@@ -1,0 +1,113 @@
+ import { Outlet, Link, createRootRoute, HeadContent, Scripts, useRouter } from "@tanstack/react-router";
+ import { lazy, Suspense, useEffect } from "react";
+ import { useNavigationTracking } from "@/lib/metrics";
+ 
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { Loader2 } from "lucide-react";
+import appCss from "../styles.css?url";
+
+ const BottomNav = lazy(() => import("@/components/BottomNav").then(m => ({ default: m.BottomNav })));
+ const MetricsDashboard = lazy(() => import("@/components/MetricsDashboard").then(m => ({ default: m.MetricsDashboard })));
+ 
+function ErrorComponent({ error }: { error: any }) {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+      <div className="max-w-md text-center">
+        <h1 className="text-xl font-bold text-foreground">Ocorreu um erro</h1>
+        <p className="mt-2 text-sm text-muted-foreground">{error?.message || "Algo deu errado."}</p>
+        <div className="mt-6">
+          <Button
+            onClick={() => window.location.reload()}
+            className="inline-flex items-center justify-center rounded-xl bg-primary px-6 py-3 text-sm font-medium text-primary-foreground"
+          >
+            Tentar novamente
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+import { Button } from "@/components/ui/button";
+
+function NotFoundComponent() {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+      <div className="max-w-md text-center">
+        <h1 className="text-7xl font-bold text-foreground">404</h1>
+        <p className="mt-2 text-sm text-muted-foreground">Página não encontrada</p>
+        <div className="mt-6">
+          <Link
+            to="/"
+            className="inline-flex items-center justify-center rounded-xl bg-primary px-6 py-3 text-sm font-medium text-primary-foreground"
+          >
+            Voltar ao início
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export const Route = createRootRoute({
+  head: () => ({
+    meta: [
+      { charSet: "utf-8" },
+      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
+      { title: "Cofre 360" },
+      { name: "description", content: "Gerencie suas finanças com inteligência artificial" },
+      { property: "og:title", content: "Cofre 360" },
+      { property: "og:description", content: "Gerencie suas finanças com inteligência artificial" },
+      { property: "og:type", content: "website" },
+      { name: "theme-color", content: "#1a1a2e" },
+    ],
+    links: [
+      { rel: "stylesheet", href: appCss },
+      { rel: "preconnect", href: "https://fonts.googleapis.com" },
+      { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" },
+    ],
+  }),
+  shellComponent: RootShell,
+  component: RootComponent,
+  notFoundComponent: NotFoundComponent,
+  errorComponent: ErrorComponent,
+});
+
+function RootShell({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="pt-BR" className="light" suppressHydrationWarning>
+      <head>
+        <HeadContent />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('theme');var c=document.documentElement.classList;c.remove('light','dark');c.add(t==='dark'?'dark':'light');}catch(e){}})();`,
+          }}
+        />
+      </head>
+      <body suppressHydrationWarning>
+        {children}
+        <Scripts />
+      </body>
+    </html>
+  );
+}
+
+ function RootComponent() {
+   useNavigationTracking();
+ 
+  return (
+    <TooltipProvider>
+      <div className="mx-auto min-h-screen max-w-md bg-background pb-20">
+        <Outlet />
+        <Suspense fallback={
+          <div className="fixed bottom-0 left-0 right-0 h-16 bg-card/80 flex items-center justify-center border-t border-border">
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          </div>
+        }>
+         <BottomNav />
+         <MetricsDashboard />
+       </Suspense>
+      </div>
+    </TooltipProvider>
+  );
+}

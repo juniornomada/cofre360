@@ -1,0 +1,222 @@
+export type Subcategory = {
+  label: string;
+  icon: string;
+};
+
+export type CategoryGroup = {
+  label: string;
+  icon: string;
+  subcategories: Subcategory[];
+};
+
+export const categoryTree: CategoryGroup[] = [
+  {
+    label: "Alimentação",
+    icon: "🍔",
+    subcategories: [
+      { label: "Supermercado", icon: "🛒" },
+      { label: "Restaurante", icon: "🍽️" },
+      { label: "Delivery", icon: "🛵" },
+      { label: "Padaria/Café", icon: "☕" },
+      { label: "Açougue/Hortifruti", icon: "🥩" },
+      { label: "Outros", icon: "🍔" },
+    ],
+  },
+  {
+    label: "Transporte",
+    icon: "🚗",
+    subcategories: [
+      { label: "Uber/99", icon: "🚕" },
+      { label: "Ônibus/Metrô", icon: "🚌" },
+      { label: "Combustível", icon: "⛽" },
+      { label: "Estacionamento", icon: "🅿️" },
+      { label: "Manutenção", icon: "🔧" },
+      { label: "IPVA/Licenciamento", icon: "📋" },
+      { label: "Pedágio", icon: "🛣️" },
+      { label: "Outros", icon: "🚗" },
+    ],
+  },
+  {
+    label: "Moradia",
+    icon: "🏠",
+    subcategories: [
+      { label: "Aluguel", icon: "🏠" },
+      { label: "Condomínio", icon: "🏢" },
+      { label: "Energia", icon: "⚡" },
+      { label: "Água", icon: "💧" },
+      { label: "Gás", icon: "🔥" },
+      { label: "Internet/Telefone", icon: "📶" },
+      { label: "IPTU", icon: "🏛️" },
+      { label: "Seguro Residencial", icon: "🛡️" },
+      { label: "Outros", icon: "🏠" },
+    ],
+  },
+  {
+    label: "Saúde",
+    icon: "💊",
+    subcategories: [
+      { label: "Farmácia", icon: "💊" },
+      { label: "Consulta Médica", icon: "🩺" },
+      { label: "Dentista", icon: "🦷" },
+      { label: "Exames", icon: "🔬" },
+      { label: "Plano de Saúde", icon: "🏥" },
+      { label: "Ótica", icon: "👓" },
+      { label: "Outros", icon: "💊" },
+    ],
+  },
+  {
+    label: "Educação",
+    icon: "📚",
+    subcategories: [
+      { label: "Mensalidade", icon: "🎓" },
+      { label: "Cursos Online", icon: "💻" },
+      { label: "Livros", icon: "📖" },
+      { label: "Material Escolar", icon: "✏️" },
+      { label: "Outros", icon: "📚" },
+    ],
+  },
+  {
+    label: "Lazer",
+    icon: "🎮",
+    subcategories: [
+      { label: "Cinema/Teatro", icon: "🎬" },
+      { label: "Viagem", icon: "✈️" },
+      { label: "Jogos", icon: "🎮" },
+      { label: "Parques/Eventos", icon: "🎡" },
+      { label: "Outros", icon: "🎮" },
+    ],
+  },
+  {
+    label: "Compras",
+    icon: "🛍️",
+    subcategories: [
+      { label: "Roupas/Calçados", icon: "👕" },
+      { label: "Eletrônicos", icon: "📱" },
+      { label: "Compras Online", icon: "🛒" },
+      { label: "Casa/Decoração", icon: "🛋️" },
+      { label: "Outros", icon: "🛍️" },
+    ],
+  },
+  {
+    label: "Assinaturas",
+    icon: "📱",
+    subcategories: [
+      { label: "Streaming", icon: "📺" },
+      { label: "Apps/Serviços", icon: "📱" },
+      { label: "Outros", icon: "📱" },
+    ],
+  },
+  {
+    label: "Serviços",
+    icon: "🔧",
+    subcategories: [
+      { label: "Limpeza", icon: "🧹" },
+      { label: "Manutenção", icon: "🔧" },
+      { label: "Profissionais", icon: "👷" },
+      { label: "Outros", icon: "🔧" },
+    ],
+  },
+  {
+    label: "Pets",
+    icon: "🐾",
+    subcategories: [
+      { label: "Ração/Petiscos", icon: "🦴" },
+      { label: "Veterinário", icon: "🏥" },
+      { label: "Petshop", icon: "🐾" },
+      { label: "Outros", icon: "🐾" },
+    ],
+  },
+  {
+    label: "Impostos/Taxas",
+    icon: "🏛️",
+    subcategories: [
+      { label: "IR", icon: "📊" },
+      { label: "INSS/FGTS", icon: "🏛️" },
+      { label: "Taxas Bancárias", icon: "🏦" },
+      { label: "Multas", icon: "⚠️" },
+      { label: "Outros", icon: "🏛️" },
+    ],
+  },
+  {
+    label: "Dívidas/Parcelas",
+    icon: "📋",
+    subcategories: [
+      { label: "Financiamento", icon: "🏦" },
+      { label: "Empréstimo", icon: "💸" },
+      { label: "Consórcio", icon: "📋" },
+      { label: "Outros", icon: "📋" },
+    ],
+  },
+  {
+    label: "Transferências",
+    icon: "🔄",
+    subcategories: [
+      { label: "PIX", icon: "⚡" },
+      { label: "TED/DOC", icon: "🔄" },
+      { label: "Outros", icon: "🔄" },
+    ],
+  },
+  {
+    label: "Receita",
+    icon: "💰",
+    subcategories: [
+      { label: "Salário", icon: "💼" },
+      { label: "Freelance", icon: "💻" },
+      { label: "Rendimentos", icon: "📈" },
+      { label: "Reembolso", icon: "↩️" },
+      { label: "Outros", icon: "💰" },
+    ],
+  },
+  {
+    label: "Outros",
+    icon: "📄",
+    subcategories: [
+      { label: "Outros", icon: "📄" },
+    ],
+  },
+];
+
+/** Flat list of "Categoria > Subcategoria" values for storage */
+export function getCategoryValue(group: string, sub: string): string {
+  return `${group} > ${sub}`;
+}
+
+/** Parse a stored value back into group + sub */
+export function parseCategoryValue(value: string): { group: string; sub: string } {
+  const parts = value.split(" > ");
+  if (parts.length === 2) return { group: parts[0], sub: parts[1] };
+  // Legacy: try to match old flat category to a group
+  const found = categoryTree.find(g => g.label === value);
+  if (found) return { group: found.label, sub: "Outros" };
+  return { group: "Outros", sub: "Outros" };
+}
+
+/** Get the display label (short) */
+export function getCategoryDisplay(value: string): string {
+  const { group, sub } = parseCategoryValue(value);
+  if (sub === "Outros") return group;
+  return sub;
+}
+
+/** Get the icon for a stored category value */
+export function getCategoryIcon(value: string): string {
+  const { group, sub } = parseCategoryValue(value);
+  const g = categoryTree.find(c => c.label === group);
+  if (!g) return "📄";
+  const s = g.subcategories.find(sc => sc.label === sub);
+  return s?.icon || g.icon;
+}
+
+/** Flat list of all main category labels (for filter chips) */
+export const mainCategories = categoryTree.map(g => g.label);
+
+/** Flat list of all possible stored values (for backward compat) */
+export function getAllCategoryValues(): string[] {
+  const values: string[] = [];
+  for (const g of categoryTree) {
+    for (const s of g.subcategories) {
+      values.push(getCategoryValue(g.label, s.label));
+    }
+  }
+  return values;
+}
