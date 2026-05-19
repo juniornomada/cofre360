@@ -13,26 +13,26 @@ import { toast } from "sonner";
 interface BudgetItem {
   id: string;
   category: string;
-  icon: string;
-  spent: number;
-  budget_limit: number;
-  color: string;
+  icon: string | null;
+  spent: number | null;
+  budget_limit: number | null;
+  color: string | null;
 }
 
 interface TxRow {
   amount: number;
-  category: string;
+  category: string | null;
   type: string;
   date: string;
 }
 
 interface Goal {
   id: string;
-  name: string;
-  icon: string;
-  current_amount: number;
-  target_amount: number;
-  deadline: string;
+  name: string | null;
+  icon: string | null;
+  current_amount: number | null;
+  target_amount: number | null;
+  deadline: string | null;
 }
 
 const budgetIconOptions = ["🍔", "🏠", "🚗", "🎬", "💊", "🎮", "📚", "👕", "✈️", "🐾", "💡", "📱"];
@@ -326,7 +326,7 @@ function OrcaMetasPage() {
                 <div key={item.id} className="group interactive-card rounded-2xl bg-card p-4 animate-stagger-in relative" style={{ animationDelay: `${60 + i * 40}ms` }}>
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2.5">
-                      <span className="text-lg">{item.icon}</span>
+                      <span className="text-lg">{item.icon || "🍔"}</span>
                       <span className="text-sm font-medium text-foreground">{item.category}</span>
                     </div>
                     <div className="flex items-center gap-1.5">
@@ -346,8 +346,8 @@ function OrcaMetasPage() {
                     <div className={`h-full rounded-full transition-all duration-500 ${isOver ? "bg-destructive" : item.color}`} style={{ width: `${Math.min(pct, 100)}%` }} />
                   </div>
                   <div className="flex justify-between mt-1.5">
-                    <span className="text-[10px] text-muted-foreground tabular-nums">R$ {item.spent.toFixed(2)}</span>
-                    <span className="text-[10px] text-muted-foreground tabular-nums">R$ {item.budget_limit.toFixed(2)}</span>
+                    <span className="text-[10px] text-muted-foreground tabular-nums">R$ {item.spent?.toFixed(2) || "0.00"}</span>
+                    <span className="text-[10px] text-muted-foreground tabular-nums">R$ {item.budget_limit?.toFixed(2) || "0.00"}</span>
                   </div>
                 </div>
               );
@@ -369,21 +369,21 @@ function OrcaMetasPage() {
               <p className="text-sm font-semibold text-foreground">{goals.length} metas ativas</p>
             </div>
             <p className="text-xs text-muted-foreground">
-              Você já economizou R$ {goals.reduce((s, g) => s + g.current_amount, 0).toLocaleString("pt-BR")} de R$ {goals.reduce((s, g) => s + g.target_amount, 0).toLocaleString("pt-BR")}
+              Você já economizou R$ {goals.reduce((s, g) => s + (g.current_amount || 0), 0).toLocaleString("pt-BR")} de R$ {goals.reduce((s, g) => s + (g.target_amount || 0), 0).toLocaleString("pt-BR")}
             </p>
           </div>
 
           <div className="flex flex-col gap-3">
             {goals.map((goal, i) => {
-              const pct = goal.target_amount > 0 ? Math.round((goal.current_amount / goal.target_amount) * 100) : 0;
+              const pct = goal.target_amount > 0 ? Math.round((goal.current_amount || 0) / goal.target_amount * 100) : 0;
               return (
                 <div key={goal.id} className="group interactive-card rounded-2xl bg-card p-4 animate-stagger-in relative" style={{ animationDelay: `${60 + i * 40}ms` }}>
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center gap-2.5">
-                      <span className="text-lg">{goal.icon}</span>
+                      <span className="text-lg">{goal.icon || "🎯"}</span>
                       <div>
-                        <p className="text-sm font-medium text-foreground">{goal.name}</p>
-                        <p className="text-[10px] text-muted-foreground">Meta: {goal.deadline}</p>
+                        <p className="text-sm font-medium text-foreground">{goal.name || "Sem nome"}</p>
+                        <p className="text-[10px] text-muted-foreground">Meta: {goal.deadline || "Sem prazo"}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -402,8 +402,8 @@ function OrcaMetasPage() {
                     <div className="h-full rounded-full bg-primary transition-all duration-500" style={{ width: `${pct}%` }} />
                   </div>
                   <div className="flex justify-between mt-1.5">
-                    <span className="text-[10px] text-muted-foreground tabular-nums">R$ {goal.current_amount.toLocaleString("pt-BR")}</span>
-                    <span className="text-[10px] text-muted-foreground tabular-nums">R$ {goal.target_amount.toLocaleString("pt-BR")}</span>
+                    <span className="text-[10px] text-muted-foreground tabular-nums">R$ {(goal.current_amount || 0).toLocaleString("pt-BR")}</span>
+                    <span className="text-[10px] text-muted-foreground tabular-nums">R$ {(goal.target_amount || 0).toLocaleString("pt-BR")}</span>
                   </div>
                 </div>
               );
