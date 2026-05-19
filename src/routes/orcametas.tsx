@@ -114,7 +114,7 @@ function OrcaMetasPage() {
     try {
       const { data, error } = await supabase.from("goals").select("*").order("created_at", { ascending: true });
       if (error) throw error;
-      if (data) setGoals(data);
+      if (data) setGoals(data as any);
     } catch (error: any) {
       console.error("Error fetching goals:", error);
       toast.error("Erro ao carregar metas");
