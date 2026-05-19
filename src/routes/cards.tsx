@@ -1180,7 +1180,7 @@ function CardsPage() {
                 <div className="text-center py-4">
                   <Landmark className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2" />
                   <p className="text-xs text-muted-foreground">Nenhuma conta cadastrada</p>
-                  <Link to="/accounts" search={{ action: undefined }} className="text-xs text-primary mt-1 inline-block">
+                  <Link to="/accounts" className="text-xs text-primary mt-1 inline-block">
                     Cadastrar conta →
                   </Link>
                 </div>
