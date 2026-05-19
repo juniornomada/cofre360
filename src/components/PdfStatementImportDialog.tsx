@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Tables, TablesInsert } from "@/integrations/supabase/types";
 import { categorizeTransaction } from "@/lib/categorize-transaction";
 import { restoreAccents } from "@/lib/restore-accents";
-import { parseCardInvoicePdf } from "@/server/parse-card-invoice";
+import { parseCardInvoicePdf } from "../server-fns/parse-card-invoice";
 import { PdfPreviewTable } from "@/components/PdfPreviewTable";
 
 type Props = {
