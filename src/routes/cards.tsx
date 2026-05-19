@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { SmartLink as Link } from "@/components/SmartLink";
 import { ArrowLeft, Plus, CreditCard, Trash2, X, Check, Loader2, Wallet, Landmark, ChevronLeft, ChevronRight, Receipt, FileUp, GripVertical, Layers, Pencil } from "lucide-react";
- import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react";
+import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react";
 
 const PdfInvoiceImportDialog = lazy(() => import("@/components/PdfInvoiceImportDialog").then(m => ({ default: m.PdfInvoiceImportDialog })));
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -35,22 +35,22 @@ import { CSS } from "@dnd-kit/utilities";
 type CardData = {
   id: string;
   name: string;
-  last_four: string;
+  last_four: string | number | null;
   brand: string;
   card_limit: number;
   used: number;
-  color: string;
-  emoji: string;
-  closing_day: number;
-  due_day: number;
+  color: string | null;
+  emoji: string | null;
+  closing_day: number | null;
+  due_day: number | null;
 };
 
 type BankAccount = {
   id: string;
   name: string;
   balance: number;
-  icon: string;
-  color: string;
+  icon: string | null;
+  color: string | null;
 };
 
 type PaymentLine = {
@@ -61,14 +61,14 @@ type PaymentLine = {
 type CardTransaction = {
   id: string;
   name: string;
-  icon: string;
-  category: string;
+  icon: string | null;
+  category: string | null;
   date: string;
   amount: number;
   type: string;
   created_at: string;
-  total_installments: number;
-  installment_number: number;
+  total_installments: number | null;
+  installment_number: number | null;
   installment_group_id: string | null;
 };
 
