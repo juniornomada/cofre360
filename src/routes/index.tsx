@@ -154,8 +154,8 @@ function Dashboard() {
     const gls = glsRes.data;
 
     setCardOptions(["Nenhum", ...((cards || []).map((c: any) => c.name))]);
-    if (rems) setPendingReminders(rems);
-    if (gls) setGoals(gls);
+    if (rems) setPendingReminders(rems as any);
+    if (gls) setGoals(gls as any);
 
     const acctNameById: Record<string, string> = {};
     for (const a of accts || []) acctNameById[a.id] = a.name;
