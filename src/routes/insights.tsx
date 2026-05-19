@@ -659,7 +659,7 @@ function InsightsPage() {
                 <Link
                   key={i}
                   to="/transactions"
-                  search={{ action: undefined, type: undefined, category: insight.category }}
+                  search={{ category: insight.category } as any}
                   className={className}
                   style={style}
                 >
