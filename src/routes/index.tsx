@@ -1,9 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { SmartLink as Link } from "@/components/SmartLink";
 import { TrendingUp, Eye, EyeOff, Bell, Pencil, Trash2, CalendarIcon, Loader2, Clock, Wallet, ChevronRight, ArrowUpRight, ArrowDownRight, AlertTriangle, Sparkles, Flame, Plus, Minus, ArrowLeftRight, Layers } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { TransactionItem } from "@/components/TransactionItem";
- import { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense } from "react";
 import { format, parse, isToday, isYesterday, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -16,6 +15,7 @@ import { parseCategoryValue, getCategoryIcon } from "@/lib/categories";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { BankLogo } from "@/components/BankLogo";
 import { EmptyState } from "@/components/EmptyState";
+import { SmartLink as Link } from "@/components/SmartLink";
 
 const CategoryPicker = lazy(() => import("@/components/CategoryPicker").then(m => ({ default: m.CategoryPicker })));
 const QuickAddTransactionDialog = lazy(() => import("@/components/QuickAddTransactionDialog").then(m => ({ default: m.QuickAddTransactionDialog })));
@@ -45,8 +45,6 @@ interface Transaction {
   transferToName?: string;
 }
 
-
-
 const shortMonthMap: Record<string, number> = {
   jan: 0, fev: 1, mar: 2, abr: 3, mai: 4, jun: 5,
   jul: 6, ago: 7, set: 8, out: 9, nov: 10, dez: 11,
@@ -55,7 +53,6 @@ const shortMonthMap: Record<string, number> = {
 function parseTxDateToDate(dateStr: string): Date | null {
   if (!dateStr) return null;
   const trimmed = dateStr.trim();
-  // Format: dd/MM/yyyy or dd/MM/yy
   const slash = trimmed.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
   if (slash) {
     const day = parseInt(slash[1], 10);
@@ -64,12 +61,10 @@ function parseTxDateToDate(dateStr: string): Date | null {
     if (year < 100) year += 2000;
     return new Date(year, month, day);
   }
-  // Format: yyyy-MM-dd (ISO)
   const iso = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (iso) {
     return new Date(parseInt(iso[1], 10), parseInt(iso[2], 10) - 1, parseInt(iso[3], 10));
   }
-  // Format: "31 mar" or "31 mar 2026"
   const parts = trimmed.toLowerCase().split(/\s+/);
   if (parts.length >= 2) {
     const day = parseInt(parts[0], 10);
@@ -93,7 +88,7 @@ function Dashboard() {
   const [balanceVisible, setBalanceVisible] = useState(true);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
-  const [accountBalances, setAccountBalances] = useState<{ id: string; name: string; icon: string; color: string; balance: number }[]>([]);
+  const [accountBalances, setAccountBalances] = useState<{ id: string; name: string; icon: string | null; color: string | null; balance: number }[]>([]);
   const [cardOptions, setCardOptions] = useState<string[]>(["Nenhum"]);
   const [loading, setLoading] = useState(true);
   const [editTx, setEditTx] = useState<Transaction | null>(null);
@@ -101,9 +96,10 @@ function Dashboard() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Transaction | null>(null);
   const [deleteScope, setDeleteScope] = useState<"single" | "future" | "all">("single");
-  const [pendingReminders, setPendingReminders] = useState<{ id: string; title: string; icon: string; due_date: string; amount: number; type: string }[]>([]);
-  const [goals, setGoals] = useState<{ id: string; name: string; icon: string; current_amount: number; target_amount: number }[]>([]);
+  const [pendingReminders, setPendingReminders] = useState<{ id: string; title: string | null; icon: string | null; due_date: string | null; amount: number | null; type: string | null }[]>([]);
+  const [goals, setGoals] = useState<{ id: string; name: string | null; icon: string | null; current_amount: number | null; target_amount: number | null }[]>([]);
   const [greeting, setGreeting] = useState<string>("");
+
   useEffect(() => { setGreeting(getGreeting()); }, []);
     const [quickAddOpen, setQuickAddOpen] = useState(false);
     const emptyStateRef = useRef<HTMLDivElement>(null);
@@ -154,8 +150,8 @@ function Dashboard() {
     const gls = glsRes.data;
 
     setCardOptions(["Nenhum", ...((cards || []).map((c: any) => c.name))]);
-    if (rems) setPendingReminders(rems);
-    if (gls) setGoals(gls);
+    if (rems) setPendingReminders(rems as any);
+    if (gls) setGoals(gls as any);
 
     const acctNameById: Record<string, string> = {};
     for (const a of accts || []) acctNameById[a.id] = a.name;

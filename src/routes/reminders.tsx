@@ -24,17 +24,17 @@ export const Route = createFileRoute("/reminders")({
 
 interface Reminder {
   id: string;
-  title: string;
-  amount: number;
-  due_date: string;
-  type: string;
-  category: string;
-  icon: string;
-  is_completed: boolean;
-  notes: string;
+  title: string | null;
+  amount: number | null;
+  due_date: string | null;
+  type: string | null;
+  category: string | null;
+  icon: string | null;
+  is_completed: boolean | null;
+  notes: string | null;
   bank_account_id: string | null;
   card_id: string | null;
-  is_recurring: boolean;
+  is_recurring: boolean | null;
   recurrence_day: number | null;
 }
 
@@ -43,8 +43,8 @@ const iconOptions = ["🔔", "💰", "🏠", "💳", "📱", "⚡", "💧", "�
 
 function RemindersPage() {
   const [reminders, setReminders] = useState<Reminder[]>([]);
-  const [bankAccounts, setBankAccounts] = useState<{ id: string; name: string; icon: string; balance: number; color: string }[]>([]);
-  const [cards, setCards] = useState<{ id: string; name: string; emoji: string; last_four: string; card_limit: number; used: number; color: string }[]>([]);
+  const [bankAccounts, setBankAccounts] = useState<{ id: string; name: string; icon: string | null; balance: number; color: string | null }[]>([]);
+  const [cards, setCards] = useState<{ id: string; name: string; emoji: string | null; last_four: string | number | null; card_limit: number; used: number; color: string | null }[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);

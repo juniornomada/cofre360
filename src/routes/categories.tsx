@@ -106,6 +106,7 @@ function CategoriesPage() {
         } else {
           const max = Math.max(0, ...categories.map((c) => c.sort_order));
           const { error } = await supabase.from("categories").insert({
+            id: crypto.randomUUID(),
             label: edit.label.trim(),
             icon: edit.icon || "📄",
             sort_order: max + 1,
@@ -127,6 +128,7 @@ function CategoriesPage() {
             ...subcategories.filter((s) => s.category_id === edit.category_id).map((s) => s.sort_order)
           );
           const { error } = await supabase.from("subcategories").insert({
+            id: crypto.randomUUID(),
             category_id: edit.category_id,
             label: edit.label.trim(),
             icon: edit.icon || "📄",

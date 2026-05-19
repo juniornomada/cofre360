@@ -145,6 +145,7 @@ export function PdfStatementImportDialog({ open, onOpenChange, bankAccountId, ba
     for (const row of preview) {
       const { category, icon } = categorizeTransaction(row.name);
       const transaction: TransactionInsert = {
+        id: crypto.randomUUID(),
         date: row.date,
         name: row.name,
         amount: row.amount,

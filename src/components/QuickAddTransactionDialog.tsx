@@ -16,8 +16,8 @@ import { toast } from "sonner";
 
 export type QuickAddInitialType = "expense" | "income" | "transfer";
 
-interface BankAccountOption { id: string; name: string; icon: string; color: string }
-interface CardOption { name: string; brand: string; emoji: string; color: string }
+interface BankAccountOption { id: string; name: string; icon: string | null; color: string | null }
+interface CardOption { name: string; brand: string; emoji: string | null; color: string | null }
 
 interface Props {
   open: boolean;
@@ -143,11 +143,13 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
         : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
       const { error } = await supabase.from("transactions").insert([
         {
+          id: crypto.randomUUID(),
           icon: "🔄", name: `Transferência → ${toName}`, category: "Transferência",
           date: newTx.date, amount: newTx.amount, type: "expense",
           card: null, bank_account_id: transferFromId, installment_group_id: groupId,
         },
         {
+          id: crypto.randomUUID(),
           icon: "🔄", name: `Transferência ← ${fromName}`, category: "Transferência",
           date: newTx.date, amount: newTx.amount, type: "income",
           card: null, bank_account_id: transferToId, installment_group_id: groupId,
@@ -181,6 +183,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
            installmentFixedValue
          );
         rows.push({
+          id: crypto.randomUUID(),
           icon: newTx.icon, name: `${newTx.name} (${i + 1}/${installmentCount})`, category: newTx.category,
           date: format(installDate, "dd MMM", { locale: ptBR }),
           amount: parcela, type: newTx.type,
@@ -194,6 +197,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
       if (error) throw error;
     } else {
       const { error } = await supabase.from("transactions").insert({
+        id: crypto.randomUUID(),
         icon: newTx.icon, name: newTx.name, category: newTx.category,
         date: newTx.date, amount: newTx.amount, type: newTx.type,
         card: cardValue, bank_account_id: newTx.bank_account_id || null,

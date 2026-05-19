@@ -38,8 +38,8 @@ type BankAccount = {
   id: string;
   name: string;
   balance: number;
-  icon: string;
-  color: string;
+  icon: string | null;
+  color: string | null;
 };
 
 const bankColorOptions = [
@@ -116,7 +116,7 @@ function SortableAccountItem({
       )}
     >
       <div className="flex items-center gap-2.5 px-2 sm:px-4 py-0.5">
-        <BankLogo icon={account.icon} color={account.color} size="sm" />
+        <BankLogo icon={account.icon || ""} color={account.color || ""} size="sm" />
         <div className="flex-1 min-w-0" style={{ animationDelay: `${60 + index * 80}ms` }}>
           {isEditing ? (
             <div className="flex flex-col gap-2">
@@ -265,23 +265,22 @@ function AccountsPage() {
   const [incomeByAccount, setIncomeByAccount] = useState<Record<string, number>>({});
   const [expenseByAccount, setExpenseByAccount] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
-   const [dialogOpen, setDialogOpen] = useState(false); const listRef = useRef<HTMLDivElement>(null);
-   
+  const [dialogOpen, setDialogOpen] = useState(false); 
+  const listRef = useRef<HTMLDivElement>(null);
    
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [csvImportAccount, setCsvImportAccount] = useState<BankAccount | null>(null);
   const [pdfImportAccount, setPdfImportAccount] = useState<BankAccount | null>(null);
-   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const isUndoing = useRef(false);
 
-  // Inline editing
-   const [editingAccount, setEditingAccount] = useState<BankAccount | null>(null);
-   const [editName, setEditName] = useState("");
-   const [editBalance, setEditBalance] = useState("");
-   const [editIcon, setEditIcon] = useState("");
-   const [editColor, setEditColor] = useState("");
-   const [historyAccount, setHistoryAccount] = useState<BankAccount | null>(null);
-   const [balanceHistory, setBalanceHistory] = useState<{ id: string; previous_balance: number; new_balance: number; created_at: string }[]>([]);
+  const [editingAccount, setEditingAccount] = useState<BankAccount | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editBalance, setEditBalance] = useState("");
+  const [editIcon, setEditIcon] = useState("");
+  const [editColor, setEditColor] = useState("");
+  const [historyAccount, setHistoryAccount] = useState<BankAccount | null>(null);
+  const [balanceHistory, setBalanceHistory] = useState<any[]>([]);
 
   // Add form
   const [formName, setFormName] = useState("");
@@ -292,9 +291,9 @@ function AccountsPage() {
   const fetchHistory = useCallback(async (accountId: string) => {
     try {
       const { data, error } = await supabase
-        .from("bank_account_balance_history")
+        .from("bank_account_balance_history" as any)
         .select("*")
-        .eq("bank_account_id", accountId)
+        .eq("bank_account_id" as any, accountId)
         .order("created_at", { ascending: false });
       if (error) throw error;
       setBalanceHistory(data || []);
@@ -424,6 +423,7 @@ function AccountsPage() {
     setIsSubmitting(true);
     try {
       const payload = {
+        id: crypto.randomUUID(),
         ...valid,
         icon: formIcon,
         color: formColor,
