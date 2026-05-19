@@ -20,7 +20,7 @@ export type Database = {
           color: string
           created_at: string
           icon: string
-          id?: string
+          id: string
           name: string
           sort_order: number
           updated_at: string
@@ -57,7 +57,7 @@ export type Database = {
           color: string
           created_at: string
           icon: string
-          id?: string
+          id: string
           spent: number
           updated_at: string
           user_id: string
@@ -92,7 +92,7 @@ export type Database = {
           bank_account_id: string
           card_id: string
           created_at: string
-          id?: string
+          id: string
           paid_at: string
           user_id: string
         }
@@ -125,7 +125,7 @@ export type Database = {
           created_at: string
           due_day: number
           emoji: string
-          id?: string
+          id: string
           last_four: number
           name: string
           sort_order: number
@@ -171,7 +171,7 @@ export type Database = {
         Row: {
           created_at: string
           icon: string
-          id?: string
+          id: string
           label: string
           sort_order: number
           updated_at: string
@@ -200,7 +200,7 @@ export type Database = {
           current_amount: number
           deadline: string
           icon: string
-          id?: string
+          id: string
           name: string
           target_amount: number
           updated_at: string
@@ -239,7 +239,7 @@ export type Database = {
           created_at: string
           due_date: string
           icon: string
-          id?: string
+          id: string
           is_completed: boolean
           is_recurring: boolean
           notes: string
@@ -292,7 +292,7 @@ export type Database = {
           category_id: string
           created_at: string
           icon: string
-          id?: string
+          id: string
           label: string
           sort_order: number
           updated_at: string
@@ -326,7 +326,7 @@ export type Database = {
           created_at: string
           date: string
           icon: string
-          id?: string
+          id: string
           installment_group_id: string
           installment_number: number
           name: string
