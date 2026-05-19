@@ -143,11 +143,13 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
         : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
       const { error } = await supabase.from("transactions").insert([
         {
+          id: crypto.randomUUID(),
           icon: "🔄", name: `Transferência → ${toName}`, category: "Transferência",
           date: newTx.date, amount: newTx.amount, type: "expense",
           card: null, bank_account_id: transferFromId, installment_group_id: groupId,
         },
         {
+          id: crypto.randomUUID(),
           icon: "🔄", name: `Transferência ← ${fromName}`, category: "Transferência",
           date: newTx.date, amount: newTx.amount, type: "income",
           card: null, bank_account_id: transferToId, installment_group_id: groupId,
