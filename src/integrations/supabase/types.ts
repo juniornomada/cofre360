@@ -2,7 +2,7 @@ export type Json =
   | string
   | number
   | boolean
-  | null
+ 
   | { [key: string]: Json | undefined }
   | Json[]
 
@@ -17,102 +17,102 @@ export type Database = {
       bank_accounts: {
         Row: {
           balance: number
-          color: string | null
+          color: string
           created_at: string
-          icon: string | null
-          id: string
+          icon: string
+          id?: string
           name: string
-          sort_order: number | null
+          sort_order: number
           updated_at: string
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           balance?: number
-          color?: string | null
+          color?: string
           created_at?: string
-          icon?: string | null
-          id: string
+          icon?: string
+          id?: string
           name: string
-          sort_order?: number | null
+          sort_order?: number
           updated_at?: string
-          user_id?: string | null
+          user_id?: string
         }
         Update: {
           balance?: number
-          color?: string | null
+          color?: string
           created_at?: string
-          icon?: string | null
+          icon?: string
           id?: string
           name?: string
-          sort_order?: number | null
+          sort_order?: number
           updated_at?: string
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: []
       }
       budget_categories: {
         Row: {
-          budget_limit: number | null
-          category: string | null
-          color: string | null
-          created_at: string | null
-          icon: string | null
-          id: string | null
-          spent: number | null
-          updated_at: string | null
-          user_id: string | null
+          budget_limit: number
+          category: string
+          color: string
+          created_at: string
+          icon: string
+          id?: string
+          spent: number
+          updated_at: string
+          user_id: string
         }
         Insert: {
-          budget_limit?: number | null
-          category?: string | null
-          color?: string | null
-          created_at?: string | null
-          icon?: string | null
-          id?: string | null
-          spent?: number | null
-          updated_at?: string | null
-          user_id?: string | null
+          budget_limit?: number
+          category?: string
+          color?: string
+          created_at?: string
+          icon?: string
+          id?: string
+          spent?: number
+          updated_at?: string
+          user_id?: string
         }
         Update: {
-          budget_limit?: number | null
-          category?: string | null
-          color?: string | null
-          created_at?: string | null
-          icon?: string | null
-          id?: string | null
-          spent?: number | null
-          updated_at?: string | null
-          user_id?: string | null
+          budget_limit?: number
+          category?: string
+          color?: string
+          created_at?: string
+          icon?: string
+          id?: string
+          spent?: number
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
       card_payments: {
         Row: {
-          amount: number | null
-          bank_account_id: string | null
-          card_id: string | null
-          created_at: string | null
-          id: string | null
-          paid_at: string | null
-          user_id: string | null
+          amount: number
+          bank_account_id: string
+          card_id: string
+          created_at: string
+          id?: string
+          paid_at: string
+          user_id: string
         }
         Insert: {
-          amount?: number | null
-          bank_account_id?: string | null
-          card_id?: string | null
-          created_at?: string | null
-          id?: string | null
-          paid_at?: string | null
-          user_id?: string | null
+          amount?: number
+          bank_account_id?: string
+          card_id?: string
+          created_at?: string
+          id?: string
+          paid_at?: string
+          user_id?: string
         }
         Update: {
-          amount?: number | null
-          bank_account_id?: string | null
-          card_id?: string | null
-          created_at?: string | null
-          id?: string | null
-          paid_at?: string | null
-          user_id?: string | null
+          amount?: number
+          bank_account_id?: string
+          card_id?: string
+          created_at?: string
+          id?: string
+          paid_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -120,50 +120,50 @@ export type Database = {
         Row: {
           brand: string
           card_limit: number
-          closing_day: number | null
-          color: string | null
+          closing_day: number
+          color: string
           created_at: string
-          due_day: number | null
-          emoji: string | null
-          id: string
-          last_four: number | null
+          due_day: number
+          emoji: string
+          id?: string
+          last_four: number
           name: string
-          sort_order: number | null
+          sort_order: number
           updated_at: string
           used: number
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           brand: string
           card_limit?: number
-          closing_day?: number | null
-          color?: string | null
+          closing_day?: number
+          color?: string
           created_at?: string
-          due_day?: number | null
-          emoji?: string | null
-          id: string
-          last_four?: number | null
+          due_day?: number
+          emoji?: string
+          id?: string
+          last_four?: number
           name: string
-          sort_order?: number | null
+          sort_order?: number
           updated_at?: string
           used?: number
-          user_id?: string | null
+          user_id?: string
         }
         Update: {
           brand?: string
           card_limit?: number
-          closing_day?: number | null
-          color?: string | null
+          closing_day?: number
+          color?: string
           created_at?: string
-          due_day?: number | null
-          emoji?: string | null
+          due_day?: number
+          emoji?: string
           id?: string
-          last_four?: number | null
+          last_four?: number
           name?: string
-          sort_order?: number | null
+          sort_order?: number
           updated_at?: string
           used?: number
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -171,17 +171,17 @@ export type Database = {
         Row: {
           created_at: string
           icon: string
-          id: string
+          id?: string
           label: string
-          sort_order: number | null
+          sort_order: number
           updated_at: string
         }
         Insert: {
           created_at?: string
           icon: string
-          id: string
+          id?: string
           label: string
-          sort_order?: number | null
+          sort_order?: number
           updated_at?: string
         }
         Update: {
@@ -189,101 +189,101 @@ export type Database = {
           icon?: string
           id?: string
           label?: string
-          sort_order?: number | null
+          sort_order?: number
           updated_at?: string
         }
         Relationships: []
       }
       goals: {
         Row: {
-          created_at: string | null
-          current_amount: number | null
-          deadline: string | null
-          icon: string | null
-          id: string | null
-          name: string | null
-          target_amount: number | null
-          updated_at: string | null
-          user_id: string | null
+          created_at: string
+          current_amount: number
+          deadline: string
+          icon: string
+          id?: string
+          name: string
+          target_amount: number
+          updated_at: string
+          user_id: string
         }
         Insert: {
-          created_at?: string | null
-          current_amount?: number | null
-          deadline?: string | null
-          icon?: string | null
-          id?: string | null
-          name?: string | null
-          target_amount?: number | null
-          updated_at?: string | null
-          user_id?: string | null
+          created_at?: string
+          current_amount?: number
+          deadline?: string
+          icon?: string
+          id?: string
+          name?: string
+          target_amount?: number
+          updated_at?: string
+          user_id?: string
         }
         Update: {
-          created_at?: string | null
-          current_amount?: number | null
-          deadline?: string | null
-          icon?: string | null
-          id?: string | null
-          name?: string | null
-          target_amount?: number | null
-          updated_at?: string | null
-          user_id?: string | null
+          created_at?: string
+          current_amount?: number
+          deadline?: string
+          icon?: string
+          id?: string
+          name?: string
+          target_amount?: number
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
       reminders: {
         Row: {
-          amount: number | null
-          bank_account_id: string | null
-          card_id: string | null
-          category: string | null
-          created_at: string | null
-          due_date: string | null
-          icon: string | null
-          id: string | null
-          is_completed: boolean | null
-          is_recurring: boolean | null
-          notes: string | null
-          recurrence_day: number | null
-          title: string | null
-          type: string | null
-          updated_at: string | null
-          user_id: string | null
+          amount: number
+          bank_account_id: string
+          card_id: string
+          category: string
+          created_at: string
+          due_date: string
+          icon: string
+          id?: string
+          is_completed: boolean
+          is_recurring: boolean
+          notes: string
+          recurrence_day: number
+          title: string
+          type: string
+          updated_at: string
+          user_id: string
         }
         Insert: {
-          amount?: number | null
-          bank_account_id?: string | null
-          card_id?: string | null
-          category?: string | null
-          created_at?: string | null
-          due_date?: string | null
-          icon?: string | null
-          id?: string | null
-          is_completed?: boolean | null
-          is_recurring?: boolean | null
-          notes?: string | null
-          recurrence_day?: number | null
-          title?: string | null
-          type?: string | null
-          updated_at?: string | null
-          user_id?: string | null
+          amount?: number
+          bank_account_id?: string
+          card_id?: string
+          category?: string
+          created_at?: string
+          due_date?: string
+          icon?: string
+          id?: string
+          is_completed?: boolean
+          is_recurring?: boolean
+          notes?: string
+          recurrence_day?: number
+          title?: string
+          type?: string
+          updated_at?: string
+          user_id?: string
         }
         Update: {
-          amount?: number | null
-          bank_account_id?: string | null
-          card_id?: string | null
-          category?: string | null
-          created_at?: string | null
-          due_date?: string | null
-          icon?: string | null
-          id?: string | null
-          is_completed?: boolean | null
-          is_recurring?: boolean | null
-          notes?: string | null
-          recurrence_day?: number | null
-          title?: string | null
-          type?: string | null
-          updated_at?: string | null
-          user_id?: string | null
+          amount?: number
+          bank_account_id?: string
+          card_id?: string
+          category?: string
+          created_at?: string
+          due_date?: string
+          icon?: string
+          id?: string
+          is_completed?: boolean
+          is_recurring?: boolean
+          notes?: string
+          recurrence_day?: number
+          title?: string
+          type?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -292,18 +292,18 @@ export type Database = {
           category_id: string
           created_at: string
           icon: string
-          id: string
+          id?: string
           label: string
-          sort_order: number | null
+          sort_order: number
           updated_at: string
         }
         Insert: {
           category_id: string
           created_at?: string
           icon: string
-          id: string
+          id?: string
           label: string
-          sort_order?: number | null
+          sort_order?: number
           updated_at?: string
         }
         Update: {
@@ -312,7 +312,7 @@ export type Database = {
           icon?: string
           id?: string
           label?: string
-          sort_order?: number | null
+          sort_order?: number
           updated_at?: string
         }
         Relationships: []
@@ -320,54 +320,54 @@ export type Database = {
       transactions: {
         Row: {
           amount: number
-          bank_account_id: string | null
-          card: string | null
-          category: string | null
+          bank_account_id: string
+          card: string
+          category: string
           created_at: string
           date: string
-          icon: string | null
-          id: string
-          installment_group_id: string | null
-          installment_number: number | null
+          icon: string
+          id?: string
+          installment_group_id: string
+          installment_number: number
           name: string
-          total_installments: number | null
+          total_installments: number
           type: string
           updated_at: string
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           amount?: number
-          bank_account_id?: string | null
-          card?: string | null
-          category?: string | null
+          bank_account_id?: string
+          card?: string
+          category?: string
           created_at?: string
           date: string
-          icon?: string | null
-          id: string
-          installment_group_id?: string | null
-          installment_number?: number | null
+          icon?: string
+          id?: string
+          installment_group_id?: string
+          installment_number?: number
           name: string
-          total_installments?: number | null
+          total_installments?: number
           type: string
           updated_at?: string
-          user_id?: string | null
+          user_id?: string
         }
         Update: {
           amount?: number
-          bank_account_id?: string | null
-          card?: string | null
-          category?: string | null
+          bank_account_id?: string
+          card?: string
+          category?: string
           created_at?: string
           date?: string
-          icon?: string | null
+          icon?: string
           id?: string
-          installment_group_id?: string | null
-          installment_number?: number | null
+          installment_group_id?: string
+          installment_number?: number
           name?: string
-          total_installments?: number | null
+          total_installments?: number
           type?: string
           updated_at?: string
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: []
       }
