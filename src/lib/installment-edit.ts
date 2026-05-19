@@ -141,22 +141,10 @@ export async function saveInstallmentPlan(input: SaveInstallmentInput): Promise<
     .from("transactions")
     .select("installment_number")
     .eq("installment_group_id", groupId);
-  const present = new Set<number>((siblings || []).map((s) => s.installment_number));
+  const present = new Set<number>((siblings || []).map((s: any) => s.installment_number));
   present.add(current);
 
-  const toInsert: Array<{
-    name: string;
-    icon: string;
-    category: string;
-    date: string;
-    amount: number;
-    type: string;
-    card: string | null;
-    bank_account_id: string | null;
-    installment_number: number;
-    total_installments: number;
-    installment_group_id: string;
-  }> = [];
+  const toInsert: any[] = [];
 
   for (let n = current + 1; n <= total; n++) {
     if (present.has(n)) continue;
