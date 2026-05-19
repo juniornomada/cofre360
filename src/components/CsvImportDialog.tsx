@@ -357,6 +357,7 @@ export function CsvImportDialog({ open, onOpenChange, bankAccountId, bankAccount
     const payload = preview.reduce<TransactionInsert[]>((rows, row) => {
       const { category, icon } = categorizeTransaction(row.name);
       const transaction: TransactionInsert = {
+        id: crypto.randomUUID(),
         date: row.date,
         name: row.name,
         amount: row.amount,
