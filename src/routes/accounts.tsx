@@ -265,23 +265,22 @@ function AccountsPage() {
   const [incomeByAccount, setIncomeByAccount] = useState<Record<string, number>>({});
   const [expenseByAccount, setExpenseByAccount] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
-   const [dialogOpen, setDialogOpen] = useState(false); const listRef = useRef<HTMLDivElement>(null);
-   
+  const [dialogOpen, setDialogOpen] = useState(false); 
+  const listRef = useRef<HTMLDivElement>(null);
    
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [csvImportAccount, setCsvImportAccount] = useState<BankAccount | null>(null);
   const [pdfImportAccount, setPdfImportAccount] = useState<BankAccount | null>(null);
-   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const isUndoing = useRef(false);
 
-  // Inline editing
-   const [editingAccount, setEditingAccount] = useState<BankAccount | null>(null);
-   const [editName, setEditName] = useState("");
-   const [editBalance, setEditBalance] = useState("");
-   const [editIcon, setEditIcon] = useState("");
-   const [editColor, setEditColor] = useState("");
-   const [historyAccount, setHistoryAccount] = useState<BankAccount | null>(null);
-   const [balanceHistory, setBalanceHistory] = useState<any[]>([]);
+  const [editingAccount, setEditingAccount] = useState<BankAccount | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editBalance, setEditBalance] = useState("");
+  const [editIcon, setEditIcon] = useState("");
+  const [editColor, setEditColor] = useState("");
+  const [historyAccount, setHistoryAccount] = useState<BankAccount | null>(null);
+  const [balanceHistory, setBalanceHistory] = useState<any[]>([]);
 
   // Add form
   const [formName, setFormName] = useState("");
