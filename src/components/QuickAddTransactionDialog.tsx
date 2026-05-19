@@ -197,6 +197,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
       if (error) throw error;
     } else {
       const { error } = await supabase.from("transactions").insert({
+        id: crypto.randomUUID(),
         icon: newTx.icon, name: newTx.name, category: newTx.category,
         date: newTx.date, amount: newTx.amount, type: newTx.type,
         card: cardValue, bank_account_id: newTx.bank_account_id || null,
