@@ -265,9 +265,29 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
         )}
 
         {error && (
-          <div className="flex items-start gap-2 text-destructive text-xs">
-            <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-            <span>{error}</span>
+          <div className="rounded-xl bg-destructive/10 p-3 space-y-2">
+            <div className="flex items-start gap-2 text-destructive text-xs font-medium">
+              <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+              <span>{error}</span>
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="w-full h-8 text-[11px] rounded-lg border-destructive/20 hover:bg-destructive/5 hover:text-destructive"
+              onClick={() => {
+                if (preview.length > 0) {
+                  if (dedupResult) {
+                    handleConfirmImport();
+                  } else {
+                    handleCheckDuplicates();
+                  }
+                } else {
+                  fileRef.current?.click();
+                }
+              }}
+            >
+              Tentar novamente
+            </Button>
           </div>
         )}
 
