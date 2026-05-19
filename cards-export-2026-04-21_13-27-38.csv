@@ -1,0 +1,5 @@
+id;name;last_four;brand;card_limit;used;color;emoji;created_at;updated_at;closing_day;due_day;sort_order
+bb6d1526-3100-489c-bda3-5322cf35ade2;Banco do brasil;0202;Mastercard;4700;185.5;from-yellow-400 to-yellow-600;💛;2026-04-10 17:42:57.931528+00;2026-04-19 13:00:36.325354+00;3;10;0
+88569aef-85a3-4d26-a3f6-0be27508cccb;Flash;0899;JCB;500;0;from-pink-400 to-pink-700;💗;2026-04-19 03:09:05.263406+00;2026-04-19 13:00:36.327757+00;25;1;3
+18b2b5af-f4ef-4390-990d-4521b411c603;Mercado Pago;0101;visa;4200;2035.5;from-gray-700 to-gray-900;⚫;2026-04-16 12:44:27.996677+00;2026-04-19 13:00:36.329675+00;12;17;1
+2568106a-a087-4f44-9617-b6ccfb4b6e1b;Nubank;0077;Diners;8000;0;from-purple-600 to-purple-900;💜;2026-04-19 03:08:15.726701+00;2026-04-19 13:00:36.330599+00;12;20;2

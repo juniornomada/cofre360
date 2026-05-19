@@ -1,0 +1,145 @@
+id;icon;name;category;date;amount;type;card;created_at;updated_at;bank_account_id;total_installments;installment_number;installment_group_id
+697eb525-6deb-4b67-af7f-7817d464417a;💰;Pix recebido TERUKO NOMADA DE OLIVEIRA;Receita;04/03/2026;1440;income;;2026-04-16 11:01:26.531066+00;2026-04-16 11:01:26.531066+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;1;1;
+09809aa2-34be-4b68-befe-23c6baafde00;🍔;DÃ©bito por dÃ­vida Pagamento mÃ­nimo da fatura CartÃ£o Mercado Pago;Alimentação;04/03/2026;306.22;expense;;2026-04-16 11:01:26.531066+00;2026-04-16 11:01:26.531066+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;1;1;
+0ce1c71b-568a-4f63-b6a2-9e8f4b76336f;💰;Pix recebido TERUKO NOMADA DE OLIVEIRA;Receita;07/03/2026;260;income;;2026-04-16 11:01:26.531066+00;2026-04-16 11:01:26.531066+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;1;1;
+c5b1e00a-8bd5-4603-ac56-5d78cb80dd3a;📄;TransferÃªncia recebida WANDERLEY JUNIOR N OLIVEIRA;Outros;09/03/2026;2791.89;income;;2026-04-16 11:01:26.531066+00;2026-04-16 11:01:26.531066+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;1;1;
+4cc6927d-ff3b-4729-a019-3c852dc8f9ce;📈;Rendimentos;Rendimentos;10/03/2026;1.36;income;;2026-04-16 11:01:26.531066+00;2026-04-16 11:01:26.531066+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;1;1;
+d93e9e6f-18c2-450e-82cf-3c5cd9a3d9e6;📈;Venda de Meli DÃ³lar;Rendimentos;10/03/2026;30.98;income;;2026-04-16 11:01:26.531066+00;2026-04-16 11:01:26.531066+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;1;1;
+eab3a263-e5f3-41f2-b045-f16de485fb8d;🔄;Pix enviado Wanderley Junior Nomada de Oliveira;Transferências;10/03/2026;3084.23;expense;;2026-04-16 11:01:26.531066+00;2026-04-16 11:01:26.531066+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;1;1;
+fa6d9c74-e938-4a34-8a1f-010484e11c79;💰;Reembolso de transferÃªncia enviada Wanderley Junior Nomada de Oliveira;Receita;10/03/2026;3084.23;income;;2026-04-16 11:01:26.531066+00;2026-04-16 11:01:26.531066+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;1;1;
+6cdc0578-3432-4e32-95ab-1c327583b613;📈;Pagamento com QR Pix PORTOSEG SA CREDITO FINANCIAMENTO E INVESTIMENTO;Rendimentos;10/03/2026;3084.23;expense;;2026-04-16 11:01:26.531066+00;2026-04-16 11:01:26.531066+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;1;1;
+26eb909d-9026-4b26-93d3-f7fb398bdf2c;💰;Pix recebido TERUKO NOMADA DE OLIVEIRA;Receita;18/03/2026;560;income;;2026-04-16 11:01:26.531066+00;2026-04-16 11:01:26.531066+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;1;1;
+4068f8e6-7a57-472c-a8d6-070146533e1f;📈;Pagamento com QR Pix PORTOSEG SA CREDITO FINANCIAMENTO E INVESTIMENTO;Rendimentos;18/03/2026;560;expense;;2026-04-16 11:01:26.531066+00;2026-04-16 11:01:26.531066+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;1;1;
+bbaea3ec-f531-4acc-bee7-de90d660a1d8;💰;Pix recebido WANDERLEY DE OLIVEIRA;Receita;24/03/2026;155;income;;2026-04-16 11:01:26.531066+00;2026-04-16 11:01:26.531066+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;1;1;
+86a8f861-9818-4d82-bf70-95f0ee6017be;🛒;Pagamento com QR Pix SHPP BRASIL INSTITUICAO DE PAGAMENTO E SERVICOS DE PAGAMENTOS...;Compras Online;24/03/2026;145.02;expense;;2026-04-16 11:01:26.531066+00;2026-04-16 11:01:26.531066+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;1;1;
+83e129b3-8ab7-4ab1-bb30-625cce5f7c02;📈;Rendimentos;Rendimentos;25/03/2026;0.01;income;;2026-04-16 11:01:26.531066+00;2026-04-16 11:01:26.531066+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;1;1;
+0efe2976-fdb6-4891-9c5d-ce909be63fd3;📈;Rendimentos;Rendimentos;26/03/2026;0.01;income;;2026-04-16 11:01:26.531066+00;2026-04-16 11:01:26.531066+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;1;1;
+0f896aac-1e5e-41dc-ad8e-5f30ca4d1d2d;💰;Pix recebido TERUKO NOMADA DE OLIVEIRA;Receita;27/03/2026;580;income;;2026-04-16 11:01:26.531066+00;2026-04-16 11:01:26.531066+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;1;1;
+a71850bc-bb39-4781-bd77-1fe4aa02582e;🔄;Pagamento com QR Pix 99 TECNOLOGIA LTDA;Transferências;28/03/2026;30;expense;;2026-04-16 11:01:26.531066+00;2026-04-16 11:01:26.531066+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;1;1;
+081eecb9-0803-4df7-8afa-c3534eea7b38;🔄;Pagamento com QR Pix 51.535.189 CAIQUE POLON;Transferências;28/03/2026;35;expense;;2026-04-16 11:01:26.531066+00;2026-04-16 11:01:26.531066+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;1;1;
+8d4b2f21-9c2e-4397-a564-66da4c1c3fc7;🔄;Pagamento com QR Pix EMPREENDIMENTOS PAGUE MENOS SA;Transferências;29/03/2026;165.18;expense;;2026-04-16 11:01:26.531066+00;2026-04-16 11:01:26.531066+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;1;1;
+27449c35-a0a7-407b-ad8a-4d95ea17469b;🛒;Pagamento com QR Pix PAGALEVE INSTITUICAO DE PAGAMENTO LTDA;Compras Online;29/03/2026;70.52;expense;;2026-04-16 11:01:26.531066+00;2026-04-16 11:01:26.531066+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;1;1;
+2a30b8f2-20f0-4236-a02b-e65ef5d5a920;💰;Pix recebido WANDERLEY JUNIOR NOMADA;Receita;30/03/2026;34.09;income;;2026-04-16 11:01:26.531066+00;2026-04-16 11:01:26.531066+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;1;1;
+e5e9e37d-ab55-41ca-8658-b7835a327c28;📈;Rendimentos;Rendimentos;31/03/2026;0.01;income;;2026-04-16 11:01:26.531066+00;2026-04-16 11:01:26.531066+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;1;1;
+cfed2406-464d-445b-8474-3978704aec9a;🛒;Supermercado Pão de Açúcar;Alimentação > Supermercado;15 abr;312.8;expense;Nubank;2026-04-16 18:56:12.259379+00;2026-04-16 23:01:43.196422+00;;1;1;
+8dca974b-fd1e-4dc4-b29e-4d782ff3ba46;⛽;Posto de gasolina;Transporte;16 abr;250;expense;Mercado Pago;2026-04-16 12:48:24.739666+00;2026-04-16 12:51:20.615725+00;;1;1;
+519754fa-6272-49aa-a532-e41940b69c36;🛒;Supermercado Tauste;Alimentação;16 abr;100;expense;;2026-04-16 12:47:51.759116+00;2026-04-16 12:52:50.507056+00;5a520588-7df8-45fc-903e-19f884c8d154;1;1;
+96ba2e29-437e-4fa1-b7c7-4b580a5799de;🚗;Auto Mecanica (1/8);Transporte;16 abr;312.5;expense;Banco do brasil;2026-04-16 13:56:24.11459+00;2026-04-16 13:56:24.11459+00;;1;1;
+87913421-0dca-4fbd-9cf9-ccdf26480e70;🚗;Auto Mecanica (2/8);Transporte;16 mai;312.5;expense;Banco do brasil;2026-04-16 13:56:24.11459+00;2026-04-16 13:56:24.11459+00;;1;1;
+c64b9293-a567-4e77-81c9-c7f8e22241e9;🚗;Auto Mecanica (3/8);Transporte;16 jun;312.5;expense;Banco do brasil;2026-04-16 13:56:24.11459+00;2026-04-16 13:56:24.11459+00;;1;1;
+bf248b0a-2f53-43f6-9c63-f916ac939362;🚗;Auto Mecanica (4/8);Transporte;16 jul;312.5;expense;Banco do brasil;2026-04-16 13:56:24.11459+00;2026-04-16 13:56:24.11459+00;;1;1;
+5d9e21b1-6626-413b-abb3-1005c7d688a5;🚗;Auto Mecanica (5/8);Transporte;16 ago;312.5;expense;Banco do brasil;2026-04-16 13:56:24.11459+00;2026-04-16 13:56:24.11459+00;;1;1;
+2a0cb9de-da7d-4b64-9613-489fac2ed7b3;🚗;Auto Mecanica (6/8);Transporte;16 set;312.5;expense;Banco do brasil;2026-04-16 13:56:24.11459+00;2026-04-16 13:56:24.11459+00;;1;1;
+67e85df2-a909-4664-90e4-d6d7da0882de;🚗;Auto Mecanica (7/8);Transporte;16 out;312.5;expense;Banco do brasil;2026-04-16 13:56:24.11459+00;2026-04-16 13:56:24.11459+00;;1;1;
+5653a11c-8d48-4b4c-8227-e285f4badaaa;🚗;Auto Mecanica (8/8);Transporte;16 nov;312.5;expense;Banco do brasil;2026-04-16 13:56:24.11459+00;2026-04-16 13:56:24.11459+00;;1;1;
+87020103-1536-44d9-b6d4-21a0ceb95651;💻;Freelance;Receita > Freelance;16 abr;3000;income;;2026-04-16 15:36:53.690225+00;2026-04-16 15:37:10.5231+00;5a520588-7df8-45fc-903e-19f884c8d154;1;1;
+66e3b913-1de2-4a43-a954-61d424975f98;💼;Salário CLT;Receita > Salário;05 abr;6500;income;;2026-04-16 18:56:12.259379+00;2026-04-16 18:56:12.259379+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;1;1;
+fae55e1d-4cc9-4682-bc31-635198c1308e;💻;Freelance Design;Receita > Freelance;12 abr;1800;income;;2026-04-16 18:56:12.259379+00;2026-04-16 18:56:12.259379+00;5a520588-7df8-45fc-903e-19f884c8d154;1;1;
+d9ea4c6f-2067-4794-b840-34cf007b168e;📈;Rendimento CDB;Receita > Rendimentos;01 abr;245.50;income;;2026-04-16 18:56:12.259379+00;2026-04-16 18:56:12.259379+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;1;1;
+a93b7ed2-08b0-464d-9c1c-a698f9afdf02;🛒;Supermercado Tauste;Alimentação > Supermercado;03 abr;487.30;expense;;2026-04-16 18:56:12.259379+00;2026-04-16 18:56:12.259379+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;1;1;
+69d6db62-fca8-412a-b0a3-4f4b97498b97;🎡;Pagamento CartÃ£o de crÃ©dito;Lazer > Parques/Eventos;29/03/2026;289;expense;;2026-04-16 11:01:26.531066+00;2026-04-16 22:55:36.255588+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;1;1;
+6cd57b99-8089-490e-8556-a2e25e057403;🎡;Pagamento CartÃ£o de crÃ©dito;Lazer > Parques/Eventos;04/03/2026;1133.78;expense;;2026-04-16 11:01:26.531066+00;2026-04-16 22:58:29.96572+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;1;1;
+b68b8d36-7064-4f00-b86a-996571fcee85;🛵;iFood - Almoço;Alimentação > Delivery;08 abr;45.90;expense;Nubank;2026-04-16 18:56:12.259379+00;2026-04-16 18:56:12.259379+00;;1;1;
+c887939d-2728-42ac-b66f-939f3c8942c8;🍽️;Restaurante Outback;Alimentação > Restaurante;13 abr;178.50;expense;Nubank;2026-04-16 18:56:12.259379+00;2026-04-16 18:56:12.259379+00;;1;1;
+41a87dc7-dc6c-452b-a23c-3b500813e2bf;☕;Padaria Esquina;Alimentação > Padaria/Café;02 abr;23.50;expense;;2026-04-16 18:56:12.259379+00;2026-04-16 18:56:12.259379+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;1;1;
+bf4e32a1-d71e-49af-b16a-fd4e84d38f25;🥩;Açougue Bom Corte;Alimentação > Açougue/Hortifruti;10 abr;156.40;expense;;2026-04-16 18:56:12.259379+00;2026-04-16 18:56:12.259379+00;5a520588-7df8-45fc-903e-19f884c8d154;1;1;
+de024cae-f151-4b81-b5a3-e0506d90c312;🚕;Uber - Centro;Transporte > Uber/99;04 abr;28.50;expense;Nubank;2026-04-16 18:56:12.259379+00;2026-04-16 18:56:12.259379+00;;1;1;
+90ec795e-a340-412c-87a0-96f3e492ca36;🚕;Uber - Aeroporto;Transporte > Uber/99;11 abr;67.30;expense;Nubank;2026-04-16 18:56:12.259379+00;2026-04-16 18:56:12.259379+00;;1;1;
+0606be7e-4cc2-46e4-8b6d-a70ac3344bc6;🚕;99 - Trabalho;Transporte > Uber/99;14 abr;19.80;expense;Nubank;2026-04-16 18:56:12.259379+00;2026-04-16 18:56:12.259379+00;;1;1;
+d3dfc790-eb94-4f05-be1c-5f85d1ef19c2;⛽;Combustível Shell;Transporte > Combustível;06 abr;320;expense;;2026-04-16 18:56:12.259379+00;2026-04-16 18:56:12.259379+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;1;1;
+75bd8dfc-08e5-4836-b3fc-a10069b66587;⛽;Combustível Ipiranga;Transporte > Combustível;14 abr;280;expense;;2026-04-16 18:56:12.259379+00;2026-04-16 18:56:12.259379+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;1;1;
+59cee007-012d-4b48-9763-775c7f183dc6;🔧;Ronaldo Romanoski - Mecânico;Transporte > Manutenção;09 abr;850;expense;;2026-04-16 18:56:12.259379+00;2026-04-16 18:56:12.259379+00;5a520588-7df8-45fc-903e-19f884c8d154;1;1;
+105c24a1-6a54-480f-a4c2-299817029e44;🅿️;Estacionamento Shopping;Transporte > Estacionamento;13 abr;25;expense;;2026-04-16 18:56:12.259379+00;2026-04-16 18:56:12.259379+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;1;1;
+1fd6b98c-20d3-444e-956e-d24a2bdf2b63;🛣️;Pedágio Rodovia;Transporte > Pedágio;06 abr;18.50;expense;;2026-04-16 18:56:12.259379+00;2026-04-16 18:56:12.259379+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;1;1;
+a85ae40f-635a-4046-a2be-c869c24c8b5e;🏠;Aluguel Apto;Moradia > Aluguel;05 abr;2200;expense;;2026-04-16 18:56:12.259379+00;2026-04-16 18:56:12.259379+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;1;1;
+6934e408-94f9-48b1-be47-7ccc126c8338;🏢;Condomínio;Moradia > Condomínio;10 abr;580;expense;;2026-04-16 18:56:12.259379+00;2026-04-16 18:56:12.259379+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;1;1;
+d8a256c6-8534-4e65-a4a7-9f83e2f177ed;⚡;Conta de Luz - Enel;Moradia > Energia;08 abr;245.80;expense;;2026-04-16 18:56:12.259379+00;2026-04-16 18:56:12.259379+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;1;1;
+68e8d5c7-ed97-4e4e-bab8-7f199ee8748d;💧;Conta de Água - Sabesp;Moradia > Água;12 abr;89.50;expense;;2026-04-16 18:56:12.259379+00;2026-04-16 18:56:12.259379+00;5a520588-7df8-45fc-903e-19f884c8d154;1;1;
+2e211044-e566-4c16-941a-26f90bab9ac0;📶;Internet Vivo Fibra;Moradia > Internet/Telefone;07 abr;119.90;expense;;2026-04-16 18:56:12.259379+00;2026-04-16 18:56:12.259379+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;1;1;
+a1900f1f-7d99-4e08-963f-e300ca2337fd;💊;Drogaria São Paulo;Saúde > Farmácia;04 abr;87.40;expense;;2026-04-16 18:56:12.259379+00;2026-04-16 18:56:12.259379+00;5a520588-7df8-45fc-903e-19f884c8d154;1;1;
+2c67c931-cd60-4434-837f-9bc0eb73cf14;🩺;Consulta Cardiologista;Saúde > Consulta Médica;11 abr;350;expense;Nubank;2026-04-16 18:56:12.259379+00;2026-04-16 18:56:12.259379+00;;1;1;
+4237e612-b3e7-4a00-bbe3-3a7155c3731c;🏥;Plano Unimed;Saúde > Plano de Saúde;05 abr;489;expense;;2026-04-16 18:56:12.259379+00;2026-04-16 18:56:12.259379+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;1;1;
+27eb962b-c485-4976-8db3-9e2b3ef18bad;🎬;Cinema Cinemark;Lazer > Cinema/Teatro;07 abr;64;expense;Nubank;2026-04-16 18:56:12.259379+00;2026-04-16 18:56:12.259379+00;;1;1;
+6e6a0fc7-935e-4ab5-852a-d662bdd6bdc6;🎮;Steam - Jogo;Lazer > Jogos;14 abr;89.90;expense;Nubank;2026-04-16 18:56:12.259379+00;2026-04-16 18:56:12.259379+00;;1;1;
+9d7fbb90-c97e-4923-b2a9-82b65b915097;👕;Zara - Roupas;Compras > Roupas/Calçados;06 abr;389;expense;Nubank;2026-04-16 18:56:12.259379+00;2026-04-16 18:56:12.259379+00;;1;1;
+4cc8c55d-c8f0-4c11-81db-fb0e597b88cf;📱;Amazon - Fone;Compras > Eletrônicos;12 abr;249.90;expense;Nubank;2026-04-16 18:56:12.259379+00;2026-04-16 18:56:12.259379+00;;1;1;
+42e92944-3875-4dc2-bbe1-11b8012a1dc4;📺;Netflix;Assinaturas > Streaming;05 abr;55.90;expense;Nubank;2026-04-16 18:56:12.259379+00;2026-04-16 18:56:12.259379+00;;1;1;
+2b9d7674-2c27-40d3-a0e5-1c162f70f0eb;📺;Spotify;Assinaturas > Streaming;05 abr;21.90;expense;Nubank;2026-04-16 18:56:12.259379+00;2026-04-16 18:56:12.259379+00;;1;1;
+3b6b2012-d25d-4fe5-bd70-87bb9826a823;📱;iCloud 200GB;Assinaturas > Apps/Serviços;08 abr;11.90;expense;Nubank;2026-04-16 18:56:12.259379+00;2026-04-16 18:56:12.259379+00;;1;1;
+623e8600-49e6-4d99-9360-2824ae92a1f5;🦴;Petshop - Ração;Pets > Ração/Petiscos;09 abr;187;expense;;2026-04-16 18:56:12.259379+00;2026-04-16 18:56:12.259379+00;5a520588-7df8-45fc-903e-19f884c8d154;1;1;
+cc3515cb-2e65-4e7f-9430-801dd9b27f62;🏥;Veterinário - Vacina;Pets > Veterinário;13 abr;220;expense;;2026-04-16 18:56:12.259379+00;2026-04-16 18:56:12.259379+00;5a520588-7df8-45fc-903e-19f884c8d154;1;1;
+b46094d6-3cc9-43be-8162-597126bd57e6;💼;Salário CLT;Receita > Salário;05 mar;6500;income;;2026-04-16 18:56:12.259379+00;2026-04-16 18:56:12.259379+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;1;1;
+150caa08-293c-4d66-a26c-b53a8e95954b;💻;Freelance Logo;Receita > Freelance;20 mar;1200;income;;2026-04-16 18:56:12.259379+00;2026-04-16 18:56:12.259379+00;5a520588-7df8-45fc-903e-19f884c8d154;1;1;
+85cab439-df37-4b87-ab4b-098920b577fe;🛵;iFood;Alimentação > Delivery;15 mar;38.50;expense;Nubank;2026-04-16 18:56:12.259379+00;2026-04-16 18:56:12.259379+00;;1;1;
+e326d9d2-fdd5-488b-bd9b-a0a3b27e1118;☕;Padaria;Alimentação > Padaria/Café;10 mar;45;expense;;2026-04-16 18:56:12.259379+00;2026-04-16 18:56:12.259379+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;1;1;
+1a41d6b8-6f6e-4041-95d3-a17bda507398;🚕;Uber;Transporte > Uber/99;12 mar;35;expense;Nubank;2026-04-16 18:56:12.259379+00;2026-04-16 18:56:12.259379+00;;1;1;
+84f13006-99e7-494d-9586-601b4021cbba;⛽;Combustível;Transporte > Combustível;20 mar;280;expense;;2026-04-16 18:56:12.259379+00;2026-04-16 18:56:12.259379+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;1;1;
+666a6339-2210-4a1f-b165-62c0fb59f9b4;🏠;Aluguel;Moradia > Aluguel;05 mar;2200;expense;;2026-04-16 18:56:12.259379+00;2026-04-16 18:56:12.259379+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;1;1;
+ac3a89a0-c49c-4c27-a6e0-4c7b65eaef5f;🏢;Condomínio;Moradia > Condomínio;10 mar;580;expense;;2026-04-16 18:56:12.259379+00;2026-04-16 18:56:12.259379+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;1;1;
+19cf95d3-cb7f-46dc-9bca-0ad13689101f;⚡;Luz;Moradia > Energia;08 mar;198;expense;;2026-04-16 18:56:12.259379+00;2026-04-16 18:56:12.259379+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;1;1;
+502953d3-d0e8-4423-80f8-4334fb6dd805;📶;Internet;Moradia > Internet/Telefone;07 mar;119.90;expense;;2026-04-16 18:56:12.259379+00;2026-04-16 18:56:12.259379+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;1;1;
+3be883ae-2193-412d-938d-098994e7023e;✈️;Viagem Praia;Lazer > Viagem;15 mar;1850;expense;Nubank;2026-04-16 18:56:12.259379+00;2026-04-16 18:56:12.259379+00;;1;1;
+484b7fce-9716-4d4c-94c9-ad86c63bf434;🍽️;Restaurante Aniversário;Alimentação > Restaurante;22 mar;320;expense;Nubank;2026-04-16 18:56:12.259379+00;2026-04-16 18:56:12.259379+00;;1;1;
+b74c6cf1-1616-41e9-b6c5-c673a89cf7e1;📱;Magazine - Geladeira;Compras > Eletrônicos;18 mar;2400;expense;Nubank;2026-04-16 18:56:12.259379+00;2026-04-16 18:56:12.259379+00;;1;1;
+b7d60cfe-3492-4597-ac95-f5005641b04a;📺;Netflix;Assinaturas > Streaming;05 mar;55.90;expense;Nubank;2026-04-16 18:56:12.259379+00;2026-04-16 18:56:12.259379+00;;1;1;
+9fb1f0ab-2283-40ec-b7f7-82c8b8d967f9;📺;Spotify;Assinaturas > Streaming;05 mar;21.90;expense;Nubank;2026-04-16 18:56:12.259379+00;2026-04-16 18:56:12.259379+00;;1;1;
+395efae6-872b-47b4-95e7-095ac5345b5b;💊;Farmácia;Saúde > Farmácia;14 mar;65;expense;;2026-04-16 18:56:12.259379+00;2026-04-16 18:56:12.259379+00;5a520588-7df8-45fc-903e-19f884c8d154;1;1;
+7809cdf0-4d3d-46e0-80dd-75963c1fe594;🏥;Plano Unimed;Saúde > Plano de Saúde;05 mar;489;expense;;2026-04-16 18:56:12.259379+00;2026-04-16 18:56:12.259379+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;1;1;
+3b392870-f113-4111-867d-ebfe227b9a27;✈️;Viagem Praia;Lazer > Viagem;14 abr;2000;expense;Banco do brasil;2026-04-17 00:54:40.422281+00;2026-04-17 02:27:19.189086+00;;1;1;
+c29921eb-799c-46c7-b054-2993a4b143ff;✈️;Viagem;Lazer > Viagem;16 abr;1500;expense;;2026-04-17 02:34:37.278525+00;2026-04-17 02:34:37.278525+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;1;1;
+618fec12-3572-47ab-bf69-cd72c810f8d9;✈️;Viagem;Lazer > Viagem;16 abr;2870;expense;Mercado Pago;2026-04-17 02:56:55.242652+00;2026-04-17 02:56:55.242652+00;;1;1;
+86d6be70-284e-4017-aa32-bc3108b217f7;🛒;Mercado Extra;Alimentação > Supermercado;03 abr;380;expense;;2026-04-17 13:41:55.292385+00;2026-04-17 13:41:55.292385+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;1;1;
+58941ef1-cb09-4b12-8c1f-2ea112ac4baf;🍽️;Restaurante Outback;Alimentação > Restaurante;08 abr;220;expense;;2026-04-17 13:41:55.292385+00;2026-04-17 13:41:55.292385+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;1;1;
+4170fcf4-6b43-4de3-8aca-b3eb0b0ad6e6;🛵;iFood almoço;Alimentação > Delivery;11 abr;65;expense;;2026-04-17 13:41:55.292385+00;2026-04-17 13:41:55.292385+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;1;1;
+864cadc6-2141-4e76-8040-1cf3ca720dd6;☕;Padaria Real;Alimentação > Padaria/Café;14 abr;45;expense;;2026-04-17 13:41:55.292385+00;2026-04-17 13:41:55.292385+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;1;1;
+26bd7ed6-67e6-4a33-8f7e-9f17c902586b;🥩;Hortifruti São Paulo;Alimentação > Açougue/Hortifruti;15 abr;110;expense;;2026-04-17 13:41:55.292385+00;2026-04-17 13:41:55.292385+00;5a520588-7df8-45fc-903e-19f884c8d154;1;1;
+bb69155e-41ce-4df3-905a-229dbf403530;🛵;iFood jantar;Alimentação > Delivery;16 abr;78;expense;;2026-04-17 13:41:55.292385+00;2026-04-17 13:41:55.292385+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;1;1;
+48db6a92-57e2-44a9-ad20-f53fbad6f710;☕;Cafeteria Suplicy;Alimentação > Padaria/Café;17 abr;32;expense;;2026-04-17 13:41:55.292385+00;2026-04-17 13:41:55.292385+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;1;1;
+96974e95-2cc5-4deb-a568-6b12f5f6b857;🍽️;Sushi Liberdade;Alimentação > Restaurante;17 abr;50;expense;;2026-04-17 13:41:55.292385+00;2026-04-17 13:41:55.292385+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;1;1;
+8e712378-1454-4d46-a0e1-c8ba751cff4f;⛽;Posto Shell;Transporte > Combustível;02 abr;280;expense;;2026-04-17 13:41:55.292385+00;2026-04-17 13:41:55.292385+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;1;1;
+ca02c7ac-8760-4ad1-8d5d-fd9c5fede14f;🚕;Uber para o trabalho;Transporte > Uber/99;05 abr;38;expense;;2026-04-17 13:41:55.292385+00;2026-04-17 13:41:55.292385+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;1;1;
+c8e65203-37e3-4749-8c35-6feb818a2874;🚕;99 corrida;Transporte > Uber/99;09 abr;25;expense;;2026-04-17 13:41:55.292385+00;2026-04-17 13:41:55.292385+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;1;1;
+bb564372-ca94-4e25-ac2f-9ce6272a16ee;🅿️;Estacionamento Shopping;Transporte > Estacionamento;12 abr;28;expense;;2026-04-17 13:41:55.292385+00;2026-04-17 13:41:55.292385+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;1;1;
+fb0221ea-0cb8-4c0e-b5ec-c18a4174bad9;🛣️;Pedágio CCR;Transporte > Pedágio;13 abr;19;expense;;2026-04-17 13:41:55.292385+00;2026-04-17 13:41:55.292385+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;1;1;
+8995fc10-45fd-4443-b11d-53084f3883cf;⛽;Posto Ipiranga;Transporte > Combustível;16 abr;150;expense;;2026-04-17 13:41:55.292385+00;2026-04-17 13:41:55.292385+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;1;1;
+e576c49e-6483-4177-b3fb-4e9f114bb4b0;🚕;Uber Eats viagem;Transporte > Uber/99;17 abr;40;expense;;2026-04-17 13:41:55.292385+00;2026-04-17 13:41:55.292385+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;1;1;
+7d310535-ce6a-4986-ac6d-5ae500c92a9f;🏠;Aluguel apartamento;Moradia > Aluguel;05 abr;1200;expense;;2026-04-17 13:41:55.292385+00;2026-04-17 13:41:55.292385+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;1;1;
+97c68439-c8e4-4378-ac2b-8b4f88c8b87a;🏢;Condomínio;Moradia > Condomínio;10 abr;380;expense;;2026-04-17 13:41:55.292385+00;2026-04-17 13:41:55.292385+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;1;1;
+73f5da88-f203-43f9-b10b-13f4fa7b3955;⚡;Conta de luz Enel;Moradia > Energia;12 abr;110;expense;;2026-04-17 13:41:55.292385+00;2026-04-17 13:41:55.292385+00;5a520588-7df8-45fc-903e-19f884c8d154;1;1;
+5052416d-e53d-4a9a-82ee-baa57634a8bb;📶;Internet Vivo Fibra;Moradia > Internet/Telefone;15 abr;60;expense;;2026-04-17 13:41:55.292385+00;2026-04-17 13:41:55.292385+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;1;1;
+b945b2c5-6196-4ed7-99b1-de76e49ff7ae;🎬;Cinema Iguatemi;Lazer > Cinema/Teatro;06 abr;80;expense;;2026-04-17 13:41:55.292385+00;2026-04-17 13:41:55.292385+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;1;1;
+14664f1b-9ee0-4b4b-a7e3-7c10f6df4590;✈️;Hotel fim de semana;Lazer > Viagem;13 abr;350;expense;;2026-04-17 13:41:55.292385+00;2026-04-17 13:41:55.292385+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;1;1;
+1cbd1484-5ffd-41b3-b58a-e205a9923729;🎬;Show de música;Lazer > Cinema/Teatro;16 abr;90;expense;;2026-04-17 13:41:55.292385+00;2026-04-17 13:41:55.292385+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;1;1;
+218b8007-731c-4404-89c7-c5744f887a47;📺;Netflix;Assinaturas > Streaming;07 abr;39;expense;;2026-04-17 13:41:55.292385+00;2026-04-17 13:41:55.292385+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;1;1;
+e155d13f-78c6-4959-a132-a05ca9539c51;📺;Spotify Premium;Assinaturas > Streaming;07 abr;21;expense;;2026-04-17 13:41:55.292385+00;2026-04-17 13:41:55.292385+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;1;1;
+c1f9aff4-4cff-4faf-a058-bcf2007c30ea;📺;Disney+;Assinaturas > Streaming;11 abr;30;expense;;2026-04-17 13:41:55.292385+00;2026-04-17 13:41:55.292385+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;1;1;
+7a21aeee-bee4-42a4-b07d-bf30905f2b0e;💊;Drogaria Pacheco;Saúde > Farmácia;04 abr;65;expense;;2026-04-17 13:41:55.292385+00;2026-04-17 13:41:55.292385+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;1;1;
+ea050cdc-fc3f-49a8-91a6-8fee20ace2f0;🩺;Consulta dermatologista;Saúde > Consulta Médica;14 abr;115;expense;;2026-04-17 13:41:55.292385+00;2026-04-17 13:41:55.292385+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;1;1;
+ce5601a2-62fd-4f50-a9d8-37ee83de3826;⚡;Luz;Moradia > Energia;10 mai;150;expense;;2026-04-17 15:54:27.116464+00;2026-04-17 15:54:27.116464+00;;1;1;
+e91ff77b-7ef0-43bf-8cd0-cb828b3142a1;💧;Água - RIC ambienta;Moradia > Água;20 mai;100;expense;;2026-04-17 15:55:42.879279+00;2026-04-17 15:55:42.879279+00;;1;1;
+cfccf5ed-e446-4676-94c5-b2638a4cbc2a;💡;Conta de Luz;Moradia;17 abr;185.50;expense;;2026-04-17 16:07:47.258751+00;2026-04-17 16:07:47.258751+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;1;1;
+67d38492-f4aa-48d4-b1b7-b41350a38d60;💡;Conta de Luz;Moradia > Energia;17 abr;185.5;expense;Banco do brasil;2026-04-17 16:10:51.734538+00;2026-04-17 16:10:51.734538+00;;1;1;
+d2410ef2-dde0-4b36-8534-a4bddcf486c8;💰;Salário;Receita > Salário;17 abr;5500;income;;2026-04-17 16:11:02.469439+00;2026-04-17 16:11:02.469439+00;5a520588-7df8-45fc-903e-19f884c8d154;1;1;
+6cc708f3-7548-4998-9397-a0149373a066;🏠;Aluguel;Moradia > Aluguel;17 abr;1850;expense;Mercado Pago;2026-04-17 16:40:54.501095+00;2026-04-17 16:40:54.501095+00;;1;1;
+8879c065-6bf2-4b14-85be-de1ec1fcb764;🛒;Tauste;Alimentação > Supermercado;08 mar;420;expense;;2026-04-16 18:56:12.259379+00;2026-04-18 03:43:20.59862+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;1;1;
+4d5a606a-a695-4d31-8c95-283f34c40803;💰;Teste receita Itaú;Outros;2026-04-18;1000;income;;2026-04-18 16:11:16.733381+00;2026-04-18 16:11:16.733381+00;c8a5fc8d-3d8f-4813-ac90-868e2a1682c6;1;1;
+27be3757-2104-4d12-afd6-0e8dfcc55655;💸;Teste despesa Itaú;Outros;2026-04-18;500;expense;;2026-04-18 16:11:31.692197+00;2026-04-18 16:11:31.692197+00;c8a5fc8d-3d8f-4813-ac90-868e2a1682c6;1;1;
+98b623a5-482f-4c2c-b782-32d75ee611c6;💸;Teste despesa MP;Outros;2026-04-18;4000;expense;;2026-04-18 16:11:31.692197+00;2026-04-18 16:11:31.692197+00;5a520588-7df8-45fc-903e-19f884c8d154;1;1;
+add51240-57b4-4604-bbb8-f5ce2b20730b;💳;Teste despesa cartão MP;Outros;2026-04-18;1000;expense;Mercado Pago;2026-04-18 16:12:02.730348+00;2026-04-18 16:12:02.730348+00;;1;1;
+38d11271-e69b-4fba-a820-0288c1b74a16;🎓;Unimar;Educação > Mensalidade;18 abr;130;expense;;2026-04-18 16:20:33.681821+00;2026-04-18 16:20:33.681821+00;;1;1;
+aa16f362-dc16-41c6-bdf0-ad6ef167e994;🛒;Tauste;Alimentação > Supermercado;19 abr;500;expense;Flash;2026-04-19 03:09:58.36625+00;2026-04-19 03:09:58.36625+00;;1;1;
+27070440-670e-4d9d-b58a-23ccf7f2c154;🛒;Tauste;Alimentação > Supermercado;19 abr;100;expense;Flash;2026-04-19 03:11:53.905385+00;2026-04-19 03:11:53.905385+00;;1;1;
+399ad1a8-97a4-4010-9a15-2619cf7be922;🔄;Transferência → Itaú;Transferência;19 abr;100;expense;;2026-04-19 11:23:34.029532+00;2026-04-19 11:23:34.029532+00;5a520588-7df8-45fc-903e-19f884c8d154;1;1;3b941dd9-d7de-49a9-873c-dc210431b597
+58073242-6c49-4811-b961-8d0c94163db4;🔄;Transferência ← Mercado Pago;Transferência;19 abr;100;income;;2026-04-19 11:23:34.029532+00;2026-04-19 11:23:34.029532+00;c8a5fc8d-3d8f-4813-ac90-868e2a1682c6;1;1;3b941dd9-d7de-49a9-873c-dc210431b597
+b3820da6-adcc-4f99-884f-86da4d6a9424;🔄;Transferência → Banco do Brasil;Transferência;19 abr;100;expense;;2026-04-19 14:25:04.002712+00;2026-04-19 14:25:04.002712+00;c8a5fc8d-3d8f-4813-ac90-868e2a1682c6;1;1;266b4934-a36a-4196-85b5-305024697c9a
+9af5aad2-f529-457e-92ca-360947271778;🔄;Transferência ← Itaú;Transferência;19 abr;100;income;;2026-04-19 14:25:04.002712+00;2026-04-19 14:25:04.002712+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;1;1;266b4934-a36a-4196-85b5-305024697c9a
+79523c47-a9a2-4977-b577-7fd6af8cbb60;🔄;Transferência → Itaú;Transferência;18 abr;854;expense;;2026-04-19 15:32:15.358052+00;2026-04-19 15:32:15.358052+00;5a520588-7df8-45fc-903e-19f884c8d154;1;1;89380ac0-2e11-4d7a-be67-5e5f9d0e067a
+f3463acb-05eb-43c0-9356-a007408373fb;🔄;Transferência ← Mercado Pago;Transferência;18 abr;854;income;;2026-04-19 15:32:15.358052+00;2026-04-19 15:32:15.358052+00;c8a5fc8d-3d8f-4813-ac90-868e2a1682c6;1;1;89380ac0-2e11-4d7a-be67-5e5f9d0e067a
+5ff63527-6696-446d-8b93-37342c1be8a6;📱;"Implementar o preenchimento da parcela ao selecionar ""cartão de crédito"" (2/8)";Compras > Eletrônicos;21 mai;625;expense;Banco do brasil;2026-04-21 13:00:21.853401+00;2026-04-21 13:00:21.853401+00;;8;2;4639db3a-6c3c-4e10-a630-a1d6e33c9a4f
+54e15259-07a9-4163-bdb5-634417227698;📱;"Implementar o preenchimento da parcela ao selecionar ""cartão de crédito"" (3/8)";Compras > Eletrônicos;21 jun;625;expense;Banco do brasil;2026-04-21 13:00:21.853401+00;2026-04-21 13:00:21.853401+00;;8;3;4639db3a-6c3c-4e10-a630-a1d6e33c9a4f
+bc66d328-8173-4e9c-9507-2678e4959ffe;📱;"Implementar o preenchimento da parcela ao selecionar ""cartão de crédito"" (4/8)";Compras > Eletrônicos;21 jul;625;expense;Banco do brasil;2026-04-21 13:00:21.853401+00;2026-04-21 13:00:21.853401+00;;8;4;4639db3a-6c3c-4e10-a630-a1d6e33c9a4f
+0bb367a6-10f3-4206-aa10-6008ebcf2285;📱;"Implementar o preenchimento da parcela ao selecionar ""cartão de crédito"" (5/8)";Compras > Eletrônicos;21 ago;625;expense;Banco do brasil;2026-04-21 13:00:21.853401+00;2026-04-21 13:00:21.853401+00;;8;5;4639db3a-6c3c-4e10-a630-a1d6e33c9a4f
+233bcd46-9b70-4242-b88f-e6be047dae0f;📱;"Implementar o preenchimento da parcela ao selecionar ""cartão de crédito"" (6/8)";Compras > Eletrônicos;21 set;625;expense;Banco do brasil;2026-04-21 13:00:21.853401+00;2026-04-21 13:00:21.853401+00;;8;6;4639db3a-6c3c-4e10-a630-a1d6e33c9a4f
+afb35b0d-47ca-4da2-a404-cb0c1e582f23;📱;"Implementar o preenchimento da parcela ao selecionar ""cartão de crédito"" (7/8)";Compras > Eletrônicos;21 out;625;expense;Banco do brasil;2026-04-21 13:00:21.853401+00;2026-04-21 13:00:21.853401+00;;8;7;4639db3a-6c3c-4e10-a630-a1d6e33c9a4f
+50bf21ac-1a18-4f23-bfe7-52c684d26b8d;📱;"Implementar o preenchimento da parcela ao selecionar ""cartão de crédito"" (8/8)";Compras > Eletrônicos;21 nov;625;expense;Banco do brasil;2026-04-21 13:00:21.853401+00;2026-04-21 13:00:21.853401+00;;8;8;4639db3a-6c3c-4e10-a630-a1d6e33c9a4f
+4df76220-ce5c-4786-8d77-641ea6e0bf19;📱;"Implementar o preenchimento da parcela ao selecionar ""cartão de crédito"" (1/8)";Compras > Eletrônicos;21 abr;78.13;expense;Nubank;2026-04-21 13:00:21.853401+00;2026-04-21 13:00:59.872101+00;;8;1;4639db3a-6c3c-4e10-a630-a1d6e33c9a4f

@@ -1,0 +1,12 @@
+id;title;amount;due_date;type;category;icon;is_completed;notes;created_at;updated_at;bank_account_id;card_id;is_recurring;recurrence_day
+34af623c-64b1-4ec7-95c4-2d9d653b0b27;Conta de Água;92.30;2026-04-24;expense;Moradia;💧;false;BRK Ambiental;2026-04-17 15:57:47.590788+00;2026-04-17 15:57:47.590788+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;;true;24
+69e39473-5de9-4cd4-acd8-b5062e958994;Internet Fibra;119.90;2026-04-27;expense;Moradia;🌐;false;Vivo Fibra 500MB;2026-04-17 15:57:47.590788+00;2026-04-17 15:57:47.590788+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;;true;27
+b01bc853-967c-4e38-bf9a-d53eac034b8e;Conta de Luz;185.50;2026-04-20;expense;Moradia;💡;true;Equatorial Energia;2026-04-17 15:57:47.590788+00;2026-04-17 16:07:47.258751+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;;true;20
+aa172e93-47dd-459b-9289-5749721bc056;Conta de Luz;185.50;20 mai;expense;Moradia;💡;true;Equatorial Energia;2026-04-17 16:07:47.258751+00;2026-04-17 16:10:52.23358+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;;true;20
+7de9ece4-fc29-4b82-8ed7-5f8258313634;Salário;5500;18 abr;income;Salário;💰;true;4/12;2026-04-17 15:57:47.590788+00;2026-04-17 16:11:02.887867+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;;true;18
+a5d27c07-470f-4a05-af77-0eb9529664af;Salário;5500;18 mai;income;Salário;💰;true;4/12;2026-04-17 16:11:03.072656+00;2026-04-17 16:11:06.12333+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;;true;18
+aa294aba-463a-4d0b-994f-47e258f3dff7;Conta de Luz;185.5;20 jun;expense;Moradia;💡;true;Equatorial Energia;2026-04-17 16:10:52.463246+00;2026-04-17 16:11:10.714606+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;;true;20
+e1919819-f20e-41f2-86b7-038182577ab3;Conta de Luz;185.5;20 jul;expense;Moradia;💡;false;Equatorial Energia;2026-04-17 16:11:10.906095+00;2026-04-17 16:11:10.906095+00;f191fcfd-8e8e-4424-99c6-26a4ac01c944;;true;20
+9cf40876-ad9f-4b13-b2c8-76b6a016fe6e;Aluguel;1850.00;2026-04-22;expense;Moradia;🏠;true;Apartamento;2026-04-17 15:57:47.590788+00;2026-04-17 16:40:54.988599+00;5a520588-7df8-45fc-903e-19f884c8d154;;true;22
+148f31ec-20d2-4920-b142-6a9953443d86;Telefone Celular;79.9;2026-05-01;expense;Moradia;📱;false;Plano pós-pago;2026-04-17 15:57:47.590788+00;2026-04-17 16:48:32.38307+00;5a520588-7df8-45fc-903e-19f884c8d154;;true;1
+a1da9481-14c4-4ec0-a886-629f5cb3fd89;Salário;5500;18 jun;income;Salário;💰;false;;2026-04-17 16:11:06.313795+00;2026-04-17 16:52:25.128668+00;c8a5fc8d-3d8f-4813-ac90-868e2a1682c6;;true;18

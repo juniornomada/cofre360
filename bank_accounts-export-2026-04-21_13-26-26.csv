@@ -1,0 +1,4 @@
+id;name;balance;icon;color;created_at;updated_at;sort_order
+5a520588-7df8-45fc-903e-19f884c8d154;Mercado Pago;8579;mercadopago;from-blue-400 to-blue-600;2026-04-10 18:41:50.517443+00;2026-04-10 18:41:50.517443+00;1
+c8a5fc8d-3d8f-4813-ac90-868e2a1682c6;Itaú;0;itau;from-orange-500 to-orange-700;2026-04-17 16:39:15.99673+00;2026-04-17 16:39:15.99673+00;2
+f191fcfd-8e8e-4424-99c6-26a4ac01c944;Banco do Brasil;	-235.5;bb;from-yellow-400 to-yellow-600;2026-04-10 18:01:19.685742+00;2026-04-10 18:01:19.685742+00;0
