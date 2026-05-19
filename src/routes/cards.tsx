@@ -101,7 +101,7 @@ const shortMonthMap: Record<string, number> = {
 };
 
 function parseTxDate(dateStr: string, fallback: string): Date {
-  const parts = dateStr.trim().toLowerCase().split(/\s+/);
+  const parts = (dateStr || "").trim().toLowerCase().split(/\s+/);
   const fallbackDate = new Date(fallback);
   const fallbackYear = !isNaN(fallbackDate.getTime()) ? fallbackDate.getFullYear() : new Date().getFullYear();
 
@@ -116,21 +116,23 @@ function parseTxDate(dateStr: string, fallback: string): Date {
   return isNaN(d.getTime()) ? (!isNaN(fallbackDate.getTime()) ? fallbackDate : new Date()) : d;
 }
 
-function groupByBillingCycle(txs: CardTransaction[], closingDay: number, dueDay: number): InvoicePeriod[] {
+function groupByBillingCycle(txs: CardTransaction[], closingDay: number | null, dueDay: number | null): InvoicePeriod[] {
+  const cDay = closingDay || 1;
+  const dDay = dueDay || 10;
   const now = new Date();
   const currentMonth = now.getMonth();
   const currentYear = now.getFullYear();
 
-  let closingDate = new Date(currentYear, currentMonth, closingDay);
+  let closingDate = new Date(currentYear, currentMonth, cDay);
   if (now > closingDate) {
-    closingDate = new Date(currentYear, currentMonth + 1, closingDay);
+    closingDate = new Date(currentYear, currentMonth + 1, cDay);
   }
 
-  const prevClosing = new Date(closingDate.getFullYear(), closingDate.getMonth() - 1, closingDay);
-  const pastClosing = new Date(prevClosing.getFullYear(), prevClosing.getMonth() - 1, closingDay);
+  const prevClosing = new Date(closingDate.getFullYear(), closingDate.getMonth() - 1, cDay);
+  const pastClosing = new Date(prevClosing.getFullYear(), prevClosing.getMonth() - 1, cDay);
 
   const makeDue = (closing: Date) => {
-    const d = new Date(closing.getFullYear(), closing.getMonth(), dueDay);
+    const d = new Date(closing.getFullYear(), closing.getMonth(), dDay);
     if (d <= closing) d.setMonth(d.getMonth() + 1);
     return d;
   };
@@ -153,7 +155,7 @@ function groupByBillingCycle(txs: CardTransaction[], closingDay: number, dueDay:
   let futureStart = new Date(closingDate);
   let futureIndex = 0;
   while (futureStart < maxFutureDate || futureIndex === 0) {
-    const futureEnd = new Date(futureStart.getFullYear(), futureStart.getMonth() + 1, closingDay);
+    const futureEnd = new Date(futureStart.getFullYear(), futureStart.getMonth() + 1, cDay);
     periods.push({
       label: formatLabel("Próxima", futureEnd),
       key: `future_${futureIndex}`,
