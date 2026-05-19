@@ -3,7 +3,7 @@ import { SmartLink as Link } from "@/components/SmartLink";
 import { TrendingUp, Eye, EyeOff, Bell, Pencil, Trash2, CalendarIcon, Loader2, Clock, Wallet, ChevronRight, ArrowUpRight, ArrowDownRight, AlertTriangle, Sparkles, Flame, Plus, Minus, ArrowLeftRight, Layers } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { TransactionItem } from "@/components/TransactionItem";
- import { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense } from "react";
 import { format, parse, isToday, isYesterday, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -93,7 +93,7 @@ function Dashboard() {
   const [balanceVisible, setBalanceVisible] = useState(true);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
-  const [accountBalances, setAccountBalances] = useState<{ id: string; name: string; icon: string; color: string; balance: number }[]>([]);
+  const [accountBalances, setAccountBalances] = useState<{ id: string; name: string; icon: string | null; color: string | null; balance: number }[]>([]);
   const [cardOptions, setCardOptions] = useState<string[]>(["Nenhum"]);
   const [loading, setLoading] = useState(true);
   const [editTx, setEditTx] = useState<Transaction | null>(null);
@@ -101,8 +101,8 @@ function Dashboard() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Transaction | null>(null);
   const [deleteScope, setDeleteScope] = useState<"single" | "future" | "all">("single");
-  const [pendingReminders, setPendingReminders] = useState<{ id: string; title: string; icon: string; due_date: string; amount: number; type: string }[]>([]);
-  const [goals, setGoals] = useState<{ id: string; name: string; icon: string; current_amount: number; target_amount: number }[]>([]);
+  const [pendingReminders, setPendingReminders] = useState<{ id: string; title: string; icon: string | null; due_date: string; amount: number; type: string }[]>([]);
+  const [goals, setGoals] = useState<{ id: string; name: string | null; icon: string | null; current_amount: number | null; target_amount: number | null }[]>([]);
   const [greeting, setGreeting] = useState<string>("");
   useEffect(() => { setGreeting(getGreeting()); }, []);
     const [quickAddOpen, setQuickAddOpen] = useState(false);
