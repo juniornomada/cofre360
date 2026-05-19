@@ -63,7 +63,7 @@ function DefaultErrorComponent({
 }
 
 export const getRouter = () => {
-  const router = createRouter({
+  const router = (createRouter as any)({
     routeTree,
     context: {},
     scrollRestoration: true,
