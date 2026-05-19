@@ -100,8 +100,8 @@ function OrcaMetasPage() {
       if (budgets.error) throw budgets.error;
       if (txs.error) throw txs.error;
 
-      if (budgets.data) setItems(budgets.data);
-      if (txs.data) setTransactions(txs.data as TxRow[]);
+      if (budgets.data) setItems(budgets.data as any);
+      if (txs.data) setTransactions(txs.data as any);
     } catch (error: any) {
       console.error("Error fetching budget data:", error);
       toast.error("Erro ao carregar dados do orçamento");
