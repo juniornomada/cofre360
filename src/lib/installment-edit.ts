@@ -162,6 +162,7 @@ export async function saveInstallmentPlan(input: SaveInstallmentInput): Promise<
     if (present.has(n)) continue;
     const months = n - current;
     toInsert.push({
+      id: uuid(),
       name: `${baseName} (${n}/${total})`,
       icon: input.icon,
       category: input.category,
