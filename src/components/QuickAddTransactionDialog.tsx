@@ -183,6 +183,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
            installmentFixedValue
          );
         rows.push({
+          id: crypto.randomUUID(),
           icon: newTx.icon, name: `${newTx.name} (${i + 1}/${installmentCount})`, category: newTx.category,
           date: format(installDate, "dd MMM", { locale: ptBR }),
           amount: parcela, type: newTx.type,
