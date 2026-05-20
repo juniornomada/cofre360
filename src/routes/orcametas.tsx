@@ -155,6 +155,7 @@ function OrcaMetasPage() {
       // 3. Subcategory only (e.g. "Uber/99")
       const subKey = (sub || "").trim().toLowerCase();
       if (subKey) subMap[subKey] = (subMap[subKey] || 0) + amount;
+      
     }
     return { spentByFull: fullMap, spentByGroup: groupMap, spentBySub: subMap };
   }, [transactions, currentMonth, currentYear]);
@@ -163,11 +164,10 @@ function OrcaMetasPage() {
     () => items.map(it => {
       const cat = it.category.trim();
       const key = cat.toLowerCase();
-      const spent =
-        spentByFull[key] ??
-        spentByGroup[key] ??
-        spentBySub[key] ??
-        0;
+      // Sum up values from full category, group, and subcategory if they match
+      const spent = (spentByFull[key] || 0) + 
+                   (spentByGroup[key] || 0) + 
+                   (spentBySub[key] || 0);
       return { ...it, spent };
     }),
     [items, spentByFull, spentByGroup, spentBySub]
