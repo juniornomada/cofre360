@@ -820,10 +820,11 @@ function TransactionsPage() {
 
       {/* Edit Dialog */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent className="w-[94vw] max-w-[94vw] sm:w-[28rem] sm:max-w-[28rem] rounded-2xl bg-background max-h-[92vh] overflow-y-auto p-4 flex flex-col gap-3">
-          <DialogHeader className="pr-6"><DialogTitle className="text-sm">Editar Transação</DialogTitle></DialogHeader>
+        <DialogContent className="w-[94vw] max-w-[94vw] sm:w-[28rem] sm:max-w-[28rem] rounded-2xl bg-background max-h-[92vh] overflow-hidden p-0 flex flex-col gap-0">
+          <DialogHeader className="p-4 pb-2 border-b"><DialogTitle className="text-sm">Editar Transação</DialogTitle></DialogHeader>
+          <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
           {editTx && (
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-4">
               <div className="relative">
                 <label className="text-xs text-muted-foreground mb-1 block">Nome</label>
                 <input
@@ -1016,9 +1017,10 @@ function TransactionsPage() {
               </div>
             </div>
           )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowEditDialog(false)}>Cancelar</Button>
-            <Button onClick={handleSaveEdit}>Salvar</Button>
+          </div>
+          <DialogFooter className="p-4 pt-2 border-t mt-0 flex-row gap-2 sm:gap-2">
+            <Button variant="outline" size="sm" className="flex-1 h-8 text-xs" onClick={() => setShowEditDialog(false)}>Cancelar</Button>
+            <Button size="sm" className="flex-1 h-8 text-xs" onClick={handleSaveEdit}>Salvar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
