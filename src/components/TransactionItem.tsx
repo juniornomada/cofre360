@@ -57,34 +57,24 @@ export function TransactionItem({ icon, name, category, date, amount, type, card
 
   return (
     <div
-      className="interactive-card flex items-center gap-3 rounded-xl p-3 cursor-pointer bg-card border border-border/30 transition-all group/item relative overflow-hidden active:scale-[0.98] sm:pr-3 pr-[88px]"
+      onClick={onEdit}
+      className="interactive-card flex items-center gap-3 rounded-xl p-3 cursor-pointer bg-card border border-border/30 transition-all group/item relative overflow-hidden active:scale-[0.98] sm:pr-3 pr-[48px]"
       style={style}
     >
-      { (onEdit || onDelete) && (
+      { onDelete && (
         <div className="absolute right-2 sm:right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5 sm:opacity-0 group-hover/item:opacity-100 focus-within:opacity-100 transition-all duration-200 sm:translate-x-2 group-hover/item:translate-x-0 focus-within:translate-x-0 z-10 pointer-events-auto sm:pointer-events-none sm:group-hover/item:pointer-events-auto sm:focus-within:pointer-events-auto">
           <div 
             className="flex items-center gap-1 bg-card/90 sm:bg-card/80 backdrop-blur-sm p-1 rounded-full border border-border/50 shadow-sm sm:shadow-none"
             role="group"
             aria-label="Ações da transação"
           >
-            {onEdit && (
-              <button
-                onClick={(e) => { e.stopPropagation(); onEdit(); }}
-                className="p-1.5 rounded-full hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary focus-visible:ring-offset-1"
-                aria-label="Editar"
-              >
-                <Pencil className="h-4 w-4" />
-              </button>
-            )}
-            {onDelete && (
-              <button
-                onClick={(e) => { e.stopPropagation(); onDelete(); }}
-                className="p-1.5 rounded-full hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-destructive focus-visible:ring-offset-1"
-                aria-label="Excluir"
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
-            )}
+            <button
+              onClick={(e) => { e.stopPropagation(); onDelete(); }}
+              className="p-1.5 rounded-full hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-destructive focus-visible:ring-offset-1"
+              aria-label="Excluir"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
           </div>
         </div>
       )}
