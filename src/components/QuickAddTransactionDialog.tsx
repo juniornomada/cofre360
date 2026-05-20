@@ -375,7 +375,9 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                 <div className="grid grid-cols-5 gap-1.5">
                   <button
                     type="button"
-                    onClick={() => setNewTx({ ...newTx, bank_account_id: null })}
+                    onClick={() => {
+                      setNewTx({ ...newTx, bank_account_id: null });
+                    }}
                     className={`flex flex-col items-center gap-0.5 rounded-lg p-1.5 transition-all ${
                       !newTx.bank_account_id ? "bg-primary/15 ring-1 ring-primary" : "bg-card hover:bg-accent"
                     }`}
