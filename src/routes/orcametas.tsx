@@ -141,11 +141,18 @@ function OrcaMetasPage() {
       const raw = (tx.category || "").trim();
       if (!raw) continue;
       const amount = Number(tx.amount || 0);
+      
+      const { group, sub } = parseCategoryValue(raw);
+      
+      // 1. Full Category string (e.g. "Transporte > Uber/99")
       const fullKey = raw.toLowerCase();
       fullMap[fullKey] = (fullMap[fullKey] || 0) + amount;
-      const { group, sub } = parseCategoryValue(raw);
+      
+      // 2. Group only (e.g. "Transporte")
       const groupKey = group.trim().toLowerCase();
       if (groupKey) groupMap[groupKey] = (groupMap[groupKey] || 0) + amount;
+      
+      // 3. Subcategory only (e.g. "Uber/99")
       const subKey = (sub || "").trim().toLowerCase();
       if (subKey) subMap[subKey] = (subMap[subKey] || 0) + amount;
     }
