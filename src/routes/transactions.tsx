@@ -880,7 +880,10 @@ function TransactionsPage() {
               </div>
               <div>
                 <label className="text-xs text-muted-foreground mb-1 block">Valor (R$)</label>
-                <input type="number" step="0.01" value={editTx.amount} onChange={e => setEditTx({ ...editTx, amount: parseFloat(e.target.value) || 0 })} className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground outline-none" />
+                <CalculatorAmountInput 
+                  value={editTx.amount} 
+                  onChange={(v) => setEditTx({ ...editTx, amount: v })}
+                />
               </div>
               <div>
                 <label className="text-xs text-muted-foreground mb-1 block">Tipo</label>
