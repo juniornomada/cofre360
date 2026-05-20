@@ -259,11 +259,11 @@ import { cn } from "@/lib/utils";
         
         {isMobile ? (
           <div className={cn(
-            "relative w-full rounded-lg bg-card px-2.5 py-1.5 transition-all flex items-center border border-transparent",
+            "relative w-full rounded-lg bg-card px-2.5 py-1.5 transition-all flex items-center border border-transparent min-h-[36px]",
             "focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2 focus-within:ring-offset-background",
             className
           )}>
-            <span className="text-muted-foreground text-[10px] mr-1.5" aria-hidden="true">R$</span>
+            <span className="text-muted-foreground text-[10px] mr-1.5 shrink-0" aria-hidden="true">R$</span>
             <input
               ref={inputRef}
               type="text"
@@ -281,7 +281,7 @@ import { cn } from "@/lib/utils";
                   onEnter();
                 }
               }}
-              className="flex-1 text-right tabular-nums font-semibold bg-transparent border-none outline-none p-0 text-xs text-foreground"
+              className="flex-1 text-right tabular-nums font-semibold bg-transparent border-none outline-none p-0 text-sm text-foreground w-full focus:ring-0 focus:outline-none"
               aria-label={`Valor: R$ ${formatted}`}
               aria-describedby="input-instruction"
             />
