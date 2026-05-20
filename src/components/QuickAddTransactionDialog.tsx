@@ -185,6 +185,15 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
       return;
     }
 
+    if (!newTx.bank_account_id && !newTx.card) {
+      if (newTx.type === "expense") {
+        toast.error("Por favor, selecione uma conta de débito ou um cartão de crédito.");
+      } else {
+        toast.error("Por favor, selecione a conta de destino para a receita.");
+      }
+      return;
+    }
+
     const cardValue = newTx.card === "Nenhum" ? null : newTx.card;
     const baseDate = (() => {
       try { return parse(newTx.date, "dd MMM", new Date(), { locale: ptBR }); }
