@@ -1092,11 +1092,11 @@ function CardsPage() {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label className="text-xs text-muted-foreground">Limite (R$)</Label>
-                <Input type="number" value={formLimit} onChange={(e) => setFormLimit(e.target.value)} placeholder="0,00" className="rounded-xl" />
+                <Input type="number" value={formLimit} onChange={(e) => setFormLimit(e.target.value)} placeholder="Opcional (0,00)" className="rounded-xl" />
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs text-muted-foreground">Fatura atual (R$)</Label>
-                <Input type="number" value={formUsed} onChange={(e) => setFormUsed(e.target.value)} placeholder="0,00" className="rounded-xl" />
+                <Input type="number" value={formUsed} onChange={(e) => setFormUsed(e.target.value)} placeholder="Opcional (0,00)" className="rounded-xl" />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
