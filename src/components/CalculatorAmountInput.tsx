@@ -190,28 +190,28 @@ import { cn } from "@/lib/utils";
            clear();
          }
         } else if (e.key === "Enter") {
+          e.preventDefault(); // Always prevent default for Enter to control flow
           if (open) {
             const activeElement = document.activeElement;
             const isInsideKeypad = activeElement?.closest('#keypad-dialog');
-             const isOkButton = activeElement?.getAttribute('data-category') === 'primary-action';
+            const isOkButton = activeElement?.getAttribute('data-category') === 'primary-action';
             const isCancelButton = activeElement?.textContent === 'Cancelar';
             
             if (isInsideKeypad) {
               if (isOkButton) {
-                e.preventDefault();
                 confirm();
               } else if (isCancelButton) {
-                e.preventDefault();
                 cancel();
+              } else {
+                // If focused on a digit or other button, just confirm the whole value
+                confirm();
               }
             } else {
-              e.preventDefault();
               confirm();
             }
           } else if (onEnter) {
-           e.preventDefault();
-           onEnter();
-         }
+            onEnter();
+          }
        } else if (e.key === "ArrowUp") {
          e.preventDefault();
          if (!hasStartedTyping) setHasStartedTyping(true);
@@ -225,8 +225,8 @@ import { cn } from "@/lib/utils";
          setCents(prev => Math.max(0, prev - 100));
        }
      };
-     window.addEventListener("keydown", handler);
-     return () => window.removeEventListener("keydown", handler);
+     window.addEventListener("keydown", handler, { capture: true });
+     return () => window.removeEventListener("keydown", handler, { capture: true });
    }, [open, hasStartedTyping, onEnter]);
 
   return (
