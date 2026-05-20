@@ -43,14 +43,14 @@ type BankAccount = {
 };
 
 const bankColorOptions = [
-  { label: "Azul", value: "from-blue-500 to-blue-800", emoji: "💙" },
-  { label: "Roxo", value: "from-purple-600 to-purple-900", emoji: "💜" },
-  { label: "Laranja", value: "from-orange-500 to-orange-700", emoji: "🧡" },
-  { label: "Verde", value: "from-green-500 to-green-800", emoji: "💚" },
+  { label: "Azul", value: "from-blue-500 to-blue-800", emoji: "🔵" },
+  { label: "Roxo", value: "from-purple-600 to-purple-900", emoji: "🟣" },
+  { label: "Laranja", value: "from-orange-500 to-orange-700", emoji: "🟠" },
+  { label: "Verde", value: "from-green-500 to-green-800", emoji: "🟢" },
   { label: "Preto", value: "from-gray-700 to-gray-900", emoji: "⚫" },
-  { label: "Vermelho", value: "from-red-500 to-red-800", emoji: "❤️" },
-  { label: "Amarelo", value: "from-yellow-400 to-yellow-600", emoji: "💛" },
-  { label: "Rosa", value: "from-pink-400 to-pink-700", emoji: "💗" },
+  { label: "Vermelho", value: "from-red-500 to-red-800", emoji: "🔴" },
+  { label: "Amarelo", value: "from-yellow-400 to-yellow-600", emoji: "🟡" },
+  { label: "Rosa", value: "from-pink-400 to-pink-700", emoji: "🌸" },
 ];
 
 type SortableAccountItemProps = {
