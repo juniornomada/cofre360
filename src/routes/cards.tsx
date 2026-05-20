@@ -634,22 +634,54 @@ function CardsPage() {
     if (validLines.length === 0) return;
     setPayingSaving(true);
     try {
+      const totalInvoice = cardTotals[payingCard.name] || 0;
+      const totalPaidAlready = cardPayments[payingCard.id] || 0;
+      const remainingBeforeThis = Math.max(0, totalInvoice - totalPaidAlready);
+      const isTotalPayment = Math.abs(paymentTotal - remainingBeforeThis) < 0.01;
+      
+      const paymentName = isTotalPayment 
+        ? `Pagamento Total fatura cartão ${payingCard.name}` 
+        : `Pagamento Parcial fatura cartão ${payingCard.name}`;
+
+      const today = new Date();
+      const monthsAbbr = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
+      const dateFormatted = `${today.getDate()} ${monthsAbbr[today.getMonth()]}`;
+
+      // 1. Create card_payments records
       const inserts = validLines.map((l) => ({
         card_id: payingCard.id,
         bank_account_id: l.accountId,
         amount: parseFloat(l.amount),
       }));
       await supabase.from("card_payments").insert(inserts);
+
+      // 2. Update bank balances and create expense transactions
       for (const line of validLines) {
         const account = bankAccounts.find((a) => a.id === line.accountId);
+        const amount = parseFloat(line.amount);
         if (account) {
-          await supabase.from("bank_accounts").update({ balance: account.balance - parseFloat(line.amount) }).eq("id", line.accountId);
+          // Update balance
+          await supabase.from("bank_accounts").update({ balance: account.balance - amount }).eq("id", line.accountId);
+          
+          // Create transaction for history/debiting from reports
+          await supabase.from("transactions").insert({
+            name: paymentName,
+            amount: amount,
+            type: "expense",
+            category: "Impostos/Taxas > Outros", // Or a dedicated payment category
+            icon: "💳",
+            date: dateFormatted,
+            bank_account_id: line.accountId,
+            created_at: new Date().toISOString()
+          });
         }
       }
-      toast.success(`Pagamento de R$ ${paymentTotal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} realizado!`);
+      
+      toast.success(`${paymentName} de R$ ${paymentTotal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} realizado!`);
       setPayDialogOpen(false);
       fetchAll();
-    } catch {
+    } catch (error) {
+      console.error("Payment error:", error);
       toast.error("Erro ao processar pagamento");
     } finally {
       setPayingSaving(false);
