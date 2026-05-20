@@ -9,6 +9,7 @@ import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react"
 const CsvImportDialog = lazy(() => import("@/components/CsvImportDialog").then(m => ({ default: m.CsvImportDialog })));
 const CategoryPieCharts = lazy(() => import("@/components/CategoryPieCharts").then(m => ({ default: m.CategoryPieCharts })));
 const CategoryPicker = lazy(() => import("@/components/CategoryPicker").then(m => ({ default: m.CategoryPicker })));
+const QuickAddTransactionDialog = lazy(() => import("@/components/QuickAddTransactionDialog").then(m => ({ default: m.QuickAddTransactionDialog })));
  import { format, parse } from "date-fns";
  import { calculateInstallmentDetails } from "@/lib/installment-utils";
 import { ptBR } from "date-fns/locale";
