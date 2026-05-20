@@ -262,7 +262,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                           transferFromId === a.id ? "bg-primary/15 ring-1 ring-primary" : "bg-card hover:bg-accent"
                         }`}
                       >
-                        <BankLogo icon={a.icon} color={a.color} size="sm" />
+                        <BankLogo icon={a.icon} color={a.color} name={a.name} size="sm" />
                         <span className="text-[9px] text-foreground truncate w-full text-center leading-tight">{a.name}</span>
                       </button>
                     ))}
