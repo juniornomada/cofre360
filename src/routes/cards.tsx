@@ -367,7 +367,7 @@ function CardsPage() {
     setFormNumber("");
     setFormBrand("Mastercard");
     setFormLimit("");
-    setFormUsed("0");
+    setFormUsed("");
     setFormColor(colorOptions[0].value);
     setFormClosingDay("1");
     setFormDueDay("10");
