@@ -118,75 +118,39 @@ export function TransactionItem({ icon, name, category, date, amount, type, card
         )}
       </div>
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-1.5">
-          <p className="text-sm font-medium text-foreground truncate">
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-sm font-semibold text-foreground truncate">
             {isTransferPair && transferFromName && transferToName ? (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span className="cursor-help transition-colors hover:text-primary">
-                    {transferFromName} → {transferToName}
-                  </span>
-                </TooltipTrigger>
-                <TooltipContent side="top">
-                  Transferência de {transferFromName} para {transferToName}
-                </TooltipContent>
-              </Tooltip>
+              <span className="transition-colors hover:text-primary">
+                {transferFromName} → {transferToName}
+              </span>
             ) : (
               restoreAccents(displayName)
             )}
           </p>
-          {isTransferPair && (
-             <Tooltip>
-               <TooltipTrigger asChild>
-                 <span
-                   tabIndex={0}
-                    role="button"
-                    aria-label="Informações da transferência"
-                   className="shrink-0 inline-flex items-center justify-center rounded-full bg-secondary p-1 text-secondary-foreground cursor-help focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-1"
-                 >
-                   <ArrowLeftRight className="h-2.5 w-2.5" strokeWidth={2.5} />
-                 </span>
-               </TooltipTrigger>
-               <TooltipContent side="top" align="center" sideOffset={5}>
-                 Transferência
-               </TooltipContent>
-             </Tooltip>
-           )}
-          {isInstallment && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span
-                  tabIndex={0}
-                  role="button"
-                  aria-label={`Informações da parcela: ${installment_number} de ${total_installments}`}
-                  className="shrink-0 inline-flex items-center gap-0.5 rounded-md bg-accent px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-foreground cursor-help focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-1"
-                >
-                  <Layers className="h-2.5 w-2.5" strokeWidth={2.5} />
-                  {installment_number}/{total_installments}
-                </span>
-              </TooltipTrigger>
-              <TooltipContent side="top" align="center" sideOffset={5}>
-                Parcela {installment_number} de {total_installments}
-              </TooltipContent>
-            </Tooltip>
+          <span className={cn(
+            "text-sm font-bold tabular-nums shrink-0",
+            isTransferPair ? "text-muted-foreground" : type === "income" ? "text-primary" : "text-foreground"
+          )}>
+            {isTransferPair ? "" : type === "expense" ? "- " : "+ "}R$ {Math.abs(amount).toFixed(2)}
+          </span>
+        </div>
+        <div className="flex items-center justify-between gap-2 mt-0.5">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-[10px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded truncate max-w-[120px]">
+              {getCategoryDisplay(category)}
+            </span>
+            <span className="text-[10px] text-muted-foreground font-medium shrink-0">
+              {formatTxDate(date)}
+            </span>
+          </div>
+          {card && (
+            <span className="text-[9px] text-muted-foreground/70 font-medium truncate max-w-[80px]">
+              {card}
+            </span>
           )}
         </div>
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
-          <span className="text-[11px] font-medium text-primary bg-primary/5 px-1.5 rounded-md">
-            {getCategoryDisplay(category)}
-          </span>
-          <span className="text-[11px] text-muted-foreground font-medium">
-            {formatTxDate(date)}
-          </span>
-          {card && <span className="text-[10px] text-muted-foreground/70">• {card}</span>}
-        </div>
       </div>
-      <span className={cn(
-        "text-sm font-semibold tabular-nums shrink-0",
-        isTransferPair ? "text-muted-foreground" : type === "income" ? "text-primary" : "text-foreground"
-      )}>
-        {isTransferPair ? "" : type === "expense" ? "- " : "+ "}R$ {Math.abs(amount).toFixed(2)}
-      </span>
     </div>
   );
 }
