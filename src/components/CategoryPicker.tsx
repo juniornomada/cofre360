@@ -11,6 +11,7 @@ interface CategoryPickerProps {
 export function CategoryPicker({ value, onChange, className }: CategoryPickerProps) {
   const parsed = parseCategoryValue(value);
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const activeGroup = selectedGroup || null;
   const group = activeGroup ? categoryTree.find(g => g.label === activeGroup) : null;
