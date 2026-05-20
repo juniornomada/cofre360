@@ -57,6 +57,7 @@ export function TransactionItem({ icon, name, category, date, amount, type, card
 
   return (
     <div
+      onClick={onEdit}
       className="interactive-card flex items-center gap-3 rounded-xl p-3 cursor-pointer bg-card border border-border/30 transition-all group/item relative overflow-hidden active:scale-[0.98] sm:pr-3 pr-[48px]"
       style={style}
     >
