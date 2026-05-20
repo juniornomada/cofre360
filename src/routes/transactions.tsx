@@ -1345,7 +1345,10 @@ function TransactionsPage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowAddDialog(false)}>Cancelar</Button>
             <Button
-              onClick={handleAdd}
+              onClick={() => {
+                console.log("Add button clicked in modal");
+                handleAdd();
+              }}
               disabled={
                 isTransfer
                   ? !transferFromId || !transferToId || transferFromId === transferToId || !newTx.amount
