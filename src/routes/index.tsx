@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, z } from "@tanstack/react-router";
 import { TrendingUp, Eye, EyeOff, Bell, Pencil, Trash2, CalendarIcon, Loader2, Clock, Wallet, ChevronRight, ArrowUpRight, ArrowDownRight, AlertTriangle, Sparkles, Flame, Plus, Minus, ArrowLeftRight, Layers } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { TransactionItem } from "@/components/TransactionItem";
@@ -83,6 +83,15 @@ function getGreeting(): string {
   if (h < 18) return "Boa tarde";
   return "Boa noite";
 }
+
+export const Route = createFileRoute("/")({
+  validateSearch: (search: Record<string, unknown>) => {
+    return {
+      compare: z.string().optional().catch(undefined).parse(search.compare),
+    };
+  },
+  component: Dashboard,
+});
 
 function Dashboard() {
   const [balanceVisible, setBalanceVisible] = useState(true);

@@ -75,7 +75,8 @@ export const Route = createRootRoute({
 
 function RootShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const isComparisonMode = router.state.location.search.compare === 'theme';
+  const search = router.state.location.search as any;
+  const isComparisonMode = search.compare === 'theme';
 
   if (isComparisonMode) {
     return (
@@ -130,7 +131,8 @@ function RootShell({ children }: { children: React.ReactNode }) {
  function RootComponent() {
    useNavigationTracking();
    const router = useRouter();
-   const isComparisonMode = router.state.location.search.compare === 'theme';
+   const search = router.state.location.search as any;
+   const isComparisonMode = search.compare === 'theme';
 
   return (
     <TooltipProvider>
