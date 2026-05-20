@@ -375,7 +375,9 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                 <div className="grid grid-cols-5 gap-1.5">
                   <button
                     type="button"
-                    onClick={() => setNewTx({ ...newTx, bank_account_id: null })}
+                    onClick={() => {
+                      setNewTx({ ...newTx, bank_account_id: null });
+                    }}
                     className={`flex flex-col items-center gap-0.5 rounded-lg p-1.5 transition-all ${
                       !newTx.bank_account_id ? "bg-primary/15 ring-1 ring-primary" : "bg-card hover:bg-accent"
                     }`}
@@ -389,7 +391,14 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                     <button
                       key={a.id}
                       type="button"
-                      onClick={() => setNewTx({ ...newTx, bank_account_id: newTx.bank_account_id === a.id ? null : a.id })}
+                      onClick={() => {
+                        const nextId = newTx.bank_account_id === a.id ? null : a.id;
+                        setNewTx({ ...newTx, bank_account_id: nextId });
+                        if (nextId) {
+                          setNewTx(prev => ({ ...prev, card: null }));
+                          setInstallmentEnabled(false);
+                        }
+                      }}
                       className={`flex flex-col items-center gap-0.5 rounded-lg p-1.5 transition-all ${
                         newTx.bank_account_id === a.id ? "bg-primary/15 ring-1 ring-primary" : "bg-card hover:bg-accent"
                       }`}
@@ -432,8 +441,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                             setNewTx({ ...newTx, card: null });
                             setInstallmentEnabled(false);
                           } else {
-                            setNewTx({ ...newTx, card: c.name });
-                            // Option removed to keep installment disabled by default
+                            setNewTx({ ...newTx, card: c.name, bank_account_id: null });
                           }
                         }}
                         className={`flex flex-col items-center gap-1 rounded-lg p-1.5 transition-all ${
