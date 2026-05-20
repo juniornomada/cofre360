@@ -144,11 +144,6 @@ export function TransactionItem({ icon, name, category, date, amount, type, card
               {formatTxDate(date)}
             </span>
           </div>
-          {card && (
-            <span className="text-[9px] text-muted-foreground/70 font-medium truncate max-w-[80px]">
-              {card}
-            </span>
-          )}
         </div>
       </div>
     </div>
