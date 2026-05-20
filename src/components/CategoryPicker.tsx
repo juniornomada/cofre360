@@ -20,12 +20,24 @@ export function CategoryPicker({ value, onChange, className }: CategoryPickerPro
     <div className={className}>
       <label className="text-[11px] font-semibold text-foreground mb-1 block">Categoria</label>
 
-      {/* Current value display */}
-      <div className="flex items-center gap-2 mb-2 px-3 py-1.5 rounded-xl bg-card text-sm text-foreground">
-        <span>{parseCategoryValue(value).group}</span>
-        <span className="text-muted-foreground">›</span>
-        <span>{parseCategoryValue(value).sub}</span>
-      </div>
+      {/* Current value display as a toggle */}
+      <button 
+        type="button"
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="flex w-full items-center justify-between gap-2 mb-2 px-3 py-2 rounded-xl bg-card text-sm text-foreground hover:bg-accent transition-colors"
+      >
+        <div className="flex items-center gap-2">
+          <span className="font-medium text-primary">{parseCategoryValue(value).group}</span>
+          <span className="text-muted-foreground opacity-50">›</span>
+          <span>{parseCategoryValue(value).sub}</span>
+        </div>
+        <div className={`text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}>
+          {isExpanded ? 'Recolher' : 'Alterar'}
+        </div>
+      </button>
+
+      {isExpanded && (
+        <div className="animate-in fade-in slide-in-from-top-2 duration-300">
 
       {!group ? (
         /* Main categories grid */
