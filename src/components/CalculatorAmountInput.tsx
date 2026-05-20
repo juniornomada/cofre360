@@ -193,13 +193,14 @@ import { cn } from "@/lib/utils";
           if (open) {
             const activeElement = document.activeElement;
             const isInsideKeypad = activeElement?.closest('#keypad-dialog');
-             const isOkButton = activeElement?.getAttribute('data-category') === 'primary-action';
+            const isOkButton = activeElement?.getAttribute('data-category') === 'primary-action';
             const isCancelButton = activeElement?.textContent === 'Cancelar';
             
             if (isInsideKeypad) {
               if (isOkButton) {
                 e.preventDefault();
                 confirm();
+                setTimeout(() => onEnter?.(), 0);
               } else if (isCancelButton) {
                 e.preventDefault();
                 cancel();
@@ -207,11 +208,12 @@ import { cn } from "@/lib/utils";
             } else {
               e.preventDefault();
               confirm();
+              setTimeout(() => onEnter?.(), 0);
             }
           } else if (onEnter) {
-           e.preventDefault();
-           onEnter();
-         }
+            e.preventDefault();
+            onEnter();
+          }
        } else if (e.key === "ArrowUp") {
          e.preventDefault();
          if (!hasStartedTyping) setHasStartedTyping(true);
