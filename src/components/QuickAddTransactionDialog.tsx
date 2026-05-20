@@ -433,7 +433,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                             setInstallmentEnabled(false);
                           } else {
                             setNewTx({ ...newTx, card: c.name });
-                            if (newTx.type === "expense") setInstallmentEnabled(true);
+                            // Option removed to keep installment disabled by default
                           }
                         }}
                         className={`flex flex-col items-center gap-1 rounded-lg p-1.5 transition-all ${
