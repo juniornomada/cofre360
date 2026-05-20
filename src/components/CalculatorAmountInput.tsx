@@ -247,156 +247,45 @@ import { cn } from "@/lib/utils";
    }, [open, hasStartedTyping, onEnter]);
 
   return (
-     <div ref={containerRef} className="relative">
-        <div 
-          id="input-instruction"
-          className="sr-only" 
-          aria-live="polite" 
-          aria-atomic="true" 
-          data-testid="announcement-region"
-        >
-          {announcement || (isMobile ? "Use o teclado numérico para inserir o valor." : "Pressione Enter ou Espaço para editar o valor.")}
-        </div>
-        
-        {isMobile ? (
-          <div className={cn(
-            "relative w-full rounded-lg bg-primary/5 px-2.5 py-2 transition-all flex items-center border border-primary/20 min-h-[44px] shadow-inner",
-            "focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2 focus-within:ring-offset-background focus-within:bg-primary/10 focus-within:border-primary/40",
-            className
-          )}>
-            <span className="text-primary font-bold text-xs mr-2 shrink-0 opacity-80" aria-hidden="true">R$</span>
-            <input
-              ref={inputRef}
-              type="text"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              value={formatted}
-              onChange={(e) => {
-                const raw = e.target.value.replace(/\D/g, "");
-                const numVal = parseInt(raw, 10) || 0;
-                
-                // If the value is the same, don't trigger state updates that might cause re-renders
-                if (numVal === cents) return;
-                
-                setCents(numVal);
-                ignoreNextFocus.current = true;
-                if (!hasStartedTyping) setHasStartedTyping(true);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && onEnter) {
-                  onEnter();
-                }
-              }}
-              className="flex-1 text-right tabular-nums font-bold bg-transparent border-none outline-none p-0 text-base text-primary w-full focus:ring-0 focus:outline-none"
-              aria-label={`Valor: R$ ${formatted}`}
-              aria-describedby="input-instruction"
-            />
-          </div>
-        ) : (
-          <button
-            ref={buttonRef}
-            type="button"
-            onClick={() => setOpen(o => !o)}
-            aria-haspopup="true"
-            aria-expanded={open}
-            aria-controls={open ? "keypad-dialog" : undefined}
-            aria-label={`Valor: R$ ${formatted}. Selecionado.`}
-            aria-describedby="input-instruction"
-            className={cn(
-              "w-full rounded-lg bg-primary/5 px-2.5 py-2 text-left text-sm text-primary outline-none transition-all flex items-center justify-between border border-primary/20 shadow-inner",
-              "focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background hover:bg-primary/10",
-              open && "ring-2 ring-primary bg-primary/10 border-primary/40",
-              className
-            )}
-         >
-           <span className="text-muted-foreground text-[10px] mr-1.5" aria-hidden="true">R$</span>
-           <span className="flex-1 text-right tabular-nums font-semibold">{formatted}</span>
-         </button>
-        )}
-
-        {open && (
-          <div 
-            id="keypad-dialog"
-            className="absolute z-50 left-0 right-0 top-full mt-1 rounded-lg bg-popover border border-border shadow-lg p-1.5 animate-in fade-in-0 zoom-in-95"
-             role="dialog"
-             aria-modal="true"
-              aria-labelledby="keypad-title"
-              aria-describedby="input-instruction"
-           >
-          <div 
-            id="keypad-title"
-            className="mb-1 rounded-md bg-card px-2 py-1 text-right tabular-nums text-xs font-bold text-foreground"
-          >
-            R$ {formatted}
-          </div>
-           <div className="grid grid-cols-3 gap-1" role="group" aria-label="Teclado numérico">
-             {/* Numbers 1-9 */}
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n, idx) => (
-               <button
-                 key={n}
-                 ref={idx === 0 ? firstKeypadButtonRef : null}
-                 type="button"
-                 onClick={() => press(n)}
-               aria-label={`Número ${n}`}
-                  data-category="numeric"
-              className="rounded-md bg-card hover:bg-accent focus-visible:bg-accent focus-visible:ring-1 focus-visible:ring-primary active:scale-95 transition-all py-1 text-xs font-semibold text-foreground"
-               >
-                 {n}
-               </button>
-             ))}
-             {/* Number 0 */}
-             <button
-               type="button"
-               onClick={() => press(0)}
-             aria-label="Número 0"
-                data-category="numeric"
-            className="rounded-md bg-card hover:bg-accent focus-visible:bg-accent focus-visible:ring-1 focus-visible:ring-primary active:scale-95 transition-all py-1 text-xs font-semibold text-foreground"
-             >
-               0
-             </button>
-             {/* Utility buttons always after numbers in Tab order */}
-             <button
-               type="button"
-               onClick={clear}
-                aria-label="Limpar todo o valor"
-                data-category="destructive"
-               className="rounded-md bg-card hover:bg-destructive/15 hover:text-destructive focus-visible:bg-destructive/15 focus-visible:text-destructive focus-visible:ring-1 focus-visible:ring-primary active:scale-95 transition-all py-1 text-[10px] font-semibold text-muted-foreground"
-             >
-               C
-             </button>
-             <button
-               type="button"
-               onClick={backspace}
-               className="rounded-md bg-card hover:bg-accent focus-visible:bg-accent focus-visible:ring-1 focus-visible:ring-primary active:scale-95 transition-all py-1 text-foreground flex items-center justify-center"
-               aria-label="Apagar último dígito"
-                data-category="utility"
-             >
-               <Delete className="h-3 w-3" />
-             </button>
-           </div>
-            <div className="flex gap-1 mt-1">
-              <button
-                type="button"
-                onClick={cancel}
-                className="flex-1 rounded-md bg-secondary text-secondary-foreground py-1 text-xs font-medium hover:bg-secondary/80 focus-visible:ring-1 focus-visible:ring-primary active:scale-[0.98] transition-all"
-                aria-label="Cancelar e manter valor anterior"
-                data-category="secondary-action"
-              >
-                Cancelar
-              </button>
-              <button
-                ref={lastKeypadButtonRef}
-                type="button"
-                onClick={confirm}
-                aria-label="Confirmar valor"
-                data-category="primary-action"
-                className="flex-1 rounded-md bg-primary text-primary-foreground py-1 text-xs font-medium hover:bg-primary/90 focus-visible:ring-1 focus-visible:ring-primary focus-visible:ring-offset-1 active:scale-[0.98] transition-all"
-              >
-                OK
-              </button>
-            </div>
-        </div>
-      )}
+    <div ref={containerRef} className="relative">
+      <div 
+        id="input-instruction"
+        className="sr-only" 
+        aria-live="polite" 
+        aria-atomic="true" 
+      >
+        Use o teclado do seu dispositivo para inserir o valor.
+      </div>
+      
+      <div className={cn(
+        "relative w-full rounded-lg bg-primary/5 px-2.5 py-2 transition-all flex items-center border border-primary/20 min-h-[44px] shadow-inner",
+        "focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2 focus-within:ring-offset-background focus-within:bg-primary/10 focus-within:border-primary/40",
+        className
+      )}>
+        <span className="text-primary font-bold text-xs mr-2 shrink-0 opacity-80" aria-hidden="true">R$</span>
+        <input
+          ref={inputRef}
+          type="text"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          value={formatted}
+          onChange={(e) => {
+            const raw = e.target.value.replace(/\D/g, "");
+            const numVal = parseInt(raw, 10) || 0;
+            if (numVal === cents) return;
+            setCents(numVal);
+            if (!hasStartedTyping) setHasStartedTyping(true);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && onEnter) {
+              onEnter();
+            }
+          }}
+          className="flex-1 text-right tabular-nums font-bold bg-transparent border-none outline-none p-0 text-base text-primary w-full focus:ring-0 focus:outline-none"
+          aria-label={`Valor: R$ ${formatted}`}
+          aria-describedby="input-instruction"
+        />
+      </div>
     </div>
   );
 }
