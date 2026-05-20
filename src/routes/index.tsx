@@ -568,7 +568,7 @@ function Dashboard() {
               boxShadow:
                 "0 0 10px hsl(142 95% 55% / 0.9), 0 0 20px hsl(142 95% 55% / 0.6), inset 0 0 6px hsl(142 95% 55% / 0.35)",
             }}
-            title="Comparar temas"
+            
           >
             <Layers className="h-5 w-5 text-muted-foreground" />
           </Link>
