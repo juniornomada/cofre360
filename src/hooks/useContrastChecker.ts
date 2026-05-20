@@ -71,7 +71,7 @@ export function useContrastChecker() {
 
         if (bgColor && fgColor) {
           const l1 = getRelativeLuminance(bgColor.r, bgColor.g, bgColor.b);
-          const l2 = getRelativeLuminance(fgColor.r, fgColor.g, fgColor.fg ? 0 : fgColor.b); // Fix typo in fgColor access
+          const l2 = getRelativeLuminance(fgColor.r, fgColor.g, fgColor.b);
           
           const ratio = getContrastRatio(l1, l2);
           
