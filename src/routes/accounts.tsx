@@ -398,8 +398,7 @@ function AccountsPage() {
 
     const rawBalance = balanceStr.toString().trim();
     if (!rawBalance) {
-      toast.error("O saldo inicial é obrigatório");
-      return null;
+      return { name: trimmedName, balance: 0 };
     }
 
     const balance = parseFloat(rawBalance.replace(",", "."));
