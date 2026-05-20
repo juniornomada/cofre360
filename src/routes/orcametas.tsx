@@ -155,6 +155,9 @@ function OrcaMetasPage() {
       // 3. Subcategory only (e.g. "Uber/99")
       const subKey = (sub || "").trim().toLowerCase();
       if (subKey) subMap[subKey] = (subMap[subKey] || 0) + amount;
+      
+      // LOGGING (Temporary for debugging if needed)
+      console.log(`BudgetCategorization: tx[${raw}] matched group[${groupKey}]`);
     }
     return { spentByFull: fullMap, spentByGroup: groupMap, spentBySub: subMap };
   }, [transactions, currentMonth, currentYear]);
