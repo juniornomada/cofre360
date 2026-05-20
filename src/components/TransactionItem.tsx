@@ -135,17 +135,7 @@ export function TransactionItem({ icon, name, category, date, amount, type, card
               restoreAccents(displayName)
             )}
           </p>
-          {isCard && (
-            <span className="shrink-0 inline-flex items-center justify-center rounded-full bg-primary/15 p-1 text-primary">
-              <CreditCard className="h-2.5 w-2.5" strokeWidth={2.5} />
-            </span>
-          )}
-          {isBank && (
-            <span className="shrink-0 inline-flex items-center justify-center rounded-full bg-secondary p-1 text-secondary-foreground">
-              <Landmark className="h-2.5 w-2.5" strokeWidth={2.5} />
-            </span>
-          )}
-           {isTransferPair && (
+          {isTransferPair && (
              <Tooltip>
                <TooltipTrigger asChild>
                  <span
