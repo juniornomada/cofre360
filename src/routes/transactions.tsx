@@ -1122,7 +1122,7 @@ function TransactionsPage() {
           setTransferToId("");
         }
       }}>
-        <DialogContent className="max-w-[90vw] rounded-2xl bg-background">
+        <DialogContent className="max-w-[90vw] rounded-2xl bg-background pointer-events-auto">
           <DialogHeader>
             <DialogTitle>{isTransfer ? "Nova Transferência" : "Nova Transação"}</DialogTitle>
           </DialogHeader>
