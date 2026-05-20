@@ -271,8 +271,12 @@ import { cn } from "@/lib/utils";
               pattern="[0-9]*"
               value={formatted}
               onChange={(e) => {
-                const val = e.target.value.replace(/\D/g, "");
-                const numVal = parseInt(val, 10) || 0;
+                const raw = e.target.value.replace(/\D/g, "");
+                const numVal = parseInt(raw, 10) || 0;
+                
+                // If the value is the same, don't trigger state updates that might cause re-renders
+                if (numVal === cents) return;
+                
                 setCents(numVal);
                 if (!hasStartedTyping) setHasStartedTyping(true);
               }}
