@@ -156,7 +156,6 @@ function OrcaMetasPage() {
       const subKey = (sub || "").trim().toLowerCase();
       if (subKey) subMap[subKey] = (subMap[subKey] || 0) + amount;
       
-      // BudgetCategorization: tx[${raw}] matched group[${groupKey}]
     }
     return { spentByFull: fullMap, spentByGroup: groupMap, spentBySub: subMap };
   }, [transactions, currentMonth, currentYear]);
