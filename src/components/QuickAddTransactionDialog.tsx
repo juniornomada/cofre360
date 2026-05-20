@@ -81,6 +81,28 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
     }
   }, []);
 
+  // Build a memory map from transactions
+  const [txHistory, setTxHistory] = useState<Map<string, { icon: string; category: string }>>(new Map());
+
+  const fetchHistory = useCallback(async () => {
+    const { data } = await supabase
+      .from("transactions")
+      .select("name, icon, category")
+      .order("created_at", { ascending: false })
+      .limit(100);
+
+    if (data) {
+      const map = new Map<string, { icon: string; category: string }>();
+      data.forEach(tx => {
+        const cleanName = tx.name.replace(/\s*\(\d+\/\d+\)\s*$/, "").trim().toLowerCase();
+        if (!map.has(cleanName)) {
+          map.set(cleanName, { icon: tx.icon, category: tx.category });
+        }
+      });
+      setTxHistory(map);
+    }
+  }, []);
+
   // Reset state every time the dialog opens with the requested initial type.
   useEffect(() => {
      if (!open) {
@@ -88,6 +110,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
        return;
      }
     fetchData();
+    fetchHistory();
     setIsTransfer(initialType === "transfer");
     setTransferFromId("");
     setTransferToId("");
@@ -105,7 +128,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
       card: null,
       bank_account_id: null,
     });
-  }, [open, initialType, fetchData]);
+  }, [open, initialType, fetchData, fetchHistory]);
 
   const [confirmInstallmentDiff, setConfirmInstallmentDiff] = useState(false);
 
@@ -328,7 +351,15 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                   <input
                     autoFocus
                     value={newTx.name}
-                   onChange={e => setNewTx({ ...newTx, name: e.target.value })}
+                    onChange={e => {
+                      const name = e.target.value;
+                      const history = txHistory.get(name.trim().toLowerCase());
+                      if (history) {
+                        setNewTx({ ...newTx, name, icon: history.icon, category: history.category });
+                      } else {
+                        setNewTx({ ...newTx, name });
+                      }
+                    }}
                    onKeyDown={e => {
                      if (e.key === "Enter") {
                        e.preventDefault();
