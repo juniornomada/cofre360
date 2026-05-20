@@ -325,8 +325,9 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
             <>
                <div>
                  <label className="text-[11px] font-semibold text-foreground mb-0.5 block">Nome</label>
-                 <input
-                   value={newTx.name}
+                  <input
+                    autoFocus
+                    value={newTx.name}
                    onChange={e => setNewTx({ ...newTx, name: e.target.value })}
                    onKeyDown={e => {
                      if (e.key === "Enter") {
@@ -362,7 +363,6 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                    <CalculatorAmountInput 
                      value={newTx.amount} 
                      onChange={(v) => setNewTx({ ...newTx, amount: v })} 
-                     autoFocus
                      onEnter={handleAdd}
                    />
                  </div>
