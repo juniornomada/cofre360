@@ -1,6 +1,8 @@
- import { Outlet, Link, createRootRoute, HeadContent, Scripts, useRouter } from "@tanstack/react-router";
- import { lazy, Suspense, useEffect } from "react";
- import { useNavigationTracking } from "@/lib/metrics";
+import { Outlet, Link, createRootRoute, HeadContent, Scripts, useRouter } from "@tanstack/react-router";
+import { z } from "zod";
+import { lazy, Suspense, useEffect } from "react";
+import { cn } from "@/lib/utils";
+import { useNavigationTracking } from "@/lib/metrics";
  
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Loader2 } from "lucide-react";
@@ -50,6 +52,11 @@ function NotFoundComponent() {
 }
 
 export const Route = createRootRoute({
+  validateSearch: (search: Record<string, unknown>) => {
+    return {
+      compare: z.string().optional().catch(undefined).parse(search.compare),
+    };
+  },
   head: () => ({
     meta: [
       { charSet: "utf-8" },
@@ -74,6 +81,42 @@ export const Route = createRootRoute({
 });
 
 function RootShell({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
+  const search = router.state.location.search as any;
+  const isComparisonMode = search.compare === 'theme';
+
+  if (isComparisonMode) {
+    return (
+      <html lang="pt-BR" suppressHydrationWarning>
+        <head>
+          <HeadContent />
+        </head>
+        <body suppressHydrationWarning className="bg-background">
+          <div className="flex h-screen w-screen overflow-hidden">
+            <div className="light relative h-full w-1/2 overflow-y-auto border-r border-border bg-background pb-10">
+              <div className="sticky top-0 z-50 flex items-center justify-between bg-card/80 p-4 backdrop-blur-md border-b">
+                <span className="text-sm font-bold text-foreground">Tema Claro</span>
+                <Link to="/" search={{ compare: undefined } as any} className="text-xs text-primary font-medium px-2 py-1 rounded-md bg-primary/10">Sair</Link>
+              </div>
+              <div className="mx-auto max-w-md">
+                {children}
+              </div>
+            </div>
+            <div className="dark relative h-full w-1/2 overflow-y-auto bg-background pb-10">
+              <div className="sticky top-0 z-50 flex items-center justify-between bg-card/80 p-4 backdrop-blur-md border-b">
+                <span className="text-sm font-bold text-foreground">Tema Escuro</span>
+              </div>
+              <div className="mx-auto max-w-md">
+                {children}
+              </div>
+            </div>
+          </div>
+          <Scripts />
+        </body>
+      </html>
+    );
+  }
+
   return (
     <html lang="pt-BR" className="light" suppressHydrationWarning>
       <head>
@@ -94,19 +137,27 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
  function RootComponent() {
    useNavigationTracking();
- 
+   const router = useRouter();
+   const search = router.state.location.search as any;
+   const isComparisonMode = search.compare === 'theme';
+
   return (
     <TooltipProvider>
-      <div className="mx-auto min-h-screen max-w-md bg-background pb-20">
+      <div className={cn(
+        "mx-auto min-h-screen bg-background pb-20",
+        !isComparisonMode && "max-w-md"
+      )}>
         <Outlet />
-        <Suspense fallback={
-          <div className="fixed bottom-0 left-0 right-0 h-16 bg-card/80 flex items-center justify-center border-t border-border">
-            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-          </div>
-        }>
-         <BottomNav />
-         <MetricsDashboard />
-       </Suspense>
+        {!isComparisonMode && (
+          <Suspense fallback={
+            <div className="fixed bottom-0 left-0 right-0 h-16 bg-card/80 flex items-center justify-center border-t border-border">
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            </div>
+          }>
+           <BottomNav />
+           <MetricsDashboard />
+         </Suspense>
+        )}
       </div>
     </TooltipProvider>
   );
