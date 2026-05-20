@@ -116,7 +116,7 @@ function SortableAccountItem({
       )}
     >
       <div className="flex items-center gap-2.5 px-2 sm:px-4 py-0.5">
-        <BankLogo icon={account.icon || ""} color={account.color || ""} size="sm" />
+        <BankLogo icon={account.icon || ""} color={account.color || ""} name={account.name} size="sm" />
         <div className="flex-1 min-w-0" style={{ animationDelay: `${60 + index * 80}ms` }}>
           {isEditing ? (
             <div className="flex flex-col gap-2">
