@@ -163,29 +163,6 @@ function SortableAccountItem({
                   R$ {currentBalance.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                 </p>
               </div>
-              {(income > 0 || expense > 0) ? (
-                <div className="flex items-center gap-1.5 mt-0.5 text-[11px] tabular-nums whitespace-nowrap">
-                  {income > 0 && (
-                    <span className="text-primary font-medium whitespace-nowrap">
-                      +R$ {income.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                    </span>
-                  )}
-                  {income > 0 && expense > 0 && <span className="text-muted-foreground/40">·</span>}
-                  {expense > 0 && (
-                    <span className="text-destructive font-medium whitespace-nowrap">
-                      −R$ {expense.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                    </span>
-                  )}
-                  <span className="text-muted-foreground/40">·</span>
-                  <span className="text-[10px] text-muted-foreground/60 tabular-nums whitespace-nowrap">
-                    Inicial R$ {account.balance.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                  </span>
-                </div>
-              ) : (
-                <p className="text-[11px] text-muted-foreground mt-0.5">
-                  Sem movimentações · Inicial R$ {account.balance.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                </p>
-              )}
             </button>
           )}
         </div>
