@@ -106,8 +106,10 @@ export function CategoryPicker({ value, onChange, className }: CategoryPickerPro
             );
           })()}
         </div>
-        </div>
       )}
+    </div>
+  );
+}
     </div>
   );
 }
