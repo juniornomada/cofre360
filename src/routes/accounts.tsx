@@ -116,7 +116,7 @@ function SortableAccountItem({
       )}
     >
       <div className="flex items-center gap-2.5 px-2 sm:px-4 py-0.5">
-        <BankLogo icon={account.icon || ""} color={account.color || ""} size="sm" />
+        <BankLogo icon={account.icon || ""} color={account.color || ""} name={account.name} size="sm" />
         <div className="flex-1 min-w-0" style={{ animationDelay: `${60 + index * 80}ms` }}>
           {isEditing ? (
             <div className="flex flex-col gap-2">
@@ -684,7 +684,7 @@ function AccountsPage() {
                      }}
                      className={`flex flex-col items-center gap-1 rounded-xl p-2 transition-colors ${(editingAccount ? editIcon : formIcon) === bank.id ? "bg-primary/15 ring-2 ring-primary" : "hover:bg-accent"}`}
                    >
-                     <BankLogo icon={bank.id} color={bank.color} size="sm" />
+                     <BankLogo icon={bank.id} color={bank.color} name={editingAccount ? editName : formName} size="sm" />
                      <span className="text-[10px] text-muted-foreground truncate w-full text-center">{bank.label}</span>
                    </button>
                  ))}

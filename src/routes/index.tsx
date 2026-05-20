@@ -681,7 +681,7 @@ function Dashboard() {
                 search={{ action: undefined } as any}
                 className="interactive-card flex items-center gap-2.5 rounded-xl bg-background/40 px-2.5 py-1.5 hover:bg-background/60 transition-colors"
               >
-                <BankLogo icon={acc.icon} color={acc.color} size="sm" />
+                <BankLogo icon={acc.icon} color={acc.color} name={acc.name} size="sm" />
                 <p className="text-xs font-medium text-foreground flex-1 min-w-0 truncate">{acc.name}</p>
                 <p className={cn(
                   "text-xs font-bold tabular-nums",
