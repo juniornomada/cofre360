@@ -29,6 +29,12 @@ export const bankPresets: BankPreset[] = [
   { id: "btg",          label: "BTG Pactual",       abbr: "BTG", color: "from-blue-900 to-blue-950",    textColor: "text-white",       bgHex: "#00234B" },
   { id: "xp",           label: "XP",                abbr: "XP",  color: "from-gray-900 to-black",       textColor: "text-white",       bgHex: "#1D1D1B" },
   { id: "flash",       label: "Flash",             abbr: "Fl",  color: "from-pink-500 to-pink-700",    textColor: "text-white",       bgHex: "#FF007F" },
+  { id: "wise",        label: "Wise",              abbr: "Wi",  color: "from-green-400 to-green-600",  textColor: "text-blue-900",    bgHex: "#9FE870" },
+  { id: "nomad",       label: "Nomad",             abbr: "No",  color: "from-green-300 to-green-500",  textColor: "text-black",       bgHex: "#CCFF00" },
+  { id: "revolut",     label: "Revolut",           abbr: "Re",  color: "from-blue-500 to-blue-700",    textColor: "text-white",       bgHex: "#000000" },
+  { id: "btg",         label: "BTG Pactual",       abbr: "BTG", color: "from-blue-900 to-blue-950",    textColor: "text-white",       bgHex: "#00234B" },
+  { id: "modal",       label: "Modalmais",         abbr: "Md",  color: "from-blue-600 to-blue-800",    textColor: "text-white",       bgHex: "#0057B8" },
+  { id: "banrisul",    label: "Banrisul",          abbr: "Ba",  color: "from-blue-700 to-blue-900",    textColor: "text-white",       bgHex: "#004A99" },
   { id: "custom",       label: "Outro",             abbr: "🏦",  color: "from-gray-500 to-gray-700",    textColor: "text-white",       bgHex: "#6B7280" },
 ];
 
