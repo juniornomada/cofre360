@@ -136,15 +136,13 @@ export function TransactionItem({ icon, name, category, date, amount, type, card
             )}
           </p>
           {isCard && (
-            <span className="shrink-0 inline-flex items-center gap-0.5 rounded-md bg-primary/15 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-primary">
+            <span className="shrink-0 inline-flex items-center justify-center rounded-full bg-primary/15 p-1 text-primary">
               <CreditCard className="h-2.5 w-2.5" strokeWidth={2.5} />
-              Crédito
             </span>
           )}
           {isBank && (
-            <span className="shrink-0 inline-flex items-center gap-0.5 rounded-md bg-secondary px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-secondary-foreground">
+            <span className="shrink-0 inline-flex items-center justify-center rounded-full bg-secondary p-1 text-secondary-foreground">
               <Landmark className="h-2.5 w-2.5" strokeWidth={2.5} />
-              Débito
             </span>
           )}
            {isTransferPair && (
@@ -154,10 +152,9 @@ export function TransactionItem({ icon, name, category, date, amount, type, card
                    tabIndex={0}
                     role="button"
                     aria-label="Informações da transferência"
-                   className="shrink-0 inline-flex items-center gap-0.5 rounded-md bg-secondary px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-secondary-foreground cursor-help focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-1"
+                   className="shrink-0 inline-flex items-center justify-center rounded-full bg-secondary p-1 text-secondary-foreground cursor-help focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-1"
                  >
                    <ArrowLeftRight className="h-2.5 w-2.5" strokeWidth={2.5} />
-                   Transf
                  </span>
                </TooltipTrigger>
                <TooltipContent side="top" align="center" sideOffset={5}>
