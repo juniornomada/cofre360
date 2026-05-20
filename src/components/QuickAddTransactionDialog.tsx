@@ -391,7 +391,14 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                     <button
                       key={a.id}
                       type="button"
-                      onClick={() => setNewTx({ ...newTx, bank_account_id: newTx.bank_account_id === a.id ? null : a.id })}
+                      onClick={() => {
+                        const nextId = newTx.bank_account_id === a.id ? null : a.id;
+                        setNewTx({ ...newTx, bank_account_id: nextId });
+                        if (nextId) {
+                          setNewTx(prev => ({ ...prev, card: null }));
+                          setInstallmentEnabled(false);
+                        }
+                      }}
                       className={`flex flex-col items-center gap-0.5 rounded-lg p-1.5 transition-all ${
                         newTx.bank_account_id === a.id ? "bg-primary/15 ring-1 ring-primary" : "bg-card hover:bg-accent"
                       }`}
