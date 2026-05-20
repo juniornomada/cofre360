@@ -16,7 +16,7 @@ export const bankPresets: BankPreset[] = [
     color: "from-red-600 to-red-800",      
     textColor: "text-white",       
     bgHex: "#CC092F",
-    logoUrl: "https://logodownload.org/wp-content/uploads/2014/05/bradesco-logo-1.png"
+    logoUrl: "https://banco.bradesco/assets/common/img/novo-logo-bradesco.png"
   },
   { id: "bb",           label: "Banco do Brasil",   abbr: "BB",  color: "from-yellow-400 to-yellow-600", textColor: "text-blue-900",    bgHex: "#FDDF00" },
   { id: "caixa",        label: "Caixa Econômica",   abbr: "CX",  color: "from-blue-600 to-blue-900",    textColor: "text-white",       bgHex: "#005CA9" },
