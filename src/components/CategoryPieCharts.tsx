@@ -28,21 +28,31 @@ const COLORS = [
 
 function aggregateByCategory(txs: Transaction[]) {
   const map = new Map<string, number>();
+  let total = 0;
   txs.forEach((tx) => {
-    map.set(tx.category, (map.get(tx.category) || 0) + Number(tx.amount));
+    const val = Number(tx.amount);
+    map.set(tx.category, (map.get(tx.category) || 0) + val);
+    total += val;
   });
   return Array.from(map.entries())
-    .map(([name, value]) => ({ name, value }))
+    .map(([name, value]) => ({ 
+      name, 
+      value, 
+      percentage: total > 0 ? (value / total) * 100 : 0 
+    }))
     .sort((a, b) => b.value - a.value);
 }
 
 const CustomTooltip = ({ active, payload, formatCurrency }: any) => {
   if (!active || !payload?.length) return null;
-  const { name, value } = payload[0].payload;
+  const { name, value, percentage } = payload[0].payload;
   return (
     <div className="rounded-lg border border-border/50 bg-background px-3 py-2 text-xs shadow-xl">
       <p className="font-medium text-foreground">{name}</p>
-      <p className="text-muted-foreground">R$ {formatCurrency(value)}</p>
+      <div className="flex justify-between gap-4 mt-1">
+        <span className="text-muted-foreground">R$ {formatCurrency(value)}</span>
+        <span className="font-bold text-primary">{percentage.toFixed(1)}%</span>
+      </div>
     </div>
   );
 };
@@ -88,9 +98,10 @@ export function CategoryPieCharts({ transactions, formatCurrency }: CategoryPieC
           </div>
           <div className="mt-2 flex flex-wrap gap-2">
             {expenseData.map((item, i) => (
-              <div key={item.name} className="flex items-center gap-1.5 text-[10px]">
-                <div className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
-                <span className="text-muted-foreground">{item.name}</span>
+              <div key={item.name} className="flex items-center gap-1.5 text-[10px] bg-accent/30 px-2 py-0.5 rounded-full">
+                <div className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
+                <span className="text-muted-foreground truncate max-w-[80px]">{item.name}</span>
+                <span className="font-bold text-foreground shrink-0">{item.percentage.toFixed(0)}%</span>
               </div>
             ))}
           </div>
@@ -124,9 +135,10 @@ export function CategoryPieCharts({ transactions, formatCurrency }: CategoryPieC
           </div>
           <div className="mt-2 flex flex-wrap gap-2">
             {incomeData.map((item, i) => (
-              <div key={item.name} className="flex items-center gap-1.5 text-[10px]">
-                <div className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
-                <span className="text-muted-foreground">{item.name}</span>
+              <div key={item.name} className="flex items-center gap-1.5 text-[10px] bg-accent/30 px-2 py-0.5 rounded-full">
+                <div className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
+                <span className="text-muted-foreground truncate max-w-[80px]">{item.name}</span>
+                <span className="font-bold text-foreground shrink-0">{item.percentage.toFixed(0)}%</span>
               </div>
             ))}
           </div>
