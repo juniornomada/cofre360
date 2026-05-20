@@ -4,14 +4,14 @@ import { lazy, Suspense, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { useNavigationTracking } from "@/lib/metrics";
 import { useContrastChecker } from "@/hooks/useContrastChecker";
- 
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import appCss from "../styles.css?url";
 
- const BottomNav = lazy(() => import("@/components/BottomNav").then(m => ({ default: m.BottomNav })));
- const MetricsDashboard = lazy(() => import("@/components/MetricsDashboard").then(m => ({ default: m.MetricsDashboard })));
- 
+const BottomNav = lazy(() => import("@/components/BottomNav").then(m => ({ default: m.BottomNav })));
+const MetricsDashboard = lazy(() => import("@/components/MetricsDashboard").then(m => ({ default: m.MetricsDashboard })));
+
 function ErrorComponent({ error }: { error: any }) {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -31,8 +31,6 @@ function ErrorComponent({ error }: { error: any }) {
   );
 }
 
-import { Button } from "@/components/ui/button";
-
 function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -51,6 +49,7 @@ function NotFoundComponent() {
     </div>
   );
 }
+
 
 export const Route = createRootRoute({
   validateSearch: (search: Record<string, unknown>) => {
