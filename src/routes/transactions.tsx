@@ -1114,7 +1114,13 @@ function TransactionsPage() {
       </Dialog>
 
       {/* Add */}
-      <Dialog modal={true} open={showAddDialog} onOpenChange={(open) => {
+      <QuickAddTransactionDialog 
+        open={showAddDialog} 
+        onOpenChange={setShowAddDialog}
+        initialType={isTransfer ? "transfer" : (newTx.type as "expense" | "income")}
+        onSuccess={fetchTransactions}
+      />
+      <Dialog modal={true} open={false} onOpenChange={(open) => {
         setShowAddDialog(open);
         if (!open) {
           setIsTransfer(false);
