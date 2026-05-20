@@ -1114,7 +1114,7 @@ function TransactionsPage() {
       </Dialog>
 
       {/* Add */}
-      <Dialog open={showAddDialog} onOpenChange={(open) => {
+      <Dialog modal={true} open={showAddDialog} onOpenChange={(open) => {
         setShowAddDialog(open);
         if (!open) {
           setIsTransfer(false);
