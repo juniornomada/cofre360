@@ -31,7 +31,7 @@ export const categoryTree: CategoryGroup[] = [
       { label: "Combustível", icon: "⛽" },
       { label: "Estacionamento", icon: "🅿️" },
       { label: "Manutenção", icon: "🔧" },
-      { label: "IPVA/Licenciamento", icon: "📋" },
+      { label: "Documentação", icon: "📋" },
       { label: "Pedágio", icon: "🛣️" },
       { label: "Outros", icon: "🚗" },
     ],
