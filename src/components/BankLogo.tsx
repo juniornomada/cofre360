@@ -32,7 +32,16 @@ export const bankPresets: BankPreset[] = [
   { id: "custom",       label: "Outro",             abbr: "🏦",  color: "from-gray-500 to-gray-700",    textColor: "text-white",       bgHex: "#6B7280" },
 ];
 
-export function BankLogo({ icon, color, size = "md" }: { icon: string; color: string; size?: "sm" | "md" | "lg" }) {
+function getAbbreviation(name: string) {
+  if (!name || name === "custom") return "🏦";
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[1][0]).toUpperCase();
+  }
+  return name.trim().slice(0, 2).toUpperCase();
+}
+
+export function BankLogo({ icon, color, name, size = "md" }: { icon: string; color: string; name?: string; size?: "sm" | "md" | "lg" }) {
   const preset = bankPresets.find(b => b.id === icon);
   const sizeClasses = size === "sm" ? "h-8 w-8 text-[10px]" : size === "lg" ? "h-14 w-14 text-base" : "h-12 w-12 text-sm";
 
@@ -49,10 +58,12 @@ export function BankLogo({ icon, color, size = "md" }: { icon: string; color: st
     );
   }
 
-  // Fallback: emoji-based (legacy or custom)
+  // Fallback: emoji-based or custom name abbreviation
+  const displayIcon = icon === "custom" && name ? getAbbreviation(name) : icon;
+
   return (
-    <div className={`flex items-center justify-center rounded-xl bg-gradient-to-br ${color} text-xl ${sizeClasses}`}>
-      {icon}
+    <div className={`flex items-center justify-center rounded-xl bg-gradient-to-br ${color} ${displayIcon.length > 2 ? 'text-xl' : 'text-xs font-bold text-white'} ${sizeClasses}`}>
+      {displayIcon}
     </div>
   );
 }
