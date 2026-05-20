@@ -684,7 +684,7 @@ function AccountsPage() {
                      }}
                      className={`flex flex-col items-center gap-1 rounded-xl p-2 transition-colors ${(editingAccount ? editIcon : formIcon) === bank.id ? "bg-primary/15 ring-2 ring-primary" : "hover:bg-accent"}`}
                    >
-                     <BankLogo icon={bank.id} color={bank.color} size="sm" />
+                     <BankLogo icon={bank.id} color={bank.color} name={editingAccount ? editName : formName} size="sm" />
                      <span className="text-[10px] text-muted-foreground truncate w-full text-center">{bank.label}</span>
                    </button>
                  ))}
