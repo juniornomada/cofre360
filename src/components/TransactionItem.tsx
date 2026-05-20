@@ -171,10 +171,15 @@ export function TransactionItem({ icon, name, category, date, amount, type, card
             </Tooltip>
           )}
         </div>
-        <p className="text-xs text-muted-foreground truncate">
-          {isTransferPair ? "Entre contas" : getCategoryDisplay(category)} • {formatTxDate(date)}
-          {card && <span className="text-foreground/70"> • {card}</span>}
-        </p>
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
+          <span className="text-[11px] font-medium text-primary bg-primary/5 px-1.5 rounded-md">
+            {getCategoryDisplay(category)}
+          </span>
+          <span className="text-[11px] text-muted-foreground font-medium">
+            {formatTxDate(date)}
+          </span>
+          {card && <span className="text-[10px] text-muted-foreground/70">• {card}</span>}
+        </div>
       </div>
       <span className={cn(
         "text-sm font-semibold tabular-nums shrink-0",
