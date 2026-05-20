@@ -28,8 +28,9 @@ import { cn } from "@/lib/utils";
    const [open, setOpen] = useState(false);
    const [isMobile, setIsMobile] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
-    const openRef = useRef(false);
-    const inputRef = useRef<HTMLInputElement>(null);
+     const openRef = useRef(false);
+     const inputRef = useRef<HTMLInputElement>(null);
+     const ignoreNextFocus = useRef(false);
 
     // Detect if we are on mobile
     useEffect(() => {
@@ -56,7 +57,7 @@ import { cn } from "@/lib/utils";
     });
 
     useEffect(() => {
-      if (autoFocus && !open) {
+      if (autoFocus && !open && !ignoreNextFocus.current) {
         if (isMobile) {
           inputRef.current?.focus();
         } else {
@@ -278,6 +279,7 @@ import { cn } from "@/lib/utils";
                 if (numVal === cents) return;
                 
                 setCents(numVal);
+                ignoreNextFocus.current = true;
                 if (!hasStartedTyping) setHasStartedTyping(true);
               }}
               onKeyDown={(e) => {
