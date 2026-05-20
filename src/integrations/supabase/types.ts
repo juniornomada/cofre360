@@ -343,7 +343,7 @@ export type Database = {
           created_at?: string
           date: string
           icon?: string | null
-          id: string
+          id?: string
           installment_group_id?: string | null
           installment_number?: number | null
           name: string
