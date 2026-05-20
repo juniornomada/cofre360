@@ -441,8 +441,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                             setNewTx({ ...newTx, card: null });
                             setInstallmentEnabled(false);
                           } else {
-                            setNewTx({ ...newTx, card: c.name });
-                            // Option removed to keep installment disabled by default
+                            setNewTx({ ...newTx, card: c.name, bank_account_id: null });
                           }
                         }}
                         className={`flex flex-col items-center gap-1 rounded-lg p-1.5 transition-all ${
