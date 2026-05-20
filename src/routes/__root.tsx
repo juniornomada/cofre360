@@ -3,6 +3,7 @@ import { z } from "zod";
 import { lazy, Suspense, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { useNavigationTracking } from "@/lib/metrics";
+import { useContrastChecker } from "@/hooks/useContrastChecker";
  
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Loader2 } from "lucide-react";
@@ -136,8 +137,9 @@ function RootShell({ children }: { children: React.ReactNode }) {
 }
 
  function RootComponent() {
-   useNavigationTracking();
-   const router = useRouter();
+  useNavigationTracking();
+  useContrastChecker();
+  const router = useRouter();
    const search = router.state.location.search as any;
    const isComparisonMode = search.compare === 'theme';
 
