@@ -260,11 +260,11 @@ import { cn } from "@/lib/utils";
         
         {isMobile ? (
           <div className={cn(
-            "relative w-full rounded-lg bg-card px-2.5 py-1.5 transition-all flex items-center border border-transparent min-h-[36px]",
-            "focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2 focus-within:ring-offset-background",
+            "relative w-full rounded-lg bg-primary/5 px-2.5 py-2 transition-all flex items-center border border-primary/20 min-h-[44px] shadow-inner",
+            "focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2 focus-within:ring-offset-background focus-within:bg-primary/10 focus-within:border-primary/40",
             className
           )}>
-            <span className="text-muted-foreground text-[10px] mr-1.5 shrink-0" aria-hidden="true">R$</span>
+            <span className="text-primary font-bold text-xs mr-2 shrink-0 opacity-80" aria-hidden="true">R$</span>
             <input
               ref={inputRef}
               type="text"
@@ -287,7 +287,7 @@ import { cn } from "@/lib/utils";
                   onEnter();
                 }
               }}
-              className="flex-1 text-right tabular-nums font-semibold bg-transparent border-none outline-none p-0 text-sm text-foreground w-full focus:ring-0 focus:outline-none"
+              className="flex-1 text-right tabular-nums font-bold bg-transparent border-none outline-none p-0 text-base text-primary w-full focus:ring-0 focus:outline-none"
               aria-label={`Valor: R$ ${formatted}`}
               aria-describedby="input-instruction"
             />
@@ -302,12 +302,12 @@ import { cn } from "@/lib/utils";
             aria-controls={open ? "keypad-dialog" : undefined}
             aria-label={`Valor: R$ ${formatted}. Selecionado.`}
             aria-describedby="input-instruction"
-           className={cn(
-             "w-full rounded-lg bg-card px-2.5 py-1.5 text-left text-xs text-foreground outline-none transition-all flex items-center justify-between",
-             "focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-             open && "ring-2 ring-primary bg-primary/5",
-             className
-           )}
+            className={cn(
+              "w-full rounded-lg bg-primary/5 px-2.5 py-2 text-left text-sm text-primary outline-none transition-all flex items-center justify-between border border-primary/20 shadow-inner",
+              "focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background hover:bg-primary/10",
+              open && "ring-2 ring-primary bg-primary/10 border-primary/40",
+              className
+            )}
          >
            <span className="text-muted-foreground text-[10px] mr-1.5" aria-hidden="true">R$</span>
            <span className="flex-1 text-right tabular-nums font-semibold">{formatted}</span>
