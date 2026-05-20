@@ -1,6 +1,8 @@
- import { Outlet, Link, createRootRoute, HeadContent, Scripts, useRouter } from "@tanstack/react-router";
- import { lazy, Suspense, useEffect } from "react";
- import { useNavigationTracking } from "@/lib/metrics";
+import { Outlet, Link, createRootRoute, HeadContent, Scripts, useRouter } from "@tanstack/react-router";
+import { z } from "zod";
+import { lazy, Suspense, useEffect } from "react";
+import { cn } from "@/lib/utils";
+import { useNavigationTracking } from "@/lib/metrics";
  
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Loader2 } from "lucide-react";
@@ -50,6 +52,11 @@ function NotFoundComponent() {
 }
 
 export const Route = createRootRoute({
+  validateSearch: (search: Record<string, unknown>) => {
+    return {
+      compare: z.string().optional().catch(undefined).parse(search.compare),
+    };
+  },
   head: () => ({
     meta: [
       { charSet: "utf-8" },
@@ -89,7 +96,7 @@ function RootShell({ children }: { children: React.ReactNode }) {
             <div className="light relative h-full w-1/2 overflow-y-auto border-r border-border bg-background pb-10">
               <div className="sticky top-0 z-50 flex items-center justify-between bg-card/80 p-4 backdrop-blur-md border-b">
                 <span className="text-sm font-bold text-foreground">Tema Claro</span>
-                <Link to="/" search={{}} className="text-xs text-primary font-medium px-2 py-1 rounded-md bg-primary/10">Sair</Link>
+                <Link to="/" search={{ compare: undefined }} className="text-xs text-primary font-medium px-2 py-1 rounded-md bg-primary/10">Sair</Link>
               </div>
               <div className="mx-auto max-w-md">
                 {children}
