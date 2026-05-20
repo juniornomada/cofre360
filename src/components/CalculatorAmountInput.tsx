@@ -26,8 +26,20 @@ import { cn } from "@/lib/utils";
    const [cents, setCents] = useState<number>(() => Math.round((value || 0) * 100));
    const [hasStartedTyping, setHasStartedTyping] = useState(false);
    const [open, setOpen] = useState(false);
+   const [isMobile, setIsMobile] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
     const openRef = useRef(false);
+    const inputRef = useRef<HTMLInputElement>(null);
+
+    // Detect if we are on mobile
+    useEffect(() => {
+      const checkMobile = () => {
+        setIsMobile(window.innerWidth < 768 || 'ontouchstart' in window);
+      };
+      checkMobile();
+      window.addEventListener('resize', checkMobile);
+      return () => window.removeEventListener('resize', checkMobile);
+    }, []);
 
     // Keep a ref to the open state for the event handler
     useEffect(() => {
@@ -45,9 +57,13 @@ import { cn } from "@/lib/utils";
 
     useEffect(() => {
       if (autoFocus && !open) {
-        buttonRef.current?.focus();
+        if (isMobile) {
+          inputRef.current?.focus();
+        } else {
+          buttonRef.current?.focus();
+        }
       }
-    }, [autoFocus, open]);
+    }, [autoFocus, open, isMobile]);
 
     // Manage focus and accessibility announcements when keypad opens/closes
     useEffect(() => {
@@ -238,27 +254,59 @@ import { cn } from "@/lib/utils";
           aria-atomic="true" 
           data-testid="announcement-region"
         >
-          {announcement || "Pressione Enter ou Espaço para editar o valor."}
+          {announcement || (isMobile ? "Use o teclado numérico para inserir o valor." : "Pressione Enter ou Espaço para editar o valor.")}
         </div>
-        <button
-          ref={buttonRef}
-          type="button"
-          onClick={() => setOpen(o => !o)}
-          aria-haspopup="true"
-          aria-expanded={open}
-          aria-controls={open ? "keypad-dialog" : undefined}
-          aria-label={`Valor: R$ ${formatted}. Selecionado.`}
-          aria-describedby="input-instruction"
-         className={cn(
-           "w-full rounded-lg bg-card px-2.5 py-1.5 text-left text-xs text-foreground outline-none transition-all flex items-center justify-between",
-           "focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-           open && "ring-2 ring-primary bg-primary/5",
-           className
-         )}
-       >
-         <span className="text-muted-foreground text-[10px] mr-1.5" aria-hidden="true">R$</span>
-         <span className="flex-1 text-right tabular-nums font-semibold">{formatted}</span>
-       </button>
+        
+        {isMobile ? (
+          <div className={cn(
+            "relative w-full rounded-lg bg-card px-2.5 py-1.5 transition-all flex items-center border border-transparent",
+            "focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2 focus-within:ring-offset-background",
+            className
+          )}>
+            <span className="text-muted-foreground text-[10px] mr-1.5" aria-hidden="true">R$</span>
+            <input
+              ref={inputRef}
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              value={formatted}
+              onChange={(e) => {
+                const val = e.target.value.replace(/\D/g, "");
+                const numVal = parseInt(val, 10) || 0;
+                setCents(numVal);
+                if (!hasStartedTyping) setHasStartedTyping(true);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && onEnter) {
+                  onEnter();
+                }
+              }}
+              className="flex-1 text-right tabular-nums font-semibold bg-transparent border-none outline-none p-0 text-xs text-foreground"
+              aria-label={`Valor: R$ ${formatted}`}
+              aria-describedby="input-instruction"
+            />
+          </div>
+        ) : (
+          <button
+            ref={buttonRef}
+            type="button"
+            onClick={() => setOpen(o => !o)}
+            aria-haspopup="true"
+            aria-expanded={open}
+            aria-controls={open ? "keypad-dialog" : undefined}
+            aria-label={`Valor: R$ ${formatted}. Selecionado.`}
+            aria-describedby="input-instruction"
+           className={cn(
+             "w-full rounded-lg bg-card px-2.5 py-1.5 text-left text-xs text-foreground outline-none transition-all flex items-center justify-between",
+             "focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+             open && "ring-2 ring-primary bg-primary/5",
+             className
+           )}
+         >
+           <span className="text-muted-foreground text-[10px] mr-1.5" aria-hidden="true">R$</span>
+           <span className="flex-1 text-right tabular-nums font-semibold">{formatted}</span>
+         </button>
+        )}
 
         {open && (
           <div 
