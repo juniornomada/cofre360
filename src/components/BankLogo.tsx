@@ -28,6 +28,7 @@ export const bankPresets: BankPreset[] = [
   { id: "will",         label: "Will Bank",         abbr: "Wi",  color: "from-yellow-400 to-yellow-500", textColor: "text-gray-900",   bgHex: "#FFD100" },
   { id: "btg",          label: "BTG Pactual",       abbr: "BTG", color: "from-blue-900 to-blue-950",    textColor: "text-white",       bgHex: "#00234B" },
   { id: "xp",           label: "XP",                abbr: "XP",  color: "from-gray-900 to-black",       textColor: "text-white",       bgHex: "#1D1D1B" },
+  { id: "flash",       label: "Flash",             abbr: "Fl",  color: "from-pink-500 to-pink-700",    textColor: "text-white",       bgHex: "#FF007F" },
   { id: "custom",       label: "Outro",             abbr: "🏦",  color: "from-gray-500 to-gray-700",    textColor: "text-white",       bgHex: "#6B7280" },
 ];
 
