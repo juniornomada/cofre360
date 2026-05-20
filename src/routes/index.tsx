@@ -1,4 +1,5 @@
-import { createFileRoute, z } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
+import { z } from "zod";
 import { TrendingUp, Eye, EyeOff, Bell, Pencil, Trash2, CalendarIcon, Loader2, Clock, Wallet, ChevronRight, ArrowUpRight, ArrowDownRight, AlertTriangle, Sparkles, Flame, Plus, Minus, ArrowLeftRight, Layers } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { TransactionItem } from "@/components/TransactionItem";
@@ -84,14 +85,6 @@ function getGreeting(): string {
   return "Boa noite";
 }
 
-export const Route = createFileRoute("/")({
-  validateSearch: (search: Record<string, unknown>) => {
-    return {
-      compare: z.string().optional().catch(undefined).parse(search.compare),
-    };
-  },
-  component: Dashboard,
-});
 
 function Dashboard() {
   const [balanceVisible, setBalanceVisible] = useState(true);
@@ -568,7 +561,7 @@ function Dashboard() {
         <div className="flex items-center gap-2">
           <Link
             to="/"
-            search={{ compare: "theme" }}
+            search={{ compare: "theme" } as any}
             className="interactive-button flex h-10 w-10 items-center justify-center rounded-full bg-card border"
             style={{
               borderColor: "hsl(142 95% 55%)",
