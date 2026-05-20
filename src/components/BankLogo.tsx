@@ -5,10 +5,19 @@ type BankPreset = {
   color: string;      // gradient classes
   textColor: string;   // text color for the abbreviation
   bgHex: string;       // solid bg for the logo circle
+  logoUrl?: string;    // Optional logo URL
 };
 
 export const bankPresets: BankPreset[] = [
-  { id: "bradesco",     label: "Bradesco",          abbr: "Br",  color: "from-red-600 to-red-800",      textColor: "text-white",       bgHex: "#CC092F" },
+  { 
+    id: "bradesco",     
+    label: "Bradesco",          
+    abbr: "Br",  
+    color: "from-red-600 to-red-800",      
+    textColor: "text-white",       
+    bgHex: "#CC092F",
+    logoUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b8/Banco_Bradesco_logo_%28vertical%29.png/120px-Banco_Bradesco_logo_%28vertical%29.png"
+  },
   { id: "bb",           label: "Banco do Brasil",   abbr: "BB",  color: "from-yellow-400 to-yellow-600", textColor: "text-blue-900",    bgHex: "#FDDF00" },
   { id: "caixa",        label: "Caixa Econômica",   abbr: "CX",  color: "from-blue-600 to-blue-900",    textColor: "text-white",       bgHex: "#005CA9" },
   { id: "nubank",       label: "Nubank",            abbr: "Nu",  color: "from-purple-500 to-purple-800", textColor: "text-white",       bgHex: "#820AD1" },
@@ -32,7 +41,6 @@ export const bankPresets: BankPreset[] = [
   { id: "wise",        label: "Wise",              abbr: "Wi",  color: "from-green-400 to-green-600",  textColor: "text-blue-900",    bgHex: "#9FE870" },
   { id: "nomad",       label: "Nomad",             abbr: "No",  color: "from-green-300 to-green-500",  textColor: "text-black",       bgHex: "#CCFF00" },
   { id: "revolut",     label: "Revolut",           abbr: "Re",  color: "from-blue-500 to-blue-700",    textColor: "text-white",       bgHex: "#000000" },
-  { id: "btg",         label: "BTG Pactual",       abbr: "BTG", color: "from-blue-900 to-blue-950",    textColor: "text-white",       bgHex: "#00234B" },
   { id: "modal",       label: "Modalmais",         abbr: "Md",  color: "from-blue-600 to-blue-800",    textColor: "text-white",       bgHex: "#0057B8" },
   { id: "banrisul",    label: "Banrisul",          abbr: "Ba",  color: "from-blue-700 to-blue-900",    textColor: "text-white",       bgHex: "#004A99" },
   { id: "custom",       label: "Outro",             abbr: "🏦",  color: "from-gray-500 to-gray-700",    textColor: "text-white",       bgHex: "#6B7280" },
@@ -54,12 +62,16 @@ export function BankLogo({ icon, color, name, size = "md" }: { icon: string; col
   if (preset && preset.id !== "custom") {
     return (
       <div
-        className={`flex items-center justify-center rounded-xl font-bold ${sizeClasses}`}
+        className={`flex items-center justify-center rounded-xl font-bold overflow-hidden ${sizeClasses}`}
         style={{ backgroundColor: preset.bgHex, color: preset.textColor.includes("white") ? "#fff" : undefined }}
       >
-        <span className={preset.textColor.includes("white") ? "" : preset.textColor}>
-          {preset.abbr}
-        </span>
+        {preset.logoUrl ? (
+          <img src={preset.logoUrl} alt={preset.label} className="w-full h-full object-cover p-1" />
+        ) : (
+          <span className={preset.textColor.includes("white") ? "" : preset.textColor}>
+            {preset.abbr}
+          </span>
+        )}
       </div>
     );
   }
