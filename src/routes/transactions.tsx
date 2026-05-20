@@ -820,8 +820,8 @@ function TransactionsPage() {
 
       {/* Edit Dialog */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent className="max-w-[90vw] rounded-2xl bg-background">
-          <DialogHeader><DialogTitle>Editar Transação</DialogTitle></DialogHeader>
+        <DialogContent className="w-[94vw] max-w-[94vw] sm:w-[28rem] sm:max-w-[28rem] rounded-2xl bg-background max-h-[92vh] overflow-y-auto p-4 flex flex-col gap-3">
+          <DialogHeader className="pr-6"><DialogTitle className="text-sm">Editar Transação</DialogTitle></DialogHeader>
           {editTx && (
             <div className="flex flex-col gap-3">
               <div className="relative">
