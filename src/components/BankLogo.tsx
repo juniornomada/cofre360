@@ -16,7 +16,7 @@ export const bankPresets: BankPreset[] = [
     color: "from-red-600 to-red-800",      
     textColor: "text-white",       
     bgHex: "#CC092F",
-    logoUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b8/Banco_Bradesco_logo_%28vertical%29.png/120px-Banco_Bradesco_logo_%28vertical%29.png"
+    logoUrl: "https://logodownload.org/wp-content/uploads/2014/05/bradesco-logo-1.png"
   },
   { id: "bb",           label: "Banco do Brasil",   abbr: "BB",  color: "from-yellow-400 to-yellow-600", textColor: "text-blue-900",    bgHex: "#FDDF00" },
   { id: "caixa",        label: "Caixa Econômica",   abbr: "CX",  color: "from-blue-600 to-blue-900",    textColor: "text-white",       bgHex: "#005CA9" },
@@ -62,15 +62,33 @@ export function BankLogo({ icon, color, name, size = "md" }: { icon: string; col
   if (preset && preset.id !== "custom") {
     return (
       <div
-        className={`flex items-center justify-center rounded-xl font-bold overflow-hidden ${sizeClasses}`}
-        style={{ backgroundColor: preset.bgHex, color: preset.textColor.includes("white") ? "#fff" : undefined }}
+        className={`flex items-center justify-center rounded-xl font-bold overflow-hidden bg-white shadow-sm ${sizeClasses}`}
+        style={{ color: preset.textColor.includes("white") ? "#fff" : undefined }}
       >
         {preset.logoUrl ? (
-          <img src={preset.logoUrl} alt={preset.label} className="w-full h-full object-cover p-1" />
+          <img 
+            src={preset.logoUrl} 
+            alt={preset.label} 
+            className="w-full h-full object-contain p-1.5"
+            onError={(e) => {
+              // Fallback if image fails to load
+              e.currentTarget.style.display = 'none';
+              const parent = e.currentTarget.parentElement;
+              if (parent) {
+                parent.style.backgroundColor = preset.bgHex;
+                const span = document.createElement('span');
+                span.innerText = preset.abbr;
+                span.className = preset.textColor.includes("white") ? "text-white" : preset.textColor;
+                parent.appendChild(span);
+              }
+            }}
+          />
         ) : (
-          <span className={preset.textColor.includes("white") ? "" : preset.textColor}>
-            {preset.abbr}
-          </span>
+          <div className="w-full h-full flex items-center justify-center" style={{ backgroundColor: preset.bgHex }}>
+            <span className={preset.textColor.includes("white") ? "text-white" : preset.textColor}>
+              {preset.abbr}
+            </span>
+          </div>
         )}
       </div>
     );
