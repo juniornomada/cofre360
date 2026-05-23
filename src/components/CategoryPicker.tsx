@@ -7,15 +7,17 @@ interface CategoryPickerProps {
   onChange: (value: string, icon: string) => void;
   className?: string;
   defaultExpanded?: boolean;
+  type?: "expense" | "income";
 }
 
-export function CategoryPicker({ value, onChange, className, defaultExpanded = false }: CategoryPickerProps) {
+export function CategoryPicker({ value, onChange, className, defaultExpanded = false, type = "expense" }: CategoryPickerProps) {
   const parsed = parseCategoryValue(value);
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
 
+  const filteredTree = categoryTree.filter(g => g.type === type);
   const activeGroup = selectedGroup || null;
-  const group = activeGroup ? categoryTree.find(g => g.label === activeGroup) : null;
+  const group = activeGroup ? filteredTree.find(g => g.label === activeGroup) : null;
 
   return (
     <div className={className}>
@@ -42,7 +44,7 @@ export function CategoryPicker({ value, onChange, className, defaultExpanded = f
           {!group ? (
             /* Main categories grid */
             <div className="grid grid-cols-5 gap-1 max-h-48 overflow-y-auto">
-              {categoryTree.map((g) => (
+              {filteredTree.map((g) => (
                 <button
                   key={g.label}
                   type="button"

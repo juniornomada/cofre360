@@ -254,14 +254,14 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
             <div className="flex flex-1 gap-1 min-w-0">
               <button
                 type="button"
-                onClick={() => { setIsTransfer(false); setNewTx({ ...newTx, type: "expense" }); }}
+                onClick={() => { setIsTransfer(false); setNewTx({ ...newTx, type: "expense", category: "Alimentação > Outros", icon: "🍔" }); }}
                 className={`flex-1 min-w-0 rounded-lg py-1 text-[10px] font-medium transition-colors ${!isTransfer && newTx.type === "expense" ? "bg-destructive text-destructive-foreground" : "bg-card text-muted-foreground"}`}
               >
                 Despesa
               </button>
               <button
                 type="button"
-                onClick={() => { setIsTransfer(false); setNewTx({ ...newTx, type: "income" }); }}
+                onClick={() => { setIsTransfer(false); setNewTx({ ...newTx, type: "income", category: "Receita > Salário", icon: "💰" }); }}
                 className={`flex-1 min-w-0 rounded-lg py-1 text-[10px] font-medium transition-colors ${!isTransfer && newTx.type === "income" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground"}`}
               >
                 Receita
@@ -383,6 +383,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                 value={newTx.category}
                 onChange={(val, icon) => setNewTx({ ...newTx, category: val, icon })}
                 defaultExpanded={true}
+                type={newTx.type}
               />
               <div className="grid grid-cols-2 gap-2">
                 <div>

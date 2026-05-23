@@ -988,6 +988,7 @@ function Dashboard() {
                 <CategoryPicker
                   value={editTx.category}
                   onChange={(val, icon) => setEditTx({ ...editTx, category: val, icon })}
+                  type={editTx.type}
                 />
               </Suspense>
               <div>
@@ -1011,8 +1012,8 @@ function Dashboard() {
               <div>
                 <label className="text-xs text-muted-foreground mb-1 block">Tipo</label>
                 <div className="flex gap-2">
-                  <button onClick={() => setEditTx({ ...editTx, type: "expense" })} className={`flex-1 rounded-xl py-2 text-xs font-medium transition-colors ${editTx.type === "expense" ? "bg-destructive text-destructive-foreground" : "bg-card text-muted-foreground"}`}>Despesa</button>
-                  <button onClick={() => setEditTx({ ...editTx, type: "income" })} className={`flex-1 rounded-xl py-2 text-xs font-medium transition-colors ${editTx.type === "income" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground"}`}>Receita</button>
+                  <button onClick={() => setEditTx({ ...editTx, type: "expense", category: "Alimentação > Outros", icon: "🍔" })} className={`flex-1 rounded-xl py-2 text-xs font-medium transition-colors ${editTx.type === "expense" ? "bg-destructive text-destructive-foreground" : "bg-card text-muted-foreground"}`}>Despesa</button>
+                  <button onClick={() => setEditTx({ ...editTx, type: "income", category: "Receita > Salário", icon: "💰" })} className={`flex-1 rounded-xl py-2 text-xs font-medium transition-colors ${editTx.type === "income" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground"}`}>Receita</button>
                 </div>
               </div>
               <div>
