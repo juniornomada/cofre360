@@ -118,7 +118,11 @@ export function TransactionItem({ icon, name, category, date, amount, type, card
               <>
                 {restoreAccents(displayName)}
                 {isInstallment && (
-                  <span className="ml-1 text-[10px] font-normal text-muted-foreground whitespace-nowrap">
+                  <span 
+                    className="ml-1 text-[10px] font-normal text-muted-foreground whitespace-nowrap"
+                    aria-label={`Parcela ${installment_number} de ${total_installments}`}
+                    tabIndex={0}
+                  >
                     ({installment_number}/{total_installments})
                   </span>
                 )}
