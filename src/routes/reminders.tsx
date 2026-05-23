@@ -463,26 +463,28 @@ function RemindersPage() {
         type={data.type as "expense" | "income"}
         onChange={(val, icon) => setData({ ...data, category: val, icon })} 
       />
-      <div>
-        <label className="text-xs text-muted-foreground mb-1 block">Valor (R$)</label>
-        <CalculatorAmountInput 
-          value={Number(data.amount)} 
-          onChange={val => setData({ ...data, amount: val })} 
-        />
-      </div>
-      <div>
-        <label className="text-xs text-muted-foreground mb-1 block">Data de vencimento</label>
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="outline" className={cn("w-full justify-start text-left font-normal rounded-xl bg-card border-none", !data.due_date && "text-muted-foreground")}>
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              {data.due_date || "Selecionar data"}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
-            <Calendar mode="single" selected={(() => { try { return parseDate(data.due_date); } catch { return undefined; } })()} onSelect={(date) => { if (date) setData({ ...data, due_date: format(date, "dd MMM", { locale: ptBR }) }); }} initialFocus className={cn("p-3 pointer-events-auto")} />
-          </PopoverContent>
-        </Popover>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="text-[11px] font-semibold text-foreground mb-1 block">Valor (R$)</label>
+          <CalculatorAmountInput 
+            value={Number(data.amount)} 
+            onChange={val => setData({ ...data, amount: val })} 
+          />
+        </div>
+        <div>
+          <label className="text-[11px] font-semibold text-foreground mb-1 block">Data de vencimento</label>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className={cn("w-full justify-start text-left font-normal rounded-xl bg-card border-none h-10 px-3 text-sm", !data.due_date && "text-muted-foreground")}>
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {data.due_date || "Selecionar"}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar mode="single" selected={(() => { try { return parseDate(data.due_date); } catch { return undefined; } })()} onSelect={(date) => { if (date) setData({ ...data, due_date: format(date, "dd MMM", { locale: ptBR }) }); }} initialFocus className={cn("p-3 pointer-events-auto")} />
+            </PopoverContent>
+          </Popover>
+        </div>
       </div>
       <div>
         <label className="text-xs text-muted-foreground mb-1 block">Pagar/Receber em (opcional)</label>
