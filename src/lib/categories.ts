@@ -14,6 +14,7 @@ export const categoryTree: CategoryGroup[] = [
   {
     label: "Alimentação",
     icon: "🍔",
+    type: "expense",
     subcategories: [
       { label: "Supermercado", icon: "🛒" },
       { label: "Restaurante", icon: "🍽️" },
@@ -26,6 +27,7 @@ export const categoryTree: CategoryGroup[] = [
   {
     label: "Transporte",
     icon: "🚗",
+    type: "expense",
     subcategories: [
       { label: "Uber/99", icon: "🚕" },
       { label: "Ônibus/Metrô", icon: "🚌" },
@@ -40,6 +42,7 @@ export const categoryTree: CategoryGroup[] = [
   {
     label: "Moradia",
     icon: "🏠",
+    type: "expense",
     subcategories: [
       { label: "Aluguel", icon: "🏠" },
       { label: "Condomínio", icon: "🏢" },
@@ -55,6 +58,7 @@ export const categoryTree: CategoryGroup[] = [
   {
     label: "Saúde",
     icon: "💊",
+    type: "expense",
     subcategories: [
       { label: "Farmácia", icon: "💊" },
       { label: "Consulta Médica", icon: "🩺" },
@@ -68,6 +72,7 @@ export const categoryTree: CategoryGroup[] = [
   {
     label: "Educação",
     icon: "📚",
+    type: "expense",
     subcategories: [
       { label: "Mensalidade", icon: "🎓" },
       { label: "Cursos Online", icon: "💻" },
@@ -79,6 +84,7 @@ export const categoryTree: CategoryGroup[] = [
   {
     label: "Lazer",
     icon: "🎮",
+    type: "expense",
     subcategories: [
       { label: "Cinema/Teatro", icon: "🎬" },
       { label: "Viagem", icon: "✈️" },
@@ -90,6 +96,7 @@ export const categoryTree: CategoryGroup[] = [
   {
     label: "Compras",
     icon: "🛍️",
+    type: "expense",
     subcategories: [
       { label: "Roupas/Calçados", icon: "👕" },
       { label: "Eletrônicos", icon: "📱" },
@@ -101,6 +108,7 @@ export const categoryTree: CategoryGroup[] = [
   {
     label: "Assinaturas",
     icon: "📱",
+    type: "expense",
     subcategories: [
       { label: "Streaming", icon: "📺" },
       { label: "Apps/Serviços", icon: "📱" },
@@ -110,6 +118,7 @@ export const categoryTree: CategoryGroup[] = [
   {
     label: "Serviços",
     icon: "🔧",
+    type: "expense",
     subcategories: [
       { label: "Limpeza", icon: "🧹" },
       { label: "Manutenção", icon: "🔧" },
@@ -120,6 +129,7 @@ export const categoryTree: CategoryGroup[] = [
   {
     label: "Pets",
     icon: "🐾",
+    type: "expense",
     subcategories: [
       { label: "Ração/Petiscos", icon: "🦴" },
       { label: "Veterinário", icon: "🏥" },
@@ -130,6 +140,7 @@ export const categoryTree: CategoryGroup[] = [
   {
     label: "Impostos/Taxas",
     icon: "🏛️",
+    type: "expense",
     subcategories: [
       { label: "IR", icon: "📊" },
       { label: "INSS/FGTS", icon: "🏛️" },
@@ -141,6 +152,7 @@ export const categoryTree: CategoryGroup[] = [
   {
     label: "Dívidas/Parcelas",
     icon: "📋",
+    type: "expense",
     subcategories: [
       { label: "Financiamento", icon: "🏦" },
       { label: "Empréstimo", icon: "💸" },
@@ -151,6 +163,7 @@ export const categoryTree: CategoryGroup[] = [
   {
     label: "Transferências",
     icon: "🔄",
+    type: "expense",
     subcategories: [
       { label: "PIX", icon: "⚡" },
       { label: "TED/DOC", icon: "🔄" },
@@ -160,6 +173,7 @@ export const categoryTree: CategoryGroup[] = [
   {
     label: "Receita",
     icon: "💰",
+    type: "income",
     subcategories: [
       { label: "Salário", icon: "💼" },
       { label: "Freelance", icon: "💻" },
@@ -171,6 +185,7 @@ export const categoryTree: CategoryGroup[] = [
   {
     label: "Outros",
     icon: "📄",
+    type: "expense",
     subcategories: [
       { label: "Outros", icon: "📄" },
     ],
