@@ -10,6 +10,8 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { supabase } from "@/integrations/supabase/client";
 import { categorizeTransaction } from "@/lib/categorize-transaction";
+import { CategoryPicker } from "@/components/CategoryPicker";
+import { getCategoryDisplay } from "@/lib/categories";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/reminders")({
@@ -39,7 +41,6 @@ interface Reminder {
   recurrence_day: number | null;
 }
 
-const categories = ["Conta", "Aluguel", "Cartão", "Salário", "Freelance", "Empréstimo", "Assinatura", "Outros"];
 const iconOptions = ["🔔", "💰", "🏠", "💳", "📱", "⚡", "💧", "🌐", "🚗", "🏥", "📺", "🎓", "🛡️", "💸"];
 
 function RemindersPage() {
@@ -64,9 +65,9 @@ function RemindersPage() {
     title: "",
     amount: 0,
     due_date: "",
-    type: "expense",
-    category: "Conta",
-    icon: "🔔",
+    type: "expense" as "expense" | "income",
+    category: "Moradia > Aluguel",
+    icon: "🏠",
     notes: "",
     bank_account_id: null as string | null,
     card_id: null as string | null,
@@ -419,16 +420,33 @@ function RemindersPage() {
       <div>
         <label className="text-xs text-muted-foreground mb-1 block">Tipo</label>
         <div className="flex gap-2">
-          <button onClick={() => setData({ ...data, type: "expense" })} className={`flex-1 rounded-xl py-2 text-xs font-medium transition-colors ${data.type === "expense" ? "bg-destructive text-destructive-foreground" : "bg-card text-muted-foreground"}`}>Pagamento</button>
-          <button onClick={() => setData({ ...data, type: "income" })} className={`flex-1 rounded-xl py-2 text-xs font-medium transition-colors ${data.type === "income" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground"}`}>Recebimento</button>
+          <button 
+            onClick={() => {
+              if (data.type !== "expense") {
+                setData({ ...data, type: "expense", category: "Moradia > Aluguel", icon: "🏠" });
+              }
+            }} 
+            className={`flex-1 rounded-xl py-2 text-xs font-medium transition-colors ${data.type === "expense" ? "bg-destructive text-destructive-foreground" : "bg-card text-muted-foreground"}`}
+          >
+            Pagamento
+          </button>
+          <button 
+            onClick={() => {
+              if (data.type !== "income") {
+                setData({ ...data, type: "income", category: "Receita > Salário", icon: "💰" });
+              }
+            }} 
+            className={`flex-1 rounded-xl py-2 text-xs font-medium transition-colors ${data.type === "income" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground"}`}
+          >
+            Recebimento
+          </button>
         </div>
       </div>
-      <div>
-        <label className="text-xs text-muted-foreground mb-1 block">Categoria</label>
-        <select value={data.category} onChange={e => setData({ ...data, category: e.target.value })} className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground outline-none">
-          {categories.map(c => <option key={c} value={c}>{c}</option>)}
-        </select>
-      </div>
+      <CategoryPicker 
+        value={data.category || ""} 
+        type={data.type as "expense" | "income"}
+        onChange={(val, icon) => setData({ ...data, category: val, icon })} 
+      />
       <div>
         <label className="text-xs text-muted-foreground mb-1 block">Valor (R$)</label>
         <input type="number" step="0.01" value={data.amount} onChange={e => setData({ ...data, amount: parseFloat(e.target.value) || 0 })} className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground outline-none" />
@@ -590,7 +608,7 @@ function RemindersPage() {
                   </div>
                   {reminder.notes && <p className="text-xs text-muted-foreground truncate">{reminder.notes}</p>}
                   <div className="flex items-center gap-1 flex-wrap mt-0.5">
-                    <span className="text-[10px] text-muted-foreground">{reminder.category}</span>
+                    <span className="text-[10px] text-muted-foreground">{getCategoryDisplay(reminder.category || "")}</span>
                     <span className="text-[10px] text-muted-foreground">•</span>
                     <span className={cn("text-[10px] font-medium flex flex-col gap-0.5", !reminder.is_completed ? dateStatus.color : "text-muted-foreground")}>
                       <div className="flex items-center gap-0.5">
