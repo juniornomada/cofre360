@@ -249,7 +249,10 @@ function RemindersPage() {
         : Number(account.balance) - amount;
       await supabase.from("bank_accounts").update({ balance: newBalance }).eq("id", accountId);
 
-      await supabase.from("reminders").update({ is_completed: true }).eq("id", reminder.id);
+      await supabase.from("reminders").update({ 
+        is_completed: true,
+        completion_date: today 
+      }).eq("id", reminder.id);
       await generateNextOccurrence(reminder);
 
       const recurringMsg = reminder.is_recurring ? " (próxima ocorrência criada)" : "";
