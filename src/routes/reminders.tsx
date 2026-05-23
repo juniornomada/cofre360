@@ -460,7 +460,10 @@ function RemindersPage() {
       />
       <div>
         <label className="text-xs text-muted-foreground mb-1 block">Valor (R$)</label>
-        <input type="number" step="0.01" value={data.amount} onChange={e => setData({ ...data, amount: parseFloat(e.target.value) || 0 })} className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground outline-none" />
+        <CalculatorAmountInput 
+          value={Number(data.amount)} 
+          onChange={val => setData({ ...data, amount: val })} 
+        />
       </div>
       <div>
         <label className="text-xs text-muted-foreground mb-1 block">Data de vencimento</label>
