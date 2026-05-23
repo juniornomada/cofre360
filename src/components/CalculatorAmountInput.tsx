@@ -233,12 +233,18 @@ import { cn } from "@/lib/utils";
          if (!hasStartedTyping) setHasStartedTyping(true);
          setCents(prev => {
            const next = prev + 100;
-           return next > 999_999_999 ? prev : next;
+           const final = next > 999_999_999 ? prev : next;
+           onChange(final / 100);
+           return final;
          });
        } else if (e.key === "ArrowDown") {
          e.preventDefault();
          if (!hasStartedTyping) setHasStartedTyping(true);
-         setCents(prev => Math.max(0, prev - 100));
+         setCents(prev => {
+           const next = Math.max(0, prev - 100);
+           onChange(next / 100);
+           return next;
+         });
        }
      };
      window.addEventListener("keydown", handler, { capture: true });
