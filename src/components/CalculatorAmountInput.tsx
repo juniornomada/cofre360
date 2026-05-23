@@ -141,25 +141,28 @@ import { cn } from "@/lib/utils";
 
    const press = (digit: number) => {
      setCents(prev => {
-       // If first digit after opening and not manually cleared, start fresh
        const base = hasStartedTyping ? prev : 0;
        const next = base * 10 + digit;
+       if (next > 999_999_999) return prev;
        
        if (!hasStartedTyping) setHasStartedTyping(true);
-       
-      // Cap at ~9 digits to avoid runaway numbers (R$ 9.999.999,99)
-      if (next > 999_999_999) return prev;
-      return next;
-    });
-  };
+       onChange(next / 100);
+       return next;
+     });
+   };
 
    const backspace = () => {
      if (!hasStartedTyping) setHasStartedTyping(true);
-     setCents(prev => Math.floor(prev / 10));
+     setCents(prev => {
+       const next = Math.floor(prev / 10);
+       onChange(next / 100);
+       return next;
+     });
    };
    const clear = () => {
      setHasStartedTyping(true);
      setCents(0);
+     onChange(0);
    };
 
    // Keyboard support and Focus Trap
