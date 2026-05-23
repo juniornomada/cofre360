@@ -649,20 +649,29 @@ function RemindersPage() {
                   )}>
                     {reminder.type === "expense" ? "- " : "+ "}R$ {formatCurrency(Number(reminder.amount))}
                   </span>
-                  <div className="flex gap-0.5">
+                  <div className="flex gap-1">
+                    {!reminder.is_completed && (
+                      <button
+                        onClick={() => handleToggleComplete(reminder)}
+                        className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-all duration-200"
+                        title="Efetivar lembrete"
+                      >
+                        <Check className="h-4 w-4" />
+                      </button>
+                    )}
                     <button
                       onClick={() => { setEditReminder({ ...reminder }); setShowEditDialog(true); }}
-                      className="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+                      className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
                       aria-label="Editar"
                     >
-                      <Pencil className="h-3 w-3" />
+                      <Pencil className="h-3.5 w-3.5" />
                     </button>
                     <button
                       onClick={() => { setDeletingId(reminder.id); setShowDeleteDialog(true); }}
-                      className="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+                      className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
                       aria-label="Excluir"
                     >
-                      <Trash2 className="h-3 w-3" />
+                      <Trash2 className="h-3.5 w-3.5" />
                     </button>
                   </div>
                 </div>
