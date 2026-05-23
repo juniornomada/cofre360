@@ -149,9 +149,9 @@ function RemindersPage() {
             return isNaN(d.getTime()) ? null : d.getDate();
           })())
         : null;
-      const { error } = await supabase.from("reminders").update({
+      const updateData = {
         title: editReminder.title,
-        amount: editReminder.amount,
+        amount: Number(editReminder.amount),
         due_date: editReminder.due_date,
         type: editReminder.type,
         category: editReminder.category,
@@ -162,8 +162,13 @@ function RemindersPage() {
         card_id: editReminder.card_id,
         is_recurring: editReminder.is_recurring,
         recurrence_day: recurrenceDay,
-      }).eq("id", editReminder.id);
+      };
+      
+      const { error } = await supabase.from("reminders").update(updateData).eq("id", editReminder.id);
       if (error) throw error;
+      
+      // Update local state immediately to reflect changes in UI
+      setReminders(prev => prev.map(r => r.id === editReminder.id ? { ...r, ...updateData } : r));
       setShowEditDialog(false);
       setEditReminder(null);
       toast.success("Lembrete atualizado!");
@@ -426,7 +431,7 @@ function RemindersPage() {
       </div>
       <div>
         <label className="text-xs text-muted-foreground mb-1 block">Título</label>
-        <input value={data.title} onChange={e => setData({ ...data, title: e.target.value })} className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground outline-none" placeholder="Ex: Conta de luz" />
+        <input value={data.title || ""} onChange={e => setData({ ...data, title: e.target.value })} className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground outline-none" placeholder="Ex: Conta de luz" />
       </div>
       <div>
         <label className="text-xs text-muted-foreground mb-1 block">Tipo</label>
