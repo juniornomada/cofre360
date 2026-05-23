@@ -151,7 +151,7 @@ function RemindersPage() {
         : null;
       const updateData = {
         title: editReminder.title,
-        amount: Number(editReminder.amount),
+        amount: editReminder.amount,
         due_date: editReminder.due_date,
         type: editReminder.type,
         category: editReminder.category,
