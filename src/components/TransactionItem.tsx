@@ -79,9 +79,23 @@ export function TransactionItem({ icon, name, category, date, amount, type, card
         </div>
       )}
       <div className="relative h-10 w-10 shrink-0">
-        <div className="flex h-full w-full items-center justify-center rounded-xl bg-accent text-lg transition-transform duration-200 group-active:scale-90 overflow-hidden content-visibility-auto">
-          <span role="img" aria-label={isTransferPair ? "Transferência" : category}>{isTransferPair ? "🔄" : displayIcon}</span>
-        </div>
+        {isTransferPair ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="flex h-full w-full items-center justify-center rounded-xl bg-accent text-lg transition-transform duration-200 group-active:scale-90 overflow-hidden content-visibility-auto">
+                <span role="img" aria-label="Transferência">🔄</span>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              Transferência de {transferFromName} para {transferToName}
+            </TooltipContent>
+          </Tooltip>
+        ) : (
+          <div className="flex h-full w-full items-center justify-center rounded-xl bg-accent text-lg transition-transform duration-200 group-active:scale-90 overflow-hidden content-visibility-auto">
+            <span role="img" aria-label={category}>{displayIcon}</span>
+          </div>
+        )}
+        
         {isCard && (
           <div
             className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-primary-foreground ring-2 ring-card shadow-sm"
