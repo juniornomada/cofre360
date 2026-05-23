@@ -106,12 +106,8 @@ import { cn } from "@/lib/utils";
   }, [cents, open, formatted]);
 
   // Propagate changes upward immediately for sync with parent
-  useEffect(() => {
-    const reais = Math.round(cents) / 100;
-    if (reais !== value) {
-      onChange(reais);
-    }
-  }, [cents, value, onChange]);
+  // Removed useEffect-based propagation to avoid race conditions with Save buttons
+  // Now handled directly in input.onChange and keypad.press/backspace/clear
 
   const confirm = () => {
     const reais = Math.round(cents) / 100;
