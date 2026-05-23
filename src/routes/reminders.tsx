@@ -557,21 +557,33 @@ function RemindersPage() {
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="flex gap-2">
-        {([
-          { key: "all", label: "Todos" },
-          { key: "pending", label: "Pendentes" },
-          { key: "completed", label: "Concluídos" },
-        ] as const).map(f => (
-          <button
-            key={f.key}
-            onClick={() => setFilter(f.key)}
-            className={`interactive-button whitespace-nowrap rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors duration-200 ${filter === f.key ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground"}`}
-          >
-            {f.label}
-          </button>
-        ))}
+      {/* Filters and Search */}
+      <div className="flex flex-col gap-3">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <input
+            type="text"
+            placeholder="Buscar nos lembretes..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full rounded-xl bg-card pl-10 pr-4 py-2 text-sm outline-none ring-primary/20 focus:ring-2"
+          />
+        </div>
+        <div className="flex gap-2">
+          {([
+            { key: "all", label: "Todos" },
+            { key: "pending", label: "Pendentes" },
+            { key: "completed", label: "Concluídos" },
+          ] as const).map(f => (
+            <button
+              key={f.key}
+              onClick={() => setFilter(f.key)}
+              className={`interactive-button flex-1 whitespace-nowrap rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors duration-200 ${filter === f.key ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground"}`}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Reminders List */}
