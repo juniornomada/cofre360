@@ -139,7 +139,10 @@ export function TransactionItem({ icon, name, category, date, amount, type, card
                   </span>
                 </TooltipTrigger>
                 <TooltipContent>
-                  Transferência de {transferFromName} para {transferToName}
+                  <div className="flex flex-col items-center">
+                    <span>Transferência</span>
+                    <span className="text-[10px] opacity-70">Transferência de {transferFromName} para {transferToName}</span>
+                  </div>
                 </TooltipContent>
               </Tooltip>
             ) : (
