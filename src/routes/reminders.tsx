@@ -698,9 +698,25 @@ function RemindersPage() {
         <DialogContent className="max-w-[90vw] rounded-2xl bg-background">
           <DialogHeader><DialogTitle>Editar Lembrete</DialogTitle></DialogHeader>
           {editReminder && renderFormFields(editReminder, setEditReminder)}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowEditDialog(false)}>Cancelar</Button>
-            <Button onClick={handleSaveEdit}>Salvar</Button>
+          <DialogFooter className="flex-col gap-2 sm:flex-row">
+            {!editReminder?.is_completed && (
+              <Button 
+                variant="secondary" 
+                className="w-full sm:w-auto bg-primary/10 text-primary hover:bg-primary/20"
+                onClick={() => {
+                  if (editReminder) {
+                    setShowEditDialog(false);
+                    handleToggleComplete(editReminder);
+                  }
+                }}
+              >
+                Efetivar Agora
+              </Button>
+            )}
+            <div className="flex gap-2 w-full sm:w-auto">
+              <Button variant="outline" className="flex-1 sm:flex-none" onClick={() => setShowEditDialog(false)}>Cancelar</Button>
+              <Button className="flex-1 sm:flex-none" onClick={handleSaveEdit}>Salvar</Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
