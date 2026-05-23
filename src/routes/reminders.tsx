@@ -294,7 +294,10 @@ function RemindersPage() {
       });
 
       await supabase.from("cards").update({ used: Number(card.used) + amount }).eq("id", cardId);
-      await supabase.from("reminders").update({ is_completed: true }).eq("id", reminder.id);
+      await supabase.from("reminders").update({ 
+        is_completed: true,
+        completion_date: today 
+      }).eq("id", reminder.id);
       await generateNextOccurrence(reminder);
 
       const recurringMsg = reminder.is_recurring ? " (próxima ocorrência criada)" : "";
