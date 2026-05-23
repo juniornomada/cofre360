@@ -31,7 +31,7 @@ export function CategoryPicker({ value, onChange, className }: CategoryPickerPro
           <span className="text-muted-foreground opacity-50">›</span>
           <span>{parseCategoryValue(value).sub}</span>
         </div>
-        <div className={`text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}>
+        <div className={`text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary transition-transform duration-300`}>
           {isExpanded ? 'Recolher' : 'Alterar'}
         </div>
       </button>
