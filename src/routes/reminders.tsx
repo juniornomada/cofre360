@@ -151,7 +151,7 @@ function RemindersPage() {
         : null;
       const updateData = {
         title: editReminder.title,
-        amount: Number(editReminder.amount),
+        amount: editReminder.amount,
         due_date: editReminder.due_date,
         type: editReminder.type,
         category: editReminder.category,
@@ -172,7 +172,7 @@ function RemindersPage() {
       setShowEditDialog(false);
       setEditReminder(null);
       toast.success("Lembrete atualizado!");
-      fetchReminders();
+      await fetchReminders();
     } catch (error: any) {
       console.error("Error updating reminder:", error);
       toast.error("Erro ao atualizar lembrete: " + (error.message || "Erro desconhecido"));
