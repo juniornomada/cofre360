@@ -11,6 +11,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { supabase } from "@/integrations/supabase/client";
 import { categorizeTransaction } from "@/lib/categorize-transaction";
 import { CategoryPicker } from "@/components/CategoryPicker";
+import { getCategoryDisplay } from "@/lib/categories";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/reminders")({
