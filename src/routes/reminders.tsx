@@ -388,6 +388,14 @@ function RemindersPage() {
   };
 
   const filtered = reminders.filter((r) => {
+    const qNormalized = normalizeText(searchQuery);
+    const matchesSearch = !searchQuery || 
+      normalizeText(r.title || "").includes(qNormalized) || 
+      normalizeText(r.category || "").includes(qNormalized) ||
+      normalizeText(r.notes || "").includes(qNormalized);
+    
+    if (!matchesSearch) return false;
+    
     if (filter === "pending") return !r.is_completed;
     if (filter === "completed") return r.is_completed;
     return true;
