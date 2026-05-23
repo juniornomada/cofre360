@@ -82,8 +82,8 @@ function RemindersPage() {
     try {
       const [remindersRes, accountsRes, cardsRes] = await Promise.all([
         supabase.from("reminders").select("*").order("due_date", { ascending: true }),
-        supabase.from("bank_accounts").select("id, name, icon, balance, color"),
-        supabase.from("cards").select("id, name, emoji, last_four, card_limit, used, color"),
+        supabase.from("bank_accounts").select("id, name, icon, balance, color").order("created_at", { ascending: true }),
+        supabase.from("cards").select("id, name, emoji, last_four, card_limit, used, color").order("created_at", { ascending: true }),
       ]);
       if (remindersRes.error) throw remindersRes.error;
       if (accountsRes.error) throw accountsRes.error;
