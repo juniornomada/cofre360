@@ -463,26 +463,28 @@ function RemindersPage() {
         type={data.type as "expense" | "income"}
         onChange={(val, icon) => setData({ ...data, category: val, icon })} 
       />
-      <div>
-        <label className="text-xs text-muted-foreground mb-1 block">Valor (R$)</label>
-        <CalculatorAmountInput 
-          value={Number(data.amount)} 
-          onChange={val => setData({ ...data, amount: val })} 
-        />
-      </div>
-      <div>
-        <label className="text-xs text-muted-foreground mb-1 block">Data de vencimento</label>
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="outline" className={cn("w-full justify-start text-left font-normal rounded-xl bg-card border-none", !data.due_date && "text-muted-foreground")}>
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              {data.due_date || "Selecionar data"}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
-            <Calendar mode="single" selected={(() => { try { return parseDate(data.due_date); } catch { return undefined; } })()} onSelect={(date) => { if (date) setData({ ...data, due_date: format(date, "dd MMM", { locale: ptBR }) }); }} initialFocus className={cn("p-3 pointer-events-auto")} />
-          </PopoverContent>
-        </Popover>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="text-[11px] font-semibold text-foreground mb-1 block">Valor (R$)</label>
+          <CalculatorAmountInput 
+            value={Number(data.amount)} 
+            onChange={val => setData({ ...data, amount: val })} 
+          />
+        </div>
+        <div>
+          <label className="text-[11px] font-semibold text-foreground mb-1 block">Data de vencimento</label>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className={cn("w-full justify-start text-left font-normal rounded-xl bg-card border-none h-10 px-3 text-sm", !data.due_date && "text-muted-foreground")}>
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {data.due_date || "Selecionar"}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar mode="single" selected={(() => { try { return parseDate(data.due_date); } catch { return undefined; } })()} onSelect={(date) => { if (date) setData({ ...data, due_date: format(date, "dd MMM", { locale: ptBR }) }); }} initialFocus className={cn("p-3 pointer-events-auto")} />
+            </PopoverContent>
+          </Popover>
+        </div>
       </div>
       <div>
         <label className="text-xs text-muted-foreground mb-1 block">Pagar/Receber em (opcional)</label>
@@ -627,68 +629,77 @@ function RemindersPage() {
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1">
-                    <p className={cn("text-sm font-medium truncate", reminder.is_completed ? "line-through text-muted-foreground" : "text-foreground")}>
-                      {reminder.title}
-                    </p>
-                    {reminder.is_recurring && (
-                      <span title="Mensal" className="flex shrink-0 items-center justify-center rounded-md bg-primary/10 p-0.5 text-primary">
-                        <Repeat className="h-2.5 w-2.5" />
-                      </span>
-                    )}
-                  </div>
-                  {reminder.notes && <p className="text-xs text-muted-foreground truncate">{reminder.notes}</p>}
-                  <div className="flex items-center gap-1 flex-wrap mt-0.5">
-                    <span className="text-[10px] text-muted-foreground">{getCategoryDisplay(reminder.category || "")}</span>
-                    <span className="text-[10px] text-muted-foreground">•</span>
-                    <span className={cn("text-[10px] font-medium flex flex-col gap-0.5", !reminder.is_completed ? dateStatus.color : "text-muted-foreground")}>
-                      <div className="flex items-center gap-0.5">
-                        <Clock className="h-2.5 w-2.5" />
-                        <span>
-                          {reminder.is_completed 
-                            ? `Vencimento: ${translateDate(reminder.due_date || "")}` 
-                            : dateStatus.label}
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1 min-w-0">
+                      <p className={cn("text-sm font-semibold truncate", reminder.is_completed ? "line-through text-muted-foreground" : "text-foreground")}>
+                        {reminder.title}
+                      </p>
+                      {reminder.is_recurring && (
+                        <span title="Mensal" className="flex shrink-0 items-center justify-center rounded-md bg-primary/10 p-0.5 text-primary">
+                          <Repeat className="h-2.5 w-2.5" />
                         </span>
-                      </div>
-                      {reminder.is_completed && reminder.completion_date && (
-                        <div className="flex items-center gap-0.5 text-primary font-semibold">
-                          <Check className="h-2.5 w-2.5" />
-                          <span>
-                            {reminder.type === "income" ? "Recebido em: " : "Pago em: "}
-                            {translateDate(reminder.completion_date)}
-                          </span>
-                        </div>
                       )}
+                    </div>
+                    <span className={cn(
+                      "text-sm font-bold tabular-nums shrink-0",
+                      reminder.type === "income" ? "text-primary" : "text-foreground"
+                    )}>
+                      {reminder.type === "expense" ? "- " : "+ "}R$ {formatCurrency(Number(reminder.amount))}
                     </span>
-                    {linkedAccount && (
-                      <span className={cn("rounded-md px-1.5 py-0.5 text-[9px] font-medium text-white bg-gradient-to-br", linkedAccount.color)}>
-                        {linkedAccount.name}
-                      </span>
-                    )}
-                    {linkedCard && (
-                      <span className={cn("rounded-md px-1.5 py-0.5 text-[9px] font-medium text-white bg-gradient-to-br", linkedCard.color)}>
-                        {linkedCard.name}
-                      </span>
-                    )}
                   </div>
+
+                  <div className="flex items-center justify-between gap-2 mt-1">
+                    <div className="flex items-center gap-1.5 min-w-0 overflow-hidden">
+                      <span className="text-[10px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded truncate shrink-0">
+                        {getCategoryDisplay(reminder.category || "")}
+                      </span>
+                      {linkedAccount && (
+                        <span className={cn("rounded px-1.5 py-0.5 text-[9px] font-medium text-white bg-gradient-to-br truncate", linkedAccount.color)}>
+                          {linkedAccount.name}
+                        </span>
+                      )}
+                      {linkedCard && (
+                        <span className={cn("rounded px-1.5 py-0.5 text-[9px] font-medium text-white bg-gradient-to-br truncate", linkedCard.color)}>
+                          {linkedCard.name}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className={cn("flex items-center gap-1 text-[10px] font-bold shrink-0", !reminder.is_completed ? dateStatus.color : "text-muted-foreground")}>
+                      <Clock className="h-2.5 w-2.5" />
+                      <span>
+                        {reminder.is_completed 
+                          ? `${translateDate(reminder.due_date || "")}` 
+                          : dateStatus.label}
+                      </span>
+                    </div>
+                  </div>
+
+                  {reminder.is_completed && reminder.completion_date && (
+                    <div className="flex items-center gap-1 mt-1 text-[10px] text-primary font-bold bg-primary/5 w-fit px-1.5 py-0.5 rounded">
+                      <Check className="h-2.5 w-2.5" />
+                      <span>
+                        {reminder.type === "income" ? "Recebido em: " : "Pago em: "}
+                        {translateDate(reminder.completion_date)}
+                      </span>
+                    </div>
+                  )}
+
+                  {reminder.notes && (
+                    <p className="text-[10px] text-muted-foreground truncate mt-1 italic">
+                      {reminder.notes}
+                    </p>
+                  )}
                 </div>
 
-                <div className="flex items-center gap-2 shrink-0">
-                  <span className={cn(
-                    "text-sm font-semibold tabular-nums",
-                    reminder.type === "income" ? "text-primary" : "text-foreground"
-                  )}>
-                    {reminder.type === "expense" ? "- " : "+ "}R$ {formatCurrency(Number(reminder.amount))}
-                  </span>
-                  <div className="flex gap-1">
-                    <button
-                      onClick={(e) => { e.stopPropagation(); setDeletingId(reminder.id); setShowDeleteDialog(true); }}
-                      className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
-                      aria-label="Excluir"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
+                <div className="flex items-center shrink-0 ml-1">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setDeletingId(reminder.id); setShowDeleteDialog(true); }}
+                    className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+                    aria-label="Excluir"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
                 </div>
               </div>
             );
