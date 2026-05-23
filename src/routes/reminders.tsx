@@ -788,20 +788,31 @@ function RemindersPage() {
                 {bankAccounts.length === 0 ? (
                   <p className="text-xs text-muted-foreground py-2">Nenhuma conta cadastrada</p>
                 ) : (
-                  bankAccounts.map(acc => (
-                    <button
-                      key={acc.id}
-                      disabled={paying}
-                      onClick={() => handlePayWithAccount(acc.id)}
-                      className="flex items-center gap-3 rounded-xl bg-card p-3 hover:bg-accent transition-colors disabled:opacity-50 text-left"
-                    >
-                      <div className={cn("flex h-9 w-9 items-center justify-center rounded-lg text-base text-white bg-gradient-to-br", acc.color)}>{acc.icon}</div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-foreground truncate">{acc.name}</p>
-                        <p className="text-[10px] text-muted-foreground tabular-nums">Saldo: R$ {Number(acc.balance).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                      </div>
-                    </button>
-                  ))
+                  bankAccounts.map(acc => {
+                    const isSuggested = payingReminder?.bank_account_id === acc.id;
+                    return (
+                      <button
+                        key={acc.id}
+                        disabled={paying}
+                        onClick={() => handlePayWithAccount(acc.id)}
+                        className={cn(
+                          "flex items-center gap-3 rounded-xl bg-card p-3 hover:bg-accent transition-colors disabled:opacity-50 text-left relative overflow-hidden",
+                          isSuggested && "ring-2 ring-primary bg-primary/5"
+                        )}
+                      >
+                        {isSuggested && (
+                          <div className="absolute top-0 right-0 bg-primary px-2 py-0.5 text-[8px] font-bold text-primary-foreground rounded-bl-lg">
+                            SUGERIDO
+                          </div>
+                        )}
+                        <div className={cn("flex h-9 w-9 items-center justify-center rounded-lg text-base text-white bg-gradient-to-br", acc.color)}>{acc.icon}</div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-foreground truncate">{acc.name}</p>
+                          <p className="text-[10px] text-muted-foreground tabular-nums">Saldo: R$ {Number(acc.balance).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                        </div>
+                      </button>
+                    );
+                  })
                 )}
               </div>
             </div>
@@ -819,13 +830,22 @@ function RemindersPage() {
                   ) : (
                     cards.map(card => {
                       const available = Number(card.card_limit) - Number(card.used);
+                      const isSuggested = payingReminder?.card_id === card.id;
                       return (
                         <button
                           key={card.id}
                           disabled={paying}
                           onClick={() => handlePayWithCard(card.id)}
-                          className="flex items-center gap-3 rounded-xl bg-card p-3 hover:bg-accent transition-colors disabled:opacity-50 text-left"
+                          className={cn(
+                            "flex items-center gap-3 rounded-xl bg-card p-3 hover:bg-accent transition-colors disabled:opacity-50 text-left relative overflow-hidden",
+                            isSuggested && "ring-2 ring-primary bg-primary/5"
+                          )}
                         >
+                          {isSuggested && (
+                            <div className="absolute top-0 right-0 bg-primary px-2 py-0.5 text-[8px] font-bold text-primary-foreground rounded-bl-lg">
+                              SUGERIDO
+                            </div>
+                          )}
                           <div className={cn("flex h-9 w-9 items-center justify-center rounded-lg text-base text-white bg-gradient-to-br", card.color)}>{card.emoji}</div>
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-foreground truncate">{card.name} •••• {card.last_four}</p>
