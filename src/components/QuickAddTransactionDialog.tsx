@@ -382,6 +382,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
               <CategoryPicker
                 value={newTx.category}
                 onChange={(val, icon) => setNewTx({ ...newTx, category: val, icon })}
+                defaultExpanded={true}
               />
               <div className="grid grid-cols-2 gap-2">
                 <div>
