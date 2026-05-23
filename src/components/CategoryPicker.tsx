@@ -6,12 +6,13 @@ interface CategoryPickerProps {
   value: string;
   onChange: (value: string, icon: string) => void;
   className?: string;
+  defaultExpanded?: boolean;
 }
 
-export function CategoryPicker({ value, onChange, className }: CategoryPickerProps) {
+export function CategoryPicker({ value, onChange, className, defaultExpanded = false }: CategoryPickerProps) {
   const parsed = parseCategoryValue(value);
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(defaultExpanded);
 
   const activeGroup = selectedGroup || null;
   const group = activeGroup ? categoryTree.find(g => g.label === activeGroup) : null;
