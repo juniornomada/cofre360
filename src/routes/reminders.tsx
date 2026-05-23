@@ -337,7 +337,8 @@ function RemindersPage() {
     jul: "jul", aug: "ago", sep: "set", oct: "out", nov: "nov", dec: "dez",
   };
 
-  const translateDate = (dateStr: string) => {
+  const translateDate = (dateStr: string | null) => {
+    if (!dateStr) return "";
     const fullMonths = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
     // Handle ISO format yyyy-mm-dd
     const isoMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateStr);
