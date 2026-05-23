@@ -125,9 +125,16 @@ export function TransactionItem({ icon, name, category, date, amount, type, card
         <div className="flex items-center justify-between gap-2">
           <p className="text-sm font-semibold text-foreground truncate">
             {isTransferPair && transferFromName && transferToName ? (
-              <span className="transition-colors hover:text-primary">
-                {transferFromName} → {transferToName}
-              </span>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="transition-colors hover:text-primary">
+                    {transferFromName} → {transferToName}
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  Transferência de {transferFromName} para {transferToName}
+                </TooltipContent>
+              </Tooltip>
             ) : (
               <>
                 {restoreAccents(displayName)}
