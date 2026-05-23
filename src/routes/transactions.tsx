@@ -863,6 +863,7 @@ function TransactionsPage() {
                 <CategoryPicker
                   value={editTx.category}
                   onChange={(val, icon) => setEditTx({ ...editTx, category: val, icon })}
+                  type={editTx.type}
                 />
               </Suspense>
               <div>
