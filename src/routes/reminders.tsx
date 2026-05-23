@@ -590,7 +590,7 @@ function RemindersPage() {
                   </div>
                   {reminder.notes && <p className="text-xs text-muted-foreground truncate">{reminder.notes}</p>}
                   <div className="flex items-center gap-1 flex-wrap mt-0.5">
-                    <span className="text-[10px] text-muted-foreground">{reminder.category}</span>
+                    <span className="text-[10px] text-muted-foreground">{getCategoryDisplay(reminder.category || "")}</span>
                     <span className="text-[10px] text-muted-foreground">•</span>
                     <span className={cn("text-[10px] font-medium flex flex-col gap-0.5", !reminder.is_completed ? dateStatus.color : "text-muted-foreground")}>
                       <div className="flex items-center gap-0.5">
