@@ -270,6 +270,7 @@ import { cn } from "@/lib/utils";
             const numVal = parseInt(raw, 10) || 0;
             if (numVal === cents) return;
             setCents(numVal);
+            onChange(numVal / 100);
             if (!hasStartedTyping) setHasStartedTyping(true);
           }}
           onKeyDown={(e) => {
