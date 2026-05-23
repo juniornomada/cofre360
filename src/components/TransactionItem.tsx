@@ -79,9 +79,30 @@ export function TransactionItem({ icon, name, category, date, amount, type, card
         </div>
       )}
       <div className="relative h-10 w-10 shrink-0">
-        <div className="flex h-full w-full items-center justify-center rounded-xl bg-accent text-lg transition-transform duration-200 group-active:scale-90 overflow-hidden content-visibility-auto">
-          <span role="img" aria-label={category}>{isTransferPair ? "🔄" : displayIcon}</span>
-        </div>
+        {isTransferPair ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div 
+                className="flex h-full w-full items-center justify-center rounded-xl bg-accent text-lg transition-transform duration-200 group-active:scale-90 overflow-hidden content-visibility-auto cursor-help focus:outline-none focus:ring-2 focus:ring-primary"
+                tabIndex={0}
+                aria-label="Transferência"
+              >
+                <span role="img" aria-hidden="true">🔄</span>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <div className="flex flex-col items-center">
+                <span>Transferência</span>
+                <span className="text-[10px] opacity-70">Transferência de {transferFromName} para {transferToName}</span>
+              </div>
+            </TooltipContent>
+          </Tooltip>
+        ) : (
+          <div className="flex h-full w-full items-center justify-center rounded-xl bg-accent text-lg transition-transform duration-200 group-active:scale-90 overflow-hidden content-visibility-auto">
+            <span role="img" aria-label={category}>{displayIcon}</span>
+          </div>
+        )}
+        
         {isCard && (
           <div
             className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-primary-foreground ring-2 ring-card shadow-sm"
@@ -111,11 +132,32 @@ export function TransactionItem({ icon, name, category, date, amount, type, card
         <div className="flex items-center justify-between gap-2">
           <p className="text-sm font-semibold text-foreground truncate">
             {isTransferPair && transferFromName && transferToName ? (
-              <span className="transition-colors hover:text-primary">
-                {transferFromName} → {transferToName}
-              </span>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="transition-colors hover:text-primary">
+                    {transferFromName} → {transferToName}
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <div className="flex flex-col items-center">
+                    <span>Transferência</span>
+                    <span className="text-[10px] opacity-70">Transferência de {transferFromName} para {transferToName}</span>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
             ) : (
-              restoreAccents(displayName)
+              <>
+                {restoreAccents(displayName)}
+                {isInstallment && (
+                  <span 
+                    className="ml-1 text-[10px] font-normal text-muted-foreground whitespace-nowrap"
+                    aria-label={`Parcela ${installment_number} de ${total_installments}`}
+                    tabIndex={0}
+                  >
+                    ({installment_number}/{total_installments})
+                  </span>
+                )}
+              </>
             )}
           </p>
           <span className={cn(
