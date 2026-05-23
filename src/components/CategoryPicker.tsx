@@ -44,7 +44,7 @@ export function CategoryPicker({ value, onChange, className, defaultExpanded = f
           {!group ? (
             /* Main categories grid */
             <div className="grid grid-cols-5 gap-1 max-h-48 overflow-y-auto">
-              {categoryTree.map((g) => (
+              {filteredTree.map((g) => (
                 <button
                   key={g.label}
                   type="button"
