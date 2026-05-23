@@ -201,6 +201,12 @@ export function getCategoryValue(group: string, sub: string): string {
 export function parseCategoryValue(value: string): { group: string; sub: string } {
   const parts = value.split(" > ");
   if (parts.length === 2) return { group: parts[0], sub: parts[1] };
+  
+  // Normalize singular/plural transfers
+  if (value === "Transferência" || value === "Transferências") {
+    return { group: "Transferências", sub: "Outros" };
+  }
+
   // Legacy: try to match old flat category to a group
   const found = categoryTree.find(g => g.label === value);
   if (found) return { group: found.label, sub: "Outros" };
