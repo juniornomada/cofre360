@@ -164,14 +164,23 @@ function RemindersPage() {
         recurrence_day: recurrenceDay,
       };
       
-      const { error } = await supabase.from("reminders").update(updateData).eq("id", editReminder.id);
+      const { data: updatedData, error } = await supabase
+        .from("reminders")
+        .update(updateData)
+        .eq("id", editReminder.id)
+        .select();
+
       if (error) throw error;
       
-      // Update local state immediately to reflect changes in UI
-      setReminders(prev => prev.map(r => r.id === editReminder.id ? { ...r, ...updateData } : r));
+      // Update local state immediately with the data returned from server if possible, 
+      // or use the local updateData
+      const finalData = updatedData && updatedData.length > 0 ? updatedData[0] : { ...editReminder, ...updateData };
+      setReminders(prev => prev.map(r => r.id === editReminder.id ? finalData : r));
+      
       setShowEditDialog(false);
       setEditReminder(null);
       toast.success("Lembrete atualizado!");
+      // Still fetch to be 100% sure everything is in sync
       await fetchReminders();
     } catch (error: any) {
       console.error("Error updating reminder:", error);

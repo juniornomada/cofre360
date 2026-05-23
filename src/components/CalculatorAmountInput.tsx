@@ -106,12 +106,8 @@ import { cn } from "@/lib/utils";
   }, [cents, open, formatted]);
 
   // Propagate changes upward immediately for sync with parent
-  useEffect(() => {
-    const reais = Math.round(cents) / 100;
-    if (reais !== value) {
-      onChange(reais);
-    }
-  }, [cents, value, onChange]);
+  // Removed useEffect-based propagation to avoid race conditions with Save buttons
+  // Now handled directly in input.onChange and keypad.press/backspace/clear
 
   const confirm = () => {
     const reais = Math.round(cents) / 100;
@@ -145,25 +141,28 @@ import { cn } from "@/lib/utils";
 
    const press = (digit: number) => {
      setCents(prev => {
-       // If first digit after opening and not manually cleared, start fresh
        const base = hasStartedTyping ? prev : 0;
        const next = base * 10 + digit;
+       if (next > 999_999_999) return prev;
        
        if (!hasStartedTyping) setHasStartedTyping(true);
-       
-      // Cap at ~9 digits to avoid runaway numbers (R$ 9.999.999,99)
-      if (next > 999_999_999) return prev;
-      return next;
-    });
-  };
+       onChange(next / 100);
+       return next;
+     });
+   };
 
    const backspace = () => {
      if (!hasStartedTyping) setHasStartedTyping(true);
-     setCents(prev => Math.floor(prev / 10));
+     setCents(prev => {
+       const next = Math.floor(prev / 10);
+       onChange(next / 100);
+       return next;
+     });
    };
    const clear = () => {
      setHasStartedTyping(true);
      setCents(0);
+     onChange(0);
    };
 
    // Keyboard support and Focus Trap
@@ -234,12 +233,18 @@ import { cn } from "@/lib/utils";
          if (!hasStartedTyping) setHasStartedTyping(true);
          setCents(prev => {
            const next = prev + 100;
-           return next > 999_999_999 ? prev : next;
+           const final = next > 999_999_999 ? prev : next;
+           onChange(final / 100);
+           return final;
          });
        } else if (e.key === "ArrowDown") {
          e.preventDefault();
          if (!hasStartedTyping) setHasStartedTyping(true);
-         setCents(prev => Math.max(0, prev - 100));
+         setCents(prev => {
+           const next = Math.max(0, prev - 100);
+           onChange(next / 100);
+           return next;
+         });
        }
      };
      window.addEventListener("keydown", handler, { capture: true });
@@ -274,6 +279,7 @@ import { cn } from "@/lib/utils";
             const numVal = parseInt(raw, 10) || 0;
             if (numVal === cents) return;
             setCents(numVal);
+            onChange(numVal / 100);
             if (!hasStartedTyping) setHasStartedTyping(true);
           }}
           onKeyDown={(e) => {
