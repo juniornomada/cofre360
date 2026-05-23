@@ -14,7 +14,7 @@ import { CalculatorAmountInput } from "@/components/CalculatorAmountInput";
  import { format, parse } from "date-fns";
  import { calculateInstallmentDetails } from "@/lib/installment-utils";
 import { ptBR } from "date-fns/locale";
-import { cn } from "@/lib/utils";
+import { cn, normalizeText } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -148,10 +148,10 @@ function TransactionsPage() {
 
   const getAutocompleteSuggestions = (input: string) => {
     if (!input || input.length < 2) return [];
-    const q = input.toLowerCase();
+    const q = normalizeText(input);
     const results: { icon: string; category: string; name: string }[] = [];
     for (const [key, val] of txMemory) {
-      if (key.includes(q)) results.push(val);
+      if (normalizeText(key).includes(q)) results.push(val);
       if (results.length >= 8) break;
     }
     return results;
@@ -1180,14 +1180,15 @@ function TransactionsPage() {
                 <p className="text-center text-xs text-muted-foreground py-6">Digite para buscar...</p>
               );
               const accountNameById = Object.fromEntries(bankAccounts.map(a => [a.id, a.name.toLowerCase()]));
+              const qNormalized = normalizeText(globalSearch);
               const results = transactions.filter(tx => {
                 const accountName = tx.bank_account_id ? accountNameById[tx.bank_account_id] || "" : "";
                 return (
-                  tx.name.toLowerCase().includes(q) ||
-                  tx.category.toLowerCase().includes(q) ||
-                  (tx.card || "").toLowerCase().includes(q) ||
-                  accountName.includes(q) ||
-                  tx.date.toLowerCase().includes(q)
+                  normalizeText(tx.name).includes(qNormalized) ||
+                  normalizeText(tx.category).includes(qNormalized) ||
+                  normalizeText(tx.card || "").includes(qNormalized) ||
+                  normalizeText(accountName).includes(qNormalized) ||
+                  normalizeText(tx.date).includes(qNormalized)
                 );
               });
               if (results.length === 0) return (

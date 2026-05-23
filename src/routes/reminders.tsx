@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Bell, Plus, Check, Trash2, Pencil, CalendarIcon, Loader2, Clock, Wallet, CreditCard, Repeat } from "lucide-react";
+import { Bell, Plus, Check, Trash2, Pencil, CalendarIcon, Loader2, Clock, Wallet, CreditCard, Repeat, Search } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { format, parse, isPast, isToday, isTomorrow, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { cn } from "@/lib/utils";
+import { cn, normalizeText } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -54,6 +54,8 @@ function RemindersPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [editReminder, setEditReminder] = useState<Reminder | null>(null);
   const [filter, setFilter] = useState<"all" | "pending" | "completed">("pending");
+  const [searchQuery, setSearchQuery] = useState("");
+  
   
   const [showPayDialog, setShowPayDialog] = useState(false);
   const [payingReminder, setPayingReminder] = useState<Reminder | null>(null);
@@ -386,6 +388,14 @@ function RemindersPage() {
   };
 
   const filtered = reminders.filter((r) => {
+    const qNormalized = normalizeText(searchQuery);
+    const matchesSearch = !searchQuery || 
+      normalizeText(r.title || "").includes(qNormalized) || 
+      normalizeText(r.category || "").includes(qNormalized) ||
+      normalizeText(r.notes || "").includes(qNormalized);
+    
+    if (!matchesSearch) return false;
+    
     if (filter === "pending") return !r.is_completed;
     if (filter === "completed") return r.is_completed;
     return true;
@@ -547,21 +557,33 @@ function RemindersPage() {
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="flex gap-2">
-        {([
-          { key: "all", label: "Todos" },
-          { key: "pending", label: "Pendentes" },
-          { key: "completed", label: "Concluídos" },
-        ] as const).map(f => (
-          <button
-            key={f.key}
-            onClick={() => setFilter(f.key)}
-            className={`interactive-button whitespace-nowrap rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors duration-200 ${filter === f.key ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground"}`}
-          >
-            {f.label}
-          </button>
-        ))}
+      {/* Filters and Search */}
+      <div className="flex flex-col gap-3">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <input
+            type="text"
+            placeholder="Buscar nos lembretes..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full rounded-xl bg-card pl-10 pr-4 py-2 text-sm outline-none ring-primary/20 focus:ring-2"
+          />
+        </div>
+        <div className="flex gap-2">
+          {([
+            { key: "all", label: "Todos" },
+            { key: "pending", label: "Pendentes" },
+            { key: "completed", label: "Concluídos" },
+          ] as const).map(f => (
+            <button
+              key={f.key}
+              onClick={() => setFilter(f.key)}
+              className={`interactive-button flex-1 whitespace-nowrap rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors duration-200 ${filter === f.key ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground"}`}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Reminders List */}
