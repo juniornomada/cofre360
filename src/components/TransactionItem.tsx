@@ -115,7 +115,14 @@ export function TransactionItem({ icon, name, category, date, amount, type, card
                 {transferFromName} → {transferToName}
               </span>
             ) : (
-              restoreAccents(displayName)
+              <>
+                {restoreAccents(displayName)}
+                {isInstallment && (
+                  <span className="ml-1 text-[10px] font-normal text-muted-foreground whitespace-nowrap">
+                    ({installment_number}/{total_installments})
+                  </span>
+                )}
+              </>
             )}
           </p>
           <span className={cn(
