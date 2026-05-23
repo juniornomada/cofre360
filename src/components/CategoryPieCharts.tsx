@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import { parseCategoryValue } from "@/lib/categories";
 
 interface Transaction {
   id: string;
