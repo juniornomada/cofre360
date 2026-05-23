@@ -588,9 +588,24 @@ function RemindersPage() {
                   <div className="flex items-center gap-1 flex-wrap mt-0.5">
                     <span className="text-[10px] text-muted-foreground">{reminder.category}</span>
                     <span className="text-[10px] text-muted-foreground">•</span>
-                    <span className={cn("text-[10px] font-medium flex items-center gap-0.5", !reminder.is_completed ? dateStatus.color : "text-muted-foreground")}>
-                      <Clock className="h-2.5 w-2.5" />
-                      {reminder.is_completed ? translateDate(reminder.due_date) : dateStatus.label}
+                    <span className={cn("text-[10px] font-medium flex flex-col gap-0.5", !reminder.is_completed ? dateStatus.color : "text-muted-foreground")}>
+                      <div className="flex items-center gap-0.5">
+                        <Clock className="h-2.5 w-2.5" />
+                        <span>
+                          {reminder.is_completed 
+                            ? `Vencimento: ${translateDate(reminder.due_date || "")}` 
+                            : dateStatus.label}
+                        </span>
+                      </div>
+                      {reminder.is_completed && reminder.completion_date && (
+                        <div className="flex items-center gap-0.5 text-primary font-semibold">
+                          <Check className="h-2.5 w-2.5" />
+                          <span>
+                            {reminder.type === "income" ? "Recebido em: " : "Pago em: "}
+                            {translateDate(reminder.completion_date)}
+                          </span>
+                        </div>
+                      )}
                     </span>
                     {linkedAccount && (
                       <span className={cn("rounded-md px-1.5 py-0.5 text-[9px] font-medium text-white bg-gradient-to-br", linkedAccount.color)}>
