@@ -27,6 +27,7 @@ interface Reminder {
   title: string | null;
   amount: number | null;
   due_date: string | null;
+  completion_date: string | null;
   type: string | null;
   category: string | null;
   icon: string | null;
