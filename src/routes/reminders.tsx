@@ -3,7 +3,7 @@ import { Bell, Plus, Check, Trash2, Pencil, CalendarIcon, Loader2, Clock, Wallet
 import { useState, useEffect, useCallback } from "react";
 import { format, parse, isPast, isToday, isTomorrow, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { cn } from "@/lib/utils";
+import { cn, normalizeText } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
