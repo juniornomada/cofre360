@@ -205,7 +205,10 @@ function RemindersPage() {
     if (reminder.is_completed) {
       try {
         // Reativar
-        const { error } = await supabase.from("reminders").update({ is_completed: false }).eq("id", reminder.id);
+        const { error } = await supabase.from("reminders").update({ 
+          is_completed: false,
+          completion_date: null 
+        }).eq("id", reminder.id);
         if (error) throw error;
         toast.success("Lembrete reativado");
         fetchReminders();
