@@ -163,9 +163,12 @@ function RemindersPage() {
         is_recurring: editReminder.is_recurring,
         recurrence_day: recurrenceDay,
       };
-      console.log("Saving reminder update:", updateData);
+      
       const { error } = await supabase.from("reminders").update(updateData).eq("id", editReminder.id);
       if (error) throw error;
+      
+      // Update local state immediately to reflect changes in UI
+      setReminders(prev => prev.map(r => r.id === editReminder.id ? { ...r, ...updateData } : r));
       setShowEditDialog(false);
       setEditReminder(null);
       toast.success("Lembrete atualizado!");
