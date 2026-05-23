@@ -40,7 +40,6 @@ interface Reminder {
   recurrence_day: number | null;
 }
 
-const categories = ["Conta", "Aluguel", "Cartão", "Salário", "Freelance", "Empréstimo", "Assinatura", "Outros"];
 const iconOptions = ["🔔", "💰", "🏠", "💳", "📱", "⚡", "💧", "🌐", "🚗", "🏥", "📺", "🎓", "🛡️", "💸"];
 
 function RemindersPage() {
