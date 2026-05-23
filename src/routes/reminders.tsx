@@ -601,21 +601,21 @@ function RemindersPage() {
             return (
               <div
                 key={reminder.id}
+                onClick={() => { setEditReminder({ ...reminder }); setShowEditDialog(true); }}
                 className={cn(
-                  "group interactive-card relative flex items-center gap-2 rounded-xl bg-card p-2.5",
+                  "group interactive-card relative flex items-center gap-2 rounded-xl bg-card p-2.5 cursor-pointer transition-all",
                   reminder.is_completed && "opacity-60"
                 )}
                 style={{ animationDelay: `${i * 40}ms` }}
               >
-                <button
-                  onClick={() => handleToggleComplete(reminder)}
+                <div
                   className={cn(
                     "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-lg transition-all duration-200",
                     reminder.is_completed ? "bg-primary/20" : "bg-accent"
                   )}
                 >
                   {reminder.is_completed ? <Check className="h-5 w-5 text-primary" /> : reminder.icon}
-                </button>
+                </div>
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1">
@@ -664,7 +664,7 @@ function RemindersPage() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1 shrink-0">
+                <div className="flex items-center gap-2 shrink-0">
                   <span className={cn(
                     "text-sm font-semibold tabular-nums",
                     reminder.type === "income" ? "text-primary" : "text-foreground"
@@ -672,24 +672,8 @@ function RemindersPage() {
                     {reminder.type === "expense" ? "- " : "+ "}R$ {formatCurrency(Number(reminder.amount))}
                   </span>
                   <div className="flex gap-1">
-                    {!reminder.is_completed && (
-                      <button
-                        onClick={() => handleToggleComplete(reminder)}
-                        className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-all duration-200"
-                        title="Efetivar lembrete"
-                      >
-                        <Check className="h-4 w-4" />
-                      </button>
-                    )}
                     <button
-                      onClick={() => { setEditReminder({ ...reminder }); setShowEditDialog(true); }}
-                      className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
-                      aria-label="Editar"
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                    </button>
-                    <button
-                      onClick={() => { setDeletingId(reminder.id); setShowDeleteDialog(true); }}
+                      onClick={(e) => { e.stopPropagation(); setDeletingId(reminder.id); setShowDeleteDialog(true); }}
                       className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
                       aria-label="Excluir"
                     >
