@@ -27,6 +27,7 @@ interface Reminder {
   title: string | null;
   amount: number | null;
   due_date: string | null;
+  completion_date: string | null;
   type: string | null;
   category: string | null;
   icon: string | null;
@@ -204,7 +205,10 @@ function RemindersPage() {
     if (reminder.is_completed) {
       try {
         // Reativar
-        const { error } = await supabase.from("reminders").update({ is_completed: false }).eq("id", reminder.id);
+        const { error } = await supabase.from("reminders").update({ 
+          is_completed: false,
+          completion_date: null 
+        }).eq("id", reminder.id);
         if (error) throw error;
         toast.success("Lembrete reativado");
         fetchReminders();
@@ -248,7 +252,10 @@ function RemindersPage() {
         : Number(account.balance) - amount;
       await supabase.from("bank_accounts").update({ balance: newBalance }).eq("id", accountId);
 
-      await supabase.from("reminders").update({ is_completed: true }).eq("id", reminder.id);
+      await supabase.from("reminders").update({ 
+        is_completed: true,
+        completion_date: today 
+      }).eq("id", reminder.id);
       await generateNextOccurrence(reminder);
 
       const recurringMsg = reminder.is_recurring ? " (próxima ocorrência criada)" : "";
@@ -290,7 +297,10 @@ function RemindersPage() {
       });
 
       await supabase.from("cards").update({ used: Number(card.used) + amount }).eq("id", cardId);
-      await supabase.from("reminders").update({ is_completed: true }).eq("id", reminder.id);
+      await supabase.from("reminders").update({ 
+        is_completed: true,
+        completion_date: today 
+      }).eq("id", reminder.id);
       await generateNextOccurrence(reminder);
 
       const recurringMsg = reminder.is_recurring ? " (próxima ocorrência criada)" : "";
@@ -327,7 +337,8 @@ function RemindersPage() {
     jul: "jul", aug: "ago", sep: "set", oct: "out", nov: "nov", dec: "dez",
   };
 
-  const translateDate = (dateStr: string) => {
+  const translateDate = (dateStr: string | null) => {
+    if (!dateStr) return "";
     const fullMonths = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
     // Handle ISO format yyyy-mm-dd
     const isoMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateStr);
@@ -581,9 +592,24 @@ function RemindersPage() {
                   <div className="flex items-center gap-1 flex-wrap mt-0.5">
                     <span className="text-[10px] text-muted-foreground">{reminder.category}</span>
                     <span className="text-[10px] text-muted-foreground">•</span>
-                    <span className={cn("text-[10px] font-medium flex items-center gap-0.5", !reminder.is_completed ? dateStatus.color : "text-muted-foreground")}>
-                      <Clock className="h-2.5 w-2.5" />
-                      {reminder.is_completed ? translateDate(reminder.due_date) : dateStatus.label}
+                    <span className={cn("text-[10px] font-medium flex flex-col gap-0.5", !reminder.is_completed ? dateStatus.color : "text-muted-foreground")}>
+                      <div className="flex items-center gap-0.5">
+                        <Clock className="h-2.5 w-2.5" />
+                        <span>
+                          {reminder.is_completed 
+                            ? `Vencimento: ${translateDate(reminder.due_date || "")}` 
+                            : dateStatus.label}
+                        </span>
+                      </div>
+                      {reminder.is_completed && reminder.completion_date && (
+                        <div className="flex items-center gap-0.5 text-primary font-semibold">
+                          <Check className="h-2.5 w-2.5" />
+                          <span>
+                            {reminder.type === "income" ? "Recebido em: " : "Pago em: "}
+                            {translateDate(reminder.completion_date)}
+                          </span>
+                        </div>
+                      )}
                     </span>
                     {linkedAccount && (
                       <span className={cn("rounded-md px-1.5 py-0.5 text-[9px] font-medium text-white bg-gradient-to-br", linkedAccount.color)}>
