@@ -54,6 +54,8 @@ function RemindersPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [editReminder, setEditReminder] = useState<Reminder | null>(null);
   const [filter, setFilter] = useState<"all" | "pending" | "completed">("pending");
+  const [searchQuery, setSearchQuery] = useState("");
+  
   
   const [showPayDialog, setShowPayDialog] = useState(false);
   const [payingReminder, setPayingReminder] = useState<Reminder | null>(null);
