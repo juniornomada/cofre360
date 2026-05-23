@@ -1180,14 +1180,15 @@ function TransactionsPage() {
                 <p className="text-center text-xs text-muted-foreground py-6">Digite para buscar...</p>
               );
               const accountNameById = Object.fromEntries(bankAccounts.map(a => [a.id, a.name.toLowerCase()]));
+              const qNormalized = normalizeText(globalSearch);
               const results = transactions.filter(tx => {
                 const accountName = tx.bank_account_id ? accountNameById[tx.bank_account_id] || "" : "";
                 return (
-                  tx.name.toLowerCase().includes(q) ||
-                  tx.category.toLowerCase().includes(q) ||
-                  (tx.card || "").toLowerCase().includes(q) ||
-                  accountName.includes(q) ||
-                  tx.date.toLowerCase().includes(q)
+                  normalizeText(tx.name).includes(qNormalized) ||
+                  normalizeText(tx.category).includes(qNormalized) ||
+                  normalizeText(tx.card || "").includes(qNormalized) ||
+                  normalizeText(accountName).includes(qNormalized) ||
+                  normalizeText(tx.date).includes(qNormalized)
                 );
               });
               if (results.length === 0) return (
