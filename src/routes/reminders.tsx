@@ -10,6 +10,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { supabase } from "@/integrations/supabase/client";
 import { categorizeTransaction } from "@/lib/categorize-transaction";
+import { CategoryPicker } from "@/components/CategoryPicker";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/reminders")({
