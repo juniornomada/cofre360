@@ -423,12 +423,11 @@ function RemindersPage() {
           <button onClick={() => setData({ ...data, type: "income" })} className={`flex-1 rounded-xl py-2 text-xs font-medium transition-colors ${data.type === "income" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground"}`}>Recebimento</button>
         </div>
       </div>
-      <div>
-        <label className="text-xs text-muted-foreground mb-1 block">Categoria</label>
-        <select value={data.category} onChange={e => setData({ ...data, category: e.target.value })} className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground outline-none">
-          {categories.map(c => <option key={c} value={c}>{c}</option>)}
-        </select>
-      </div>
+      <CategoryPicker 
+        value={data.category || ""} 
+        type={data.type as "expense" | "income"}
+        onChange={(val, icon) => setData({ ...data, category: val, icon })} 
+      />
       <div>
         <label className="text-xs text-muted-foreground mb-1 block">Valor (R$)</label>
         <input type="number" step="0.01" value={data.amount} onChange={e => setData({ ...data, amount: parseFloat(e.target.value) || 0 })} className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground outline-none" />
