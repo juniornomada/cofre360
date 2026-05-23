@@ -261,7 +261,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
               </button>
               <button
                 type="button"
-                onClick={() => { setIsTransfer(false); setNewTx({ ...newTx, type: "income" }); }}
+                onClick={() => { setIsTransfer(false); setNewTx({ ...newTx, type: "income", category: "Receita > Salário", icon: "💰" }); }}
                 className={`flex-1 min-w-0 rounded-lg py-1 text-[10px] font-medium transition-colors ${!isTransfer && newTx.type === "income" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground"}`}
               >
                 Receita
