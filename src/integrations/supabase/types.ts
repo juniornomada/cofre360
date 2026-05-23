@@ -236,6 +236,7 @@ export type Database = {
           bank_account_id: string | null
           card_id: string | null
           category: string | null
+          completion_date: string | null
           created_at: string | null
           due_date: string | null
           icon: string | null
@@ -254,6 +255,7 @@ export type Database = {
           bank_account_id?: string | null
           card_id?: string | null
           category?: string | null
+          completion_date?: string | null
           created_at?: string | null
           due_date?: string | null
           icon?: string | null
@@ -272,6 +274,7 @@ export type Database = {
           bank_account_id?: string | null
           card_id?: string | null
           category?: string | null
+          completion_date?: string | null
           created_at?: string | null
           due_date?: string | null
           icon?: string | null
