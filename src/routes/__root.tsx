@@ -2,7 +2,7 @@ import { Outlet, Link, createRootRoute, HeadContent, Scripts, useRouter } from "
 import { z } from "zod";
 import { lazy, Suspense, useEffect } from "react";
 import { cn } from "@/lib/utils";
-import { useNavigationTracking } from "@/lib/metrics";
+
 import { useContrastChecker } from "@/hooks/useContrastChecker";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,7 @@ import { Loader2 } from "lucide-react";
 import appCss from "../styles.css?url";
 
 const BottomNav = lazy(() => import("@/components/BottomNav").then(m => ({ default: m.BottomNav })));
-const MetricsDashboard = lazy(() => import("@/components/MetricsDashboard").then(m => ({ default: m.MetricsDashboard })));
+
 
 function ErrorComponent({ error }: { error: any }) {
   return (
@@ -136,7 +136,7 @@ function RootShell({ children }: { children: React.ReactNode }) {
 }
 
  function RootComponent() {
-  useNavigationTracking();
+  
   useContrastChecker();
   const router = useRouter();
    const search = router.state.location.search as any;
@@ -156,7 +156,7 @@ function RootShell({ children }: { children: React.ReactNode }) {
             </div>
           }>
            <BottomNav />
-           <MetricsDashboard />
+           
          </Suspense>
         )}
       </div>
