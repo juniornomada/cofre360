@@ -6,6 +6,7 @@ export type Subcategory = {
 export type CategoryGroup = {
   label: string;
   icon: string;
+  type: "expense" | "income";
   subcategories: Subcategory[];
 };
 
