@@ -32,7 +32,9 @@ function aggregateByCategory(txs: Transaction[]) {
   let total = 0;
   txs.forEach((tx) => {
     const val = Number(tx.amount);
-    map.set(tx.category, (map.get(tx.category) || 0) + val);
+    // Aggregate by group name for clearer high-level charts
+    const { group } = parseCategoryValue(tx.category);
+    map.set(group, (map.get(group) || 0) + val);
     total += val;
   });
   return Array.from(map.entries())
