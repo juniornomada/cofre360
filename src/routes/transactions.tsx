@@ -148,10 +148,10 @@ function TransactionsPage() {
 
   const getAutocompleteSuggestions = (input: string) => {
     if (!input || input.length < 2) return [];
-    const q = input.toLowerCase();
+    const q = normalizeText(input);
     const results: { icon: string; category: string; name: string }[] = [];
     for (const [key, val] of txMemory) {
-      if (key.includes(q)) results.push(val);
+      if (normalizeText(key).includes(q)) results.push(val);
       if (results.length >= 8) break;
     }
     return results;
