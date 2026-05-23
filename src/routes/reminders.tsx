@@ -428,7 +428,7 @@ function RemindersPage() {
       </div>
       <div>
         <label className="text-xs text-muted-foreground mb-1 block">Título</label>
-        <input value={data.title} onChange={e => setData({ ...data, title: e.target.value })} className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground outline-none" placeholder="Ex: Conta de luz" />
+        <input value={data.title || ""} onChange={e => setData({ ...data, title: e.target.value })} className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground outline-none" placeholder="Ex: Conta de luz" />
       </div>
       <div>
         <label className="text-xs text-muted-foreground mb-1 block">Tipo</label>
