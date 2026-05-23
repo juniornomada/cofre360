@@ -149,9 +149,9 @@ function RemindersPage() {
             return isNaN(d.getTime()) ? null : d.getDate();
           })())
         : null;
-      const { error } = await supabase.from("reminders").update({
+      const updateData = {
         title: editReminder.title,
-        amount: editReminder.amount,
+        amount: Number(editReminder.amount),
         due_date: editReminder.due_date,
         type: editReminder.type,
         category: editReminder.category,
@@ -162,7 +162,9 @@ function RemindersPage() {
         card_id: editReminder.card_id,
         is_recurring: editReminder.is_recurring,
         recurrence_day: recurrenceDay,
-      }).eq("id", editReminder.id);
+      };
+      console.log("Saving reminder update:", updateData);
+      const { error } = await supabase.from("reminders").update(updateData).eq("id", editReminder.id);
       if (error) throw error;
       setShowEditDialog(false);
       setEditReminder(null);
