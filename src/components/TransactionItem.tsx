@@ -80,7 +80,7 @@ export function TransactionItem({ icon, name, category, date, amount, type, card
       )}
       <div className="relative h-10 w-10 shrink-0">
         <div className="flex h-full w-full items-center justify-center rounded-xl bg-accent text-lg transition-transform duration-200 group-active:scale-90 overflow-hidden content-visibility-auto">
-          <span role="img" aria-label={category}>{isTransferPair ? "🔄" : displayIcon}</span>
+          <span role="img" aria-label={isTransferPair ? "Transferência" : category}>{isTransferPair ? "🔄" : displayIcon}</span>
         </div>
         {isCard && (
           <div
