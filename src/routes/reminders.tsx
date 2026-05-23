@@ -649,20 +649,29 @@ function RemindersPage() {
                   )}>
                     {reminder.type === "expense" ? "- " : "+ "}R$ {formatCurrency(Number(reminder.amount))}
                   </span>
-                  <div className="flex gap-0.5">
+                  <div className="flex gap-1">
+                    {!reminder.is_completed && (
+                      <button
+                        onClick={() => handleToggleComplete(reminder)}
+                        className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-all duration-200"
+                        title="Efetivar lembrete"
+                      >
+                        <Check className="h-4 w-4" />
+                      </button>
+                    )}
                     <button
                       onClick={() => { setEditReminder({ ...reminder }); setShowEditDialog(true); }}
-                      className="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+                      className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
                       aria-label="Editar"
                     >
-                      <Pencil className="h-3 w-3" />
+                      <Pencil className="h-3.5 w-3.5" />
                     </button>
                     <button
                       onClick={() => { setDeletingId(reminder.id); setShowDeleteDialog(true); }}
-                      className="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+                      className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
                       aria-label="Excluir"
                     >
-                      <Trash2 className="h-3 w-3" />
+                      <Trash2 className="h-3.5 w-3.5" />
                     </button>
                   </div>
                 </div>
@@ -689,9 +698,25 @@ function RemindersPage() {
         <DialogContent className="max-w-[90vw] rounded-2xl bg-background">
           <DialogHeader><DialogTitle>Editar Lembrete</DialogTitle></DialogHeader>
           {editReminder && renderFormFields(editReminder, setEditReminder)}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowEditDialog(false)}>Cancelar</Button>
-            <Button onClick={handleSaveEdit}>Salvar</Button>
+          <DialogFooter className="flex-col gap-2 sm:flex-row">
+            {!editReminder?.is_completed && (
+              <Button 
+                variant="secondary" 
+                className="w-full sm:w-auto bg-primary/10 text-primary hover:bg-primary/20"
+                onClick={() => {
+                  if (editReminder) {
+                    setShowEditDialog(false);
+                    handleToggleComplete(editReminder);
+                  }
+                }}
+              >
+                Efetivar Agora
+              </Button>
+            )}
+            <div className="flex gap-2 w-full sm:w-auto">
+              <Button variant="outline" className="flex-1 sm:flex-none" onClick={() => setShowEditDialog(false)}>Cancelar</Button>
+              <Button className="flex-1 sm:flex-none" onClick={handleSaveEdit}>Salvar</Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -763,20 +788,31 @@ function RemindersPage() {
                 {bankAccounts.length === 0 ? (
                   <p className="text-xs text-muted-foreground py-2">Nenhuma conta cadastrada</p>
                 ) : (
-                  bankAccounts.map(acc => (
-                    <button
-                      key={acc.id}
-                      disabled={paying}
-                      onClick={() => handlePayWithAccount(acc.id)}
-                      className="flex items-center gap-3 rounded-xl bg-card p-3 hover:bg-accent transition-colors disabled:opacity-50 text-left"
-                    >
-                      <div className={cn("flex h-9 w-9 items-center justify-center rounded-lg text-base text-white bg-gradient-to-br", acc.color)}>{acc.icon}</div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-foreground truncate">{acc.name}</p>
-                        <p className="text-[10px] text-muted-foreground tabular-nums">Saldo: R$ {Number(acc.balance).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                      </div>
-                    </button>
-                  ))
+                  bankAccounts.map(acc => {
+                    const isSuggested = payingReminder?.bank_account_id === acc.id;
+                    return (
+                      <button
+                        key={acc.id}
+                        disabled={paying}
+                        onClick={() => handlePayWithAccount(acc.id)}
+                        className={cn(
+                          "flex items-center gap-3 rounded-xl bg-card p-3 hover:bg-accent transition-colors disabled:opacity-50 text-left relative overflow-hidden",
+                          isSuggested && "ring-2 ring-primary bg-primary/5"
+                        )}
+                      >
+                        {isSuggested && (
+                          <div className="absolute top-0 right-0 bg-primary px-2 py-0.5 text-[8px] font-bold text-primary-foreground rounded-bl-lg">
+                            SUGERIDO
+                          </div>
+                        )}
+                        <div className={cn("flex h-9 w-9 items-center justify-center rounded-lg text-base text-white bg-gradient-to-br", acc.color)}>{acc.icon}</div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-foreground truncate">{acc.name}</p>
+                          <p className="text-[10px] text-muted-foreground tabular-nums">Saldo: R$ {Number(acc.balance).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                        </div>
+                      </button>
+                    );
+                  })
                 )}
               </div>
             </div>
@@ -794,13 +830,22 @@ function RemindersPage() {
                   ) : (
                     cards.map(card => {
                       const available = Number(card.card_limit) - Number(card.used);
+                      const isSuggested = payingReminder?.card_id === card.id;
                       return (
                         <button
                           key={card.id}
                           disabled={paying}
                           onClick={() => handlePayWithCard(card.id)}
-                          className="flex items-center gap-3 rounded-xl bg-card p-3 hover:bg-accent transition-colors disabled:opacity-50 text-left"
+                          className={cn(
+                            "flex items-center gap-3 rounded-xl bg-card p-3 hover:bg-accent transition-colors disabled:opacity-50 text-left relative overflow-hidden",
+                            isSuggested && "ring-2 ring-primary bg-primary/5"
+                          )}
                         >
+                          {isSuggested && (
+                            <div className="absolute top-0 right-0 bg-primary px-2 py-0.5 text-[8px] font-bold text-primary-foreground rounded-bl-lg">
+                              SUGERIDO
+                            </div>
+                          )}
                           <div className={cn("flex h-9 w-9 items-center justify-center rounded-lg text-base text-white bg-gradient-to-br", card.color)}>{card.emoji}</div>
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-foreground truncate">{card.name} •••• {card.last_four}</p>
