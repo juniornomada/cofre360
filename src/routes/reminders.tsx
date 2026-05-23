@@ -420,8 +420,26 @@ function RemindersPage() {
       <div>
         <label className="text-xs text-muted-foreground mb-1 block">Tipo</label>
         <div className="flex gap-2">
-          <button onClick={() => setData({ ...data, type: "expense" })} className={`flex-1 rounded-xl py-2 text-xs font-medium transition-colors ${data.type === "expense" ? "bg-destructive text-destructive-foreground" : "bg-card text-muted-foreground"}`}>Pagamento</button>
-          <button onClick={() => setData({ ...data, type: "income" })} className={`flex-1 rounded-xl py-2 text-xs font-medium transition-colors ${data.type === "income" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground"}`}>Recebimento</button>
+          <button 
+            onClick={() => {
+              if (data.type !== "expense") {
+                setData({ ...data, type: "expense", category: "Moradia > Aluguel", icon: "🏠" });
+              }
+            }} 
+            className={`flex-1 rounded-xl py-2 text-xs font-medium transition-colors ${data.type === "expense" ? "bg-destructive text-destructive-foreground" : "bg-card text-muted-foreground"}`}
+          >
+            Pagamento
+          </button>
+          <button 
+            onClick={() => {
+              if (data.type !== "income") {
+                setData({ ...data, type: "income", category: "Receita > Salário", icon: "💰" });
+              }
+            }} 
+            className={`flex-1 rounded-xl py-2 text-xs font-medium transition-colors ${data.type === "income" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground"}`}
+          >
+            Recebimento
+          </button>
         </div>
       </div>
       <CategoryPicker 
