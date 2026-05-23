@@ -14,7 +14,7 @@ import { CalculatorAmountInput } from "@/components/CalculatorAmountInput";
  import { format, parse } from "date-fns";
  import { calculateInstallmentDetails } from "@/lib/installment-utils";
 import { ptBR } from "date-fns/locale";
-import { cn } from "@/lib/utils";
+import { cn, normalizeText } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
