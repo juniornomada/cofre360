@@ -82,8 +82,12 @@ export function TransactionItem({ icon, name, category, date, amount, type, card
         {isTransferPair ? (
           <Tooltip>
             <TooltipTrigger asChild>
-              <div className="flex h-full w-full items-center justify-center rounded-xl bg-accent text-lg transition-transform duration-200 group-active:scale-90 overflow-hidden content-visibility-auto">
-                <span role="img" aria-label="Transferência">🔄</span>
+              <div 
+                className="flex h-full w-full items-center justify-center rounded-xl bg-accent text-lg transition-transform duration-200 group-active:scale-90 overflow-hidden content-visibility-auto cursor-help focus:outline-none focus:ring-2 focus:ring-primary"
+                tabIndex={0}
+                aria-label="Transferência"
+              >
+                <span role="img" aria-hidden="true">🔄</span>
               </div>
             </TooltipTrigger>
             <TooltipContent>
