@@ -14,6 +14,7 @@ import { CategoryPicker } from "@/components/CategoryPicker";
 import { CalculatorAmountInput } from "@/components/CalculatorAmountInput";
 import { getCategoryDisplay } from "@/lib/categories";
 import { toast } from "sonner";
+import { BankLogo } from "@/components/BankLogo";
 
 export const Route = createFileRoute("/reminders")({
   head: () => ({
