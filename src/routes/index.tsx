@@ -131,7 +131,7 @@ function Dashboard() {
     ] = await Promise.all([
       supabase.from("transactions").select(TX_FIELDS).order("created_at", { ascending: false }).limit(20),
       supabase.from("transactions").select("type, amount, date, card, bank_account_id, category"),
-      supabase.from("bank_accounts").select("id, name, icon, color, balance").order("created_at", { ascending: true }),
+      supabase.from("bank_accounts").select("id, name, icon, color, balance, is_visible").order("created_at", { ascending: true }),
       supabase.from("cards").select("name").order("created_at", { ascending: true }),
       supabase.from("reminders").select("id, title, icon, due_date, amount, type").eq("is_completed", false).order("due_date", { ascending: true }).limit(3),
       supabase.from("goals").select("id, name, icon, current_amount, target_amount"),
