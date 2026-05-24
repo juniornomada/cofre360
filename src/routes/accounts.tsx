@@ -208,7 +208,20 @@ function SortableAccountItem({
                    <History className="h-4 w-4 mr-2" />
                    Histórico de saldo
                  </DropdownMenuItem>
-                 <DropdownMenuSeparator />
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => handleToggleVisibility(account.id, account.is_visible)} className="cursor-pointer">
+                    {account.is_visible ? (
+                      <>
+                        <EyeOff className="h-4 w-4 mr-2" />
+                        Ocultar do Início
+                      </>
+                    ) : (
+                      <>
+                        <Eye className="h-4 w-4 mr-2" />
+                        Mostrar no Início
+                      </>
+                    )}
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => startEdit(account)} className="cursor-pointer">
                     <Pencil className="h-4 w-4 mr-2" />
                     Editar conta
