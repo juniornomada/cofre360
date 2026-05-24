@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { SmartLink as Link } from "@/components/SmartLink";
 import { ArrowLeft, Plus, Landmark, Trash2, X, Check, Loader2, Upload, FileText, MoreVertical, GripVertical, History, Pencil, Eye, EyeOff, CheckSquare, Square } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+
 import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react";
 
 const CsvImportDialog = lazy(() => import("@/components/CsvImportDialog").then(m => ({ default: m.CsvImportDialog })));
@@ -172,10 +173,13 @@ function SortableAccountItem({
               className="text-left w-full"
             >
               <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-1.5 min-w-0">
-                  <p className="text-[15px] font-semibold text-foreground truncate tracking-tight leading-tight">{account.name}</p>
-                  <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground shrink-0" />
-                </div>
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <p className="text-[15px] font-semibold text-foreground truncate tracking-tight leading-tight">{account.name}</p>
+                    {account.is_visible === false && (
+                      <EyeOff className="h-3 w-3 text-muted-foreground/60 shrink-0" />
+                    )}
+                    <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground shrink-0" />
+                  </div>
                 <p className={cn(
                   "text-[15px] font-bold tabular-nums tracking-tight leading-tight whitespace-nowrap shrink-0",
                   currentBalance < 0 ? "text-destructive" : "text-foreground"
@@ -857,9 +861,9 @@ function AccountsPage() {
                             )}>
                               {diff > 0 ? "+" : ""} R$ {diff.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                             </div>
-                          </div>
-                        );
-                      }
+    </div>
+  );
+}
                       return null;
                     })()}
                     <p className="text-[10px] text-muted-foreground text-center">
