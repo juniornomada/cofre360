@@ -47,8 +47,8 @@ const iconOptions = ["🔔", "💰", "🏠", "💳", "📱", "⚡", "💧", "�
 
 function RemindersPage() {
   const [reminders, setReminders] = useState<Reminder[]>([]);
-  const [bankAccounts, setBankAccounts] = useState<{ id: string; name: string; icon: string | null; balance: number; color: string | null }[]>([]);
-  const [cards, setCards] = useState<{ id: string; name: string; emoji: string | null; last_four: string | number | null; card_limit: number; used: number; color: string | null }[]>([]);
+  const [bankAccounts, setBankAccounts] = useState<{ id: string; name: string; icon: string | null; balance: number; color: string | null; is_visible?: boolean | null }[]>([]);
+  const [cards, setCards] = useState<{ id: string; name: string; emoji: string | null; last_four: string | number | null; card_limit: number; used: number; color: string | null; is_visible?: boolean | null }[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
@@ -557,7 +557,7 @@ function RemindersPage() {
               </div>
               <span className="text-[9px] text-muted-foreground truncate w-full text-center leading-tight">Nenhum</span>
             </button>
-            {cards.map(c => {
+            {cards.filter(c => c.is_visible !== false).map(c => {
               const selected = data.card_id === c.id;
               return (
                 <button
@@ -890,10 +890,10 @@ function RemindersPage() {
                 <p className="text-xs font-medium text-muted-foreground">Contas bancárias</p>
               </div>
               <div className="flex flex-col gap-2">
-                {bankAccounts.length === 0 ? (
+                {bankAccounts.filter(a => a.is_visible !== false).length === 0 ? (
                   <p className="text-xs text-muted-foreground py-2">Nenhuma conta cadastrada</p>
                 ) : (
-                  bankAccounts.map(acc => {
+                  bankAccounts.filter(a => a.is_visible !== false).map(acc => {
                     const isSuggested = payingReminder?.bank_account_id === acc.id;
                     return (
                       <button
@@ -930,10 +930,10 @@ function RemindersPage() {
                   <p className="text-xs font-medium text-muted-foreground">Cartões de crédito</p>
                 </div>
                 <div className="flex flex-col gap-2">
-                  {cards.length === 0 ? (
+                  {cards.filter(c => c.is_visible !== false).length === 0 ? (
                     <p className="text-xs text-muted-foreground py-2">Nenhum cartão cadastrado</p>
                   ) : (
-                    cards.map(card => {
+                    cards.filter(c => c.is_visible !== false).map(card => {
                       const available = Number(card.card_limit) - Number(card.used);
                       const isSuggested = payingReminder?.card_id === card.id;
                       return (
