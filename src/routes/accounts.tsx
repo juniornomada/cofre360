@@ -81,6 +81,9 @@ type SortableAccountItemProps = {
   setPdfImportAccount: (a: BankAccount) => void;
   setHistoryAccount: (a: BankAccount) => void;
   handleToggleVisibility: (id: string, current: boolean | null) => void;
+  isSelectionMode: boolean;
+  isSelected: boolean;
+  onToggleSelect: (id: string) => void;
 };
 
 function SortableAccountItem({
@@ -103,6 +106,9 @@ function SortableAccountItem({
   setPdfImportAccount,
   setHistoryAccount,
   handleToggleVisibility,
+  isSelectionMode,
+  isSelected,
+  onToggleSelect,
 }: SortableAccountItemProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: account.id });
   const style: React.CSSProperties = {
@@ -298,6 +304,41 @@ function AccountsPage() {
   const [formBalance, setFormBalance] = useState("");
   const [formIcon, setFormIcon] = useState("custom");
   const [formColor, setFormColor] = useState(bankPresets.find(b => b.id === "custom")!.color);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+
+  const toggleSelect = (id: string) => {
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedIds(newSelected);
+  };
+
+  const handleBulkVisibility = async (visible: boolean) => {
+    if (selectedIds.size === 0) return;
+    setIsSubmitting(true);
+    try {
+      const { error } = await supabase
+        .from("bank_accounts")
+        .update({ is_visible: visible })
+        .in("id", Array.from(selectedIds));
+      
+      if (error) throw error;
+      
+      toast.success(`${selectedIds.size} conta(s) ${visible ? "mostradas" : "ocultadas"}`);
+      setSelectedIds(new Set());
+      setIsSelectionMode(false);
+      fetchAccounts();
+    } catch (error: any) {
+      console.error("Error bulk updating visibility:", error);
+      toast.error("Erro ao atualizar visibilidade");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const fetchHistory = useCallback(async (accountId: string) => {
     try {
@@ -627,9 +668,43 @@ function AccountsPage() {
       {accounts.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center justify-between px-1">
-            <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-[0.08em]">Suas contas</p>
-            <p className="text-[10.5px] text-muted-foreground/70">Pressione por 1 segundo e arraste para reordenar</p>
+            <div className="flex items-center gap-2">
+              <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-[0.08em]">Suas contas</p>
+              <button 
+                onClick={() => {
+                  setIsSelectionMode(!isSelectionMode);
+                  setSelectedIds(new Set());
+                }}
+                className={cn(
+                  "text-[10px] font-semibold px-2 py-0.5 rounded-full transition-colors",
+                  isSelectionMode ? "bg-primary text-primary-foreground" : "bg-accent text-muted-foreground hover:bg-accent/80"
+                )}
+              >
+                {isSelectionMode ? "Cancelar Seleção" : "Seleção Múltipla"}
+              </button>
+            </div>
+            {!isSelectionMode && (
+              <p className="text-[10px] text-muted-foreground/70">Pressione por 1 segundo e arraste para reordenar</p>
+            )}
           </div>
+          {isSelectionMode && selectedIds.size > 0 && (
+            <div className="flex items-center gap-2 px-1 animate-in slide-in-from-top-1 duration-200">
+              <button 
+                onClick={() => handleBulkVisibility(true)}
+                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-primary/10 text-primary text-[11px] font-bold border border-primary/20 hover:bg-primary/20 transition-colors"
+              >
+                <Eye className="h-3.5 w-3.5" />
+                Mostrar Selecionados
+              </button>
+              <button 
+                onClick={() => handleBulkVisibility(false)}
+                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-destructive/10 text-destructive text-[11px] font-bold border border-destructive/20 hover:bg-destructive/20 transition-colors"
+              >
+                <EyeOff className="h-3.5 w-3.5" />
+                Ocultar Selecionados
+              </button>
+            </div>
+          )}
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
             <SortableContext items={accounts.map((a) => a.id)} strategy={verticalListSortingStrategy}>
               <div className="rounded-2xl bg-card overflow-hidden divide-y divide-border/10">
@@ -655,6 +730,9 @@ function AccountsPage() {
                     setPdfImportAccount={setPdfImportAccount}
                     setHistoryAccount={setHistoryAccount}
                     handleToggleVisibility={handleToggleVisibility}
+                    isSelectionMode={isSelectionMode}
+                    isSelected={selectedIds.has(account.id)}
+                    onToggleSelect={toggleSelect}
                   />
                 ))}
               </div>
