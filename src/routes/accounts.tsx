@@ -40,6 +40,7 @@ type BankAccount = {
   balance: number;
   icon: string | null;
   color: string | null;
+  is_visible: boolean;
 };
 
 const bankColorOptions = [
