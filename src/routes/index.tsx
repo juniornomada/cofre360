@@ -798,11 +798,11 @@ function Dashboard() {
         </div>
 
         {/* Per-account balances */}
-        {accountBalances.length > 0 && (
+        {displayAccounts.length > 0 && (
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-            <SortableContext items={accountBalances.map((a) => a.id)} strategy={verticalListSortingStrategy}>
+            <SortableContext items={displayAccounts.map((a) => a.id)} strategy={verticalListSortingStrategy}>
               <div className="mt-3 flex flex-col gap-1">
-                {accountBalances.map((acc) => (
+                {displayAccounts.map((acc) => (
                   <SortableAccountItem key={acc.id} acc={acc} balanceVisible={balanceVisible} fmt={fmt} />
                 ))}
               </div>
