@@ -479,7 +479,7 @@ function RemindersPage() {
       </div>
       <div>
         <label className="text-xs text-muted-foreground mb-1 block">Título</label>
-        <input value={data.title || ""} onChange={e => setData({ ...data, title: e.target.value })} className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground outline-none" placeholder="Ex: Conta de luz" />
+        <input value={data.title || ""} onChange={e => setData(prev => ({ ...prev, title: e.target.value }))} className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground outline-none" placeholder="Ex: Conta de luz" />
       </div>
       <div>
         <label className="text-xs text-muted-foreground mb-1 block">Tipo</label>
@@ -487,7 +487,7 @@ function RemindersPage() {
           <button 
             onClick={() => {
               if (data.type !== "expense") {
-                setData({ ...data, type: "expense", category: "Moradia > Aluguel", icon: "🏠" });
+                setData(prev => ({ ...prev, type: "expense", category: "Moradia > Aluguel", icon: "🏠" }));
               }
             }} 
             className={`flex-1 rounded-xl py-2 text-xs font-medium transition-colors ${data.type === "expense" ? "bg-destructive text-destructive-foreground" : "bg-card text-muted-foreground"}`}
@@ -497,7 +497,7 @@ function RemindersPage() {
           <button 
             onClick={() => {
               if (data.type !== "income") {
-                setData({ ...data, type: "income", category: "Receita > Salário", icon: "💰" });
+                setData(prev => ({ ...prev, type: "income", category: "Receita > Salário", icon: "💰" }));
               }
             }} 
             className={`flex-1 rounded-xl py-2 text-xs font-medium transition-colors ${data.type === "income" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground"}`}
@@ -509,14 +509,14 @@ function RemindersPage() {
       <CategoryPicker 
         value={data.category || ""} 
         type={data.type as "expense" | "income"}
-        onChange={(val, icon) => setData({ ...data, category: val, icon })} 
+        onChange={(val, icon) => setData(prev => ({ ...prev, category: val, icon }))} 
       />
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="text-[11px] font-semibold text-foreground mb-1 block">Valor (R$)</label>
           <CalculatorAmountInput 
             value={Number(data.amount)} 
-            onChange={val => setData({ ...data, amount: val })} 
+            onChange={val => setData(prev => ({ ...prev, amount: val }))} 
           />
         </div>
         <div>
@@ -529,7 +529,7 @@ function RemindersPage() {
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
-              <Calendar mode="single" selected={(() => { try { return parseDate(data.due_date); } catch { return undefined; } })()} onSelect={(date) => { if (date) setData({ ...data, due_date: format(date, "dd MMM", { locale: ptBR }) }); }} initialFocus className={cn("p-3 pointer-events-auto")} />
+              <Calendar mode="single" selected={(() => { try { return parseDate(data.due_date || ""); } catch { return undefined; } })()} onSelect={(date) => { if (date) setData(prev => ({ ...prev, due_date: format(date, "dd MMM", { locale: ptBR }) })); }} initialFocus className={cn("p-3 pointer-events-auto")} />
             </PopoverContent>
           </Popover>
         </div>
@@ -542,7 +542,7 @@ function RemindersPage() {
         <div className="grid grid-cols-5 gap-1.5">
           <button
             type="button"
-            onClick={() => setData({ ...data, bank_account_id: null })}
+            onClick={() => setData(prev => ({ ...prev, bank_account_id: null }))}
             className={`flex flex-col items-center gap-0.5 rounded-lg p-1.5 transition-all ${
               !data.bank_account_id ? "bg-primary/15 ring-1 ring-primary" : "bg-card hover:bg-accent"
             }`}
@@ -557,8 +557,10 @@ function RemindersPage() {
               key={a.id}
               type="button"
               onClick={() => {
-                const nextId = data.bank_account_id === a.id ? null : a.id;
-                setData({ ...data, bank_account_id: nextId, card_id: null });
+                setData(prev => {
+                  const nextId = prev.bank_account_id === a.id ? null : a.id;
+                  return { ...prev, bank_account_id: nextId, card_id: null };
+                });
               }}
               className={`flex flex-col items-center gap-0.5 rounded-lg p-1.5 transition-all ${
                 data.bank_account_id === a.id ? "bg-primary/15 ring-1 ring-primary" : "bg-card hover:bg-accent"
@@ -579,7 +581,7 @@ function RemindersPage() {
           <div className="grid grid-cols-5 gap-1.5">
             <button
               type="button"
-              onClick={() => setData({ ...data, card_id: null })}
+              onClick={() => setData(prev => ({ ...prev, card_id: null }))}
               className={`flex flex-col items-center gap-0.5 rounded-lg p-1.5 transition-all ${
                 !data.card_id ? "bg-primary/15 ring-1 ring-primary" : "bg-card hover:bg-accent"
               }`}
@@ -596,8 +598,10 @@ function RemindersPage() {
                   key={c.id}
                   type="button"
                   onClick={() => {
-                    const nextId = data.card_id === c.id ? null : c.id;
-                    setData({ ...data, card_id: nextId, bank_account_id: null });
+                    setData(prev => {
+                      const nextId = prev.card_id === c.id ? null : c.id;
+                      return { ...prev, card_id: nextId, bank_account_id: null };
+                    });
                   }}
                   className={`flex flex-col items-center gap-1 rounded-lg p-1.5 transition-all ${
                     selected ? "bg-primary/15 ring-1 ring-primary" : "bg-card hover:bg-accent"
@@ -632,7 +636,7 @@ function RemindersPage() {
           </div>
           <button
             type="button"
-            onClick={() => setData({ ...data, is_recurring: !data.is_recurring })}
+            onClick={() => setData(prev => ({ ...prev, is_recurring: !prev.is_recurring }))}
             className={cn(
               "relative h-6 w-11 rounded-full transition-colors",
               data.is_recurring ? "bg-primary" : "bg-accent"
@@ -647,7 +651,7 @@ function RemindersPage() {
       </div>
       <div>
         <label className="text-xs text-muted-foreground mb-1 block">Observações</label>
-        <textarea value={data.notes} onChange={e => setData({ ...data, notes: e.target.value })} className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground outline-none resize-none h-16" placeholder="Anotações opcionais..." />
+        <textarea value={data.notes || ""} onChange={e => setData(prev => ({ ...prev, notes: e.target.value }))} className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground outline-none resize-none h-16" placeholder="Anotações opcionais..." />
       </div>
     </div>
   );
