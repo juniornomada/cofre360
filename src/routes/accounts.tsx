@@ -80,6 +80,7 @@ type SortableAccountItemProps = {
   setCsvImportAccount: (a: BankAccount) => void;
   setPdfImportAccount: (a: BankAccount) => void;
   setHistoryAccount: (a: BankAccount) => void;
+  handleToggleVisibility: (id: string, current: boolean) => void;
 };
 
 function SortableAccountItem({
