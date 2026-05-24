@@ -129,6 +129,7 @@ export type Database = {
           due_day: number | null
           emoji: string | null
           id: string
+          is_visible: boolean | null
           last_four: number | null
           name: string
           sort_order: number | null
@@ -145,6 +146,7 @@ export type Database = {
           due_day?: number | null
           emoji?: string | null
           id: string
+          is_visible?: boolean | null
           last_four?: number | null
           name: string
           sort_order?: number | null
@@ -161,6 +163,7 @@ export type Database = {
           due_day?: number | null
           emoji?: string | null
           id?: string
+          is_visible?: boolean | null
           last_four?: number | null
           name?: string
           sort_order?: number | null

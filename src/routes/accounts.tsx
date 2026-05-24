@@ -40,7 +40,7 @@ type BankAccount = {
   balance: number;
   icon: string | null;
   color: string | null;
-  is_visible: boolean;
+  is_visible: boolean | null;
 };
 
 const bankColorOptions = [
@@ -80,7 +80,7 @@ type SortableAccountItemProps = {
   setCsvImportAccount: (a: BankAccount) => void;
   setPdfImportAccount: (a: BankAccount) => void;
   setHistoryAccount: (a: BankAccount) => void;
-  handleToggleVisibility: (id: string, current: boolean) => void;
+  handleToggleVisibility: (id: string, current: boolean | null) => void;
 };
 
 function SortableAccountItem({
@@ -539,7 +539,7 @@ function AccountsPage() {
     }
   };
   
-  const handleToggleVisibility = async (id: string, current: boolean) => {
+  const handleToggleVisibility = async (id: string, current: boolean | null) => {
     try {
       const { error } = await supabase.from("bank_accounts").update({ is_visible: !current }).eq("id", id);
       if (error) throw error;

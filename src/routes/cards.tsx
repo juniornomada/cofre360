@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { SmartLink as Link } from "@/components/SmartLink";
-import { ArrowLeft, Plus, CreditCard, Trash2, X, Check, Loader2, Wallet, Landmark, ChevronLeft, ChevronRight, Receipt, FileUp, GripVertical, Layers, Pencil } from "lucide-react";
+import { ArrowLeft, Plus, CreditCard, Trash2, X, Check, Loader2, Wallet, Landmark, ChevronLeft, ChevronRight, Receipt, FileUp, GripVertical, Layers, Pencil, MoreVertical, Eye, EyeOff } from "lucide-react";
 import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 
 const PdfInvoiceImportDialog = lazy(() => import("@/components/PdfInvoiceImportDialog").then(m => ({ default: m.PdfInvoiceImportDialog })));
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -43,6 +44,7 @@ type CardData = {
   emoji: string | null;
   closing_day: number | null;
   due_day: number | null;
+  is_visible: boolean | null;
 };
 
 type BankAccount = {
@@ -412,8 +414,8 @@ function CardsPage() {
     setEditName(card.name);
     setEditBrand(card.brand);
     setEditLimit(card.card_limit.toString());
-    setEditClosing(card.closing_day.toString());
-    setEditDue(card.due_day.toString());
+    setEditClosing(card.closing_day?.toString() || "");
+    setEditDue(card.due_day?.toString() || "");
   };
 
   const saveEdit = async (id: string) => {
@@ -447,6 +449,18 @@ function CardsPage() {
     } catch (error: any) {
       console.error("Error deleting card:", error);
       toast.error("Erro ao excluir cartão: " + (error.message || "Erro desconhecido"));
+    }
+  };
+
+  const handleToggleVisibility = async (id: string, current: boolean | null) => {
+    try {
+      const { error } = await supabase.from("cards").update({ is_visible: !current }).eq("id", id);
+      if (error) throw error;
+      fetchAll();
+      toast.success(current ? "Cartão ocultado da página inicial" : "Cartão agora visível na página inicial");
+    } catch (error: any) {
+      console.error("Error toggling visibility:", error);
+      toast.error("Erro ao alterar visibilidade");
     }
   };
 
@@ -793,7 +807,7 @@ function CardsPage() {
                         <Pencil className="h-3 w-3 opacity-0 group-hover/name:opacity-100 transition-opacity ml-1" />
                       </button>
                     )}
-                    <div className="flex items-center gap-1 shrink-0">
+                    <div className="flex items-center gap-1 shrink-0 relative z-20">
                       {isEditing ? (
                         <div className="flex items-center gap-1 bg-white/20 backdrop-blur-md p-1 rounded-full border border-white/10 shadow-sm">
                           <button onClick={() => saveEdit(card.id)} className="p-1.5 rounded-full hover:bg-white/20 text-white transition-colors" title="Salvar">
@@ -815,15 +829,37 @@ function CardsPage() {
                               </button>
                             </div>
                           ) : (
-                            <div className="opacity-0 group-hover/name:opacity-100 focus-within:opacity-100 transition-all duration-200 translate-x-2 group-hover/name:translate-x-0">
-                              <button 
-                                onClick={(e) => { e.stopPropagation(); setDeleteConfirm(card.id); }} 
-                                className="p-1.5 rounded-full bg-white/10 hover:bg-destructive/20 text-white/80 hover:text-white transition-colors border border-white/10 shadow-sm"
-                                title="Excluir cartão"
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </button>
-                            </div>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <button className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors border border-white/10 shadow-sm">
+                                  <MoreVertical className="h-3.5 w-3.5" />
+                                </button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="rounded-xl">
+                                <DropdownMenuItem onClick={() => handleToggleVisibility(card.id, card.is_visible)} className="cursor-pointer">
+                                  {card.is_visible ? (
+                                    <>
+                                      <EyeOff className="h-4 w-4 mr-2" />
+                                      Ocultar do Início
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Eye className="h-4 w-4 mr-2" />
+                                      Mostrar no Início
+                                    </>
+                                  )}
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => startEdit(card)} className="cursor-pointer">
+                                  <Pencil className="h-4 w-4 mr-2" />
+                                  Editar cartão
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={() => setDeleteConfirm(card.id)} className="cursor-pointer text-destructive focus:text-destructive">
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Excluir cartão
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           )}
                         </div>
                       )}
