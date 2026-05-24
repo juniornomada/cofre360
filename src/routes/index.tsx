@@ -787,7 +787,7 @@ function Dashboard() {
                   </button>
                 </TooltipTrigger>
                 <TooltipContent side="top">
-                  {hideZeroBalances ? "Mostrando todas as contas" : "Ocultando contas com saldo zero"}
+                  {hideZeroBalances ? "Exibir contas com saldo zero" : "Ocultar contas com saldo zero"}
                 </TooltipContent>
               </Tooltip>
               <button onClick={() => setBalanceVisible(!balanceVisible)} className="interactive-button p-1.5 rounded-lg hover:bg-accent/50 text-muted-foreground">
