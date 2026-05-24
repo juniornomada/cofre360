@@ -840,31 +840,29 @@ function AccountsPage() {
                     {(() => {
                       const valid = validateAccount(editName, editBalance);
                       const originalAccount = accounts.find(a => a.id === editingAccount?.id);
-                      if (valid && originalAccount) {
-                        const diff = valid.balance - originalAccount.balance;
-                        return (
-                          <div className="flex flex-col gap-1 items-center bg-background/40 py-2 px-1 rounded-lg">
-                            <div className="flex items-center gap-4 text-xs font-medium">
-                              <div className="flex flex-col items-center">
-                                <span className="text-[9px] uppercase text-muted-foreground">Anterior</span>
-                                <span className="tabular-nums">R$ {originalAccount.balance.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
-                              </div>
-                              <div className="text-muted-foreground">→</div>
-                              <div className="flex flex-col items-center">
-                                <span className="text-[9px] uppercase text-primary">Novo</span>
-                                <span className="tabular-nums font-bold">R$ {valid.balance.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
-                              </div>
+                      if (!valid || !originalAccount) return null;
+                      const diff = valid.balance - originalAccount.balance;
+                      return (
+                        <div className="flex flex-col gap-1 items-center bg-background/40 py-2 px-1 rounded-lg">
+                          <div className="flex items-center gap-4 text-xs font-medium">
+                            <div className="flex flex-col items-center">
+                              <span className="text-[9px] uppercase text-muted-foreground">Anterior</span>
+                              <span className="tabular-nums">R$ {originalAccount.balance.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
                             </div>
-                            <div className={cn(
-                              "text-[10px] font-bold mt-1 px-2 py-0.5 rounded-full",
-                              diff > 0 ? "bg-primary/20 text-primary" : "bg-destructive/20 text-destructive"
-                            )}>
-                              {diff > 0 ? "+" : ""} R$ {diff.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                            <div className="text-muted-foreground">→</div>
+                            <div className="flex flex-col items-center">
+                              <span className="text-[9px] uppercase text-primary">Novo</span>
+                              <span className="tabular-nums font-bold">R$ {valid.balance.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
                             </div>
-    </div>
-  );
-}
-                      return null;
+                          </div>
+                          <div className={cn(
+                            "text-[10px] font-bold mt-1 px-2 py-0.5 rounded-full",
+                            diff > 0 ? "bg-primary/20 text-primary" : "bg-destructive/20 text-destructive"
+                          )}>
+                            {diff > 0 ? "+" : ""} R$ {diff.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                          </div>
+                        </div>
+                      );
                     })()}
                     <p className="text-[10px] text-muted-foreground text-center">
                       Para salvar, digite <span className="font-bold text-destructive">CONFIRMAR</span> abaixo:
