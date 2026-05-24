@@ -497,29 +497,92 @@ function RemindersPage() {
         </div>
       </div>
       <div>
-        <label className="text-xs text-muted-foreground mb-1 block">Pagar/Receber em (opcional)</label>
-        <select
-          value={data.bank_account_id ? `acc:${data.bank_account_id}` : data.card_id ? `card:${data.card_id}` : ""}
-          onChange={e => {
-            const v = e.target.value;
-            if (!v) setData({ ...data, bank_account_id: null, card_id: null });
-            else if (v.startsWith("acc:")) setData({ ...data, bank_account_id: v.slice(4), card_id: null });
-            else if (v.startsWith("card:")) setData({ ...data, bank_account_id: null, card_id: v.slice(5) });
-          }}
-          className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground outline-none"
-        >
-          <option value="">Escolher ao concluir</option>
-          {bankAccounts.length > 0 && <optgroup label="Contas bancárias">
-            {bankAccounts.map(a => <option key={a.id} value={`acc:${a.id}`}>{a.name}</option>)}
-          </optgroup>}
-          {data.type !== "income" && cards.length > 0 && <optgroup label="Cartões de crédito">
-            {cards.map(c => <option key={c.id} value={`card:${c.id}`}>{c.name}</option>)}
-          </optgroup>}
-        </select>
-        {(data.bank_account_id || data.card_id) && (
-          <p className="text-[10px] text-muted-foreground mt-1">Ao concluir, a transação será lançada automaticamente.</p>
-        )}
+        <label className="text-[11px] font-semibold text-foreground mb-1 flex items-center gap-1">
+          <Landmark className="h-3 w-3" />
+          Conta Débito/Pix
+        </label>
+        <div className="grid grid-cols-5 gap-1.5">
+          <button
+            type="button"
+            onClick={() => setData({ ...data, bank_account_id: null })}
+            className={`flex flex-col items-center gap-0.5 rounded-lg p-1.5 transition-all ${
+              !data.bank_account_id ? "bg-primary/15 ring-1 ring-primary" : "bg-card hover:bg-accent"
+            }`}
+          >
+            <div className="h-7 w-7 rounded-full bg-muted flex items-center justify-center text-muted-foreground text-[10px]">
+              —
+            </div>
+            <span className="text-[9px] text-muted-foreground truncate w-full text-center leading-tight">Nenhuma</span>
+          </button>
+          {bankAccounts.map(a => (
+            <button
+              key={a.id}
+              type="button"
+              onClick={() => {
+                const nextId = data.bank_account_id === a.id ? null : a.id;
+                setData({ ...data, bank_account_id: nextId, card_id: null });
+              }}
+              className={`flex flex-col items-center gap-0.5 rounded-lg p-1.5 transition-all ${
+                data.bank_account_id === a.id ? "bg-primary/15 ring-1 ring-primary" : "bg-card hover:bg-accent"
+              }`}
+            >
+              <BankLogo icon={a.icon} color={a.color} name={a.name} size="sm" />
+              <span className="text-[9px] text-foreground truncate w-full text-center leading-tight">{a.name}</span>
+            </button>
+          ))}
+        </div>
       </div>
+      {data.type !== "income" && (
+        <div>
+          <label className="text-[11px] font-semibold text-foreground mb-1 flex items-center gap-1">
+            <CreditCard className="h-3 w-3" />
+            Cartão de crédito
+          </label>
+          <div className="grid grid-cols-5 gap-1.5">
+            <button
+              type="button"
+              onClick={() => setData({ ...data, card_id: null })}
+              className={`flex flex-col items-center gap-0.5 rounded-lg p-1.5 transition-all ${
+                !data.card_id ? "bg-primary/15 ring-1 ring-primary" : "bg-card hover:bg-accent"
+              }`}
+            >
+              <div className="h-7 w-7 rounded-md bg-muted flex items-center justify-center text-muted-foreground text-[10px]">
+                —
+              </div>
+              <span className="text-[9px] text-muted-foreground truncate w-full text-center leading-tight">Nenhum</span>
+            </button>
+            {cards.map(c => {
+              const selected = data.card_id === c.id;
+              return (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => {
+                    const nextId = data.card_id === c.id ? null : c.id;
+                    setData({ ...data, card_id: nextId, bank_account_id: null });
+                  }}
+                  className={`flex flex-col items-center gap-1 rounded-lg p-1.5 transition-all ${
+                    selected ? "bg-primary/15 ring-1 ring-primary" : "bg-card hover:bg-accent"
+                  }`}
+                >
+                  <div
+                    className={`h-7 w-10 rounded-[4px] flex items-end justify-start p-0.5 shadow-sm relative overflow-hidden bg-gradient-to-br ${c.color || "from-gray-600 to-gray-800"}`}
+                  >
+                    <div className="absolute top-1 left-1 h-1 w-1.5 rounded-[1px] bg-white/40" />
+                    <span className="text-[6px] font-bold text-white leading-none truncate max-w-full tracking-tight relative">
+                      {c.name}
+                    </span>
+                  </div>
+                  <span className="text-[9px] text-foreground truncate w-full text-center leading-tight">{c.name}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+      {(data.bank_account_id || data.card_id) && (
+        <p className="text-[10px] text-muted-foreground mt-1 italic">Ao concluir, a transação será lançada automaticamente.</p>
+      )}
       <div className="rounded-xl bg-card p-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
