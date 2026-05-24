@@ -150,44 +150,44 @@ function RemindersPage() {
   const handleSaveEdit = async () => {
     try {
       if (!editReminder) return;
-      const recurrenceDay = editReminder.is_recurring
-        ? (editReminder.recurrence_day ?? (() => {
-            const d = parseDate(editReminder.due_date);
+      
+      const currentReminder = editReminder;
+      const recurrenceDay = currentReminder.is_recurring
+        ? (currentReminder.recurrence_day ?? (() => {
+            const d = parseDate(currentReminder.due_date || "");
             return isNaN(d.getTime()) ? null : d.getDate();
           })())
         : null;
+
       const updateData = {
-        title: editReminder.title,
-        amount: editReminder.amount,
-        due_date: editReminder.due_date,
-        type: editReminder.type,
-        category: editReminder.category,
-        icon: editReminder.icon,
-        notes: editReminder.notes,
-        is_completed: editReminder.is_completed,
-        bank_account_id: editReminder.bank_account_id,
-        card_id: editReminder.card_id,
-        is_recurring: editReminder.is_recurring,
+        title: currentReminder.title,
+        amount: Number(currentReminder.amount),
+        due_date: currentReminder.due_date,
+        type: currentReminder.type,
+        category: currentReminder.category,
+        icon: currentReminder.icon,
+        notes: currentReminder.notes,
+        is_completed: currentReminder.is_completed,
+        bank_account_id: currentReminder.bank_account_id,
+        card_id: currentReminder.card_id,
+        is_recurring: currentReminder.is_recurring,
         recurrence_day: recurrenceDay,
       };
       
       const { data: updatedData, error } = await supabase
         .from("reminders")
         .update(updateData)
-        .eq("id", editReminder.id)
+        .eq("id", currentReminder.id)
         .select();
 
       if (error) throw error;
       
-      // Update local state immediately with the data returned from server if possible, 
-      // or use the local updateData
-      const finalData = updatedData && updatedData.length > 0 ? updatedData[0] : { ...editReminder, ...updateData };
-      setReminders(prev => prev.map(r => r.id === editReminder.id ? finalData : r));
+      const finalData = updatedData && updatedData.length > 0 ? updatedData[0] : { ...currentReminder, ...updateData };
+      setReminders(prev => prev.map(r => r.id === currentReminder.id ? finalData : r));
       
       setShowEditDialog(false);
       setEditReminder(null);
       toast.success("Lembrete atualizado!");
-      // Still fetch to be 100% sure everything is in sync
       await fetchReminders();
     } catch (error: any) {
       console.error("Error updating reminder:", error);
