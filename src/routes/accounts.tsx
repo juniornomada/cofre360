@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { SmartLink as Link } from "@/components/SmartLink";
 import { ArrowLeft, Plus, Landmark, Trash2, X, Check, Loader2, Upload, FileText, MoreVertical, GripVertical, History, Pencil, Eye, EyeOff, CheckSquare, Square } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react";
 
 const CsvImportDialog = lazy(() => import("@/components/CsvImportDialog").then(m => ({ default: m.CsvImportDialog })));
@@ -175,7 +176,12 @@ function SortableAccountItem({
                   <div className="flex items-center gap-1.5 min-w-0">
                     <p className="text-[15px] font-semibold text-foreground truncate tracking-tight leading-tight">{account.name}</p>
                     {account.is_visible === false && (
-                      <EyeOff className="h-3 w-3 text-muted-foreground/60 shrink-0" title="Oculto da página inicial" />
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <EyeOff className="h-3 w-3 text-muted-foreground/60 shrink-0" />
+                        </TooltipTrigger>
+                        <TooltipContent side="top">Oculto da página inicial</TooltipContent>
+                      </Tooltip>
                     )}
                     <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground shrink-0" />
                   </div>
@@ -632,7 +638,8 @@ function AccountsPage() {
   const totalCurrent = accounts.reduce((sum, a) => sum + a.balance + (incomeByAccount[a.id] || 0) - (expenseByAccount[a.id] || 0), 0);
 
   return (
-    <div className="animate-page-enter flex flex-col gap-8 px-2 sm:px-4 pt-6 pb-28">
+    <TooltipProvider>
+      <div className="animate-page-enter flex flex-col gap-8 px-2 sm:px-4 pt-6 pb-28">
       {/* Header */}
       <div className="flex items-center gap-3">
         <Link to="/" className="interactive-button flex h-9 w-9 items-center justify-center rounded-full hover:bg-accent transition-colors">
@@ -860,8 +867,9 @@ function AccountsPage() {
                             )}>
                               {diff > 0 ? "+" : ""} R$ {diff.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                             </div>
-                          </div>
-                        );
+      </div>
+    </TooltipProvider>
+  );
                       }
                       return null;
                     })()}
