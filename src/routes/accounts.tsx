@@ -643,6 +643,7 @@ function AccountsPage() {
                     setCsvImportAccount={setCsvImportAccount}
                     setPdfImportAccount={setPdfImportAccount}
                     setHistoryAccount={setHistoryAccount}
+                    handleToggleVisibility={handleToggleVisibility}
                   />
                 ))}
               </div>
