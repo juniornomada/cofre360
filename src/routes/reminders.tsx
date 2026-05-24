@@ -119,13 +119,13 @@ function RemindersPage() {
       }
       const recurrenceDay = newReminder.is_recurring
         ? (() => {
-            const d = parseDate(newReminder.due_date);
+            const d = parseDate(newReminder.due_date || "");
             return isNaN(d.getTime()) ? null : d.getDate();
           })()
         : null;
       const { error } = await supabase.from("reminders").insert({
         title: newReminder.title,
-        amount: newReminder.amount,
+        amount: Number(newReminder.amount),
         due_date: newReminder.due_date,
         type: newReminder.type,
         category: newReminder.category,
@@ -138,7 +138,7 @@ function RemindersPage() {
       });
       if (error) throw error;
       setShowAddDialog(false);
-      setNewReminder({ title: "", amount: 0, due_date: "", type: "expense", category: "Conta", icon: "🔔", notes: "", bank_account_id: null, card_id: null, is_recurring: false, recurrence_day: null });
+      setNewReminder({ title: "", amount: 0, due_date: "", type: "expense", category: "Moradia > Aluguel", icon: "🏠", notes: "", bank_account_id: null, card_id: null, is_recurring: false, recurrence_day: null });
       toast.success("Lembrete criado!");
       fetchReminders();
     } catch (error: any) {
@@ -150,44 +150,44 @@ function RemindersPage() {
   const handleSaveEdit = async () => {
     try {
       if (!editReminder) return;
-      const recurrenceDay = editReminder.is_recurring
-        ? (editReminder.recurrence_day ?? (() => {
-            const d = parseDate(editReminder.due_date);
+      
+      const currentReminder = editReminder;
+      const recurrenceDay = currentReminder.is_recurring
+        ? (currentReminder.recurrence_day ?? (() => {
+            const d = parseDate(currentReminder.due_date || "");
             return isNaN(d.getTime()) ? null : d.getDate();
           })())
         : null;
+
       const updateData = {
-        title: editReminder.title,
-        amount: editReminder.amount,
-        due_date: editReminder.due_date,
-        type: editReminder.type,
-        category: editReminder.category,
-        icon: editReminder.icon,
-        notes: editReminder.notes,
-        is_completed: editReminder.is_completed,
-        bank_account_id: editReminder.bank_account_id,
-        card_id: editReminder.card_id,
-        is_recurring: editReminder.is_recurring,
+        title: currentReminder.title,
+        amount: Number(currentReminder.amount),
+        due_date: currentReminder.due_date,
+        type: currentReminder.type,
+        category: currentReminder.category,
+        icon: currentReminder.icon,
+        notes: currentReminder.notes,
+        is_completed: currentReminder.is_completed,
+        bank_account_id: currentReminder.bank_account_id,
+        card_id: currentReminder.card_id,
+        is_recurring: currentReminder.is_recurring,
         recurrence_day: recurrenceDay,
       };
       
       const { data: updatedData, error } = await supabase
         .from("reminders")
         .update(updateData)
-        .eq("id", editReminder.id)
+        .eq("id", currentReminder.id)
         .select();
 
       if (error) throw error;
       
-      // Update local state immediately with the data returned from server if possible, 
-      // or use the local updateData
-      const finalData = updatedData && updatedData.length > 0 ? updatedData[0] : { ...editReminder, ...updateData };
-      setReminders(prev => prev.map(r => r.id === editReminder.id ? finalData : r));
+      const finalData = updatedData && updatedData.length > 0 ? updatedData[0] : { ...currentReminder, ...updateData };
+      setReminders(prev => prev.map(r => r.id === currentReminder.id ? finalData : r));
       
       setShowEditDialog(false);
       setEditReminder(null);
       toast.success("Lembrete atualizado!");
-      // Still fetch to be 100% sure everything is in sync
       await fetchReminders();
     } catch (error: any) {
       console.error("Error updating reminder:", error);
@@ -229,7 +229,6 @@ function RemindersPage() {
   const handleToggleComplete = async (reminder: Reminder) => {
     if (reminder.is_completed) {
       try {
-        // Reativar
         const { error } = await supabase.from("reminders").update({ 
           is_completed: false,
           completion_date: null 
@@ -243,7 +242,40 @@ function RemindersPage() {
       }
       return;
     }
-    // Sempre abre o dialog para escolher data + conta/cartão
+    
+    // Se vier do diálogo de edição, garantir que as alterações pendentes sejam salvas
+    // Mas como o handleToggleComplete apenas abre o diálogo de pagamento, 
+    // o salvamento real dos dados do lembrete (como o valor) deve ocorrer ao FINAL do processo de pagamento,
+    // ou precisamos salvar aqui. Vamos salvar aqui para garantir que o lembrete no DB esteja atualizado
+    // com as alterações feitas no diálogo de edição antes de prosseguir para o pagamento.
+    
+    if (showEditDialog && editReminder && editReminder.id === reminder.id) {
+       try {
+         const recurrenceDay = editReminder.is_recurring
+           ? (editReminder.recurrence_day ?? (() => {
+               const d = parseDate(editReminder.due_date || "");
+               return isNaN(d.getTime()) ? null : d.getDate();
+             })())
+           : null;
+
+         await supabase.from("reminders").update({
+           title: editReminder.title,
+           amount: Number(editReminder.amount),
+           due_date: editReminder.due_date,
+           type: editReminder.type,
+           category: editReminder.category,
+           icon: editReminder.icon,
+           notes: editReminder.notes,
+           is_recurring: editReminder.is_recurring,
+           recurrence_day: recurrenceDay,
+           bank_account_id: editReminder.bank_account_id,
+           card_id: editReminder.card_id,
+         }).eq("id", reminder.id);
+       } catch (error) {
+         console.error("Error updating reminder before payment:", error);
+       }
+    }
+
     setPayingReminder(reminder);
     setPayDate(new Date());
     setShowPayDialog(true);
@@ -435,19 +467,19 @@ function RemindersPage() {
     );
   }
 
-  const renderFormFields = (data: typeof newReminder | Reminder, setData: (d: any) => void) => (
+  const renderFormFields = (data: typeof newReminder | Reminder, setData: React.Dispatch<React.SetStateAction<any>>) => (
     <div className="flex flex-col gap-3 max-h-[60vh] overflow-y-auto">
       <div>
         <label className="text-xs text-muted-foreground mb-1 block">Ícone</label>
         <div className="flex flex-wrap gap-2">
           {iconOptions.map(ic => (
-            <button key={ic} onClick={() => setData({ ...data, icon: ic })} className={`text-xl p-1 rounded-lg transition-colors ${data.icon === ic ? "bg-primary/20 ring-1 ring-primary" : "hover:bg-accent"}`}>{ic}</button>
+            <button key={ic} onClick={() => setData(prev => ({ ...prev, icon: ic }))} className={`text-xl p-1 rounded-lg transition-colors ${data.icon === ic ? "bg-primary/20 ring-1 ring-primary" : "hover:bg-accent"}`}>{ic}</button>
           ))}
         </div>
       </div>
       <div>
         <label className="text-xs text-muted-foreground mb-1 block">Título</label>
-        <input value={data.title || ""} onChange={e => setData({ ...data, title: e.target.value })} className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground outline-none" placeholder="Ex: Conta de luz" />
+        <input value={data.title || ""} onChange={e => setData(prev => ({ ...prev, title: e.target.value }))} className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground outline-none" placeholder="Ex: Conta de luz" />
       </div>
       <div>
         <label className="text-xs text-muted-foreground mb-1 block">Tipo</label>
@@ -455,7 +487,7 @@ function RemindersPage() {
           <button 
             onClick={() => {
               if (data.type !== "expense") {
-                setData({ ...data, type: "expense", category: "Moradia > Aluguel", icon: "🏠" });
+                setData(prev => ({ ...prev, type: "expense", category: "Moradia > Aluguel", icon: "🏠" }));
               }
             }} 
             className={`flex-1 rounded-xl py-2 text-xs font-medium transition-colors ${data.type === "expense" ? "bg-destructive text-destructive-foreground" : "bg-card text-muted-foreground"}`}
@@ -465,7 +497,7 @@ function RemindersPage() {
           <button 
             onClick={() => {
               if (data.type !== "income") {
-                setData({ ...data, type: "income", category: "Receita > Salário", icon: "💰" });
+                setData(prev => ({ ...prev, type: "income", category: "Receita > Salário", icon: "💰" }));
               }
             }} 
             className={`flex-1 rounded-xl py-2 text-xs font-medium transition-colors ${data.type === "income" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground"}`}
@@ -477,14 +509,14 @@ function RemindersPage() {
       <CategoryPicker 
         value={data.category || ""} 
         type={data.type as "expense" | "income"}
-        onChange={(val, icon) => setData({ ...data, category: val, icon })} 
+        onChange={(val, icon) => setData(prev => ({ ...prev, category: val, icon }))} 
       />
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="text-[11px] font-semibold text-foreground mb-1 block">Valor (R$)</label>
           <CalculatorAmountInput 
             value={Number(data.amount)} 
-            onChange={val => setData({ ...data, amount: val })} 
+            onChange={val => setData(prev => ({ ...prev, amount: val }))} 
           />
         </div>
         <div>
@@ -497,7 +529,7 @@ function RemindersPage() {
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
-              <Calendar mode="single" selected={(() => { try { return parseDate(data.due_date); } catch { return undefined; } })()} onSelect={(date) => { if (date) setData({ ...data, due_date: format(date, "dd MMM", { locale: ptBR }) }); }} initialFocus className={cn("p-3 pointer-events-auto")} />
+              <Calendar mode="single" selected={(() => { try { return parseDate(data.due_date || ""); } catch { return undefined; } })()} onSelect={(date) => { if (date) setData(prev => ({ ...prev, due_date: format(date, "dd MMM", { locale: ptBR }) })); }} initialFocus className={cn("p-3 pointer-events-auto")} />
             </PopoverContent>
           </Popover>
         </div>
@@ -510,7 +542,7 @@ function RemindersPage() {
         <div className="grid grid-cols-5 gap-1.5">
           <button
             type="button"
-            onClick={() => setData({ ...data, bank_account_id: null })}
+            onClick={() => setData(prev => ({ ...prev, bank_account_id: null }))}
             className={`flex flex-col items-center gap-0.5 rounded-lg p-1.5 transition-all ${
               !data.bank_account_id ? "bg-primary/15 ring-1 ring-primary" : "bg-card hover:bg-accent"
             }`}
@@ -525,8 +557,10 @@ function RemindersPage() {
               key={a.id}
               type="button"
               onClick={() => {
-                const nextId = data.bank_account_id === a.id ? null : a.id;
-                setData({ ...data, bank_account_id: nextId, card_id: null });
+                setData(prev => {
+                  const nextId = prev.bank_account_id === a.id ? null : a.id;
+                  return { ...prev, bank_account_id: nextId, card_id: null };
+                });
               }}
               className={`flex flex-col items-center gap-0.5 rounded-lg p-1.5 transition-all ${
                 data.bank_account_id === a.id ? "bg-primary/15 ring-1 ring-primary" : "bg-card hover:bg-accent"
@@ -547,7 +581,7 @@ function RemindersPage() {
           <div className="grid grid-cols-5 gap-1.5">
             <button
               type="button"
-              onClick={() => setData({ ...data, card_id: null })}
+              onClick={() => setData(prev => ({ ...prev, card_id: null }))}
               className={`flex flex-col items-center gap-0.5 rounded-lg p-1.5 transition-all ${
                 !data.card_id ? "bg-primary/15 ring-1 ring-primary" : "bg-card hover:bg-accent"
               }`}
@@ -564,8 +598,10 @@ function RemindersPage() {
                   key={c.id}
                   type="button"
                   onClick={() => {
-                    const nextId = data.card_id === c.id ? null : c.id;
-                    setData({ ...data, card_id: nextId, bank_account_id: null });
+                    setData(prev => {
+                      const nextId = prev.card_id === c.id ? null : c.id;
+                      return { ...prev, card_id: nextId, bank_account_id: null };
+                    });
                   }}
                   className={`flex flex-col items-center gap-1 rounded-lg p-1.5 transition-all ${
                     selected ? "bg-primary/15 ring-1 ring-primary" : "bg-card hover:bg-accent"
@@ -600,7 +636,7 @@ function RemindersPage() {
           </div>
           <button
             type="button"
-            onClick={() => setData({ ...data, is_recurring: !data.is_recurring })}
+            onClick={() => setData(prev => ({ ...prev, is_recurring: !prev.is_recurring }))}
             className={cn(
               "relative h-6 w-11 rounded-full transition-colors",
               data.is_recurring ? "bg-primary" : "bg-accent"
@@ -615,7 +651,7 @@ function RemindersPage() {
       </div>
       <div>
         <label className="text-xs text-muted-foreground mb-1 block">Observações</label>
-        <textarea value={data.notes} onChange={e => setData({ ...data, notes: e.target.value })} className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground outline-none resize-none h-16" placeholder="Anotações opcionais..." />
+        <textarea value={data.notes || ""} onChange={e => setData(prev => ({ ...prev, notes: e.target.value }))} className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground outline-none resize-none h-16" placeholder="Anotações opcionais..." />
       </div>
     </div>
   );
