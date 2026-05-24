@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { SmartLink as Link } from "@/components/SmartLink";
-import { ArrowLeft, Plus, CreditCard, Trash2, X, Check, Loader2, Wallet, Landmark, ChevronLeft, ChevronRight, Receipt, FileUp, GripVertical, Layers, Pencil } from "lucide-react";
+import { ArrowLeft, Plus, CreditCard, Trash2, X, Check, Loader2, Wallet, Landmark, ChevronLeft, ChevronRight, Receipt, FileUp, GripVertical, Layers, Pencil, MoreVertical, Eye, EyeOff } from "lucide-react";
 import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 
 const PdfInvoiceImportDialog = lazy(() => import("@/components/PdfInvoiceImportDialog").then(m => ({ default: m.PdfInvoiceImportDialog })));
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -43,6 +44,7 @@ type CardData = {
   emoji: string | null;
   closing_day: number | null;
   due_day: number | null;
+  is_visible: boolean | null;
 };
 
 type BankAccount = {
