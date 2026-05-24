@@ -467,13 +467,13 @@ function RemindersPage() {
     );
   }
 
-  const renderFormFields = (data: typeof newReminder | Reminder, setData: (d: any) => void) => (
+  const renderFormFields = (data: typeof newReminder | Reminder, setData: React.Dispatch<React.SetStateAction<any>>) => (
     <div className="flex flex-col gap-3 max-h-[60vh] overflow-y-auto">
       <div>
         <label className="text-xs text-muted-foreground mb-1 block">Ícone</label>
         <div className="flex flex-wrap gap-2">
           {iconOptions.map(ic => (
-            <button key={ic} onClick={() => setData({ ...data, icon: ic })} className={`text-xl p-1 rounded-lg transition-colors ${data.icon === ic ? "bg-primary/20 ring-1 ring-primary" : "hover:bg-accent"}`}>{ic}</button>
+            <button key={ic} onClick={() => setData(prev => ({ ...prev, icon: ic }))} className={`text-xl p-1 rounded-lg transition-colors ${data.icon === ic ? "bg-primary/20 ring-1 ring-primary" : "hover:bg-accent"}`}>{ic}</button>
           ))}
         </div>
       </div>
