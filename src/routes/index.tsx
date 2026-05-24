@@ -737,7 +737,12 @@ function Dashboard() {
       <div className="rounded-2xl bg-gradient-to-br from-primary/15 via-card to-card p-5 border border-border/40">
         <div className="flex items-center justify-between gap-3 mb-1 flex-wrap">
           <div className="flex items-baseline gap-2 min-w-0">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Saldo</p>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center justify-between flex-1">
+              Saldo
+              {accountBalances.length > 1 && (
+                <span className="text-[9px] lowercase opacity-60 font-normal">Arraste para reordenar</span>
+              )}
+            </p>
             <p className={cn(
               "text-3xl font-bold tabular-nums transition-all duration-300 truncate",
               balance >= 0 ? "text-foreground" : "text-destructive"
