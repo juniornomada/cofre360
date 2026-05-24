@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
-import { TrendingUp, Eye, EyeOff, Bell, Pencil, Trash2, CalendarIcon, Loader2, Clock, Wallet, ChevronRight, ArrowUpRight, ArrowDownRight, AlertTriangle, Sparkles, Flame, Plus, Minus, ArrowLeftRight, Layers, GripVertical } from "lucide-react";
+import { TrendingUp, Eye, EyeOff, Bell, Pencil, Trash2, CalendarIcon, Loader2, Clock, Wallet, ChevronRight, ArrowUpRight, ArrowDownRight, AlertTriangle, Sparkles, Flame, Plus, Minus, ArrowLeftRight, Layers, GripVertical, Filter, FilterX } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { TransactionItem } from "@/components/TransactionItem";
 import { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense } from "react";
@@ -152,6 +152,13 @@ function SortableAccountItem({ acc, balanceVisible, fmt }: { acc: any; balanceVi
 
 function Dashboard() {
   const [balanceVisible, setBalanceVisible] = useState(true);
+  const [hideZeroBalances, setHideZeroBalances] = useState(() => {
+    return localStorage.getItem("hideZeroBalances") === "true";
+  });
+
+  useEffect(() => {
+    localStorage.setItem("hideZeroBalances", String(hideZeroBalances));
+  }, [hideZeroBalances]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
   const [accountBalances, setAccountBalances] = useState<{ id: string; name: string; icon: string | null; color: string | null; balance: number }[]>([]);
@@ -628,6 +635,11 @@ function Dashboard() {
   }, [transactions]);
   const currentMonthName = new Date().toLocaleDateString("pt-BR", { month: "long" });
 
+  const displayAccounts = useMemo(() => {
+    if (!hideZeroBalances) return accountBalances;
+    return accountBalances.filter(acc => Math.abs(acc.balance) >= 0.01);
+  }, [accountBalances, hideZeroBalances]);
+
   return (
     <div className="animate-page-enter flex flex-col gap-5 px-4 pt-5 pb-24">
       {/* Header */}
@@ -761,18 +773,36 @@ function Dashboard() {
                 {healthScore >= 80 ? "Saudável" : healthScore >= 60 ? "Estável" : "Atenção"}
               </div>
             )}
-            <button onClick={() => setBalanceVisible(!balanceVisible)} className="interactive-button p-1.5 rounded-lg hover:bg-accent/50 text-muted-foreground">
-              {balanceVisible ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-            </button>
+            <div className="flex items-center gap-1">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button 
+                    onClick={() => setHideZeroBalances(!hideZeroBalances)} 
+                    className={cn(
+                      "interactive-button p-1.5 rounded-lg hover:bg-accent/50 transition-colors",
+                      hideZeroBalances ? "text-primary bg-primary/10" : "text-muted-foreground"
+                    )}
+                  >
+                    {hideZeroBalances ? <FilterX className="h-4 w-4" /> : <Filter className="h-4 w-4" />}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top">
+                  {hideZeroBalances ? "Exibir contas com saldo zero" : "Ocultar contas com saldo zero"}
+                </TooltipContent>
+              </Tooltip>
+              <button onClick={() => setBalanceVisible(!balanceVisible)} className="interactive-button p-1.5 rounded-lg hover:bg-accent/50 text-muted-foreground">
+                {balanceVisible ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+              </button>
+            </div>
           </div>
         </div>
 
         {/* Per-account balances */}
-        {accountBalances.length > 0 && (
+        {displayAccounts.length > 0 && (
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-            <SortableContext items={accountBalances.map((a) => a.id)} strategy={verticalListSortingStrategy}>
+            <SortableContext items={displayAccounts.map((a) => a.id)} strategy={verticalListSortingStrategy}>
               <div className="mt-3 flex flex-col gap-1">
-                {accountBalances.map((acc) => (
+                {displayAccounts.map((acc) => (
                   <SortableAccountItem key={acc.id} acc={acc} balanceVisible={balanceVisible} fmt={fmt} />
                 ))}
               </div>
