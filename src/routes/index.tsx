@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
-import { TrendingUp, Eye, EyeOff, Bell, Pencil, Trash2, CalendarIcon, Loader2, Clock, Wallet, ChevronRight, ArrowUpRight, ArrowDownRight, AlertTriangle, Sparkles, Flame, Plus, Minus, ArrowLeftRight, Layers } from "lucide-react";
+import { TrendingUp, Eye, EyeOff, Bell, Pencil, Trash2, CalendarIcon, Loader2, Clock, Wallet, ChevronRight, ArrowUpRight, ArrowDownRight, AlertTriangle, Sparkles, Flame, Plus, Minus, ArrowLeftRight, Layers, GripVertical } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { TransactionItem } from "@/components/TransactionItem";
 import { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense } from "react";
@@ -17,6 +17,24 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { BankLogo } from "@/components/BankLogo";
 import { EmptyState } from "@/components/EmptyState";
 import { SmartLink as Link } from "@/components/SmartLink";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  MouseSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 const CategoryPicker = lazy(() => import("@/components/CategoryPicker").then(m => ({ default: m.CategoryPicker })));
 const QuickAddTransactionDialog = lazy(() => import("@/components/QuickAddTransactionDialog").then(m => ({ default: m.QuickAddTransactionDialog })));
@@ -86,6 +104,52 @@ function getGreeting(): string {
 }
 
 
+function SortableAccountItem({ acc, balanceVisible, fmt }: { acc: any; balanceVisible: boolean; fmt: (v: number) => string }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: acc.id });
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 50 : "auto",
+    touchAction: "manipulation",
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      className={cn(
+        "relative select-none",
+        isDragging && "ring-2 ring-primary ring-offset-2 ring-offset-background rounded-xl shadow-2xl scale-[1.01] z-50",
+      )}
+    >
+      <Link
+        to="/accounts"
+        search={{ action: undefined } as any}
+        className="interactive-card flex items-center gap-2.5 rounded-xl bg-background/40 px-2.5 py-1.5 hover:bg-background/60 transition-colors"
+      >
+        <BankLogo icon={acc.icon} color={acc.color} name={acc.name} size="sm" />
+        <p className="text-xs font-medium text-foreground flex-1 min-w-0 truncate">{acc.name}</p>
+        <p className={cn(
+          "text-xs font-bold tabular-nums",
+          acc.balance >= 0 ? "text-foreground" : "text-destructive"
+        )}>
+          {balanceVisible ? `R$ ${fmt(acc.balance)}` : "R$ ••••"}
+        </p>
+      </Link>
+      {isDragging && (
+        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-black/5 backdrop-blur-[0.5px] rounded-xl animate-fade-in">
+          <div className="flex items-center gap-1.5 rounded-full bg-white/95 px-2 py-1 text-[10px] font-bold text-gray-900 shadow-lg ring-1 ring-primary">
+            <GripVertical className="h-3 w-3" />
+            Mover
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Dashboard() {
   const [balanceVisible, setBalanceVisible] = useState(true);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -110,6 +174,31 @@ function Dashboard() {
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [editInstallmentMode, setEditInstallmentMode] = useState<"divide" | "fixed">("divide");
   const [editInstallmentFixedValue, setEditInstallmentFixedValue] = useState(0);
+
+  const sensors = useSensors(
+    useSensor(MouseSensor, { activationConstraint: { delay: 1000, tolerance: 10 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 1000, tolerance: 10 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = accountBalances.findIndex((a) => a.id === active.id);
+    const newIndex = accountBalances.findIndex((a) => a.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+    const reordered = arrayMove(accountBalances, oldIndex, newIndex);
+    setAccountBalances(reordered);
+    try {
+      await Promise.all(
+        reordered.map((a, idx) => supabase.from("bank_accounts").update({ sort_order: idx }).eq("id", a.id)),
+      );
+    } catch (error: any) {
+      console.error("Error reordering accounts:", error);
+      toast.error("Erro ao reordenar contas");
+    }
+  };
+
   const openQuickAdd = (t: QuickAddInitialType) => {
     setQuickAddType(t);
     setPopoverOpen(false);
@@ -131,7 +220,7 @@ function Dashboard() {
     ] = await Promise.all([
       supabase.from("transactions").select(TX_FIELDS).order("created_at", { ascending: false }).limit(20),
       supabase.from("transactions").select("type, amount, date, card, bank_account_id, category"),
-      supabase.from("bank_accounts").select("id, name, icon, color, balance, is_visible").order("created_at", { ascending: true }),
+      supabase.from("bank_accounts").select("id, name, icon, color, balance, is_visible, sort_order").order("sort_order", { ascending: true }).order("created_at", { ascending: true }),
       supabase.from("cards").select("name").order("created_at", { ascending: true }),
       supabase.from("reminders").select("id, title, icon, due_date, amount, type").eq("is_completed", false).order("due_date", { ascending: true }).limit(3),
       supabase.from("goals").select("id, name, icon, current_amount, target_amount"),
@@ -648,7 +737,12 @@ function Dashboard() {
       <div className="rounded-2xl bg-gradient-to-br from-primary/15 via-card to-card p-5 border border-border/40">
         <div className="flex items-center justify-between gap-3 mb-1 flex-wrap">
           <div className="flex items-baseline gap-2 min-w-0">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Saldo</p>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center justify-between flex-1">
+              Saldo
+              {accountBalances.length > 1 && (
+                <span className="text-[9px] lowercase opacity-60 font-normal">Arraste para reordenar</span>
+              )}
+            </p>
             <p className={cn(
               "text-3xl font-bold tabular-nums transition-all duration-300 truncate",
               balance >= 0 ? "text-foreground" : "text-destructive"
@@ -675,25 +769,15 @@ function Dashboard() {
 
         {/* Per-account balances */}
         {accountBalances.length > 0 && (
-          <div className="mt-3 flex flex-col gap-0.5">
-            {accountBalances.map((acc) => (
-              <Link
-                key={acc.id}
-                to="/accounts"
-                search={{ action: undefined } as any}
-                className="interactive-card flex items-center gap-2.5 rounded-xl bg-background/40 px-2.5 py-1.5 hover:bg-background/60 transition-colors"
-              >
-                <BankLogo icon={acc.icon} color={acc.color} name={acc.name} size="sm" />
-                <p className="text-xs font-medium text-foreground flex-1 min-w-0 truncate">{acc.name}</p>
-                <p className={cn(
-                  "text-xs font-bold tabular-nums",
-                  acc.balance >= 0 ? "text-foreground" : "text-destructive"
-                )}>
-                  {balanceVisible ? `R$ ${fmt(acc.balance)}` : "R$ ••••"}
-                </p>
-              </Link>
-            ))}
-          </div>
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={accountBalances.map((a) => a.id)} strategy={verticalListSortingStrategy}>
+              <div className="mt-3 flex flex-col gap-1">
+                {accountBalances.map((acc) => (
+                  <SortableAccountItem key={acc.id} acc={acc} balanceVisible={balanceVisible} fmt={fmt} />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
         )}
 
         {/* Saldo inicial do mês + previsão fim do mês — moved to bottom */}
