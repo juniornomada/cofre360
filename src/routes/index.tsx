@@ -204,7 +204,7 @@ function Dashboard() {
         if (tx.type === "income") incMap[id] = (incMap[id] || 0) + Number(tx.amount);
         else expMap[id] = (expMap[id] || 0) + Number(tx.amount);
       }
-      setAccountBalances(accts.map(a => ({
+      setAccountBalances(accts.filter(a => a.is_visible).map(a => ({
         id: a.id,
         name: a.name,
         icon: a.icon,
