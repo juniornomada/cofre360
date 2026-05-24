@@ -229,7 +229,6 @@ function RemindersPage() {
   const handleToggleComplete = async (reminder: Reminder) => {
     if (reminder.is_completed) {
       try {
-        // Reativar
         const { error } = await supabase.from("reminders").update({ 
           is_completed: false,
           completion_date: null 
@@ -243,7 +242,40 @@ function RemindersPage() {
       }
       return;
     }
-    // Sempre abre o dialog para escolher data + conta/cartão
+    
+    // Se vier do diálogo de edição, garantir que as alterações pendentes sejam salvas
+    // Mas como o handleToggleComplete apenas abre o diálogo de pagamento, 
+    // o salvamento real dos dados do lembrete (como o valor) deve ocorrer ao FINAL do processo de pagamento,
+    // ou precisamos salvar aqui. Vamos salvar aqui para garantir que o lembrete no DB esteja atualizado
+    // com as alterações feitas no diálogo de edição antes de prosseguir para o pagamento.
+    
+    if (showEditDialog && editReminder && editReminder.id === reminder.id) {
+       try {
+         const recurrenceDay = editReminder.is_recurring
+           ? (editReminder.recurrence_day ?? (() => {
+               const d = parseDate(editReminder.due_date || "");
+               return isNaN(d.getTime()) ? null : d.getDate();
+             })())
+           : null;
+
+         await supabase.from("reminders").update({
+           title: editReminder.title,
+           amount: Number(editReminder.amount),
+           due_date: editReminder.due_date,
+           type: editReminder.type,
+           category: editReminder.category,
+           icon: editReminder.icon,
+           notes: editReminder.notes,
+           is_recurring: editReminder.is_recurring,
+           recurrence_day: recurrenceDay,
+           bank_account_id: editReminder.bank_account_id,
+           card_id: editReminder.card_id,
+         }).eq("id", reminder.id);
+       } catch (error) {
+         console.error("Error updating reminder before payment:", error);
+       }
+    }
+
     setPayingReminder(reminder);
     setPayDate(new Date());
     setShowPayDialog(true);
