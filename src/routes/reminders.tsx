@@ -520,7 +520,7 @@ function RemindersPage() {
             </div>
             <span className="text-[9px] text-muted-foreground truncate w-full text-center leading-tight">Nenhuma</span>
           </button>
-          {bankAccounts.map(a => (
+          {bankAccounts.filter(a => a.is_visible !== false).map(a => (
             <button
               key={a.id}
               type="button"
