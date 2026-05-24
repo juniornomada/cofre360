@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { SmartLink as Link } from "@/components/SmartLink";
-import { ArrowLeft, Plus, Landmark, Trash2, X, Check, Loader2, Upload, FileText, MoreVertical, GripVertical, History, Pencil, Eye, EyeOff } from "lucide-react";
+import { ArrowLeft, Plus, Landmark, Trash2, X, Check, Loader2, Upload, FileText, MoreVertical, GripVertical, History, Pencil, Eye, EyeOff, CheckSquare, Square } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react";
 
@@ -121,11 +121,22 @@ function SortableAccountItem({
       {...attributes}
       {...listeners}
       className={cn(
-        "animate-stagger-in group relative bg-card hover:bg-accent/40 transition-colors cursor-grab active:cursor-grabbing select-none",
+        "animate-stagger-in group relative bg-card hover:bg-accent/40 transition-colors select-none",
+        !isSelectionMode && "cursor-grab active:cursor-grabbing",
         isDragging && "ring-2 ring-primary ring-offset-2 ring-offset-background shadow-2xl scale-[1.01] z-50",
       )}
+      onClick={() => isSelectionMode && onToggleSelect(account.id)}
     >
       <div className="flex items-center gap-2.5 px-2 sm:px-4 py-0.5">
+        {isSelectionMode && (
+          <div className="flex items-center justify-center shrink-0 w-8 h-8 rounded-full hover:bg-accent transition-colors">
+            {isSelected ? (
+              <CheckSquare className="h-5 w-5 text-primary" />
+            ) : (
+              <Square className="h-5 w-5 text-muted-foreground" />
+            )}
+          </div>
+        )}
         <BankLogo icon={account.icon || ""} color={account.color || ""} name={account.name} size="sm" />
         <div className="flex-1 min-w-0" style={{ animationDelay: `${60 + index * 80}ms` }}>
           {isEditing ? (
