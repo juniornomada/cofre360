@@ -538,6 +538,18 @@ function AccountsPage() {
       setIsSubmitting(false);
     }
   };
+  
+  const handleToggleVisibility = async (id: string, current: boolean) => {
+    try {
+      const { error } = await supabase.from("bank_accounts").update({ is_visible: !current }).eq("id", id);
+      if (error) throw error;
+      fetchAccounts();
+      toast.success(current ? "Conta ocultada da página inicial" : "Conta agora visível na página inicial");
+    } catch (error: any) {
+      console.error("Error toggling visibility:", error);
+      toast.error("Erro ao alterar visibilidade");
+    }
+  };
 
    const cancelEdit = () => setEditingAccount(null);
 
