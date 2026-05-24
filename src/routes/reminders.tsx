@@ -119,13 +119,13 @@ function RemindersPage() {
       }
       const recurrenceDay = newReminder.is_recurring
         ? (() => {
-            const d = parseDate(newReminder.due_date);
+            const d = parseDate(newReminder.due_date || "");
             return isNaN(d.getTime()) ? null : d.getDate();
           })()
         : null;
       const { error } = await supabase.from("reminders").insert({
         title: newReminder.title,
-        amount: newReminder.amount,
+        amount: Number(newReminder.amount),
         due_date: newReminder.due_date,
         type: newReminder.type,
         category: newReminder.category,
@@ -138,7 +138,7 @@ function RemindersPage() {
       });
       if (error) throw error;
       setShowAddDialog(false);
-      setNewReminder({ title: "", amount: 0, due_date: "", type: "expense", category: "Conta", icon: "🔔", notes: "", bank_account_id: null, card_id: null, is_recurring: false, recurrence_day: null });
+      setNewReminder({ title: "", amount: 0, due_date: "", type: "expense", category: "Moradia > Aluguel", icon: "🏠", notes: "", bank_account_id: null, card_id: null, is_recurring: false, recurrence_day: null });
       toast.success("Lembrete criado!");
       fetchReminders();
     } catch (error: any) {
