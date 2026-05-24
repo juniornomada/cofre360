@@ -635,6 +635,11 @@ function Dashboard() {
   }, [transactions]);
   const currentMonthName = new Date().toLocaleDateString("pt-BR", { month: "long" });
 
+  const displayAccounts = useMemo(() => {
+    if (!hideZeroBalances) return accountBalances;
+    return accountBalances.filter(acc => Math.abs(acc.balance) >= 0.01);
+  }, [accountBalances, hideZeroBalances]);
+
   return (
     <div className="animate-page-enter flex flex-col gap-5 px-4 pt-5 pb-24">
       {/* Header */}
