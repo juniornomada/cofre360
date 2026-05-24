@@ -102,6 +102,7 @@ function SortableAccountItem({
   setCsvImportAccount,
   setPdfImportAccount,
   setHistoryAccount,
+  handleToggleVisibility,
 }: SortableAccountItemProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: account.id });
   const style: React.CSSProperties = {
