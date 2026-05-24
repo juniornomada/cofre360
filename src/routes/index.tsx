@@ -773,9 +773,27 @@ function Dashboard() {
                 {healthScore >= 80 ? "Saudável" : healthScore >= 60 ? "Estável" : "Atenção"}
               </div>
             )}
-            <button onClick={() => setBalanceVisible(!balanceVisible)} className="interactive-button p-1.5 rounded-lg hover:bg-accent/50 text-muted-foreground">
-              {balanceVisible ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-            </button>
+            <div className="flex items-center gap-1">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button 
+                    onClick={() => setHideZeroBalances(!hideZeroBalances)} 
+                    className={cn(
+                      "interactive-button p-1.5 rounded-lg hover:bg-accent/50 transition-colors",
+                      hideZeroBalances ? "text-primary bg-primary/10" : "text-muted-foreground"
+                    )}
+                  >
+                    {hideZeroBalances ? <FilterX className="h-4 w-4" /> : <Filter className="h-4 w-4" />}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top">
+                  {hideZeroBalances ? "Mostrando todas as contas" : "Ocultando contas com saldo zero"}
+                </TooltipContent>
+              </Tooltip>
+              <button onClick={() => setBalanceVisible(!balanceVisible)} className="interactive-button p-1.5 rounded-lg hover:bg-accent/50 text-muted-foreground">
+                {balanceVisible ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+              </button>
+            </div>
           </div>
         </div>
 
