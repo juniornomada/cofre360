@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { SmartLink as Link } from "@/components/SmartLink";
-import { ArrowLeft, Plus, Landmark, Trash2, X, Check, Loader2, Upload, FileText, MoreVertical, GripVertical, History, Pencil } from "lucide-react";
+import { ArrowLeft, Plus, Landmark, Trash2, X, Check, Loader2, Upload, FileText, MoreVertical, GripVertical, History, Pencil, Eye, EyeOff } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react";
 
@@ -40,6 +40,7 @@ type BankAccount = {
   balance: number;
   icon: string | null;
   color: string | null;
+  is_visible: boolean;
 };
 
 const bankColorOptions = [
@@ -79,6 +80,7 @@ type SortableAccountItemProps = {
   setCsvImportAccount: (a: BankAccount) => void;
   setPdfImportAccount: (a: BankAccount) => void;
   setHistoryAccount: (a: BankAccount) => void;
+  handleToggleVisibility: (id: string, current: boolean) => void;
 };
 
 function SortableAccountItem({
@@ -100,6 +102,7 @@ function SortableAccountItem({
   setCsvImportAccount,
   setPdfImportAccount,
   setHistoryAccount,
+  handleToggleVisibility,
 }: SortableAccountItemProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: account.id });
   const style: React.CSSProperties = {
@@ -205,7 +208,20 @@ function SortableAccountItem({
                    <History className="h-4 w-4 mr-2" />
                    Histórico de saldo
                  </DropdownMenuItem>
-                 <DropdownMenuSeparator />
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => handleToggleVisibility(account.id, account.is_visible)} className="cursor-pointer">
+                    {account.is_visible ? (
+                      <>
+                        <EyeOff className="h-4 w-4 mr-2" />
+                        Ocultar do Início
+                      </>
+                    ) : (
+                      <>
+                        <Eye className="h-4 w-4 mr-2" />
+                        Mostrar no Início
+                      </>
+                    )}
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => startEdit(account)} className="cursor-pointer">
                     <Pencil className="h-4 w-4 mr-2" />
                     Editar conta
@@ -522,6 +538,18 @@ function AccountsPage() {
       setIsSubmitting(false);
     }
   };
+  
+  const handleToggleVisibility = async (id: string, current: boolean) => {
+    try {
+      const { error } = await supabase.from("bank_accounts").update({ is_visible: !current }).eq("id", id);
+      if (error) throw error;
+      fetchAccounts();
+      toast.success(current ? "Conta ocultada da página inicial" : "Conta agora visível na página inicial");
+    } catch (error: any) {
+      console.error("Error toggling visibility:", error);
+      toast.error("Erro ao alterar visibilidade");
+    }
+  };
 
    const cancelEdit = () => setEditingAccount(null);
 
@@ -615,6 +643,7 @@ function AccountsPage() {
                     setCsvImportAccount={setCsvImportAccount}
                     setPdfImportAccount={setPdfImportAccount}
                     setHistoryAccount={setHistoryAccount}
+                    handleToggleVisibility={handleToggleVisibility}
                   />
                 ))}
               </div>
