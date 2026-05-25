@@ -89,6 +89,8 @@ function TransactionsPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showDeleteAllDialog, setShowDeleteAllDialog] = useState(false);
   const [showBatchDeleteDialog, setShowBatchDeleteDialog] = useState(false);
+  const [showBatchVisibilityDialog, setShowBatchVisibilityDialog] = useState(false);
+  const [pendingVisibility, setPendingVisibility] = useState<boolean | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [showGlobalSearch, setShowGlobalSearch] = useState(false);
   const [globalSearch, setGlobalSearch] = useState("");
