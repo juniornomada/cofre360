@@ -284,7 +284,7 @@ function Dashboard() {
         seen.add(tx.id);
         merged.push(tx as Transaction);
       }
-      setTransactions(merged.slice(0, 8));
+      setTransactions(merged.filter(tx => tx.is_visible !== false).slice(0, 8));
     }
 
     if (allTx) {
@@ -293,7 +293,7 @@ function Dashboard() {
     if (accts) {
       const incMap: Record<string, number> = {};
       const expMap: Record<string, number> = {};
-      for (const tx of (allTx || []) as any[]) {
+      for (const tx of (allTx || []).filter((t: any) => t.is_visible !== false) as any[]) {
         const id = tx.bank_account_id as string | null;
         if (!id) continue;
         if (tx.type === "expense" && tx.card) continue;

@@ -314,8 +314,8 @@ function TransactionsPage() {
     setFilterType("all");
   };
 
-  const totalIncome = filtered.filter(t => t.type === "income").reduce((s, t) => s + t.amount, 0);
-  const totalExpense = filtered.filter(t => t.type === "expense").reduce((s, t) => s + t.amount, 0);
+  const totalIncome = filtered.filter(t => t.type === "income" && t.is_visible !== false).reduce((s, t) => s + t.amount, 0);
+  const totalExpense = filtered.filter(t => t.type === "expense" && t.is_visible !== false).reduce((s, t) => s + t.amount, 0);
 
   const handleEdit = (tx: Transaction) => {
     setEditTx({ ...tx });
