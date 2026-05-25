@@ -186,11 +186,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
     }
 
     if (!newTx.bank_account_id && !newTx.card) {
-      if (newTx.type === "expense") {
-        toast.error("Por favor, selecione uma conta de débito ou um cartão de crédito.");
-      } else {
-        toast.error("Por favor, selecione a conta de destino para a receita.");
-      }
+      toast.error("Seleciona uma conta/cartão");
       return;
     }
 
