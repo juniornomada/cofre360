@@ -451,6 +451,18 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                         if (nextId) {
                           setNewTx(prev => ({ ...prev, card: null }));
                           setInstallmentEnabled(false);
+                          if (newTx.amount > 0 && newTx.name.trim()) handleAdd();
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          const nextId = newTx.bank_account_id === a.id ? null : a.id;
+                          setNewTx({ ...newTx, bank_account_id: nextId });
+                          if (nextId) {
+                            setNewTx(prev => ({ ...prev, card: null }));
+                            setInstallmentEnabled(false);
+                            if (newTx.amount > 0 && newTx.name.trim()) handleAdd();
+                          }
                         }
                       }}
                       className={`flex flex-col items-center gap-0.5 rounded-lg p-1.5 transition-all ${
@@ -495,7 +507,21 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                             setNewTx({ ...newTx, card: null });
                             setInstallmentEnabled(false);
                           } else {
-                            setNewTx({ ...newTx, card: c.name, bank_account_id: null });
+                            const newCard = c.name;
+                            setNewTx({ ...newTx, card: newCard, bank_account_id: null });
+                            if (newTx.amount > 0 && newTx.name.trim()) handleAdd();
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            if (newTx.card === c.name) {
+                              setNewTx({ ...newTx, card: null });
+                              setInstallmentEnabled(false);
+                            } else {
+                              const newCard = c.name;
+                              setNewTx({ ...newTx, card: newCard, bank_account_id: null });
+                              if (newTx.amount > 0 && newTx.name.trim()) handleAdd();
+                            }
                           }
                         }}
                         className={`flex flex-col items-center gap-1 rounded-lg p-1.5 transition-all ${
