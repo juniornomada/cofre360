@@ -181,13 +181,32 @@ function RemindersPage() {
         .select();
 
       if (error) throw error;
+
+      // Se o lembrete for recorrente, atualizar também as próximas instâncias pendentes (não concluídas) com o mesmo título
+      if (currentReminder.is_recurring) {
+        await supabase
+          .from("reminders")
+          .update({
+            amount: Number(currentReminder.amount),
+            title: currentReminder.title,
+            category: currentReminder.category,
+            icon: currentReminder.icon,
+            bank_account_id: currentReminder.bank_account_id,
+            card_id: currentReminder.card_id,
+            notes: currentReminder.notes,
+          })
+          .eq("title", currentReminder.title)
+          .eq("is_completed", false)
+          .is("is_recurring", true)
+          .neq("id", currentReminder.id); // Não atualizar a si mesmo novamente
+      }
       
       const finalData = updatedData && updatedData.length > 0 ? updatedData[0] : { ...currentReminder, ...updateData };
       setReminders(prev => prev.map(r => r.id === currentReminder.id ? finalData : r));
       
       setShowEditDialog(false);
       setEditReminder(null);
-      toast.success("Lembrete atualizado!");
+      toast.success("Lembrete e instâncias futuras atualizadas!");
       await fetchReminders();
     } catch (error: any) {
       console.error("Error updating reminder:", error);
