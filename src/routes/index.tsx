@@ -152,10 +152,16 @@ function SortableAccountItem({ acc, balanceVisible, fmt }: { acc: any; balanceVi
 }
 
 function Dashboard() {
-  const [balanceVisible, setBalanceVisible] = useState(true);
+  const [balanceVisible, setBalanceVisible] = useState(() => {
+    return localStorage.getItem("balanceVisible") !== "false";
+  });
   const [hideZeroBalances, setHideZeroBalances] = useState(() => {
     return localStorage.getItem("hideZeroBalances") === "true";
   });
+
+  useEffect(() => {
+    localStorage.setItem("balanceVisible", String(balanceVisible));
+  }, [balanceVisible]);
 
   useEffect(() => {
     localStorage.setItem("hideZeroBalances", String(hideZeroBalances));
