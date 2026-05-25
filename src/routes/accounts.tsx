@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { SmartLink as Link } from "@/components/SmartLink";
-import { ArrowLeft, Plus, Landmark, Trash2, X, Check, Loader2, Upload, FileText, MoreVertical, GripVertical, History, Pencil, Eye, EyeOff, CheckSquare, Square } from \\"lucide-react\\";
-import { useUserPreferences } from \\"@/hooks/use-user-preferences\\";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from \\"@/components/ui/dropdown-menu\\";
+import { ArrowLeft, Plus, Landmark, Trash2, X, Check, Loader2, Upload, FileText, MoreVertical, GripVertical, History, Pencil, Eye, EyeOff, CheckSquare, Square } from "lucide-react";
+import { useUserPreferences } from "@/hooks/use-user-preferences";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 
 import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react";
 
@@ -187,7 +187,7 @@ function SortableAccountItem({
                   "text-[15px] font-bold tabular-nums tracking-tight leading-tight whitespace-nowrap shrink-0",
                   currentBalance < 0 ? "text-destructive" : "text-foreground"
                 )}>
-                  {balanceVisible ? `R$ ${currentBalance.toLocaleString(\"pt-BR\", { minimumFractionDigits: 2 })}` : \"R$ ••••\"}
+                  {balanceVisible ? `R$ ${currentBalance.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "R$ ••••"}
                 </p>
               </div>
             </button>
