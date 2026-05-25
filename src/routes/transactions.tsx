@@ -454,7 +454,7 @@ function TransactionsPage() {
 
     toast.promise(promise(), {
       loading: visible ? `Exibindo ${count} transações...` : `Ocultando ${count} transações...`,
-      success: (updatedCount) => `${updatedCount} ${updatedCount === 1 ? "transação" : "transações"} ${visible ? "exibida" : "ocultada"}${updatedCount === 1 ? "" : "s"} com sucesso`,
+      success: (updatedCount) => `${updatedCount} ${updatedCount === 1 ? "transação atualizada" : "transações atualizadas"} com sucesso`,
       error: "Erro ao atualizar visibilidade das transações",
       finally: () => setDeleting(false)
     });
