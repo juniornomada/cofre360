@@ -1265,6 +1265,27 @@ function TransactionsPage() {
         </DialogContent>
       </Dialog>
 
+      {/* Batch Visibility */}
+      <Dialog open={showBatchVisibilityDialog} onOpenChange={setShowBatchVisibilityDialog}>
+        <DialogContent className="max-w-[90vw] rounded-2xl bg-background">
+          <DialogHeader>
+            <DialogTitle>Alterar Visibilidade</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Deseja {pendingVisibility ? "exibir" : "ocultar"} <strong>{selectedIds.size}</strong> transação(ões) selecionada(s)?
+            </p>
+            <p className="text-[11px] text-muted-foreground bg-muted p-2 rounded-lg italic">
+              Nota: Transações ocultas não são contabilizadas nos saldos das contas e relatórios.
+            </p>
+          </div>
+          <DialogFooter className="flex-row gap-2 mt-4">
+            <Button variant="outline" className="flex-1" onClick={() => setShowBatchVisibilityDialog(false)}>Cancelar</Button>
+            <Button className="flex-1" onClick={confirmBulkVisibility}>Confirmar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Add */}
       <Suspense fallback={null}>
         {showAddDialog && (
