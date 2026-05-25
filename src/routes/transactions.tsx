@@ -533,49 +533,6 @@ function TransactionsPage() {
     }
   };
 
-   const handleAdd = async () => {
-     if (hasDiff && !confirmInstallmentDiff) {
-       toast.error("Por favor, confirme o ajuste de centavos no parcelamento.");
-       return;
-     }
- 
-     try {
-      // Transfer flow: insert two linked rows (expense from source, income to destination)
-      if (isTransfer) {
-      if (!transferFromId || !transferToId || transferFromId === transferToId || (newTx.amount || 0) <= 0) {
-        toast.error("Selecione contas diferentes e um valor maior que zero.");
-        return;
-      }
-      const fromAcc = bankAccounts.find(a => a.id === transferFromId);
-      const toAcc = bankAccounts.find(a => a.id === transferToId);
-      const fromName = fromAcc?.name || "Conta";
-      const toName = toAcc?.name || "Conta";
-      // Generate a shared group id to link the two legs (uses crypto.randomUUID, available in browsers)
-      const groupId = (typeof crypto !== "undefined" && "randomUUID" in crypto)
-        ? crypto.randomUUID()
-        : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-      const { error } = await supabase.from("transactions").insert([
-        {
-          icon: "🔄", name: `Transferência → ${toName}`, category: "Transferências",
-          date: newTx.date, amount: newTx.amount, type: "expense",
-          card: null, bank_account_id: transferFromId, installment_group_id: groupId,
-        },
-        {
-          icon: "🔄", name: `Transferência ← ${fromName}`, category: "Transferências",
-          date: newTx.date, amount: newTx.amount, type: "income",
-          card: null, bank_account_id: transferToId, installment_group_id: groupId,
-        },
-      ]);
-      if (error) throw error;
-      setShowAddDialog(false);
-      setIsTransfer(false);
-      setTransferFromId("");
-      setTransferToId("");
-      setNewTx({ icon: "🍔", name: "", category: "Alimentação > Outros", date: format(new Date(), "dd MMM", { locale: ptBR }), amount: 0, type: "expense", card: null, bank_account_id: null });
-      fetchTransactions();
-      toast.success("Transferência realizada com sucesso!");
-      return;
-    }
 
     if (!newTx.bank_account_id && !newTx.card) {
       toast.error("Seleciona uma conta/cartão");
