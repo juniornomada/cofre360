@@ -151,7 +151,7 @@ function RemindersPage() {
     try {
       if (!editReminder) return;
       
-      const currentReminder = editReminder;
+      const currentReminder = { ...editReminder };
       const recurrenceDay = currentReminder.is_recurring
         ? (currentReminder.recurrence_day ?? (() => {
             const d = parseDate(currentReminder.due_date || "");
@@ -289,18 +289,27 @@ function RemindersPage() {
       const account = bankAccounts.find(a => a.id === accountId);
       if (!account) throw new Error("Conta não encontrada");
 
-      const { category, icon } = categorizeTransaction(reminder.title);
+      // Buscar o valor mais recente do lembrete no banco de dados para garantir que usamos o novo valor salvo
+      const { data: latestReminder, error: fetchError } = await supabase
+        .from("reminders")
+        .select("amount, title, type, category, icon, is_recurring, recurrence_day, due_date, notes")
+        .eq("id", reminder.id)
+        .single();
+      
+      if (fetchError) throw fetchError;
+
+      const { category, icon } = categorizeTransaction(latestReminder.title || "");
       const today = format(payDate, "dd MMM", { locale: ptBR });
-      const isIncome = reminder.type === "income";
-      const amount = Number(reminder.amount);
+      const isIncome = latestReminder.type === "income";
+      const amount = Number(latestReminder.amount);
 
       await supabase.from("transactions").insert({
-        name: reminder.title,
+        name: latestReminder.title,
         amount,
         date: today,
         type: isIncome ? "income" : "expense",
-        category: category || reminder.category,
-        icon: reminder.icon || icon,
+        category: category || latestReminder.category,
+        icon: latestReminder.icon || icon,
         bank_account_id: accountId,
       });
 
@@ -313,14 +322,17 @@ function RemindersPage() {
         is_completed: true,
         completion_date: today 
       }).eq("id", reminder.id);
-      await generateNextOccurrence(reminder);
+      
+      // Passar o reminder completo atualizado para generateNextOccurrence
+      await generateNextOccurrence({ ...reminder, ...latestReminder });
 
-      const recurringMsg = reminder.is_recurring ? " (próxima ocorrência criada)" : "";
+      const recurringMsg = latestReminder.is_recurring ? " (próxima ocorrência criada)" : "";
       toast.success(`${isIncome ? "Recebimento" : "Pagamento"} registrado em ${account.name}${recurringMsg}`);
       setShowPayDialog(false);
       setPayingReminder(null);
       fetchReminders();
-    } catch {
+    } catch (error) {
+      console.error("Error registering transaction:", error);
       toast.error("Erro ao registrar transação");
     } finally {
       setPaying(false);
@@ -339,17 +351,26 @@ function RemindersPage() {
       const card = cards.find(c => c.id === cardId);
       if (!card) throw new Error("Cartão não encontrado");
 
-      const { category, icon } = categorizeTransaction(reminder.title);
+      // Buscar o valor mais recente do lembrete no banco de dados
+      const { data: latestReminder, error: fetchError } = await supabase
+        .from("reminders")
+        .select("amount, title, type, category, icon, is_recurring, recurrence_day, due_date, notes")
+        .eq("id", reminder.id)
+        .single();
+      
+      if (fetchError) throw fetchError;
+
+      const { category, icon } = categorizeTransaction(latestReminder.title || "");
       const today = format(payDate, "dd MMM", { locale: ptBR });
-      const amount = Number(reminder.amount);
+      const amount = Number(latestReminder.amount);
 
       await supabase.from("transactions").insert({
-        name: reminder.title,
+        name: latestReminder.title,
         amount,
         date: today,
         type: "expense",
-        category: category || reminder.category,
-        icon: reminder.icon || icon,
+        category: category || latestReminder.category,
+        icon: latestReminder.icon || icon,
         card: card.name,
       });
 
@@ -358,14 +379,17 @@ function RemindersPage() {
         is_completed: true,
         completion_date: today 
       }).eq("id", reminder.id);
-      await generateNextOccurrence(reminder);
+      
+      // Passar o reminder completo atualizado para generateNextOccurrence
+      await generateNextOccurrence({ ...reminder, ...latestReminder });
 
-      const recurringMsg = reminder.is_recurring ? " (próxima ocorrência criada)" : "";
+      const recurringMsg = latestReminder.is_recurring ? " (próxima ocorrência criada)" : "";
       toast.success(`Pagamento registrado no ${card.name}${recurringMsg}`);
       setShowPayDialog(false);
       setPayingReminder(null);
       fetchReminders();
-    } catch {
+    } catch (error) {
+      console.error("Error registering transaction:", error);
       toast.error("Erro ao registrar transação");
     } finally {
       setPaying(false);
