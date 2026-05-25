@@ -787,9 +787,6 @@ function Dashboard() {
           <div className="flex flex-col min-w-0">
             <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
               Saldo
-              {accountBalances.length > 1 && (
-                <span className="text-[9px] lowercase opacity-40 font-normal">Arraste para reordenar</span>
-              )}
             </p>
             <p className={cn(
               "text-2xl font-bold tabular-nums transition-all duration-300 truncate",
