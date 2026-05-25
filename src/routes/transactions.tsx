@@ -48,6 +48,7 @@ interface Transaction {
 interface BankAccountOption {
   id: string;
   name: string;
+  balance?: number;
 }
 
 interface CardOption {
