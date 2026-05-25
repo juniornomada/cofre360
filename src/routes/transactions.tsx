@@ -89,6 +89,8 @@ function TransactionsPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showDeleteAllDialog, setShowDeleteAllDialog] = useState(false);
   const [showBatchDeleteDialog, setShowBatchDeleteDialog] = useState(false);
+  const [showBatchVisibilityDialog, setShowBatchVisibilityDialog] = useState(false);
+  const [pendingVisibility, setPendingVisibility] = useState<boolean | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [showGlobalSearch, setShowGlobalSearch] = useState(false);
   const [globalSearch, setGlobalSearch] = useState("");
@@ -430,11 +432,20 @@ function TransactionsPage() {
     }
   };
 
-  const handleBulkVisibility = async (visible: boolean) => {
+  const handleBulkVisibility = (visible: boolean) => {
+    if (selectedIds.size === 0) return;
+    setPendingVisibility(visible);
+    setShowBatchVisibilityDialog(true);
+  };
+
+  const confirmBulkVisibility = async () => {
+    if (pendingVisibility === null) return;
+    const visible = pendingVisibility;
     const count = selectedIds.size;
-    if (count === 0) return;
     
     setDeleting(true);
+    setShowBatchVisibilityDialog(false);
+
     const promise = async () => {
       const ids = Array.from(selectedIds);
       let idsToUpdate = [...ids];
@@ -470,6 +481,7 @@ function TransactionsPage() {
       ));
       setSelectedIds(new Set());
       setSelectionMode(false);
+      setPendingVisibility(null);
       return idsToUpdate.length;
     };
 
@@ -1249,6 +1261,27 @@ function TransactionsPage() {
               {deleting && <Loader2 className="h-4 w-4 animate-spin mr-1" />}
               Excluir {selectedIds.size}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Batch Visibility */}
+      <Dialog open={showBatchVisibilityDialog} onOpenChange={setShowBatchVisibilityDialog}>
+        <DialogContent className="max-w-[90vw] rounded-2xl bg-background">
+          <DialogHeader>
+            <DialogTitle>Alterar Visibilidade</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Deseja {pendingVisibility ? "exibir" : "ocultar"} <strong>{selectedIds.size}</strong> transação(ões) selecionada(s)?
+            </p>
+            <p className="text-[11px] text-muted-foreground bg-muted p-2 rounded-lg italic">
+              Nota: Transações ocultas não são contabilizadas nos saldos das contas e relatórios.
+            </p>
+          </div>
+          <DialogFooter className="flex-row gap-2 mt-4">
+            <Button variant="outline" className="flex-1" onClick={() => setShowBatchVisibilityDialog(false)}>Cancelar</Button>
+            <Button className="flex-1" onClick={confirmBulkVisibility}>Confirmar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
