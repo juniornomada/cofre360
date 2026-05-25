@@ -159,9 +159,11 @@ function RemindersPage() {
           })())
         : null;
 
+      const amountToSave = Number(currentReminder.amount);
+
       const updateData = {
         title: currentReminder.title,
-        amount: Number(currentReminder.amount),
+        amount: amountToSave,
         due_date: currentReminder.due_date,
         type: currentReminder.type,
         category: currentReminder.category,
@@ -187,7 +189,7 @@ function RemindersPage() {
         await supabase
           .from("reminders")
           .update({
-            amount: Number(currentReminder.amount),
+            amount: amountToSave,
             title: currentReminder.title,
             category: currentReminder.category,
             icon: currentReminder.icon,
@@ -202,12 +204,15 @@ function RemindersPage() {
       }
       
       const finalData = updatedData && updatedData.length > 0 ? updatedData[0] : { ...currentReminder, ...updateData };
+      
+      // Atualizar o estado local imediatamente com o valor correto
       setReminders(prev => prev.map(r => r.id === currentReminder.id ? finalData : r));
       
       setShowEditDialog(false);
       setEditReminder(null);
       toast.success("Lembrete e instâncias futuras atualizadas!");
-      await fetchReminders();
+      // Não precisamos necessariamente de await aqui se o estado já foi atualizado, mas fetchReminders garante sincronia total com DB
+      fetchReminders();
     } catch (error: any) {
       console.error("Error updating reminder:", error);
       toast.error("Erro ao atualizar lembrete: " + (error.message || "Erro desconhecido"));
