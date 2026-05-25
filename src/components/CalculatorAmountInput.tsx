@@ -83,13 +83,13 @@ import { cn } from "@/lib/utils";
 
   // Keep internal buffer in sync when the parent resets the value (e.g. dialog reopen).
   // Sync internal state when value is changed externally (e.g. parent reset)
-  // We check hasStartedTyping to avoid resetting while the user is actively typing
+  // Sync internal state when value is changed externally (e.g. parent reset)
   useEffect(() => {
     const incoming = Math.round((value || 0) * 100);
-    if (incoming !== cents && !hasStartedTyping) {
+    if (incoming !== cents) {
       setCents(incoming);
     }
-  }, [value, hasStartedTyping, cents]);
+  }, [value]);
 
   // Reset hasStartedTyping when keypad closes
   useEffect(() => {
