@@ -244,6 +244,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
   };
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-[94vw] max-w-[94vw] sm:w-[28rem] sm:max-w-[28rem] rounded-2xl bg-background max-h-[92vh] min-h-[600px] sm:min-h-[640px] overflow-y-auto p-4 gap-2 flex flex-col">
         <DialogHeader className="space-y-0 pr-6">
