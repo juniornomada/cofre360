@@ -163,6 +163,7 @@ function Dashboard() {
   const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
   const [accountBalances, setAccountBalances] = useState<{ id: string; name: string; icon: string | null; color: string | null; balance: number }[]>([]);
   const [cardOptions, setCardOptions] = useState<string[]>(["Nenhum"]);
+  const [allCards, setAllCards] = useState<{ id: string; name: string; emoji: string | null; color: string | null }[]>([]);
   const [loading, setLoading] = useState(true);
   const [editTx, setEditTx] = useState<Transaction | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
@@ -228,7 +229,7 @@ function Dashboard() {
       supabase.from("transactions").select(TX_FIELDS).order("created_at", { ascending: false }).limit(20),
       supabase.from("transactions").select("type, amount, date, card, bank_account_id, category"),
       supabase.from("bank_accounts").select("id, name, icon, color, balance, is_visible, sort_order").order("sort_order", { ascending: true }).order("created_at", { ascending: true }),
-      supabase.from("cards").select("name").order("created_at", { ascending: true }),
+      supabase.from("cards").select("id, name, emoji, color").order("created_at", { ascending: true }),
       supabase.from("reminders").select("id, title, icon, due_date, amount, type, bank_account_id, card_id").eq("is_completed", false).order("due_date", { ascending: true }).limit(3),
       supabase.from("goals").select("id, name, icon, current_amount, target_amount"),
     ]);
@@ -248,6 +249,7 @@ function Dashboard() {
     const gls = glsRes.data;
 
     setCardOptions(["Nenhum", ...((cards || []).map((c: any) => c.name))]);
+    if (cards) setAllCards(cards as any);
     if (rems) setPendingReminders(rems as any);
     if (gls) setGoals(gls as any);
 
@@ -1087,6 +1089,7 @@ function Dashboard() {
           <div className="flex flex-col gap-1.5">
             {pendingReminders.map((r) => {
               const linkedAccount = r.bank_account_id ? accountBalances.find(a => a.id === r.bank_account_id) : null;
+              const linkedCard = r.card_id ? allCards.find(c => c.id === r.card_id) : null;
               // Note: cards are not explicitly loaded into a "cards" state in this component, 
               // but we have cardOptions and bankAccounts. We might need cards too.
               // Looking at fetchAll, cardsRes is fetched but only names are set in cardOptions.
@@ -1101,6 +1104,13 @@ function Dashboard() {
                       {linkedAccount && (
                         <div className={cn("flex items-center rounded-md px-1 py-0.5 shadow-sm shrink-0 bg-gradient-to-br", linkedAccount.color)}>
                           <BankLogo icon={linkedAccount.icon || ""} color={linkedAccount.color || ""} name={linkedAccount.name} size="xs" />
+                        </div>
+                      )}
+                      {linkedCard && (
+                        <div className={cn("flex items-center rounded-md px-1 py-0.5 shadow-sm shrink-0 bg-gradient-to-br", linkedCard.color)}>
+                          <div className="flex h-5 w-5 items-center justify-center rounded-sm bg-white/20 text-[10px]">
+                            {linkedCard.emoji || "💳"}
+                          </div>
                         </div>
                       )}
                     </div>
