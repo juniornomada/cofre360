@@ -240,7 +240,7 @@ function RemindersPage() {
       const day = reminder.recurrence_day ?? current.getDate();
       const lastDayOfMonth = new Date(next.getFullYear(), next.getMonth() + 1, 0).getDate();
       next.setDate(Math.min(day, lastDayOfMonth));
-      const nextDateStr = format(next, "dd MMM", { locale: ptBR });
+      const nextDateStr = format(next, "yyyy-MM-dd");
       await supabase.from("reminders").insert({
         title: reminder.title,
         amount: reminder.amount,
