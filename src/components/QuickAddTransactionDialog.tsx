@@ -188,7 +188,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
     }
 
     if (!newTx.bank_account_id && !newTx.card) {
-      toast.error("Seleciona uma conta/cartão");
+      setShowNoSelectionAlert(true);
       return;
     }
 
