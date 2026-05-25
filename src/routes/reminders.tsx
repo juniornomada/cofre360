@@ -151,28 +151,26 @@ function RemindersPage() {
     try {
       if (!editReminder) return;
       
-      const currentReminder = JSON.parse(JSON.stringify(editReminder));
-      const amountToSave = Number(currentReminder.amount);
-      
-      const recurrenceDay = currentReminder.is_recurring
-        ? (currentReminder.recurrence_day ?? (() => {
-            const d = parseDate(currentReminder.due_date || "");
+      const amountToSave = Number(editReminder.amount);
+      const recurrenceDay = editReminder.is_recurring
+        ? (editReminder.recurrence_day ?? (() => {
+            const d = parseDate(editReminder.due_date || "");
             return isNaN(d.getTime()) ? null : d.getDate();
           })())
         : null;
 
       const updateData = {
-        title: currentReminder.title,
+        title: editReminder.title,
         amount: amountToSave,
-        due_date: currentReminder.due_date,
-        type: currentReminder.type,
-        category: currentReminder.category,
-        icon: currentReminder.icon,
-        notes: currentReminder.notes,
-        is_completed: currentReminder.is_completed,
-        bank_account_id: currentReminder.bank_account_id,
-        card_id: currentReminder.card_id,
-        is_recurring: currentReminder.is_recurring,
+        due_date: editReminder.due_date,
+        type: editReminder.type,
+        category: editReminder.category,
+        icon: editReminder.icon,
+        notes: editReminder.notes,
+        is_completed: editReminder.is_completed,
+        bank_account_id: editReminder.bank_account_id,
+        card_id: editReminder.card_id,
+        is_recurring: editReminder.is_recurring,
         recurrence_day: recurrenceDay,
       };
       
@@ -181,7 +179,7 @@ function RemindersPage() {
       const { data: updatedData, error } = await supabase
         .from("reminders")
         .update(updateData)
-        .eq("id", currentReminder.id)
+        .eq("id", editReminder.id)
         .select();
 
       if (error) {
@@ -190,31 +188,31 @@ function RemindersPage() {
       }
 
       // Se o lembrete for recorrente, atualizar também as próximas instâncias pendentes (não concluídas) com o mesmo título
-      if (currentReminder.is_recurring) {
+      if (editReminder.is_recurring) {
         const { error: batchError } = await supabase
           .from("reminders")
           .update({
             amount: amountToSave,
-            title: currentReminder.title,
-            category: currentReminder.category,
-            icon: currentReminder.icon,
-            bank_account_id: currentReminder.bank_account_id,
-            card_id: currentReminder.card_id,
-            notes: currentReminder.notes,
+            title: editReminder.title,
+            category: editReminder.category,
+            icon: editReminder.icon,
+            bank_account_id: editReminder.bank_account_id,
+            card_id: editReminder.card_id,
+            notes: editReminder.notes,
           })
-          .eq("title", currentReminder.title)
+          .eq("title", editReminder.title)
           .eq("is_completed", false)
           .is("is_recurring", true)
-          .neq("id", currentReminder.id);
+          .neq("id", editReminder.id);
 
         if (batchError) console.error("Error updating future instances:", batchError);
       }
       
-      const finalData = (updatedData && updatedData.length > 0) ? updatedData[0] : { ...currentReminder, ...updateData };
+      const finalData = (updatedData && updatedData.length > 0) ? updatedData[0] : { ...editReminder, ...updateData };
       
       // Atualizar o estado local imediatamente
       setReminders(prev => {
-        const newList = prev.map(r => r.id === currentReminder.id ? finalData : r);
+        const newList = prev.map(r => r.id === editReminder.id ? finalData : r);
         return [...newList];
       });
       
