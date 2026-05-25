@@ -394,7 +394,7 @@ function RemindersPage() {
       if (fetchError) throw fetchError;
 
       const { category, icon } = categorizeTransaction(latestReminder.title || "");
-      const today = format(payDate, "dd MMM", { locale: ptBR });
+      const today = format(payDate, "yyyy-MM-dd");
       const amount = Number(latestReminder.amount);
 
       await supabase.from("transactions").insert({
