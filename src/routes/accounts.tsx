@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { SmartLink as Link } from "@/components/SmartLink";
-import { ArrowLeft, Plus, Landmark, Trash2, X, Check, Loader2, Upload, FileText, MoreVertical, GripVertical, History, Pencil, Eye, EyeOff, CheckSquare, Square } from "lucide-react";
+import { ArrowLeft, Plus, Landmark, Trash2, X, Check, Loader2, Upload, FileText, MoreVertical, GripVertical, History, Pencil, Eye, EyeOff, CheckSquare, Square, Filter, FilterX } from "lucide-react";
 import { useUserPreferences } from "@/hooks/use-user-preferences";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 
 import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react";
@@ -285,7 +286,7 @@ function SortableAccountItem({
  });
 
 function AccountsPage() {
-  const { balanceVisible, updateBalanceVisible } = useUserPreferences();
+  const { balanceVisible, updateBalanceVisible, hideZeroBalances, updateHideZeroBalances } = useUserPreferences();
   const [accounts, setAccounts] = useState<BankAccount[]>([]);
   const [incomeByAccount, setIncomeByAccount] = useState<Record<string, number>>({});
   const [expenseByAccount, setExpenseByAccount] = useState<Record<string, number>>({});
@@ -639,11 +640,35 @@ function AccountsPage() {
   return (
     <div className="animate-page-enter flex flex-col gap-8 px-2 sm:px-4 pt-6 pb-28">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <Link to="/" className="interactive-button flex h-9 w-9 items-center justify-center rounded-full hover:bg-accent transition-colors">
-          <ArrowLeft className="h-4 w-4 text-foreground" />
-        </Link>
-        <h1 className="text-[15px] font-semibold text-foreground tracking-tight">Contas</h1>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Link to="/" className="interactive-button flex h-9 w-9 items-center justify-center rounded-full hover:bg-accent transition-colors">
+            <ArrowLeft className="h-4 w-4 text-foreground" />
+          </Link>
+          <h1 className="text-[15px] font-semibold text-foreground tracking-tight">Contas</h1>
+        </div>
+        
+        <div className="flex items-center gap-1">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button 
+                onClick={() => updateHideZeroBalances(!hideZeroBalances)} 
+                className={cn(
+                  "interactive-button p-2 rounded-lg hover:bg-accent/50 transition-colors",
+                  hideZeroBalances ? "text-primary bg-primary/10" : "text-muted-foreground"
+                )}
+              >
+                {hideZeroBalances ? <FilterX className="h-4 w-4" /> : <Filter className="h-4 w-4" />}
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">
+              {hideZeroBalances ? "Exibir contas com saldo zero no início" : "Ocultar contas com saldo zero no início"}
+            </TooltipContent>
+          </Tooltip>
+          <button onClick={() => updateBalanceVisible(!balanceVisible)} className="interactive-button p-2 rounded-lg hover:bg-accent/50 text-muted-foreground">
+            {balanceVisible ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+          </button>
+        </div>
       </div>
 
       {/* Total balance hero */}
