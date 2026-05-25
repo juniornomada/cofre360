@@ -359,6 +359,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                  <label className="text-[11px] font-semibold text-foreground mb-0.5 block">Nome</label>
                   <input
                     autoFocus
+                    id="tx-name-input"
                     value={newTx.name}
                     onChange={e => {
                       const name = e.target.value;
@@ -372,7 +373,11 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                    onKeyDown={e => {
                      if (e.key === "Enter") {
                        e.preventDefault();
-                       handleAdd();
+                       // Avançar para o campo de valor
+                       const amountInput = document.querySelector('input[inputmode="numeric"]');
+                       if (amountInput instanceof HTMLInputElement) {
+                         amountInput.focus();
+                       }
                      }
                    }}
                    placeholder="Ex: Supermercado"
