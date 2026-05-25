@@ -59,6 +59,14 @@ const iconOptions = ["🛵", "🏠", "💰", "🎬", "⛽", "🛒", "💊", "�
 
 function TransactionsPage() {
   const searchParams = Route.useSearch();
+  const [balanceVisible, setBalanceVisible] = useState(() => {
+    return localStorage.getItem("balanceVisible") !== "false";
+  });
+
+  useEffect(() => {
+    localStorage.setItem("balanceVisible", String(balanceVisible));
+  }, [balanceVisible]);
+
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [cardOptions, setCardOptions] = useState<CardOption[]>([]);
   const [bankAccounts, setBankAccounts] = useState<BankAccountOption[]>([]);
