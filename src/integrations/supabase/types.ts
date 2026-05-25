@@ -236,6 +236,33 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          balance_visible: boolean | null
+          created_at: string
+          hide_zero_balances: boolean | null
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          balance_visible?: boolean | null
+          created_at?: string
+          hide_zero_balances?: boolean | null
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          balance_visible?: boolean | null
+          created_at?: string
+          hide_zero_balances?: boolean | null
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       reminders: {
         Row: {
           amount: number | null
