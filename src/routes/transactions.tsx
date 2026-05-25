@@ -804,9 +804,11 @@ function TransactionsPage() {
                   card={tx.card ?? undefined} 
                   cardBrand={tx.cardBrand ?? undefined} 
                   amount={Number(tx.amount)} 
+                  is_visible={tx.is_visible !== false}
                   style={{ animationDelay: `${i * 40}ms` }} 
                   onEdit={selectionMode ? undefined : () => handleEdit(tx)}
                   onDelete={selectionMode ? undefined : () => { setDeleteTarget(tx); setDeleteScope("single"); setShowDeleteDialog(true); }}
+                  onToggleVisibility={selectionMode ? undefined : () => handleToggleVisibility(tx)}
                 />
               </div>
             </div>
