@@ -718,14 +718,14 @@ function AccountsPage() {
                 className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-primary/10 text-primary text-[11px] font-bold border border-primary/20 hover:bg-primary/20 transition-colors"
               >
                 <Eye className="h-3.5 w-3.5" />
-                Mostrar Selecionados
+                Mostrar Selecionadas ({selectedIds.size})
               </button>
               <button 
                 onClick={() => handleBulkVisibility(false)}
                 className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-destructive/10 text-destructive text-[11px] font-bold border border-destructive/20 hover:bg-destructive/20 transition-colors"
               >
                 <EyeOff className="h-3.5 w-3.5" />
-                Ocultar Selecionados
+                Ocultar Selecionadas ({selectedIds.size})
               </button>
             </div>
           )}
