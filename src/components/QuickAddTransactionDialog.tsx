@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -131,6 +132,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
   }, [open, initialType, fetchData, fetchHistory]);
 
   const [confirmInstallmentDiff, setConfirmInstallmentDiff] = useState(false);
+  const [showNoSelectionAlert, setShowNoSelectionAlert] = useState(false);
 
   const installmentDetails = calculateInstallmentDetails(
     newTx.amount,
@@ -186,7 +188,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
     }
 
     if (!newTx.bank_account_id && !newTx.card) {
-      toast.error("Seleciona uma conta/cartão");
+      setShowNoSelectionAlert(true);
       return;
     }
 
@@ -242,6 +244,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
   };
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-[94vw] max-w-[94vw] sm:w-[28rem] sm:max-w-[28rem] rounded-2xl bg-background max-h-[92vh] min-h-[600px] sm:min-h-[640px] overflow-y-auto p-4 gap-2 flex flex-col">
         <DialogHeader className="space-y-0 pr-6">
@@ -581,5 +584,25 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    <AlertDialog open={showNoSelectionAlert} onOpenChange={setShowNoSelectionAlert}>
+      <AlertDialogContent className="w-[85vw] max-w-[320px] rounded-2xl p-6">
+        <AlertDialogHeader>
+          <AlertDialogTitle className="text-center text-lg">Selecionar conta/cartão</AlertDialogTitle>
+          <AlertDialogDescription className="text-center text-sm pt-2">
+            Por favor, selecione uma conta ou cartão para registrar esta transação.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter className="sm:justify-center mt-4">
+          <AlertDialogAction 
+            onClick={() => setShowNoSelectionAlert(false)}
+            className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+          >
+            Entendido
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }
