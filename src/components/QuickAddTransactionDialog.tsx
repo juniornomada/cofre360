@@ -207,10 +207,12 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
     }
 
     const cardValue = newTx.card === "Nenhum" ? null : newTx.card;
-    const baseDate = (() => {
-      try { return parse(newTx.date, "dd MMM", new Date(), { locale: ptBR }); }
-      catch { return new Date(); }
-    })();
+    let baseDate: Date;
+    try {
+      baseDate = parse(newTx.date, "dd MMM", new Date(), { locale: ptBR });
+    } catch {
+      baseDate = new Date();
+    }
 
     if (installmentEnabled && cardValue && installmentCount > 1) {
       const groupId = (typeof crypto !== "undefined" && "randomUUID" in crypto)
