@@ -431,9 +431,11 @@ function TransactionsPage() {
   };
 
   const handleBulkVisibility = async (visible: boolean) => {
-    if (selectedIds.size === 0) return;
+    const count = selectedIds.size;
+    if (count === 0) return;
+    
     setDeleting(true);
-    try {
+    const promise = async () => {
       const ids = Array.from(selectedIds);
       const { error } = await supabase
         .from("transactions")
@@ -442,18 +444,20 @@ function TransactionsPage() {
 
       if (error) throw error;
 
-      toast.success(`${selectedIds.size} transações ${visible ? "exibidas" : "ocultadas"}`);
       setTransactions(prev => prev.map(t => 
         selectedIds.has(t.id) ? { ...t, is_visible: visible } : t
       ));
       setSelectedIds(new Set());
       setSelectionMode(false);
-    } catch (error: any) {
-      console.error("Error updating bulk visibility:", error);
-      toast.error("Erro ao atualizar visibilidade");
-    } finally {
-      setDeleting(false);
-    }
+      return count;
+    };
+
+    toast.promise(promise(), {
+      loading: visible ? `Exibindo ${count} transações...` : `Ocultando ${count} transações...`,
+      success: (updatedCount) => `${updatedCount} ${updatedCount === 1 ? "transação" : "transações"} ${visible ? "exibida" : "ocultada"}${updatedCount === 1 ? "" : "s"} com sucesso`,
+      error: "Erro ao atualizar visibilidade das transações",
+      finally: () => setDeleting(false)
+    });
   };
 
   const handleDeleteConfirm = async () => {
