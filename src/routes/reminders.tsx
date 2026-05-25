@@ -151,7 +151,7 @@ function RemindersPage() {
     try {
       if (!editReminder) return;
       
-      const currentReminder = editReminder;
+      const currentReminder = { ...editReminder };
       const recurrenceDay = currentReminder.is_recurring
         ? (currentReminder.recurrence_day ?? (() => {
             const d = parseDate(currentReminder.due_date || "");
