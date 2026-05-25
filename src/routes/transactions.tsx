@@ -437,23 +437,44 @@ function TransactionsPage() {
     setDeleting(true);
     const promise = async () => {
       const ids = Array.from(selectedIds);
+      let idsToUpdate = [...ids];
+
+      // Identify selected transfers and find their pairs
+      const selectedTxs = transactions.filter(t => selectedIds.has(t.id));
+      const transferGroupIds = selectedTxs
+        .filter(t => t.category === "Transferência" && t.installment_group_id)
+        .map(t => t.installment_group_id) as string[];
+
+      if (transferGroupIds.length > 0) {
+        const { data: linkedTxs } = await supabase
+          .from("transactions")
+          .select("id")
+          .in("installment_group_id", transferGroupIds)
+          .eq("category", "Transferência");
+        
+        if (linkedTxs) {
+          const linkedIds = linkedTxs.map(l => l.id);
+          idsToUpdate = Array.from(new Set([...idsToUpdate, ...linkedIds]));
+        }
+      }
+
       const { error } = await supabase
         .from("transactions")
         .update({ is_visible: visible })
-        .in("id", ids);
+        .in("id", idsToUpdate);
 
       if (error) throw error;
 
       setTransactions(prev => prev.map(t => 
-        selectedIds.has(t.id) ? { ...t, is_visible: visible } : t
+        idsToUpdate.includes(t.id) ? { ...t, is_visible: visible } : t
       ));
       setSelectedIds(new Set());
       setSelectionMode(false);
-      return count;
+      return idsToUpdate.length;
     };
 
     toast.promise(promise(), {
-      loading: visible ? `Exibindo ${count} transações...` : `Ocultando ${count} transações...`,
+      loading: visible ? `Exibindo transações...` : `Ocultando transações...`,
       success: (updatedCount) => `${updatedCount} ${updatedCount === 1 ? "transação atualizada" : "transações atualizadas"} com sucesso`,
       error: "Erro ao atualizar visibilidade das transações",
       finally: () => setDeleting(false)
