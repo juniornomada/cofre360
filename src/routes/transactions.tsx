@@ -454,7 +454,7 @@ function TransactionsPage() {
 
     toast.promise(promise(), {
       loading: visible ? `Exibindo ${count} transações...` : `Ocultando ${count} transações...`,
-      success: (updatedCount) => `${updatedCount} ${updatedCount === 1 ? "transação" : "transações"} ${visible ? "exibida" : "ocultada"}${updatedCount === 1 ? "" : "s"} com sucesso`,
+      success: (updatedCount) => `${updatedCount} ${updatedCount === 1 ? "transação atualizada" : "transações atualizadas"} com sucesso`,
       error: "Erro ao atualizar visibilidade das transações",
       finally: () => setDeleting(false)
     });
@@ -608,16 +608,31 @@ function TransactionsPage() {
   };
 
   const handleBatchDelete = async () => {
+    const count = selectedIds.size;
+    if (count === 0) return;
+    
     setDeleting(true);
-    const ids = Array.from(selectedIds);
-    for (let i = 0; i < ids.length; i += 50) {
-      const batch = ids.slice(i, i + 50);
-      await supabase.from("transactions").delete().in("id", batch);
-    }
-    setDeleting(false);
-    setShowBatchDeleteDialog(false);
-    exitSelectionMode();
-    fetchTransactions();
+    const promise = async () => {
+      const ids = Array.from(selectedIds);
+      for (let i = 0; i < ids.length; i += 50) {
+        const batch = ids.slice(i, i + 50);
+        const { error } = await supabase.from("transactions").delete().in("id", batch);
+        if (error) throw error;
+      }
+      return count;
+    };
+
+    toast.promise(promise(), {
+      loading: `Excluindo ${count} transações...`,
+      success: (deletedCount) => `${deletedCount} ${deletedCount === 1 ? "transação excluída" : "transações excluídas"} com sucesso`,
+      error: "Erro ao excluir transações",
+      finally: () => {
+        setDeleting(false);
+        setShowBatchDeleteDialog(false);
+        exitSelectionMode();
+        fetchTransactions();
+      }
+    });
   };
 
   const handleDeleteAll = async () => {
@@ -659,9 +674,11 @@ function TransactionsPage() {
                 <div className="flex gap-1.5">
                   <button onClick={() => handleBulkVisibility(true)} className="flex h-8 items-center gap-1.5 rounded-full bg-primary/10 text-primary px-3 text-xs font-medium border border-primary/20" title="Exibir selecionadas">
                     <Eye className="h-3.5 w-3.5" />
+                    {selectedIds.size}
                   </button>
                   <button onClick={() => handleBulkVisibility(false)} className="flex h-8 items-center gap-1.5 rounded-full bg-accent text-muted-foreground px-3 text-xs font-medium border border-border" title="Ocultar selecionadas">
                     <EyeOff className="h-3.5 w-3.5" />
+                    {selectedIds.size}
                   </button>
                   <button onClick={() => setShowBatchDeleteDialog(true)} className="flex h-8 items-center gap-1.5 rounded-full bg-destructive px-3 text-xs font-medium text-destructive-foreground">
                     <Trash2 className="h-3.5 w-3.5" />

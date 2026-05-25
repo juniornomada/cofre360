@@ -327,9 +327,11 @@ function AccountsPage() {
   };
 
   const handleBulkVisibility = async (visible: boolean) => {
-    if (selectedIds.size === 0) return;
+    const count = selectedIds.size;
+    if (count === 0) return;
     setIsSubmitting(true);
-    try {
+    
+    const promise = async () => {
       const { error } = await supabase
         .from("bank_accounts")
         .update({ is_visible: visible })
@@ -337,16 +339,18 @@ function AccountsPage() {
       
       if (error) throw error;
       
-      toast.success(`${selectedIds.size} conta(s) ${visible ? "mostradas" : "ocultadas"}`);
       setSelectedIds(new Set());
       setIsSelectionMode(false);
       fetchAccounts();
-    } catch (error: any) {
-      console.error("Error bulk updating visibility:", error);
-      toast.error("Erro ao atualizar visibilidade");
-    } finally {
-      setIsSubmitting(false);
-    }
+      return count;
+    };
+
+    toast.promise(promise(), {
+      loading: visible ? `Exibindo ${count} contas...` : `Ocultando ${count} contas...`,
+      success: (updatedCount) => `${updatedCount} ${updatedCount === 1 ? "conta atualizada" : "contas atualizadas"} com sucesso`,
+      error: "Erro ao atualizar visibilidade das contas",
+      finally: () => setIsSubmitting(false)
+    });
   };
 
   const fetchHistory = useCallback(async (accountId: string) => {
@@ -714,14 +718,14 @@ function AccountsPage() {
                 className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-primary/10 text-primary text-[11px] font-bold border border-primary/20 hover:bg-primary/20 transition-colors"
               >
                 <Eye className="h-3.5 w-3.5" />
-                Mostrar Selecionados
+                Mostrar Selecionadas ({selectedIds.size})
               </button>
               <button 
                 onClick={() => handleBulkVisibility(false)}
                 className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-destructive/10 text-destructive text-[11px] font-bold border border-destructive/20 hover:bg-destructive/20 transition-colors"
               >
                 <EyeOff className="h-3.5 w-3.5" />
-                Ocultar Selecionados
+                Ocultar Selecionadas ({selectedIds.size})
               </button>
             </div>
           )}
