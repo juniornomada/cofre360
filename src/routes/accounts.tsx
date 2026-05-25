@@ -706,9 +706,6 @@ function AccountsPage() {
                 {isSelectionMode ? "Cancelar Seleção" : "Seleção Múltipla"}
               </button>
             </div>
-            {!isSelectionMode && (
-              <p className="text-[10px] text-muted-foreground/70">Pressione por 1 segundo e arraste para reordenar</p>
-            )}
           </div>
           {isSelectionMode && selectedIds.size > 0 && (
             <div className="flex items-center gap-2 px-1 animate-in slide-in-from-top-1 duration-200">
