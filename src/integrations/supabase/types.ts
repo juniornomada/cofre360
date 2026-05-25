@@ -273,7 +273,7 @@ export type Database = {
           created_at: string | null
           due_date: string | null
           icon: string | null
-          id: string | null
+          id: string
           is_completed: boolean | null
           is_recurring: boolean | null
           notes: string | null
@@ -292,7 +292,7 @@ export type Database = {
           created_at?: string | null
           due_date?: string | null
           icon?: string | null
-          id?: string | null
+          id: string
           is_completed?: boolean | null
           is_recurring?: boolean | null
           notes?: string | null
@@ -311,7 +311,7 @@ export type Database = {
           created_at?: string | null
           due_date?: string | null
           icon?: string | null
-          id?: string | null
+          id?: string
           is_completed?: boolean | null
           is_recurring?: boolean | null
           notes?: string | null
