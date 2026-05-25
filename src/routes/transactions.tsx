@@ -430,6 +430,32 @@ function TransactionsPage() {
     }
   };
 
+  const handleBulkVisibility = async (visible: boolean) => {
+    if (selectedIds.size === 0) return;
+    setDeleting(true);
+    try {
+      const ids = Array.from(selectedIds);
+      const { error } = await supabase
+        .from("transactions")
+        .update({ is_visible: visible })
+        .in("id", ids);
+
+      if (error) throw error;
+
+      toast.success(`${selectedIds.size} transações ${visible ? "exibidas" : "ocultadas"}`);
+      setTransactions(prev => prev.map(t => 
+        selectedIds.has(t.id) ? { ...t, is_visible: visible } : t
+      ));
+      setSelectedIds(new Set());
+      setSelectionMode(false);
+    } catch (error: any) {
+      console.error("Error updating bulk visibility:", error);
+      toast.error("Erro ao atualizar visibilidade");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const handleDeleteConfirm = async () => {
     if (!deleteTarget) return;
     try {
@@ -621,10 +647,18 @@ function TransactionsPage() {
                 {selectedIds.size === filtered.length ? "Desmarcar" : "Todos"}
               </button>
               {selectedIds.size > 0 && (
-                <button onClick={() => setShowBatchDeleteDialog(true)} className="flex h-8 items-center gap-1.5 rounded-full bg-destructive px-3 text-xs font-medium text-destructive-foreground">
-                  <Trash2 className="h-3.5 w-3.5" />
-                  {selectedIds.size}
-                </button>
+                <div className="flex gap-1.5">
+                  <button onClick={() => handleBulkVisibility(true)} className="flex h-8 items-center gap-1.5 rounded-full bg-primary/10 text-primary px-3 text-xs font-medium border border-primary/20" title="Exibir selecionadas">
+                    <Eye className="h-3.5 w-3.5" />
+                  </button>
+                  <button onClick={() => handleBulkVisibility(false)} className="flex h-8 items-center gap-1.5 rounded-full bg-accent text-muted-foreground px-3 text-xs font-medium border border-border" title="Ocultar selecionadas">
+                    <EyeOff className="h-3.5 w-3.5" />
+                  </button>
+                  <button onClick={() => setShowBatchDeleteDialog(true)} className="flex h-8 items-center gap-1.5 rounded-full bg-destructive px-3 text-xs font-medium text-destructive-foreground">
+                    <Trash2 className="h-3.5 w-3.5" />
+                    {selectedIds.size}
+                  </button>
+                </div>
               )}
               <button onClick={exitSelectionMode} className="flex h-8 w-8 items-center justify-center rounded-full bg-card text-muted-foreground border border-border">
                 <X className="h-4 w-4" />
