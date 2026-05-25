@@ -43,6 +43,7 @@ import type { QuickAddInitialType } from "@/components/QuickAddTransactionDialog
 import { saveInstallmentPlan, stripInstallmentSuffix } from "@/lib/installment-edit";
 import { deleteTransactionScope, isInstallmentTx } from "@/lib/installment-delete";
 import { toast } from "sonner";
+import { useUserPreferences } from "@/hooks/use-user-preferences";
 
 
 interface Transaction {
@@ -152,20 +153,12 @@ function SortableAccountItem({ acc, balanceVisible, fmt }: { acc: any; balanceVi
 }
 
 function Dashboard() {
-  const [balanceVisible, setBalanceVisible] = useState(() => {
-    return localStorage.getItem("balanceVisible") !== "false";
-  });
-  const [hideZeroBalances, setHideZeroBalances] = useState(() => {
-    return localStorage.getItem("hideZeroBalances") === "true";
-  });
-
-  useEffect(() => {
-    localStorage.setItem("balanceVisible", String(balanceVisible));
-  }, [balanceVisible]);
-
-  useEffect(() => {
-    localStorage.setItem("hideZeroBalances", String(hideZeroBalances));
-  }, [hideZeroBalances]);
+  const {
+    balanceVisible,
+    hideZeroBalances,
+    updateBalanceVisible,
+    updateHideZeroBalances
+  } = useUserPreferences();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
   const [accountBalances, setAccountBalances] = useState<{ id: string; name: string; icon: string | null; color: string | null; balance: number }[]>([]);
