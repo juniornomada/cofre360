@@ -24,6 +24,7 @@ import { saveInstallmentPlan, stripInstallmentSuffix } from "@/lib/installment-e
 import { deleteTransactionScope, isInstallmentTx } from "@/lib/installment-delete";
 import { toast } from "sonner";
 import { Layers } from "lucide-react";
+import { useUserPreferences } from "@/hooks/use-user-preferences";
 
 
 interface Transaction {
@@ -59,13 +60,7 @@ const iconOptions = ["🛵", "🏠", "💰", "🎬", "⛽", "🛒", "💊", "�
 
 function TransactionsPage() {
   const searchParams = Route.useSearch();
-  const [balanceVisible, setBalanceVisible] = useState(() => {
-    return localStorage.getItem("balanceVisible") !== "false";
-  });
-
-  useEffect(() => {
-    localStorage.setItem("balanceVisible", String(balanceVisible));
-  }, [balanceVisible]);
+  const { balanceVisible, updateBalanceVisible } = useUserPreferences();
 
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [cardOptions, setCardOptions] = useState<CardOption[]>([]);

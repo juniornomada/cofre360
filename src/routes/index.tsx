@@ -813,7 +813,7 @@ function Dashboard() {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button 
-                    onClick={() => setHideZeroBalances(!hideZeroBalances)} 
+                    onClick={() => updateHideZeroBalances(!hideZeroBalances)} 
                     className={cn(
                       "interactive-button p-1.5 rounded-lg hover:bg-accent/50 transition-colors",
                       hideZeroBalances ? "text-primary bg-primary/10" : "text-muted-foreground"
@@ -826,7 +826,7 @@ function Dashboard() {
                   {hideZeroBalances ? "Exibir contas com saldo zero" : "Ocultar contas com saldo zero"}
                 </TooltipContent>
               </Tooltip>
-              <button onClick={() => setBalanceVisible(!balanceVisible)} className="interactive-button p-1.5 rounded-lg hover:bg-accent/50 text-muted-foreground">
+              <button onClick={() => updateBalanceVisible(!balanceVisible)} className="interactive-button p-1.5 rounded-lg hover:bg-accent/50 text-muted-foreground">
                 {balanceVisible ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
               </button>
             </div>
