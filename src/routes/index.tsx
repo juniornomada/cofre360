@@ -322,6 +322,41 @@ function Dashboard() {
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
+  const handleToggleVisibility = async (tx: Transaction) => {
+    try {
+      const newVisibility = tx.is_visible === false ? true : false;
+      const idsToUpdate = [tx.id];
+      
+      // If it's a transfer pair, find the linked transaction
+      if (tx.isTransferPair && tx.installment_group_id) {
+        const { data: linked } = await supabase
+          .from("transactions")
+          .select("id")
+          .eq("installment_group_id", tx.installment_group_id)
+          .eq("category", "Transferência");
+        
+        if (linked) {
+          linked.forEach(l => {
+            if (l.id !== tx.id) idsToUpdate.push(l.id);
+          });
+        }
+      }
+
+      const { error } = await supabase
+        .from("transactions")
+        .update({ is_visible: newVisibility })
+        .in("id", idsToUpdate);
+
+      if (error) throw error;
+
+      toast.success(newVisibility ? "Transação visível" : "Transação oculta");
+      fetchAll();
+    } catch (error: any) {
+      console.error("Error toggling visibility:", error);
+      toast.error("Erro ao alterar visibilidade");
+    }
+  };
+
   const handleEdit = (tx: Transaction) => {
     setEditTx({ ...tx });
     setEditInstallmentMode("divide");
