@@ -17,7 +17,7 @@ import { toast } from "sonner";
 
 export type QuickAddInitialType = "expense" | "income" | "transfer";
 
-interface BankAccountOption { id: string; name: string; icon: string | null; color: string | null }
+interface BankAccountOption { id: string; name: string; icon: string | null; color: string | null; balance: number }
 interface CardOption { name: string; brand: string; emoji: string | null; color: string | null }
 
 interface Props {
@@ -68,14 +68,14 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
     try {
       const [{ data: cards, error: cardsError }, { data: accs, error: accsError }] = await Promise.all([
         supabase.from("cards").select("name, brand, emoji, color").order("created_at", { ascending: true }),
-        supabase.from("bank_accounts").select("id, name, icon, color").order("created_at", { ascending: true }),
+        supabase.from("bank_accounts").select("id, name, icon, color, balance").order("created_at", { ascending: true }),
       ]);
 
       if (cardsError) throw cardsError;
       if (accsError) throw accsError;
 
       setCardOptions((cards || []).map(c => ({ name: c.name, brand: c.brand, emoji: c.emoji, color: c.color })));
-      setBankAccounts((accs || []).map(a => ({ id: a.id, name: a.name, icon: a.icon, color: a.color })));
+      setBankAccounts((accs || []).map(a => ({ id: a.id, name: a.name, icon: a.icon, color: a.color, balance: a.balance || 0 })));
     } catch (error: any) {
       console.error("Error fetching data:", error);
       toast.error("Erro ao carregar dados: " + (error.message || "Erro desconhecido"));
@@ -159,8 +159,14 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
          toast.error("Selecione contas diferentes para a transferência.");
          return;
        }
-      const fromAcc = bankAccounts.find(a => a.id === transferFromId);
-      const toAcc = bankAccounts.find(a => a.id === transferToId);
+
+       const fromAcc = bankAccounts.find(a => a.id === transferFromId);
+       if (fromAcc && newTx.amount > fromAcc.balance) {
+         toast.error(`Saldo insuficiente na conta ${fromAcc.name} (Saldo: R$ ${fromAcc.balance.toLocaleString("pt-BR", { minimumFractionDigits: 2 })})`);
+         return;
+       }
+
+       const toAcc = bankAccounts.find(a => a.id === transferToId);
       const fromName = fromAcc?.name || "Conta";
       const toName = toAcc?.name || "Conta";
       const groupId = (typeof crypto !== "undefined" && "randomUUID" in crypto)
