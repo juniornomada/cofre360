@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { SmartLink as Link } from "@/components/SmartLink";
-import { ArrowLeft, Plus, Landmark, Trash2, X, Check, Loader2, Upload, FileText, MoreVertical, GripVertical, History, Pencil, Eye, EyeOff, CheckSquare, Square } from "lucide-react";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { ArrowLeft, Plus, Landmark, Trash2, X, Check, Loader2, Upload, FileText, MoreVertical, GripVertical, History, Pencil, Eye, EyeOff, CheckSquare, Square } from \\"lucide-react\\";
+import { useUserPreferences } from \\"@/hooks/use-user-preferences\\";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from \\"@/components/ui/dropdown-menu\\";
 
 import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react";
 
@@ -85,6 +86,7 @@ type SortableAccountItemProps = {
   isSelectionMode: boolean;
   isSelected: boolean;
   onToggleSelect: (id: string) => void;
+  balanceVisible: boolean;
 };
 
 function SortableAccountItem({
@@ -110,6 +112,7 @@ function SortableAccountItem({
   isSelectionMode,
   isSelected,
   onToggleSelect,
+  balanceVisible,
 }: SortableAccountItemProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: account.id });
   const style: React.CSSProperties = {
@@ -184,7 +187,7 @@ function SortableAccountItem({
                   "text-[15px] font-bold tabular-nums tracking-tight leading-tight whitespace-nowrap shrink-0",
                   currentBalance < 0 ? "text-destructive" : "text-foreground"
                 )}>
-                  R$ {currentBalance.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                  {balanceVisible ? `R$ ${currentBalance.toLocaleString(\"pt-BR\", { minimumFractionDigits: 2 })}` : \"R$ ••••\"}
                 </p>
               </div>
             </button>
@@ -282,6 +285,7 @@ function SortableAccountItem({
  });
 
 function AccountsPage() {
+  const { balanceVisible, updateBalanceVisible } = useUserPreferences();
   const [accounts, setAccounts] = useState<BankAccount[]>([]);
   const [incomeByAccount, setIncomeByAccount] = useState<Record<string, number>>({});
   const [expenseByAccount, setExpenseByAccount] = useState<Record<string, number>>({});
