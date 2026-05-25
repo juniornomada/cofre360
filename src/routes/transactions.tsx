@@ -41,6 +41,7 @@ interface Transaction {
   installment_group_id?: string | null;
   installment_number?: number;
   total_installments?: number;
+  is_visible?: boolean;
 }
 
 interface BankAccountOption {
