@@ -849,21 +849,19 @@ function RemindersPage() {
                       {linkedAccount && (
                         <div 
                           title={linkedAccount.name}
-                          className={cn("flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[9px] font-bold text-white bg-gradient-to-br shadow-sm shrink-0", linkedAccount.color)}
+                          className={cn("flex items-center gap-1 rounded-md px-1 py-0.5 text-[9px] font-bold text-white bg-gradient-to-br shadow-sm shrink-0", linkedAccount.color)}
                         >
                           <BankLogo icon={linkedAccount.icon || ""} color={linkedAccount.color || ""} name={linkedAccount.name} size="xs" />
-                          <span className="truncate max-w-[60px]">{linkedAccount.name}</span>
                         </div>
                       )}
                       {linkedCard && (
                         <div 
                           title={linkedCard.name}
-                          className={cn("flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[9px] font-bold text-white bg-gradient-to-br shadow-sm shrink-0", linkedCard.color)}
+                          className={cn("flex items-center gap-1 rounded-md px-1 py-0.5 text-[9px] font-bold text-white bg-gradient-to-br shadow-sm shrink-0", linkedCard.color)}
                         >
                           <div className="flex h-5 w-5 items-center justify-center rounded-sm bg-white/20 text-[10px]">
                             {linkedCard.emoji || "💳"}
                           </div>
-                          <span className="truncate max-w-[60px]">{linkedCard.name}</span>
                         </div>
                       )}
                     </div>
