@@ -62,6 +62,7 @@ interface Transaction {
   isTransferPair?: boolean;
   transferFromName?: string;
   transferToName?: string;
+  is_visible?: boolean;
 }
 
 const shortMonthMap: Record<string, number> = {
