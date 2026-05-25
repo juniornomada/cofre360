@@ -608,16 +608,31 @@ function TransactionsPage() {
   };
 
   const handleBatchDelete = async () => {
+    const count = selectedIds.size;
+    if (count === 0) return;
+    
     setDeleting(true);
-    const ids = Array.from(selectedIds);
-    for (let i = 0; i < ids.length; i += 50) {
-      const batch = ids.slice(i, i + 50);
-      await supabase.from("transactions").delete().in("id", batch);
-    }
-    setDeleting(false);
-    setShowBatchDeleteDialog(false);
-    exitSelectionMode();
-    fetchTransactions();
+    const promise = async () => {
+      const ids = Array.from(selectedIds);
+      for (let i = 0; i < ids.length; i += 50) {
+        const batch = ids.slice(i, i + 50);
+        const { error } = await supabase.from("transactions").delete().in("id", batch);
+        if (error) throw error;
+      }
+      return count;
+    };
+
+    toast.promise(promise(), {
+      loading: `Excluindo ${count} transações...`,
+      success: (deletedCount) => `${deletedCount} ${deletedCount === 1 ? "transação excluída" : "transações excluídas"} com sucesso`,
+      error: "Erro ao excluir transações",
+      finally: () => {
+        setDeleting(false);
+        setShowBatchDeleteDialog(false);
+        exitSelectionMode();
+        fetchTransactions();
+      }
+    });
   };
 
   const handleDeleteAll = async () => {
