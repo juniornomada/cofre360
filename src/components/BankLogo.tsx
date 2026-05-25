@@ -58,11 +58,12 @@ function getAbbreviation(name: string) {
 export function BankLogo({ icon, color, name, size = "md" }: { icon: string; color: string; name?: string; size?: "xs" | "sm" | "md" | "lg" }) {
   const preset = bankPresets.find(b => b.id === icon);
   const sizeClasses = size === "xs" ? "h-5 w-5 text-[8px]" : size === "sm" ? "h-8 w-8 text-[10px]" : size === "lg" ? "h-14 w-14 text-base" : "h-12 w-12 text-sm";
+  const radiusClasses = size === "xs" ? "rounded-md" : "rounded-xl";
 
   if (preset && preset.id !== "custom") {
     return (
       <div
-        className={`flex items-center justify-center rounded-xl font-bold overflow-hidden bg-white shadow-sm ${sizeClasses}`}
+        className={`flex items-center justify-center ${radiusClasses} font-bold overflow-hidden bg-white shadow-sm ${sizeClasses}`}
         style={{ color: preset.textColor.includes("white") ? "#fff" : undefined }}
       >
         {preset.logoUrl ? (
@@ -98,7 +99,7 @@ export function BankLogo({ icon, color, name, size = "md" }: { icon: string; col
   const displayIcon = icon === "custom" && name ? getAbbreviation(name) : icon;
 
   return (
-    <div className={`flex items-center justify-center rounded-xl bg-gradient-to-br ${color} ${displayIcon.length > 2 ? 'text-xl' : 'text-xs font-bold text-white'} ${sizeClasses}`}>
+    <div className={`flex items-center justify-center ${radiusClasses} bg-gradient-to-br ${color} ${displayIcon.length > 2 ? (size === "xs" ? "text-[10px]" : "text-xl") : (size === "xs" ? "text-[8px] font-bold" : "text-xs font-bold")} text-white ${sizeClasses}`}>
       {displayIcon}
     </div>
   );
