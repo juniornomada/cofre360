@@ -163,13 +163,14 @@ function Dashboard() {
   const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
   const [accountBalances, setAccountBalances] = useState<{ id: string; name: string; icon: string | null; color: string | null; balance: number }[]>([]);
   const [cardOptions, setCardOptions] = useState<string[]>(["Nenhum"]);
+  const [allCards, setAllCards] = useState<{ id: string; name: string; emoji: string | null; color: string | null }[]>([]);
   const [loading, setLoading] = useState(true);
   const [editTx, setEditTx] = useState<Transaction | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Transaction | null>(null);
   const [deleteScope, setDeleteScope] = useState<"single" | "future" | "all">("single");
-  const [pendingReminders, setPendingReminders] = useState<{ id: string; title: string | null; icon: string | null; due_date: string | null; amount: number | null; type: string | null }[]>([]);
+  const [pendingReminders, setPendingReminders] = useState<{ id: string; title: string | null; icon: string | null; due_date: string | null; amount: number | null; type: string | null; bank_account_id: string | null; card_id: string | null }[]>([]);
   const [goals, setGoals] = useState<{ id: string; name: string | null; icon: string | null; current_amount: number | null; target_amount: number | null }[]>([]);
   const [greeting, setGreeting] = useState<string>("");
 
@@ -228,8 +229,8 @@ function Dashboard() {
       supabase.from("transactions").select(TX_FIELDS).order("created_at", { ascending: false }).limit(20),
       supabase.from("transactions").select("type, amount, date, card, bank_account_id, category"),
       supabase.from("bank_accounts").select("id, name, icon, color, balance, is_visible, sort_order").order("sort_order", { ascending: true }).order("created_at", { ascending: true }),
-      supabase.from("cards").select("name").order("created_at", { ascending: true }),
-      supabase.from("reminders").select("id, title, icon, due_date, amount, type").eq("is_completed", false).order("due_date", { ascending: true }).limit(3),
+      supabase.from("cards").select("id, name, emoji, color").order("created_at", { ascending: true }),
+      supabase.from("reminders").select("id, title, icon, due_date, amount, type, bank_account_id, card_id").eq("is_completed", false).order("due_date", { ascending: true }).limit(3),
       supabase.from("goals").select("id, name, icon, current_amount, target_amount"),
     ]);
 
@@ -248,6 +249,7 @@ function Dashboard() {
     const gls = glsRes.data;
 
     setCardOptions(["Nenhum", ...((cards || []).map((c: any) => c.name))]);
+    if (cards) setAllCards(cards as any);
     if (rems) setPendingReminders(rems as any);
     if (gls) setGoals(gls as any);
 
@@ -1085,21 +1087,44 @@ function Dashboard() {
             </Link>
           </div>
           <div className="flex flex-col gap-1.5">
-            {pendingReminders.map((r) => (
-              <Link key={r.id} to="/reminders" className="interactive-card flex items-center gap-3 rounded-xl bg-card px-3 py-2.5 border border-border/20">
-                <span className="text-lg">{r.icon}</span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">{r.title}</p>
-                  <p className="text-[10px] text-muted-foreground">{(() => { const d = parseTxDateToDate(r.due_date); if (!d) return r.due_date; const m = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"]; return `${d.getDate()} ${m[d.getMonth()]}`; })()}</p>
-                </div>
+            {pendingReminders.map((r) => {
+              const linkedAccount = r.bank_account_id ? accountBalances.find(a => a.id === r.bank_account_id) : null;
+              const linkedCard = r.card_id ? allCards.find(c => c.id === r.card_id) : null;
+              // Note: cards are not explicitly loaded into a "cards" state in this component, 
+              // but we have cardOptions and bankAccounts. We might need cards too.
+              // Looking at fetchAll, cardsRes is fetched but only names are set in cardOptions.
+              // I'll need to update fetchAll to get full card objects if we want emojis.
+              
+              return (
+                <Link key={r.id} to="/reminders" className="interactive-card flex items-center gap-3 rounded-xl bg-card px-3 py-2.5 border border-border/20">
+                  <span className="text-lg">{r.icon}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-medium text-foreground truncate">{r.title}</p>
+                      {linkedAccount && (
+                        <div className={cn("flex items-center rounded-md px-1 py-0.5 shadow-sm shrink-0 bg-gradient-to-br", linkedAccount.color)}>
+                          <BankLogo icon={linkedAccount.icon || ""} color={linkedAccount.color || ""} name={linkedAccount.name} size="xs" />
+                        </div>
+                      )}
+                      {linkedCard && (
+                        <div className={cn("flex items-center rounded-md px-1 py-0.5 shadow-sm shrink-0 bg-gradient-to-br", linkedCard.color)}>
+                          <div className="flex h-5 w-5 items-center justify-center rounded-sm bg-white/20 text-[10px]">
+                            {linkedCard.emoji || "💳"}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-[10px] text-muted-foreground">{(() => { const d = parseTxDateToDate(r.due_date || ""); if (!d) return r.due_date; const m = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"]; return `${d.getDate()} ${m[d.getMonth()]}`; })()}</p>
+                  </div>
                 <span className={cn(
                   "text-sm font-semibold tabular-nums",
                   r.type === "income" ? "text-primary" : "text-foreground"
                 )}>
                   R$ {fmt(Number(r.amount))}
                 </span>
-              </Link>
-            ))}
+                </Link>
+              );
+            })}
           </div>
         </div>
       )}
