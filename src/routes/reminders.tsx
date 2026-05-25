@@ -522,7 +522,21 @@ function RemindersPage() {
       </div>
       <div>
         <label className="text-xs text-muted-foreground mb-1 block">Título</label>
-        <input value={data.title || ""} onChange={e => setData(prev => ({ ...prev, title: e.target.value }))} className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground outline-none" placeholder="Ex: Conta de luz" />
+        <input 
+          value={data.title || ""} 
+          onChange={e => setData(prev => ({ ...prev, title: e.target.value }))} 
+          onKeyDown={e => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              const amountInput = (e.target as HTMLElement).closest('.flex-col')?.querySelector('input[inputmode="numeric"]');
+              if (amountInput instanceof HTMLInputElement) {
+                amountInput.focus();
+              }
+            }
+          }}
+          className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground outline-none" 
+          placeholder="Ex: Conta de luz" 
+        />
       </div>
       <div>
         <label className="text-xs text-muted-foreground mb-1 block">Tipo</label>
@@ -560,6 +574,13 @@ function RemindersPage() {
           <CalculatorAmountInput 
             value={Number(data.amount)} 
             onChange={val => setData(prev => ({ ...prev, amount: val }))} 
+            onEnter={() => {
+              if ('id' in data) {
+                handleSaveEdit();
+              } else {
+                handleAdd();
+              }
+            }}
           />
         </div>
         <div>
