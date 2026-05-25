@@ -193,9 +193,9 @@ function TransactionsPage() {
 
   const fetchBankAccounts = useCallback(async () => {
     try {
-      const { data, error } = await supabase.from("bank_accounts").select("id, name").order("created_at", { ascending: true });
+      const { data, error } = await supabase.from("bank_accounts").select("id, name, balance").order("created_at", { ascending: true });
       if (error) throw error;
-      if (data) setBankAccounts(data);
+      if (data) setBankAccounts(data.map(a => ({ id: a.id, name: a.name, balance: a.balance || 0 })));
     } catch (error: any) {
       console.error("Error fetching bank accounts:", error);
       toast.error("Erro ao carregar contas: " + (error.message || "Erro desconhecido"));
