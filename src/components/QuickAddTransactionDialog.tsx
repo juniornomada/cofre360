@@ -17,7 +17,7 @@ import { toast } from "sonner";
 
 export type QuickAddInitialType = "expense" | "income" | "transfer";
 
-interface BankAccountOption { id: string; name: string; icon: string | null; color: string | null }
+interface BankAccountOption { id: string; name: string; icon: string | null; color: string | null; balance: number }
 interface CardOption { name: string; brand: string; emoji: string | null; color: string | null }
 
 interface Props {
