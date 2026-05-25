@@ -430,6 +430,32 @@ function TransactionsPage() {
     }
   };
 
+  const handleBulkVisibility = async (visible: boolean) => {
+    if (selectedIds.size === 0) return;
+    setDeleting(true);
+    try {
+      const ids = Array.from(selectedIds);
+      const { error } = await supabase
+        .from("transactions")
+        .update({ is_visible: visible })
+        .in("id", ids);
+
+      if (error) throw error;
+
+      toast.success(`${selectedIds.size} transações ${visible ? "exibidas" : "ocultadas"}`);
+      setTransactions(prev => prev.map(t => 
+        selectedIds.has(t.id) ? { ...t, is_visible: visible } : t
+      ));
+      setSelectedIds(new Set());
+      setSelectionMode(false);
+    } catch (error: any) {
+      console.error("Error updating bulk visibility:", error);
+      toast.error("Erro ao atualizar visibilidade");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const handleDeleteConfirm = async () => {
     if (!deleteTarget) return;
     try {
