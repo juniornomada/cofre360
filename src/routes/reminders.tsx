@@ -847,14 +847,24 @@ function RemindersPage() {
                         {getCategoryDisplay(reminder.category || "")}
                       </span>
                       {linkedAccount && (
-                        <span className={cn("rounded px-1.5 py-0.5 text-[9px] font-medium text-white bg-gradient-to-br truncate", linkedAccount.color)}>
-                          {linkedAccount.name}
-                        </span>
+                        <div 
+                          title={linkedAccount.name}
+                          className={cn("flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[9px] font-bold text-white bg-gradient-to-br shadow-sm shrink-0", linkedAccount.color)}
+                        >
+                          <BankLogo icon={linkedAccount.icon || ""} color={linkedAccount.color || ""} name={linkedAccount.name} size="xs" />
+                          <span className="truncate max-w-[60px]">{linkedAccount.name}</span>
+                        </div>
                       )}
                       {linkedCard && (
-                        <span className={cn("rounded px-1.5 py-0.5 text-[9px] font-medium text-white bg-gradient-to-br truncate", linkedCard.color)}>
-                          {linkedCard.name}
-                        </span>
+                        <div 
+                          title={linkedCard.name}
+                          className={cn("flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[9px] font-bold text-white bg-gradient-to-br shadow-sm shrink-0", linkedCard.color)}
+                        >
+                          <div className="flex h-5 w-5 items-center justify-center rounded-sm bg-white/20 text-[10px]">
+                            {linkedCard.emoji || "💳"}
+                          </div>
+                          <span className="truncate max-w-[60px]">{linkedCard.name}</span>
+                        </div>
                       )}
                     </div>
 
@@ -1024,7 +1034,7 @@ function RemindersPage() {
                             SUGERIDO
                           </div>
                         )}
-                        <div className={cn("flex h-9 w-9 items-center justify-center rounded-lg text-base text-white bg-gradient-to-br", acc.color)}>{acc.icon}</div>
+                        <BankLogo icon={acc.icon || ""} color={acc.color || ""} name={acc.name} size="sm" />
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-foreground truncate">{acc.name}</p>
                           <p className="text-[10px] text-muted-foreground tabular-nums">Saldo: R$ {Number(acc.balance).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
@@ -1065,7 +1075,7 @@ function RemindersPage() {
                               SUGERIDO
                             </div>
                           )}
-                          <div className={cn("flex h-9 w-9 items-center justify-center rounded-lg text-base text-white bg-gradient-to-br", card.color)}>{card.emoji}</div>
+                          <div className={cn("flex h-9 w-9 items-center justify-center rounded-lg text-base text-white bg-gradient-to-br shadow-sm", card.color)}>{card.emoji}</div>
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-foreground truncate">{card.name} •••• {card.last_four}</p>
                             <p className="text-[10px] text-muted-foreground tabular-nums">Disponível: R$ {available.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
