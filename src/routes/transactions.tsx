@@ -534,66 +534,6 @@ function TransactionsPage() {
   };
 
 
-    if (!newTx.bank_account_id && !newTx.card) {
-      toast.error("Seleciona uma conta/cartão");
-      return;
-    }
-
-    const cardValue = newTx.card === "Nenhum" ? null : newTx.card;
-    const baseDate = (() => {
-      try { return parse(newTx.date, "dd MMM", new Date(), { locale: ptBR }); }
-      catch { return new Date(); }
-    })();
-
-    if (installmentEnabled && cardValue && installmentCount > 1 && newTx.type === "expense") {
-      const groupId = (typeof crypto !== "undefined" && "randomUUID" in crypto)
-        ? crypto.randomUUID()
-        : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-      const rows = [];
-      for (let i = 0; i < installmentCount; i++) {
-        const installDate = new Date(baseDate);
-        installDate.setMonth(installDate.getMonth() + i);
-         const { valorParcela: parcela } = calculateInstallmentDetails(
-           newTx.amount,
-           installmentCount,
-           installmentMode,
-           installmentFixedValue
-         );
-        const label = `${newTx.name} (${i + 1}/${installmentCount})`;
-        rows.push({
-          icon: newTx.icon, name: label, category: newTx.category,
-          date: format(installDate, "dd MMM", { locale: ptBR }),
-          amount: parcela, type: newTx.type,
-          card: cardValue, bank_account_id: newTx.bank_account_id || null,
-          installment_number: i + 1,
-          total_installments: installmentCount,
-          installment_group_id: groupId,
-        });
-      }
-      const { error } = await supabase.from("transactions").insert(rows);
-      if (error) throw error;
-    } else {
-      const { error } = await supabase.from("transactions").insert({
-        icon: newTx.icon, name: newTx.name, category: newTx.category,
-        date: newTx.date, amount: newTx.amount, type: newTx.type,
-        card: cardValue, bank_account_id: newTx.bank_account_id || null,
-      });
-      if (error) throw error;
-    }
-    setShowAddDialog(false);
-    setInstallmentEnabled(false);
-    setInstallmentCount(2);
-    setInstallmentMode("divide");
-    setInstallmentFixedValue(0);
-    setNewTx({ icon: "🍔", name: "", category: "Alimentação > Outros", date: format(new Date(), "dd MMM", { locale: ptBR }), amount: 0, type: "expense", card: null, bank_account_id: null });
-    fetchTransactions();
-    toast.success("Transação adicionada com sucesso!");
-    } catch (error: any) {
-      console.error("Error adding transaction:", error);
-      toast.error("Erro ao adicionar transação: " + (error.message || "Erro desconhecido"));
-    }
-  };
-
   const formatCurrency = (value: number) => value.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   const toggleSelect = (id: string) => {
