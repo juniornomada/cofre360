@@ -62,6 +62,7 @@ interface Transaction {
   isTransferPair?: boolean;
   transferFromName?: string;
   transferToName?: string;
+  is_visible?: boolean;
 }
 
 const shortMonthMap: Record<string, number> = {
@@ -151,10 +152,16 @@ function SortableAccountItem({ acc, balanceVisible, fmt }: { acc: any; balanceVi
 }
 
 function Dashboard() {
-  const [balanceVisible, setBalanceVisible] = useState(true);
+  const [balanceVisible, setBalanceVisible] = useState(() => {
+    return localStorage.getItem("balanceVisible") !== "false";
+  });
   const [hideZeroBalances, setHideZeroBalances] = useState(() => {
     return localStorage.getItem("hideZeroBalances") === "true";
   });
+
+  useEffect(() => {
+    localStorage.setItem("balanceVisible", String(balanceVisible));
+  }, [balanceVisible]);
 
   useEffect(() => {
     localStorage.setItem("hideZeroBalances", String(hideZeroBalances));
@@ -216,7 +223,7 @@ function Dashboard() {
     try {
     // Fire ALL queries in parallel — was sequential before, causing slow load.
     // Also: only select fields we actually use, instead of select("*").
-    const TX_FIELDS = "id, icon, name, category, date, amount, type, card, bank_account_id, installment_group_id, installment_number, total_installments";
+    const TX_FIELDS = "id, icon, name, category, date, amount, type, card, bank_account_id, installment_group_id, installment_number, total_installments, is_visible";
     const [
       rawRecentRes,
       allTxRes,
@@ -320,6 +327,41 @@ function Dashboard() {
   const fetchTransactions = fetchAll;
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
+
+  const handleToggleVisibility = async (tx: Transaction) => {
+    try {
+      const newVisibility = tx.is_visible === false ? true : false;
+      const idsToUpdate = [tx.id];
+      
+      // If it's a transfer pair, find the linked transaction
+      if (tx.isTransferPair && tx.installment_group_id) {
+        const { data: linked } = await supabase
+          .from("transactions")
+          .select("id")
+          .eq("installment_group_id", tx.installment_group_id)
+          .eq("category", "Transferência");
+        
+        if (linked) {
+          linked.forEach(l => {
+            if (l.id !== tx.id) idsToUpdate.push(l.id);
+          });
+        }
+      }
+
+      const { error } = await supabase
+        .from("transactions")
+        .update({ is_visible: newVisibility })
+        .in("id", idsToUpdate);
+
+      if (error) throw error;
+
+      toast.success(newVisibility ? "Transação visível" : "Transação oculta");
+      fetchAll();
+    } catch (error: any) {
+      console.error("Error toggling visibility:", error);
+      toast.error("Erro ao alterar visibilidade");
+    }
+  };
 
   const handleEdit = (tx: Transaction) => {
     setEditTx({ ...tx });
@@ -616,6 +658,7 @@ function Dashboard() {
   const groupedTransactions = useMemo(() => {
     const groups: Record<string, { label: string; items: Transaction[] }> = {};
     for (const tx of transactions) {
+      if (tx.is_visible === false) continue;
       const d = parseTxDateToDate(tx.date);
       let key: string;
       let label: string;
@@ -886,9 +929,12 @@ function Dashboard() {
                         {...tx} 
                         card={tx.card ?? undefined} 
                         amount={Number(tx.amount)} 
+                        amountVisible={balanceVisible}
+                        is_visible={tx.is_visible !== false}
                         style={{ animationDelay: `${i * 40}ms` }} 
                         onEdit={() => handleEdit(tx)}
                         onDelete={() => { setDeleteTarget(tx); setDeleteScope("single"); setShowDeleteDialog(true); }}
+                        onToggleVisibility={() => handleToggleVisibility(tx)}
                       />
                     </div>
                   ))}

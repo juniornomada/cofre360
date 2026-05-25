@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils";
 import { getCategoryDisplay, getCategoryIcon } from "@/lib/categories";
 import { restoreAccents } from "@/lib/restore-accents";
-import { CreditCard, Landmark, ArrowLeftRight, Layers, Pencil, Trash2 } from "lucide-react";
+import { CreditCard, Landmark, ArrowLeftRight, Layers, Pencil, Trash2, Eye, EyeOff } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 const MONTHS_PT_ABBR = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
@@ -42,9 +42,17 @@ interface TransactionItemProps {
   style?: React.CSSProperties;
   onEdit?: () => void;
   onDelete?: () => void;
+  onToggleVisibility?: () => void;
+  is_visible?: boolean;
+  amountVisible?: boolean;
 }
 
-export function TransactionItem({ icon, name, category, date, amount, type, card, cardBrand, bank_account_id, isTransferPair, transferFromName, transferToName, installment_number, total_installments, style, onEdit, onDelete }: TransactionItemProps) {
+export function TransactionItem({ 
+  icon, name, category, date, amount, type, card, cardBrand, 
+  bank_account_id, isTransferPair, transferFromName, transferToName, 
+  installment_number, total_installments, style, onEdit, onDelete,
+  onToggleVisibility, is_visible = true, amountVisible = true
+}: TransactionItemProps) {
   const isInstallment = !!total_installments && total_installments > 1 && !!installment_number;
   // Strip the trailing "(n/m)" from the displayed name since we'll show it as a badge.
   const displayName = isInstallment
@@ -58,23 +66,37 @@ export function TransactionItem({ icon, name, category, date, amount, type, card
   return (
     <div
       onClick={onEdit}
-      className="interactive-card flex items-center gap-3 rounded-xl p-3 cursor-pointer bg-card border border-border/30 transition-all group/item relative overflow-hidden active:scale-[0.98] sm:pr-3 pr-[48px]"
+      className={cn(
+        "interactive-card flex items-center gap-3 rounded-xl p-3 cursor-pointer bg-card border border-border/30 transition-all group/item relative overflow-hidden active:scale-[0.98] sm:pr-3 pr-[48px]",
+        !is_visible && "opacity-60 grayscale-[0.3]"
+      )}
       style={style}
     >
-      { onDelete && (
+      {(onDelete || onToggleVisibility) && (
         <div className="absolute right-2 sm:right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5 sm:opacity-0 group-hover/item:opacity-100 focus-within:opacity-100 transition-all duration-200 sm:translate-x-2 group-hover/item:translate-x-0 focus-within:translate-x-0 z-10 pointer-events-auto sm:pointer-events-none sm:group-hover/item:pointer-events-auto sm:focus-within:pointer-events-auto">
           <div 
             className="flex items-center gap-1 bg-card/90 sm:bg-card/80 backdrop-blur-sm p-1 rounded-full border border-border/50 shadow-sm sm:shadow-none"
             role="group"
             aria-label="Ações da transação"
           >
-            <button
-              onClick={(e) => { e.stopPropagation(); onDelete(); }}
-              className="p-1.5 rounded-full hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-destructive focus-visible:ring-offset-1"
-              aria-label="Excluir"
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
+            {onToggleVisibility && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onToggleVisibility(); }}
+                className="p-1.5 rounded-full hover:bg-accent text-muted-foreground transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary focus-visible:ring-offset-1"
+                aria-label={is_visible ? "Ocultar transação" : "Mostrar transação"}
+              >
+                {is_visible ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+              </button>
+            )}
+            {onDelete && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onDelete(); }}
+                className="p-1.5 rounded-full hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-destructive focus-visible:ring-offset-1"
+                aria-label="Excluir"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -164,7 +186,8 @@ export function TransactionItem({ icon, name, category, date, amount, type, card
             "text-sm font-bold tabular-nums shrink-0",
             isTransferPair ? "text-muted-foreground" : type === "income" ? "text-primary" : "text-foreground"
           )}>
-            {isTransferPair ? "" : type === "expense" ? "- " : "+ "}R$ {Math.abs(amount).toFixed(2)}
+            {isTransferPair ? "" : type === "expense" ? "- " : "+ "}
+            {amountVisible ? `R$ ${Math.abs(amount).toFixed(2)}` : "R$ ••••"}
           </span>
         </div>
         <div className="flex items-center justify-between gap-2 mt-0.5">

@@ -3,7 +3,7 @@ import { SmartLink as Link } from "@/components/SmartLink";
 import { TransactionItem } from "@/components/TransactionItem";
 import { EmptyState } from "@/components/EmptyState";
 import { mainCategories, parseCategoryValue } from "@/lib/categories";
-import { Search, Pencil, Trash2, Plus, CalendarIcon, Loader2, Upload, CheckSquare, Square, X, SlidersHorizontal, ArrowLeftRight, ArrowRight } from "lucide-react";
+import { Search, Pencil, Trash2, Plus, CalendarIcon, Loader2, Upload, CheckSquare, Square, X, SlidersHorizontal, ArrowLeftRight, ArrowRight, Eye, EyeOff } from "lucide-react";
 import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react";
 
 const CsvImportDialog = lazy(() => import("@/components/CsvImportDialog").then(m => ({ default: m.CsvImportDialog })));
@@ -41,6 +41,7 @@ interface Transaction {
   installment_group_id?: string | null;
   installment_number?: number;
   total_installments?: number;
+  is_visible?: boolean;
 }
 
 interface BankAccountOption {
@@ -58,6 +59,14 @@ const iconOptions = ["🛵", "🏠", "💰", "🎬", "⛽", "🛒", "💊", "�
 
 function TransactionsPage() {
   const searchParams = Route.useSearch();
+  const [balanceVisible, setBalanceVisible] = useState(() => {
+    return localStorage.getItem("balanceVisible") !== "false";
+  });
+
+  useEffect(() => {
+    localStorage.setItem("balanceVisible", String(balanceVisible));
+  }, [balanceVisible]);
+
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [cardOptions, setCardOptions] = useState<CardOption[]>([]);
   const [bankAccounts, setBankAccounts] = useState<BankAccountOption[]>([]);
@@ -390,6 +399,42 @@ function TransactionsPage() {
     }
   };
 
+  const handleToggleVisibility = async (tx: Transaction) => {
+    try {
+      const newVisibility = tx.is_visible === false ? true : false;
+      const idsToUpdate = [tx.id];
+      
+      if (tx.category === "Transferência" && tx.installment_group_id) {
+        const { data: linked } = await supabase
+          .from("transactions")
+          .select("id")
+          .eq("installment_group_id", tx.installment_group_id)
+          .eq("category", "Transferência");
+        
+        if (linked) {
+          linked.forEach(l => {
+            if (l.id !== tx.id) idsToUpdate.push(l.id);
+          });
+        }
+      }
+
+      const { error } = await supabase
+        .from("transactions")
+        .update({ is_visible: newVisibility })
+        .in("id", idsToUpdate);
+
+      if (error) throw error;
+
+      toast.success(newVisibility ? "Transação visível" : "Transação oculta");
+      setTransactions(prev => prev.map(t => 
+        idsToUpdate.includes(t.id) ? { ...t, is_visible: newVisibility } : t
+      ));
+    } catch (error: any) {
+      console.error("Error toggling visibility:", error);
+      toast.error("Erro ao alterar visibilidade");
+    }
+  };
+
   const handleDeleteConfirm = async () => {
     if (!deleteTarget) return;
     try {
@@ -566,7 +611,14 @@ function TransactionsPage() {
     <div className="animate-page-enter flex flex-col gap-4 px-4 pt-6 pb-24">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-foreground">Transações</h1>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={() => setBalanceVisible(!balanceVisible)} 
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-card text-muted-foreground border border-border"
+          >
+            {balanceVisible ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+          </button>
+          <div className="flex gap-2">
           {selectionMode ? (
             <>
               <button onClick={toggleSelectAll} className="flex h-8 items-center gap-1.5 rounded-full bg-card px-3 text-xs font-medium text-muted-foreground border border-border">
@@ -701,6 +753,7 @@ function TransactionsPage() {
           )}
         </div>
       </div>
+    </div>
 
 
 
@@ -767,9 +820,12 @@ function TransactionsPage() {
                   card={tx.card ?? undefined} 
                   cardBrand={tx.cardBrand ?? undefined} 
                   amount={Number(tx.amount)} 
+                  amountVisible={balanceVisible}
+                  is_visible={tx.is_visible !== false}
                   style={{ animationDelay: `${i * 40}ms` }} 
                   onEdit={selectionMode ? undefined : () => handleEdit(tx)}
                   onDelete={selectionMode ? undefined : () => { setDeleteTarget(tx); setDeleteScope("single"); setShowDeleteDialog(true); }}
+                  onToggleVisibility={selectionMode ? undefined : () => handleToggleVisibility(tx)}
                 />
               </div>
             </div>
@@ -1200,7 +1256,7 @@ function TransactionsPage() {
                   onClick={() => { setShowGlobalSearch(false); handleEdit(tx); }}
                   className="text-left"
                 >
-                  <TransactionItem {...tx} card={tx.card ?? undefined} cardBrand={tx.cardBrand ?? undefined} amount={Number(tx.amount)} />
+                  <TransactionItem {...tx} card={tx.card ?? undefined} cardBrand={tx.cardBrand ?? undefined} amount={Number(tx.amount)} is_visible={tx.is_visible !== false} amountVisible={balanceVisible} />
                 </button>
               ));
             })()}
