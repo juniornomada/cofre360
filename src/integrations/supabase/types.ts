@@ -338,6 +338,7 @@ export type Database = {
           id: string
           installment_group_id: string | null
           installment_number: number | null
+          is_visible: boolean | null
           name: string
           total_installments: number | null
           type: string
@@ -355,6 +356,7 @@ export type Database = {
           id?: string
           installment_group_id?: string | null
           installment_number?: number | null
+          is_visible?: boolean | null
           name: string
           total_installments?: number | null
           type: string
@@ -372,6 +374,7 @@ export type Database = {
           id?: string
           installment_group_id?: string | null
           installment_number?: number | null
+          is_visible?: boolean | null
           name?: string
           total_installments?: number | null
           type?: string
