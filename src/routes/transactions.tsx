@@ -524,6 +524,11 @@ function TransactionsPage() {
       return;
     }
 
+    if (!newTx.bank_account_id && !newTx.card) {
+      toast.error("Seleciona uma conta/cartão");
+      return;
+    }
+
     const cardValue = newTx.card === "Nenhum" ? null : newTx.card;
     const baseDate = (() => {
       try { return parse(newTx.date, "dd MMM", new Date(), { locale: ptBR }); }
