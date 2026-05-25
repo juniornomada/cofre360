@@ -48,6 +48,7 @@ interface Transaction {
 interface BankAccountOption {
   id: string;
   name: string;
+  balance?: number;
 }
 
 interface CardOption {
@@ -192,9 +193,9 @@ function TransactionsPage() {
 
   const fetchBankAccounts = useCallback(async () => {
     try {
-      const { data, error } = await supabase.from("bank_accounts").select("id, name").order("created_at", { ascending: true });
+      const { data, error } = await supabase.from("bank_accounts").select("id, name, balance").order("created_at", { ascending: true });
       if (error) throw error;
-      if (data) setBankAccounts(data);
+      if (data) setBankAccounts(data.map(a => ({ id: a.id, name: a.name, balance: a.balance || 0 })));
     } catch (error: any) {
       console.error("Error fetching bank accounts:", error);
       toast.error("Erro ao carregar contas: " + (error.message || "Erro desconhecido"));
@@ -347,6 +348,25 @@ function TransactionsPage() {
      );
 
     try {
+      // Balance check for expenses from bank accounts
+      if (editTx.type === "expense" && editTx.bank_account_id) {
+        const acc = bankAccounts.find(a => a.id === editTx.bank_account_id);
+        if (acc) {
+          const originalTx = transactions.find(t => t.id === editTx.id);
+          let availableBalance = acc.balance || 0;
+          
+          // If editing an existing expense from the same account, add back the current amount to check limit
+          if (originalTx && originalTx.bank_account_id === editTx.bank_account_id && originalTx.type === "expense") {
+            availableBalance += originalTx.amount;
+          }
+          
+          if (perInstallment > availableBalance) {
+            toast.error(`Saldo insuficiente na conta ${acc.name} (Saldo disponível: R$ ${availableBalance.toLocaleString("pt-BR", { minimumFractionDigits: 2 })})`);
+            return;
+          }
+        }
+      }
+
       // 1) Update fields on the current row (amount = per-installment when split)
       const { error: updErr } = await supabase.from("transactions").update({
         icon: editTx.icon,
@@ -513,109 +533,6 @@ function TransactionsPage() {
     }
   };
 
-   const handleAdd = async () => {
-     if (hasDiff && !confirmInstallmentDiff) {
-       toast.error("Por favor, confirme o ajuste de centavos no parcelamento.");
-       return;
-     }
- 
-     try {
-      // Transfer flow: insert two linked rows (expense from source, income to destination)
-      if (isTransfer) {
-      if (!transferFromId || !transferToId || transferFromId === transferToId || (newTx.amount || 0) <= 0) {
-        toast.error("Selecione contas diferentes e um valor maior que zero.");
-        return;
-      }
-      const fromAcc = bankAccounts.find(a => a.id === transferFromId);
-      const toAcc = bankAccounts.find(a => a.id === transferToId);
-      const fromName = fromAcc?.name || "Conta";
-      const toName = toAcc?.name || "Conta";
-      // Generate a shared group id to link the two legs (uses crypto.randomUUID, available in browsers)
-      const groupId = (typeof crypto !== "undefined" && "randomUUID" in crypto)
-        ? crypto.randomUUID()
-        : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-      const { error } = await supabase.from("transactions").insert([
-        {
-          icon: "🔄", name: `Transferência → ${toName}`, category: "Transferências",
-          date: newTx.date, amount: newTx.amount, type: "expense",
-          card: null, bank_account_id: transferFromId, installment_group_id: groupId,
-        },
-        {
-          icon: "🔄", name: `Transferência ← ${fromName}`, category: "Transferências",
-          date: newTx.date, amount: newTx.amount, type: "income",
-          card: null, bank_account_id: transferToId, installment_group_id: groupId,
-        },
-      ]);
-      if (error) throw error;
-      setShowAddDialog(false);
-      setIsTransfer(false);
-      setTransferFromId("");
-      setTransferToId("");
-      setNewTx({ icon: "🍔", name: "", category: "Alimentação > Outros", date: format(new Date(), "dd MMM", { locale: ptBR }), amount: 0, type: "expense", card: null, bank_account_id: null });
-      fetchTransactions();
-      toast.success("Transferência realizada com sucesso!");
-      return;
-    }
-
-    if (!newTx.bank_account_id && !newTx.card) {
-      toast.error("Seleciona uma conta/cartão");
-      return;
-    }
-
-    const cardValue = newTx.card === "Nenhum" ? null : newTx.card;
-    const baseDate = (() => {
-      try { return parse(newTx.date, "dd MMM", new Date(), { locale: ptBR }); }
-      catch { return new Date(); }
-    })();
-
-    if (installmentEnabled && cardValue && installmentCount > 1 && newTx.type === "expense") {
-      const groupId = (typeof crypto !== "undefined" && "randomUUID" in crypto)
-        ? crypto.randomUUID()
-        : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-      const rows = [];
-      for (let i = 0; i < installmentCount; i++) {
-        const installDate = new Date(baseDate);
-        installDate.setMonth(installDate.getMonth() + i);
-         const { valorParcela: parcela } = calculateInstallmentDetails(
-           newTx.amount,
-           installmentCount,
-           installmentMode,
-           installmentFixedValue
-         );
-        const label = `${newTx.name} (${i + 1}/${installmentCount})`;
-        rows.push({
-          icon: newTx.icon, name: label, category: newTx.category,
-          date: format(installDate, "dd MMM", { locale: ptBR }),
-          amount: parcela, type: newTx.type,
-          card: cardValue, bank_account_id: newTx.bank_account_id || null,
-          installment_number: i + 1,
-          total_installments: installmentCount,
-          installment_group_id: groupId,
-        });
-      }
-      const { error } = await supabase.from("transactions").insert(rows);
-      if (error) throw error;
-    } else {
-      const { error } = await supabase.from("transactions").insert({
-        icon: newTx.icon, name: newTx.name, category: newTx.category,
-        date: newTx.date, amount: newTx.amount, type: newTx.type,
-        card: cardValue, bank_account_id: newTx.bank_account_id || null,
-      });
-      if (error) throw error;
-    }
-    setShowAddDialog(false);
-    setInstallmentEnabled(false);
-    setInstallmentCount(2);
-    setInstallmentMode("divide");
-    setInstallmentFixedValue(0);
-    setNewTx({ icon: "🍔", name: "", category: "Alimentação > Outros", date: format(new Date(), "dd MMM", { locale: ptBR }), amount: 0, type: "expense", card: null, bank_account_id: null });
-    fetchTransactions();
-    toast.success("Transação adicionada com sucesso!");
-    } catch (error: any) {
-      console.error("Error adding transaction:", error);
-      toast.error("Erro ao adicionar transação: " + (error.message || "Erro desconhecido"));
-    }
-  };
 
   const formatCurrency = (value: number) => value.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
