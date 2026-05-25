@@ -68,7 +68,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
     try {
       const [{ data: cards, error: cardsError }, { data: accs, error: accsError }] = await Promise.all([
         supabase.from("cards").select("name, brand, emoji, color").order("created_at", { ascending: true }),
-        supabase.from("bank_accounts").select("id, name, icon, color").order("created_at", { ascending: true }),
+        supabase.from("bank_accounts").select("id, name, icon, color, balance").order("created_at", { ascending: true }),
       ]);
 
       if (cardsError) throw cardsError;
