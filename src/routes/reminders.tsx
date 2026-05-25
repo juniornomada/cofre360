@@ -152,14 +152,14 @@ function RemindersPage() {
       if (!editReminder) return;
       
       const currentReminder = { ...editReminder };
+      const amountToSave = Number(currentReminder.amount);
+      
       const recurrenceDay = currentReminder.is_recurring
         ? (currentReminder.recurrence_day ?? (() => {
             const d = parseDate(currentReminder.due_date || "");
             return isNaN(d.getTime()) ? null : d.getDate();
           })())
         : null;
-
-      const amountToSave = Number(currentReminder.amount);
 
       const updateData = {
         title: currentReminder.title,
@@ -205,13 +205,12 @@ function RemindersPage() {
       
       const finalData = updatedData && updatedData.length > 0 ? updatedData[0] : { ...currentReminder, ...updateData };
       
-      // Atualizar o estado local imediatamente com o valor correto
+      // Atualizar o estado local imediatamente
       setReminders(prev => prev.map(r => r.id === currentReminder.id ? finalData : r));
       
       setShowEditDialog(false);
       setEditReminder(null);
       toast.success("Lembrete e instâncias futuras atualizadas!");
-      // Não precisamos necessariamente de await aqui se o estado já foi atualizado, mas fetchReminders garante sincronia total com DB
       fetchReminders();
     } catch (error: any) {
       console.error("Error updating reminder:", error);
