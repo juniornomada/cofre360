@@ -55,9 +55,9 @@ function getAbbreviation(name: string) {
   return name.trim().slice(0, 2).toUpperCase();
 }
 
-export function BankLogo({ icon, color, name, size = "md" }: { icon: string; color: string; name?: string; size?: "sm" | "md" | "lg" }) {
+export function BankLogo({ icon, color, name, size = "md" }: { icon: string; color: string; name?: string; size?: "xs" | "sm" | "md" | "lg" }) {
   const preset = bankPresets.find(b => b.id === icon);
-  const sizeClasses = size === "sm" ? "h-8 w-8 text-[10px]" : size === "lg" ? "h-14 w-14 text-base" : "h-12 w-12 text-sm";
+  const sizeClasses = size === "xs" ? "h-5 w-5 text-[8px]" : size === "sm" ? "h-8 w-8 text-[10px]" : size === "lg" ? "h-14 w-14 text-base" : "h-12 w-12 text-sm";
 
   if (preset && preset.id !== "custom") {
     return (
