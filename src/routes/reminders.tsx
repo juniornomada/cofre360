@@ -574,6 +574,13 @@ function RemindersPage() {
           <CalculatorAmountInput 
             value={Number(data.amount)} 
             onChange={val => setData(prev => ({ ...prev, amount: val }))} 
+            onEnter={() => {
+              if ('id' in data) {
+                handleSaveEdit();
+              } else {
+                handleAdd();
+              }
+            }}
           />
         </div>
         <div>
