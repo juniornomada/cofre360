@@ -64,7 +64,7 @@ function InsightsPage() {
   const [loading, setLoading] = useState(true);
 
   const fetchTransactions = useCallback(async () => {
-    const { data } = await supabase.from("transactions").select("*");
+    const { data } = await supabase.from("transactions").select("*").neq("is_visible", false);
     if (data) setTransactions(data as Transaction[]);
     setLoading(false);
   }, []);

@@ -95,7 +95,7 @@ function OrcaMetasPage() {
     try {
       const [budgets, txs] = await Promise.all([
         supabase.from("budget_categories").select("*").order("created_at", { ascending: true }),
-        supabase.from("transactions").select("amount, category, type, date").eq("type", "expense"),
+        supabase.from("transactions").select("amount, category, type, date").eq("type", "expense").neq("is_visible", false),
       ]);
       if (budgets.error) throw budgets.error;
       if (txs.error) throw txs.error;
