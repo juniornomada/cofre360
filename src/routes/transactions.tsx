@@ -659,9 +659,11 @@ function TransactionsPage() {
                 <div className="flex gap-1.5">
                   <button onClick={() => handleBulkVisibility(true)} className="flex h-8 items-center gap-1.5 rounded-full bg-primary/10 text-primary px-3 text-xs font-medium border border-primary/20" title="Exibir selecionadas">
                     <Eye className="h-3.5 w-3.5" />
+                    {selectedIds.size}
                   </button>
                   <button onClick={() => handleBulkVisibility(false)} className="flex h-8 items-center gap-1.5 rounded-full bg-accent text-muted-foreground px-3 text-xs font-medium border border-border" title="Ocultar selecionadas">
                     <EyeOff className="h-3.5 w-3.5" />
+                    {selectedIds.size}
                   </button>
                   <button onClick={() => setShowBatchDeleteDialog(true)} className="flex h-8 items-center gap-1.5 rounded-full bg-destructive px-3 text-xs font-medium text-destructive-foreground">
                     <Trash2 className="h-3.5 w-3.5" />
