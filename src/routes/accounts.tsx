@@ -741,6 +741,7 @@ function AccountsPage() {
                     isSelectionMode={isSelectionMode}
                     isSelected={selectedIds.has(account.id)}
                     onToggleSelect={toggleSelect}
+                    balanceVisible={balanceVisible}
                   />
                 ))}
               </div>
