@@ -332,7 +332,7 @@ function RemindersPage() {
       if (fetchError) throw fetchError;
 
       const { category, icon } = categorizeTransaction(latestReminder.title || "");
-      const today = format(payDate, "dd MMM", { locale: ptBR });
+      const today = format(payDate, "yyyy-MM-dd");
       const isIncome = latestReminder.type === "income";
       const amount = Number(latestReminder.amount);
 
@@ -394,7 +394,7 @@ function RemindersPage() {
       if (fetchError) throw fetchError;
 
       const { category, icon } = categorizeTransaction(latestReminder.title || "");
-      const today = format(payDate, "dd MMM", { locale: ptBR });
+      const today = format(payDate, "yyyy-MM-dd");
       const amount = Number(latestReminder.amount);
 
       await supabase.from("transactions").insert({
@@ -607,7 +607,7 @@ function RemindersPage() {
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
-              <Calendar mode="single" selected={(() => { try { return parseDate(data.due_date || ""); } catch { return undefined; } })()} onSelect={(date) => { if (date) setData(prev => ({ ...prev, due_date: format(date, "dd MMM", { locale: ptBR }) })); }} initialFocus className={cn("p-3 pointer-events-auto")} />
+              <Calendar mode="single" selected={(() => { try { return parseDate(data.due_date || ""); } catch { return undefined; } })()} onSelect={(date) => { if (date) setData(prev => ({ ...prev, due_date: format(date, "yyyy-MM-dd") })); }} initialFocus className={cn("p-3 pointer-events-auto")} />
             </PopoverContent>
           </Popover>
         </div>
