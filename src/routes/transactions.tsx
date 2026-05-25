@@ -608,7 +608,7 @@ function TransactionsPage() {
         <h1 className="text-xl font-bold text-foreground">Transações</h1>
         <div className="flex items-center gap-2">
           <button 
-            onClick={() => setBalanceVisible(!balanceVisible)} 
+            onClick={() => updateBalanceVisible(!balanceVisible)} 
             className="flex h-8 w-8 items-center justify-center rounded-full bg-card text-muted-foreground border border-border"
           >
             {balanceVisible ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
