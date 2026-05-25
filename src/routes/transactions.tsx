@@ -348,6 +348,25 @@ function TransactionsPage() {
      );
 
     try {
+      // Balance check for expenses from bank accounts
+      if (editTx.type === "expense" && editTx.bank_account_id) {
+        const acc = bankAccounts.find(a => a.id === editTx.bank_account_id);
+        if (acc) {
+          const originalTx = transactions.find(t => t.id === editTx.id);
+          let availableBalance = acc.balance || 0;
+          
+          // If editing an existing expense from the same account, add back the current amount to check limit
+          if (originalTx && originalTx.bank_account_id === editTx.bank_account_id && originalTx.type === "expense") {
+            availableBalance += originalTx.amount;
+          }
+          
+          if (perInstallment > availableBalance) {
+            toast.error(`Saldo insuficiente na conta ${acc.name} (Saldo disponível: R$ ${availableBalance.toLocaleString("pt-BR", { minimumFractionDigits: 2 })})`);
+            return;
+          }
+        }
+      }
+
       // 1) Update fields on the current row (amount = per-installment when split)
       const { error: updErr } = await supabase.from("transactions").update({
         icon: editTx.icon,
