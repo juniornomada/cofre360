@@ -151,7 +151,7 @@ function RemindersPage() {
     try {
       if (!editReminder) return;
       
-      const currentReminder = { ...editReminder };
+      const currentReminder = JSON.parse(JSON.stringify(editReminder));
       const amountToSave = Number(currentReminder.amount);
       
       const recurrenceDay = currentReminder.is_recurring
@@ -176,17 +176,22 @@ function RemindersPage() {
         recurrence_day: recurrenceDay,
       };
       
+      console.log("Saving reminder with data:", updateData);
+
       const { data: updatedData, error } = await supabase
         .from("reminders")
         .update(updateData)
         .eq("id", currentReminder.id)
         .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase update error:", error);
+        throw error;
+      }
 
       // Se o lembrete for recorrente, atualizar também as próximas instâncias pendentes (não concluídas) com o mesmo título
       if (currentReminder.is_recurring) {
-        await supabase
+        const { error: batchError } = await supabase
           .from("reminders")
           .update({
             amount: amountToSave,
@@ -200,18 +205,25 @@ function RemindersPage() {
           .eq("title", currentReminder.title)
           .eq("is_completed", false)
           .is("is_recurring", true)
-          .neq("id", currentReminder.id); // Não atualizar a si mesmo novamente
+          .neq("id", currentReminder.id);
+
+        if (batchError) console.error("Error updating future instances:", batchError);
       }
       
-      const finalData = updatedData && updatedData.length > 0 ? updatedData[0] : { ...currentReminder, ...updateData };
+      const finalData = (updatedData && updatedData.length > 0) ? updatedData[0] : { ...currentReminder, ...updateData };
       
       // Atualizar o estado local imediatamente
-      setReminders(prev => prev.map(r => r.id === currentReminder.id ? finalData : r));
+      setReminders(prev => {
+        const newList = prev.map(r => r.id === currentReminder.id ? finalData : r);
+        return [...newList];
+      });
       
       setShowEditDialog(false);
       setEditReminder(null);
-      toast.success("Lembrete e instâncias futuras atualizadas!");
-      fetchReminders();
+      toast.success("Alterações salvas com sucesso!");
+      
+      // Recarregar tudo do banco para garantir consistência total
+      setTimeout(() => fetchReminders(), 100);
     } catch (error: any) {
       console.error("Error updating reminder:", error);
       toast.error("Erro ao atualizar lembrete: " + (error.message || "Erro desconhecido"));
