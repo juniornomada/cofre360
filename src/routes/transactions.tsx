@@ -820,6 +820,7 @@ function TransactionsPage() {
                   card={tx.card ?? undefined} 
                   cardBrand={tx.cardBrand ?? undefined} 
                   amount={Number(tx.amount)} 
+                  amountVisible={balanceVisible}
                   is_visible={tx.is_visible !== false}
                   style={{ animationDelay: `${i * 40}ms` }} 
                   onEdit={selectionMode ? undefined : () => handleEdit(tx)}
