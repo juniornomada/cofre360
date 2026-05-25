@@ -160,11 +160,11 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
          return;
        }
 
-       const fromAcc = bankAccounts.find(a => a.id === transferFromId);
-       if (fromAcc && newTx.amount > fromAcc.balance) {
-         toast.error(`Saldo insuficiente na conta ${fromAcc.name} (Saldo: R$ ${fromAcc.balance.toLocaleString("pt-BR", { minimumFractionDigits: 2 })})`);
-         return;
-       }
+        const fromAcc = bankAccounts.find(a => a.id === transferFromId);
+        if (fromAcc && newTx.amount > fromAcc.balance) {
+          toast.error(`Saldo insuficiente na conta ${fromAcc.name} (Saldo: R$ ${fromAcc.balance.toLocaleString("pt-BR", { minimumFractionDigits: 2 })})`);
+          return;
+        }
 
        const toAcc = bankAccounts.find(a => a.id === transferToId);
       const fromName = fromAcc?.name || "Conta";
