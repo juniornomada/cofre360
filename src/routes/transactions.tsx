@@ -611,7 +611,14 @@ function TransactionsPage() {
     <div className="animate-page-enter flex flex-col gap-4 px-4 pt-6 pb-24">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-foreground">Transações</h1>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={() => setBalanceVisible(!balanceVisible)} 
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-card text-muted-foreground border border-border"
+          >
+            {balanceVisible ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+          </button>
+          <div className="flex gap-2">
           {selectionMode ? (
             <>
               <button onClick={toggleSelectAll} className="flex h-8 items-center gap-1.5 rounded-full bg-card px-3 text-xs font-medium text-muted-foreground border border-border">
