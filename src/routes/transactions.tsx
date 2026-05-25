@@ -1256,7 +1256,7 @@ function TransactionsPage() {
                   onClick={() => { setShowGlobalSearch(false); handleEdit(tx); }}
                   className="text-left"
                 >
-                  <TransactionItem {...tx} card={tx.card ?? undefined} cardBrand={tx.cardBrand ?? undefined} amount={Number(tx.amount)} is_visible={tx.is_visible !== false} />
+                  <TransactionItem {...tx} card={tx.card ?? undefined} cardBrand={tx.cardBrand ?? undefined} amount={Number(tx.amount)} is_visible={tx.is_visible !== false} amountVisible={balanceVisible} />
                 </button>
               ));
             })()}
