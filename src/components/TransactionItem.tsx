@@ -186,7 +186,8 @@ export function TransactionItem({
             "text-sm font-bold tabular-nums shrink-0",
             isTransferPair ? "text-muted-foreground" : type === "income" ? "text-primary" : "text-foreground"
           )}>
-            {isTransferPair ? "" : type === "expense" ? "- " : "+ "}R$ {Math.abs(amount).toFixed(2)}
+            {isTransferPair ? "" : type === "expense" ? "- " : "+ "}
+            {amountVisible ? `R$ ${Math.abs(amount).toFixed(2)}` : "R$ ••••"}
           </span>
         </div>
         <div className="flex items-center justify-between gap-2 mt-0.5">
