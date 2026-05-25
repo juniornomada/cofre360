@@ -198,6 +198,14 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
       return;
     }
 
+    if (!isTransfer && newTx.type === "expense" && newTx.bank_account_id) {
+      const acc = bankAccounts.find(a => a.id === newTx.bank_account_id);
+      if (acc && newTx.amount > acc.balance) {
+        toast.error(`Saldo insuficiente na conta ${acc.name} (Saldo: R$ ${acc.balance.toLocaleString("pt-BR", { minimumFractionDigits: 2 })})`);
+        return;
+      }
+    }
+
     const cardValue = newTx.card === "Nenhum" ? null : newTx.card;
     const baseDate = (() => {
       try { return parse(newTx.date, "dd MMM", new Date(), { locale: ptBR }); }
