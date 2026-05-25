@@ -823,7 +823,27 @@ function RemindersPage() {
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-1 min-w-0">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="flex items-center gap-1 shrink-0">
+                        {linkedAccount && (
+                          <div 
+                            title={linkedAccount.name}
+                            className={cn("flex items-center gap-1 rounded-md px-1 py-0.5 shadow-sm shrink-0 bg-gradient-to-br", linkedAccount.color)}
+                          >
+                            <BankLogo icon={linkedAccount.icon || ""} color={linkedAccount.color || ""} name={linkedAccount.name} size="xs" />
+                          </div>
+                        )}
+                        {linkedCard && (
+                          <div 
+                            title={linkedCard.name}
+                            className={cn("flex items-center gap-1 rounded-md px-1 py-0.5 shadow-sm shrink-0 bg-gradient-to-br", linkedCard.color)}
+                          >
+                            <div className="flex h-5 w-5 items-center justify-center rounded-sm bg-white/20 text-[10px]">
+                              {linkedCard.emoji || "💳"}
+                            </div>
+                          </div>
+                        )}
+                      </div>
                       <p className={cn("text-sm font-semibold truncate", reminder.is_completed ? "line-through text-muted-foreground" : "text-foreground")}>
                         {reminder.title}
                       </p>
@@ -846,24 +866,6 @@ function RemindersPage() {
                       <span className="text-[10px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded truncate shrink-0">
                         {getCategoryDisplay(reminder.category || "")}
                       </span>
-                      {linkedAccount && (
-                        <div 
-                          title={linkedAccount.name}
-                          className={cn("flex items-center gap-1 rounded-md px-1 py-0.5 text-[9px] font-bold text-white bg-gradient-to-br shadow-sm shrink-0", linkedAccount.color)}
-                        >
-                          <BankLogo icon={linkedAccount.icon || ""} color={linkedAccount.color || ""} name={linkedAccount.name} size="xs" />
-                        </div>
-                      )}
-                      {linkedCard && (
-                        <div 
-                          title={linkedCard.name}
-                          className={cn("flex items-center gap-1 rounded-md px-1 py-0.5 text-[9px] font-bold text-white bg-gradient-to-br shadow-sm shrink-0", linkedCard.color)}
-                        >
-                          <div className="flex h-5 w-5 items-center justify-center rounded-sm bg-white/20 text-[10px]">
-                            {linkedCard.emoji || "💳"}
-                          </div>
-                        </div>
-                      )}
                     </div>
 
                     <div className={cn("flex items-center gap-1 text-[10px] font-bold shrink-0", !reminder.is_completed ? dateStatus.color : "text-muted-foreground")}>
