@@ -327,9 +327,11 @@ function AccountsPage() {
   };
 
   const handleBulkVisibility = async (visible: boolean) => {
-    if (selectedIds.size === 0) return;
+    const count = selectedIds.size;
+    if (count === 0) return;
     setIsSubmitting(true);
-    try {
+    
+    const promise = async () => {
       const { error } = await supabase
         .from("bank_accounts")
         .update({ is_visible: visible })
@@ -337,16 +339,18 @@ function AccountsPage() {
       
       if (error) throw error;
       
-      toast.success(`${selectedIds.size} conta(s) ${visible ? "mostradas" : "ocultadas"}`);
       setSelectedIds(new Set());
       setIsSelectionMode(false);
       fetchAccounts();
-    } catch (error: any) {
-      console.error("Error bulk updating visibility:", error);
-      toast.error("Erro ao atualizar visibilidade");
-    } finally {
-      setIsSubmitting(false);
-    }
+      return count;
+    };
+
+    toast.promise(promise(), {
+      loading: visible ? `Exibindo ${count} contas...` : `Ocultando ${count} contas...`,
+      success: (updatedCount) => `${updatedCount} ${updatedCount === 1 ? "conta atualizada" : "contas atualizadas"} com sucesso`,
+      error: "Erro ao atualizar visibilidade das contas",
+      finally: () => setIsSubmitting(false)
+    });
   };
 
   const fetchHistory = useCallback(async (accountId: string) => {
