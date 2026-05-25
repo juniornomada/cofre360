@@ -391,6 +391,42 @@ function TransactionsPage() {
     }
   };
 
+  const handleToggleVisibility = async (tx: Transaction) => {
+    try {
+      const newVisibility = tx.is_visible === false ? true : false;
+      const idsToUpdate = [tx.id];
+      
+      if (tx.category === "Transferência" && tx.installment_group_id) {
+        const { data: linked } = await supabase
+          .from("transactions")
+          .select("id")
+          .eq("installment_group_id", tx.installment_group_id)
+          .eq("category", "Transferência");
+        
+        if (linked) {
+          linked.forEach(l => {
+            if (l.id !== tx.id) idsToUpdate.push(l.id);
+          });
+        }
+      }
+
+      const { error } = await supabase
+        .from("transactions")
+        .update({ is_visible: newVisibility })
+        .in("id", idsToUpdate);
+
+      if (error) throw error;
+
+      toast.success(newVisibility ? "Transação visível" : "Transação oculta");
+      setTransactions(prev => prev.map(t => 
+        idsToUpdate.includes(t.id) ? { ...t, is_visible: newVisibility } : t
+      ));
+    } catch (error: any) {
+      console.error("Error toggling visibility:", error);
+      toast.error("Erro ao alterar visibilidade");
+    }
+  };
+
   const handleDeleteConfirm = async () => {
     if (!deleteTarget) return;
     try {
