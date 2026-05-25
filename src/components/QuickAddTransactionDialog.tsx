@@ -288,7 +288,11 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                       <button
                         key={a.id}
                         type="button"
-                        onClick={() => setTransferFromId(transferFromId === a.id ? "" : a.id)}
+                        onClick={() => {
+                          const newId = transferFromId === a.id ? "" : a.id;
+                          setTransferFromId(newId);
+                          if (newId && transferToId && newTx.amount > 0) handleAdd();
+                        }}
                         className={`flex flex-col items-center gap-0.5 rounded-lg p-1.5 transition-all ${
                           transferFromId === a.id ? "bg-primary/15 ring-1 ring-primary" : "bg-card hover:bg-accent"
                         }`}
@@ -311,7 +315,11 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                       <button
                         key={a.id}
                         type="button"
-                        onClick={() => setTransferToId(transferToId === a.id ? "" : a.id)}
+                        onClick={() => {
+                          const newId = transferToId === a.id ? "" : a.id;
+                          setTransferToId(newId);
+                          if (newId && transferFromId && newTx.amount > 0) handleAdd();
+                        }}
                         className={`flex flex-col items-center gap-0.5 rounded-lg p-1.5 transition-all ${
                           transferToId === a.id ? "bg-primary/15 ring-1 ring-primary" : "bg-card hover:bg-accent"
                         }`}
