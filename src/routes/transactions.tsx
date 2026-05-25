@@ -432,11 +432,20 @@ function TransactionsPage() {
     }
   };
 
-  const handleBulkVisibility = async (visible: boolean) => {
+  const handleBulkVisibility = (visible: boolean) => {
+    if (selectedIds.size === 0) return;
+    setPendingVisibility(visible);
+    setShowBatchVisibilityDialog(true);
+  };
+
+  const confirmBulkVisibility = async () => {
+    if (pendingVisibility === null) return;
+    const visible = pendingVisibility;
     const count = selectedIds.size;
-    if (count === 0) return;
     
     setDeleting(true);
+    setShowBatchVisibilityDialog(false);
+
     const promise = async () => {
       const ids = Array.from(selectedIds);
       let idsToUpdate = [...ids];
@@ -472,6 +481,7 @@ function TransactionsPage() {
       ));
       setSelectedIds(new Set());
       setSelectionMode(false);
+      setPendingVisibility(null);
       return idsToUpdate.length;
     };
 
