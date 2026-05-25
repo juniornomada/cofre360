@@ -639,16 +639,21 @@ function AccountsPage() {
 
   return (
     <div className="animate-page-enter flex flex-col gap-8 px-2 sm:px-4 pt-6 pb-28">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Link to="/" className="interactive-button flex h-9 w-9 items-center justify-center rounded-full hover:bg-accent transition-colors">
+      {/* Header and Total Balance */}
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3 min-w-0">
+          <Link to="/" className="interactive-button flex h-9 w-9 items-center justify-center rounded-full hover:bg-accent transition-colors shrink-0">
             <ArrowLeft className="h-4 w-4 text-foreground" />
           </Link>
-          <h1 className="text-[15px] font-semibold text-foreground tracking-tight">Contas</h1>
+          <div className="flex flex-col min-w-0">
+            <h1 className="text-[10px] font-medium text-muted-foreground uppercase tracking-[0.08em] truncate">Contas</h1>
+            <p className="text-2xl font-bold text-foreground tabular-nums tracking-tight truncate">
+              {balanceVisible ? `R$ ${totalCurrent.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "R$ ••••"}
+            </p>
+          </div>
         </div>
         
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 shrink-0 self-end mb-0.5">
           <Tooltip>
             <TooltipTrigger asChild>
               <button 
@@ -670,21 +675,6 @@ function AccountsPage() {
           </button>
         </div>
       </div>
-
-      {/* Total balance hero */}
-      {accounts.length > 0 && (
-        <div className="px-1">
-          <div className="flex items-baseline gap-2 flex-wrap">
-            <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-[0.08em]">Saldo total</p>
-            <p className="text-4xl font-semibold text-foreground tabular-nums tracking-tight">
-              R$ {totalCurrent.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-            </p>
-          </div>
-          <p className="text-xs text-muted-foreground mt-1.5">
-            {accounts.length} {accounts.length === 1 ? "conta ativa" : "contas ativas"}
-          </p>
-        </div>
-      )}
 
       {/* Empty state */}
       {accounts.length === 0 && (

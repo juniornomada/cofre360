@@ -783,25 +783,26 @@ function Dashboard() {
 
       {/* Balance Card — refined with health score + daily available */}
       <div className="rounded-2xl bg-gradient-to-br from-primary/15 via-card to-card p-5 border border-border/40">
-        <div className="flex items-center justify-between gap-3 mb-1 flex-wrap">
-          <div className="flex items-baseline gap-2 min-w-0">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center justify-between flex-1">
+        <div className="flex items-center justify-between gap-4 mb-2">
+          <div className="flex flex-col min-w-0">
+            <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
               Saldo
               {accountBalances.length > 1 && (
-                <span className="text-[9px] lowercase opacity-60 font-normal">Arraste para reordenar</span>
+                <span className="text-[9px] lowercase opacity-40 font-normal">Arraste para reordenar</span>
               )}
             </p>
             <p className={cn(
-              "text-3xl font-bold tabular-nums transition-all duration-300 truncate",
+              "text-2xl font-bold tabular-nums transition-all duration-300 truncate",
               balance >= 0 ? "text-foreground" : "text-destructive"
             )}>
               {balanceVisible ? `R$ ${fmt(balance)}` : "R$ ••••••"}
             </p>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
+          
+          <div className="flex items-center gap-2 shrink-0 self-end mb-0.5">
             {healthScore !== null && balanceVisible && healthScore >= 40 && (
               <div className={cn(
-                "flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold",
+                "hidden sm:flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold",
                 healthScore >= 80 ? "bg-primary/15 text-primary" :
                 healthScore >= 60 ? "bg-blue-500/15 text-blue-400" :
                 "bg-amber-500/15 text-amber-400"
