@@ -75,7 +75,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
       if (accsError) throw accsError;
 
       setCardOptions((cards || []).map(c => ({ name: c.name, brand: c.brand, emoji: c.emoji, color: c.color })));
-      setBankAccounts((accs || []).map(a => ({ id: a.id, name: a.name, icon: a.icon, color: a.color })));
+      setBankAccounts((accs || []).map(a => ({ id: a.id, name: a.name, icon: a.icon, color: a.color, balance: a.balance || 0 })));
     } catch (error: any) {
       console.error("Error fetching data:", error);
       toast.error("Erro ao carregar dados: " + (error.message || "Erro desconhecido"));
