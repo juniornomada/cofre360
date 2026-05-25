@@ -607,7 +607,7 @@ function RemindersPage() {
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
-              <Calendar mode="single" selected={(() => { try { return parseDate(data.due_date || ""); } catch { return undefined; } })()} onSelect={(date) => { if (date) setData(prev => ({ ...prev, due_date: format(date, "dd MMM", { locale: ptBR }) })); }} initialFocus className={cn("p-3 pointer-events-auto")} />
+              <Calendar mode="single" selected={(() => { try { return parseDate(data.due_date || ""); } catch { return undefined; } })()} onSelect={(date) => { if (date) setData(prev => ({ ...prev, due_date: format(date, "yyyy-MM-dd") })); }} initialFocus className={cn("p-3 pointer-events-auto")} />
             </PopoverContent>
           </Popover>
         </div>
