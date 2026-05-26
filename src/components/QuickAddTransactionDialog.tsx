@@ -168,13 +168,8 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
           return;
         }
 
+        // We removed the balance check for transfers to allow tracking even with negative balances
         const fromAcc = bankAccounts.find(a => a.id === transferFromId);
-        if (fromAcc && newTx.amount > fromAcc.balance) {
-          console.warn("QuickAdd: Insufficient balance", { amount: newTx.amount, balance: fromAcc.balance });
-          toast.error(`Saldo insuficiente na conta ${fromAcc.name} (Saldo disponível: R$ ${fromAcc.balance.toLocaleString("pt-BR", { minimumFractionDigits: 2 })})`);
-          setIsSubmitting(false);
-          return;
-        }
 
         const toAcc = bankAccounts.find(a => a.id === transferToId);
         const fromName = fromAcc?.name || "Conta";
@@ -220,14 +215,8 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
         return;
       }
 
-      if (!isTransfer && newTx.type === "expense" && newTx.bank_account_id) {
-        const acc = bankAccounts.find(a => a.id === newTx.bank_account_id);
-        if (acc && newTx.amount > acc.balance) {
-          toast.error(`Saldo insuficiente na conta ${acc.name} (Saldo: R$ ${acc.balance.toLocaleString("pt-BR", { minimumFractionDigits: 2 })})`);
-          setIsSubmitting(false);
-          return;
-        }
-      }
+      // We also removed the balance check for standard transactions to maintain consistency
+      // as this is a tracking app and users might want to record transactions even with insufficient app-balance.
 
     const cardValue = newTx.card === "Nenhum" ? null : newTx.card;
     let baseDate: Date;
