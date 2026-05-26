@@ -307,14 +307,6 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                         onClick={() => {
                           const newId = transferFromId === a.id ? "" : a.id;
                           setTransferFromId(newId);
-                          if (newId && transferToId && newTx.amount > 0) {
-                            const fromAcc = bankAccounts.find(acc => acc.id === newId);
-                            if (fromAcc && newTx.amount > fromAcc.balance) {
-                              toast.error(`Saldo insuficiente na conta ${fromAcc.name} (Saldo: R$ ${fromAcc.balance.toLocaleString("pt-BR", { minimumFractionDigits: 2 })})`);
-                              return;
-                            }
-                            handleAdd();
-                          }
                         }}
                         className={`flex flex-col items-center gap-0.5 rounded-lg p-1.5 transition-all ${
                           transferFromId === a.id ? "bg-primary/15 ring-1 ring-primary" : "bg-card hover:bg-accent"
@@ -341,14 +333,6 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                         onClick={() => {
                           const newId = transferToId === a.id ? "" : a.id;
                           setTransferToId(newId);
-                          if (newId && transferFromId && newTx.amount > 0) {
-                            const fromAcc = bankAccounts.find(acc => acc.id === transferFromId);
-                            if (fromAcc && newTx.amount > fromAcc.balance) {
-                              toast.error(`Saldo insuficiente na conta ${fromAcc.name} (Saldo: R$ ${fromAcc.balance.toLocaleString("pt-BR", { minimumFractionDigits: 2 })})`);
-                              return;
-                            }
-                            handleAdd();
-                          }
                         }}
                         className={`flex flex-col items-center gap-0.5 rounded-lg p-1.5 transition-all ${
                           transferToId === a.id ? "bg-primary/15 ring-1 ring-primary" : "bg-card hover:bg-accent"
