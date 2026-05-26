@@ -154,14 +154,18 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
      }
  
      try {
+     console.log("QuickAdd: Starting handleAdd", { isTransfer, transferFromId, transferToId, amount: newTx.amount });
+     
      if (isTransfer) {
        if (!transferFromId || !transferToId || transferFromId === transferToId) {
+         console.warn("QuickAdd: Transfer validation failed", { transferFromId, transferToId });
          toast.error("Selecione contas diferentes para a transferência.");
          return;
        }
 
        const fromAcc = bankAccounts.find(a => a.id === transferFromId);
        if (fromAcc && newTx.amount > fromAcc.balance) {
+         console.warn("QuickAdd: Insufficient balance", { amount: newTx.amount, balance: fromAcc.balance });
          toast.error(`Saldo insuficiente na conta ${fromAcc.name} (Saldo disponível: R$ ${fromAcc.balance.toLocaleString("pt-BR", { minimumFractionDigits: 2 })})`);
          return;
        }
@@ -173,7 +177,9 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
          ? crypto.randomUUID()
          : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
        
-       const { error } = await supabase.from("transactions").insert([
+       console.log("QuickAdd: Inserting transfer transactions", { groupId });
+       
+       const { error, data } = await supabase.from("transactions").insert([
          {
            icon: "🔄", name: `Transferência → ${toName}`, category: "Transferências",
            date: newTx.date, amount: newTx.amount, type: "expense",
@@ -184,19 +190,25 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
            date: newTx.date, amount: newTx.amount, type: "income",
            card: null, bank_account_id: transferToId, installment_group_id: groupId,
          },
-       ]);
+       ]).select();
 
-       if (error) throw error;
+       if (error) {
+         console.error("QuickAdd: Supabase insertion error", error);
+         throw error;
+       }
+       
+       console.log("QuickAdd: Transfer successful", data);
        onOpenChange(false);
        onSuccess?.();
        toast.success("Transferência realizada com sucesso!");
        return;
      }
 
-    if (!newTx.bank_account_id && !newTx.card) {
-      setShowNoSelectionAlert(true);
-      return;
-    }
+     console.log("QuickAdd: Standard transaction validation", { bank_account_id: newTx.bank_account_id, card: newTx.card });
+     if (!newTx.bank_account_id && !newTx.card) {
+       setShowNoSelectionAlert(true);
+       return;
+     }
 
     if (!isTransfer && newTx.type === "expense" && newTx.bank_account_id) {
       const acc = bankAccounts.find(a => a.id === newTx.bank_account_id);
