@@ -119,12 +119,22 @@ import { cn } from "@/lib/utils";
     onChange(reais);
     setOpen(false);
     setHasStartedTyping(false);
+    // Ensure keyboard is dismissed on mobile
+    if (isMobile) {
+      inputRef.current?.blur();
+      (document.activeElement as HTMLElement)?.blur();
+    }
   };
 
   const cancel = () => {
     setCents(Math.round((value || 0) * 100));
     setOpen(false);
     setHasStartedTyping(false);
+    // Ensure keyboard is dismissed on mobile
+    if (isMobile) {
+      inputRef.current?.blur();
+      (document.activeElement as HTMLElement)?.blur();
+    }
   };
 
   // Close keypad when clicking outside.
