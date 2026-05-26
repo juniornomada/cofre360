@@ -7,6 +7,7 @@ import { useContrastChecker } from "@/hooks/useContrastChecker";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
+import { Toaster } from "@/components/ui/sonner";
 import appCss from "../styles.css?url";
 
 const BottomNav = lazy(() => import("@/components/BottomNav").then(m => ({ default: m.BottomNav })));
@@ -158,8 +159,9 @@ function RootShell({ children }: { children: React.ReactNode }) {
            <BottomNav />
            
          </Suspense>
-        )}
+         )}
       </div>
+      <Toaster />
     </TooltipProvider>
   );
 }
