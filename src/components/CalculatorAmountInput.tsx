@@ -115,9 +115,8 @@ import { cn } from "@/lib/utils";
     onChange(reais);
     setOpen(false);
     setHasStartedTyping(false);
-    // Ensure keyboard is dismissed on mobile
+    // Ensure focus is dismissed on mobile
     if (isMobile) {
-      inputRef.current?.blur();
       (document.activeElement as HTMLElement)?.blur();
     }
   };
@@ -126,9 +125,8 @@ import { cn } from "@/lib/utils";
     setCents(Math.round((value || 0) * 100));
     setOpen(false);
     setHasStartedTyping(false);
-    // Ensure keyboard is dismissed on mobile
+    // Ensure focus is dismissed on mobile
     if (isMobile) {
-      inputRef.current?.blur();
       (document.activeElement as HTMLElement)?.blur();
     }
   };
