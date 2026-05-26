@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Delete } from "lucide-react";
+import { Delete, X, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
  interface Props {
@@ -262,17 +262,44 @@ import { cn } from "@/lib/utils";
         Use o teclado do seu dispositivo para inserir o valor.
       </div>
       
-      <div className={cn(
-        "relative w-full rounded-lg bg-primary/5 px-2.5 py-2 transition-all flex items-center border border-primary/20 min-h-[44px] shadow-inner",
-        "focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2 focus-within:ring-offset-background focus-within:bg-primary/10 focus-within:border-primary/40",
-        className
-      )}>
+      <div 
+        data-testid="announcement-region"
+        className="sr-only"
+        aria-live="assertive"
+      >
+        {announcement}
+      </div>
+
+      <button
+        ref={buttonRef}
+        type="button"
+        onClick={() => setOpen(!open)}
+        className={cn(
+          "relative w-full rounded-lg bg-primary/5 px-2.5 py-2 transition-all flex items-center border border-primary/20 min-h-[44px] shadow-inner",
+          "hover:bg-primary/10 hover:border-primary/30",
+          "focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background focus:outline-none",
+          className
+        )}
+        aria-label={`Valor: R$ ${formatted}`}
+        aria-expanded={open}
+        aria-haspopup="dialog"
+        aria-controls="keypad-dialog"
+        aria-describedby="input-instruction"
+      >
         <span className="text-primary font-bold text-xs mr-2 shrink-0 opacity-80" aria-hidden="true">R$</span>
+        <span className="flex-1 text-right tabular-nums font-bold text-base text-primary">
+          {formatted}
+        </span>
+      </button>
+
+      {/* Mobile-only hidden input to trigger numeric keyboard */}
+      {isMobile && (
         <input
           ref={inputRef}
           type="text"
           inputMode="numeric"
           pattern="[0-9]*"
+          className="absolute inset-0 opacity-0 pointer-events-none"
           value={formatted}
           onChange={(e) => {
             const raw = e.target.value.replace(/\D/g, "");
@@ -282,16 +309,86 @@ import { cn } from "@/lib/utils";
             onChange(numVal / 100);
             if (!hasStartedTyping) setHasStartedTyping(true);
           }}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && onEnter) {
-              onEnter();
-            }
-          }}
-          className="flex-1 text-right tabular-nums font-bold bg-transparent border-none outline-none p-0 text-base text-primary w-full focus:ring-0 focus:outline-none"
-          aria-label={`Valor: R$ ${formatted}`}
-          aria-describedby="input-instruction"
+          aria-hidden="true"
+          tabIndex={-1}
         />
-      </div>
+      )}
+
+      {/* Keypad Popover */}
+      {open && (
+        <div 
+          id="keypad-dialog"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Teclado numérico"
+          className="absolute top-full left-0 right-0 z-[100] mt-2 rounded-2xl bg-background border border-border shadow-2xl p-4 animate-in fade-in zoom-in duration-200"
+        >
+          <div className="grid grid-cols-3 gap-2">
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
+              <button
+                key={num}
+                ref={num === 1 ? firstKeypadButtonRef : null}
+                type="button"
+                onClick={() => press(num)}
+                data-category="numeric"
+                aria-label={`Número ${num}`}
+                className="h-12 rounded-xl bg-card hover:bg-accent text-lg font-bold transition-colors focus:ring-2 focus:ring-primary focus:outline-none"
+              >
+                {num}
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={clear}
+              data-category="destructive"
+              aria-label="Limpar todo o valor"
+              className="h-12 rounded-xl bg-destructive/10 hover:bg-destructive text-destructive hover:text-destructive-foreground text-lg font-bold transition-colors focus:ring-2 focus:ring-primary focus:outline-none"
+            >
+              C
+            </button>
+            <button
+              type="button"
+              onClick={() => press(0)}
+              data-category="numeric"
+              aria-label="Número 0"
+              className="h-12 rounded-xl bg-card hover:bg-accent text-lg font-bold transition-colors focus:ring-2 focus:ring-primary focus:outline-none"
+            >
+              0
+            </button>
+            <button
+              type="button"
+              onClick={backspace}
+              data-category="utility"
+              aria-label="Apagar último dígito"
+              className="h-12 rounded-xl bg-card hover:bg-accent flex items-center justify-center transition-colors focus:ring-2 focus:ring-primary focus:outline-none"
+            >
+              <Delete className="h-5 w-5" />
+            </button>
+
+            {/* Actions */}
+            <button
+              type="button"
+              onClick={cancel}
+              data-category="secondary-action"
+              aria-label="Cancelar e manter valor anterior"
+              className="h-12 rounded-xl bg-muted hover:bg-muted/80 text-muted-foreground flex items-center justify-center transition-colors focus:ring-2 focus:ring-primary focus:outline-none"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            <button
+              ref={lastKeypadButtonRef}
+              type="button"
+              onClick={confirm}
+              data-category="primary-action"
+              aria-label="Confirmar valor"
+              className="col-span-2 h-12 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground flex items-center justify-center transition-colors focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:outline-none"
+            >
+              <Check className="h-5 w-5" />
+              <span className="ml-2 font-bold">OK</span>
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
