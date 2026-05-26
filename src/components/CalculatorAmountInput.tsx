@@ -29,7 +29,7 @@ import { cn } from "@/lib/utils";
    const [isMobile, setIsMobile] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
      const openRef = useRef(false);
-     const inputRef = useRef<HTMLInputElement>(null);
+     
      const ignoreNextFocus = useRef(false);
 
     // Detect if we are on mobile
