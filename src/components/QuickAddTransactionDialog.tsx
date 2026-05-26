@@ -160,38 +160,38 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
          return;
        }
 
-        const fromAcc = bankAccounts.find(a => a.id === transferFromId);
-        if (fromAcc && newTx.amount > fromAcc.balance) {
-          toast.error(`Saldo insuficiente na conta ${fromAcc.name} (Saldo disponível: R$ ${fromAcc.balance.toLocaleString("pt-BR", { minimumFractionDigits: 2 })})`);
-          return;
-        }
+       const fromAcc = bankAccounts.find(a => a.id === transferFromId);
+       if (fromAcc && newTx.amount > fromAcc.balance) {
+         toast.error(`Saldo insuficiente na conta ${fromAcc.name} (Saldo disponível: R$ ${fromAcc.balance.toLocaleString("pt-BR", { minimumFractionDigits: 2 })})`);
+         return;
+       }
 
        const toAcc = bankAccounts.find(a => a.id === transferToId);
-      const fromName = fromAcc?.name || "Conta";
-      const toName = toAcc?.name || "Conta";
-      const groupId = (typeof crypto !== "undefined" && "randomUUID" in crypto)
-        ? crypto.randomUUID()
-        : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-      const { error } = await supabase.from("transactions").insert([
-        {
-          id: crypto.randomUUID(),
-          icon: "🔄", name: `Transferência → ${toName}`, category: "Transferências",
-          date: newTx.date, amount: newTx.amount, type: "expense",
-          card: null, bank_account_id: transferFromId, installment_group_id: groupId,
-        },
-        {
-          id: crypto.randomUUID(),
-          icon: "🔄", name: `Transferência ← ${fromName}`, category: "Transferências",
-          date: newTx.date, amount: newTx.amount, type: "income",
-          card: null, bank_account_id: transferToId, installment_group_id: groupId,
-        },
-      ]);
-      if (error) throw error;
-      onOpenChange(false);
-      onSuccess?.();
-      toast.success("Transferência realizada com sucesso!");
-      return;
-    }
+       const fromName = fromAcc?.name || "Conta";
+       const toName = toAcc?.name || "Conta";
+       const groupId = (typeof crypto !== "undefined" && "randomUUID" in crypto)
+         ? crypto.randomUUID()
+         : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+       
+       const { error } = await supabase.from("transactions").insert([
+         {
+           icon: "🔄", name: `Transferência → ${toName}`, category: "Transferências",
+           date: newTx.date, amount: newTx.amount, type: "expense",
+           card: null, bank_account_id: transferFromId, installment_group_id: groupId,
+         },
+         {
+           icon: "🔄", name: `Transferência ← ${fromName}`, category: "Transferências",
+           date: newTx.date, amount: newTx.amount, type: "income",
+           card: null, bank_account_id: transferToId, installment_group_id: groupId,
+         },
+       ]);
+
+       if (error) throw error;
+       onOpenChange(false);
+       onSuccess?.();
+       toast.success("Transferência realizada com sucesso!");
+       return;
+     }
 
     if (!newTx.bank_account_id && !newTx.card) {
       setShowNoSelectionAlert(true);
@@ -229,7 +229,6 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
            installmentFixedValue
          );
         rows.push({
-          id: crypto.randomUUID(),
           icon: newTx.icon, name: `${newTx.name} (${i + 1}/${installmentCount})`, category: newTx.category,
           date: format(installDate, "dd MMM", { locale: ptBR }),
           amount: parcela, type: newTx.type,
@@ -243,7 +242,6 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
       if (error) throw error;
     } else {
       const { error } = await supabase.from("transactions").insert({
-        id: crypto.randomUUID(),
         icon: newTx.icon, name: newTx.name, category: newTx.category,
         date: newTx.date, amount: newTx.amount, type: newTx.type,
         card: cardValue, bank_account_id: newTx.bank_account_id || null,
