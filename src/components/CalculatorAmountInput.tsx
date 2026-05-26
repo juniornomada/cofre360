@@ -206,8 +206,11 @@ import { cn } from "@/lib/utils";
            clear();
          }
         } else if (e.key === "Enter") {
-          e.preventDefault(); // Always prevent default for Enter to control flow
+          e.preventDefault();
           if (open) {
+            confirm();
+            if (onEnter) setTimeout(onEnter, 50);
+          } else if (onEnter) {
             const activeElement = document.activeElement;
             const isInsideKeypad = activeElement?.closest('#keypad-dialog');
             const isOkButton = activeElement?.getAttribute('data-category') === 'primary-action';

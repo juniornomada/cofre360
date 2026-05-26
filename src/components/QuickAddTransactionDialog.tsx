@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CategoryPicker } from "@/components/CategoryPicker";
-import { CalendarIcon, ArrowLeftRight, ArrowRight, CreditCard, Landmark } from "lucide-react";
+import { CalendarIcon, ArrowLeftRight, ArrowRight, CreditCard, Landmark, Loader2 } from "lucide-react";
 import { BankLogo } from "@/components/BankLogo";
 import { CalculatorAmountInput } from "@/components/CalculatorAmountInput";
  import { format, parse } from "date-fns";
@@ -45,6 +45,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
   const [cardOptions, setCardOptions] = useState<CardOption[]>([]);
 
   const [isTransfer, setIsTransfer] = useState(initialType === "transfer");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [transferFromId, setTransferFromId] = useState("");
   const [transferToId, setTransferToId] = useState("");
 
@@ -143,82 +144,90 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
   const hasDiff = installmentEnabled && !isTransfer && installmentMode === "divide" && installmentDetails.diff !== 0;
 
   const handleAdd = async () => {
+    if (isSubmitting) return;
+
     if (hasDiff && !confirmInstallmentDiff) {
       toast.error("Por favor, confirme o ajuste de centavos no parcelamento.");
       return;
     }
 
-     if ((newTx.amount || 0) <= 0) {
-       toast.error("Por favor, insira um valor maior que zero.");
-       return;
-     }
- 
-     try {
-     console.log("QuickAdd: Starting handleAdd", { isTransfer, transferFromId, transferToId, amount: newTx.amount });
-     
-     if (isTransfer) {
-       if (!transferFromId || !transferToId || transferFromId === transferToId) {
-         console.warn("QuickAdd: Transfer validation failed", { transferFromId, transferToId });
-         toast.error("Selecione contas diferentes para a transferência.");
-         return;
-       }
+    if ((newTx.amount || 0) <= 0) {
+      toast.error("Por favor, insira um valor maior que zero.");
+      return;
+    }
 
-       const fromAcc = bankAccounts.find(a => a.id === transferFromId);
-       if (fromAcc && newTx.amount > fromAcc.balance) {
-         console.warn("QuickAdd: Insufficient balance", { amount: newTx.amount, balance: fromAcc.balance });
-         toast.error(`Saldo insuficiente na conta ${fromAcc.name} (Saldo disponível: R$ ${fromAcc.balance.toLocaleString("pt-BR", { minimumFractionDigits: 2 })})`);
-         return;
-       }
+    setIsSubmitting(true);
+    try {
+      console.log("QuickAdd: Starting handleAdd", { isTransfer, transferFromId, transferToId, amount: newTx.amount });
+      
+      if (isTransfer) {
+        if (!transferFromId || !transferToId || transferFromId === transferToId) {
+          console.warn("QuickAdd: Transfer validation failed", { transferFromId, transferToId });
+          toast.error("Selecione contas diferentes para a transferência.");
+          setIsSubmitting(false);
+          return;
+        }
 
-       const toAcc = bankAccounts.find(a => a.id === transferToId);
-       const fromName = fromAcc?.name || "Conta";
-       const toName = toAcc?.name || "Conta";
-       const groupId = (typeof crypto !== "undefined" && "randomUUID" in crypto)
-         ? crypto.randomUUID()
-         : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-       
-       console.log("QuickAdd: Inserting transfer transactions", { groupId });
-       
-       const { error, data } = await supabase.from("transactions").insert([
-         {
-           icon: "🔄", name: `Transferência → ${toName}`, category: "Transferências",
-           date: newTx.date, amount: newTx.amount, type: "expense",
-           card: null, bank_account_id: transferFromId, installment_group_id: groupId,
-           is_visible: true
-         },
-         {
-           icon: "🔄", name: `Transferência ← ${fromName}`, category: "Transferências",
-           date: newTx.date, amount: newTx.amount, type: "income",
-           card: null, bank_account_id: transferToId, installment_group_id: groupId,
-           is_visible: true
-         },
-       ]).select();
+        const fromAcc = bankAccounts.find(a => a.id === transferFromId);
+        if (fromAcc && newTx.amount > fromAcc.balance) {
+          console.warn("QuickAdd: Insufficient balance", { amount: newTx.amount, balance: fromAcc.balance });
+          toast.error(`Saldo insuficiente na conta ${fromAcc.name} (Saldo disponível: R$ ${fromAcc.balance.toLocaleString("pt-BR", { minimumFractionDigits: 2 })})`);
+          setIsSubmitting(false);
+          return;
+        }
 
-       if (error) {
-         console.error("QuickAdd: Supabase insertion error", error);
-         throw error;
-       }
-       
-       console.log("QuickAdd: Transfer successful", data);
-       onOpenChange(false);
-       onSuccess?.();
-       toast.success("Transferência realizada com sucesso!");
-       return;
-     }
+        const toAcc = bankAccounts.find(a => a.id === transferToId);
+        const fromName = fromAcc?.name || "Conta";
+        const toName = toAcc?.name || "Conta";
+        const groupId = (typeof crypto !== "undefined" && "randomUUID" in crypto)
+          ? crypto.randomUUID()
+          : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        
+        console.log("QuickAdd: Inserting transfer transactions", { groupId, fromName, toName });
+        
+        const { error, data } = await supabase.from("transactions").insert([
+          {
+            icon: "🔄", name: `Transferência → ${toName}`, category: "Transferências",
+            date: newTx.date, amount: newTx.amount, type: "expense",
+            card: null, bank_account_id: transferFromId, installment_group_id: groupId,
+            is_visible: true
+          },
+          {
+            icon: "🔄", name: `Transferência ← ${fromName}`, category: "Transferências",
+            date: newTx.date, amount: newTx.amount, type: "income",
+            card: null, bank_account_id: transferToId, installment_group_id: groupId,
+            is_visible: true
+          },
+        ]).select();
 
-     console.log("QuickAdd: Standard transaction validation", { bank_account_id: newTx.bank_account_id, card: newTx.card });
-     if (!newTx.bank_account_id && !newTx.card) {
-       setShowNoSelectionAlert(true);
-       return;
-     }
-
-    if (!isTransfer && newTx.type === "expense" && newTx.bank_account_id) {
-      const acc = bankAccounts.find(a => a.id === newTx.bank_account_id);
-      if (acc && newTx.amount > acc.balance) {
-        toast.error(`Saldo insuficiente na conta ${acc.name} (Saldo: R$ ${acc.balance.toLocaleString("pt-BR", { minimumFractionDigits: 2 })})`);
+        if (error) {
+          console.error("QuickAdd: Supabase insertion error", error);
+          toast.error("Erro na comunicação com o banco de dados. Tente novamente.");
+          throw error;
+        }
+        
+        console.log("QuickAdd: Transfer successful", data);
+        onOpenChange(false);
+        onSuccess?.();
+        toast.success("Transferência realizada com sucesso!");
         return;
       }
-    }
+
+      console.log("QuickAdd: Standard transaction validation", { bank_account_id: newTx.bank_account_id, card: newTx.card });
+      if (!newTx.bank_account_id && !newTx.card) {
+        setShowNoSelectionAlert(true);
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (!isTransfer && newTx.type === "expense" && newTx.bank_account_id) {
+        const acc = bankAccounts.find(a => a.id === newTx.bank_account_id);
+        if (acc && newTx.amount > acc.balance) {
+          toast.error(`Saldo insuficiente na conta ${acc.name} (Saldo: R$ ${acc.balance.toLocaleString("pt-BR", { minimumFractionDigits: 2 })})`);
+          setIsSubmitting(false);
+          return;
+        }
+      }
 
     const cardValue = newTx.card === "Nenhum" ? null : newTx.card;
     let baseDate: Date;
@@ -270,6 +279,8 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
     } catch (error: any) {
       console.error("Error adding transaction:", error);
       toast.error("Erro ao adicionar transação: " + (error.message || "Erro desconhecido"));
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -636,12 +647,19 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
             className="flex-1 h-8 text-xs"
             onClick={handleAdd}
             disabled={
-              isTransfer
+              isSubmitting || (isTransfer
                 ? !transferFromId || !transferToId || transferFromId === transferToId || !newTx.amount
-                : !newTx.name || !newTx.amount
+                : !newTx.name || !newTx.amount)
             }
           >
-            {isTransfer ? "Transferir" : "Adicionar"}
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Processando...
+              </>
+            ) : (
+              isTransfer ? "Transferir" : "Adicionar"
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>
