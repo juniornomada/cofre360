@@ -67,16 +67,37 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
 
   const fetchData = useCallback(async () => {
     try {
-      const [{ data: cards, error: cardsError }, { data: accs, error: accsError }] = await Promise.all([
+      const [
+        { data: cards, error: cardsError },
+        { data: accs, error: accsError },
+        { data: txs, error: txsError }
+      ] = await Promise.all([
         supabase.from("cards").select("name, brand, emoji, color").order("created_at", { ascending: true }),
         supabase.from("bank_accounts").select("id, name, icon, color, balance").order("created_at", { ascending: true }),
+        supabase.from("transactions").select("bank_account_id, amount, type, is_visible").not("bank_account_id", "is", null),
       ]);
 
       if (cardsError) throw cardsError;
       if (accsError) throw accsError;
+      if (txsError) throw txsError;
+
+      const incomeByAccount: Record<string, number> = {};
+      const expenseByAccount: Record<string, number> = {};
+      (txs || []).forEach(tx => {
+        if (tx.is_visible === false) return;
+        const id = tx.bank_account_id!;
+        if (tx.type === "income") incomeByAccount[id] = (incomeByAccount[id] || 0) + (tx.amount || 0);
+        else expenseByAccount[id] = (expenseByAccount[id] || 0) + (tx.amount || 0);
+      });
 
       setCardOptions((cards || []).map(c => ({ name: c.name, brand: c.brand, emoji: c.emoji, color: c.color })));
-      setBankAccounts((accs || []).map(a => ({ id: a.id, name: a.name, icon: a.icon, color: a.color, balance: a.balance || 0 })));
+      setBankAccounts((accs || []).map(a => ({
+        id: a.id,
+        name: a.name,
+        icon: a.icon,
+        color: a.color,
+        balance: (a.balance || 0) + (incomeByAccount[a.id] || 0) - (expenseByAccount[a.id] || 0)
+      })));
     } catch (error: any) {
       console.error("Error fetching data:", error);
       toast.error("Erro ao carregar dados: " + (error.message || "Erro desconhecido"));
