@@ -430,7 +430,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                <div>
                  <label className="text-[11px] font-semibold text-foreground mb-0.5 block">Nome</label>
                   <input
-                    autoFocus
+                    
                     id="tx-name-input"
                     value={newTx.name}
                     onChange={e => {
