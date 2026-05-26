@@ -417,7 +417,6 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                    <CalculatorAmountInput 
                      value={newTx.amount} 
                      onChange={(v) => setNewTx({ ...newTx, amount: v })} 
-                     autoFocus
                      onEnter={handleAdd}
                    />
                  </div>
