@@ -184,11 +184,13 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
            icon: "🔄", name: `Transferência → ${toName}`, category: "Transferências",
            date: newTx.date, amount: newTx.amount, type: "expense",
            card: null, bank_account_id: transferFromId, installment_group_id: groupId,
+           is_visible: true
          },
          {
            icon: "🔄", name: `Transferência ← ${fromName}`, category: "Transferências",
            date: newTx.date, amount: newTx.amount, type: "income",
            card: null, bank_account_id: transferToId, installment_group_id: groupId,
+           is_visible: true
          },
        ]).select();
 
@@ -245,21 +247,23 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
           date: format(installDate, "dd MMM", { locale: ptBR }),
           amount: parcela, type: newTx.type,
           card: cardValue, bank_account_id: newTx.bank_account_id || null,
-          installment_number: i + 1,
-          total_installments: installmentCount,
-          installment_group_id: groupId,
-        });
-      }
-      const { error } = await supabase.from("transactions").insert(rows);
-      if (error) throw error;
-    } else {
-      const { error } = await supabase.from("transactions").insert({
-        icon: newTx.icon, name: newTx.name, category: newTx.category,
-        date: newTx.date, amount: newTx.amount, type: newTx.type,
-        card: cardValue, bank_account_id: newTx.bank_account_id || null,
-      });
-      if (error) throw error;
-    }
+           installment_number: i + 1,
+           total_installments: installmentCount,
+           installment_group_id: groupId,
+           is_visible: true
+         });
+       }
+       const { error } = await supabase.from("transactions").insert(rows);
+       if (error) throw error;
+     } else {
+       const { error } = await supabase.from("transactions").insert({
+         icon: newTx.icon, name: newTx.name, category: newTx.category,
+         date: newTx.date, amount: newTx.amount, type: newTx.type,
+         card: cardValue, bank_account_id: newTx.bank_account_id || null,
+         is_visible: true
+       });
+       if (error) throw error;
+     }
     onOpenChange(false);
     onSuccess?.();
     toast.success("Transação adicionada com sucesso!");
