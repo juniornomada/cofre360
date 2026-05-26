@@ -168,8 +168,12 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
           return;
         }
 
-        // We removed the balance check for transfers to allow tracking even with negative balances
         const fromAcc = bankAccounts.find(a => a.id === transferFromId);
+        if (fromAcc && (fromAcc.balance || 0) < newTx.amount) {
+          toast.error(`Saldo insuficiente na conta ${fromAcc.name}. Saldo disponível: R$ ${(fromAcc.balance || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`);
+          setIsSubmitting(false);
+          return;
+        }
 
         const toAcc = bankAccounts.find(a => a.id === transferToId);
         const fromName = fromAcc?.name || "Conta";
