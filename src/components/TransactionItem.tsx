@@ -60,7 +60,7 @@ export function TransactionItem({
     : name;
   const displayIcon = getCategoryIcon(category) || icon;
   const isCard = !!card;
-  const isTransfer = category === "Transferência" || isTransferPair;
+  const isTransfer = category === "Transferência" || category === "Transferências" || category.startsWith("Transferências >") || isTransferPair;
   const isBank = !card && !!bank_account_id && !isTransfer;
 
   return (
