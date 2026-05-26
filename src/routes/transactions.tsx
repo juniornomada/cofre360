@@ -193,9 +193,35 @@ function TransactionsPage() {
 
   const fetchBankAccounts = useCallback(async () => {
     try {
-      const { data, error } = await supabase.from("bank_accounts").select("id, name, balance").order("created_at", { ascending: true });
-      if (error) throw error;
-      if (data) setBankAccounts(data.map(a => ({ id: a.id, name: a.name, balance: a.balance || 0 })));
+      const [
+        { data: accts, error: acctsError },
+        { data: txs, error: txsError }
+      ] = await Promise.all([
+        supabase.from("bank_accounts").select("id, name, balance").order("created_at", { ascending: true }),
+        supabase.from("transactions").select("bank_account_id, amount, type, is_visible").not("bank_account_id", "is", null),
+      ]);
+
+      if (acctsError) throw acctsError;
+      if (txsError) throw txsError;
+
+      if (accts) {
+        const incMap: Record<string, number> = {};
+        const expMap: Record<string, number> = {};
+        for (const tx of (txs || [])) {
+          if (tx.is_visible === false) continue;
+          const id = tx.bank_account_id as string;
+          if (tx.type === "income") {
+            incMap[id] = (incMap[id] || 0) + Number(tx.amount);
+          } else {
+            expMap[id] = (expMap[id] || 0) + Number(tx.amount);
+          }
+        }
+        setBankAccounts(accts.map(a => ({ 
+          id: a.id, 
+          name: a.name, 
+          balance: Number(a.balance) + (incMap[a.id] || 0) - (expMap[a.id] || 0) 
+        })));
+      }
     } catch (error: any) {
       console.error("Error fetching bank accounts:", error);
       toast.error("Erro ao carregar contas: " + (error.message || "Erro desconhecido"));
