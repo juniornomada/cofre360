@@ -117,12 +117,13 @@ function RemindersPage() {
         toast.error("Preencha o título e a data");
         return;
       }
-      const recurrenceDay = newReminder.is_recurring
-        ? (() => {
-            const d = parseDate(newReminder.due_date || "");
-            return isNaN(d.getTime()) ? null : d.getDate();
-          })()
-        : null;
+
+      let recurrenceDay = null;
+      if (newReminder.is_recurring) {
+        const d = parseDate(newReminder.due_date || "");
+        recurrenceDay = isNaN(d.getTime()) ? null : d.getDate();
+      }
+
       const { error } = await supabase.from("reminders").insert({
         title: newReminder.title,
         amount: Number(newReminder.amount),
@@ -152,12 +153,16 @@ function RemindersPage() {
       if (!editReminder) return;
       
       const amountToSave = Number(editReminder.amount);
-      const recurrenceDay = editReminder.is_recurring
-        ? (editReminder.recurrence_day ?? (() => {
-            const d = parseDate(editReminder.due_date || "");
-            return isNaN(d.getTime()) ? null : d.getDate();
-          })())
-        : null;
+      
+      let recurrenceDay = null;
+      if (editReminder.is_recurring) {
+        if (editReminder.recurrence_day !== null && editReminder.recurrence_day !== undefined) {
+          recurrenceDay = editReminder.recurrence_day;
+        } else {
+          const d = parseDate(editReminder.due_date || "");
+          recurrenceDay = isNaN(d.getTime()) ? null : d.getDate();
+        }
+      }
 
       const updateData = {
         title: editReminder.title,
@@ -284,12 +289,15 @@ function RemindersPage() {
     
     if (showEditDialog && editReminder && editReminder.id === reminder.id) {
        try {
-         const recurrenceDay = editReminder.is_recurring
-           ? (editReminder.recurrence_day ?? (() => {
-               const d = parseDate(editReminder.due_date || "");
-               return isNaN(d.getTime()) ? null : d.getDate();
-             })())
-           : null;
+         let recurrenceDay = null;
+         if (editReminder.is_recurring) {
+           if (editReminder.recurrence_day !== null && editReminder.recurrence_day !== undefined) {
+             recurrenceDay = editReminder.recurrence_day;
+           } else {
+             const d = parseDate(editReminder.due_date || "");
+             recurrenceDay = isNaN(d.getTime()) ? null : d.getDate();
+           }
+         }
 
          await supabase.from("reminders").update({
            title: editReminder.title,
