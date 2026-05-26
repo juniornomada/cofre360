@@ -165,6 +165,9 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
   const hasDiff = installmentEnabled && !isTransfer && installmentMode === "divide" && installmentDetails.diff !== 0;
 
   const handleAdd = async () => {
+    // Dismiss keyboard on mobile
+    (document.activeElement as HTMLElement)?.blur();
+    
     if (isSubmitting) return;
 
     if (hasDiff && !confirmInstallmentDiff) {
