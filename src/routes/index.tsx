@@ -383,6 +383,25 @@ function Dashboard() {
     }
 
     try {
+      // Balance check for expenses from bank accounts (including transfers which are expenses on the origin side)
+      if (editTx.type === "expense" && editTx.bank_account_id) {
+        const acc = accountBalances.find(a => a.id === editTx.bank_account_id);
+        if (acc) {
+          const originalTx = allTransactions.find(t => t.id === editTx.id);
+          let availableBalance = acc.balance || 0;
+          
+          // If editing an existing expense from the same account, add back the current amount to check limit
+          if (originalTx && originalTx.bank_account_id === editTx.bank_account_id && originalTx.type === "expense") {
+            availableBalance += originalTx.amount;
+          }
+          
+          if (perInstallment > availableBalance) {
+            toast.error(`Saldo insuficiente na conta ${acc.name} (Saldo disponível: R$ ${availableBalance.toLocaleString("pt-BR", { minimumFractionDigits: 2 })})`);
+            return;
+          }
+        }
+      }
+
       const { error: updErr } = await supabase.from("transactions").update({
         icon: editTx.icon,
         name: finalName,
@@ -391,6 +410,7 @@ function Dashboard() {
         amount: perInstallment,
         type: editTx.type,
         card: editTx.card,
+        bank_account_id: editTx.bank_account_id || null,
       }).eq("id", editTx.id);
       if (updErr) throw updErr;
 
