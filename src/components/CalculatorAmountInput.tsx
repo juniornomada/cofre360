@@ -76,8 +76,13 @@ import { cn } from "@/lib/utils";
         if (announcement !== "") {
           setAnnouncement(`Modo de edição encerrado. Valor selecionado: R$ ${formatted}`);
         }
-        // Return focus to the main value button when closing
-        buttonRef.current?.focus();
+        // Return focus to the main value button when closing, except on mobile to avoid keyboard issues
+        if (!isMobile) {
+          buttonRef.current?.focus();
+        } else {
+          // On mobile, explicitly blur to ensure keyboard is dismissed
+          (document.activeElement as HTMLElement)?.blur();
+        }
       }
     }, [open]);
 
@@ -114,12 +119,22 @@ import { cn } from "@/lib/utils";
     onChange(reais);
     setOpen(false);
     setHasStartedTyping(false);
+    // Ensure keyboard is dismissed on mobile
+    if (isMobile) {
+      inputRef.current?.blur();
+      (document.activeElement as HTMLElement)?.blur();
+    }
   };
 
   const cancel = () => {
     setCents(Math.round((value || 0) * 100));
     setOpen(false);
     setHasStartedTyping(false);
+    // Ensure keyboard is dismissed on mobile
+    if (isMobile) {
+      inputRef.current?.blur();
+      (document.activeElement as HTMLElement)?.blur();
+    }
   };
 
   // Close keypad when clicking outside.
