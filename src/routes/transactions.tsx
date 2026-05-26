@@ -286,7 +286,7 @@ function TransactionsPage() {
   const maxAmt = filterMaxAmount ? parseFloat(filterMaxAmount) : null;
 
   const filtered = transactions.filter((tx) => {
-    const matchesCategory = activeCategory === "Todas" || tx.category === activeCategory || parseCategoryValue(tx.category).group === activeCategory;
+    const matchesCategory = activeCategory === "Todas" || tx.category === activeCategory || parseCategoryValue(tx.category).group === activeCategory || (activeCategory === "Transferências" && (tx.category === "Transferência" || tx.category === "Transferências"));
     const matchesSource = activeSource === "all"
       ? true
       : activeSource === "card"
