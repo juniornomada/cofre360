@@ -154,14 +154,18 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
      }
  
      try {
+     console.log("QuickAdd: Starting handleAdd", { isTransfer, transferFromId, transferToId, amount: newTx.amount });
+     
      if (isTransfer) {
        if (!transferFromId || !transferToId || transferFromId === transferToId) {
+         console.warn("QuickAdd: Transfer validation failed", { transferFromId, transferToId });
          toast.error("Selecione contas diferentes para a transferência.");
          return;
        }
 
        const fromAcc = bankAccounts.find(a => a.id === transferFromId);
        if (fromAcc && newTx.amount > fromAcc.balance) {
+         console.warn("QuickAdd: Insufficient balance", { amount: newTx.amount, balance: fromAcc.balance });
          toast.error(`Saldo insuficiente na conta ${fromAcc.name} (Saldo disponível: R$ ${fromAcc.balance.toLocaleString("pt-BR", { minimumFractionDigits: 2 })})`);
          return;
        }
@@ -173,30 +177,40 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
          ? crypto.randomUUID()
          : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
        
-       const { error } = await supabase.from("transactions").insert([
+       console.log("QuickAdd: Inserting transfer transactions", { groupId });
+       
+       const { error, data } = await supabase.from("transactions").insert([
          {
            icon: "🔄", name: `Transferência → ${toName}`, category: "Transferências",
            date: newTx.date, amount: newTx.amount, type: "expense",
            card: null, bank_account_id: transferFromId, installment_group_id: groupId,
+           is_visible: true
          },
          {
            icon: "🔄", name: `Transferência ← ${fromName}`, category: "Transferências",
            date: newTx.date, amount: newTx.amount, type: "income",
            card: null, bank_account_id: transferToId, installment_group_id: groupId,
+           is_visible: true
          },
-       ]);
+       ]).select();
 
-       if (error) throw error;
+       if (error) {
+         console.error("QuickAdd: Supabase insertion error", error);
+         throw error;
+       }
+       
+       console.log("QuickAdd: Transfer successful", data);
        onOpenChange(false);
        onSuccess?.();
        toast.success("Transferência realizada com sucesso!");
        return;
      }
 
-    if (!newTx.bank_account_id && !newTx.card) {
-      setShowNoSelectionAlert(true);
-      return;
-    }
+     console.log("QuickAdd: Standard transaction validation", { bank_account_id: newTx.bank_account_id, card: newTx.card });
+     if (!newTx.bank_account_id && !newTx.card) {
+       setShowNoSelectionAlert(true);
+       return;
+     }
 
     if (!isTransfer && newTx.type === "expense" && newTx.bank_account_id) {
       const acc = bankAccounts.find(a => a.id === newTx.bank_account_id);
@@ -233,21 +247,23 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
           date: format(installDate, "dd MMM", { locale: ptBR }),
           amount: parcela, type: newTx.type,
           card: cardValue, bank_account_id: newTx.bank_account_id || null,
-          installment_number: i + 1,
-          total_installments: installmentCount,
-          installment_group_id: groupId,
-        });
-      }
-      const { error } = await supabase.from("transactions").insert(rows);
-      if (error) throw error;
-    } else {
-      const { error } = await supabase.from("transactions").insert({
-        icon: newTx.icon, name: newTx.name, category: newTx.category,
-        date: newTx.date, amount: newTx.amount, type: newTx.type,
-        card: cardValue, bank_account_id: newTx.bank_account_id || null,
-      });
-      if (error) throw error;
-    }
+           installment_number: i + 1,
+           total_installments: installmentCount,
+           installment_group_id: groupId,
+           is_visible: true
+         });
+       }
+       const { error } = await supabase.from("transactions").insert(rows);
+       if (error) throw error;
+     } else {
+       const { error } = await supabase.from("transactions").insert({
+         icon: newTx.icon, name: newTx.name, category: newTx.category,
+         date: newTx.date, amount: newTx.amount, type: newTx.type,
+         card: cardValue, bank_account_id: newTx.bank_account_id || null,
+         is_visible: true
+       });
+       if (error) throw error;
+     }
     onOpenChange(false);
     onSuccess?.();
     toast.success("Transação adicionada com sucesso!");
