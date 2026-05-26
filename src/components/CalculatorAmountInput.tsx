@@ -310,27 +310,7 @@ import { cn } from "@/lib/utils";
         </span>
       </button>
 
-      {/* Mobile-only hidden input to trigger numeric keyboard */}
-      {isMobile && (
-        <input
-          ref={inputRef}
-          type="text"
-          inputMode="numeric"
-          pattern="[0-9]*"
-          className="absolute inset-0 opacity-0 pointer-events-none"
-          value={formatted}
-          onChange={(e) => {
-            const raw = e.target.value.replace(/\D/g, "");
-            const numVal = parseInt(raw, 10) || 0;
-            if (numVal === cents) return;
-            setCents(numVal);
-            onChange(numVal / 100);
-            if (!hasStartedTyping) setHasStartedTyping(true);
-          }}
-          aria-hidden="true"
-          tabIndex={-1}
-        />
-      )}
+      {/* OS Keyboard hidden input removed to prevent keyboard from popping up on mobile */}
 
       {/* Keypad Popover */}
       {open && (
