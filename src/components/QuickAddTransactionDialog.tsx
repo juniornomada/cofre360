@@ -243,7 +243,17 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
       // We also removed the balance check for standard transactions to maintain consistency
       // as this is a tracking app and users might want to record transactions even with insufficient app-balance.
 
-    const cardValue = newTx.card === "Nenhum" ? null : newTx.card;
+      // Balance check for expenses from bank accounts
+      if (newTx.type === "expense" && newTx.bank_account_id) {
+        const acc = bankAccounts.find(a => a.id === newTx.bank_account_id);
+        if (acc && (acc.balance || 0) < newTx.amount) {
+          toast.error(`Saldo insuficiente na conta ${acc.name}. Saldo disponível: R$ ${(acc.balance || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`);
+          setIsSubmitting(false);
+          return;
+        }
+      }
+      
+      const cardValue = newTx.card === "Nenhum" ? null : newTx.card;
     let baseDate: Date;
     try {
       baseDate = parse(newTx.date, "dd MMM", new Date(), { locale: ptBR });
