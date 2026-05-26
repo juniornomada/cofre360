@@ -58,11 +58,7 @@ import { cn } from "@/lib/utils";
 
     useEffect(() => {
       if (autoFocus && !open && !ignoreNextFocus.current) {
-        if (isMobile) {
-          inputRef.current?.focus();
-        } else {
-          buttonRef.current?.focus();
-        }
+        buttonRef.current?.focus();
       }
     }, [autoFocus, open, isMobile]);
 
