@@ -155,20 +155,23 @@ import { cn } from "@/lib/utils";
    const press = (digit: number) => {
      setCents(prev => {
        const base = hasStartedTyping ? prev : 0;
+       // Limit to R$ 9.999.999,99 (9 digits in cents)
        const next = base * 10 + digit;
        if (next > 999_999_999) return prev;
        
+       const nextValue = next / 100;
        if (!hasStartedTyping) setHasStartedTyping(true);
-       onChange(next / 100);
+       onChange(nextValue);
        return next;
      });
    };
 
    const backspace = () => {
-     if (!hasStartedTyping) setHasStartedTyping(true);
      setCents(prev => {
        const next = Math.floor(prev / 10);
-       onChange(next / 100);
+       const nextValue = next / 100;
+       if (!hasStartedTyping) setHasStartedTyping(true);
+       onChange(nextValue);
        return next;
      });
    };
