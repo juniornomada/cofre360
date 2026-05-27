@@ -215,31 +215,24 @@ import { cn } from "@/lib/utils";
            clear();
          }
         } else if (e.key === "Enter") {
-          e.preventDefault();
+          const activeElement = document.activeElement;
+          const isButton = activeElement?.tagName === 'BUTTON';
+          
           if (open) {
-            confirm();
-            if (onEnter) setTimeout(onEnter, 50);
-          } else if (onEnter) {
-            const activeElement = document.activeElement;
-            const isInsideKeypad = activeElement?.closest('#keypad-dialog');
-            const isOkButton = activeElement?.getAttribute('data-category') === 'primary-action';
-            const isCancelButton = activeElement?.textContent === 'Cancelar';
-            
-            if (isInsideKeypad) {
-              if (isOkButton) {
-                confirm();
-              } else if (isCancelButton) {
-                cancel();
-              } else {
-                // If focused on a digit or other button, just confirm the whole value
-                confirm();
-              }
-            } else {
+            if (!isButton || activeElement?.getAttribute('data-category') === 'primary-action') {
+              e.preventDefault();
               confirm();
+              if (onEnter) setTimeout(onEnter, 50);
             }
-          } else if (onEnter) {
-            onEnter();
+          } else if (isFocused) {
+            e.preventDefault();
+            if (onEnter) {
+              onEnter();
+            } else {
+              setOpen(true);
+            }
           }
+        }
        } else if (e.key === "ArrowUp") {
          e.preventDefault();
          if (!hasStartedTyping) setHasStartedTyping(true);
