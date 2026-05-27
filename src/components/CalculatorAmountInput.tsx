@@ -52,8 +52,8 @@ import { cn } from "@/lib/utils";
     const [announcement, setAnnouncement] = useState("");
 
     const formatted = (cents / 100).toLocaleString("pt-BR", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
+      style: "currency",
+      currency: "BRL",
     });
 
     useEffect(() => {
