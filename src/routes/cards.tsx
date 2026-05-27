@@ -1168,11 +1168,11 @@ function CardsPage() {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label className="text-xs text-muted-foreground">Limite (R$)</Label>
-                <Input type="number" value={formLimit} onChange={(e) => setFormLimit(e.target.value)} placeholder="Opcional (0,00)" className="rounded-xl" />
+                <CalculatorAmountInput value={parseFloat(formLimit) || 0} onChange={(v) => setFormLimit(v.toString())} />
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs text-muted-foreground">Fatura atual (R$)</Label>
-                <Input type="number" value={formUsed} onChange={(e) => setFormUsed(e.target.value)} placeholder="Opcional (0,00)" className="rounded-xl" />
+                <CalculatorAmountInput value={parseFloat(formUsed) || 0} onChange={(v) => setFormUsed(v.toString())} />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
