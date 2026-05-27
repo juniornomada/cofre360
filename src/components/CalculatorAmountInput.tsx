@@ -242,21 +242,23 @@ import { cn } from "@/lib/utils";
         } else if (e.key === "ArrowUp") {
           e.preventDefault();
          if (!hasStartedTyping) setHasStartedTyping(true);
-         setCents(prev => {
-           const next = prev + 100;
-           const final = next > 999_999_999 ? prev : next;
-           onChange(final / 100);
-           return final;
-         });
-       } else if (e.key === "ArrowDown") {
-         e.preventDefault();
-         if (!hasStartedTyping) setHasStartedTyping(true);
-         setCents(prev => {
-           const next = Math.max(0, prev - 100);
-           onChange(next / 100);
-           return next;
-         });
-       }
+          setCents(prev => {
+            const next = prev + 100;
+            const final = next > 999_999_999 ? prev : next;
+            const finalValue = final / 100;
+            onChange(finalValue);
+            return final;
+          });
+        } else if (e.key === "ArrowDown") {
+          e.preventDefault();
+          if (!hasStartedTyping) setHasStartedTyping(true);
+          setCents(prev => {
+            const next = Math.max(0, prev - 100);
+            const finalValue = next / 100;
+            onChange(finalValue);
+            return next;
+          });
+        }
      };
      window.addEventListener("keydown", handler, { capture: true });
      return () => window.removeEventListener("keydown", handler, { capture: true });
