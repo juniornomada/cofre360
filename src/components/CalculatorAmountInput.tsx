@@ -292,13 +292,12 @@ import { cn } from "@/lib/utils";
           "focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background focus:outline-none",
           className
         )}
-        aria-label={`Valor: R$ ${formatted}`}
+        aria-label={`Valor: ${formatted}`}
         aria-expanded={open}
         aria-haspopup="dialog"
         aria-controls="keypad-dialog"
         aria-describedby="input-instruction"
       >
-        <span className="text-primary font-bold text-xs mr-2 shrink-0 opacity-80" aria-hidden="true">R$</span>
         <span className="flex-1 text-right tabular-nums font-bold text-base text-primary">
           {formatted}
         </span>
