@@ -314,7 +314,7 @@ import { cn } from "@/lib/utils";
                 type="button"
                 onClick={() => press(num)}
                 data-category="numeric"
-                aria-label={`Número ${num}`}
+                aria-label={num.toString()}
                 className="h-12 rounded-xl bg-card hover:bg-accent text-lg font-bold transition-colors focus:ring-2 focus:ring-primary focus:outline-none"
               >
                 {num}
