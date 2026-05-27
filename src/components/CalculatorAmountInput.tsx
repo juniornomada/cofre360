@@ -52,8 +52,8 @@ import { cn } from "@/lib/utils";
     const [announcement, setAnnouncement] = useState("");
 
     const formatted = (cents / 100).toLocaleString("pt-BR", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
+      style: "currency",
+      currency: "BRL",
     });
 
     useEffect(() => {
@@ -65,12 +65,12 @@ import { cn } from "@/lib/utils";
     // Manage focus and accessibility announcements when keypad opens/closes
     useEffect(() => {
       if (open) {
-        setAnnouncement(`Modo de edição de valor ativado. Valor atual: R$ ${formatted}`);
+        setAnnouncement(`Modo de edição de valor ativado. Valor atual: ${formatted}`);
         // Focus the first button in the keypad (number 1)
         setTimeout(() => firstKeypadButtonRef.current?.focus(), 50);
       } else {
         if (announcement !== "") {
-          setAnnouncement(`Modo de edição encerrado. Valor selecionado: R$ ${formatted}`);
+          setAnnouncement(`Modo de edição encerrado. Valor selecionado: ${formatted}`);
         }
         // Return focus to the main value button when closing, except on mobile to avoid keyboard issues
         buttonRef.current?.focus();
@@ -106,7 +106,7 @@ import { cn } from "@/lib/utils";
   // Update announcement when cents change while open
   useEffect(() => {
     if (open) {
-      setAnnouncement(`Valor atual: R$ ${formatted}`);
+      setAnnouncement(`Valor atual: ${formatted}`);
     }
   }, [cents, open, formatted]);
 
@@ -155,20 +155,23 @@ import { cn } from "@/lib/utils";
    const press = (digit: number) => {
      setCents(prev => {
        const base = hasStartedTyping ? prev : 0;
+       // Limit to R$ 9.999.999,99 (9 digits in cents)
        const next = base * 10 + digit;
        if (next > 999_999_999) return prev;
        
+       const nextValue = next / 100;
        if (!hasStartedTyping) setHasStartedTyping(true);
-       onChange(next / 100);
+       onChange(nextValue);
        return next;
      });
    };
 
    const backspace = () => {
-     if (!hasStartedTyping) setHasStartedTyping(true);
      setCents(prev => {
        const next = Math.floor(prev / 10);
-       onChange(next / 100);
+       const nextValue = next / 100;
+       if (!hasStartedTyping) setHasStartedTyping(true);
+       onChange(nextValue);
        return next;
      });
    };
@@ -239,21 +242,23 @@ import { cn } from "@/lib/utils";
         } else if (e.key === "ArrowUp") {
           e.preventDefault();
          if (!hasStartedTyping) setHasStartedTyping(true);
-         setCents(prev => {
-           const next = prev + 100;
-           const final = next > 999_999_999 ? prev : next;
-           onChange(final / 100);
-           return final;
-         });
-       } else if (e.key === "ArrowDown") {
-         e.preventDefault();
-         if (!hasStartedTyping) setHasStartedTyping(true);
-         setCents(prev => {
-           const next = Math.max(0, prev - 100);
-           onChange(next / 100);
-           return next;
-         });
-       }
+          setCents(prev => {
+            const next = prev + 100;
+            const final = next > 999_999_999 ? prev : next;
+            const finalValue = final / 100;
+            onChange(finalValue);
+            return final;
+          });
+        } else if (e.key === "ArrowDown") {
+          e.preventDefault();
+          if (!hasStartedTyping) setHasStartedTyping(true);
+          setCents(prev => {
+            const next = Math.max(0, prev - 100);
+            const finalValue = next / 100;
+            onChange(finalValue);
+            return next;
+          });
+        }
      };
      window.addEventListener("keydown", handler, { capture: true });
      return () => window.removeEventListener("keydown", handler, { capture: true });
@@ -287,13 +292,12 @@ import { cn } from "@/lib/utils";
           "focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background focus:outline-none",
           className
         )}
-        aria-label={`Valor: R$ ${formatted}`}
+        aria-label={`Valor: ${formatted}`}
         aria-expanded={open}
         aria-haspopup="dialog"
         aria-controls="keypad-dialog"
         aria-describedby="input-instruction"
       >
-        <span className="text-primary font-bold text-xs mr-2 shrink-0 opacity-80" aria-hidden="true">R$</span>
         <span className="flex-1 text-right tabular-nums font-bold text-base text-primary">
           {formatted}
         </span>
