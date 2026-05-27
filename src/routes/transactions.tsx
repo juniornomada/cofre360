@@ -750,22 +750,16 @@ function TransactionsPage() {
                   <div>
                     <label className="text-xs text-muted-foreground mb-1 block">Faixa de valor (R$)</label>
                     <div className="flex gap-2">
-                      <input
-                        type="number"
-                        step="0.01"
-                        placeholder="Mín"
-                        value={filterMinAmount}
-                        onChange={e => setFilterMinAmount(e.target.value)}
-                        className="flex-1 rounded-lg bg-card px-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground outline-none border border-border"
-                      />
-                      <input
-                        type="number"
-                        step="0.01"
-                        placeholder="Máx"
-                        value={filterMaxAmount}
-                        onChange={e => setFilterMaxAmount(e.target.value)}
-                        className="flex-1 rounded-lg bg-card px-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground outline-none border border-border"
-                      />
+                       <CalculatorAmountInput
+                         value={parseFloat(filterMinAmount) || 0}
+                         onChange={v => setFilterMinAmount(v.toString())}
+                         className="flex-1"
+                       />
+                       <CalculatorAmountInput
+                         value={parseFloat(filterMaxAmount) || 0}
+                         onChange={v => setFilterMaxAmount(v.toString())}
+                         className="flex-1"
+                       />
                     </div>
                   </div>
 
