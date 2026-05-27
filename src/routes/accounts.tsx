@@ -828,12 +828,9 @@ function AccountsPage() {
              </div>
               <div className="space-y-1.5">
                 <Label className="text-xs text-muted-foreground">Saldo Inicial (R$)</Label>
-                <Input
-                  type="number"
-                  value={editingAccount ? editBalance : formBalance}
-                  onChange={(e) => editingAccount ? setEditBalance(e.target.value) : setFormBalance(e.target.value)}
-                  placeholder="Opcional (0,00)"
-                  className="rounded-xl"
+                <CalculatorAmountInput
+                  value={parseFloat(editingAccount ? editBalance : formBalance) || 0}
+                  onChange={(v) => editingAccount ? setEditBalance(v.toString()) : setFormBalance(v.toString())}
                 />
               </div>
              {((editingAccount ? editIcon : formIcon) === "custom") && (
