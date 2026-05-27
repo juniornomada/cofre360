@@ -296,7 +296,8 @@ import { cn } from "@/lib/utils";
       </button>
 
       {/* OS Keyboard hidden input removed to prevent keyboard from popping up on mobile */}
-
+      {/* Keypad Popover */}
+      {open && (
         <div 
           id="keypad-dialog"
           role="dialog"
