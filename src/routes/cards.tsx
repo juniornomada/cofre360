@@ -884,13 +884,13 @@ function CardsPage() {
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-[10px] opacity-70 w-14">Limite R$</span>
-                        <Input
-                          type="number"
-                          value={editLimit}
-                          onChange={(e) => setEditLimit(e.target.value)}
-                          className="h-7 w-28 rounded-lg bg-white/20 border-white/30 text-white text-xs placeholder:text-white/50"
-                          onKeyDown={(e) => { if (e.key === "Enter") saveEdit(card.id); if (e.key === "Escape") cancelEdit(); }}
-                        />
+                        <div className="w-28">
+                          <CalculatorAmountInput
+                            value={parseFloat(editLimit) || 0}
+                            onChange={(v) => setEditLimit(v.toString())}
+                            className="h-7 bg-white/20 border-white/30 text-white"
+                          />
+                        </div>
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-[10px] opacity-70 w-14">Fecha dia</span>
