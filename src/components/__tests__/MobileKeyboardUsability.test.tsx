@@ -78,6 +78,6 @@ describe("Mobile Keyboard Usability", () => {
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
     
     // On desktop, we DO expect focus to return to trigger for accessibility
-    expect(document.activeElement).toBe(trigger);
+    await waitFor(() => expect(document.activeElement).toBe(trigger));
   });
 });
