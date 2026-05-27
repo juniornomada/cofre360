@@ -232,9 +232,8 @@ import { cn } from "@/lib/utils";
               setOpen(true);
             }
           }
-        }
-       } else if (e.key === "ArrowUp") {
-         e.preventDefault();
+        } else if (e.key === "ArrowUp") {
+          e.preventDefault();
          if (!hasStartedTyping) setHasStartedTyping(true);
          setCents(prev => {
            const next = prev + 100;
