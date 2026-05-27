@@ -106,7 +106,7 @@ import { cn } from "@/lib/utils";
   // Update announcement when cents change while open
   useEffect(() => {
     if (open) {
-      setAnnouncement(`Valor atual: R$ ${formatted}`);
+      setAnnouncement(`Valor atual: ${formatted}`);
     }
   }, [cents, open, formatted]);
 
