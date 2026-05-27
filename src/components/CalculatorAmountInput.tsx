@@ -65,7 +65,7 @@ import { cn } from "@/lib/utils";
     // Manage focus and accessibility announcements when keypad opens/closes
     useEffect(() => {
       if (open) {
-        setAnnouncement(`Modo de edição de valor ativado. Valor atual: R$ ${formatted}`);
+        setAnnouncement(`Modo de edição de valor ativado. Valor atual: ${formatted}`);
         // Focus the first button in the keypad (number 1)
         setTimeout(() => firstKeypadButtonRef.current?.focus(), 50);
       } else {
