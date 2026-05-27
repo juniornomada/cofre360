@@ -161,14 +161,13 @@ function SortableAccountItem({
                 onKeyDown={(e) => { if (e.key === "Enter") saveEdit(account.id); if (e.key === "Escape") cancelEdit(); }}
               />
               <div className="flex items-center gap-1">
-                <span className="text-xs text-muted-foreground">R$</span>
-                <Input
-                  type="number"
-                  value={editBalance}
-                  onChange={(e) => setEditBalance(e.target.value)}
-                  className="h-9 rounded-lg text-sm w-32"
-                  onKeyDown={(e) => { if (e.key === "Enter") saveEdit(account.id); if (e.key === "Escape") cancelEdit(); }}
-                />
+                <span className="text-xs text-muted-foreground mr-1">R$</span>
+                <div className="w-32">
+                  <CalculatorAmountInput
+                    value={parseFloat(editBalance) || 0}
+                    onChange={(v) => setEditBalance(v.toString())}
+                  />
+                </div>
               </div>
             </div>
           ) : (
