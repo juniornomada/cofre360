@@ -260,16 +260,15 @@ import { cn } from "@/lib/utils";
       <div 
         id="input-instruction"
         className="sr-only" 
-        aria-live="polite" 
-        aria-atomic="true" 
       >
-        Use o teclado do seu dispositivo para inserir o valor.
+        Edição de valor monetário. Use os números de 0 a 9 para digitar. O valor é inserido em centavos da direita para a esquerda.
       </div>
       
       <div 
         data-testid="announcement-region"
         className="sr-only"
-        aria-live="assertive"
+        aria-live="polite"
+        aria-atomic="true"
       >
         {announcement}
       </div>
