@@ -28,9 +28,9 @@ import { cn } from "@/lib/utils";
    const [open, setOpen] = useState(false);
    const [isMobile, setIsMobile] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
-     const openRef = useRef(false);
-     
-     const ignoreNextFocus = useRef(false);
+    const openRef = useRef(false);
+    
+    const ignoreNextFocus = useRef(false);
 
     // Detect if we are on mobile
     useEffect(() => {
@@ -67,20 +67,24 @@ import { cn } from "@/lib/utils";
       if (open) {
         setAnnouncement(`Modo de edição de valor ativado. Valor atual: R$ ${formatted}`);
         // Focus the first button in the keypad (number 1)
-        setTimeout(() => firstKeypadButtonRef.current?.focus(), 10);
+        setTimeout(() => firstKeypadButtonRef.current?.focus(), 50);
       } else {
         if (announcement !== "") {
           setAnnouncement(`Modo de edição encerrado. Valor selecionado: R$ ${formatted}`);
         }
         // Return focus to the main value button when closing, except on mobile to avoid keyboard issues
-        if (!isMobile) {
-          buttonRef.current?.focus();
-        } else {
-          // On mobile, explicitly blur to ensure keyboard is dismissed
-          (document.activeElement as HTMLElement)?.blur();
+        buttonRef.current?.focus();
+        
+        // On mobile, explicitly blur after a short delay if it was focused
+        if (isMobile) {
+          setTimeout(() => {
+            if (document.activeElement === buttonRef.current) {
+              (document.activeElement as HTMLElement)?.blur();
+            }
+          }, 10);
         }
       }
-    }, [open]);
+    }, [open, isMobile]);
 
   // Keep internal buffer in sync when the parent resets the value (e.g. dialog reopen).
   // Sync internal state when value is changed externally (e.g. parent reset)
@@ -260,16 +264,15 @@ import { cn } from "@/lib/utils";
       <div 
         id="input-instruction"
         className="sr-only" 
-        aria-live="polite" 
-        aria-atomic="true" 
       >
-        Use o teclado do seu dispositivo para inserir o valor.
+        Edição de valor monetário. Use os números de 0 a 9 para digitar. O valor é inserido em centavos da direita para a esquerda.
       </div>
       
       <div 
         data-testid="announcement-region"
         className="sr-only"
-        aria-live="assertive"
+        aria-live="polite"
+        aria-atomic="true"
       >
         {announcement}
       </div>
@@ -297,16 +300,16 @@ import { cn } from "@/lib/utils";
       </button>
 
       {/* OS Keyboard hidden input removed to prevent keyboard from popping up on mobile */}
-
       {/* Keypad Popover */}
       {open && (
         <div 
           id="keypad-dialog"
           role="dialog"
           aria-modal="true"
-          aria-label="Teclado numérico"
+          aria-labelledby="keypad-title"
           className="absolute top-full left-0 right-0 z-[100] mt-2 rounded-2xl bg-background border border-border shadow-2xl p-4 animate-in fade-in zoom-in duration-200"
         >
+          <h2 id="keypad-title" className="sr-only">Teclado numérico</h2>
           <div className="grid grid-cols-3 gap-2">
             {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
               <button
@@ -315,7 +318,7 @@ import { cn } from "@/lib/utils";
                 type="button"
                 onClick={() => press(num)}
                 data-category="numeric"
-                aria-label={`Número ${num}`}
+                aria-label={num.toString()}
                 className="h-12 rounded-xl bg-card hover:bg-accent text-lg font-bold transition-colors focus:ring-2 focus:ring-primary focus:outline-none"
               >
                 {num}
@@ -325,7 +328,7 @@ import { cn } from "@/lib/utils";
               type="button"
               onClick={clear}
               data-category="destructive"
-              aria-label="Limpar todo o valor"
+              aria-label="Limpar tudo"
               className="h-12 rounded-xl bg-destructive/10 hover:bg-destructive text-destructive hover:text-destructive-foreground text-lg font-bold transition-colors focus:ring-2 focus:ring-primary focus:outline-none"
             >
               C
@@ -334,7 +337,7 @@ import { cn } from "@/lib/utils";
               type="button"
               onClick={() => press(0)}
               data-category="numeric"
-              aria-label="Número 0"
+              aria-label="0"
               className="h-12 rounded-xl bg-card hover:bg-accent text-lg font-bold transition-colors focus:ring-2 focus:ring-primary focus:outline-none"
             >
               0
@@ -343,7 +346,7 @@ import { cn } from "@/lib/utils";
               type="button"
               onClick={backspace}
               data-category="utility"
-              aria-label="Apagar último dígito"
+              aria-label="Apagar"
               className="h-12 rounded-xl bg-card hover:bg-accent flex items-center justify-center transition-colors focus:ring-2 focus:ring-primary focus:outline-none"
             >
               <Delete className="h-5 w-5" />
@@ -354,7 +357,7 @@ import { cn } from "@/lib/utils";
               type="button"
               onClick={cancel}
               data-category="secondary-action"
-              aria-label="Cancelar e manter valor anterior"
+              aria-label="Cancelar"
               className="h-12 rounded-xl bg-muted hover:bg-muted/80 text-muted-foreground flex items-center justify-center transition-colors focus:ring-2 focus:ring-primary focus:outline-none"
             >
               <X className="h-5 w-5" />
@@ -364,10 +367,10 @@ import { cn } from "@/lib/utils";
               type="button"
               onClick={confirm}
               data-category="primary-action"
-              aria-label="Confirmar valor"
+              aria-label="Confirmar"
               className="col-span-2 h-12 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground flex items-center justify-center transition-colors focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:outline-none"
             >
-              <Check className="h-5 w-5" />
+              <Check className="h-5 w-5" aria-hidden="true" />
               <span className="ml-2 font-bold">OK</span>
             </button>
           </div>
