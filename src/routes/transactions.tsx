@@ -1072,13 +1072,9 @@ function TransactionsPage() {
                      {editInstallmentMode === "fixed" && (
                        <div>
                          <label className="text-[10px] text-muted-foreground mb-1 block">Valor de cada parcela</label>
-                         <input
-                           type="number"
-                           step="0.01"
-                           min={0}
+                         <CalculatorAmountInput
                            value={editInstallmentFixedValue}
-                           onChange={e => setEditInstallmentFixedValue(parseFloat(e.target.value) || 0)}
-                           className="w-full rounded-lg bg-background px-2 py-1.5 text-sm text-foreground outline-none"
+                           onChange={v => setEditInstallmentFixedValue(v)}
                          />
                        </div>
                      )}
