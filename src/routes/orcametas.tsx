@@ -8,6 +8,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { parseCategoryValue } from "@/lib/categories";
 import { toast } from "sonner";
+import { CalculatorAmountInput } from "@/components/CalculatorAmountInput";
 
 
 interface BudgetItem {
@@ -445,7 +446,7 @@ function OrcaMetasPage() {
             </div>
             <div>
               <label className="text-xs text-muted-foreground mb-1 block">Limite (R$)</label>
-              <input type="number" step="0.01" value={newItem.budget_limit || ""} onChange={e => setNewItem({ ...newItem, budget_limit: parseFloat(e.target.value) || 0 })} placeholder="0.00" className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none" />
+              <CalculatorAmountInput value={newItem.budget_limit || 0} onChange={v => setNewItem({ ...newItem, budget_limit: v })} />
             </div>
           </div>
           <DialogFooter>
@@ -474,7 +475,7 @@ function OrcaMetasPage() {
               </div>
               <div>
                 <label className="text-xs text-muted-foreground mb-1 block">Limite (R$)</label>
-                <input type="number" step="0.01" value={editItem.budget_limit} onChange={e => setEditItem({ ...editItem, budget_limit: parseFloat(e.target.value) || 0 })} className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground outline-none" />
+                <CalculatorAmountInput value={editItem.budget_limit || 0} onChange={v => setEditItem({ ...editItem, budget_limit: v })} />
               </div>
               <p className="text-[10px] text-muted-foreground">O gasto é calculado automaticamente a partir das suas transações do mês.</p>
             </div>
@@ -517,11 +518,11 @@ function OrcaMetasPage() {
               </div>
               <div>
                 <label className="text-xs text-muted-foreground mb-1 block">Valor atual (R$)</label>
-                <input type="number" step="0.01" value={editGoal.current_amount} onChange={e => setEditGoal({ ...editGoal, current_amount: parseFloat(e.target.value) || 0 })} className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground outline-none" />
+                <CalculatorAmountInput value={editGoal.current_amount || 0} onChange={v => setEditGoal({ ...editGoal, current_amount: v })} />
               </div>
               <div>
                 <label className="text-xs text-muted-foreground mb-1 block">Valor alvo (R$)</label>
-                <input type="number" step="0.01" value={editGoal.target_amount} onChange={e => setEditGoal({ ...editGoal, target_amount: parseFloat(e.target.value) || 0 })} className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground outline-none" />
+                <CalculatorAmountInput value={editGoal.target_amount || 0} onChange={v => setEditGoal({ ...editGoal, target_amount: v })} />
               </div>
               <div>
                 <label className="text-xs text-muted-foreground mb-1 block">Prazo</label>
@@ -565,11 +566,11 @@ function OrcaMetasPage() {
             </div>
             <div>
               <label className="text-xs text-muted-foreground mb-1 block">Valor atual (R$)</label>
-              <input type="number" step="0.01" value={newGoal.current_amount || ""} onChange={e => setNewGoal({ ...newGoal, current_amount: parseFloat(e.target.value) || 0 })} placeholder="0.00" className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none" />
+              <CalculatorAmountInput value={newGoal.current_amount || 0} onChange={v => setNewGoal({ ...newGoal, current_amount: v })} />
             </div>
             <div>
               <label className="text-xs text-muted-foreground mb-1 block">Valor alvo (R$)</label>
-              <input type="number" step="0.01" value={newGoal.target_amount || ""} onChange={e => setNewGoal({ ...newGoal, target_amount: parseFloat(e.target.value) || 0 })} placeholder="0.00" className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none" />
+              <CalculatorAmountInput value={newGoal.target_amount || 0} onChange={v => setNewGoal({ ...newGoal, target_amount: v })} />
             </div>
             <div>
               <label className="text-xs text-muted-foreground mb-1 block">Prazo</label>

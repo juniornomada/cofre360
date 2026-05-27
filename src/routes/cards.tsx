@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { CalculatorAmountInput } from "@/components/CalculatorAmountInput";
 import { CardBrand, brandPresets } from "@/components/CardBrand";
 import { cn } from "@/lib/utils";
 import {
@@ -883,13 +884,13 @@ function CardsPage() {
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-[10px] opacity-70 w-14">Limite R$</span>
-                        <Input
-                          type="number"
-                          value={editLimit}
-                          onChange={(e) => setEditLimit(e.target.value)}
-                          className="h-7 w-28 rounded-lg bg-white/20 border-white/30 text-white text-xs placeholder:text-white/50"
-                          onKeyDown={(e) => { if (e.key === "Enter") saveEdit(card.id); if (e.key === "Escape") cancelEdit(); }}
-                        />
+                        <div className="w-28">
+                          <CalculatorAmountInput
+                            value={parseFloat(editLimit) || 0}
+                            onChange={(v) => setEditLimit(v.toString())}
+                            className="h-7 bg-white/20 border-white/30 text-white"
+                          />
+                        </div>
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-[10px] opacity-70 w-14">Fecha dia</span>
@@ -1167,11 +1168,11 @@ function CardsPage() {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label className="text-xs text-muted-foreground">Limite (R$)</Label>
-                <Input type="number" value={formLimit} onChange={(e) => setFormLimit(e.target.value)} placeholder="Opcional (0,00)" className="rounded-xl" />
+                <CalculatorAmountInput value={parseFloat(formLimit) || 0} onChange={(v) => setFormLimit(v.toString())} />
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs text-muted-foreground">Fatura atual (R$)</Label>
-                <Input type="number" value={formUsed} onChange={(e) => setFormUsed(e.target.value)} placeholder="Opcional (0,00)" className="rounded-xl" />
+                <CalculatorAmountInput value={parseFloat(formUsed) || 0} onChange={(v) => setFormUsed(v.toString())} />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -1280,12 +1281,9 @@ function CardsPage() {
                       </div>
                       <div className="w-28 space-y-1.5">
                         <Label className="text-[10px] text-muted-foreground">Valor (R$)</Label>
-                        <Input
-                          type="number"
-                          value={line.amount}
-                          onChange={(e) => updatePaymentLine(index, "amount", e.target.value)}
-                          placeholder="0,00"
-                          className="rounded-xl text-xs"
+                        <CalculatorAmountInput
+                          value={parseFloat(line.amount) || 0}
+                          onChange={(v) => updatePaymentLine(index, "amount", v.toString())}
                         />
                       </div>
                       {paymentLines.length > 1 && (

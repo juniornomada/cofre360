@@ -16,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { BankLogo, bankPresets } from "@/components/BankLogo";
 import { toast } from "sonner";
+import { CalculatorAmountInput } from "@/components/CalculatorAmountInput";
 import { cn } from "@/lib/utils";
 import {
   DndContext,
@@ -160,14 +161,13 @@ function SortableAccountItem({
                 onKeyDown={(e) => { if (e.key === "Enter") saveEdit(account.id); if (e.key === "Escape") cancelEdit(); }}
               />
               <div className="flex items-center gap-1">
-                <span className="text-xs text-muted-foreground">R$</span>
-                <Input
-                  type="number"
-                  value={editBalance}
-                  onChange={(e) => setEditBalance(e.target.value)}
-                  className="h-9 rounded-lg text-sm w-32"
-                  onKeyDown={(e) => { if (e.key === "Enter") saveEdit(account.id); if (e.key === "Escape") cancelEdit(); }}
-                />
+                <span className="text-xs text-muted-foreground mr-1">R$</span>
+                <div className="w-32">
+                  <CalculatorAmountInput
+                    value={parseFloat(editBalance) || 0}
+                    onChange={(v) => setEditBalance(v.toString())}
+                  />
+                </div>
               </div>
             </div>
           ) : (
@@ -828,12 +828,9 @@ function AccountsPage() {
              </div>
               <div className="space-y-1.5">
                 <Label className="text-xs text-muted-foreground">Saldo Inicial (R$)</Label>
-                <Input
-                  type="number"
-                  value={editingAccount ? editBalance : formBalance}
-                  onChange={(e) => editingAccount ? setEditBalance(e.target.value) : setFormBalance(e.target.value)}
-                  placeholder="Opcional (0,00)"
-                  className="rounded-xl"
+                <CalculatorAmountInput
+                  value={parseFloat(editingAccount ? editBalance : formBalance) || 0}
+                  onChange={(v) => editingAccount ? setEditBalance(v.toString()) : setFormBalance(v.toString())}
                 />
               </div>
              {((editingAccount ? editIcon : formIcon) === "custom") && (

@@ -38,6 +38,7 @@ import { CSS } from "@dnd-kit/utilities";
 
 const CategoryPicker = lazy(() => import("@/components/CategoryPicker").then(m => ({ default: m.CategoryPicker })));
 const QuickAddTransactionDialog = lazy(() => import("@/components/QuickAddTransactionDialog").then(m => ({ default: m.QuickAddTransactionDialog })));
+import { CalculatorAmountInput } from "@/components/CalculatorAmountInput";
 
 import type { QuickAddInitialType } from "@/components/QuickAddTransactionDialog";
 import { saveInstallmentPlan, stripInstallmentSuffix } from "@/lib/installment-edit";
@@ -1203,7 +1204,7 @@ function Dashboard() {
               </div>
               <div>
                 <label className="text-xs text-muted-foreground mb-1 block">Valor (R$)</label>
-                <input type="number" step="0.01" value={editTx.amount} onChange={e => setEditTx({ ...editTx, amount: parseFloat(e.target.value) || 0 })} className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground outline-none" />
+                <CalculatorAmountInput value={editTx.amount} onChange={v => setEditTx({ ...editTx, amount: v })} />
               </div>
               <div>
                 <label className="text-xs text-muted-foreground mb-1 block">Tipo</label>
@@ -1311,13 +1312,9 @@ function Dashboard() {
                     ) : (
                       <div>
                         <label className="text-[10px] text-muted-foreground mb-1 block">Valor de cada parcela</label>
-                        <input
-                          type="number"
-                          step="0.01"
-                          min={0}
+                        <CalculatorAmountInput
                           value={editInstallmentFixedValue}
-                          onChange={e => setEditInstallmentFixedValue(parseFloat(e.target.value) || 0)}
-                          className="w-full rounded-lg bg-background px-2 py-1.5 text-sm text-foreground outline-none"
+                          onChange={v => setEditInstallmentFixedValue(v)}
                         />
                         <p className="text-[10px] text-muted-foreground leading-relaxed mt-1">
                           Total da compra:{" "}
