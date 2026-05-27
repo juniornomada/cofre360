@@ -297,15 +297,14 @@ import { cn } from "@/lib/utils";
 
       {/* OS Keyboard hidden input removed to prevent keyboard from popping up on mobile */}
 
-      {/* Keypad Popover */}
-      {open && (
         <div 
           id="keypad-dialog"
           role="dialog"
           aria-modal="true"
-          aria-label="Teclado numérico"
+          aria-labelledby="keypad-title"
           className="absolute top-full left-0 right-0 z-[100] mt-2 rounded-2xl bg-background border border-border shadow-2xl p-4 animate-in fade-in zoom-in duration-200"
         >
+          <h2 id="keypad-title" className="sr-only">Teclado numérico</h2>
           <div className="grid grid-cols-3 gap-2">
             {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
               <button
