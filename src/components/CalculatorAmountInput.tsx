@@ -363,10 +363,10 @@ import { cn } from "@/lib/utils";
               type="button"
               onClick={confirm}
               data-category="primary-action"
-              aria-label="Confirmar valor"
+              aria-label="Confirmar"
               className="col-span-2 h-12 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground flex items-center justify-center transition-colors focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:outline-none"
             >
-              <Check className="h-5 w-5" />
+              <Check className="h-5 w-5" aria-hidden="true" />
               <span className="ml-2 font-bold">OK</span>
             </button>
           </div>
