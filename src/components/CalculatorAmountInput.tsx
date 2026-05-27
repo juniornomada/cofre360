@@ -353,7 +353,7 @@ import { cn } from "@/lib/utils";
               type="button"
               onClick={cancel}
               data-category="secondary-action"
-              aria-label="Cancelar e manter valor anterior"
+              aria-label="Cancelar"
               className="h-12 rounded-xl bg-muted hover:bg-muted/80 text-muted-foreground flex items-center justify-center transition-colors focus:ring-2 focus:ring-primary focus:outline-none"
             >
               <X className="h-5 w-5" />
