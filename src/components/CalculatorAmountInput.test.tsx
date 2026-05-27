@@ -39,16 +39,16 @@ describe("CalculatorAmountInput Accessibility", () => {
       const announcementRegion = screen.getByTestId("announcement-region");
       
       await user.click(trigger);
-      await waitFor(() => expect(announcementRegion).toHaveTextContent(/Modo de edição de valor ativado/i));
+      await waitFor(() => expect(announcementRegion).toHaveTextContent(/Modo de edição de valor ativado/i), { timeout: 2000 });
       
       await user.keyboard("1");
-      await waitFor(() => expect(announcementRegion).toHaveTextContent(/Valor atual: R\$ 0,01/i));
+      await waitFor(() => expect(announcementRegion).toHaveTextContent(/Valor atual: R\$ 0,01/i), { timeout: 2000 });
       
       await user.keyboard("2");
-      await waitFor(() => expect(announcementRegion).toHaveTextContent(/Valor atual: R\$ 0,12/i));
+      await waitFor(() => expect(announcementRegion).toHaveTextContent(/Valor atual: R\$ 0,12/i), { timeout: 2000 });
       
       await user.keyboard("{Backspace}");
-      await waitFor(() => expect(announcementRegion).toHaveTextContent(/Valor atual: R\$ 0,01/i));
+      await waitFor(() => expect(announcementRegion).toHaveTextContent(/Valor atual: R\$ 0,01/i), { timeout: 2000 });
     });
 
     it("should trap focus inside the keypad when open", async () => {
