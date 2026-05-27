@@ -566,11 +566,11 @@ function OrcaMetasPage() {
             </div>
             <div>
               <label className="text-xs text-muted-foreground mb-1 block">Valor atual (R$)</label>
-              <input type="number" step="0.01" value={newGoal.current_amount || ""} onChange={e => setNewGoal({ ...newGoal, current_amount: parseFloat(e.target.value) || 0 })} placeholder="0.00" className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none" />
+              <CalculatorAmountInput value={newGoal.current_amount || 0} onChange={v => setNewGoal({ ...newGoal, current_amount: v })} />
             </div>
             <div>
               <label className="text-xs text-muted-foreground mb-1 block">Valor alvo (R$)</label>
-              <input type="number" step="0.01" value={newGoal.target_amount || ""} onChange={e => setNewGoal({ ...newGoal, target_amount: parseFloat(e.target.value) || 0 })} placeholder="0.00" className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none" />
+              <CalculatorAmountInput value={newGoal.target_amount || 0} onChange={v => setNewGoal({ ...newGoal, target_amount: v })} />
             </div>
             <div>
               <label className="text-xs text-muted-foreground mb-1 block">Prazo</label>
