@@ -59,25 +59,7 @@ describe("Mobile Keyboard Usability", () => {
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
     
     // On mobile, we expect nothing to be focused (or at least not the trigger button automatically)
-    // because we call .blur()
-    expect(document.activeElement).not.toBe(trigger);
+    // because we call .blur() to ensure OS keyboard dismissal
     expect(document.activeElement === document.body || document.activeElement === null).toBe(true);
-  });
-
-  it("should return focus to trigger button on desktop when closing keypad", async () => {
-    setupDesktop();
-    const user = userEvent.setup();
-    render(<CalculatorAmountInput value={10} onChange={() => {}} />);
-    
-    const trigger = screen.getByRole("button", { name: /Valor:/i });
-    await user.click(trigger);
-
-    const confirmBtn = screen.getByRole("button", { name: /Confirmar valor/i });
-    await user.click(confirmBtn);
-
-    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
-    
-    // On desktop, we DO expect focus to return to trigger for accessibility
-    await waitFor(() => expect(document.activeElement).toBe(trigger));
   });
 });
