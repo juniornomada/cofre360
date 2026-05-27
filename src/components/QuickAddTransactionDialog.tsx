@@ -445,11 +445,11 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                    onKeyDown={e => {
                      if (e.key === "Enter") {
                        e.preventDefault();
-                       // Avançar para o campo de valor
-                       const amountInput = document.querySelector('input[inputmode="numeric"]');
-                       if (amountInput instanceof HTMLInputElement) {
-                         amountInput.focus();
-                       }
+                        // Avançar para o campo de valor (que agora é um botão)
+                        const amountButton = document.querySelector('button[aria-label^="Valor:"]') as HTMLButtonElement;
+                        if (amountButton) {
+                          amountButton.focus();
+                        }
                      }
                    }}
                    placeholder="Ex: Supermercado"
