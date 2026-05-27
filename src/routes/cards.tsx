@@ -1281,12 +1281,9 @@ function CardsPage() {
                       </div>
                       <div className="w-28 space-y-1.5">
                         <Label className="text-[10px] text-muted-foreground">Valor (R$)</Label>
-                        <Input
-                          type="number"
-                          value={line.amount}
-                          onChange={(e) => updatePaymentLine(index, "amount", e.target.value)}
-                          placeholder="0,00"
-                          className="rounded-xl text-xs"
+                        <CalculatorAmountInput
+                          value={parseFloat(line.amount) || 0}
+                          onChange={(v) => updatePaymentLine(index, "amount", v.toString())}
                         />
                       </div>
                       {paymentLines.length > 1 && (
