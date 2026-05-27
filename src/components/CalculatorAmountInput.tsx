@@ -324,7 +324,7 @@ import { cn } from "@/lib/utils";
               type="button"
               onClick={clear}
               data-category="destructive"
-              aria-label="Limpar todo o valor"
+              aria-label="Limpar tudo"
               className="h-12 rounded-xl bg-destructive/10 hover:bg-destructive text-destructive hover:text-destructive-foreground text-lg font-bold transition-colors focus:ring-2 focus:ring-primary focus:outline-none"
             >
               C
@@ -333,7 +333,7 @@ import { cn } from "@/lib/utils";
               type="button"
               onClick={() => press(0)}
               data-category="numeric"
-              aria-label="Número 0"
+              aria-label="0"
               className="h-12 rounded-xl bg-card hover:bg-accent text-lg font-bold transition-colors focus:ring-2 focus:ring-primary focus:outline-none"
             >
               0
