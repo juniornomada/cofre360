@@ -475,7 +475,7 @@ function OrcaMetasPage() {
               </div>
               <div>
                 <label className="text-xs text-muted-foreground mb-1 block">Limite (R$)</label>
-                <input type="number" step="0.01" value={editItem.budget_limit} onChange={e => setEditItem({ ...editItem, budget_limit: parseFloat(e.target.value) || 0 })} className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground outline-none" />
+                <CalculatorAmountInput value={editItem.budget_limit || 0} onChange={v => setEditItem({ ...editItem, budget_limit: v })} />
               </div>
               <p className="text-[10px] text-muted-foreground">O gasto é calculado automaticamente a partir das suas transações do mês.</p>
             </div>
