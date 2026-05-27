@@ -73,14 +73,18 @@ import { cn } from "@/lib/utils";
           setAnnouncement(`Modo de edição encerrado. Valor selecionado: R$ ${formatted}`);
         }
         // Return focus to the main value button when closing, except on mobile to avoid keyboard issues
-        if (!isMobile) {
-          buttonRef.current?.focus();
-        } else {
-          // On mobile, explicitly blur to ensure keyboard is dismissed
-          (document.activeElement as HTMLElement)?.blur();
+        buttonRef.current?.focus();
+        
+        // On mobile, explicitly blur after a short delay if it was focused
+        if (isMobile) {
+          setTimeout(() => {
+            if (document.activeElement === buttonRef.current) {
+              (document.activeElement as HTMLElement)?.blur();
+            }
+          }, 10);
         }
       }
-    }, [open]);
+    }, [open, isMobile]);
 
   // Keep internal buffer in sync when the parent resets the value (e.g. dialog reopen).
   // Sync internal state when value is changed externally (e.g. parent reset)
