@@ -30,7 +30,6 @@ import { cn } from "@/lib/utils";
     const containerRef = useRef<HTMLDivElement>(null);
     const openRef = useRef(false);
     
-    const isDesktopMock = useRef<boolean | null>(null);
     const ignoreNextFocus = useRef(false);
 
     // Detect if we are on mobile
