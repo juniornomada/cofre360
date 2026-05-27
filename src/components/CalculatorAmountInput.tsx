@@ -28,9 +28,10 @@ import { cn } from "@/lib/utils";
    const [open, setOpen] = useState(false);
    const [isMobile, setIsMobile] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
-     const openRef = useRef(false);
-     
-     const ignoreNextFocus = useRef(false);
+    const openRef = useRef(false);
+    
+    const isDesktopMock = useRef<boolean | null>(null);
+    const ignoreNextFocus = useRef(false);
 
     // Detect if we are on mobile
     useEffect(() => {
