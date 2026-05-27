@@ -70,7 +70,7 @@ import { cn } from "@/lib/utils";
         setTimeout(() => firstKeypadButtonRef.current?.focus(), 50);
       } else {
         if (announcement !== "") {
-          setAnnouncement(`Modo de edição encerrado. Valor selecionado: R$ ${formatted}`);
+          setAnnouncement(`Modo de edição encerrado. Valor selecionado: ${formatted}`);
         }
         // Return focus to the main value button when closing, except on mobile to avoid keyboard issues
         buttonRef.current?.focus();
