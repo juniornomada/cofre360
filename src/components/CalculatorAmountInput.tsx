@@ -36,7 +36,7 @@ import { cn } from "@/lib/utils";
     // Detect if we are on mobile
     useEffect(() => {
       const checkMobile = () => {
-        setIsMobile(window.innerWidth < 768 || 'ontouchstart' in window);
+        setIsMobile((isDesktopMock.current === null ? window.innerWidth < 768 : !isDesktopMock.current) || 'ontouchstart' in window);
       };
       checkMobile();
       window.addEventListener('resize', checkMobile);
