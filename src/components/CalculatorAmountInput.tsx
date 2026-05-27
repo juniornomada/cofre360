@@ -342,7 +342,7 @@ import { cn } from "@/lib/utils";
               type="button"
               onClick={backspace}
               data-category="utility"
-              aria-label="Apagar último dígito"
+              aria-label="Apagar"
               className="h-12 rounded-xl bg-card hover:bg-accent flex items-center justify-center transition-colors focus:ring-2 focus:ring-primary focus:outline-none"
             >
               <Delete className="h-5 w-5" />
