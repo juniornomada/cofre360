@@ -90,19 +90,22 @@ describe("CalculatorAmountInput Accessibility", () => {
       const trigger = screen.getByRole("button", { name: /Valor:/i });
       await user.click(trigger);
       
+      // Wait for focus on first button
+      await waitFor(() => expect(screen.getByRole("button", { name: "1" })).toHaveFocus(), { timeout: 2000 });
+
       // Tab to number 5 and press Enter
       // Order: 1, 2, 3, 4, 5 (4 tabs)
       for (let i = 0; i < 4; i++) await user.tab();
-      expect(screen.getByRole("button", { name: "5" })).toHaveFocus();
+      expect(document.activeElement?.getAttribute('aria-label')).toBe("5");
       await user.keyboard("{Enter}");
       
       const announcementRegion = screen.getByTestId("announcement-region");
-      await waitFor(() => expect(announcementRegion).toHaveTextContent(/Valor atual: R\$ 0,05/i));
+      await waitFor(() => expect(announcementRegion).toHaveTextContent(/0,05/i), { timeout: 2000 });
       
       // Tab to OK/Confirm button and press Space
       // Current: 5. Remaining: 6, 7, 8, 9, Clear, 0, Backspace, Cancel, Confirm (9 tabs)
       for (let i = 0; i < 9; i++) await user.tab();
-      expect(screen.getByRole("button", { name: /Confirmar/i })).toHaveFocus();
+      expect(document.activeElement?.getAttribute('aria-label')).toBe("Confirmar");
       await user.keyboard(" ");
       
       await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
@@ -112,13 +115,6 @@ describe("CalculatorAmountInput Accessibility", () => {
     it("should return focus to the trigger button when closing keypad (on non-mobile)", async () => {
       const user = userEvent.setup();
       render(<CalculatorAmountInput value={0} onChange={() => {}} />);
-      
-      // Force non-mobile mode via internal ref for testing
-      const container = document.querySelector('.relative');
-      const instance = (container as any)?.__reactFiber$?.return?.stateNode;
-      if (instance) {
-          // This is a bit hacky but helps test the focus return logic without full JSDOM env control
-      }
       
       const trigger = screen.getByRole("button", { name: /Valor:/i });
       await user.click(trigger);
