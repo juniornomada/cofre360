@@ -107,7 +107,7 @@ function getGreeting(): string {
 }
 
 
-function SortableAccountItem({ acc, balanceVisible, fmt, onToggleVisibility }: { acc: any; balanceVisible: boolean; fmt: (v: number) => string; onToggleVisibility: (id: string, current: boolean) => void }) {
+function SortableAccountItem({ acc, balanceVisible, fmt }: { acc: any; balanceVisible: boolean; fmt: (v: number) => string }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: acc.id });
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
@@ -142,17 +142,6 @@ function SortableAccountItem({ acc, balanceVisible, fmt, onToggleVisibility }: {
           {balanceVisible ? `R$ ${fmt(acc.balance)}` : "R$ ••••"}
         </p>
         </Link>
-        <button
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            onToggleVisibility(acc.id, acc.is_visible !== false);
-          }}
-          className="p-1.5 rounded-lg hover:bg-accent/50 text-muted-foreground transition-colors shrink-0"
-          title={acc.is_visible !== false ? "Ocultar conta da tela inicial" : "Exibir conta na tela inicial"}
-        >
-          {acc.is_visible !== false ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-        </button>
       </div>
       {isDragging && (
         <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-black/5 backdrop-blur-[0.5px] rounded-xl animate-fade-in">
@@ -165,6 +154,7 @@ function SortableAccountItem({ acc, balanceVisible, fmt, onToggleVisibility }: {
     </div>
   );
 }
+
 
 function Dashboard() {
   const {
