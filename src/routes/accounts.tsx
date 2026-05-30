@@ -751,7 +751,7 @@ function AccountsPage() {
                     handleDelete={handleDelete}
                     setCsvImportAccount={setCsvImportAccount}
                     setPdfImportAccount={setPdfImportAccount}
-                    setHistoryAccount={setHistoryAccount}
+                    
                     handleToggleVisibility={handleToggleVisibility}
                     isSelectionMode={isSelectionMode}
                     isSelected={selectedIds.has(account.id)}
