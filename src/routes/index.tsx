@@ -107,7 +107,7 @@ function getGreeting(): string {
 }
 
 
-function SortableAccountItem({ acc, balanceVisible, fmt }: { acc: any; balanceVisible: boolean; fmt: (v: number) => string }) {
+function SortableAccountItem({ acc, balanceVisible, fmt, onToggleVisibility }: { acc: any; balanceVisible: boolean; fmt: (v: number) => string; onToggleVisibility: (id: string, current: boolean) => void }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: acc.id });
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
@@ -127,11 +127,12 @@ function SortableAccountItem({ acc, balanceVisible, fmt }: { acc: any; balanceVi
         isDragging && "ring-2 ring-primary ring-offset-2 ring-offset-background rounded-xl shadow-2xl scale-[1.01] z-50",
       )}
     >
-      <Link
-        to="/accounts"
-        search={{ action: undefined } as any}
-        className="interactive-card flex items-center gap-2.5 rounded-xl bg-background/40 px-2.5 py-1.5 hover:bg-background/60 transition-colors"
-      >
+      <div className="flex flex-1 items-center gap-2 overflow-hidden">
+        <Link
+          to="/accounts"
+          search={{ action: undefined } as any}
+          className="flex-1 flex items-center gap-2.5 rounded-xl bg-background/40 px-2.5 py-1.5 hover:bg-background/60 transition-colors overflow-hidden"
+        >
         <BankLogo icon={acc.icon} color={acc.color} name={acc.name} size="sm" />
         <p className="text-xs font-medium text-foreground flex-1 min-w-0 truncate">{acc.name}</p>
         <p className={cn(
@@ -140,7 +141,19 @@ function SortableAccountItem({ acc, balanceVisible, fmt }: { acc: any; balanceVi
         )}>
           {balanceVisible ? `R$ ${fmt(acc.balance)}` : "R$ ••••"}
         </p>
-      </Link>
+        </Link>
+        <button
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onToggleVisibility(acc.id, acc.is_visible !== false);
+          }}
+          className="p-1.5 rounded-lg hover:bg-accent/50 text-muted-foreground transition-colors shrink-0"
+          title={acc.is_visible !== false ? "Ocultar conta da tela inicial" : "Exibir conta na tela inicial"}
+        >
+          {acc.is_visible !== false ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+        </button>
+      </div>
       {isDragging && (
         <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-black/5 backdrop-blur-[0.5px] rounded-xl animate-fade-in">
           <div className="flex items-center gap-1.5 rounded-full bg-white/95 px-2 py-1 text-[10px] font-bold text-gray-900 shadow-lg ring-1 ring-primary">
@@ -205,6 +218,26 @@ function Dashboard() {
     } catch (error: any) {
       console.error("Error reordering accounts:", error);
       toast.error("Erro ao reordenar contas");
+    }
+  };
+
+  const handleToggleAccountVisibility = async (id: string, currentVisible: boolean) => {
+    const newVisible = !currentVisible;
+    setAccountBalances(prev => prev.map(a => a.id === id ? { ...a, is_visible: newVisible } : a));
+    
+    try {
+      const { error } = await supabase
+        .from("bank_accounts")
+        .update({ is_visible: newVisible })
+        .eq("id", id);
+      
+      if (error) throw error;
+      toast.success(newVisible ? "Conta agora é exibida" : "Conta agora está oculta");
+    } catch (error) {
+      console.error("Error toggling account visibility:", error);
+      toast.error("Erro ao atualizar visibilidade");
+      // Rollback on error
+      setAccountBalances(prev => prev.map(a => a.id === id ? { ...a, is_visible: currentVisible } : a));
     }
   };
 
@@ -860,7 +893,7 @@ function Dashboard() {
             <SortableContext items={displayAccounts.map((a) => a.id)} strategy={verticalListSortingStrategy}>
               <div className="mt-3 flex flex-col gap-1">
                 {displayAccounts.map((acc) => (
-                  <SortableAccountItem key={acc.id} acc={acc} balanceVisible={balanceVisible} fmt={fmt} />
+                  <SortableAccountItem key={acc.id} acc={acc} balanceVisible={balanceVisible} fmt={fmt} onToggleVisibility={handleToggleAccountVisibility} />
                 ))}
               </div>
             </SortableContext>
