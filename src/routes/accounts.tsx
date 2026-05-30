@@ -348,9 +348,6 @@ function AccountsPage() {
     });
   };
 
-
-
-
   const fetchAccounts = useCallback(async () => {
     try {
       const { data, error } = await supabase.from("bank_accounts").select("*").order("sort_order", { ascending: true }).order("created_at", { ascending: true });
