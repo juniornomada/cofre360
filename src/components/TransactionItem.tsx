@@ -50,8 +50,7 @@ interface TransactionItemProps {
 export function TransactionItem({ 
   icon, name, category, date, amount, type, card, cardBrand, 
   bank_account_id, isTransferPair, transferFromName, transferToName, 
-  installment_number, total_installments, style, onEdit, onDelete,
-  onEdit, onDelete, amountVisible = true
+  installment_number, total_installments, style, onEdit, onDelete, amountVisible = true
 }: TransactionItemProps) {
   const isInstallment = !!total_installments && total_installments > 1 && !!installment_number;
   // Strip the trailing "(n/m)" from the displayed name since we'll show it as a badge.

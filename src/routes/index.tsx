@@ -944,11 +944,11 @@ function Dashboard() {
                         card={tx.card ?? undefined} 
                         amount={Number(tx.amount)} 
                         amountVisible={balanceVisible}
-                        is_visible={tx.is_visible !== false}
+                        
                         style={{ animationDelay: `${i * 40}ms` }} 
                         onEdit={() => handleEdit(tx)}
                         onDelete={() => { setDeleteTarget(tx); setDeleteScope("single"); setShowDeleteDialog(true); }}
-                        onToggleVisibility={() => handleToggleVisibility(tx)}
+                        
                       />
                     </div>
                   ))}
