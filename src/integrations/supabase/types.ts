@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_test_runs: {
+        Row: {
+          avg_accuracy: number
+          avg_consistency: number
+          avg_duration_ms: number
+          created_at: string
+          failed: number
+          id: string
+          passed: number
+          results: Json
+          run_at: string
+          total_tests: number
+          trigger: string
+        }
+        Insert: {
+          avg_accuracy: number
+          avg_consistency: number
+          avg_duration_ms: number
+          created_at?: string
+          failed: number
+          id?: string
+          passed: number
+          results: Json
+          run_at?: string
+          total_tests: number
+          trigger?: string
+        }
+        Update: {
+          avg_accuracy?: number
+          avg_consistency?: number
+          avg_duration_ms?: number
+          created_at?: string
+          failed?: number
+          id?: string
+          passed?: number
+          results?: Json
+          run_at?: string
+          total_tests?: number
+          trigger?: string
+        }
+        Relationships: []
+      }
       bank_accounts: {
         Row: {
           balance: number
