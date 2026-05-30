@@ -214,49 +214,50 @@ function SortableAccountItem({
               </button>
             </div>
           ) : (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="interactive-button h-9 w-9 flex items-center justify-center rounded-full hover:bg-accent transition-colors" aria-label="Mais ações">
-                  <MoreVertical className="h-4 w-4 text-muted-foreground" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="rounded-xl">
-                <DropdownMenuItem onClick={() => setCsvImportAccount(account)} className="cursor-pointer">
-                  <Upload className="h-4 w-4 mr-2" />
-                  Importar CSV
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setPdfImportAccount(account)} className="cursor-pointer">
-                  <FileText className="h-4 w-4 mr-2" />
-                  Importar extrato PDF
-                </DropdownMenuItem>
-                 <DropdownMenuItem onClick={() => setHistoryAccount(account)} className="cursor-pointer">
-                   <History className="h-4 w-4 mr-2" />
-                   Histórico de saldo
-                 </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => handleToggleVisibility(account.id, account.is_visible)} className="cursor-pointer">
-                    {account.is_visible ? (
-                      <>
-                        <EyeOff className="h-4 w-4 mr-2" />
-                        Ocultar do Início
-                      </>
-                    ) : (
-                      <>
-                        <Eye className="h-4 w-4 mr-2" />
-                        Mostrar no Início
-                      </>
-                    )}
+            <div className=\"flex items-center gap-0.5\">
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleToggleVisibility(account.id, account.is_visible);
+                }}
+                className=\"interactive-button h-9 w-9 flex items-center justify-center rounded-full hover:bg-accent transition-colors\"
+                title={account.is_visible ? \"Ocultar do Início\" : \"Mostrar no Início\"}
+              >
+                {account.is_visible ? <Eye className=\"h-4 w-4 text-muted-foreground\" /> : <EyeOff className=\"h-4 w-4 text-muted-foreground/60\" />}
+              </button>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className=\"interactive-button h-9 w-9 flex items-center justify-center rounded-full hover:bg-accent transition-colors\" aria-label=\"Mais ações\">
+                    <MoreVertical className=\"h-4 w-4 text-muted-foreground\" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align=\"end\" className=\"rounded-xl\">
+                  <DropdownMenuItem onClick={() => setCsvImportAccount(account)} className=\"cursor-pointer\">
+                    <Upload className=\"h-4 w-4 mr-2\" />
+                    Importar CSV
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => startEdit(account)} className="cursor-pointer">
-                    <Pencil className="h-4 w-4 mr-2" />
+                  <DropdownMenuItem onClick={() => setPdfImportAccount(account)} className=\"cursor-pointer\">
+                    <FileText className=\"h-4 w-4 mr-2\" />
+                    Importar extrato PDF
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setHistoryAccount(account)} className=\"cursor-pointer\">
+                    <History className=\"h-4 w-4 mr-2\" />
+                    Histórico de saldo
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => startEdit(account)} className=\"cursor-pointer\">
+                    <Pencil className=\"h-4 w-4 mr-2\" />
                     Editar conta
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setDeleteConfirm(account.id)} className="cursor-pointer text-destructive focus:text-destructive">
-                   <Trash2 className="h-4 w-4 mr-2" />
-                   Excluir conta
-                 </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                  <DropdownMenuItem onClick={() => setDeleteConfirm(account.id)} className=\"cursor-pointer text-destructive focus:text-destructive\">
+                    <Trash2 className=\"h-4 w-4 mr-2\" />
+                    Excluir conta
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           )}
         </div>
       </div>

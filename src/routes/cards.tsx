@@ -830,37 +830,38 @@ function CardsPage() {
                               </button>
                             </div>
                           ) : (
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <button className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors border border-white/10 shadow-sm">
-                                  <MoreVertical className="h-3.5 w-3.5" />
-                                </button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="rounded-xl">
-                                <DropdownMenuItem onClick={() => handleToggleVisibility(card.id, card.is_visible)} className="cursor-pointer">
-                                  {card.is_visible ? (
-                                    <>
-                                      <EyeOff className="h-4 w-4 mr-2" />
-                                      Ocultar do Início
-                                    </>
-                                  ) : (
-                                    <>
-                                      <Eye className="h-4 w-4 mr-2" />
-                                      Mostrar no Início
-                                    </>
-                                  )}
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => startEdit(card)} className="cursor-pointer">
-                                  <Pencil className="h-4 w-4 mr-2" />
-                                  Editar cartão
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={() => setDeleteConfirm(card.id)} className="cursor-pointer text-destructive focus:text-destructive">
-                                  <Trash2 className="h-4 w-4 mr-2" />
-                                  Excluir cartão
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
+                            <div className=\"flex items-center gap-0.5\">
+                              <button
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handleToggleVisibility(card.id, card.is_visible);
+                                }}
+                                className=\"p-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors border border-white/10 shadow-sm\"
+                                title={card.is_visible ? \"Ocultar do Início\" : \"Mostrar no Início\"}
+                              >
+                                {card.is_visible ? <Eye className=\"h-3.5 w-3.5\" /> : <EyeOff className=\"h-3.5 w-3.5 text-white/60\" />}
+                              </button>
+
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <button className=\"p-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors border border-white/10 shadow-sm\">
+                                    <MoreVertical className=\"h-3.5 w-3.5\" />
+                                  </button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align=\"end\" className=\"rounded-xl\">
+                                  <DropdownMenuItem onClick={() => startEdit(card)} className=\"cursor-pointer\">
+                                    <Pencil className=\"h-4 w-4 mr-2\" />
+                                    Editar cartão
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem onClick={() => setDeleteConfirm(card.id)} className=\"cursor-pointer text-destructive focus:text-destructive\">
+                                    <Trash2 className=\"h-4 w-4 mr-2\" />
+                                    Excluir cartão
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
                           )}
                         </div>
                       )}
