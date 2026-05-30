@@ -883,7 +883,7 @@ function Dashboard() {
             <SortableContext items={displayAccounts.map((a) => a.id)} strategy={verticalListSortingStrategy}>
               <div className="mt-3 flex flex-col gap-1">
                 {displayAccounts.map((acc) => (
-                  <SortableAccountItem key={acc.id} acc={acc} balanceVisible={balanceVisible} fmt={fmt} onToggleVisibility={handleToggleAccountVisibility} />
+                  <SortableAccountItem key={acc.id} acc={acc} balanceVisible={balanceVisible} fmt={fmt} />
                 ))}
               </div>
             </SortableContext>
