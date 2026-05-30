@@ -242,10 +242,6 @@ function SortableAccountItem({
                     <FileText className="h-4 w-4 mr-2" />
                     Importar extrato PDF
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setHistoryAccount(account)} className="cursor-pointer">
-                    <History className="h-4 w-4 mr-2" />
-                    Histórico de saldo
-                  </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => startEdit(account)} className="cursor-pointer">
                     <Pencil className="h-4 w-4 mr-2" />
