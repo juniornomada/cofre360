@@ -674,7 +674,7 @@ function Dashboard() {
   const groupedTransactions = useMemo(() => {
     const groups: Record<string, { label: string; items: Transaction[] }> = {};
     for (const tx of transactions) {
-      if (tx.is_visible === false) continue;
+      
       const d = parseTxDateToDate(tx.date);
       let key: string;
       let label: string;
