@@ -898,41 +898,7 @@ function AccountsPage() {
          </DialogContent>
        </Dialog>
 
-       {/* History Dialog */}
-       <Dialog open={!!historyAccount} onOpenChange={(v) => !v && setHistoryAccount(null)}>
-         <DialogContent className="max-w-sm mx-auto rounded-2xl">
-           <DialogHeader>
-             <DialogTitle className="flex items-center gap-2">
-               <History className="h-5 w-5" />
-               Histórico: {historyAccount?.name}
-             </DialogTitle>
-           </DialogHeader>
-           <div className="flex flex-col gap-3 mt-4 max-h-[60vh] overflow-y-auto pr-1">
-             {balanceHistory.length === 0 ? (
-               <p className="text-center py-10 text-sm text-muted-foreground">Nenhuma alteração registrada.</p>
-             ) : (
-               balanceHistory.map((item) => (
-                 <div key={item.id} className="flex flex-col gap-1 rounded-xl bg-accent/30 p-3">
-                   <div className="flex justify-between items-center text-[10px] text-muted-foreground mb-1">
-                     <span>{new Date(item.created_at).toLocaleString("pt-BR")}</span>
-                   </div>
-                   <div className="flex justify-between items-center">
-                     <div className="flex flex-col">
-                       <span className="text-[10px] uppercase font-semibold text-muted-foreground/60 tracking-wider leading-none">Anterior</span>
-                       <span className="text-sm font-medium tabular-nums">R$ {item.previous_balance.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
-                     </div>
-                     <div className="h-4 w-4 flex items-center justify-center text-muted-foreground">→</div>
-                     <div className="flex flex-col text-right">
-                       <span className="text-[10px] uppercase font-semibold text-primary tracking-wider leading-none">Novo</span>
-                       <span className="text-sm font-bold tabular-nums text-primary">R$ {item.new_balance.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
-                     </div>
-                   </div>
-                 </div>
-               ))
-             )}
-           </div>
-         </DialogContent>
-       </Dialog>
+
 
       <Suspense fallback={null}>
         {csvImportAccount && (
