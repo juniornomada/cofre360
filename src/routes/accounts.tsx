@@ -348,25 +348,8 @@ function AccountsPage() {
     });
   };
 
-  const fetchHistory = useCallback(async (accountId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from("bank_account_balance_history" as any)
-        .select("*")
-        .eq("bank_account_id" as any, accountId)
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      setBalanceHistory(data || []);
-    } catch (error) {
-      console.error("Error fetching history:", error);
-    }
-  }, []);
 
-  useEffect(() => {
-    if (historyAccount) {
-      fetchHistory(historyAccount.id);
-    }
-  }, [historyAccount, fetchHistory]);
+
 
   const fetchAccounts = useCallback(async () => {
     try {
