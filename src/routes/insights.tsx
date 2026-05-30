@@ -21,6 +21,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
+import { AITestHistory } from "@/components/AITestHistory";
 
 export const Route = createFileRoute("/insights")({
   component: AIInsightsDashboard,
@@ -423,6 +424,8 @@ function AIInsightsDashboard() {
           );
         })}
       </div>
+
+      <AITestHistory />
     </div>
   );
 }
