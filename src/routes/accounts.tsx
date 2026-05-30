@@ -83,7 +83,7 @@ type SortableAccountItemProps = {
   handleDelete: (id: string) => void;
   setCsvImportAccount: (a: BankAccount) => void;
   setPdfImportAccount: (a: BankAccount) => void;
-  setHistoryAccount: (a: BankAccount) => void;
+  
   handleToggleVisibility: (id: string, current: boolean | null) => void;
   isSelectionMode: boolean;
   isSelected: boolean;
@@ -109,7 +109,7 @@ function SortableAccountItem({
   handleDelete,
   setCsvImportAccount,
   setPdfImportAccount,
-  setHistoryAccount,
+  
   handleToggleVisibility,
   isSelectionMode,
   isSelected,
