@@ -90,8 +90,6 @@ function TransactionsPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showDeleteAllDialog, setShowDeleteAllDialog] = useState(false);
   const [showBatchDeleteDialog, setShowBatchDeleteDialog] = useState(false);
-  const [showBatchVisibilityDialog, setShowBatchVisibilityDialog] = useState(false);
-  const [pendingVisibility, setPendingVisibility] = useState<boolean | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [showGlobalSearch, setShowGlobalSearch] = useState(false);
   const [globalSearch, setGlobalSearch] = useState("");
@@ -442,102 +440,6 @@ function TransactionsPage() {
     }
   };
 
-  const handleToggleVisibility = async (tx: Transaction) => {
-    try {
-      const newVisibility = tx.is_visible === false ? true : false;
-      const idsToUpdate = [tx.id];
-      
-      if (tx.category === "Transferência" && tx.installment_group_id) {
-        const { data: linked } = await supabase
-          .from("transactions")
-          .select("id")
-          .eq("installment_group_id", tx.installment_group_id)
-          .eq("category", "Transferência");
-        
-        if (linked) {
-          linked.forEach(l => {
-            if (l.id !== tx.id) idsToUpdate.push(l.id);
-          });
-        }
-      }
-
-      const { error } = await supabase
-        .from("transactions")
-        .update({ is_visible: newVisibility })
-        .in("id", idsToUpdate);
-
-      if (error) throw error;
-
-      toast.success(newVisibility ? "Transação visível" : "Transação oculta");
-      setTransactions(prev => prev.map(t => 
-        idsToUpdate.includes(t.id) ? { ...t, is_visible: newVisibility } : t
-      ));
-    } catch (error: any) {
-      console.error("Error toggling visibility:", error);
-      toast.error("Erro ao alterar visibilidade");
-    }
-  };
-
-  const handleBulkVisibility = (visible: boolean) => {
-    if (selectedIds.size === 0) return;
-    setPendingVisibility(visible);
-    setShowBatchVisibilityDialog(true);
-  };
-
-  const confirmBulkVisibility = async () => {
-    if (pendingVisibility === null) return;
-    const visible = pendingVisibility;
-    const count = selectedIds.size;
-    
-    setDeleting(true);
-    setShowBatchVisibilityDialog(false);
-
-    const promise = async () => {
-      const ids = Array.from(selectedIds);
-      let idsToUpdate = [...ids];
-
-      // Identify selected transfers and find their pairs
-      const selectedTxs = transactions.filter(t => selectedIds.has(t.id));
-      const transferGroupIds = selectedTxs
-        .filter(t => t.category === "Transferência" && t.installment_group_id)
-        .map(t => t.installment_group_id) as string[];
-
-      if (transferGroupIds.length > 0) {
-        const { data: linkedTxs } = await supabase
-          .from("transactions")
-          .select("id")
-          .in("installment_group_id", transferGroupIds)
-          .eq("category", "Transferência");
-        
-        if (linkedTxs) {
-          const linkedIds = linkedTxs.map(l => l.id);
-          idsToUpdate = Array.from(new Set([...idsToUpdate, ...linkedIds]));
-        }
-      }
-
-      const { error } = await supabase
-        .from("transactions")
-        .update({ is_visible: visible })
-        .in("id", idsToUpdate);
-
-      if (error) throw error;
-
-      setTransactions(prev => prev.map(t => 
-        idsToUpdate.includes(t.id) ? { ...t, is_visible: visible } : t
-      ));
-      setSelectedIds(new Set());
-      setSelectionMode(false);
-      setPendingVisibility(null);
-      return idsToUpdate.length;
-    };
-
-    toast.promise(promise(), {
-      loading: visible ? `Exibindo transações...` : `Ocultando transações...`,
-      success: (updatedCount) => `${updatedCount} ${updatedCount === 1 ? "transação atualizada" : "transações atualizadas"} com sucesso`,
-      error: "Erro ao atualizar visibilidade das transações",
-      finally: () => setDeleting(false)
-    });
-  };
 
   const handleDeleteConfirm = async () => {
     if (!deleteTarget) return;
@@ -648,14 +550,6 @@ function TransactionsPage() {
               </button>
               {selectedIds.size > 0 && (
                 <div className="flex gap-1.5">
-                  <button onClick={() => handleBulkVisibility(true)} className="flex h-8 items-center gap-1.5 rounded-full bg-primary/10 text-primary px-3 text-xs font-medium border border-primary/20" title="Exibir selecionadas">
-                    <Eye className="h-3.5 w-3.5" />
-                    {selectedIds.size}
-                  </button>
-                  <button onClick={() => handleBulkVisibility(false)} className="flex h-8 items-center gap-1.5 rounded-full bg-accent text-muted-foreground px-3 text-xs font-medium border border-border" title="Ocultar selecionadas">
-                    <EyeOff className="h-3.5 w-3.5" />
-                    {selectedIds.size}
-                  </button>
                   <button onClick={() => setShowBatchDeleteDialog(true)} className="flex h-8 items-center gap-1.5 rounded-full bg-destructive px-3 text-xs font-medium text-destructive-foreground">
                     <Trash2 className="h-3.5 w-3.5" />
                     {selectedIds.size}
@@ -846,11 +740,10 @@ function TransactionsPage() {
                   cardBrand={tx.cardBrand ?? undefined} 
                   amount={Number(tx.amount)} 
                   amountVisible={balanceVisible}
-                  is_visible={tx.is_visible !== false}
                   style={{ animationDelay: `${i * 40}ms` }} 
                   onEdit={selectionMode ? undefined : () => handleEdit(tx)}
                   onDelete={selectionMode ? undefined : () => { setDeleteTarget(tx); setDeleteScope("single"); setShowDeleteDialog(true); }}
-                  onToggleVisibility={selectionMode ? undefined : () => handleToggleVisibility(tx)}
+                  
                 />
               </div>
             </div>
@@ -1198,26 +1091,6 @@ function TransactionsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Batch Visibility */}
-      <Dialog open={showBatchVisibilityDialog} onOpenChange={setShowBatchVisibilityDialog}>
-        <DialogContent className="max-w-[90vw] rounded-2xl bg-background">
-          <DialogHeader>
-            <DialogTitle>Alterar Visibilidade</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
-            <p className="text-sm text-muted-foreground">
-              Deseja {pendingVisibility ? "exibir" : "ocultar"} <strong>{selectedIds.size}</strong> transação(ões) selecionada(s)?
-            </p>
-            <p className="text-[11px] text-muted-foreground bg-muted p-2 rounded-lg italic">
-              Nota: Transações ocultas não são contabilizadas nos saldos das contas e relatórios.
-            </p>
-          </div>
-          <DialogFooter className="flex-row gap-2 mt-4">
-            <Button variant="outline" className="flex-1" onClick={() => setShowBatchVisibilityDialog(false)}>Cancelar</Button>
-            <Button className="flex-1" onClick={confirmBulkVisibility}>Confirmar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Add */}
       <Suspense fallback={null}>

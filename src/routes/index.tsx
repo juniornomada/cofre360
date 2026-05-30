@@ -674,7 +674,7 @@ function Dashboard() {
   const groupedTransactions = useMemo(() => {
     const groups: Record<string, { label: string; items: Transaction[] }> = {};
     for (const tx of transactions) {
-      if (tx.is_visible === false) continue;
+      
       const d = parseTxDateToDate(tx.date);
       let key: string;
       let label: string;
@@ -944,11 +944,11 @@ function Dashboard() {
                         card={tx.card ?? undefined} 
                         amount={Number(tx.amount)} 
                         amountVisible={balanceVisible}
-                        is_visible={tx.is_visible !== false}
+                        
                         style={{ animationDelay: `${i * 40}ms` }} 
                         onEdit={() => handleEdit(tx)}
                         onDelete={() => { setDeleteTarget(tx); setDeleteScope("single"); setShowDeleteDialog(true); }}
-                        onToggleVisibility={() => handleToggleVisibility(tx)}
+                        
                       />
                     </div>
                   ))}
