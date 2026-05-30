@@ -306,8 +306,6 @@ function AccountsPage() {
   const [editBalance, setEditBalance] = useState("");
   const [editIcon, setEditIcon] = useState("");
   const [editColor, setEditColor] = useState("");
-  const [historyAccount, setHistoryAccount] = useState<BankAccount | null>(null);
-  const [balanceHistory, setBalanceHistory] = useState<any[]>([]);
 
   // Add form
   const [formName, setFormName] = useState("");
