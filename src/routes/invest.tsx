@@ -28,14 +28,8 @@ interface Investment {
 const typeOptions = ["Renda Fixa", "ETF", "Ações", "FII", "Crypto"];
 const iconOptions = ["🏦", "📊", "🇺🇸", "⛽", "🏢", "₿", "💎", "🪙", "📈", "🏠", "💰", "🔒"];
 
-const initialPortfolio: Investment[] = [
-  { id: 1, name: "Tesouro Selic", icon: "🏦", value: 15000, change: 1.2, type: "Renda Fixa" },
-  { id: 2, name: "CDB Inter 120%", icon: "📊", value: 5000, change: 1.05, type: "Renda Fixa" },
-  { id: 3, name: "IVVB11", icon: "🇺🇸", value: 3200, change: -0.8, type: "ETF" },
-  { id: 4, name: "PETR4", icon: "⛽", value: 2800, change: 2.3, type: "Ações" },
-  { id: 5, name: "HGLG11", icon: "🏢", value: 4500, change: 0.5, type: "FII" },
-  { id: 6, name: "Bitcoin", icon: "₿", value: 1500, change: -2.1, type: "Crypto" },
-];
+const initialPortfolio: Investment[] = [];
+
 
 function InvestPage() {
   const [portfolio, setPortfolio] = useState<Investment[]>([]);
