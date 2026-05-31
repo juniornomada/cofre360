@@ -3,7 +3,7 @@ import { SmartLink as Link } from "@/components/SmartLink";
 import { TransactionItem } from "@/components/TransactionItem";
 import { EmptyState } from "@/components/EmptyState";
 import { mainCategories, parseCategoryValue } from "@/lib/categories";
-import { Search, Pencil, Trash2, Plus, CalendarIcon, Loader2, Upload, CheckSquare, Square, X, SlidersHorizontal, ArrowLeftRight, ArrowRight, Eye, EyeOff } from "lucide-react";
+import { Search, Pencil, Trash2, Plus, CalendarIcon, Loader2, Upload, CheckSquare, Square, X, SlidersHorizontal, ArrowLeftRight, ArrowRight, Eye, EyeOff, FileText } from "lucide-react";
 import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react";
 
 const CsvImportDialog = lazy(() => import("@/components/CsvImportDialog").then(m => ({ default: m.CsvImportDialog })));
@@ -25,6 +25,9 @@ import { deleteTransactionScope, isInstallmentTx } from "@/lib/installment-delet
 import { toast } from "sonner";
 import { Layers } from "lucide-react";
 import { useUserPreferences } from "@/hooks/use-user-preferences";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+
 
 
 interface Transaction {
@@ -344,6 +347,50 @@ export function TransactionsPage() {
   const totalIncome = filtered.filter(t => t.type === "income" && t.is_visible !== false).reduce((s, t) => s + t.amount, 0);
   const totalExpense = filtered.filter(t => t.type === "expense" && t.is_visible !== false).reduce((s, t) => s + t.amount, 0);
 
+  const generatePDF = () => {
+    try {
+      const doc = new jsPDF();
+      const title = "Relatorio de Transacoes - Cofre 360";
+      
+      doc.setFontSize(18);
+      doc.text(title, 14, 22);
+      doc.setFontSize(11);
+      doc.setTextColor(100);
+      
+      const dateStr = format(new Date(), "dd/MM/yyyy HH:mm");
+      doc.text(`Gerado em: ${dateStr}`, 14, 30);
+
+      const tableRows = filtered.map(tx => [
+        tx.date,
+        tx.name,
+        tx.category,
+        tx.type === "income" ? "Receita" : "Despesa",
+        `R$ ${tx.amount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`
+      ]);
+
+      autoTable(doc, {
+        startY: 35,
+        head: [["Data", "Nome", "Categoria", "Tipo", "Valor"]],
+        body: tableRows,
+        theme: "striped",
+        headStyles: { fillColor: [26, 26, 46], textColor: [255, 255, 255] },
+        alternateRowStyles: { fillColor: [245, 245, 245] },
+      });
+
+      const finalY = (doc as any).lastAutoTable.finalY || 40;
+      doc.text(`Total Receitas: R$ ${totalIncome.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`, 14, finalY + 10);
+      doc.text(`Total Despesas: R$ ${totalExpense.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`, 14, finalY + 16);
+      doc.text(`Saldo: R$ ${(totalIncome - totalExpense).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`, 14, finalY + 22);
+
+      doc.save(`transacoes_${format(new Date(), "yyyyMMdd")}.pdf`);
+      toast.success("Relatório gerado com sucesso!");
+    } catch (error) {
+      console.error("Erro ao gerar PDF:", error);
+      toast.error("Erro ao gerar relatório em PDF");
+    }
+  };
+
+
   const handleEdit = (tx: Transaction) => {
     setEditTx({ ...tx });
     setEditInstallmentMode("divide");
@@ -662,7 +709,11 @@ export function TransactionsPage() {
                   </Button>
                 </PopoverContent>
               </Popover>
+              <button onClick={generatePDF} className="flex h-8 w-8 items-center justify-center rounded-full bg-card text-muted-foreground border border-border" title="Gerar relatório PDF">
+                <FileText className="h-4 w-4" />
+              </button>
               <button onClick={() => setShowCsvImport(true)} className="flex h-8 w-8 items-center justify-center rounded-full bg-card text-muted-foreground border border-border" title="Importar CSV">
+
                 <Upload className="h-4 w-4" />
               </button>
               <button onClick={() => setShowAddDialog(true)} className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
