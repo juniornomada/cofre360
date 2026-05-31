@@ -70,8 +70,6 @@ function CategoriesPage() {
 
     setLoading(true);
     try {
-
-    try {
       const [c, s] = await Promise.all([
         supabase.from("categories").select("*").order("sort_order"),
         supabase.from("subcategories").select("*").order("sort_order"),
@@ -88,6 +86,7 @@ function CategoriesPage() {
       setLoading(false);
     }
   }
+
 
   useEffect(() => {
     load();
