@@ -28,9 +28,6 @@ interface Investment {
 const typeOptions = ["Renda Fixa", "ETF", "Ações", "FII", "Crypto"];
 const iconOptions = ["🏦", "📊", "🇺🇸", "⛽", "🏢", "₿", "💎", "🪙", "📈", "🏠", "💰", "🔒"];
 
-const initialPortfolio: Investment[] = [];
-
-
 function InvestPage() {
   const [portfolio, setPortfolio] = useState<Investment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -42,6 +39,7 @@ function InvestPage() {
   const [newItem, setNewItem] = useState<Omit<Investment, "id">>({
     name: "", icon: "📈", value: 0, change: 0, type: "Renda Fixa",
   });
+
 
 
   const fetchInvestments = useCallback(async () => {
