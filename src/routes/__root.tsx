@@ -1,4 +1,4 @@
-import { Outlet, Link, createRootRoute, HeadContent, Scripts, useRouter } from "@tanstack/react-router";
+import { Outlet, Link, createRootRoute, HeadContent, Scripts, useRouter, redirect } from "@tanstack/react-router";
 import { z } from "zod";
 import { lazy, Suspense, useEffect } from "react";
 import { cn } from "@/lib/utils";
