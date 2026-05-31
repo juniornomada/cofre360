@@ -80,7 +80,11 @@ function RemindersPage() {
   });
 
   const fetchReminders = useCallback(async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+
     try {
+
       const [remindersRes, accountsRes, cardsRes] = await Promise.all([
         supabase.from("reminders").select("*").order("due_date", { ascending: true }),
         supabase.from("bank_accounts")

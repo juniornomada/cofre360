@@ -235,7 +235,11 @@ export function TransactionsPage() {
   const offsetRef = useRef(0);
 
   const fetchTransactionsPage = useCallback(async (reset = false) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+
     try {
+
       if (reset) {
         offsetRef.current = 0;
         setHasMore(true);

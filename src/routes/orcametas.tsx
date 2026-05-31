@@ -93,7 +93,11 @@ function OrcaMetasPage() {
   const [newGoal, setNewGoal] = useState({ name: "", icon: "🎯", current_amount: 0, target_amount: 0, deadline: "" });
 
   const fetchBudget = useCallback(async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+
     try {
+
       const [budgets, txs] = await Promise.all([
         supabase.from("budget_categories").select("*").order("created_at", { ascending: true }),
         supabase.from("transactions").select("amount, category, type, date").eq("type", "expense").neq("is_visible", false),
@@ -112,7 +116,11 @@ function OrcaMetasPage() {
   }, []);
 
   const fetchGoals = useCallback(async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+
     try {
+
       const { data, error } = await supabase.from("goals").select("*").order("created_at", { ascending: true });
       if (error) throw error;
       if (data) setGoals(data as any);

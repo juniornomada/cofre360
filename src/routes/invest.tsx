@@ -1,7 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { SmartLink as Link } from "@/components/SmartLink";
-import { ArrowLeft, TrendingUp, TrendingDown, Plus, Pencil, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { ArrowLeft, TrendingUp, TrendingDown, Plus, Pencil, Trash2, Loader2 } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+
 import {
   Dialog,
   DialogContent,
@@ -13,7 +16,7 @@ import { Button } from "@/components/ui/button";
 
 
 interface Investment {
-  id: number;
+  id: string;
   name: string;
   icon: string;
   value: number;
@@ -21,50 +24,96 @@ interface Investment {
   type: string;
 }
 
+
 const typeOptions = ["Renda Fixa", "ETF", "Ações", "FII", "Crypto"];
 const iconOptions = ["🏦", "📊", "🇺🇸", "⛽", "🏢", "₿", "💎", "🪙", "📈", "🏠", "💰", "🔒"];
 
-const initialPortfolio: Investment[] = [
-  { id: 1, name: "Tesouro Selic", icon: "🏦", value: 15000, change: 1.2, type: "Renda Fixa" },
-  { id: 2, name: "CDB Inter 120%", icon: "📊", value: 5000, change: 1.05, type: "Renda Fixa" },
-  { id: 3, name: "IVVB11", icon: "🇺🇸", value: 3200, change: -0.8, type: "ETF" },
-  { id: 4, name: "PETR4", icon: "⛽", value: 2800, change: 2.3, type: "Ações" },
-  { id: 5, name: "HGLG11", icon: "🏢", value: 4500, change: 0.5, type: "FII" },
-  { id: 6, name: "Bitcoin", icon: "₿", value: 1500, change: -2.1, type: "Crypto" },
-];
-
 function InvestPage() {
-  const [portfolio, setPortfolio] = useState<Investment[]>(initialPortfolio);
+  const [portfolio, setPortfolio] = useState<Investment[]>([]);
+  const [loading, setLoading] = useState(true);
   const [editItem, setEditItem] = useState<Investment | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [newItem, setNewItem] = useState<Omit<Investment, "id">>({
     name: "", icon: "📈", value: 0, change: 0, type: "Renda Fixa",
   });
 
+
+
+  const fetchInvestments = useCallback(async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+
+    setLoading(true);
+
+    try {
+      const { data, error } = await supabase.from("investments").select("*").order("created_at", { ascending: false });
+      if (error) throw error;
+      setPortfolio(data || []);
+    } catch (error: any) {
+      console.error("Error fetching investments:", error);
+      toast.error("Erro ao carregar investimentos");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchInvestments();
+  }, [fetchInvestments]);
+
   const totalValue = portfolio.reduce((s, p) => s + p.value, 0);
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (!editItem) return;
-    setPortfolio(prev => prev.map(p => p.id === editItem.id ? editItem : p));
-    setShowEditDialog(false);
-    setEditItem(null);
+    try {
+      const { error } = await supabase
+        .from("investments")
+        .update({
+          name: editItem.name,
+          icon: editItem.icon,
+          value: editItem.value,
+          change: editItem.change,
+          type: editItem.type,
+        })
+        .eq("id", editItem.id);
+      if (error) throw error;
+      toast.success("Investimento atualizado");
+      setShowEditDialog(false);
+      setEditItem(null);
+      fetchInvestments();
+    } catch (error: any) {
+      toast.error("Erro ao atualizar");
+    }
   };
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (deleteId === null) return;
-    setPortfolio(prev => prev.filter(p => p.id !== deleteId));
-    setShowDeleteDialog(false);
-    setDeleteId(null);
+    try {
+      const { error } = await supabase.from("investments").delete().eq("id", deleteId);
+      if (error) throw error;
+      toast.success("Investimento excluído");
+      setShowDeleteDialog(false);
+      setDeleteId(null);
+      fetchInvestments();
+    } catch (error: any) {
+      toast.error("Erro ao excluir");
+    }
   };
 
-  const handleAdd = () => {
-    const id = Math.max(0, ...portfolio.map(p => p.id)) + 1;
-    setPortfolio(prev => [{ ...newItem, id }, ...prev]);
-    setShowAddDialog(false);
-    setNewItem({ name: "", icon: "📈", value: 0, change: 0, type: "Renda Fixa" });
+  const handleAdd = async () => {
+    try {
+      const { error } = await supabase.from("investments").insert([newItem]);
+      if (error) throw error;
+      toast.success("Investimento adicionado");
+      setShowAddDialog(false);
+      setNewItem({ name: "", icon: "📈", value: 0, change: 0, type: "Renda Fixa" });
+      fetchInvestments();
+    } catch (error: any) {
+      toast.error("Erro ao adicionar");
+    }
   };
 
   // Allocation calc
@@ -72,6 +121,7 @@ function InvestPage() {
     acc[p.type] = (acc[p.type] || 0) + p.value;
     return acc;
   }, {} as Record<string, number>);
+
 
   const allocationColors: Record<string, string> = {
     "Renda Fixa": "bg-chart-1",
@@ -135,7 +185,12 @@ function InvestPage() {
 
       {/* Assets list */}
       <div className="flex flex-col gap-2">
-        {portfolio.map((asset, i) => {
+        {loading ? (
+          <div className="flex justify-center py-10">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        ) : portfolio.map((asset, i) => {
+
           const isPositive = asset.change >= 0;
           return (
             <div
@@ -182,9 +237,10 @@ function InvestPage() {
             </div>
           );
         })}
-        {portfolio.length === 0 && (
+        {!loading && portfolio.length === 0 && (
           <p className="py-8 text-center text-sm text-muted-foreground">Nenhum investimento cadastrado</p>
         )}
+
       </div>
 
       {/* Edit Dialog */}

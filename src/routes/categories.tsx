@@ -65,6 +65,9 @@ function CategoriesPage() {
   const [del, setDel] = useState<DeleteState>(null);
 
   async function load() {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+
     setLoading(true);
     try {
       const [c, s] = await Promise.all([
@@ -83,6 +86,7 @@ function CategoriesPage() {
       setLoading(false);
     }
   }
+
 
   useEffect(() => {
     load();
