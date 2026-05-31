@@ -746,20 +746,26 @@ function Dashboard() {
         <div className="flex flex-col">
           <div
             className="flex flex-col leading-none select-none rounded-xl border px-3 py-1.5 mb-1"
-
-          style={{
-            borderColor: "hsl(142 95% 55%)",
-            boxShadow:
-              "0 0 10px hsl(142 95% 55% / 0.9), 0 0 20px hsl(142 95% 55% / 0.6), inset 0 0 6px hsl(142 95% 55% / 0.35)",
-          }}
-        >
-          <span className="text-xl font-extrabold tracking-tight text-primary dark:text-[hsl(142_95%_62%)] dark:[text-shadow:0_0_10px_hsl(142_95%_55%/0.85),0_0_20px_hsl(142_95%_55%/0.55)]">
-            cofre <span className="text-primary/80 dark:text-[hsl(142_95%_70%)]">360</span>
-          </span>
-          <span className="mt-0.5 text-[10px] font-medium tracking-wide text-primary/70 dark:text-[hsl(142_90%_68%)] dark:[text-shadow:0_0_6px_hsl(142_95%_55%/0.65)]">
-            Seu dinheiro. Seu controle.
-          </span>
+            style={{
+              borderColor: "hsl(142 95% 55%)",
+              boxShadow:
+                "0 0 10px hsl(142 95% 55% / 0.9), 0 0 20px hsl(142 95% 55% / 0.6), inset 0 0 6px hsl(142 95% 55% / 0.35)",
+            }}
+          >
+            <span className="text-xl font-extrabold tracking-tight text-primary dark:text-[hsl(142_95%_62%)] dark:[text-shadow:0_0_10px_hsl(142_95%_55%/0.85),0_0_20px_hsl(142_95%_55%/0.55)]">
+              cofre <span className="text-primary/80 dark:text-[hsl(142_95%_70%)]">360</span>
+            </span>
+            <span className="mt-0.5 text-[10px] font-medium tracking-wide text-primary/70 dark:text-[hsl(142_90%_68%)] dark:[text-shadow:0_0_6px_hsl(142_95%_55%/0.65)]">
+              Seu dinheiro. Seu controle.
+            </span>
+          </div>
+          {userEmail && (
+            <span className="text-[10px] text-muted-foreground px-1 truncate max-w-[150px]">
+              {userEmail}
+            </span>
+          )}
         </div>
+
         <div className="flex items-center gap-2">
           <button
             onClick={handleLogout}
