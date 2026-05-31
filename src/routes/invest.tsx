@@ -37,7 +37,7 @@ function InvestPage() {
   const [editItem, setEditItem] = useState<Investment | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [newItem, setNewItem] = useState<Omit<Investment, "id">>({
     name: "", icon: "📈", value: 0, change: 0, type: "Renda Fixa",
