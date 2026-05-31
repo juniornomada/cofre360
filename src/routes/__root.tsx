@@ -142,6 +142,42 @@ function RootShell({ children }: { children: React.ReactNode }) {
   
   useContrastChecker();
   const router = useRouter();
+  const [session, setSession] = useState<any>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setAuthLoading(false);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      setAuthLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (!authLoading) {
+      const path = router.state.location.pathname;
+      if (!session && path !== '/auth') {
+        router.navigate({ to: '/auth' });
+      } else if (session && path === '/auth') {
+        router.navigate({ to: '/' });
+      }
+    }
+  }, [session, authLoading, router.state.location.pathname]);
+
+  if (authLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
    const search = router.state.location.search as any;
    const isComparisonMode = search.compare === 'theme';
 
