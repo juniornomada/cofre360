@@ -116,7 +116,11 @@ function OrcaMetasPage() {
   }, []);
 
   const fetchGoals = useCallback(async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+
     try {
+
       const { data, error } = await supabase.from("goals").select("*").order("created_at", { ascending: true });
       if (error) throw error;
       if (data) setGoals(data as any);
