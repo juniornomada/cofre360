@@ -59,7 +59,7 @@ interface CardOption {
 const filterCategories = ["Todas", ...mainCategories];
 const iconOptions = ["🛵", "🏠", "💰", "🎬", "⛽", "🛒", "💊", "🎮", "💸", "🍕", "🚗", "👕", "📱", "🎵", "✈️", "🏥", "📚", "🐾"];
 
-function TransactionsPage() {
+export function TransactionsPage() {
   const searchParams = Route.useSearch();
   const { balanceVisible, updateBalanceVisible } = useUserPreferences();
 
