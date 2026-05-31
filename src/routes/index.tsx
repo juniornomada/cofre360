@@ -179,6 +179,8 @@ function Dashboard() {
   const [deleteTarget, setDeleteTarget] = useState<Transaction | null>(null);
   const [deleteScope, setDeleteScope] = useState<"single" | "future" | "all">("single");
   const [pendingReminders, setPendingReminders] = useState<{ id: string; title: string | null; icon: string | null; due_date: string | null; amount: number | null; type: string | null; bank_account_id: string | null; card_id: string | null }[]>([]);
+  const [goals, setGoals] = useState<{ id: string; name: string | null; icon: string | null; current_amount: number | null; target_amount: number | null }[]>([]);
+
   const [greeting, setGreeting] = useState<string>("");
 
   useEffect(() => {
