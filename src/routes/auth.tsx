@@ -114,7 +114,7 @@ function AuthPage() {
             )}
           </Button>
 
-          <div className="text-center">
+          <div className="space-y-4 text-center">
             <button
               type="button"
               onClick={() => setIsSignUp(!isSignUp)}
@@ -122,6 +122,28 @@ function AuthPage() {
             >
               {isSignUp ? "Já tem uma conta? Entre aqui" : "Não tem conta? Cadastre-se agora"}
             </button>
+
+            {isSignUp && (
+              <div className="mt-8 rounded-xl border border-border bg-muted/30 p-4 text-left">
+                <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+                  Checklist para Login Automático
+                </h4>
+                <ul className="space-y-2 text-xs text-muted-foreground">
+                  <li className="flex items-start gap-2">
+                    <div className="mt-1 h-3 w-3 rounded-full border border-primary/50 flex items-center justify-center text-[10px] text-primary font-bold">1</div>
+                    <span>Acesse o <strong>Dashboard do Supabase</strong></span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <div className="mt-1 h-3 w-3 rounded-full border border-primary/50 flex items-center justify-center text-[10px] text-primary font-bold">2</div>
+                    <span>Vá em <strong>Authentication &gt; Providers &gt; Email</strong></span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <div className="mt-1 h-3 w-3 rounded-full border border-primary/50 flex items-center justify-center text-[10px] text-primary font-bold">3</div>
+                    <span>Desative a opção <strong>"Confirm email"</strong> e salve</span>
+                  </li>
+                </ul>
+              </div>
+            )}
           </div>
         </form>
       </div>
