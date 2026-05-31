@@ -9,7 +9,7 @@ const navItems = [
   { to: "/accounts" as const, icon: Landmark, label: "Contas" },
   { to: "/shop" as const, icon: ShoppingCart, label: "Loja" },
   { to: "/cards" as const, icon: CreditCard, label: "Cartões" },
-  { to: "/insights" as const, icon: Sparkles, label: "Insights" },
+  { to: "/insights" as const, icon: Sparkles, label: "Insights IA" },
 ];
 
 export function BottomNav() {
