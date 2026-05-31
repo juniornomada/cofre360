@@ -185,7 +185,12 @@ function InvestPage() {
 
       {/* Assets list */}
       <div className="flex flex-col gap-2">
-        {portfolio.map((asset, i) => {
+        {loading ? (
+          <div className="flex justify-center py-10">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        ) : portfolio.map((asset, i) => {
+
           const isPositive = asset.change >= 0;
           return (
             <div
