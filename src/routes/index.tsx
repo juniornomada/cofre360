@@ -179,6 +179,15 @@ function Dashboard() {
   const [greeting, setGreeting] = useState<string>("");
 
   useEffect(() => { setGreeting(getGreeting()); }, []);
+  const handleLogout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      toast.error("Erro ao sair: " + error.message);
+    } else {
+      window.location.href = "/auth";
+    }
+  };
+
     const [quickAddOpen, setQuickAddOpen] = useState(false);
     const emptyStateRef = useRef<HTMLDivElement>(null);
     const transactionsListRef = useRef<HTMLDivElement>(null);
