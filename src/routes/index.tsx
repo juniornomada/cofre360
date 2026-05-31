@@ -164,6 +164,8 @@ function Dashboard() {
     updateHideZeroBalances
   } = useUserPreferences();
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [session, setSession] = useState<any>(null);
+
 
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
