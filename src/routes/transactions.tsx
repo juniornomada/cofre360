@@ -709,7 +709,11 @@ export function TransactionsPage() {
                   </Button>
                 </PopoverContent>
               </Popover>
+              <button onClick={generatePDF} className="flex h-8 w-8 items-center justify-center rounded-full bg-card text-muted-foreground border border-border" title="Gerar relatório PDF">
+                <FileText className="h-4 w-4" />
+              </button>
               <button onClick={() => setShowCsvImport(true)} className="flex h-8 w-8 items-center justify-center rounded-full bg-card text-muted-foreground border border-border" title="Importar CSV">
+
                 <Upload className="h-4 w-4" />
               </button>
               <button onClick={() => setShowAddDialog(true)} className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
