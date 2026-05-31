@@ -457,7 +457,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      safe_transfer_user_email: {
+        Args: { new_email: string; old_email: string }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never
