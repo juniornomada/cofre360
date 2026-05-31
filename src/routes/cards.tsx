@@ -326,7 +326,11 @@ function CardsPage() {
   }, [cards]);
 
   const fetchAll = useCallback(async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+
     try {
+
       const [cardsRes, txRes, accountsRes, paymentsRes] = await Promise.all([
         supabase.from("cards").select("*").order("sort_order", { ascending: true }).order("created_at", { ascending: true }),
         supabase.from("transactions").select("card, amount").not("card", "is", null),
