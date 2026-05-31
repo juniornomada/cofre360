@@ -49,27 +49,74 @@ function InvestPage() {
   });
 
 
+  const fetchInvestments = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.from("investments").select("*").order("created_at", { ascending: false });
+      if (error) throw error;
+      setPortfolio(data || []);
+    } catch (error: any) {
+      console.error("Error fetching investments:", error);
+      toast.error("Erro ao carregar investimentos");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchInvestments();
+  }, [fetchInvestments]);
+
   const totalValue = portfolio.reduce((s, p) => s + p.value, 0);
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (!editItem) return;
-    setPortfolio(prev => prev.map(p => p.id === editItem.id ? editItem : p));
-    setShowEditDialog(false);
-    setEditItem(null);
+    try {
+      const { error } = await supabase
+        .from("investments")
+        .update({
+          name: editItem.name,
+          icon: editItem.icon,
+          value: editItem.value,
+          change: editItem.change,
+          type: editItem.type,
+        })
+        .eq("id", editItem.id);
+      if (error) throw error;
+      toast.success("Investimento atualizado");
+      setShowEditDialog(false);
+      setEditItem(null);
+      fetchInvestments();
+    } catch (error: any) {
+      toast.error("Erro ao atualizar");
+    }
   };
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (deleteId === null) return;
-    setPortfolio(prev => prev.filter(p => p.id !== deleteId));
-    setShowDeleteDialog(false);
-    setDeleteId(null);
+    try {
+      const { error } = await supabase.from("investments").delete().eq("id", deleteId);
+      if (error) throw error;
+      toast.success("Investimento excluído");
+      setShowDeleteDialog(false);
+      setDeleteId(null);
+      fetchInvestments();
+    } catch (error: any) {
+      toast.error("Erro ao excluir");
+    }
   };
 
-  const handleAdd = () => {
-    const id = Math.max(0, ...portfolio.map(p => p.id)) + 1;
-    setPortfolio(prev => [{ ...newItem, id }, ...prev]);
-    setShowAddDialog(false);
-    setNewItem({ name: "", icon: "📈", value: 0, change: 0, type: "Renda Fixa" });
+  const handleAdd = async () => {
+    try {
+      const { error } = await supabase.from("investments").insert([newItem]);
+      if (error) throw error;
+      toast.success("Investimento adicionado");
+      setShowAddDialog(false);
+      setNewItem({ name: "", icon: "📈", value: 0, change: 0, type: "Renda Fixa" });
+      fetchInvestments();
+    } catch (error: any) {
+      toast.error("Erro ao adicionar");
+    }
   };
 
   // Allocation calc
@@ -77,6 +124,7 @@ function InvestPage() {
     acc[p.type] = (acc[p.type] || 0) + p.value;
     return acc;
   }, {} as Record<string, number>);
+
 
   const allocationColors: Record<string, string> = {
     "Renda Fixa": "bg-chart-1",
