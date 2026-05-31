@@ -19,12 +19,20 @@ function AuthPage() {
 
     try {
       if (isSignUp) {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
+          options: {
+            emailRedirectTo: window.location.origin,
+          }
         });
         if (error) throw error;
-        toast.success("Cadastro realizado com sucesso! Verifique seu e-mail.");
+        
+        if (data.user && data.session) {
+          toast.success("Cadastro realizado com sucesso!");
+        } else {
+          toast.success("Cadastro realizado! Se o login automático não ocorrer, verifique se a confirmação de e-mail está ativa no Supabase.");
+        }
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email,
