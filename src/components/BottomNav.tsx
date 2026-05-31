@@ -1,4 +1,4 @@
-import { useLocation } from "@tanstack/react-router";
+import { useLocation, useRouterState } from "@tanstack/react-router";
 import { SmartLink as Link } from "./SmartLink";
 import { Home, ArrowLeftRight, Landmark, CreditCard, Sparkles, PiggyBank, Target, ShoppingCart } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -14,12 +14,15 @@ const navItems = [
 
 export function BottomNav() {
   const location = useLocation();
+  const isLoading = useRouterState({ select: (s) => s.status === 'pending' });
+  const pendingLocation = useRouterState({ select: (s) => s.location });
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/80 backdrop-blur-xl">
       <div className="mx-auto flex max-w-md items-center justify-around px-1 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] overflow-x-auto no-scrollbar">
         {navItems.map((item) => {
-          const isActive = location.pathname === item.to;
+          const isPending = isLoading && pendingLocation?.pathname === item.to;
+          const isActive = (location.pathname === item.to && !isLoading) || isPending;
           return (
             <Link
               key={item.to}
