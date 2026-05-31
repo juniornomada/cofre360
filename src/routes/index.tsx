@@ -181,14 +181,16 @@ function Dashboard() {
   const [pendingReminders, setPendingReminders] = useState<{ id: string; title: string | null; icon: string | null; due_date: string | null; amount: number | null; type: string | null; bank_account_id: string | null; card_id: string | null }[]>([]);
   const [goals, setGoals] = useState<{ id: string; name: string | null; icon: string | null; current_amount: number | null; target_amount: number | null }[]>([]);
   const [greeting, setGreeting] = useState<string>("");
-  const [session, setSession] = useState<any>(null);
 
   useEffect(() => {
     setGreeting(getGreeting());
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-    });
-  }, []);
+    if (!session) {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        setSession(session);
+      });
+    }
+  }, [session]);
+
 
   const handleLogout = async () => {
     const { error } = await supabase.auth.signOut();
