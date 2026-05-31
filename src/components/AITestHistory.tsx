@@ -2,7 +2,20 @@ import { useEffect, useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, Play, RefreshCw, History as HistoryIcon, CheckCircle2, XCircle } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { 
+  Calendar, 
+  Clock, 
+  Play, 
+  RefreshCw, 
+  History as HistoryIcon, 
+  CheckCircle2, 
+  XCircle, 
+  AlertTriangle,
+  Settings2,
+  Bell
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -39,6 +52,9 @@ export function AITestHistory() {
   const [loading, setLoading] = useState(true);
   const [running, setRunning] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [accuracyThreshold, setAccuracyThreshold] = useState(80);
+  const [consistencyThreshold, setConsistencyThreshold] = useState(80);
+  const [showSettings, setShowSettings] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -55,7 +71,21 @@ export function AITestHistory() {
     setLoading(false);
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+    // Load local thresholds
+    const savedAcc = localStorage.getItem("ai_test_acc_threshold");
+    const savedCons = localStorage.getItem("ai_test_cons_threshold");
+    if (savedAcc) setAccuracyThreshold(Number(savedAcc));
+    if (savedCons) setConsistencyThreshold(Number(savedCons));
+  }, [load]);
+
+  const saveThresholds = () => {
+    localStorage.setItem("ai_test_acc_threshold", String(accuracyThreshold));
+    localStorage.setItem("ai_test_cons_threshold", String(consistencyThreshold));
+    setShowSettings(false);
+    toast.success("Limiares de alerta salvos localmente");
+  };
 
   const runNow = async () => {
     setRunning(true);
@@ -88,11 +118,11 @@ export function AITestHistory() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h2 className="text-lg font-semibold flex items-center gap-2">
             <HistoryIcon className="h-5 w-5 text-primary" />
-            Histórico Agendado
+            Insights AI: Acurácia e Consistência
           </h2>
           <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
             <Calendar className="h-3 w-3" />
@@ -100,6 +130,10 @@ export function AITestHistory() {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => setShowSettings(!showSettings)}>
+            <Settings2 className="h-4 w-4 mr-2" />
+            Configurar Alertas
+          </Button>
           <Button variant="outline" size="sm" onClick={load} disabled={loading}>
             <RefreshCw className={cn("h-4 w-4 mr-2", loading && "animate-spin")} />
             Atualizar
@@ -111,29 +145,114 @@ export function AITestHistory() {
         </div>
       </div>
 
-      {/* Daily report banner */}
-      <Card className={cn(
-        "border-l-4",
-        todayRun ? (todayRun.passed === todayRun.total_tests ? "border-l-emerald-500" : "border-l-amber-500") : "border-l-muted"
-      )}>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">Relatório de hoje</CardTitle>
-          <CardDescription>
-            {todayRun
-              ? `Última execução: ${fmtDate(todayRun.run_at)} (${todayRun.trigger})`
-              : "Nenhuma execução registrada hoje ainda."}
-          </CardDescription>
-        </CardHeader>
-        {todayRun && (
-          <CardContent className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-sm">
-            <Metric label="Aprovados" value={`${todayRun.passed}/${todayRun.total_tests}`} accent="emerald" />
-            <Metric label="Falharam" value={String(todayRun.failed)} accent={todayRun.failed > 0 ? "red" : "muted"} />
-            <Metric label="Acurácia" value={`${todayRun.avg_accuracy}%`} accent="blue" />
-            <Metric label="Consistência" value={`${todayRun.avg_consistency}%`} accent="violet" />
-            <Metric label="Tempo médio" value={`${(todayRun.avg_duration_ms / 1000).toFixed(1)}s`} accent="muted" />
+      {showSettings && (
+        <Card className="border-primary/20 bg-primary/5">
+          <CardHeader className="py-3">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Bell className="h-4 w-4" />
+              Configurações de Alerta
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pb-4 space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="acc-threshold" className="text-xs">Mínimo de Acurácia (%)</Label>
+                <Input 
+                  id="acc-threshold" 
+                  type="number" 
+                  value={accuracyThreshold} 
+                  onChange={(e) => setAccuracyThreshold(Number(e.target.value))}
+                  className="h-8 text-sm"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="cons-threshold" className="text-xs">Mínimo de Consistência (%)</Label>
+                <Input 
+                  id="cons-threshold" 
+                  type="number" 
+                  value={consistencyThreshold} 
+                  onChange={(e) => setConsistencyThreshold(Number(e.target.value))}
+                  className="h-8 text-sm"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="ghost" size="sm" onClick={() => setShowSettings(false)}>Cancelar</Button>
+              <Button size="sm" onClick={saveThresholds}>Salvar Limiares</Button>
+            </div>
           </CardContent>
-        )}
-      </Card>
+        </Card>
+      )}
+
+      {/* Daily report banner */}
+      {todayRun && (
+        <Card className={cn(
+          "border-l-4",
+          todayRun.avg_accuracy < accuracyThreshold || todayRun.avg_consistency < consistencyThreshold 
+            ? "border-l-red-500 bg-red-50/50" 
+            : (todayRun.passed === todayRun.total_tests ? "border-l-emerald-500" : "border-l-amber-500")
+        )}>
+          <CardHeader className="pb-3 flex-row items-center justify-between space-y-0">
+            <div>
+              <CardTitle className="text-base flex items-center gap-2">
+                Relatório de hoje
+                {(todayRun.avg_accuracy < accuracyThreshold || todayRun.avg_consistency < consistencyThreshold) && (
+                  <Badge variant="destructive" className="animate-pulse">ALERTA DE PERFORMANCE</Badge>
+                )}
+              </CardTitle>
+              <CardDescription>
+                Última execução: {fmtDate(todayRun.run_at)} ({todayRun.trigger})
+              </CardDescription>
+            </div>
+            {(todayRun.avg_accuracy < accuracyThreshold || todayRun.avg_consistency < consistencyThreshold) && (
+              <AlertTriangle className="h-8 w-8 text-red-500" />
+            )}
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-sm">
+              <Metric label="Aprovados" value={`${todayRun.passed}/${todayRun.total_tests}`} accent="emerald" />
+              <Metric label="Falharam" value={String(todayRun.failed)} accent={todayRun.failed > 0 ? "red" : "muted"} />
+              <Metric 
+                label="Acurácia" 
+                value={`${todayRun.avg_accuracy}%`} 
+                accent={todayRun.avg_accuracy < accuracyThreshold ? "red" : "blue"} 
+              />
+              <Metric 
+                label="Consistência" 
+                value={`${todayRun.avg_consistency}%`} 
+                accent={todayRun.avg_consistency < consistencyThreshold ? "red" : "violet"} 
+              />
+              <Metric label="Tempo médio" value={`${(todayRun.avg_duration_ms / 1000).toFixed(1)}s`} accent="muted" />
+            </div>
+
+            {(todayRun.avg_accuracy < accuracyThreshold || todayRun.avg_consistency < consistencyThreshold) && (
+              <div className="p-3 bg-red-50 border border-red-100 rounded-md text-sm text-red-800 flex items-start gap-2">
+                <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+                <div>
+                  <p className="font-semibold">Desempenho abaixo do esperado:</p>
+                  <ul className="list-disc list-inside mt-1 text-xs space-y-1">
+                    {todayRun.avg_accuracy < accuracyThreshold && (
+                      <li>Acurácia ({todayRun.avg_accuracy}%) está abaixo do limiar de {accuracyThreshold}%</li>
+                    )}
+                    {todayRun.avg_consistency < consistencyThreshold && (
+                      <li>Consistência ({todayRun.avg_consistency}%) está abaixo do limiar de {consistencyThreshold}%</li>
+                    )}
+                  </ul>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {!todayRun && !loading && (
+        <Card className="border-dashed border-2">
+          <CardHeader>
+            <CardTitle className="text-sm">Status de Hoje</CardTitle>
+            <CardDescription>Nenhuma execução registrada hoje ainda.</CardDescription>
+          </CardHeader>
+        </Card>
+      )}
 
       {/* Run list */}
       <div className="space-y-2">
@@ -146,14 +265,21 @@ export function AITestHistory() {
         {runs.map((r) => {
           const isOpen = expandedId === r.id;
           const allPassed = r.passed === r.total_tests;
+          const isBelowThreshold = r.avg_accuracy < accuracyThreshold || r.avg_consistency < consistencyThreshold;
+          
           return (
-            <Card key={r.id} className="overflow-hidden">
+            <Card key={r.id} className={cn("overflow-hidden", isBelowThreshold && "border-red-200")}>
               <button
                 onClick={() => setExpandedId(isOpen ? null : r.id)}
-                className="w-full p-3 flex items-center justify-between hover:bg-accent/40 transition-colors text-left"
+                className={cn(
+                  "w-full p-3 flex items-center justify-between hover:bg-accent/40 transition-colors text-left",
+                  isBelowThreshold && "bg-red-50/30"
+                )}
               >
                 <div className="flex items-center gap-3">
-                  {allPassed ? (
+                  {isBelowThreshold ? (
+                    <AlertTriangle className="h-5 w-5 text-red-500" />
+                  ) : allPassed ? (
                     <CheckCircle2 className="h-5 w-5 text-emerald-500" />
                   ) : (
                     <XCircle className="h-5 w-5 text-red-500" />
@@ -164,11 +290,18 @@ export function AITestHistory() {
                       <Badge variant={r.trigger === "scheduled" ? "default" : "secondary"} className="text-[10px]">
                         {r.trigger}
                       </Badge>
+                      {isBelowThreshold && (
+                        <Badge variant="destructive" className="text-[9px] h-4">ALERTA</Badge>
+                      )}
                     </div>
                     <div className="text-xs text-muted-foreground flex items-center gap-3 mt-0.5">
                       <span>{r.passed}/{r.total_tests} ok</span>
-                      <span>Ac: {r.avg_accuracy}%</span>
-                      <span>Co: {r.avg_consistency}%</span>
+                      <span className={cn(r.avg_accuracy < accuracyThreshold && "text-red-500 font-bold")}>
+                        Ac: {r.avg_accuracy}%
+                      </span>
+                      <span className={cn(r.avg_consistency < consistencyThreshold && "text-red-500 font-bold")}>
+                        Co: {r.avg_consistency}%
+                      </span>
                       <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{(r.avg_duration_ms / 1000).toFixed(1)}s</span>
                     </div>
                   </div>
