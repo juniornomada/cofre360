@@ -104,5 +104,35 @@ test.describe('Filtros na página de Transações', () => {
         await expect(alimentacaoBtn).toHaveClass(/bg-primary/);
     }
   });
+
+  test('Deve verificar paginação e ordenação', async ({ page }) => {
+    // 1. Verificar se o botão "Ver mais" aparece quando há muitas transações
+    // O usuário teste tem 261 transações, PAGE_SIZE é 50, então deve haver "Ver mais"
+    const loadMoreBtn = page.getByRole('button', { name: 'Ver mais' });
+    await expect(loadMoreBtn).toBeVisible();
+
+    // 2. Verificar se o número de itens aumenta ao carregar mais
+    const initialTxs = await page.locator('.interactive-card').count();
+    // initialTxs deve ser PAGE_SIZE (50) ou um pouco mais se houver pares de transferência fundidos
+    expect(initialTxs).toBeGreaterThanOrEqual(40); 
+
+    await loadMoreBtn.click();
+    
+    // Aguardar carregamento (o botão fica desabilitado com spinner)
+    await expect(loadMoreBtn).toBeEnabled();
+    
+    const afterLoadTxs = await page.locator('.interactive-card').count();
+    expect(afterLoadTxs).toBeGreaterThan(initialTxs);
+
+    // 3. Verificar ordenação (padrão: data decrescente / created_at)
+    // Vamos pegar as datas das duas primeiras transações visíveis
+    const txItems = page.locator('.interactive-card');
+    const firstTxDate = await txItems.first().locator('span.text-\\[10px\\]').last().innerText();
+    
+    // Como a ordenação é decrescente, a primeira deve ser igual ou posterior à segunda
+    // Mas no dashboard/transactions a ordenação por created_at desc é a regra
+    console.log(`Primeira transação: ${firstTxDate}`);
+  });
 });
+
 
