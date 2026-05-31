@@ -751,7 +751,20 @@ function Dashboard() {
           </span>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            onClick={handleLogout}
+            className="interactive-button flex h-10 w-10 items-center justify-center rounded-full bg-card border"
+            style={{
+              borderColor: "hsl(142 95% 55%)",
+              boxShadow:
+                "0 0 10px hsl(142 95% 55% / 0.9), 0 0 20px hsl(142 95% 55% / 0.6), inset 0 0 6px hsl(142 95% 55% / 0.35)",
+            }}
+            title="Sair"
+          >
+            <LogOut className="h-5 w-5 text-muted-foreground" />
+          </button>
           <Link
+
             to="/reminders"
             className="interactive-button relative flex h-10 w-10 items-center justify-center rounded-full bg-card border"
             style={{
