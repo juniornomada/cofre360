@@ -1,5 +1,10 @@
 project_id = "scbkqzoyyooclvmtcfis"
 
+[auth]
+enable_signup = true
+enable_email_signup = true
+enable_email_confirmations = false
+
 [functions.financial-chat]
 verify_jwt = false
 
