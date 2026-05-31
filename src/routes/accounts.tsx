@@ -349,7 +349,11 @@ function AccountsPage() {
   };
 
   const fetchAccounts = useCallback(async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+
     try {
+
       const { data, error } = await supabase.from("bank_accounts").select("*").order("sort_order", { ascending: true }).order("created_at", { ascending: true });
       if (error) throw error;
       if (data) setAccounts(data);
