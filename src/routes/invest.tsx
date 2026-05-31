@@ -16,13 +16,14 @@ import { Button } from "@/components/ui/button";
 
 
 interface Investment {
-  id: number;
+  id: string;
   name: string;
   icon: string;
   value: number;
   change: number;
   type: string;
 }
+
 
 const typeOptions = ["Renda Fixa", "ETF", "Ações", "FII", "Crypto"];
 const iconOptions = ["🏦", "📊", "🇺🇸", "⛽", "🏢", "₿", "💎", "🪙", "📈", "🏠", "💰", "🔒"];
