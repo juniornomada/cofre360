@@ -133,6 +133,21 @@ test.describe('Filtros na página de Transações', () => {
     // Mas no dashboard/transactions a ordenação por created_at desc é a regra
     console.log(`Primeira transação: ${firstTxDate}`);
   });
+
+  test('Deve gerar relatório PDF', async ({ page }) => {
+    // 1. Verificar se o botão de PDF está visível
+    const pdfBtn = page.locator('button[title="Gerar relatório PDF"]');
+    await expect(pdfBtn).toBeVisible();
+
+    // 2. Tentar clicar e verificar se o toast de sucesso aparece
+    // Nota: O download em si pode ser bloqueado no ambiente de teste, 
+    // mas o toast confirma que a lógica foi executada com sucesso.
+    await pdfBtn.click();
+    
+    // O toast é disparado via toast.success
+    await expect(page.getByText('Relatório gerado com sucesso!')).toBeVisible();
+  });
 });
+
 
 
