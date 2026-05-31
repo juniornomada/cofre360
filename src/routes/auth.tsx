@@ -41,11 +41,22 @@ function AuthPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4 pb-20">
       <div className="w-full max-w-sm space-y-8 rounded-2xl bg-card p-8 border border-border shadow-xl">
         <div className="text-center">
-          <h1 className="text-3xl font-bold tracking-tight text-primary">cofre 360</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
+          <div
+            className="inline-flex flex-col leading-none select-none rounded-xl border px-3 py-1.5 mb-6"
+            style={{
+              borderColor: "hsl(142 95% 55%)",
+              boxShadow:
+                "0 0 10px hsl(142 95% 55% / 0.9), 0 0 20px hsl(142 95% 55% / 0.6), inset 0 0 6px hsl(142 95% 55% / 0.35)",
+            }}
+          >
+            <span className="text-xl font-extrabold tracking-tight text-primary dark:text-[hsl(142_95%_62%)] dark:[text-shadow:0_0_10px_hsl(142_95%_55%/0.85),0_0_20px_hsl(142_95%_55%/0.55)]">
+              cofre <span className="text-primary/80 dark:text-[hsl(142_95%_70%)]">360</span>
+            </span>
+          </div>
+          <p className="text-sm text-muted-foreground">
             {isSignUp ? "Crie sua conta para começar" : "Entre para gerenciar suas finanças"}
           </p>
         </div>
