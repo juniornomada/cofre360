@@ -354,11 +354,11 @@ function AccountsPage() {
 
     try {
 
-      const { data, error } = await supabase.from("bank_accounts").select("*").order("sort_order", { ascending: true }).order("created_at", { ascending: true });
+      const { data, error } = await supabase.from("bank_accounts").select("*").eq("user_id", session.user.id).order("sort_order", { ascending: true }).order("created_at", { ascending: true });
       if (error) throw error;
       if (data) setAccounts(data);
 
-      const { data: txData, error: txError } = await supabase.from("transactions").select("bank_account_id, amount, type").not("bank_account_id", "is", null);
+      const { data: txData, error: txError } = await supabase.from("transactions").select("bank_account_id, amount, type").eq("user_id", session.user.id).not("bank_account_id", "is", null);
       if (txError) throw txError;
 
       if (txData) {
