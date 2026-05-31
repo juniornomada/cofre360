@@ -1474,8 +1474,9 @@ function Dashboard() {
         )}
        </Suspense>
      </div>
-   );
- }
+    </div>
+  );
+}
 
 export const Route = createFileRoute("/")({
   validateSearch: (search: Record<string, unknown>) => {
@@ -1485,3 +1486,4 @@ export const Route = createFileRoute("/")({
   },
   component: Dashboard,
 });
+
