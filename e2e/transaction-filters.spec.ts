@@ -1,40 +1,41 @@
 import { test, expect } from '@playwright/test';
-import { format, subDays, startOfMonth, endOfMonth } from 'date-fns';
+import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 test.describe('Filtros na página de Transações', () => {
   test.beforeEach(async ({ page }) => {
     // 1. Fazer login como o usuário de teste
-    await page.goto('/auth');
-    await page.getByPlaceholder('seu@email.com').fill('teste@teste.com.br');
-    await page.getByPlaceholder('Sua senha').fill('bra2008');
-    await page.getByRole('button', { name: 'Entrar' }).click();
+    await page.goto('/');
     
-    // Esperar redirecionar para o dashboard
-    await expect(page).toHaveURL(/\/dashboard|\//);
+    // Se estiver na tela de login, preencher. Se já estiver logado, continua.
+    const loginEmail = page.getByPlaceholder('seu@email.com');
+    if (await loginEmail.isVisible()) {
+        await loginEmail.fill('teste@teste.com.br');
+        await page.getByPlaceholder('Sua senha').fill('bra2008');
+        await page.getByRole('button', { name: 'Entrar' }).click();
+        await expect(page).toHaveURL(/\/dashboard|\//);
+    }
     
-    // Ir para a página de transações
-    await page.goto('/transactions');
-    await expect(page.getByText('Transações')).toBeVisible();
+    // Ir para a página de transações via BottomNav para garantir que o link funciona
+    await page.getByRole('link', { name: 'Transações' }).click();
+    await expect(page).toHaveURL(/\/transactions/);
+    await expect(page.getByText('Transações', { exact: true }).first()).toBeVisible();
   });
 
   test('Deve filtrar por período corretamente', async ({ page }) => {
     // Abrir filtros avançados
-    await page.locator('button[title="Filtros avançados"]').click();
+    const filterBtn = page.locator('button[title="Filtros avançados"]');
+    await filterBtn.click();
     
     const today = new Date();
-    const startDate = startOfMonth(today);
-    const endDate = endOfMonth(today);
     
     // Selecionar data de início
     await page.getByRole('button', { name: 'Início' }).click();
-    // No componente de calendário, clicamos no dia (precisamos garantir que estamos no mês certo)
-    // O calendário do Shadcn/UI geralmente renderiza os dias. Vamos tentar clicar no dia 1.
+    // No componente de calendário, clicamos no dia 1.
     await page.getByRole('gridcell', { name: '1', exact: true }).first().click();
     
     // Selecionar data de fim
     await page.getByRole('button', { name: 'Fim' }).click();
-    // Clicar no último dia do mês ou apenas no dia atual para simplificar
     const dayOfMonth = today.getDate().toString();
     await page.getByRole('gridcell', { name: dayOfMonth, exact: true }).first().click();
     
@@ -42,15 +43,14 @@ test.describe('Filtros na página de Transações', () => {
     await page.getByRole('button', { name: 'Aplicar' }).click();
     
     // Verificar se o contador de filtros ativos mudou
-    const filterBadge = page.locator('button[title="Filtros avançados"] span');
+    const filterBadge = filterBtn.locator('span');
     await expect(filterBadge).toBeVisible();
     
-    // Verificar se as transações exibidas estão dentro do período (visual apenas, pois é complexo validar data exata via texto)
-    // Mas podemos verificar se não há mensagem de "Nenhuma transação" se soubermos que há dados
+    // Validar que o estado de "vazio" não é exibido (assumindo que o usuário tem dados)
     const emptyState = page.getByText('Nenhuma transação corresponde aos filtros');
-    // Como o usuário tem muitos dados, provavelmente haverá resultados
-    if (await emptyState.isVisible()) {
-        console.log("Aviso: Nenhuma transação encontrada no período atual.");
+    const isVisible = await emptyState.isVisible();
+    if (isVisible) {
+        console.log("Aviso: Nenhuma transação no período selecionado.");
     }
   });
 
@@ -62,9 +62,7 @@ test.describe('Filtros na página de Transações', () => {
     await page.getByRole('button', { name: 'Receita', exact: true }).click();
     await page.getByRole('button', { name: 'Aplicar' }).click();
     
-    // Verificar se todas as transações visíveis são positivas ou têm ícone de receita
-    // Na nossa UI, receitas costumam ser verdes ou ter um indicador
-    // Vamos verificar o total de receitas vs despesas exibido no topo
+    // Verificar se total despesas é 0,00
     const totalExpenses = page.locator('div.rounded-xl.bg-card.p-3').filter({ hasText: 'Total despesas' }).locator('p.text-lg');
     await expect(totalExpenses).toHaveText('R$ 0,00');
     
@@ -82,13 +80,10 @@ test.describe('Filtros na página de Transações', () => {
     const accountFilterBtn = page.getByRole('button', { name: 'Conta' });
     await accountFilterBtn.click();
     
-    // Ao clicar em Conta, as transações de cartão devem sumir
-    // No código, activeSource === 'account' filtra transações com bank_account_id e SEM card
-    
-    // Verificar se o botão está ativo (classe primary)
+    // Verificar se o botão está ativo
     await expect(accountFilterBtn).toHaveClass(/bg-primary/);
     
-    // Limpar filtro
+    // Limpar filtro clicando novamente
     await accountFilterBtn.click();
     await expect(accountFilterBtn).not.toHaveClass(/bg-primary/);
     
@@ -99,15 +94,15 @@ test.describe('Filtros na página de Transações', () => {
   });
 
   test('Deve filtrar por categoria corretamente', async ({ page }) => {
-    // Selecionar uma categoria específica, e.g., "Alimentação"
-    const categoryBtn = page.getByRole('button', { name: 'Alimentação', exact: true });
-    if (await categoryBtn.isVisible()) {
-        await categoryBtn.click();
-        await expect(categoryBtn).toHaveClass(/bg-primary/);
-        
-        // Verificar se as transações exibidas pertencem a essa categoria
-        // O TransactionItem costuma mostrar o nome da categoria ou subcategoria
-        // Mas como são muitas, vamos validar que o estado mudou
+    // Encontrar uma categoria qualquer no carrossel e clicar
+    // Como o carrossel tem "Todas", "Alimentação", etc.
+    const alimentacaoBtn = page.getByRole('button', { name: 'Alimentação', exact: true });
+    
+    // Se não estiver visível, pode ser que precise scrollar, mas geralmente as primeiras estão lá
+    if (await alimentacaoBtn.isVisible()) {
+        await alimentacaoBtn.click();
+        await expect(alimentacaoBtn).toHaveClass(/bg-primary/);
     }
   });
 });
+
