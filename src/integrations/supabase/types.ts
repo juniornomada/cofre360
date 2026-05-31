@@ -461,6 +461,7 @@ export type Database = {
         Args: { new_email: string; old_email: string }
         Returns: string
       }
+      test_safe_transfer_validation: { Args: never; Returns: string }
     }
     Enums: {
       [_ in never]: never
