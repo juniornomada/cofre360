@@ -251,6 +251,7 @@ export function TransactionsPage() {
       const { data, error } = await supabase
         .from("transactions")
         .select("*")
+        .eq("user_id", session.user.id) // Ensure we filter by the logged-in user
         .order("created_at", { ascending: false })
         .range(from, to);
 

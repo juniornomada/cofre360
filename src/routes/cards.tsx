@@ -332,10 +332,10 @@ function CardsPage() {
     try {
 
       const [cardsRes, txRes, accountsRes, paymentsRes] = await Promise.all([
-        supabase.from("cards").select("*").order("sort_order", { ascending: true }).order("created_at", { ascending: true }),
-        supabase.from("transactions").select("card, amount").not("card", "is", null),
-        supabase.from("bank_accounts").select("*").order("created_at", { ascending: true }),
-        supabase.from("card_payments").select("card_id, amount"),
+        supabase.from("cards").select("*").eq("user_id", session.user.id).order("sort_order", { ascending: true }).order("created_at", { ascending: true }),
+        supabase.from("transactions").select("card, amount").eq("user_id", session.user.id).not("card", "is", null),
+        supabase.from("bank_accounts").select("*").eq("user_id", session.user.id).order("created_at", { ascending: true }),
+        supabase.from("card_payments").select("card_id, amount").eq("user_id", session.user.id),
       ]);
 
       if (cardsRes.error) throw cardsRes.error;
