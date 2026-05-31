@@ -34,7 +34,8 @@ const initialPortfolio: Investment[] = [
 ];
 
 function InvestPage() {
-  const [portfolio, setPortfolio] = useState<Investment[]>(initialPortfolio);
+  const [portfolio, setPortfolio] = useState<Investment[]>([]);
+  const [loading, setLoading] = useState(true);
   const [editItem, setEditItem] = useState<Investment | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -43,6 +44,7 @@ function InvestPage() {
   const [newItem, setNewItem] = useState<Omit<Investment, "id">>({
     name: "", icon: "📈", value: 0, change: 0, type: "Renda Fixa",
   });
+
 
   const totalValue = portfolio.reduce((s, p) => s + p.value, 0);
 
