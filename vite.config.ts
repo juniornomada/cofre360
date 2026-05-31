@@ -6,6 +6,7 @@
 // You can pass additional config via defineConfig({ vite: { ... } }) if needed.
 import { defineConfig as defineTanstackConfig } from "@lovable.dev/vite-tanstack-config";
 import { mergeConfig, defineConfig } from "vite";
+import { defaultExclude } from 'vitest/config';
 
 export default defineTanstackConfig({
   vite: {
@@ -13,6 +14,7 @@ export default defineTanstackConfig({
       globals: true,
       environment: "jsdom",
       setupFiles: "./src/tests/setup.ts",
+      exclude: [...defaultExclude, 'e2e/**'],
     },
   } as any,
 });

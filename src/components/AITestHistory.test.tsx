@@ -26,7 +26,7 @@ describe('AITestHistory Component', () => {
         <AITestHistory />
       </QueryClientProvider>
     );
-    expect(screen.getByText(/Insights IA: Acurácia e Consistência/i)).toBeDefined();
+    expect(screen.getByText(/Insights AI: Acurácia e Consistência/i)).toBeDefined();
   });
 
   it('deve mostrar o botão de rodar agora', () => {
