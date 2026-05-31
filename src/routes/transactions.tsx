@@ -25,6 +25,9 @@ import { deleteTransactionScope, isInstallmentTx } from "@/lib/installment-delet
 import { toast } from "sonner";
 import { Layers } from "lucide-react";
 import { useUserPreferences } from "@/hooks/use-user-preferences";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+
 
 
 interface Transaction {
