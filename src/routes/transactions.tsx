@@ -373,7 +373,7 @@ export function TransactionsPage() {
         head: [["Data", "Nome", "Categoria", "Tipo", "Valor"]],
         body: tableRows,
         theme: "striped",
-        headStyles: { fillStyle: "f", fillColor: [26, 26, 46], textColor: [255, 255, 255] },
+        headStyles: { fillColor: [26, 26, 46], textColor: [255, 255, 255] },
         alternateRowStyles: { fillColor: [245, 245, 245] },
       });
 
