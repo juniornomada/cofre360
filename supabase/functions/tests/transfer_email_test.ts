@@ -1,12 +1,21 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { assert, assertEquals, assertExists } from "https://deno.land/std@0.208.0/assert/mod.ts";
 
-const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-
-const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
+// Helper to get environment variables or fallback to placeholders for local type checking
+const getSupabaseConfig = () => {
+  const url = Deno.env.get("SUPABASE_URL");
+  const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  
+  if (!url || !key) {
+    throw new Error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY environment variables");
+  }
+  return { url, key };
+};
 
 Deno.test("Validation: transfer should fail if target email already exists", async () => {
+  const { url, key } = getSupabaseConfig();
+  const supabase = createClient(url, key);
+  
   const emailA = `test_a_${Date.now()}@example.com`;
   const emailB = `test_b_${Date.now()}@example.com`;
   const password = "password123";
@@ -51,6 +60,9 @@ Deno.test("Validation: transfer should fail if target email already exists", asy
 });
 
 Deno.test("Validation: transfer should succeed if target email does NOT exist", async () => {
+    const { url, key } = getSupabaseConfig();
+    const supabase = createClient(url, key);
+
     const emailSource = `source_${Date.now()}@example.com`;
     const emailTarget = `target_${Date.now()}@example.com`;
     const password = "password123";
