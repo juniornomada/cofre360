@@ -1,15 +1,14 @@
 import { useLocation } from "@tanstack/react-router";
 import { SmartLink as Link } from "./SmartLink";
-import { Home, ArrowLeftRight, Landmark, CreditCard, Sparkles, PiggyBank, Target } from "lucide-react";
+import { Home, ArrowLeftRight, Landmark, CreditCard, Sparkles, PiggyBank, Target, ShoppingCart } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { to: "/" as const, icon: Home, label: "Início" },
   { to: "/transactions" as const, icon: ArrowLeftRight, label: "Transações" },
   { to: "/accounts" as const, icon: Landmark, label: "Contas" },
+  { to: "/shop" as const, icon: ShoppingCart, label: "Loja" },
   { to: "/cards" as const, icon: CreditCard, label: "Cartões" },
-  { to: "/orcametas" as const, icon: Target, label: "OrçaMetas" },
-  { to: "/invest" as const, icon: PiggyBank, label: "Investir" },
   { to: "/insights" as const, icon: Sparkles, label: "Insights IA" },
 ];
 

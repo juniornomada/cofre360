@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TransactionsRouteImport } from './routes/transactions'
+import { Route as ShopRouteImport } from './routes/shop'
 import { Route as RemindersRouteImport } from './routes/reminders'
 import { Route as OrcametasRouteImport } from './routes/orcametas'
 import { Route as InvestRouteImport } from './routes/invest'
@@ -25,6 +26,11 @@ import { Route as IndexRouteImport } from './routes/index'
 const TransactionsRoute = TransactionsRouteImport.update({
   id: '/transactions',
   path: '/transactions',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ShopRoute = ShopRouteImport.update({
+  id: '/shop',
+  path: '/shop',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RemindersRoute = RemindersRouteImport.update({
@@ -95,6 +101,7 @@ export interface FileRoutesByFullPath {
   '/invest': typeof InvestRoute
   '/orcametas': typeof OrcametasRoute
   '/reminders': typeof RemindersRoute
+  '/shop': typeof ShopRoute
   '/transactions': typeof TransactionsRoute
 }
 export interface FileRoutesByTo {
@@ -109,6 +116,7 @@ export interface FileRoutesByTo {
   '/invest': typeof InvestRoute
   '/orcametas': typeof OrcametasRoute
   '/reminders': typeof RemindersRoute
+  '/shop': typeof ShopRoute
   '/transactions': typeof TransactionsRoute
 }
 export interface FileRoutesById {
@@ -124,6 +132,7 @@ export interface FileRoutesById {
   '/invest': typeof InvestRoute
   '/orcametas': typeof OrcametasRoute
   '/reminders': typeof RemindersRoute
+  '/shop': typeof ShopRoute
   '/transactions': typeof TransactionsRoute
 }
 export interface FileRouteTypes {
@@ -140,6 +149,7 @@ export interface FileRouteTypes {
     | '/invest'
     | '/orcametas'
     | '/reminders'
+    | '/shop'
     | '/transactions'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -154,6 +164,7 @@ export interface FileRouteTypes {
     | '/invest'
     | '/orcametas'
     | '/reminders'
+    | '/shop'
     | '/transactions'
   id:
     | '__root__'
@@ -168,6 +179,7 @@ export interface FileRouteTypes {
     | '/invest'
     | '/orcametas'
     | '/reminders'
+    | '/shop'
     | '/transactions'
   fileRoutesById: FileRoutesById
 }
@@ -183,6 +195,7 @@ export interface RootRouteChildren {
   InvestRoute: typeof InvestRoute
   OrcametasRoute: typeof OrcametasRoute
   RemindersRoute: typeof RemindersRoute
+  ShopRoute: typeof ShopRoute
   TransactionsRoute: typeof TransactionsRoute
 }
 
@@ -193,6 +206,13 @@ declare module '@tanstack/react-router' {
       path: '/transactions'
       fullPath: '/transactions'
       preLoaderRoute: typeof TransactionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/shop': {
+      id: '/shop'
+      path: '/shop'
+      fullPath: '/shop'
+      preLoaderRoute: typeof ShopRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reminders': {
@@ -287,17 +307,9 @@ const rootRouteChildren: RootRouteChildren = {
   InvestRoute: InvestRoute,
   OrcametasRoute: OrcametasRoute,
   RemindersRoute: RemindersRoute,
+  ShopRoute: ShopRoute,
   TransactionsRoute: TransactionsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}
