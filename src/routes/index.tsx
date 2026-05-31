@@ -251,6 +251,8 @@ function Dashboard() {
   const fetchAll = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
+    setUserEmail(session.user.email || null);
+
 
     try {
 
