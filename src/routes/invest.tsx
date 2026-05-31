@@ -45,7 +45,11 @@ function InvestPage() {
 
 
   const fetchInvestments = useCallback(async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+
     setLoading(true);
+
     try {
       const { data, error } = await supabase.from("investments").select("*").order("created_at", { ascending: false });
       if (error) throw error;
