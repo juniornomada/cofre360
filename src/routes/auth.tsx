@@ -29,9 +29,9 @@ function AuthPage() {
         if (error) throw error;
         
         if (data.user && data.session) {
-          toast.success("Cadastro realizado com sucesso!");
+          toast.success("Cadastro realizado com sucesso! Você já está logado.");
         } else {
-          toast.success("Cadastro realizado! Se o login automático não ocorrer, verifique se a confirmação de e-mail está ativa no Supabase.");
+          toast.success("Cadastro realizado! Se o login automático não ocorrer, acesse o dashboard do Supabase e desative a opção 'Confirm Email'.");
         }
       } else {
         const { error } = await supabase.auth.signInWithPassword({
