@@ -1474,16 +1474,16 @@ function Dashboard() {
         )}
        </Suspense>
      </div>
-    </div>
-  );
-}
+   );
+ }
+ 
+ export const Route = createFileRoute("/")({
+   validateSearch: (search: Record<string, unknown>) => {
+     return {
+       compare: z.string().optional().catch(undefined).parse(search.compare),
+     };
+   },
+   component: Dashboard,
+ });
 
-export const Route = createFileRoute("/")({
-  validateSearch: (search: Record<string, unknown>) => {
-    return {
-      compare: z.string().optional().catch(undefined).parse(search.compare),
-    };
-  },
-  component: Dashboard,
-});
 
