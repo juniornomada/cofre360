@@ -347,6 +347,50 @@ export function TransactionsPage() {
   const totalIncome = filtered.filter(t => t.type === "income" && t.is_visible !== false).reduce((s, t) => s + t.amount, 0);
   const totalExpense = filtered.filter(t => t.type === "expense" && t.is_visible !== false).reduce((s, t) => s + t.amount, 0);
 
+  const generatePDF = () => {
+    try {
+      const doc = new jsPDF();
+      const title = "Relatorio de Transacoes - Cofre 360";
+      
+      doc.setFontSize(18);
+      doc.text(title, 14, 22);
+      doc.setFontSize(11);
+      doc.setTextColor(100);
+      
+      const dateStr = format(new Date(), "dd/MM/yyyy HH:mm");
+      doc.text(`Gerado em: ${dateStr}`, 14, 30);
+
+      const tableRows = filtered.map(tx => [
+        tx.date,
+        tx.name,
+        tx.category,
+        tx.type === "income" ? "Receita" : "Despesa",
+        `R$ ${tx.amount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`
+      ]);
+
+      autoTable(doc, {
+        startY: 35,
+        head: [["Data", "Nome", "Categoria", "Tipo", "Valor"]],
+        body: tableRows,
+        theme: "striped",
+        headStyles: { fillStyle: "f", fillColor: [26, 26, 46], textColor: [255, 255, 255] },
+        alternateRowStyles: { fillColor: [245, 245, 245] },
+      });
+
+      const finalY = (doc as any).lastAutoTable.finalY || 40;
+      doc.text(`Total Receitas: R$ ${totalIncome.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`, 14, finalY + 10);
+      doc.text(`Total Despesas: R$ ${totalExpense.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`, 14, finalY + 16);
+      doc.text(`Saldo: R$ ${(totalIncome - totalExpense).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`, 14, finalY + 22);
+
+      doc.save(`transacoes_${format(new Date(), "yyyyMMdd")}.pdf`);
+      toast.success("Relatório gerado com sucesso!");
+    } catch (error) {
+      console.error("Erro ao gerar PDF:", error);
+      toast.error("Erro ao gerar relatório em PDF");
+    }
+  };
+
+
   const handleEdit = (tx: Transaction) => {
     setEditTx({ ...tx });
     setEditInstallmentMode("divide");
