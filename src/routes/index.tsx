@@ -163,6 +163,8 @@ function Dashboard() {
     updateBalanceVisible,
     updateHideZeroBalances
   } = useUserPreferences();
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
   const [accountBalances, setAccountBalances] = useState<{ id: string; name: string; icon: string | null; color: string | null; balance: number }[]>([]);
