@@ -45,9 +45,10 @@ Deno.test("Validation: transfer should fail if target email already exists", asy
       new_email: emailB
     });
 
-    // 4. Validate that it failed with the correct error message
+    // 4. Validate that it failed with the correct error code and message
     assertExists(error, "The transfer should have failed because target exists");
-    assert(error.message.includes("já existe"), `Error message should mention that target exists. Got: ${error.message}`);
+    assert(error.message.includes("[DESTINATION_EMAIL_IN_USE]"), `Error message should contain code [DESTINATION_EMAIL_IN_USE]. Got: ${error.message}`);
+    assert(error.message.includes("e-mail de destino"), `Error message should mention the blocked field. Got: ${error.message}`);
 
     // 5. Cleanup
     await supabase.auth.admin.deleteUser(userA.user.id);
