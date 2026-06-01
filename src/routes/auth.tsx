@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { getFriendlyErrorMessage } from "@/lib/utils";
 
 function AuthPage() {
   const [email, setEmail] = useState("");
@@ -49,7 +50,7 @@ function AuthPage() {
         toast.success("Login realizado com sucesso!");
       }
     } catch (error: any) {
-      toast.error(error.message);
+      toast.error(getFriendlyErrorMessage(error));
     } finally {
       setLoading(false);
     }

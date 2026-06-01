@@ -14,6 +14,7 @@ import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { getFriendlyErrorMessage } from "@/lib/utils";
 
 export type QuickAddInitialType = "expense" | "income" | "transfer";
 
@@ -100,7 +101,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
       })));
     } catch (error: any) {
       console.error("Error fetching data:", error);
-      toast.error("Erro ao carregar dados: " + (error.message || "Erro desconhecido"));
+      toast.error("Erro ao carregar dados: " + getFriendlyErrorMessage(error));
     }
   }, []);
 
@@ -305,7 +306,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
     toast.success("Transação adicionada com sucesso!");
     } catch (error: any) {
       console.error("Error adding transaction:", error);
-      toast.error("Erro ao adicionar transação: " + (error.message || "Erro desconhecido"));
+      toast.error("Erro ao adicionar transação: " + getFriendlyErrorMessage(error));
     } finally {
       setIsSubmitting(false);
     }
