@@ -155,7 +155,6 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
   }, [open, initialType, fetchData, fetchHistory]);
 
   const [confirmInstallmentDiff, setConfirmInstallmentDiff] = useState(false);
-  const [showNoSelectionAlert, setShowNoSelectionAlert] = useState(false);
 
   const installmentDetails = calculateInstallmentDetails(
     newTx.amount,
