@@ -31,6 +31,13 @@ describe("getFriendlyErrorMessage", () => {
   it("should return the friendly message for validation errors", () => {
     expect(getFriendlyErrorMessage({ message: "Error: VALIDATION_ERROR" })).toBe("Erro de validação nos dados enviados (VALIDATION_ERROR). Verifique os campos.");
     expect(getFriendlyErrorMessage({ message: "Error: REQUIRED_FIELD_MISSING" })).toBe("Um ou mais campos obrigatórios estão faltando (REQUIRED_FIELD_MISSING).");
+    expect(getFriendlyErrorMessage({ message: "Error: INVALID_DATA_TYPE" })).toBe("Os dados fornecidos possuem um formato incompatível (INVALID_DATA_TYPE).");
+  });
+
+  it("should confirm blocked field appears for destination email conflicts", () => {
+    const error = { message: "Error: violates unique constraint on e-mail de destino" };
+    expect(getFriendlyErrorMessage(error)).toContain("e-mail de destino");
+    expect(getFriendlyErrorMessage(error)).toBe("Conflito no campo: e-mail de destino.");
   });
 
   it("should map common Supabase auth errors", () => {
