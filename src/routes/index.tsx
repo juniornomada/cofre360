@@ -1008,17 +1008,44 @@ function Dashboard() {
 
 
       {/* Credit Cards Summary */}
-      {allCards.filter(c => c.is_visible !== false && c.is_visible !== null).length > 0 && (
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center justify-between mb-1">
-            <h2 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
-              <CreditCard className="h-4 w-4 text-primary" />
-              Cartões de crédito
-            </h2>
-            <Link to="/cards" className="text-[10px] font-medium text-primary flex items-center gap-0.5">
-              Gerenciar <ChevronRight className="h-3 w-3" />
+      {/* Credit Cards Summary */}
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center justify-between mb-1">
+          <h2 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+            <CreditCard className="h-4 w-4 text-primary" />
+            Cartões de crédito
+          </h2>
+          <Link to="/cards" className="text-[10px] font-medium text-primary flex items-center gap-0.5">
+            Gerenciar <ChevronRight className="h-3 w-3" />
+          </Link>
+        </div>
+
+        {allCards.length === 0 && !loading ? (
+          <div className="rounded-2xl border border-dashed border-border/50 p-6 text-center">
+            <CreditCard className="mx-auto h-8 w-8 text-muted-foreground/30 mb-2" />
+            <p className="text-xs text-muted-foreground">Você ainda não tem cartões cadastrados.</p>
+            <Link to="/cards" search={{ action: "add" } as any} className="text-[10px] text-primary font-medium mt-1 inline-block">
+              Cadastrar meu primeiro cartão →
             </Link>
           </div>
+        ) : allCards.filter(c => c.is_visible !== false && c.is_visible !== null).length === 0 && !loading ? (
+          <div className="rounded-2xl bg-accent/30 p-4 border border-border/30">
+            <div className="flex items-start gap-3">
+              <div className="bg-amber-500/10 p-2 rounded-lg">
+                <AlertTriangle className="h-4 w-4 text-amber-500" />
+              </div>
+              <div className="flex-1">
+                <p className="text-xs font-semibold text-foreground">Nenhum cartão visível</p>
+                <p className="text-[10px] text-muted-foreground leading-relaxed mt-0.5">
+                  Você possui {allCards.length} {allCards.length === 1 ? "cartão cadastrado" : "cartões cadastrados"}, mas nenhum está marcado para aparecer aqui.
+                </p>
+                <Link to="/cards" className="text-[10px] text-primary font-bold mt-2 inline-block">
+                  Ajustar visibilidade dos cartões →
+                </Link>
+              </div>
+            </div>
+          </div>
+        ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {allCards.filter(c => c.is_visible !== false && c.is_visible !== null).map((card) => {
               const total = cardTotals[card.name] || 0;
@@ -1055,8 +1082,8 @@ function Dashboard() {
               );
             })}
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Recent Transactions — moved to right below balance */}
       <div>
