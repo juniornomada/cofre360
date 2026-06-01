@@ -650,17 +650,50 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                           Valor fixo
                         </button>
                       </div>
-                      <div className="flex gap-1.5 items-end">
-                        <div className="flex-1">
-                          <label className="text-[11px] font-semibold text-foreground mb-0.5 block">Parcelas</label>
-                          <input type="number" min={2} max={48} value={installmentCount} onChange={e => { const val = e.target.value; setInstallmentCount(val === "" ? "" : Math.max(1, parseInt(val) || 1)); }} className="w-full rounded-lg bg-card px-2.5 py-1.5 text-xs text-foreground outline-none" />
-                        </div>
-                        {installmentMode === "fixed" && (
-                          <div className="flex-1">
-                            <label className="text-[11px] font-semibold text-foreground mb-0.5 block">Valor/parcela</label>
-                            <CalculatorAmountInput value={installmentFixedValue} onChange={setInstallmentFixedValue} />
+                      <div className="space-y-2">
+                        <div>
+                          <label className="text-[11px] font-semibold text-foreground mb-1 block">Total de parcelas</label>
+                          <div className="flex flex-wrap gap-1 mb-2">
+                            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 24].map((n) => (
+                              <button
+                                key={n}
+                                type="button"
+                                onClick={() => setInstallmentCount(n)}
+                                className={cn(
+                                  "px-2 py-1 rounded text-[10px] font-medium transition-colors border",
+                                  installmentCount === n 
+                                    ? "bg-primary text-primary-foreground border-primary" 
+                                    : "bg-card text-muted-foreground border-border hover:border-primary/50"
+                                )}
+                              >
+                                {n}x
+                              </button>
+                            ))}
                           </div>
-                        )}
+                          <div className="flex gap-2 items-end">
+                            <div className="flex-1">
+                              <label className="text-[9px] text-muted-foreground mb-0.5 block italic">Ou digite outro valor</label>
+                              <input 
+                                type="number" 
+                                min={1} 
+                                max={48} 
+                                value={installmentCount} 
+                                onChange={e => { 
+                                  const val = e.target.value; 
+                                  setInstallmentCount(val === "" ? "" : Math.max(1, parseInt(val) || 1)); 
+                                }} 
+                                className="w-full rounded-lg bg-card px-2.5 py-1.5 text-xs text-foreground outline-none border border-border focus:border-primary/50" 
+                                placeholder="Ex: 15"
+                              />
+                            </div>
+                            {installmentMode === "fixed" && (
+                              <div className="flex-1">
+                                <label className="text-[11px] font-semibold text-foreground mb-0.5 block">Valor/parcela</label>
+                                <CalculatorAmountInput value={installmentFixedValue} onChange={setInstallmentFixedValue} />
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       </div>
                         <div className="space-y-1.5">
                           <p className="text-[10px] text-muted-foreground">
