@@ -1509,7 +1509,7 @@ function Dashboard() {
                   </div>
                 </div>
 
-                {(editTx.total_installments ?? 1) > 1 && (
+                {(Number(editTx.total_installments) || 1) > 1 && (
                   <>
                     <div>
                       <label className="text-[10px] text-muted-foreground mb-1 block">Modo de cálculo</label>
