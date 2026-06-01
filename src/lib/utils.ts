@@ -40,6 +40,19 @@ export function getFriendlyErrorMessage(error: any): string {
     return "Você não tem permissão para realizar esta operação (INSUFFICIENT_PERMISSIONS).";
   }
 
+  // Mapeamento de códigos de validação do back-end
+  if (message.includes("VALIDATION_ERROR")) {
+    return "Erro de validação nos dados enviados (VALIDATION_ERROR). Verifique os campos.";
+  }
+
+  if (message.includes("REQUIRED_FIELD_MISSING")) {
+    return "Um ou mais campos obrigatórios estão faltando (REQUIRED_FIELD_MISSING).";
+  }
+
+  if (message.includes("INVALID_DATA_TYPE")) {
+    return "Os dados fornecidos possuem um formato incompatível (INVALID_DATA_TYPE).";
+  }
+
   // Mapeamento de erros comuns do Supabase/Auth
   if (message.includes("Invalid login credentials")) {
     return "E-mail ou senha incorretos.";
