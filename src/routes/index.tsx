@@ -534,18 +534,7 @@ function Dashboard() {
     // Strip installment suffix for the copy
     const cleanName = stripInstallmentSuffix(tx.name);
     
-    // Using simple approach: populate quick add state or navigate
-    // Here we'll just use toast to confirm and open quick add with pre-filled data
-    // Since index.tsx uses QuickAddTransactionDialog (not shown in view but probable)
-    // Actually, I'll just navigate to /transactions?action=add with state if possible, 
-    // or simulate the copy logic directly if I can access the setter.
-    // Looking at the imports in index.tsx...
-    
-    // For now, let's implement handleCopy in index.tsx similar to transactions.tsx
-    // but focusing on opening the Quick Add dialog if it's available.
-    
-    // If I don't have a direct "newTx" state here, I'll look at how openQuickAdd works.
-    openQuickAdd(tx.type, {
+    openQuickAdd(tx.type as QuickAddInitialType, {
       name: cleanName,
       amount: tx.amount,
       category: tx.category,
