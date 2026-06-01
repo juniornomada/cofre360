@@ -1008,7 +1008,7 @@ function Dashboard() {
 
 
       {/* Credit Cards Summary */}
-      {allCards.filter(c => c.is_visible !== false).length > 0 && (
+      {allCards.filter(c => c.is_visible !== false && c.is_visible !== null).length > 0 && (
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between mb-1">
             <h2 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
@@ -1020,7 +1020,7 @@ function Dashboard() {
             </Link>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {allCards.filter(c => c.is_visible !== false).map((card) => {
+            {allCards.filter(c => c.is_visible !== false && c.is_visible !== null).map((card) => {
               const total = cardTotals[card.name] || 0;
               const paid = cardPayments[card.id] || 0;
               const remaining = Math.max(0, total - paid);
