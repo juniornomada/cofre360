@@ -66,7 +66,8 @@ type CardTransaction = {
   id: string;
   name: string;
   icon: string | null;
-  category: string | null;
+  category: string;
+  card?: string | null;
   date: string;
   amount: number;
   type: string;
@@ -1121,14 +1122,14 @@ function CardsPage() {
                           <div className="flex items-center gap-1 opacity-0 group-hover/card-tx-row:opacity-100 transition-all duration-200 translate-x-2 group-hover/card-tx-row:translate-x-0">
                             <button
                               onClick={() => {
-                                const cleanName = stripInstallmentSuffix(tx.name);
+                                const cleanName = tx.name.replace(/\s*\(\s*\d{1,2}\s*\/\s*\d{1,2}\s*\)\s*$/, "").trim();
                                 // Navigate to transactions with parameters to pre-fill the form
-                                window.location.href = `/transactions?action=add&name=${encodeURIComponent(cleanName)}&amount=${tx.amount}&category=${encodeURIComponent(tx.category)}&icon=${encodeURIComponent(tx.icon)}&card=${encodeURIComponent(tx.card || "")}`;
+                                window.location.href = `/transactions?action=add&name=${encodeURIComponent(cleanName)}&amount=${tx.amount}&category=${encodeURIComponent(tx.category || "")}&icon=${encodeURIComponent(tx.icon || "")}&card=${encodeURIComponent(selectedCard?.name || "")}`;
                               }}
                               className="p-1.5 rounded-full bg-accent/50 hover:bg-accent text-muted-foreground hover:text-primary transition-colors"
                               title="Copiar para nova transação"
                             >
-                              <Copy className="h-3.5 w-3.5" />
+                              <Copy className="h-3.5 w-4" />
                             </button>
                             <button
                               onClick={() => openInstallmentDialog(tx)}
