@@ -35,6 +35,15 @@ export function CalculatorAmountInput({ value, onChange, className, autoFocus, o
     }
   }, [value]);
 
+  // Ensure cursor is always at the end after updates
+  useEffect(() => {
+    if (inputRef.current) {
+      const length = inputRef.current.value.length;
+      inputRef.current.setSelectionRange(length, length);
+    }
+  }, [formattedValue]);
+
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const rawValue = e.target.value;
     // Extract only digits
@@ -65,6 +74,23 @@ export function CalculatorAmountInput({ value, onChange, className, autoFocus, o
     }
   };
 
+  const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+    const length = e.target.value.length;
+    e.target.setSelectionRange(length, length);
+  };
+
+  const handleClick = (e: React.MouseEvent<HTMLInputElement>) => {
+    const target = e.target as HTMLInputElement;
+    const length = target.value.length;
+    target.setSelectionRange(length, length);
+  };
+
+  const handleSelect = (e: React.SyntheticEvent<HTMLInputElement>) => {
+    const target = e.target as HTMLInputElement;
+    const length = target.value.length;
+    target.setSelectionRange(length, length);
+  };
+
   return (
     <div className="relative w-full">
       <Input
@@ -74,7 +100,11 @@ export function CalculatorAmountInput({ value, onChange, className, autoFocus, o
         value={formattedValue}
         onChange={handleInputChange}
         onKeyDown={handleKeyDown}
+        onFocus={handleFocus}
+        onClick={handleClick}
+        onSelect={handleSelect}
         autoFocus={autoFocus}
+
         className={cn(
           "text-right tabular-nums font-bold text-base text-primary h-[44px] bg-primary/5 border-primary/20 shadow-inner",
           "focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
