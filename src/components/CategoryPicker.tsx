@@ -30,9 +30,9 @@ export function CategoryPicker({ value, onChange, className, defaultExpanded = f
         className="flex w-full items-center justify-between gap-2 mb-2 px-3 py-2 rounded-xl bg-card text-sm text-foreground hover:bg-accent transition-colors"
       >
         <div className="flex items-center gap-2">
-          <span className="font-medium text-primary">{parseCategoryValue(value).group}</span>
-          <span className="text-muted-foreground opacity-50">›</span>
-          <span>{parseCategoryValue(value).sub}</span>
+          <span className="font-bold text-foreground">{parseCategoryValue(value).group}</span>
+          <span className="text-muted-foreground opacity-30 mx-0.5">›</span>
+          <span className="text-muted-foreground font-medium">{parseCategoryValue(value).sub}</span>
         </div>
         <div className={`text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary transition-transform duration-300`}>
           {isExpanded ? 'Recolher' : 'Alterar'}
