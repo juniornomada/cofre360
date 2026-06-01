@@ -52,10 +52,10 @@ describe("getFriendlyErrorMessage", () => {
     expect(friendlyMessage).toBe("Conflito no campo: e-mail de destino.");
   });
 
-  it("should return the original message if no mapping is found", () => {
-    const error = { message: "Some unknown error occurred" };
+  it("should return a generic friendly message if no mapping is found", () => {
+    const error = { message: "Some unknown database error code 12345" };
     const friendlyMessage = getFriendlyErrorMessage(error);
-    expect(friendlyMessage).toBe("Some unknown error occurred");
+    expect(friendlyMessage).toBe("Ocorreu um erro ao processar sua solicitação. Por favor, tente novamente.");
   });
 
   it("should return a default message if error is null", () => {
