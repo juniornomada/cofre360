@@ -169,9 +169,9 @@ function Dashboard() {
 
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
-  const [accountBalances, setAccountBalances] = useState<{ id: string; name: string; icon: string | null; color: string | null; balance: number }[]>([]);
+  const [accountBalances, setAccountBalances] = useState<{ id: string; name: string; icon: string | null; color: string | null; balance: number; is_visible?: boolean }[]>([]);
   const [cardOptions, setCardOptions] = useState<string[]>(["Nenhum"]);
-  const [allCards, setAllCards] = useState<{ id: string; name: string; emoji: string | null; color: string | null }[]>([]);
+  const [allCards, setAllCards] = useState<{ id: string; name: string; emoji: string | null; color: string | null; is_visible?: boolean }[]>([]);
   const [loading, setLoading] = useState(true);
   const [editTx, setEditTx] = useState<Transaction | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
@@ -279,7 +279,7 @@ function Dashboard() {
       supabase.from("transactions").select(TX_FIELDS).eq("user_id", session.user.id).order("created_at", { ascending: false }).limit(20),
       supabase.from("transactions").select("type, amount, date, card, bank_account_id, category").eq("user_id", session.user.id),
       supabase.from("bank_accounts").select("id, name, icon, color, balance, is_visible, sort_order").eq("user_id", session.user.id).order("sort_order", { ascending: true }).order("created_at", { ascending: true }),
-      supabase.from("cards").select("id, name, emoji, color").eq("user_id", session.user.id).order("created_at", { ascending: true }),
+      supabase.from("cards").select("id, name, emoji, color, is_visible").eq("user_id", session.user.id).order("sort_order", { ascending: true }).order("created_at", { ascending: true }),
       supabase.from("reminders").select("id, title, icon, due_date, amount, type, bank_account_id, card_id").eq("user_id", session.user.id).eq("is_completed", false).order("due_date", { ascending: true }).limit(3),
       supabase.from("goals").select("id, name, icon, current_amount, target_amount").eq("user_id", session.user.id),
     ]);
@@ -352,7 +352,7 @@ function Dashboard() {
         if (tx.type === "income") incMap[id] = (incMap[id] || 0) + Number(tx.amount);
         else expMap[id] = (expMap[id] || 0) + Number(tx.amount);
       }
-      setAccountBalances(accts.filter(a => a.is_visible).map(a => ({
+      setAccountBalances(accts.map(a => ({
         id: a.id,
         name: a.name,
         icon: a.icon,
