@@ -31,6 +31,7 @@ describe("getFriendlyErrorMessage", () => {
   it("should map common Supabase auth errors", () => {
     expect(getFriendlyErrorMessage({ message: "Invalid login credentials" })).toBe("E-mail ou senha incorretos.");
     expect(getFriendlyErrorMessage({ message: "User already registered" })).toBe("Este e-mail já está cadastrado.");
+    expect(getFriendlyErrorMessage({ message: "Email not confirmed" })).toBe("Por favor, confirme seu e-mail antes de acessar.");
   });
 
   it("should return a clear message for generic destination email conflicts", () => {
@@ -38,7 +39,14 @@ describe("getFriendlyErrorMessage", () => {
     const friendlyMessage = getFriendlyErrorMessage(error);
     expect(friendlyMessage).toBe("Conflito no campo: e-mail de destino.");
   });
-...
+
+  it("should return the original message if no mapping is found", () => {
+    const error = { message: "Some unknown error occurred" };
+    const friendlyMessage = getFriendlyErrorMessage(error);
+    expect(friendlyMessage).toBe("Some unknown error occurred");
+  });
+
+  it("should return a default message if error is null", () => {
     const friendlyMessage = getFriendlyErrorMessage(null);
     expect(friendlyMessage).toBe("Ocorreu um erro inesperado.");
   });
