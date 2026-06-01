@@ -171,7 +171,7 @@ function Dashboard() {
   const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
   const [accountBalances, setAccountBalances] = useState<{ id: string; name: string; icon: string | null; color: string | null; balance: number; is_visible?: boolean }[]>([]);
   const [cardOptions, setCardOptions] = useState<string[]>(["Nenhum"]);
-  const [allCards, setAllCards] = useState<{ id: string; name: string; emoji: string | null; color: string | null; is_visible?: boolean }[]>([]);
+  const [allCards, setAllCards] = useState<{ id: string; name: string; emoji: string | null; color: string | null; is_visible?: boolean; closing_day?: number; due_day?: number }[]>([]);
   const [loading, setLoading] = useState(true);
   const [editTx, setEditTx] = useState<Transaction | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
