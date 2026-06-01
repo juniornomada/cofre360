@@ -180,6 +180,8 @@ function Dashboard() {
   const [deleteScope, setDeleteScope] = useState<"single" | "future" | "all">("single");
   const [pendingReminders, setPendingReminders] = useState<{ id: string; title: string | null; icon: string | null; due_date: string | null; amount: number | null; type: string | null; bank_account_id: string | null; card_id: string | null }[]>([]);
   const [goals, setGoals] = useState<{ id: string; name: string | null; icon: string | null; current_amount: number | null; target_amount: number | null }[]>([]);
+  const [cardTotals, setCardTotals] = useState<Record<string, number>>({});
+  const [cardPayments, setCardPayments] = useState<Record<string, number>>({});
 
   const [greeting, setGreeting] = useState<string>("");
 
@@ -282,6 +284,8 @@ function Dashboard() {
       supabase.from("cards").select("id, name, emoji, color, is_visible").eq("user_id", session.user.id).order("sort_order", { ascending: true }).order("created_at", { ascending: true }),
       supabase.from("reminders").select("id, title, icon, due_date, amount, type, bank_account_id, card_id").eq("user_id", session.user.id).eq("is_completed", false).order("due_date", { ascending: true }).limit(3),
       supabase.from("goals").select("id, name, icon, current_amount, target_amount").eq("user_id", session.user.id),
+      supabase.from("transactions").select("card, amount").eq("user_id", session.user.id).not("card", "is", null),
+      supabase.from("card_payments").select("card_id, amount").eq("user_id", session.user.id),
     ]);
 
     if (rawRecentRes.error) throw rawRecentRes.error;
@@ -297,11 +301,27 @@ function Dashboard() {
     const cards = cardsRes.data;
     const rems = remsRes.data;
     const gls = glsRes.data;
+    const txTotals = txRes.data;
+    const payments = paymentsRes.data;
 
     setCardOptions(["Nenhum", ...((cards || []).map((c: any) => c.name))]);
     if (cards) setAllCards(cards as any);
     if (rems) setPendingReminders(rems as any);
     if (gls) setGoals(gls as any);
+    if (txTotals) {
+      const totals: Record<string, number> = {};
+      for (const tx of txTotals) {
+        if (tx.card) totals[tx.card] = (totals[tx.card] || 0) + Number(tx.amount);
+      }
+      setCardTotals(totals);
+    }
+    if (payments) {
+      const paid: Record<string, number> = {};
+      for (const p of payments) {
+        paid[p.card_id] = (paid[p.card_id] || 0) + Number(p.amount);
+      }
+      setCardPayments(paid);
+    }
 
     const acctNameById: Record<string, string> = {};
     for (const a of accts || []) acctNameById[a.id] = a.name;
