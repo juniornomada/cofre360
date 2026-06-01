@@ -198,6 +198,12 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
     try {
       console.log("QuickAdd: Starting handleAdd", { isTransfer, transferFromId, transferToId, amount: newTx.amount });
       
+      if (installmentEnabled && !isTransfer && (installmentCount === "" || Number(installmentCount) < 2)) {
+        toast.error("Por favor, insira um número válido de parcelas (mínimo 2).");
+        setIsSubmitting(false);
+        return;
+      }
+      
       if (isTransfer) {
         if (!transferFromId || !transferToId || transferFromId === transferToId) {
           console.warn("QuickAdd: Transfer validation failed", { transferFromId, transferToId });

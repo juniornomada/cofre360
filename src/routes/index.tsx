@@ -448,7 +448,11 @@ function Dashboard() {
 
   const handleSaveEdit = async () => {
     if (!editTx) return;
-    const total = Math.max(1, Math.floor(editTx.total_installments || 1));
+    if (editTx.total_installments === undefined || editTx.total_installments === null || editTx.total_installments < 1) {
+      toast.error("Por favor, insira um número válido de parcelas (mínimo 1).");
+      return;
+    }
+    const total = Math.max(1, Math.floor(editTx.total_installments));
     const current = Math.max(1, Math.min(total, Math.floor(editTx.installment_number || 1)));
     const baseName = stripInstallmentSuffix(editTx.name);
     const finalName = total > 1 ? `${baseName} (${current}/${total})` : baseName;
@@ -1483,7 +1487,10 @@ function Dashboard() {
                       type="number"
                       min={1}
                       value={editTx.installment_number ?? 1}
-                      onChange={e => setEditTx({ ...editTx, installment_number: Math.max(1, parseInt(e.target.value) || 1) })}
+                      onChange={e => {
+                        const val = e.target.value;
+                        setEditTx({ ...editTx, installment_number: val === "" ? null : Math.max(1, parseInt(val) || 1) });
+                      }}
                       className="w-full rounded-lg bg-background px-2 py-1.5 text-sm text-foreground outline-none"
                     />
                   </div>
@@ -1493,7 +1500,10 @@ function Dashboard() {
                       type="number"
                       min={1}
                       value={editTx.total_installments ?? 1}
-                      onChange={e => setEditTx({ ...editTx, total_installments: Math.max(1, parseInt(e.target.value) || 1) })}
+                      onChange={e => {
+                        const val = e.target.value;
+                        setEditTx({ ...editTx, total_installments: val === "" ? null : Math.max(1, parseInt(val) || 1) });
+                      }}
                       className="w-full rounded-lg bg-background px-2 py-1.5 text-sm text-foreground outline-none"
                     />
                   </div>
