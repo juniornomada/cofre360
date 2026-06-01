@@ -58,8 +58,8 @@ interface Transaction {
   card?: string | null;
   bank_account_id?: string | null;
   installment_group_id?: string | null;
-  installment_number?: number;
-  total_installments?: number;
+  installment_number?: number | null;
+  total_installments?: number | null;
   // For unified transfer rendering
   isTransferPair?: boolean;
   transferFromName?: string;
