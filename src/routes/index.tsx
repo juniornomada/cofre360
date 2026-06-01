@@ -58,8 +58,8 @@ interface Transaction {
   card?: string | null;
   bank_account_id?: string | null;
   installment_group_id?: string | null;
-  installment_number?: number;
-  total_installments?: number;
+  installment_number?: number | null;
+  total_installments?: number | null;
   // For unified transfer rendering
   isTransferPair?: boolean;
   transferFromName?: string;
@@ -452,8 +452,8 @@ function Dashboard() {
       toast.error("Por favor, insira um número válido de parcelas (mínimo 1).");
       return;
     }
-    const total = Math.max(1, Math.floor(editTx.total_installments));
-    const current = Math.max(1, Math.min(total, Math.floor(editTx.installment_number || 1)));
+    const total = Math.max(1, Math.floor(Number(editTx.total_installments)));
+    const current = Math.max(1, Math.min(total, Math.floor(Number(editTx.installment_number) || 1)));
     const baseName = stripInstallmentSuffix(editTx.name);
     const finalName = total > 1 ? `${baseName} (${current}/${total})` : baseName;
 
@@ -1509,7 +1509,7 @@ function Dashboard() {
                   </div>
                 </div>
 
-                {(editTx.total_installments ?? 1) > 1 && (
+                {(Number(editTx.total_installments) || 1) > 1 && (
                   <>
                     <div>
                       <label className="text-[10px] text-muted-foreground mb-1 block">Modo de cálculo</label>
