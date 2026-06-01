@@ -30,9 +30,9 @@ export function CategoryPicker({ value, onChange, className, defaultExpanded = f
         className="flex w-full items-center justify-between gap-2 mb-2 px-3 py-2 rounded-xl bg-card text-sm text-foreground hover:bg-accent transition-colors"
       >
         <div className="flex items-center gap-2">
-          <span className="font-medium text-primary">{parseCategoryValue(value).group}</span>
-          <span className="text-muted-foreground opacity-50">›</span>
-          <span>{parseCategoryValue(value).sub}</span>
+          <span className="font-bold text-foreground">{parseCategoryValue(value).group}</span>
+          <span className="text-muted-foreground opacity-30 mx-0.5">›</span>
+          <span className="text-muted-foreground font-medium">{parseCategoryValue(value).sub}</span>
         </div>
         <div className={`text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary transition-transform duration-300`}>
           {isExpanded ? 'Recolher' : 'Alterar'}
@@ -57,8 +57,8 @@ export function CategoryPicker({ value, onChange, className, defaultExpanded = f
                   }}
                   className={`flex flex-col items-center gap-0.5 rounded-xl px-1.5 py-2 text-[10px] font-medium transition-colors ${
                     parsed.group === g.label
-                      ? "bg-primary/15 text-primary ring-1 ring-primary/30"
-                      : "bg-card text-muted-foreground hover:bg-accent"
+                      ? "bg-primary/20 text-foreground font-bold ring-1 ring-primary/40 shadow-sm"
+                      : "bg-card text-foreground hover:bg-accent/80 border border-border/40"
                   }`}
                 >
                   <span className="text-base">{g.icon}</span>
@@ -94,8 +94,8 @@ export function CategoryPicker({ value, onChange, className, defaultExpanded = f
                         }}
                         className={`flex flex-col items-center justify-center gap-0.5 rounded-lg px-1 py-1.5 text-[10px] font-medium leading-tight transition-colors ${
                           parsed.group === group.label && parsed.sub === sub.label
-                            ? "bg-primary/15 text-primary ring-1 ring-primary/30"
-                            : "bg-card text-muted-foreground hover:bg-accent"
+                            ? "bg-primary/10 text-primary font-semibold ring-1 ring-primary/20"
+                            : "bg-card/40 text-muted-foreground/80 hover:bg-accent/50 border border-border/20"
                         }`}
                       >
                         <span className="text-base leading-none">{sub.icon}</span>
