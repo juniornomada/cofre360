@@ -71,3 +71,22 @@ export const ERROR_MESSAGES: Record<string, Omit<FriendlyError, "code">> = {
   }
 } as const;
 
+/**
+ * Mapeamento de padrões de erro para chaves de ERROR_MESSAGES
+ */
+export const ERROR_CODE_MAPPINGS: Array<{ pattern: string; key: keyof typeof ERROR_MESSAGES }> = [
+  { pattern: "DESTINATION_EMAIL_IN_USE", key: "DESTINATION_EMAIL_IN_USE" },
+  { pattern: "SOURCE_EMAIL_NOT_FOUND", key: "SOURCE_EMAIL_NOT_FOUND" },
+  { pattern: "INVALID_EMAIL_FORMAT", key: "INVALID_EMAIL_FORMAT" },
+  { pattern: "INSUFFICIENT_PERMISSIONS", key: "INSUFFICIENT_PERMISSIONS" },
+  { pattern: "VALIDATION_ERROR", key: "VALIDATION_ERROR" },
+  { pattern: "REQUIRED_FIELD_MISSING", key: "REQUIRED_FIELD_MISSING" },
+  { pattern: "INVALID_DATA_TYPE", key: "INVALID_DATA_TYPE" },
+  { pattern: "Invalid login credentials", key: "INVALID_CREDENTIALS" },
+  { pattern: "User already registered", key: "USER_ALREADY_REGISTERED" },
+  { pattern: "Email not confirmed", key: "EMAIL_NOT_CONFIRMED" },
+  { pattern: "Password should be at least 6 characters", key: "PASSWORD_TOO_SHORT" },
+  { pattern: "e-mail de destino", key: "DESTINATION_EMAIL_CONFLICT" },
+];
+
+
