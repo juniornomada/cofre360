@@ -24,7 +24,7 @@ export function getFriendlyErrorMessage(error: any): string {
   const message = error.message || String(error);
 
   if (message.includes("DESTINATION_EMAIL_IN_USE")) {
-    return "O e-mail de destino já está em uso por outro usuário. Por favor, utilize um e-mail diferente.";
+    return "E-mail de destino já está em uso (DESTINATION_EMAIL_IN_USE). Por favor, utilize um e-mail diferente.";
   }
 
   if (message.includes("SOURCE_EMAIL_NOT_FOUND")) {
