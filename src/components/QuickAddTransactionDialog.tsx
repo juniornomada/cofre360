@@ -70,7 +70,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
   });
 
   const [installmentEnabled, setInstallmentEnabled] = useState(false);
-  const [installmentCount, setInstallmentCount] = useState(2);
+  const [installmentCount, setInstallmentCount] = useState<number | "">(2);
   const [installmentMode, setInstallmentMode] = useState<"divide" | "fixed">("divide");
   const [installmentFixedValue, setInstallmentFixedValue] = useState(0);
 
@@ -172,7 +172,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
 
   const installmentDetails = calculateInstallmentDetails(
     newTx.amount,
-    installmentCount,
+    Number(installmentCount) || 1,
     installmentMode,
     installmentFixedValue
   );
@@ -278,27 +278,28 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
       baseDate = new Date();
     }
 
-    if (installmentEnabled && cardValue && installmentCount > 1) {
+    if (installmentEnabled && cardValue && Number(installmentCount) > 1) {
       const groupId = (typeof crypto !== "undefined" && "randomUUID" in crypto)
         ? crypto.randomUUID()
         : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
       const rows = [];
-      for (let i = 0; i < installmentCount; i++) {
+      const count = Number(installmentCount) || 1;
+      for (let i = 0; i < count; i++) {
         const installDate = new Date(baseDate);
         installDate.setMonth(installDate.getMonth() + i);
          const { valorParcela: parcela } = calculateInstallmentDetails(
            newTx.amount,
-           installmentCount,
+           count,
            installmentMode,
            installmentFixedValue
          );
         rows.push({
-          icon: newTx.icon, name: `${newTx.name} (${i + 1}/${installmentCount})`, category: newTx.category,
+          icon: newTx.icon, name: `${newTx.name} (${i + 1}/${count})`, category: newTx.category,
           date: format(installDate, "dd MMM", { locale: ptBR }),
           amount: parcela, type: newTx.type,
           card: cardValue, bank_account_id: newTx.bank_account_id || null,
            installment_number: i + 1,
-           total_installments: installmentCount,
+           total_installments: count,
            installment_group_id: groupId,
            is_visible: true
          });
@@ -646,7 +647,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                       <div className="flex gap-1.5 items-end">
                         <div className="flex-1">
                           <label className="text-[11px] font-semibold text-foreground mb-0.5 block">Parcelas</label>
-                          <input type="number" min={2} max={48} value={installmentCount} onChange={e => setInstallmentCount(Math.max(2, parseInt(e.target.value) || 2))} className="w-full rounded-lg bg-card px-2.5 py-1.5 text-xs text-foreground outline-none" />
+                          <input type="number" min={2} max={48} value={installmentCount} onChange={e => { const val = e.target.value; setInstallmentCount(val === "" ? "" : Math.max(1, parseInt(val) || 1)); }} className="w-full rounded-lg bg-card px-2.5 py-1.5 text-xs text-foreground outline-none" />
                         </div>
                         {installmentMode === "fixed" && (
                           <div className="flex-1">
