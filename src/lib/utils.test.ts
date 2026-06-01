@@ -58,6 +58,12 @@ describe("getFriendlyErrorMessage", () => {
     expect(friendlyMessage).toBe("Ocorreu um erro ao processar sua solicitação. Por favor, tente novamente.");
   });
 
+  it("should return a generic friendly message for technical error objects", () => {
+    const technicalError = { code: "500", detail: "Database connection lost" };
+    const friendlyMessage = getFriendlyErrorMessage(technicalError);
+    expect(friendlyMessage).toBe("Ocorreu um erro ao processar sua solicitação. Por favor, tente novamente.");
+  });
+
   it("should return a default message if error is null", () => {
     const friendlyMessage = getFriendlyErrorMessage(null);
     expect(friendlyMessage).toBe("Ocorreu um erro inesperado.");
