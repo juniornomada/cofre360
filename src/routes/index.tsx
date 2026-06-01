@@ -205,6 +205,7 @@ function Dashboard() {
     const emptyStateRef = useRef<HTMLDivElement>(null);
     const transactionsListRef = useRef<HTMLDivElement>(null);
   const [quickAddType, setQuickAddType] = useState<QuickAddInitialType>("expense");
+  const [copyTxData, setCopyTxData] = useState<{ name: string; amount: number; category: string; icon: string; card: string | null; bank_account_id: string | null } | null>(null);
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [editInstallmentMode, setEditInstallmentMode] = useState<"divide" | "fixed">("divide");
   const [editInstallmentFixedValue, setEditInstallmentFixedValue] = useState(0);
@@ -253,8 +254,9 @@ function Dashboard() {
     }
   };
 
-  const openQuickAdd = (t: QuickAddInitialType) => {
+  const openQuickAdd = (t: QuickAddInitialType, copyData: typeof copyTxData = null) => {
     setQuickAddType(t);
+    setCopyTxData(copyData);
     setPopoverOpen(false);
     setQuickAddOpen(true);
   };
