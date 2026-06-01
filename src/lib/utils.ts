@@ -41,10 +41,3 @@ export function getFriendlyErrorMessage(error: any): FriendlyError {
     code: error?.code || null
   };
 }
-
-  const baseError = getBaseError();
-  return {
-    ...baseError,
-    code: error?.code || null
-  };
-}
