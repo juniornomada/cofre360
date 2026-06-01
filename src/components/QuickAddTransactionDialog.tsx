@@ -283,22 +283,23 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
         ? crypto.randomUUID()
         : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
       const rows = [];
-      for (let i = 0; i < installmentCount; i++) {
+      const count = Number(installmentCount) || 1;
+      for (let i = 0; i < count; i++) {
         const installDate = new Date(baseDate);
         installDate.setMonth(installDate.getMonth() + i);
          const { valorParcela: parcela } = calculateInstallmentDetails(
            newTx.amount,
-           installmentCount,
+           count,
            installmentMode,
            installmentFixedValue
          );
         rows.push({
-          icon: newTx.icon, name: `${newTx.name} (${i + 1}/${installmentCount})`, category: newTx.category,
+          icon: newTx.icon, name: `${newTx.name} (${i + 1}/${count})`, category: newTx.category,
           date: format(installDate, "dd MMM", { locale: ptBR }),
           amount: parcela, type: newTx.type,
           card: cardValue, bank_account_id: newTx.bank_account_id || null,
            installment_number: i + 1,
-           total_installments: installmentCount,
+           total_installments: count,
            installment_group_id: groupId,
            is_visible: true
          });
