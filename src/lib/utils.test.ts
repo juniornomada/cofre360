@@ -28,6 +28,11 @@ describe("getFriendlyErrorMessage", () => {
     expect(friendlyMessage).toBe("Você não tem permissão para realizar esta operação (INSUFFICIENT_PERMISSIONS).");
   });
 
+  it("should return the friendly message for validation errors", () => {
+    expect(getFriendlyErrorMessage({ message: "Error: VALIDATION_ERROR" })).toBe("Erro de validação nos dados enviados (VALIDATION_ERROR). Verifique os campos.");
+    expect(getFriendlyErrorMessage({ message: "Error: REQUIRED_FIELD_MISSING" })).toBe("Um ou mais campos obrigatórios estão faltando (REQUIRED_FIELD_MISSING).");
+  });
+
   it("should map common Supabase auth errors", () => {
     expect(getFriendlyErrorMessage({ message: "Invalid login credentials" })).toBe("E-mail ou senha incorretos.");
     expect(getFriendlyErrorMessage({ message: "User already registered" })).toBe("Este e-mail já está cadastrado.");
