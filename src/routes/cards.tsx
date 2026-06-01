@@ -1274,27 +1274,28 @@ function CardsPage() {
               ) : (
                 <>
                   {paymentLines.map((line, index) => (
-                    <div key={index} className="flex items-end gap-2">
-                      <div className="flex-1 space-y-1.5">
-                        <Label className="text-[10px] text-muted-foreground">Conta</Label>
+                    <div key={index} className="flex items-end gap-1.5 sm:gap-2">
+                      <div className="flex-1 space-y-1.5 min-w-0">
+                        <Label className="text-[10px] text-muted-foreground truncate block">Conta</Label>
                         <Select value={line.accountId} onValueChange={(v) => updatePaymentLine(index, "accountId", v)}>
-                          <SelectTrigger className="rounded-xl text-xs">
+                          <SelectTrigger className="rounded-xl text-xs h-10">
                             <SelectValue placeholder="Selecione" />
                           </SelectTrigger>
                           <SelectContent>
                             {bankAccounts.map((acc) => (
-                              <SelectItem key={acc.id} value={acc.id}>
+                              <SelectItem key={acc.id} value={acc.id} className="text-xs">
                                 {acc.icon} {acc.name} — R$ {acc.balance.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                               </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
                       </div>
-                      <div className="w-28 space-y-1.5">
-                        <Label className="text-[10px] text-muted-foreground">Valor (R$)</Label>
+                      <div className="w-24 sm:w-28 space-y-1.5 shrink-0">
+                        <Label className="text-[10px] text-muted-foreground block">Valor (R$)</Label>
                         <CalculatorAmountInput
                           value={parseFloat(line.amount) || 0}
                           onChange={(v) => updatePaymentLine(index, "amount", v.toString())}
+                          className="h-10 text-xs sm:text-sm"
                         />
                       </div>
                       {paymentLines.length > 1 && (
