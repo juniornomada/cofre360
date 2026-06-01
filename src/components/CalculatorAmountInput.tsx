@@ -85,6 +85,12 @@ export function CalculatorAmountInput({ value, onChange, className, autoFocus, o
     target.setSelectionRange(length, length);
   };
 
+  const handleSelect = (e: React.SyntheticEvent<HTMLInputElement>) => {
+    const target = e.target as HTMLInputElement;
+    const length = target.value.length;
+    target.setSelectionRange(length, length);
+  };
+
   return (
     <div className="relative w-full">
       <Input
@@ -96,7 +102,9 @@ export function CalculatorAmountInput({ value, onChange, className, autoFocus, o
         onKeyDown={handleKeyDown}
         onFocus={handleFocus}
         onClick={handleClick}
+        onSelect={handleSelect}
         autoFocus={autoFocus}
+
         className={cn(
           "text-right tabular-nums font-bold text-base text-primary h-[44px] bg-primary/5 border-primary/20 shadow-inner",
           "focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
