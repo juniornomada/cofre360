@@ -162,10 +162,11 @@ function SortableAccountItem({
               />
               <div className="flex items-center gap-1">
                 <span className="text-xs text-muted-foreground mr-1">R$</span>
-                <div className="w-32">
+                <div className="w-24 sm:w-32 shrink-0">
                   <CalculatorAmountInput
                     value={parseFloat(editBalance) || 0}
                     onChange={(v) => setEditBalance(v.toString())}
+                    className="h-8 text-xs sm:text-sm"
                   />
                 </div>
               </div>

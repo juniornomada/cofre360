@@ -895,11 +895,11 @@ function CardsPage() {
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-[10px] opacity-70 w-14">Limite R$</span>
-                        <div className="w-28">
+                        <div className="w-24 sm:w-28 shrink-0">
                           <CalculatorAmountInput
                             value={parseFloat(editLimit) || 0}
                             onChange={(v) => setEditLimit(v.toString())}
-                            className="h-7 bg-white/20 border-white/30 text-white"
+                            className="h-7 bg-white/20 border-white/30 text-white text-[11px] sm:text-xs"
                           />
                         </div>
                       </div>
@@ -1139,7 +1139,7 @@ function CardsPage() {
 
       {/* Add card dialog (new cards only) */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-sm mx-auto rounded-2xl">
+        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-sm mx-auto rounded-2xl p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle>Novo cartão</DialogTitle>
           </DialogHeader>
@@ -1209,11 +1209,11 @@ function CardsPage() {
 
       {/* Pay invoice dialog */}
       <Dialog open={payDialogOpen} onOpenChange={setPayDialogOpen}>
-        <DialogContent className="max-w-sm mx-auto rounded-2xl">
+        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-sm mx-auto rounded-2xl p-4 sm:p-6">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Wallet className="h-5 w-5 text-primary" />
-              Pagar fatura — {payingCard?.name}
+            <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <Wallet className="h-5 w-5 text-primary shrink-0" />
+              <span className="truncate">Pagar fatura — {payingCard?.name}</span>
             </DialogTitle>
           </DialogHeader>
           {payingCard && (
@@ -1274,27 +1274,28 @@ function CardsPage() {
               ) : (
                 <>
                   {paymentLines.map((line, index) => (
-                    <div key={index} className="flex items-end gap-2">
-                      <div className="flex-1 space-y-1.5">
-                        <Label className="text-[10px] text-muted-foreground">Conta</Label>
+                    <div key={index} className="flex items-end gap-1.5 sm:gap-2">
+                      <div className="flex-1 space-y-1.5 min-w-0">
+                        <Label className="text-[10px] text-muted-foreground truncate block">Conta</Label>
                         <Select value={line.accountId} onValueChange={(v) => updatePaymentLine(index, "accountId", v)}>
-                          <SelectTrigger className="rounded-xl text-xs">
+                          <SelectTrigger className="rounded-xl text-xs h-10">
                             <SelectValue placeholder="Selecione" />
                           </SelectTrigger>
                           <SelectContent>
                             {bankAccounts.map((acc) => (
-                              <SelectItem key={acc.id} value={acc.id}>
+                              <SelectItem key={acc.id} value={acc.id} className="text-xs">
                                 {acc.icon} {acc.name} — R$ {acc.balance.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                               </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
                       </div>
-                      <div className="w-28 space-y-1.5">
-                        <Label className="text-[10px] text-muted-foreground">Valor (R$)</Label>
+                      <div className="w-24 sm:w-28 space-y-1.5 shrink-0">
+                        <Label className="text-[10px] text-muted-foreground block">Valor (R$)</Label>
                         <CalculatorAmountInput
                           value={parseFloat(line.amount) || 0}
                           onChange={(v) => updatePaymentLine(index, "amount", v.toString())}
+                          className="h-10 text-xs sm:text-sm"
                         />
                       </div>
                       {paymentLines.length > 1 && (
@@ -1339,7 +1340,7 @@ function CardsPage() {
 
       {/* Installment edit dialog */}
       <Dialog open={installmentDialogOpen} onOpenChange={setInstallmentDialogOpen}>
-        <DialogContent className="max-w-sm mx-auto rounded-2xl">
+        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-sm mx-auto rounded-2xl p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-base">
               <Layers className="h-4 w-4 text-primary" />
