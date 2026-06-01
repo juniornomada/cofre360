@@ -1494,18 +1494,38 @@ function Dashboard() {
                       className="w-full rounded-lg bg-background px-2 py-1.5 text-sm text-foreground outline-none"
                     />
                   </div>
-                  <div>
+                  <div className="col-span-2 space-y-2">
                     <label className="text-[10px] text-muted-foreground mb-1 block">Total de parcelas</label>
-                    <input
-                      type="number"
-                      min={1}
-                      value={editTx.total_installments ?? 1}
-                      onChange={e => {
-                        const val = e.target.value;
-                        setEditTx({ ...editTx, total_installments: val === "" ? null : Math.max(1, parseInt(val) || 1) });
-                      }}
-                      className="w-full rounded-lg bg-background px-2 py-1.5 text-sm text-foreground outline-none"
-                    />
+                    <div className="flex flex-wrap gap-1 mb-2">
+                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 24].map((n) => (
+                        <button
+                          key={n}
+                          type="button"
+                          onClick={() => setEditTx({ ...editTx, total_installments: n })}
+                          className={cn(
+                            "px-2 py-1 rounded text-[10px] font-medium transition-colors border",
+                            Number(editTx.total_installments) === n 
+                              ? "bg-primary text-primary-foreground border-primary" 
+                              : "bg-background text-muted-foreground border-border hover:border-primary/50"
+                          )}
+                        >
+                          {n}x
+                        </button>
+                      ))}
+                    </div>
+                    <div className="flex-1">
+                      <label className="text-[9px] text-muted-foreground mb-0.5 block italic">Ou digite outro valor</label>
+                      <input
+                        type="number"
+                        min={1}
+                        value={editTx.total_installments ?? 1}
+                        onChange={e => {
+                          const val = e.target.value;
+                          setEditTx({ ...editTx, total_installments: val === "" ? null : Math.max(1, parseInt(val) || 1) });
+                        }}
+                        className="w-full rounded-lg bg-background px-2 py-1.5 text-sm text-foreground outline-none border border-border focus:border-primary/50"
+                      />
+                    </div>
                   </div>
                 </div>
 
