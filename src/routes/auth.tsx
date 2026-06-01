@@ -32,14 +32,15 @@ function AuthPage() {
         if (data.user && data.session) {
           toast.success("Cadastro realizado com sucesso! Você já está logado.");
         } else {
+          const friendly = getFriendlyErrorMessage("EMAIL_NOT_CONFIRMED");
           toast.warning(
-            "Cadastro concluído, mas o login automático falhou.",
+            friendly.message,
             {
               description: "Tente entrar manualmente com seu e-mail e senha. Se o problema persistir, verifique se a confirmação de e-mail foi desativada no painel do Supabase.",
               duration: 8000,
             }
           );
-          setIsSignUp(false); // Alterna para a tela de login para facilitar
+          setIsSignUp(false);
         }
       } else {
         const { error } = await supabase.auth.signInWithPassword({
