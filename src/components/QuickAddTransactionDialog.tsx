@@ -101,7 +101,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
       })));
     } catch (error: any) {
       console.error("Error fetching data:", error);
-      toast.error("Erro ao carregar dados: " + (error.message || "Erro desconhecido"));
+      toast.error("Erro ao carregar dados: " + getFriendlyErrorMessage(error));
     }
   }, []);
 
