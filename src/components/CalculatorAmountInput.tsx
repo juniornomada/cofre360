@@ -35,6 +35,15 @@ export function CalculatorAmountInput({ value, onChange, className, autoFocus, o
     }
   }, [value]);
 
+  // Ensure cursor is always at the end after updates
+  useEffect(() => {
+    if (inputRef.current) {
+      const length = inputRef.current.value.length;
+      inputRef.current.setSelectionRange(length, length);
+    }
+  }, [formattedValue]);
+
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const rawValue = e.target.value;
     // Extract only digits
