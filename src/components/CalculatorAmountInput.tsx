@@ -65,6 +65,17 @@ export function CalculatorAmountInput({ value, onChange, className, autoFocus, o
     }
   };
 
+  const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+    const length = e.target.value.length;
+    e.target.setSelectionRange(length, length);
+  };
+
+  const handleClick = (e: React.MouseEvent<HTMLInputElement>) => {
+    const target = e.target as HTMLInputElement;
+    const length = target.value.length;
+    target.setSelectionRange(length, length);
+  };
+
   return (
     <div className="relative w-full">
       <Input
@@ -74,6 +85,8 @@ export function CalculatorAmountInput({ value, onChange, className, autoFocus, o
         value={formattedValue}
         onChange={handleInputChange}
         onKeyDown={handleKeyDown}
+        onFocus={handleFocus}
+        onClick={handleClick}
         autoFocus={autoFocus}
         className={cn(
           "text-right tabular-nums font-bold text-base text-primary h-[44px] bg-primary/5 border-primary/20 shadow-inner",
