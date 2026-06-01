@@ -187,7 +187,7 @@ export type Database = {
           created_at?: string
           due_day?: number | null
           emoji?: string | null
-          id: string
+          id?: string
           is_visible?: boolean | null
           last_four?: number | null
           name: string
