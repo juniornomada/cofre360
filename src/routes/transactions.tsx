@@ -403,6 +403,25 @@ export function TransactionsPage() {
     setShowEditDialog(true);
   };
 
+  const handleCopy = (tx: Transaction) => {
+    // Strip installment suffix for the copy
+    const cleanName = stripInstallmentSuffix(tx.name);
+    setNewTx({
+      icon: tx.icon,
+      name: cleanName,
+      category: tx.category,
+      date: todayFormatted,
+      amount: tx.amount,
+      type: tx.type,
+      card: tx.card || null,
+      bank_account_id: tx.bank_account_id || null,
+    });
+    setIsTransfer(tx.category === "Transferência" || tx.category === "Transferências");
+    setInstallmentEnabled(false);
+    setShowAddDialog(true);
+    toast.success("Dados copiados para nova transação!");
+  };
+
    const handleSaveEdit = async () => {
      if (!editTx) return;
  
