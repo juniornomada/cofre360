@@ -895,11 +895,11 @@ function CardsPage() {
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-[10px] opacity-70 w-14">Limite R$</span>
-                        <div className="w-28">
+                        <div className="w-24 sm:w-28 shrink-0">
                           <CalculatorAmountInput
                             value={parseFloat(editLimit) || 0}
                             onChange={(v) => setEditLimit(v.toString())}
-                            className="h-7 bg-white/20 border-white/30 text-white"
+                            className="h-7 bg-white/20 border-white/30 text-white text-[11px] sm:text-xs"
                           />
                         </div>
                       </div>
