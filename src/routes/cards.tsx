@@ -1124,7 +1124,7 @@ function CardsPage() {
                               onClick={() => {
                                 const cleanName = tx.name.replace(/\s*\(\s*\d{1,2}\s*\/\s*\d{1,2}\s*\)\s*$/, "").trim();
                                 // Navigate to transactions with parameters to pre-fill the form
-                                window.location.href = `/transactions?action=add&name=${encodeURIComponent(cleanName)}&amount=${tx.amount}&category=${encodeURIComponent(tx.category || "")}&icon=${encodeURIComponent(tx.icon || "")}&card=${encodeURIComponent(selectedCard?.name || "")}`;
+                                window.location.href = `/transactions?action=add&name=${encodeURIComponent(cleanName)}&amount=${tx.amount}&category=${encodeURIComponent(tx.category || "")}&icon=${encodeURIComponent(tx.icon || "")}&card=${encodeURIComponent(invoiceCard?.name || "")}`;
                               }}
                               className="p-1.5 rounded-full bg-accent/50 hover:bg-accent text-muted-foreground hover:text-primary transition-colors"
                               title="Copiar para nova transação"
