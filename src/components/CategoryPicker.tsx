@@ -57,8 +57,8 @@ export function CategoryPicker({ value, onChange, className, defaultExpanded = f
                   }}
                   className={`flex flex-col items-center gap-0.5 rounded-xl px-1.5 py-2 text-[10px] font-medium transition-colors ${
                     parsed.group === g.label
-                      ? "bg-primary/15 text-primary ring-1 ring-primary/30"
-                      : "bg-card text-muted-foreground hover:bg-accent"
+                      ? "bg-primary/20 text-foreground font-bold ring-1 ring-primary/40 shadow-sm"
+                      : "bg-card text-foreground hover:bg-accent/80 border border-border/40"
                   }`}
                 >
                   <span className="text-base">{g.icon}</span>
