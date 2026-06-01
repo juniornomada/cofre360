@@ -283,7 +283,7 @@ function Dashboard() {
       supabase.from("transactions").select(TX_FIELDS).eq("user_id", session.user.id).order("created_at", { ascending: false }).limit(20),
       supabase.from("transactions").select("type, amount, date, card, bank_account_id, category").eq("user_id", session.user.id),
       supabase.from("bank_accounts").select("id, name, icon, color, balance, is_visible, sort_order").eq("user_id", session.user.id).order("sort_order", { ascending: true }).order("created_at", { ascending: true }),
-      supabase.from("cards").select("id, name, emoji, color, is_visible").eq("user_id", session.user.id).order("sort_order", { ascending: true }).order("created_at", { ascending: true }),
+      supabase.from("cards").select("id, name, emoji, color, is_visible, closing_day, due_day").eq("user_id", session.user.id).order("sort_order", { ascending: true }).order("created_at", { ascending: true }),
       supabase.from("reminders").select("id, title, icon, due_date, amount, type, bank_account_id, card_id").eq("user_id", session.user.id).eq("is_completed", false).order("due_date", { ascending: true }).limit(3),
       supabase.from("goals").select("id, name, icon, current_amount, target_amount").eq("user_id", session.user.id),
       supabase.from("transactions").select("card, amount").eq("user_id", session.user.id).not("card", "is", null),
@@ -1061,16 +1061,14 @@ function Dashboard() {
               const today = new Date();
               const todayDay = today.getDate();
               // Compute due date of current invoice
-              let currentDue = new Date(today.getFullYear(), today.getMonth(), card.due_day);
-              let currentClose = new Date(today.getFullYear(), today.getMonth(), card.closing_day);
+              let currentDue = new Date(today.getFullYear(), today.getMonth(), card.due_day || 1);
               
               const isPaid = total > 0 && remaining === 0;
-              const invoiceClosed = todayDay > card.closing_day;
               
               // If invoice is already paid OR it's already closed/near due for next month
               let displayDue = currentDue;
-              if (isPaid || (todayDay > card.due_day)) {
-                displayDue = new Date(today.getFullYear(), today.getMonth() + 1, card.due_day);
+              if (isPaid || (todayDay > (card.due_day || 1))) {
+                displayDue = new Date(today.getFullYear(), today.getMonth() + 1, card.due_day || 1);
               }
 
               const formatDueDate = (d: Date) => format(d, "dd/MM");
