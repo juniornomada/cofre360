@@ -75,5 +75,5 @@ export function getFriendlyErrorMessage(error: any): string {
     return "Conflito no campo: e-mail de destino.";
   }
 
-  return message;
+  return "Ocorreu um erro ao processar sua solicitação. Por favor, tente novamente.";
 }
