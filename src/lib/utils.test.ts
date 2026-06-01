@@ -6,7 +6,7 @@ describe("getFriendlyErrorMessage", () => {
     const error = { message: "Error: DESTINATION_EMAIL_IN_USE" };
     const friendlyMessage = getFriendlyErrorMessage(error);
     expect(friendlyMessage).toBe(
-      "O e-mail de destino já está em uso por outro usuário. Por favor, utilize um e-mail diferente."
+      "E-mail de destino já está em uso (DESTINATION_EMAIL_IN_USE). Por favor, utilize um e-mail diferente."
     );
   });
 
