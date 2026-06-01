@@ -101,7 +101,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
       })));
     } catch (error: any) {
       console.error("Error fetching data:", error);
-      toast.error("Erro ao carregar dados: " + getFriendlyErrorMessage(error));
+      toast.error("Erro ao carregar dados: " + getFriendlyErrorMessage(error).message);
     }
   }, []);
 
@@ -306,7 +306,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
     toast.success("Transação adicionada com sucesso!");
     } catch (error: any) {
       console.error("Error adding transaction:", error);
-      toast.error("Erro ao adicionar transação: " + getFriendlyErrorMessage(error));
+      toast.error("Erro ao adicionar transação: " + getFriendlyErrorMessage(error).message);
     } finally {
       setIsSubmitting(false);
     }
