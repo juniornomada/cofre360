@@ -155,7 +155,6 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
   }, [open, initialType, fetchData, fetchHistory]);
 
   const [confirmInstallmentDiff, setConfirmInstallmentDiff] = useState(false);
-  const [showNoSelectionAlert, setShowNoSelectionAlert] = useState(false);
 
   const installmentDetails = calculateInstallmentDetails(
     newTx.amount,
@@ -239,7 +238,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
 
       console.log("QuickAdd: Standard transaction validation", { bank_account_id: newTx.bank_account_id, card: newTx.card });
       if (!newTx.bank_account_id && !newTx.card) {
-        setShowNoSelectionAlert(true);
+        toast.error("Por favor, selecione uma conta ou cartão.");
         setIsSubmitting(false);
         return;
       }
@@ -691,25 +690,6 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
         </DialogFooter>
       </DialogContent>
     </Dialog>
-
-    <AlertDialog open={showNoSelectionAlert} onOpenChange={setShowNoSelectionAlert}>
-      <AlertDialogContent className="w-[85vw] max-w-[320px] rounded-2xl p-6">
-        <AlertDialogHeader>
-          <AlertDialogTitle className="text-center text-lg">Selecionar conta/cartão</AlertDialogTitle>
-          <AlertDialogDescription className="text-center text-sm pt-2">
-            Por favor, selecione uma conta ou cartão para registrar esta transação.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter className="sm:justify-center mt-4">
-          <AlertDialogAction 
-            onClick={() => setShowNoSelectionAlert(false)}
-            className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
-          >
-            Entendido
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
     </>
   );
 }
