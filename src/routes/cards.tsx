@@ -1278,8 +1278,19 @@ function CardsPage() {
                       <div className="flex-1 space-y-1.5 min-w-0">
                         <Label className="text-[10px] text-muted-foreground truncate block">Conta</Label>
                         <Select value={line.accountId} onValueChange={(v) => updatePaymentLine(index, "accountId", v)}>
-                          <SelectTrigger className="rounded-xl text-xs h-10">
-                            <SelectValue placeholder="Selecione" />
+                          <SelectTrigger className="rounded-xl text-xs h-10 px-2 overflow-hidden">
+                            <SelectValue placeholder="Conta">
+                              {line.accountId && (() => {
+                                const acc = bankAccounts.find(a => a.id === line.accountId);
+                                if (!acc) return "Conta";
+                                return (
+                                  <div className="flex items-center gap-1.5 min-w-0">
+                                    <BankLogo icon={acc.icon} color={acc.color} name={acc.name} size="xs" />
+                                    <span className="truncate max-w-[50px] sm:max-w-none">{acc.name}</span>
+                                  </div>
+                                );
+                              })()}
+                            </SelectValue>
                           </SelectTrigger>
                           <SelectContent>
                             {bankAccounts.map((acc) => (
