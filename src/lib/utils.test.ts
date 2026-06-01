@@ -3,62 +3,39 @@ import { getFriendlyErrorMessage } from "./utils";
 import { ERROR_MESSAGES } from "./constants";
 
 describe("getFriendlyErrorMessage", () => {
-  it("should return the friendly message for DESTINATION_EMAIL_IN_USE", () => {
-    const error = { message: "Error: DESTINATION_EMAIL_IN_USE" };
-    const friendlyMessage = getFriendlyErrorMessage(error);
-    expect(friendlyMessage).toBe(ERROR_MESSAGES.DESTINATION_EMAIL_IN_USE);
+  it("should return a structured object for DESTINATION_EMAIL_IN_USE", () => {
+    const error = { message: "Error: DESTINATION_EMAIL_IN_USE", code: "P2002" };
+    const friendly = getFriendlyErrorMessage(error);
+    expect(friendly).toEqual({
+      ...ERROR_MESSAGES.DESTINATION_EMAIL_IN_USE,
+      code: "P2002"
+    });
   });
 
-  it("should return the friendly message for SOURCE_EMAIL_NOT_FOUND", () => {
-    const error = { message: "Error: SOURCE_EMAIL_NOT_FOUND" };
-    const friendlyMessage = getFriendlyErrorMessage(error);
-    expect(friendlyMessage).toBe(ERROR_MESSAGES.SOURCE_EMAIL_NOT_FOUND);
+  it("should return a structured object for validation errors", () => {
+    const error = { message: "Error: VALIDATION_ERROR" };
+    const friendly = getFriendlyErrorMessage(error);
+    expect(friendly).toEqual({
+      ...ERROR_MESSAGES.VALIDATION_ERROR,
+      code: null
+    });
   });
 
-  it("should return the friendly message for INVALID_EMAIL_FORMAT", () => {
-    const error = { message: "Error: INVALID_EMAIL_FORMAT" };
-    const friendlyMessage = getFriendlyErrorMessage(error);
-    expect(friendlyMessage).toBe(ERROR_MESSAGES.INVALID_EMAIL_FORMAT);
+  it("should return a structured object for unknown errors", () => {
+    const error = { message: "Unknown thing", code: "500" };
+    const friendly = getFriendlyErrorMessage(error);
+    expect(friendly).toEqual({
+      ...ERROR_MESSAGES.DEFAULT_PROCESSING,
+      code: "500"
+    });
   });
 
-  it("should return the friendly message for INSUFFICIENT_PERMISSIONS", () => {
-    const error = { message: "Error: INSUFFICIENT_PERMISSIONS" };
-    const friendlyMessage = getFriendlyErrorMessage(error);
-    expect(friendlyMessage).toBe(ERROR_MESSAGES.INSUFFICIENT_PERMISSIONS);
-  });
-
-  it("should return the friendly message for validation errors", () => {
-    expect(getFriendlyErrorMessage({ message: "Error: VALIDATION_ERROR" })).toBe(ERROR_MESSAGES.VALIDATION_ERROR);
-    expect(getFriendlyErrorMessage({ message: "Error: REQUIRED_FIELD_MISSING" })).toBe(ERROR_MESSAGES.REQUIRED_FIELD_MISSING);
-    expect(getFriendlyErrorMessage({ message: "Error: INVALID_DATA_TYPE" })).toBe(ERROR_MESSAGES.INVALID_DATA_TYPE);
-  });
-
-  it("should confirm blocked field appears for destination email conflicts", () => {
-    const error = { message: "Error: violates unique constraint on e-mail de destino" };
-    expect(getFriendlyErrorMessage(error)).toBe(ERROR_MESSAGES.DESTINATION_EMAIL_CONFLICT);
-  });
-
-  it("should map common Supabase auth errors", () => {
-    expect(getFriendlyErrorMessage({ message: "Invalid login credentials" })).toBe(ERROR_MESSAGES.INVALID_CREDENTIALS);
-    expect(getFriendlyErrorMessage({ message: "User already registered" })).toBe(ERROR_MESSAGES.USER_ALREADY_REGISTERED);
-    expect(getFriendlyErrorMessage({ message: "Email not confirmed" })).toBe(ERROR_MESSAGES.EMAIL_NOT_CONFIRMED);
-  });
-
-  it("should return a generic friendly message if no mapping is found", () => {
-    const error = { message: "Some unknown database error code 12345" };
-    const friendlyMessage = getFriendlyErrorMessage(error);
-    expect(friendlyMessage).toBe(ERROR_MESSAGES.DEFAULT_PROCESSING);
-  });
-
-  it("should return a generic friendly message for technical error objects", () => {
-    const technicalError = { code: "500", detail: "Database connection lost" };
-    const friendlyMessage = getFriendlyErrorMessage(technicalError);
-    expect(friendlyMessage).toBe(ERROR_MESSAGES.DEFAULT_PROCESSING);
-  });
-
-  it("should return a default message if error is null", () => {
-    const friendlyMessage = getFriendlyErrorMessage(null);
-    expect(friendlyMessage).toBe(ERROR_MESSAGES.DEFAULT_UNEXPECTED);
+  it("should return a default structured object if error is null", () => {
+    const friendly = getFriendlyErrorMessage(null);
+    expect(friendly).toEqual({
+      ...ERROR_MESSAGES.DEFAULT_UNEXPECTED,
+      code: null
+    });
   });
 
   describe("consistency and tone", () => {
@@ -79,51 +56,37 @@ describe("getFriendlyErrorMessage", () => {
       { input: { message: "UNKNOWN_ERROR" }, expected: ERROR_MESSAGES.DEFAULT_PROCESSING }
     ];
 
-    it("should end all messages with a period", () => {
+    it("should end all messages with a period and have a valid type", () => {
       scenarios.forEach(({ input }) => {
-        const message = getFriendlyErrorMessage(input);
-        expect(message.endsWith(".")).toBe(true);
+        const result = getFriendlyErrorMessage(input);
+        expect(result.message.endsWith(".")).toBe(true);
+        expect(["validation", "auth", "system", "unknown"]).toContain(result.type);
       });
     });
 
     it("should maintain a professional and polite tone", () => {
       scenarios.forEach(({ input }) => {
-        const message = getFriendlyErrorMessage(input);
-        expect(message).not.toContain("Error:");
-        expect(message).not.toContain("Exception");
-        expect(message).toMatch(/^(O|H|V|E|P|A|I|U)/); // Starts with capital letter
+        const result = getFriendlyErrorMessage(input);
+        expect(result.message).not.toContain("Error:");
+        expect(result.message).not.toContain("Exception");
+        expect(result.message).toMatch(/^(O|H|V|E|P|A|I|U)/);
       });
     });
 
-    it("should match exactly the expected standardized messages from constants", () => {
+    it("should match exactly the expected standardized objects from constants", () => {
       scenarios.forEach(({ input, expected }) => {
-        expect(getFriendlyErrorMessage(input)).toBe(expected);
+        const result = getFriendlyErrorMessage(input);
+        expect(result.message).toBe(expected.message);
+        expect(result.type).toBe(expected.type);
       });
     });
     
-    it("should not have any hardcoded strings that differ from constants", () => {
-      // This is implicitly checked by the previous test, but we can also check that all values in ERROR_MESSAGES are used
-      const allMessages = Object.values(ERROR_MESSAGES);
-      allMessages.forEach(msg => {
-        expect(typeof msg).toBe("string");
-        expect(msg.length).toBeGreaterThan(0);
-      });
-    });
-
-    it("should have each error message used exactly once in the utility function", () => {
-      // This test ensures that we don't have unused constants or duplicate logic
-      // Note: In a real environment, we'd use static analysis or dynamic checks.
-      // Here we check that all keys in ERROR_MESSAGES correspond to a branch in getFriendlyErrorMessage
-      const keys = Object.keys(ERROR_MESSAGES);
+    it("should have each error message configuration used at least once in tests", () => {
+      const allExpectedMessages = scenarios.map(s => s.expected.message);
+      const constantMessages = Object.values(ERROR_MESSAGES).map(m => m.message);
       
-      // We know all keys are used based on the scenarios mapping, but let's be explicit
-      const usedInScenarios = scenarios.map(s => s.expected);
-      keys.forEach(key => {
-        const expectedValue = ERROR_MESSAGES[key as keyof typeof ERROR_MESSAGES];
-        const occurrences = usedInScenarios.filter(val => val === expectedValue).length;
-        
-        // Every constant should be mapped to at least one scenario (testing its usage)
-        expect(occurrences).toBeGreaterThanOrEqual(1);
+      constantMessages.forEach(msg => {
+        expect(allExpectedMessages).toContain(msg);
       });
     });
   });
