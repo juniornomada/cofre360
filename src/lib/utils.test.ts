@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { getFriendlyErrorMessage } from "./utils";
-import { ERROR_MESSAGES } from "./constants";
+import { ERROR_MESSAGES, ERROR_CODE_MAPPINGS } from "./constants";
 
 describe("getFriendlyErrorMessage", () => {
   it("should return a structured object for DESTINATION_EMAIL_IN_USE", () => {
