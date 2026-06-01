@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
-import { TrendingUp, Eye, EyeOff, Bell, Pencil, Trash2, CalendarIcon, Loader2, Clock, Wallet, ChevronRight, ArrowUpRight, ArrowDownRight, AlertTriangle, Sparkles, Flame, Plus, Minus, ArrowLeftRight, Layers, GripVertical, Filter, FilterX, LogOut } from "lucide-react";
+import { TrendingUp, Eye, EyeOff, Bell, Pencil, Trash2, CalendarIcon, Loader2, Clock, Wallet, ChevronRight, ArrowUpRight, ArrowDownRight, AlertTriangle, Sparkles, Flame, Plus, Minus, ArrowLeftRight, Layers, GripVertical, Filter, FilterX, LogOut, CreditCard } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { TransactionItem } from "@/components/TransactionItem";
 import { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense } from "react";
@@ -169,9 +169,9 @@ function Dashboard() {
 
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
-  const [accountBalances, setAccountBalances] = useState<{ id: string; name: string; icon: string | null; color: string | null; balance: number }[]>([]);
+  const [accountBalances, setAccountBalances] = useState<{ id: string; name: string; icon: string | null; color: string | null; balance: number; is_visible?: boolean }[]>([]);
   const [cardOptions, setCardOptions] = useState<string[]>(["Nenhum"]);
-  const [allCards, setAllCards] = useState<{ id: string; name: string; emoji: string | null; color: string | null }[]>([]);
+  const [allCards, setAllCards] = useState<{ id: string; name: string; emoji: string | null; color: string | null; is_visible?: boolean }[]>([]);
   const [loading, setLoading] = useState(true);
   const [editTx, setEditTx] = useState<Transaction | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
@@ -180,6 +180,8 @@ function Dashboard() {
   const [deleteScope, setDeleteScope] = useState<"single" | "future" | "all">("single");
   const [pendingReminders, setPendingReminders] = useState<{ id: string; title: string | null; icon: string | null; due_date: string | null; amount: number | null; type: string | null; bank_account_id: string | null; card_id: string | null }[]>([]);
   const [goals, setGoals] = useState<{ id: string; name: string | null; icon: string | null; current_amount: number | null; target_amount: number | null }[]>([]);
+  const [cardTotals, setCardTotals] = useState<Record<string, number>>({});
+  const [cardPayments, setCardPayments] = useState<Record<string, number>>({});
 
   const [greeting, setGreeting] = useState<string>("");
 
@@ -275,13 +277,17 @@ function Dashboard() {
       cardsRes,
       remsRes,
       glsRes,
+      txRes,
+      paymentsRes,
     ] = await Promise.all([
       supabase.from("transactions").select(TX_FIELDS).eq("user_id", session.user.id).order("created_at", { ascending: false }).limit(20),
       supabase.from("transactions").select("type, amount, date, card, bank_account_id, category").eq("user_id", session.user.id),
       supabase.from("bank_accounts").select("id, name, icon, color, balance, is_visible, sort_order").eq("user_id", session.user.id).order("sort_order", { ascending: true }).order("created_at", { ascending: true }),
-      supabase.from("cards").select("id, name, emoji, color").eq("user_id", session.user.id).order("created_at", { ascending: true }),
+      supabase.from("cards").select("id, name, emoji, color, is_visible").eq("user_id", session.user.id).order("sort_order", { ascending: true }).order("created_at", { ascending: true }),
       supabase.from("reminders").select("id, title, icon, due_date, amount, type, bank_account_id, card_id").eq("user_id", session.user.id).eq("is_completed", false).order("due_date", { ascending: true }).limit(3),
       supabase.from("goals").select("id, name, icon, current_amount, target_amount").eq("user_id", session.user.id),
+      supabase.from("transactions").select("card, amount").eq("user_id", session.user.id).not("card", "is", null),
+      supabase.from("card_payments").select("card_id, amount").eq("user_id", session.user.id),
     ]);
 
     if (rawRecentRes.error) throw rawRecentRes.error;
@@ -297,11 +303,27 @@ function Dashboard() {
     const cards = cardsRes.data;
     const rems = remsRes.data;
     const gls = glsRes.data;
+    const txTotals = txRes.data;
+    const payments = paymentsRes.data;
 
     setCardOptions(["Nenhum", ...((cards || []).map((c: any) => c.name))]);
     if (cards) setAllCards(cards as any);
     if (rems) setPendingReminders(rems as any);
     if (gls) setGoals(gls as any);
+    if (txTotals) {
+      const totals: Record<string, number> = {};
+      for (const tx of txTotals) {
+        if (tx.card) totals[tx.card] = (totals[tx.card] || 0) + Number(tx.amount);
+      }
+      setCardTotals(totals);
+    }
+    if (payments) {
+      const paid: Record<string, number> = {};
+      for (const p of payments) {
+        paid[p.card_id] = (paid[p.card_id] || 0) + Number(p.amount);
+      }
+      setCardPayments(paid);
+    }
 
     const acctNameById: Record<string, string> = {};
     for (const a of accts || []) acctNameById[a.id] = a.name;
@@ -352,11 +374,12 @@ function Dashboard() {
         if (tx.type === "income") incMap[id] = (incMap[id] || 0) + Number(tx.amount);
         else expMap[id] = (expMap[id] || 0) + Number(tx.amount);
       }
-      setAccountBalances(accts.filter(a => a.is_visible).map(a => ({
+      setAccountBalances(accts.map(a => ({
         id: a.id,
         name: a.name,
         icon: a.icon,
         color: a.color,
+        is_visible: a.is_visible,
         balance: Number(a.balance) + (incMap[a.id] || 0) - (expMap[a.id] || 0),
       })));
     }
@@ -744,8 +767,9 @@ function Dashboard() {
   const currentMonthName = new Date().toLocaleDateString("pt-BR", { month: "long" });
 
   const displayAccounts = useMemo(() => {
-    if (!hideZeroBalances) return accountBalances;
-    return accountBalances.filter(acc => Math.abs(acc.balance) >= 0.01);
+    const visible = accountBalances.filter(a => a.is_visible !== false);
+    if (!hideZeroBalances) return visible;
+    return visible.filter(acc => Math.abs(acc.balance) >= 0.01);
   }, [accountBalances, hideZeroBalances]);
 
   return (
@@ -982,6 +1006,57 @@ function Dashboard() {
       </div>
 
 
+
+      {/* Credit Cards Summary */}
+      {allCards.filter(c => c.is_visible !== false).length > 0 && (
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-between mb-1">
+            <h2 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+              <CreditCard className="h-4 w-4 text-primary" />
+              Cartões de crédito
+            </h2>
+            <Link to="/cards" className="text-[10px] font-medium text-primary flex items-center gap-0.5">
+              Gerenciar <ChevronRight className="h-3 w-3" />
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {allCards.filter(c => c.is_visible !== false).map((card) => {
+              const total = cardTotals[card.name] || 0;
+              const paid = cardPayments[card.id] || 0;
+              const remaining = Math.max(0, total - paid);
+              
+              return (
+                <Link 
+                  key={card.id} 
+                  to="/cards" 
+                  className="interactive-card flex items-center justify-between p-3 rounded-2xl bg-card border border-border/30 overflow-hidden relative"
+                >
+                  <div className={cn("absolute inset-y-0 left-0 w-1 bg-gradient-to-b", card.color || "from-primary to-primary/60")} />
+                  <div className="flex items-center gap-3">
+                    <div className={cn("flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br text-lg", card.color || "from-primary/20 to-primary/10")}>
+                      {card.emoji || "💳"}
+                    </div>
+                    <div className="flex flex-col">
+                      <p className="text-xs font-bold text-foreground truncate max-w-[120px]">{card.name}</p>
+                      <p className="text-[10px] text-muted-foreground">Fatura atual</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-bold text-destructive tabular-nums">
+                      {balanceVisible ? `R$ ${fmt(remaining)}` : "R$ •••"}
+                    </p>
+                    {paid > 0 && (
+                      <p className="text-[9px] text-primary font-medium">
+                        Pago: R$ {fmtShort(paid)}
+                      </p>
+                    )}
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Recent Transactions — moved to right below balance */}
       <div>
