@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils";
 import { getCategoryDisplay, getCategoryIcon } from "@/lib/categories";
 import { restoreAccents } from "@/lib/restore-accents";
-import { CreditCard, Landmark, ArrowLeftRight, Layers, Pencil, Trash2, Eye, EyeOff } from "lucide-react";
+import { CreditCard, Landmark, ArrowLeftRight, Layers, Pencil, Trash2, Eye, EyeOff, Copy } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 const MONTHS_PT_ABBR = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
@@ -42,6 +42,7 @@ interface TransactionItemProps {
   style?: React.CSSProperties;
   onEdit?: () => void;
   onDelete?: () => void;
+  onCopy?: () => void;
   
   is_visible?: boolean;
   amountVisible?: boolean;
@@ -50,7 +51,7 @@ interface TransactionItemProps {
 export function TransactionItem({ 
   icon, name, category, date, amount, type, card, cardBrand, 
   bank_account_id, isTransferPair, transferFromName, transferToName, 
-  installment_number, total_installments, style, onEdit, onDelete, amountVisible = true
+  installment_number, total_installments, style, onEdit, onDelete, onCopy, amountVisible = true
 }: TransactionItemProps) {
   const isInstallment = !!total_installments && total_installments > 1 && !!installment_number;
   // Strip the trailing "(n/m)" from the displayed name since we'll show it as a badge.
@@ -66,7 +67,7 @@ export function TransactionItem({
     <div
       onClick={onEdit}
       className={cn(
-        "interactive-card flex items-center gap-3 rounded-xl p-3 cursor-pointer bg-card border border-border/30 transition-all group/item relative overflow-hidden active:scale-[0.98] sm:pr-3 pr-[48px]"
+        "interactive-card flex items-center gap-3 rounded-xl p-3 cursor-pointer bg-card border border-border/30 transition-all group/item relative overflow-hidden active:scale-[0.98] sm:pr-3 pr-[88px]"
       )}
       style={style}
     >
@@ -77,6 +78,16 @@ export function TransactionItem({
             role="group"
             aria-label="Ações da transação"
           >
+            {onCopy && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onCopy(); }}
+                className="p-1.5 rounded-full hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary focus-visible:ring-offset-1"
+                title="Copiar para nova transação"
+                aria-label="Copiar"
+              >
+                <Copy className="h-4 w-4" />
+              </button>
+            )}
             {onDelete && (
               <button
                 onClick={(e) => { e.stopPropagation(); onDelete(); }}
