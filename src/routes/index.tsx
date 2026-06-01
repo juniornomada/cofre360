@@ -357,6 +357,7 @@ function Dashboard() {
         name: a.name,
         icon: a.icon,
         color: a.color,
+        is_visible: a.is_visible,
         balance: Number(a.balance) + (incMap[a.id] || 0) - (expMap[a.id] || 0),
       })));
     }
@@ -744,8 +745,9 @@ function Dashboard() {
   const currentMonthName = new Date().toLocaleDateString("pt-BR", { month: "long" });
 
   const displayAccounts = useMemo(() => {
-    if (!hideZeroBalances) return accountBalances;
-    return accountBalances.filter(acc => Math.abs(acc.balance) >= 0.01);
+    const visible = accountBalances.filter(a => a.is_visible !== false);
+    if (!hideZeroBalances) return visible;
+    return visible.filter(acc => Math.abs(acc.balance) >= 0.01);
   }, [accountBalances, hideZeroBalances]);
 
   return (
@@ -982,6 +984,57 @@ function Dashboard() {
       </div>
 
 
+
+      {/* Credit Cards Summary */}
+      {allCards.filter(c => c.is_visible !== false).length > 0 && (
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-between mb-1">
+            <h2 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+              <CreditCard className="h-4 w-4 text-primary" />
+              Cartões de crédito
+            </h2>
+            <Link to="/cards" className="text-[10px] font-medium text-primary flex items-center gap-0.5">
+              Gerenciar <ChevronRight className="h-3 w-3" />
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {allCards.filter(c => c.is_visible !== false).map((card) => {
+              const total = cardTotals[card.name] || 0;
+              const paid = cardPayments[card.id] || 0;
+              const remaining = Math.max(0, total - paid);
+              
+              return (
+                <Link 
+                  key={card.id} 
+                  to="/cards" 
+                  className="interactive-card flex items-center justify-between p-3 rounded-2xl bg-card border border-border/30 overflow-hidden relative"
+                >
+                  <div className={cn("absolute inset-y-0 left-0 w-1 bg-gradient-to-b", card.color || "from-primary to-primary/60")} />
+                  <div className="flex items-center gap-3">
+                    <div className={cn("flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br text-lg", card.color || "from-primary/20 to-primary/10")}>
+                      {card.emoji || "💳"}
+                    </div>
+                    <div className="flex flex-col">
+                      <p className="text-xs font-bold text-foreground truncate max-w-[120px]">{card.name}</p>
+                      <p className="text-[10px] text-muted-foreground">Fatura atual</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-bold text-destructive tabular-nums">
+                      {balanceVisible ? `R$ ${fmt(remaining)}` : "R$ •••"}
+                    </p>
+                    {paid > 0 && (
+                      <p className="text-[9px] text-primary font-medium">
+                        Pago: R$ {fmtShort(paid)}
+                      </p>
+                    )}
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Recent Transactions — moved to right below balance */}
       <div>
