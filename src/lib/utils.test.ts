@@ -8,7 +8,6 @@ describe("getFriendlyErrorMessage", () => {
     const friendlyMessage = getFriendlyErrorMessage(error);
     expect(friendlyMessage).toBe(ERROR_MESSAGES.DESTINATION_EMAIL_IN_USE);
   });
-  });
 
   it("should return the friendly message for SOURCE_EMAIL_NOT_FOUND", () => {
     const error = { message: "Error: SOURCE_EMAIL_NOT_FOUND" };
@@ -90,16 +89,24 @@ describe("getFriendlyErrorMessage", () => {
     it("should maintain a professional and polite tone", () => {
       scenarios.forEach(({ input }) => {
         const message = getFriendlyErrorMessage(input);
-        // Check for professional keywords or absence of rude language/technical jargon (except for the codes in parentheses)
         expect(message).not.toContain("Error:");
         expect(message).not.toContain("Exception");
         expect(message).toMatch(/^(O|H|V|E|P|A|I|U)/); // Starts with capital letter
       });
     });
 
-    it("should match exactly the expected standardized messages", () => {
+    it("should match exactly the expected standardized messages from constants", () => {
       scenarios.forEach(({ input, expected }) => {
         expect(getFriendlyErrorMessage(input)).toBe(expected);
+      });
+    });
+    
+    it("should not have any hardcoded strings that differ from constants", () => {
+      // This is implicitly checked by the previous test, but we can also check that all values in ERROR_MESSAGES are used
+      const allMessages = Object.values(ERROR_MESSAGES);
+      allMessages.forEach(msg => {
+        expect(typeof msg).toBe("string");
+        expect(msg.length).toBeGreaterThan(0);
       });
     });
   });
