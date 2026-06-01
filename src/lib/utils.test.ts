@@ -89,5 +89,19 @@ describe("getFriendlyErrorMessage", () => {
         expect(allExpectedMessages).toContain(msg);
       });
     });
+
+    it("should ensure every mapped error code has a corresponding message in ERROR_MESSAGES", () => {
+      ERROR_CODE_MAPPINGS.forEach(mapping => {
+        expect(ERROR_MESSAGES[mapping.key], `Mapping key "${mapping.key}" for pattern "${mapping.pattern}" must exist in ERROR_MESSAGES`).toBeDefined();
+        expect(ERROR_MESSAGES[mapping.key].message).toBeDefined();
+        expect(ERROR_MESSAGES[mapping.key].type).toBeDefined();
+      });
+    });
+
+    it("should have no duplicate patterns in ERROR_CODE_MAPPINGS", () => {
+      const patterns = ERROR_CODE_MAPPINGS.map(m => m.pattern);
+      const uniquePatterns = new Set(patterns);
+      expect(patterns.length).toBe(uniquePatterns.size);
+    });
   });
 });
