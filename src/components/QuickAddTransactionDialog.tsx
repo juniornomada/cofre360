@@ -14,6 +14,7 @@ import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { getFriendlyErrorMessage } from "@/lib/utils";
 
 export type QuickAddInitialType = "expense" | "income" | "transfer";
 
