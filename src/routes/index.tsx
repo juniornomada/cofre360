@@ -205,6 +205,7 @@ function Dashboard() {
     const emptyStateRef = useRef<HTMLDivElement>(null);
     const transactionsListRef = useRef<HTMLDivElement>(null);
   const [quickAddType, setQuickAddType] = useState<QuickAddInitialType>("expense");
+  const [copyTxData, setCopyTxData] = useState<{ name: string; amount: number; category: string; icon: string; card: string | null; bank_account_id: string | null } | null>(null);
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [editInstallmentMode, setEditInstallmentMode] = useState<"divide" | "fixed">("divide");
   const [editInstallmentFixedValue, setEditInstallmentFixedValue] = useState(0);
@@ -253,8 +254,9 @@ function Dashboard() {
     }
   };
 
-  const openQuickAdd = (t: QuickAddInitialType) => {
+  const openQuickAdd = (t: QuickAddInitialType, copyData: typeof copyTxData = null) => {
     setQuickAddType(t);
+    setCopyTxData(copyData);
     setPopoverOpen(false);
     setQuickAddOpen(true);
   };
@@ -526,6 +528,21 @@ function Dashboard() {
       setEditTx(null);
       fetchTransactions();
     }
+  };
+
+  const handleCopy = (tx: Transaction) => {
+    // Strip installment suffix for the copy
+    const cleanName = stripInstallmentSuffix(tx.name);
+    
+    openQuickAdd(tx.type as QuickAddInitialType, {
+      name: cleanName,
+      amount: tx.amount,
+      category: tx.category,
+      icon: tx.icon,
+      card: tx.card || null,
+      bank_account_id: tx.bank_account_id || null,
+    });
+    toast.success("Dados copiados para nova transação!");
   };
 
   const handleDeleteConfirm = async () => {
@@ -1147,6 +1164,7 @@ function Dashboard() {
                         style={{ animationDelay: `${i * 40}ms` }} 
                         onEdit={() => handleEdit(tx)}
                         onDelete={() => { setDeleteTarget(tx); setDeleteScope("single"); setShowDeleteDialog(true); }}
+                        onCopy={() => handleCopy(tx)}
                         
                       />
                     </div>
@@ -1607,6 +1625,7 @@ function Dashboard() {
             open={quickAddOpen}
             onOpenChange={setQuickAddOpen}
             initialType={quickAddType}
+            copyData={copyTxData}
             onSuccess={() => { fetchTransactions(); }}
           />
         )}

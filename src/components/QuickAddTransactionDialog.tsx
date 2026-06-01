@@ -26,6 +26,14 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   initialType?: QuickAddInitialType;
   onSuccess?: () => void;
+  copyData?: {
+    name: string;
+    amount: number;
+    category: string;
+    icon: string;
+    card: string | null;
+    bank_account_id: string | null;
+  } | null;
 }
 
 interface NewTx {
@@ -39,7 +47,7 @@ interface NewTx {
   bank_account_id: string | null;
 }
 
-export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "expense", onSuccess }: Props) {
+export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "expense", onSuccess, copyData }: Props) {
   const todayFormatted = format(new Date(), "dd MMM", { locale: ptBR });
 
   const [bankAccounts, setBankAccounts] = useState<BankAccountOption[]>([]);
@@ -135,7 +143,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
      }
     fetchData();
     fetchHistory();
-    setIsTransfer(initialType === "transfer");
+    setIsTransfer(copyData ? (copyData.category === "Transferência" || copyData.category === "Transferências" || copyData.category.startsWith("Transferências >")) : initialType === "transfer");
     setTransferFromId("");
     setTransferToId("");
     setInstallmentEnabled(false);
@@ -143,15 +151,21 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
     setInstallmentMode("divide");
     setInstallmentFixedValue(0);
     setNewTx({
-      icon: initialType === "income" ? "💰" : "🍔",
-      name: "",
-      category: initialType === "income" ? "Renda > Salário" : "Alimentação > Outros",
+      icon: copyData ? copyData.icon : (initialType === "income" ? "💰" : "🍔"),
+      name: copyData ? copyData.name : "",
+      category: copyData ? copyData.category : (initialType === "income" ? "Renda > Salário" : "Alimentação > Outros"),
       date: format(new Date(), "dd MMM", { locale: ptBR }),
-      amount: 0,
-      type: initialType === "income" ? "income" : "expense",
-      card: null,
-      bank_account_id: null,
+      amount: copyData ? copyData.amount : 0,
+      type: copyData ? (copyData.category.startsWith("Receita") || (copyData.category !== "Transferência" && !copyData.category.startsWith("Transferências") && !copyData.category.startsWith("Alimentação") && initialType === "income") ? "income" : "expense") : (initialType === "income" ? "income" : "expense"),
+      card: copyData ? copyData.card : null,
+      bank_account_id: copyData ? copyData.bank_account_id : null,
     });
+    
+    // Fix type logic for copyData more robustly
+    if (copyData) {
+      const isInc = copyData.category.startsWith("Receita") || (initialType === "income" && !copyData.category.startsWith("Transferência"));
+      setNewTx(prev => ({ ...prev, type: isInc ? "income" : "expense" }));
+    }
   }, [open, initialType, fetchData, fetchHistory]);
 
   const [confirmInstallmentDiff, setConfirmInstallmentDiff] = useState(false);

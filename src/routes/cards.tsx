@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { SmartLink as Link } from "@/components/SmartLink";
-import { ArrowLeft, Plus, CreditCard, Trash2, X, Check, Loader2, Wallet, Landmark, ChevronLeft, ChevronRight, Receipt, FileUp, GripVertical, Layers, Pencil, MoreVertical, Eye, EyeOff } from "lucide-react";
+import { ArrowLeft, Plus, CreditCard, Trash2, X, Check, Loader2, Wallet, Landmark, ChevronLeft, ChevronRight, Receipt, FileUp, GripVertical, Layers, Pencil, MoreVertical, Eye, EyeOff, Copy } from "lucide-react";
 import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 
@@ -66,7 +66,8 @@ type CardTransaction = {
   id: string;
   name: string;
   icon: string | null;
-  category: string | null;
+  category: string;
+  card?: string | null;
   date: string;
   amount: number;
   type: string;
@@ -1119,6 +1120,17 @@ function CardsPage() {
                             -R$ {Number(tx.amount).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                           </span>
                           <div className="flex items-center gap-1 opacity-0 group-hover/card-tx-row:opacity-100 transition-all duration-200 translate-x-2 group-hover/card-tx-row:translate-x-0">
+                            <button
+                              onClick={() => {
+                                const cleanName = tx.name.replace(/\s*\(\s*\d{1,2}\s*\/\s*\d{1,2}\s*\)\s*$/, "").trim();
+                                // Navigate to transactions with parameters to pre-fill the form
+                                window.location.href = `/transactions?action=add&name=${encodeURIComponent(cleanName)}&amount=${tx.amount}&category=${encodeURIComponent(tx.category || "")}&icon=${encodeURIComponent(tx.icon || "")}&card=${encodeURIComponent(invoiceCard?.name || "")}`;
+                              }}
+                              className="p-1.5 rounded-full bg-accent/50 hover:bg-accent text-muted-foreground hover:text-primary transition-colors"
+                              title="Copiar para nova transação"
+                            >
+                              <Copy className="h-3.5 w-4" />
+                            </button>
                             <button
                               onClick={() => openInstallmentDialog(tx)}
                               className="p-1.5 rounded-full bg-accent/50 hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
