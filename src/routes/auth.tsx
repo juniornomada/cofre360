@@ -50,7 +50,7 @@ function AuthPage() {
         toast.success("Login realizado com sucesso!");
       }
     } catch (error: any) {
-      toast.error(error.message);
+      toast.error(getFriendlyErrorMessage(error));
     } finally {
       setLoading(false);
     }
