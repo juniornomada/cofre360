@@ -998,7 +998,10 @@ export function TransactionsPage() {
                       type="number"
                       min={1}
                       value={editTx.installment_number ?? 1}
-                      onChange={e => setEditTx({ ...editTx, installment_number: Math.max(1, parseInt(e.target.value) || 1) })}
+                      onChange={e => {
+                        const val = e.target.value;
+                        setEditTx({ ...editTx, installment_number: val === "" ? null : Math.max(1, parseInt(val) || 1) });
+                      }}
                       className="w-full rounded-lg bg-background px-2 py-1.5 text-sm text-foreground outline-none"
                     />
                   </div>
