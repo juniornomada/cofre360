@@ -1625,6 +1625,7 @@ function Dashboard() {
             open={quickAddOpen}
             onOpenChange={setQuickAddOpen}
             initialType={quickAddType}
+            copyData={copyTxData}
             onSuccess={() => { fetchTransactions(); }}
           />
         )}
