@@ -171,7 +171,7 @@ function Dashboard() {
   const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
   const [accountBalances, setAccountBalances] = useState<{ id: string; name: string; icon: string | null; color: string | null; balance: number; is_visible?: boolean }[]>([]);
   const [cardOptions, setCardOptions] = useState<string[]>(["Nenhum"]);
-  const [allCards, setAllCards] = useState<{ id: string; name: string; emoji: string | null; color: string | null; is_visible?: boolean }[]>([]);
+  const [allCards, setAllCards] = useState<{ id: string; name: string; emoji: string | null; color: string | null; is_visible?: boolean; closing_day?: number; due_day?: number }[]>([]);
   const [loading, setLoading] = useState(true);
   const [editTx, setEditTx] = useState<Transaction | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
@@ -283,7 +283,7 @@ function Dashboard() {
       supabase.from("transactions").select(TX_FIELDS).eq("user_id", session.user.id).order("created_at", { ascending: false }).limit(20),
       supabase.from("transactions").select("type, amount, date, card, bank_account_id, category").eq("user_id", session.user.id),
       supabase.from("bank_accounts").select("id, name, icon, color, balance, is_visible, sort_order").eq("user_id", session.user.id).order("sort_order", { ascending: true }).order("created_at", { ascending: true }),
-      supabase.from("cards").select("id, name, emoji, color, is_visible").eq("user_id", session.user.id).order("sort_order", { ascending: true }).order("created_at", { ascending: true }),
+      supabase.from("cards").select("id, name, emoji, color, is_visible, closing_day, due_day").eq("user_id", session.user.id).order("sort_order", { ascending: true }).order("created_at", { ascending: true }),
       supabase.from("reminders").select("id, title, icon, due_date, amount, type, bank_account_id, card_id").eq("user_id", session.user.id).eq("is_completed", false).order("due_date", { ascending: true }).limit(3),
       supabase.from("goals").select("id, name, icon, current_amount, target_amount").eq("user_id", session.user.id),
       supabase.from("transactions").select("card, amount").eq("user_id", session.user.id).not("card", "is", null),
@@ -1058,6 +1058,21 @@ function Dashboard() {
               const paid = cardPayments[card.id] || 0;
               const remaining = Math.max(0, total - paid);
               
+              const today = new Date();
+              const todayDay = today.getDate();
+              // Compute due date of current invoice
+              let currentDue = new Date(today.getFullYear(), today.getMonth(), card.due_day || 1);
+              
+              const isPaid = total > 0 && remaining === 0;
+              
+              // If invoice is already paid OR it's already closed/near due for next month
+              let displayDue = currentDue;
+              if (isPaid || (todayDay > (card.due_day || 1))) {
+                displayDue = new Date(today.getFullYear(), today.getMonth() + 1, card.due_day || 1);
+              }
+
+              const formatDueDate = (d: Date) => format(d, "dd/MM");
+
               return (
                 <Link 
                   key={card.id} 
@@ -1071,17 +1086,23 @@ function Dashboard() {
                     </div>
                     <div className="flex flex-col">
                       <p className="text-xs font-bold text-foreground truncate max-w-[120px]">{card.name}</p>
-                      <p className="text-[10px] text-muted-foreground">Fatura atual</p>
+                      <div className="flex items-center gap-1">
+                        <p className="text-[10px] text-muted-foreground">{isPaid ? "Próx. fatura" : "Fatura atual"}</p>
+                        <span className="text-[9px] font-medium bg-accent/50 px-1 rounded text-muted-foreground">Venc. {formatDueDate(displayDue)}</span>
+                      </div>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-bold text-destructive tabular-nums">
+                    <p className={cn("text-sm font-bold tabular-nums", remaining > 0 ? "text-destructive" : "text-primary")}>
                       {balanceVisible ? `R$ ${fmt(remaining)}` : "R$ •••"}
                     </p>
-                    {paid > 0 && (
+                    {paid > 0 && remaining > 0 && (
                       <p className="text-[9px] text-primary font-medium">
                         Pago: R$ {fmtShort(paid)}
                       </p>
+                    )}
+                    {remaining === 0 && (
+                      <p className="text-[9px] text-primary font-medium">Fatura paga</p>
                     )}
                   </div>
                 </Link>
