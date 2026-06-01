@@ -238,7 +238,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
 
       console.log("QuickAdd: Standard transaction validation", { bank_account_id: newTx.bank_account_id, card: newTx.card });
       if (!newTx.bank_account_id && !newTx.card) {
-        setShowNoSelectionAlert(true);
+        toast.error("Por favor, selecione uma conta ou cartão.");
         setIsSubmitting(false);
         return;
       }
