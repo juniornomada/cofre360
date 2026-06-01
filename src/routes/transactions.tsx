@@ -882,6 +882,7 @@ export function TransactionsPage() {
               <div className="relative">
                 <label className="text-xs text-muted-foreground mb-1 block">Nome</label>
                 <input
+                  autoFocus={false}
                   value={editTx.name}
                   onChange={e => {
                     setEditTx({ ...editTx, name: e.target.value });

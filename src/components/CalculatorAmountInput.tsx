@@ -104,6 +104,11 @@ export function CalculatorAmountInput({ value, onChange, className, autoFocus, o
         onClick={handleClick}
         onSelect={handleSelect}
         autoFocus={autoFocus}
+        onFocus={(e) => {
+          if (autoFocus) {
+            handleFocus(e);
+          }
+        }}
 
         className={cn(
           "text-right tabular-nums font-bold text-base text-primary h-[44px] bg-primary/5 border-primary/20 shadow-inner",
