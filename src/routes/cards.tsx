@@ -1139,7 +1139,7 @@ function CardsPage() {
 
       {/* Add card dialog (new cards only) */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-sm mx-auto rounded-2xl">
+        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-sm mx-auto rounded-2xl p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle>Novo cartão</DialogTitle>
           </DialogHeader>
@@ -1209,11 +1209,11 @@ function CardsPage() {
 
       {/* Pay invoice dialog */}
       <Dialog open={payDialogOpen} onOpenChange={setPayDialogOpen}>
-        <DialogContent className="max-w-sm mx-auto rounded-2xl">
+        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-sm mx-auto rounded-2xl p-4 sm:p-6">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Wallet className="h-5 w-5 text-primary" />
-              Pagar fatura — {payingCard?.name}
+            <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <Wallet className="h-5 w-5 text-primary shrink-0" />
+              <span className="truncate">Pagar fatura — {payingCard?.name}</span>
             </DialogTitle>
           </DialogHeader>
           {payingCard && (
@@ -1339,7 +1339,7 @@ function CardsPage() {
 
       {/* Installment edit dialog */}
       <Dialog open={installmentDialogOpen} onOpenChange={setInstallmentDialogOpen}>
-        <DialogContent className="max-w-sm mx-auto rounded-2xl">
+        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-sm mx-auto rounded-2xl p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-base">
               <Layers className="h-4 w-4 text-primary" />
