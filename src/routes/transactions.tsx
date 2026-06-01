@@ -822,7 +822,6 @@ export function TransactionsPage() {
                   style={{ animationDelay: `${i * 40}ms` }} 
                   onEdit={selectionMode ? undefined : () => handleEdit(tx)}
                   onDelete={selectionMode ? undefined : () => { setDeleteTarget(tx); setDeleteScope("single"); setShowDeleteDialog(true); }}
-                  onCopy={selectionMode ? undefined : () => handleCopy(tx)}
                   
                 />
               </div>

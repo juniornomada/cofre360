@@ -1168,7 +1168,6 @@ function Dashboard() {
                         style={{ animationDelay: `${i * 40}ms` }} 
                         onEdit={() => handleEdit(tx)}
                         onDelete={() => { setDeleteTarget(tx); setDeleteScope("single"); setShowDeleteDialog(true); }}
-                        onCopy={() => handleCopy(tx)}
                         
                       />
                     </div>
