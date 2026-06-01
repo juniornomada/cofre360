@@ -394,7 +394,13 @@ function Dashboard() {
   // Kept as separate refresh handlers (used after edits/deletes).
   const fetchTransactions = fetchAll;
 
-  useEffect(() => { fetchAll(); }, [fetchAll]);
+  useEffect(() => {
+    fetchAll();
+    // Re-fetch when the window regains focus to avoid stale visibility data
+    const onFocus = () => fetchAll();
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [fetchAll]);
 
   const handleToggleVisibility = async (tx: Transaction) => {
     try {

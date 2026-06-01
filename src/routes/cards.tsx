@@ -367,7 +367,13 @@ function CardsPage() {
     }
   }, []);
 
-  useEffect(() => { fetchAll(); }, [fetchAll]);
+  useEffect(() => {
+    fetchAll();
+    // Re-fetch when the window regains focus to avoid stale data
+    const onFocus = () => fetchAll();
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [fetchAll]);
 
   const searchParams = Route.useSearch();
   useEffect(() => {

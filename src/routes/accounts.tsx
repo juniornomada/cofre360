@@ -407,7 +407,13 @@ function AccountsPage() {
     }
   };
 
-  useEffect(() => { fetchAccounts(); }, [fetchAccounts]);
+  useEffect(() => {
+    fetchAccounts();
+    // Re-fetch when the window regains focus
+    const onFocus = () => fetchAccounts();
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [fetchAccounts]);
 
   const searchParams = Route.useSearch();
   useEffect(() => {
