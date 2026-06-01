@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { CalculatorAmountInput } from "@/components/CalculatorAmountInput";
 import { CardBrand, brandPresets } from "@/components/CardBrand";
+import { BankLogo, bankPresets } from "@/components/BankLogo";
 import { cn } from "@/lib/utils";
 import {
   DndContext,
