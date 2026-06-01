@@ -306,7 +306,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
     toast.success("Transação adicionada com sucesso!");
     } catch (error: any) {
       console.error("Error adding transaction:", error);
-      toast.error("Erro ao adicionar transação: " + (error.message || "Erro desconhecido"));
+      toast.error("Erro ao adicionar transação: " + getFriendlyErrorMessage(error));
     } finally {
       setIsSubmitting(false);
     }
