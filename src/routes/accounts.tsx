@@ -471,7 +471,7 @@ function AccountsPage() {
     if (!valid || isSubmitting) return;
 
     setIsSubmitting(true);
-    try {
+    const promise = (async () => {
       const payload = {
         id: crypto.randomUUID(),
         ...valid,
@@ -481,11 +481,17 @@ function AccountsPage() {
       const { error } = await supabase.from("bank_accounts").insert(payload);
       if (error) throw error;
       setDialogOpen(false);
-      fetchAccounts();
-      toast.success("Conta adicionada com sucesso");
-    } catch (error: any) {
-      console.error("Error adding account:", error);
-      toast.error("Erro ao adicionar conta: " + (error.message || "Erro desconhecido"));
+      await fetchAccounts();
+    })();
+
+    toast.promise(promise, {
+      loading: "Adicionando conta...",
+      success: "Conta adicionada com sucesso!",
+      error: (err) => `Erro ao adicionar conta: ${err.message || err}`,
+    });
+
+    try {
+      await promise;
     } finally {
       setIsSubmitting(false);
     }
