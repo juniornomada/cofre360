@@ -55,7 +55,7 @@ describe('BottomNavBar Accessibility', () => {
 
   it('focus outline is visible and meets focus standards (FE-001 to FE-003)', () => {
     renderWithTheme('light');
-    const firstLink = screen.getAllByTestId('nav-link')[0];
+    const firstLink = screen.getByTestId('nav-link-início');
     
     // Simulate focus
     firstLink.focus();
