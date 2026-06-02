@@ -794,12 +794,13 @@ function AccountsPage() {
              </div>
              <div className="space-y-1.5">
                <Label className="text-xs text-muted-foreground">Nome da conta</Label>
-               <Input
-                 value={editingAccount ? editName : formName}
-                 onChange={(e) => editingAccount ? setEditName(e.target.value) : setFormName(e.target.value)}
-                 placeholder="Ex: Banco do Brasil"
-                 className="rounded-xl"
-               />
+                <Input
+                  value={editingAccount ? editName : formName}
+                  onChange={(e) => editingAccount ? setEditName(e.target.value) : setFormName(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && (editingAccount ? saveEdit(editingAccount.id) : handleAdd())}
+                  placeholder="Ex: Banco do Brasil"
+                  className="rounded-xl"
+                />
              </div>
               <div className="space-y-1.5">
                 <Label className="text-xs text-muted-foreground">Saldo Inicial (R$)</Label>
