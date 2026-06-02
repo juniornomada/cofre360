@@ -1039,6 +1039,7 @@ export function TransactionsPage() {
                   onChange={(v) => {
                     setEditTx({ ...editTx, amount: v });
                   }}  
+                  onEnter={handleSaveEdit}
                   autoFocus={false}
                 />
               </div>
@@ -1128,6 +1129,7 @@ export function TransactionsPage() {
                         const val = e.target.value;
                         setEditTx({ ...editTx, installment_number: val === "" ? null : Math.max(1, parseInt(val) || 1) });
                       }}
+                      onKeyDown={e => e.key === "Enter" && handleSaveEdit()}
                       className="w-full rounded-lg bg-background px-2 py-1.5 text-sm text-foreground outline-none"
                     />
                   </div>
@@ -1160,6 +1162,7 @@ export function TransactionsPage() {
                           const val = e.target.value;
                           setEditTx({ ...editTx, total_installments: val === "" ? null : Math.max(1, parseInt(val) || 1) });
                         }}
+                        onKeyDown={e => e.key === "Enter" && handleSaveEdit()}
                         className="w-full rounded-lg bg-background px-2 py-1.5 text-sm text-foreground outline-none border border-border focus:border-primary/50"
                       />
                     </div>

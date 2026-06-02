@@ -846,6 +846,7 @@ function CardsPage() {
                           <CalculatorAmountInput
                             value={parseFloat(editLimit) || 0}
                             onChange={(v) => setEditLimit(v.toString())}
+                            onEnter={() => saveEdit(card.id)}
                             className="h-7 bg-white/20 border-white/30 text-white text-[11px] sm:text-xs"
                           />
                         </div>
@@ -1198,11 +1199,11 @@ function CardsPage() {
           <div className="flex flex-col gap-4 mt-2">
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground">Nome do cartão</Label>
-              <Input value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="Ex: Nubank" className="rounded-xl" />
+              <Input value={formName} onChange={(e) => setFormName(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleAdd()} placeholder="Ex: Nubank" className="rounded-xl" />
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground">Últimos 4 dígitos</Label>
-              <Input value={formNumber} onChange={(e) => setFormNumber(e.target.value.replace(/\D/g, "").slice(0, 4))} placeholder="0000" maxLength={4} className="rounded-xl font-mono" />
+              <Input value={formNumber} onChange={(e) => setFormNumber(e.target.value.replace(/\D/g, "").slice(0, 4))} onKeyDown={(e) => e.key === "Enter" && handleAdd()} placeholder="0000" maxLength={4} className="rounded-xl font-mono" />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
@@ -1231,21 +1232,21 @@ function CardsPage() {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label className="text-xs text-muted-foreground">Limite (R$)</Label>
-                <CalculatorAmountInput value={parseFloat(formLimit) || 0} onChange={(v) => setFormLimit(v.toString())} />
+                <CalculatorAmountInput value={parseFloat(formLimit) || 0} onChange={(v) => setFormLimit(v.toString())} onEnter={handleAdd} />
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs text-muted-foreground">Fatura atual (R$)</Label>
-                <CalculatorAmountInput value={parseFloat(formUsed) || 0} onChange={(v) => setFormUsed(v.toString())} />
+                <CalculatorAmountInput value={parseFloat(formUsed) || 0} onChange={(v) => setFormUsed(v.toString())} onEnter={handleAdd} />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label className="text-xs text-muted-foreground">Dia do fechamento</Label>
-                <Input type="number" value={formClosingDay} onChange={(e) => setFormClosingDay(e.target.value.replace(/\D/g, "").slice(0, 2))} placeholder="1" min={1} max={31} className="rounded-xl" />
+                <Input type="number" value={formClosingDay} onChange={(e) => setFormClosingDay(e.target.value.replace(/\D/g, "").slice(0, 2))} onKeyDown={(e) => e.key === "Enter" && handleAdd()} placeholder="1" min={1} max={31} className="rounded-xl" />
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs text-muted-foreground">Dia do vencimento</Label>
-                <Input type="number" value={formDueDay} onChange={(e) => setFormDueDay(e.target.value.replace(/\D/g, "").slice(0, 2))} placeholder="10" min={1} max={31} className="rounded-xl" />
+                <Input type="number" value={formDueDay} onChange={(e) => setFormDueDay(e.target.value.replace(/\D/g, "").slice(0, 2))} onKeyDown={(e) => e.key === "Enter" && handleAdd()} placeholder="10" min={1} max={31} className="rounded-xl" />
               </div>
             </div>
             <button

@@ -717,6 +717,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                                   const val = e.target.value; 
                                   setInstallmentCount(val === "" ? "" : Math.max(1, parseInt(val) || 1)); 
                                 }} 
+                                onKeyDown={e => e.key === "Enter" && handleAdd()}
                                 className="w-full rounded-lg bg-card px-2.5 py-1.5 text-xs text-foreground outline-none border border-border focus:border-primary/50" 
                                 placeholder="Ex: 15"
                               />
