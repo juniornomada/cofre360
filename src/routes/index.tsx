@@ -1100,20 +1100,21 @@ function Dashboard() {
 
 
       {/* Credit Cards Summary */}
-      {/* Credit Cards Summary */}
-      <div className="flex flex-col gap-2">
-        <div className="flex items-center justify-between mb-1">
-          <h2 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+      <div className="rounded-2xl bg-gradient-to-br from-primary/15 via-card to-card p-5 border border-border/40">
+        <div className="flex items-center justify-between gap-4 mb-2">
+          <h2 className="text-sm font-semibold text-foreground flex items-center gap-1.5 uppercase">
             <CreditCard className="h-4 w-4 text-primary" />
             CARTÕES
           </h2>
+
           <Link to="/cards" className="text-[10px] font-medium text-primary flex items-center gap-0.5">
             Gerenciar <ChevronRight className="h-3 w-3" />
           </Link>
         </div>
 
+
         {allCards.length === 0 && !loading ? (
-          <div className="rounded-2xl border border-dashed border-border/50 p-6 text-center">
+          <div className="rounded-xl bg-background/40 border border-dashed border-border/50 p-6 text-center">
             <CreditCard className="mx-auto h-8 w-8 text-muted-foreground/30 mb-2" />
             <p className="text-xs text-muted-foreground">Você ainda não tem cartões cadastrados.</p>
             <Link to="/cards" search={{ action: "add" } as any} className="text-[10px] text-primary font-medium mt-1 inline-block">
@@ -1121,7 +1122,7 @@ function Dashboard() {
             </Link>
           </div>
         ) : allCards.filter(c => c.is_visible !== false && c.is_visible !== null).length === 0 && !loading ? (
-          <div className="rounded-2xl bg-accent/30 p-4 border border-border/30">
+          <div className="rounded-xl bg-background/40 p-4 border border-border/30">
             <div className="flex items-start gap-3">
               <div className="bg-amber-500/10 p-2 rounded-lg">
                 <AlertTriangle className="h-4 w-4 text-amber-500" />
@@ -1138,7 +1139,7 @@ function Dashboard() {
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
             {allCards.filter(c => c.is_visible !== false && c.is_visible !== null).map((card) => {
               const isPaid = cardInvoicePaid[card.id] || false;
               const displayAmount = cardNextInvoices[card.name] || 0;
@@ -1161,7 +1162,8 @@ function Dashboard() {
                 <Link 
                   key={card.id} 
                   to="/cards" 
-                  className="interactive-card flex items-center justify-between p-3 rounded-2xl bg-card border border-border/30 overflow-hidden relative"
+                  className="interactive-card flex items-center justify-between p-3 rounded-xl bg-background/40 hover:bg-background/60 transition-colors overflow-hidden relative"
+
                 >
                   <div className={cn("absolute inset-y-0 left-0 w-1 bg-gradient-to-b", card.color || "from-primary to-primary/60")} />
                   <div className="flex items-center gap-3">
