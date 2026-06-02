@@ -102,7 +102,7 @@ export type Database = {
           color: string | null
           created_at: string | null
           icon: string | null
-          id: string | null
+          id: string
           spent: number | null
           updated_at: string | null
           user_id: string | null
@@ -113,7 +113,7 @@ export type Database = {
           color?: string | null
           created_at?: string | null
           icon?: string | null
-          id?: string | null
+          id?: string
           spent?: number | null
           updated_at?: string | null
           user_id?: string | null
@@ -124,7 +124,7 @@ export type Database = {
           color?: string | null
           created_at?: string | null
           icon?: string | null
-          id?: string | null
+          id?: string
           spent?: number | null
           updated_at?: string | null
           user_id?: string | null
