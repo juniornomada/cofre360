@@ -66,7 +66,7 @@ export function TransactionItem({
     <div
       onClick={onEdit}
       className={cn(
-        "interactive-card flex items-center gap-3 rounded-2xl p-4 cursor-pointer bg-card border border-border/40 transition-all group/item relative overflow-hidden active:scale-[0.98] sm:pr-4 pr-[48px] shadow-sm hover:shadow-md"
+        "interactive-card flex items-center gap-3 rounded-xl p-3 cursor-pointer bg-card border border-border/30 transition-all group/item relative overflow-hidden active:scale-[0.98] sm:pr-3 pr-[48px]"
       )}
       style={style}
     >

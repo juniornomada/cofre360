@@ -133,12 +133,12 @@ function SortableAccountItem({ acc, balanceVisible, fmt }: { acc: any; balanceVi
         <Link
           to="/accounts"
           search={{ action: undefined } as any}
-          className="flex-1 flex items-center gap-2.5 rounded-2xl bg-background/40 px-3 py-2.5 hover:bg-background/60 border border-border/40 transition-all overflow-hidden active:scale-[0.98]"
+          className="flex-1 flex items-center gap-2.5 rounded-xl bg-background/40 px-2.5 py-1.5 hover:bg-background/60 transition-colors overflow-hidden"
         >
         <BankLogo icon={acc.icon} color={acc.color} name={acc.name} size="sm" />
-        <p className="text-sm font-medium text-foreground flex-1 min-w-0 truncate">{acc.name}</p>
+        <p className="text-xs font-medium text-foreground flex-1 min-w-0 truncate">{acc.name}</p>
         <p className={cn(
-          "text-sm font-bold tabular-nums",
+          "text-xs font-bold tabular-nums",
           acc.balance >= 0 ? "text-foreground" : "text-destructive"
         )}>
           {balanceVisible ? `R$ ${fmt(acc.balance)}` : "R$ ••••"}
@@ -146,7 +146,7 @@ function SortableAccountItem({ acc, balanceVisible, fmt }: { acc: any; balanceVi
         </Link>
       </div>
       {isDragging && (
-        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-black/5 backdrop-blur-[0.5px] rounded-2xl animate-fade-in">
+        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-black/5 backdrop-blur-[0.5px] rounded-xl animate-fade-in">
           <div className="flex items-center gap-1.5 rounded-full bg-white/95 px-2 py-1 text-[10px] font-bold text-gray-900 shadow-lg ring-1 ring-primary">
             <GripVertical className="h-3 w-3" />
             Mover
@@ -987,7 +987,7 @@ function Dashboard() {
         <div className="flex items-center justify-between gap-4 mb-2">
           <div className="flex flex-col min-w-0">
             <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-              CONTAS
+              Saldo
             </p>
             <p className={cn(
               "text-2xl font-bold tabular-nums transition-all duration-300 truncate",
@@ -1036,7 +1036,7 @@ function Dashboard() {
         {displayAccounts.length > 0 && (
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
             <SortableContext items={displayAccounts.map((a) => a.id)} strategy={verticalListSortingStrategy}>
-              <div className="mt-3 flex flex-col gap-2">
+              <div className="mt-3 flex flex-col gap-1">
                 {displayAccounts.map((acc) => (
                   <SortableAccountItem key={acc.id} acc={acc} balanceVisible={balanceVisible} fmt={fmt} />
                 ))}
@@ -1097,7 +1097,7 @@ function Dashboard() {
         <div className="flex items-center justify-between mb-1">
           <h2 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
             <CreditCard className="h-4 w-4 text-primary" />
-            CARTÕES
+            Cartões de crédito
           </h2>
           <Link to="/cards" className="text-[10px] font-medium text-primary flex items-center gap-0.5">
             Gerenciar <ChevronRight className="h-3 w-3" />
@@ -1130,7 +1130,7 @@ function Dashboard() {
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {allCards.filter(c => c.is_visible !== false && c.is_visible !== null).map((card) => {
               const used = cardTotals[card.name] || 0;
               const paid = cardPayments[card.id] || 0;
@@ -1158,59 +1158,32 @@ function Dashboard() {
                 <Link 
                   key={card.id} 
                   to="/cards" 
-                  className="interactive-card flex flex-col p-4 rounded-2xl bg-card border border-border/40 overflow-hidden relative shadow-sm h-full group transition-all duration-300 hover:shadow-md"
+                  className="interactive-card flex items-center justify-between p-3 rounded-2xl bg-card border border-border/30 overflow-hidden relative"
                 >
-                  <div className={cn("absolute inset-y-0 left-0 w-1.5 bg-gradient-to-b transition-transform group-hover:scale-y-110", card.color || "from-primary to-primary/60")} />
-                  
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className={cn("flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br text-2xl shadow-inner transition-transform group-hover:scale-105", card.color || "from-primary/20 to-primary/10")}>
-                        {card.emoji || "💳"}
-                      </div>
-                      <div className="flex flex-col min-w-0">
-                        <p className="text-sm font-bold text-foreground truncate">{card.name}</p>
-                        <div className="flex items-center gap-1.5 mt-0.5">
-                          <Clock className="h-3 w-3 text-muted-foreground" />
-                          <p className="text-[10px] font-medium text-muted-foreground whitespace-nowrap">
-                            Venc. <span className="text-foreground">{formatDueDate(displayDue)}</span>
-                          </p>
-                        </div>
-                      </div>
+                  <div className={cn("absolute inset-y-0 left-0 w-1 bg-gradient-to-b", card.color || "from-primary to-primary/60")} />
+                  <div className="flex items-center gap-3">
+                    <div className={cn("flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br text-lg", card.color || "from-primary/20 to-primary/10")}>
+                      {card.emoji || "💳"}
                     </div>
-
-                    <div className="flex flex-col items-end shrink-0">
-                      {isPaid ? (
-                        <div className="bg-primary/10 text-primary text-[10px] font-bold px-2 py-1 rounded-full border border-primary/20 flex items-center gap-1 shadow-sm">
-                          <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
-                          PAGA
-                        </div>
-                      ) : (
-                        <div className="bg-destructive/10 text-destructive text-[10px] font-bold px-2 py-1 rounded-full border border-destructive/20 flex items-center gap-1 shadow-sm">
-                          <div className="h-1.5 w-1.5 rounded-full bg-destructive animate-pulse" />
-                          ABERTA
-                        </div>
-                      )}
+                    <div className="flex flex-col">
+                      <p className="text-xs font-bold text-foreground truncate max-w-[120px]">{card.name}</p>
+                      <div className="flex items-center gap-1">
+                        <p className="text-[10px] text-muted-foreground">{isPaid ? "Próx. fatura" : "Fatura atual"}</p>
+                        <span className="text-[9px] font-medium bg-accent/50 px-1 rounded text-muted-foreground">Venc. {formatDueDate(displayDue)}</span>
+                      </div>
                     </div>
                   </div>
-
-                  <div className="mt-auto space-y-1">
-                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-                      {isPaid ? "Próxima Fatura" : "Valor Previsto"}
+                  <div className="text-right">
+                    <p className={cn("text-sm font-bold tabular-nums", !isPaid && remaining > 0 ? "text-destructive" : "text-primary")}>
+                      {balanceVisible ? `R$ ${fmt(displayAmount)}` : "R$ •••"}
                     </p>
-                    <div className="flex items-baseline gap-1">
-                      <p className={cn(
-                        "text-xl sm:text-2xl font-black tabular-nums tracking-tighter transition-colors", 
-                        !isPaid && remaining > 0 ? "text-destructive" : "text-primary"
-                      )}>
-                        {balanceVisible ? `R$ ${fmt(displayAmount)}` : "R$ •••••"}
-                      </p>
-                    </div>
-                    
                     {paid > 0 && remaining > 0 && (
-                      <div className="flex items-center justify-between pt-2 mt-2 border-t border-border/20">
-                        <p className="text-[10px] text-muted-foreground">Já pago</p>
-                        <p className="text-[10px] font-bold text-primary">R$ {fmt(paid)}</p>
-                      </div>
+                      <p className="text-[9px] text-primary font-medium">
+                        Pago: R$ {fmtShort(paid)}
+                      </p>
+                    )}
+                    {remaining === 0 && (
+                      <p className="text-[9px] text-primary font-medium">Fatura paga</p>
                     )}
                   </div>
                 </Link>
@@ -1414,7 +1387,7 @@ function Dashboard() {
               Ver todos <ChevronRight className="h-3 w-3" />
             </Link>
           </div>
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-1.5">
             {pendingReminders.map((r) => {
               const linkedAccount = r.bank_account_id ? accountBalances.find(a => a.id === r.bank_account_id) : null;
               const linkedCard = r.card_id ? allCards.find(c => c.id === r.card_id) : null;
