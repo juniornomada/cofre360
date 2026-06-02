@@ -528,8 +528,7 @@ function Dashboard() {
           }
           
           if (perInstallment > availableBalance) {
-            toast.error(`Saldo insuficiente na conta ${acc.name} (Saldo disponível: R$ ${availableBalance.toLocaleString("pt-BR", { minimumFractionDigits: 2 })})`);
-            return;
+            throw new Error(`Saldo insuficiente na conta ${acc.name}`);
           }
         }
       }
@@ -548,7 +547,7 @@ function Dashboard() {
       }).eq("id", editTx.id);
       if (updErr) throw updErr;
 
-      const result = await saveInstallmentPlan({
+      await saveInstallmentPlan({
         id: editTx.id,
         name: finalName,
         icon: editTx.icon,
@@ -566,23 +565,17 @@ function Dashboard() {
         installmentSourceAmount: editTx.amount,
       });
 
-      if (result.cleared) {
-        toast.success("Parcelamento removido");
-      } else if (result.futureRowsAdded > 0) {
-        toast.success(
-          `Parcelamento salvo (${result.futureRowsAdded} parcela${result.futureRowsAdded > 1 ? "s" : ""} futura${result.futureRowsAdded > 1 ? "s" : ""})`
-        );
-      } else {
-        toast.success("Transação atualizada");
-      }
-    } catch (e) {
-      console.error(e);
-      toast.error("Erro ao salvar transação");
-    } finally {
-      setShowEditDialog(false);
-      setEditTx(null);
-      fetchTransactions();
-    }
+      await fetchAll();
+    })();
+
+    toast.promise(promise, {
+      loading: "Salvando alterações...",
+      success: "Transação atualizada com sucesso!",
+      error: (err: any) => err.message || "Erro ao salvar transação",
+    });
+
+    setShowEditDialog(false);
+    setEditTx(null);
   };
 
   const handleCopy = (tx: Transaction) => {
