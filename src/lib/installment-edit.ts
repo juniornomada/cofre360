@@ -84,6 +84,14 @@ export type SaveInstallmentInput = {
    */
   installmentAmount?: number;
   /**
+   * The mode used for calculations: "divide" or "fixed".
+   */
+  installmentMode?: string;
+  /**
+   * The original source amount typed by the user.
+   */
+  installmentSourceAmount?: number;
+  /**
    * If true, updates all existing installments in the same group (siblings).
    * Useful when changing value or name and wanting it reflected everywhere.
    */
