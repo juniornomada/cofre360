@@ -273,7 +273,7 @@ function Dashboard() {
 
     // Fire ALL queries in parallel — was sequential before, causing slow load.
     // Also: only select fields we actually use, instead of select("*").
-    const TX_FIELDS = "id, icon, name, category, date, amount, type, card, bank_account_id, installment_group_id, installment_number, total_installments, is_visible";
+    const TX_FIELDS = "id, icon, name, category, date, amount, type, card, bank_account_id, installment_group_id, installment_number, total_installments, installment_mode, installment_source_amount, is_visible";
     const [
       rawRecentRes,
       allTxRes,
