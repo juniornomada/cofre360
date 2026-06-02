@@ -1140,25 +1140,20 @@ function Dashboard() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {allCards.filter(c => c.is_visible !== false && c.is_visible !== null).map((card) => {
-              const used = cardTotals[card.name] || 0;
-              const paid = cardPayments[card.id] || 0;
-              const remaining = Math.max(0, used - paid);
-              const nextInvoice = cardNextInvoices[card.name] || 0;
+              const isPaid = cardInvoicePaid[card.id] || false;
+              const displayAmount = cardNextInvoices[card.name] || 0;
+              const paidThisMonth = cardPayments[card.id] || 0;
               
               const today = new Date();
               const todayDay = today.getDate();
               // Compute due date of current invoice
               let currentDue = new Date(today.getFullYear(), today.getMonth(), card.due_day || 1);
               
-              const isPaid = used > 0 && remaining === 0;
-              
               // If invoice is already paid OR it's already closed/near due for next month
               let displayDue = currentDue;
               if (isPaid || (todayDay > (card.due_day || 1))) {
                 displayDue = new Date(today.getFullYear(), today.getMonth() + 1, card.due_day || 1);
               }
-
-              const displayAmount = isPaid ? nextInvoice : remaining;
 
               const formatDueDate = (d: Date) => format(d, "dd/MM");
 
