@@ -873,7 +873,7 @@ export function TransactionsPage() {
       </div>
 
        <div ref={listRef} tabIndex={-1} className="flex flex-col gap-2 focus:outline-none">
-         {filtered.map((tx, i) => (
+         {sortedTransactions.map((tx, i) => (
           <div
             key={tx.id}
             className={`group relative ${selectionMode && selectedIds.has(tx.id) ? "ring-1 ring-primary rounded-xl" : ""}`}
