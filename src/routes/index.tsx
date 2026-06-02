@@ -1101,8 +1101,9 @@ function Dashboard() {
 
       {/* Credit Cards Summary */}
       <div className="rounded-2xl bg-gradient-to-br from-primary/15 via-card to-card p-5 border border-border/40">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between gap-4 mb-2">
           <h2 className="text-sm font-semibold text-foreground flex items-center gap-1.5 uppercase">
+
             <CreditCard className="h-4 w-4 text-primary" />
             CARTÕES
           </h2>
@@ -1161,7 +1162,8 @@ function Dashboard() {
                 <Link 
                   key={card.id} 
                   to="/cards" 
-                  className="interactive-card flex items-center justify-between p-3 rounded-2xl bg-card border border-border/30 overflow-hidden relative"
+                  className="interactive-card flex items-center justify-between p-3 rounded-xl bg-background/40 hover:bg-background/60 transition-colors overflow-hidden relative"
+
                 >
                   <div className={cn("absolute inset-y-0 left-0 w-1 bg-gradient-to-b", card.color || "from-primary to-primary/60")} />
                   <div className="flex items-center gap-3">
