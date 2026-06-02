@@ -130,7 +130,7 @@ export async function saveInstallmentPlan(input: SaveInstallmentInput): Promise<
       : input.amount;
 
   const updateData = {
-    name: `${baseName} (${current}/${total})`,
+    name: baseName,
     amount: perInstallment,
     installment_number: current,
     total_installments: total,
