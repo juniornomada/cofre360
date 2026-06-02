@@ -198,7 +198,7 @@
   }
 
   .nav-item-transition {
-    transition: color 0.2s ease, transform 0.2s ease;
+    transition: color 0.2s ease, transform 0.2s ease, background-color 0.2s ease;
   }
    .nav-item-transition:active {
      transform: scale(0.9);
