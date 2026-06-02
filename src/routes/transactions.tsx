@@ -116,10 +116,8 @@ export function TransactionsPage() {
   const [installmentEnabled, setInstallmentEnabled] = useState(false);
   const [installmentCount, setInstallmentCount] = useState(2);
   const [installmentMode, setInstallmentMode] = useState<"divide" | "fixed">("divide");
-  const [installmentFixedValue, setInstallmentFixedValue] = useState(0);
   // Edit-installment UI state
   const [editInstallmentMode, setEditInstallmentMode] = useState<"divide" | "fixed">("divide");
-  const [editInstallmentFixedValue, setEditInstallmentFixedValue] = useState(0);
   // Transfer state
   const [isTransfer, setIsTransfer] = useState(false);
   const [transferFromId, setTransferFromId] = useState<string>("");
@@ -127,20 +125,13 @@ export function TransactionsPage() {
    const [confirmInstallmentDiff, setConfirmInstallmentDiff] = useState(false);
    const [editNameMode, setEditNameMode] = useState<"none" | "text">("none");
  
-   const installmentDetails = calculateInstallmentDetails(
-     newTx.amount,
-     installmentCount,
-     installmentMode,
-     installmentFixedValue
-   );
-   const hasDiff = installmentEnabled && !isTransfer && installmentMode === "divide" && installmentDetails.diff !== 0;
  
-   const editInstallmentDetails = editTx ? calculateInstallmentDetails(
-     editTx.amount,
-     editTx.total_installments ?? 1,
-     editInstallmentMode,
-     editInstallmentFixedValue
-   ) : null;
+    const editInstallmentDetails = editTx ? calculateInstallmentDetails(
+      editTx.amount,
+      editTx.total_installments ?? 1,
+      editInstallmentMode,
+      editInstallmentMode === "fixed" ? editTx.amount : 0
+    ) : null;
    const hasEditDiff = !!editTx && (editTx.total_installments ?? 1) > 1 && editInstallmentMode === "divide" && editInstallmentDetails?.diff !== 0;
 
   // Autocomplete state
@@ -409,7 +400,6 @@ export function TransactionsPage() {
   const handleEdit = (tx: Transaction) => {
     setEditTx({ ...tx });
     setEditInstallmentMode("divide");
-    setEditInstallmentFixedValue(tx.amount || 0);
     setEditNameMode("none");
     setShowEditDialog(true);
   };
@@ -967,13 +957,8 @@ export function TransactionsPage() {
                 <CalculatorAmountInput 
                   value={editTx.amount} 
                   onChange={(v) => {
-                    const oldAmount = editTx.amount;
                     setEditTx({ ...editTx, amount: v });
-                    // Sincroniza o valor fixo se ele for igual ao valor total anterior (ainda não ajustado manualmente)
-                    if (editInstallmentMode === "fixed" && (editInstallmentFixedValue === 0 || editInstallmentFixedValue === oldAmount)) {
-                      setEditInstallmentFixedValue(v);
-                    }
-                  }}
+                  }}  
                   autoFocus={false}
                 />
               </div>
@@ -1117,11 +1102,7 @@ export function TransactionsPage() {
                           type="button"
                           onClick={() => {
                             setEditInstallmentMode("fixed");
-                            // Mantém o valor digitado ao selecionar valor fixo
-                            if (editTx && (editInstallmentFixedValue === 0 || editInstallmentFixedValue === editTx.amount / (editTx.total_installments || 1))) {
-                              setEditInstallmentFixedValue(editTx.amount);
-                            }
-                          }}
+                          }}  
                           className={`flex-1 rounded-lg py-1.5 text-[11px] font-medium transition-colors ${editInstallmentMode === "fixed" ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground"}`}
                         >
                           Valor por parcela
@@ -1129,15 +1110,6 @@ export function TransactionsPage() {
                       </div>
                     </div>
 
-                     {editInstallmentMode === "fixed" && (
-                       <div>
-                         <label className="text-[10px] text-muted-foreground mb-1 block">Valor de cada parcela</label>
-                         <CalculatorAmountInput
-                           value={editInstallmentFixedValue}
-                           onChange={v => setEditInstallmentFixedValue(v)}
-                         />
-                       </div>
-                     )}
                      <div className="space-y-1.5 mt-1">
                        <p className="text-[10px] text-muted-foreground leading-relaxed">
                          {editInstallmentDetails?.formattedSummary}
