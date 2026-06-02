@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
-import { supabase } from "@/integrations/supabase/client.server";
+import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { supabase } from "@/integrations/supabase/client";
 import { groupByBillingCycle, type CardTransaction } from "@/lib/invoice-utils";
 
 export const validateAgreement = createServerFn({ method: "POST" })
