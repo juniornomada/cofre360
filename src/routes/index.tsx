@@ -442,9 +442,12 @@ function Dashboard() {
   };
 
   const handleEdit = (tx: Transaction) => {
-    setEditTx({ ...tx });
-    setEditInstallmentMode("divide");
-    setEditInstallmentFixedValue(tx.amount || 0);
+    setEditTx({ 
+      ...tx, 
+      amount: tx.installment_mode === "divide" ? (tx.installment_source_amount ?? tx.amount) : tx.amount 
+    });
+    setEditInstallmentMode(tx.installment_mode || "divide");
+    setEditInstallmentFixedValue(tx.installment_mode === "fixed" ? (tx.installment_source_amount ?? tx.amount) : (tx.amount || 0));
     setShowEditDialog(true);
   };
 
