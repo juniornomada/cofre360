@@ -686,13 +686,13 @@ function CardsPage() {
         <TabsContent value="list" className="mt-5 space-y-5">
           {cards.length > 0 && (
             <div className="grid grid-cols-2 gap-3 animate-stagger-in">
-              <div className="rounded-2xl bg-card border border-border/50 p-4">
+              <div className="interactive-card rounded-2xl bg-gradient-to-br from-primary/20 to-card border border-border/50 p-4 shadow-sm">
                 <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Fatura total</p>
                 <p className="mt-1 text-lg font-bold text-foreground tabular-nums">
                   R$ {totalAllInvoices.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                 </p>
               </div>
-              <div className="rounded-2xl bg-card border border-border/50 p-4">
+              <div className="interactive-card rounded-2xl bg-gradient-to-br from-primary/20 to-card border border-border/50 p-4 shadow-sm">
                 <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Limite disponível</p>
                 <p className="mt-1 text-lg font-bold text-primary tabular-nums">
                   R$ {totalAvailable.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
@@ -963,7 +963,7 @@ function CardsPage() {
     </TabsContent>
 
         <TabsContent value="validation" className="mt-5 space-y-4">
-          <div className="rounded-2xl bg-card border border-border/50 p-4 space-y-4">
+          <div className="interactive-card rounded-2xl bg-gradient-to-br from-primary/20 to-card border border-border/50 p-4 shadow-sm space-y-4">
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-sm font-bold text-foreground">Status da Validação</h3>

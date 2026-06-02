@@ -975,7 +975,7 @@ function Dashboard() {
       </div>
 
       {/* Balance Card — refined with health score + daily available */}
-      <div className="rounded-2xl bg-gradient-to-br from-primary/15 via-card to-card p-5 border border-border/40">
+      <div className="rounded-2xl bg-gradient-to-br from-primary/20 via-card to-card p-5 border border-border/40">
         <div className="flex items-center justify-between gap-4 mb-2">
           <div className="flex flex-col min-w-0">
             <h2 className="text-sm font-semibold text-foreground flex items-center gap-1.5 uppercase">
@@ -1069,7 +1069,7 @@ function Dashboard() {
 
 
       {/* Credit Cards Summary */}
-      <div className="rounded-2xl bg-gradient-to-br from-primary/15 via-card to-card p-5 border border-border/40">
+      <div className="rounded-2xl bg-gradient-to-br from-primary/20 via-card to-card p-5 border border-border/40">
         <div className="flex items-center justify-between gap-4 mb-2">
           <h2 className="text-sm font-semibold text-foreground flex items-center gap-1.5 uppercase">
             <CreditCard className="h-4 w-4 text-primary" />
