@@ -69,14 +69,15 @@ interface Transaction {
   is_visible?: boolean;
 }
 
-const shortMonthMap: Record<string, number> = {
-  jan: 0, fev: 1, mar: 2, abr: 3, mai: 4, jun: 5,
-  jul: 6, ago: 7, set: 8, out: 9, nov: 10, dez: 11,
-};
+import { groupByBillingCycle, type InvoicePeriod } from "@/lib/invoice-utils";
 
 function parseTxDateToDate(dateStr: string): Date | null {
   if (!dateStr) return null;
   const trimmed = dateStr.trim();
+  const shortMonthMap: Record<string, number> = {
+    jan: 0, fev: 1, mar: 2, abr: 3, mai: 4, jun: 5,
+    jul: 6, ago: 7, set: 8, out: 9, nov: 10, dez: 11,
+  };
   const slash = trimmed.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
   if (slash) {
     const day = parseInt(slash[1], 10);
@@ -101,105 +102,6 @@ function parseTxDateToDate(dateStr: string): Date | null {
   return null;
 }
 
-const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
-
-function parseTxDate(dateStr: string, fallback: string): Date {
-  const parts = (dateStr || "").trim().toLowerCase().split(/\s+/);
-  const fallbackDate = new Date(fallback);
-  const fallbackYear = !isNaN(fallbackDate.getTime()) ? fallbackDate.getFullYear() : new Date().getFullYear();
-
-  if (parts.length === 2) {
-    const day = parseInt(parts[0]);
-    const monthIdx = shortMonthMap[parts[1]];
-    if (!isNaN(day) && monthIdx !== undefined) {
-      return new Date(fallbackYear, monthIdx, day);
-    }
-  }
-  const d = new Date(dateStr);
-  return isNaN(d.getTime()) ? (!isNaN(fallbackDate.getTime()) ? fallbackDate : new Date()) : d;
-}
-
-type InvoicePeriod = {
-  label: string;
-  key: string;
-  startDate: Date;
-  endDate: Date;
-  dueDate: Date;
-  transactions: any[];
-  total: number;
-};
-
-function groupByBillingCycle(txs: any[], closingDay: number | null, dueDay: number | null): InvoicePeriod[] {
-  const cDay = closingDay || 1;
-  const dDay = dueDay || 10;
-  const now = new Date();
-  const currentMonth = now.getMonth();
-  const currentYear = now.getFullYear();
-
-  let closingDate = new Date(currentYear, currentMonth, cDay);
-  if (now > closingDate) {
-    closingDate = new Date(currentYear, currentMonth + 1, cDay);
-  }
-
-  const prevClosing = new Date(closingDate.getFullYear(), closingDate.getMonth() - 1, cDay);
-  const pastClosing = new Date(prevClosing.getFullYear(), prevClosing.getMonth() - 1, cDay);
-
-  const makeDue = (closing: Date) => {
-    const d = new Date(closing.getFullYear(), closing.getMonth(), dDay);
-    if (d <= closing) d.setMonth(d.getMonth() + 1);
-    return d;
-  };
-
-  let maxFutureDate = now;
-  for (const tx of txs) {
-    const txDate = parseTxDate(tx.date, tx.created_at);
-    if (txDate > maxFutureDate) maxFutureDate = txDate;
-  }
-
-  const formatLabel = (prefix: string, endDate: Date) =>
-    `${prefix} (${monthNames[endDate.getMonth()]}/${endDate.getFullYear().toString().slice(2)})`;
-
-  const periods: InvoicePeriod[] = [
-    { label: formatLabel("Anterior", prevClosing), key: "past", startDate: pastClosing, endDate: prevClosing, dueDate: makeDue(prevClosing), transactions: [], total: 0 },
-    { label: formatLabel("Atual", closingDate), key: "current", startDate: prevClosing, endDate: closingDate, dueDate: makeDue(closingDate), transactions: [], total: 0 },
-  ];
-
-  let futureStart = new Date(closingDate);
-  let futureIndex = 0;
-  while (futureStart < maxFutureDate || futureIndex === 0) {
-    const futureEnd = new Date(futureStart.getFullYear(), futureStart.getMonth() + 1, cDay);
-    periods.push({
-      label: formatLabel("Próxima", futureEnd),
-      key: `future_${futureIndex}`,
-      startDate: new Date(futureStart),
-      endDate: futureEnd,
-      dueDate: makeDue(futureEnd),
-      transactions: [],
-      total: 0,
-    });
-    futureStart = futureEnd;
-    futureIndex++;
-    if (futureIndex > 24) break;
-  }
-
-  for (const tx of txs) {
-    const txDate = parseTxDate(tx.date, tx.created_at);
-
-    let periodIdx = -1;
-    for (let pi = 0; pi < periods.length; pi++) {
-      if (txDate >= periods[pi].startDate && txDate < periods[pi].endDate) {
-        periodIdx = pi;
-        break;
-      }
-    }
-    if (periodIdx === -1) continue;
-
-    periods[periodIdx].transactions.push(tx);
-    periods[periodIdx].total += Number(tx.amount);
-  }
-
-  return periods.filter((p, i) => i < 2 || p.transactions.length > 0);
-}
 
 function getGreeting(): string {
   const h = new Date().getHours();
@@ -1255,9 +1157,10 @@ function Dashboard() {
                     <span className="text-[10px] font-medium text-muted-foreground">Fatura Atual · Venc. {formatDueDate(displayDue)}</span>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className={cn("text-xs font-bold tabular-nums", !isPaid && displayAmount > 0 ? "text-destructive" : "text-primary")}>
+                    <p className={cn("text-xs font-bold tabular-nums", !isPaid && displayAmount > 0 ? "text-destructive" : "text-primary")} data-testid="fatura-atual-valor">
                       {balanceVisible ? `R$ ${fmt(displayAmount)}` : "R$ •••"}
                     </p>
+
                     {paidThisMonth > 0 && (
                       <p className="text-[10px] text-primary font-medium">
                         Pago: R$ {balanceVisible ? fmt(paidThisMonth) : "•••"}

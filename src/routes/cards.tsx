@@ -62,20 +62,7 @@ type PaymentLine = {
   amount: string;
 };
 
-type CardTransaction = {
-  id: string;
-  name: string;
-  icon: string | null;
-  category: string;
-  card?: string | null;
-  date: string;
-  amount: number;
-  type: string;
-  created_at: string;
-  total_installments: number | null;
-  installment_number: number | null;
-  installment_group_id: string | null;
-};
+import { groupByBillingCycle, parseTxDate, type CardTransaction, type InvoicePeriod } from "@/lib/invoice-utils";
 
 const colorOptions = [
   { label: "Roxo", value: "from-purple-600 to-purple-900", emoji: "🟣" },
@@ -95,112 +82,8 @@ const colorOptions = [
   { label: "Prateado", value: "from-slate-300 to-slate-500", emoji: "🥈" },
 ];
 
-type InvoicePeriod = {
-  label: string;
-  key: string;
-  startDate: Date;
-  endDate: Date;
-  dueDate: Date;
-  transactions: CardTransaction[];
-  total: number;
-};
 
-const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 
-const shortMonthMap: Record<string, number> = {
-  jan: 0, fev: 1, mar: 2, abr: 3, mai: 4, jun: 5,
-  jul: 6, ago: 7, set: 8, out: 9, nov: 10, dez: 11,
-};
-
-function parseTxDate(dateStr: string, fallback: string): Date {
-  const parts = (dateStr || "").trim().toLowerCase().split(/\s+/);
-  const fallbackDate = new Date(fallback);
-  const fallbackYear = !isNaN(fallbackDate.getTime()) ? fallbackDate.getFullYear() : new Date().getFullYear();
-
-  if (parts.length === 2) {
-    const day = parseInt(parts[0]);
-    const monthIdx = shortMonthMap[parts[1]];
-    if (!isNaN(day) && monthIdx !== undefined) {
-      return new Date(fallbackYear, monthIdx, day);
-    }
-  }
-  const d = new Date(dateStr);
-  return isNaN(d.getTime()) ? (!isNaN(fallbackDate.getTime()) ? fallbackDate : new Date()) : d;
-}
-
-function groupByBillingCycle(txs: CardTransaction[], closingDay: number | null, dueDay: number | null): InvoicePeriod[] {
-  const cDay = closingDay || 1;
-  const dDay = dueDay || 10;
-  const now = new Date();
-  const currentMonth = now.getMonth();
-  const currentYear = now.getFullYear();
-
-  let closingDate = new Date(currentYear, currentMonth, cDay);
-  if (now > closingDate) {
-    closingDate = new Date(currentYear, currentMonth + 1, cDay);
-  }
-
-  const prevClosing = new Date(closingDate.getFullYear(), closingDate.getMonth() - 1, cDay);
-  const pastClosing = new Date(prevClosing.getFullYear(), prevClosing.getMonth() - 1, cDay);
-
-  const makeDue = (closing: Date) => {
-    const d = new Date(closing.getFullYear(), closing.getMonth(), dDay);
-    if (d <= closing) d.setMonth(d.getMonth() + 1);
-    return d;
-  };
-
-  // Find the max future date from all transactions based on their actual date field
-  let maxFutureDate = now;
-  for (const tx of txs) {
-    const txDate = parseTxDate(tx.date, tx.created_at);
-    if (txDate > maxFutureDate) maxFutureDate = txDate;
-  }
-
-  const formatLabel = (prefix: string, endDate: Date) =>
-    `${prefix} (${monthNames[endDate.getMonth()]}/${endDate.getFullYear().toString().slice(2)})`;
-
-  const periods: InvoicePeriod[] = [
-    { label: formatLabel("Anterior", prevClosing), key: "past", startDate: pastClosing, endDate: prevClosing, dueDate: makeDue(prevClosing), transactions: [], total: 0 },
-    { label: formatLabel("Atual", closingDate), key: "current", startDate: prevClosing, endDate: closingDate, dueDate: makeDue(closingDate), transactions: [], total: 0 },
-  ];
-
-  let futureStart = new Date(closingDate);
-  let futureIndex = 0;
-  while (futureStart < maxFutureDate || futureIndex === 0) {
-    const futureEnd = new Date(futureStart.getFullYear(), futureStart.getMonth() + 1, cDay);
-    periods.push({
-      label: formatLabel("Próxima", futureEnd),
-      key: `future_${futureIndex}`,
-      startDate: new Date(futureStart),
-      endDate: futureEnd,
-      dueDate: makeDue(futureEnd),
-      transactions: [],
-      total: 0,
-    });
-    futureStart = futureEnd;
-    futureIndex++;
-    if (futureIndex > 24) break;
-  }
-
-  // Place each transaction in the correct period based on its DATE field
-  for (const tx of txs) {
-    const txDate = parseTxDate(tx.date, tx.created_at);
-
-    let periodIdx = -1;
-    for (let pi = 0; pi < periods.length; pi++) {
-      if (txDate >= periods[pi].startDate && txDate < periods[pi].endDate) {
-        periodIdx = pi;
-        break;
-      }
-    }
-    if (periodIdx === -1) continue;
-
-    periods[periodIdx].transactions.push(tx);
-    periods[periodIdx].total += Number(tx.amount);
-  }
-
-  return periods.filter((p, i) => i < 2 || p.transactions.length > 0);
-}
 
 function SortableCardWrapper({ id, children, animationDelay }: { id: string; children: React.ReactNode; animationDelay: number }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
@@ -940,9 +823,10 @@ function CardsPage() {
                   <div className="flex justify-between items-start gap-2 mb-1.5">
                     <div className="min-w-0">
                       <p className="text-[10px] font-bold uppercase tracking-wider text-white/90">Fatura {activeInvoicePeriod?.label.split(" (")[0] || "atual"}</p>
-                      <p className="text-base font-extrabold text-white tabular-nums drop-shadow-md truncate">
+                      <p className="text-base font-extrabold text-white tabular-nums drop-shadow-md truncate" data-testid="fatura-atual-valor">
                         R$ {invoiceRemaining.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                       </p>
+
                     </div>
                     <div className="flex items-center gap-1 text-[10px] font-semibold text-white shrink-0 mt-0.5">
                       <span className="rounded-full bg-black/45 px-1.5 py-0.5 ring-1 ring-white/20 tabular-nums">
@@ -1077,27 +961,30 @@ function CardsPage() {
 
               <div className="flex gap-1 px-5 pb-3 overflow-x-auto no-scrollbar">
                 {invoicePeriods.map((period, idx) => (
-                  <button
-                    key={period.key}
-                    onClick={() => setActiveInvoiceIdx(idx)}
-                    className={cn(
-                      "whitespace-nowrap rounded-full px-3 py-1 text-[11px] font-medium transition-colors shrink-0",
-                      idx === activeInvoiceIdx
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-accent/50 text-muted-foreground hover:bg-accent"
-                    )}
-                  >
-                    {period.label}
-                  </button>
+                    <button
+                      key={period.key}
+                      onClick={() => setActiveInvoiceIdx(idx)}
+                      data-testid={`period-tab-${period.key}`}
+                      className={cn(
+                        "whitespace-nowrap rounded-full px-3 py-1 text-[11px] font-medium transition-colors shrink-0",
+                        idx === activeInvoiceIdx
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-accent/50 text-muted-foreground hover:bg-accent"
+                      )}
+                    >
+                      {period.label}
+                    </button>
+
                 ))}
               </div>
 
               {activePeriod && (
                 <div className="mx-5 mb-3 rounded-xl bg-accent/50 p-3 flex justify-between items-center">
                   <span className="text-xs font-medium text-muted-foreground">Total da fatura</span>
-                  <span className="text-sm font-bold text-destructive tabular-nums">
+                  <span className="text-sm font-bold text-destructive tabular-nums" data-testid="total-da-fatura-valor">
                     R$ {activePeriod.total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                   </span>
+
                 </div>
               )}
 
