@@ -291,8 +291,8 @@ function Dashboard() {
       supabase.from("cards").select("id, name, emoji, color, is_visible, closing_day, due_day").eq("user_id", session.user.id).order("sort_order", { ascending: true }).order("created_at", { ascending: true }),
       supabase.from("reminders").select("id, title, icon, due_date, amount, type, bank_account_id, card_id").eq("user_id", session.user.id).eq("is_completed", false).order("due_date", { ascending: true }).limit(3),
       supabase.from("goals").select("id, name, icon, current_amount, target_amount").eq("user_id", session.user.id),
-      supabase.from("transactions").select("card, amount").eq("user_id", session.user.id).not("card", "is", null),
-      supabase.from("card_payments").select("card_id, amount").eq("user_id", session.user.id),
+      supabase.from("transactions").select("card, amount, date").eq("user_id", session.user.id).not("card", "is", null),
+      supabase.from("card_payments").select("card_id, amount, paid_at").eq("user_id", session.user.id),
     ]);
 
     if (rawRecentRes.error) throw rawRecentRes.error;
