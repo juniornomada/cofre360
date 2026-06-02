@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { SmartLink as Link } from "@/components/SmartLink";
-import { ArrowLeft, Plus, CreditCard, Trash2, X, Check, Loader2, Wallet, Landmark, ChevronLeft, ChevronRight, Receipt, FileUp, GripVertical, Layers, Pencil, MoreVertical, Eye, EyeOff, Copy } from "lucide-react";
+import { ArrowLeft, Plus, CreditCard, Trash2, X, Check, Loader2, Wallet, Landmark, ChevronLeft, ChevronRight, Receipt, FileUp, GripVertical, Layers, Pencil, MoreVertical, Eye, EyeOff, Copy, AlertCircle, CheckCircle2, Info, RefreshCw } from "lucide-react";
 import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 
@@ -15,6 +15,9 @@ import { CalculatorAmountInput } from "@/components/CalculatorAmountInput";
 import { CardBrand, brandPresets } from "@/components/CardBrand";
 import { BankLogo, bankPresets } from "@/components/BankLogo";
 import { cn } from "@/lib/utils";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { validateAgreement } from "@/server-fns/validate-agreement";
 import {
   DndContext,
   closestCenter,
@@ -182,6 +185,31 @@ function CardsPage() {
   // PDF invoice import dialog
   const [pdfImportOpen, setPdfImportOpen] = useState(false);
   const [pdfImportCard, setPdfImportCard] = useState<CardData | null>(null);
+
+  // Validation state
+  const [validationData, setValidationData] = useState<any>(null);
+  const [isValidating, setIsValidating] = useState(false);
+  const [activeTab, setActiveTab] = useState("list");
+
+  const runValidation = async () => {
+    setIsValidating(true);
+    try {
+      const result = await validateAgreement();
+      setValidationData(result);
+      if (result.status === 'ok') {
+        toast.success("Validação concluída: Tudo certo!");
+      } else if (result.status === 'partial') {
+        toast.warning("Validação concluída: Algumas divergências encontradas.");
+      } else {
+        toast.error("Validação concluída: Erros críticos detectados!");
+      }
+    } catch (error: any) {
+      console.error("Validation error:", error);
+      toast.error("Erro ao validar: " + error.message);
+    } finally {
+      setIsValidating(false);
+    }
+  };
 
   // Drag-and-drop sensors — pressionar 1s (mouse e toque) inicia a ordenação
   const sensors = useSensors(
@@ -627,37 +655,55 @@ function CardsPage() {
         </div>
       </div>
 
-      {cards.length > 0 && (
-        <div className="grid grid-cols-2 gap-3 animate-stagger-in">
-          <div className="rounded-2xl bg-card border border-border/50 p-4">
-            <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Fatura total</p>
-            <p className="mt-1 text-lg font-bold text-foreground tabular-nums">
-              R$ {totalAllInvoices.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-            </p>
-          </div>
-          <div className="rounded-2xl bg-card border border-border/50 p-4">
-            <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Limite disponível</p>
-            <p className="mt-1 text-lg font-bold text-primary tabular-nums">
-              R$ {totalAvailable.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-            </p>
-          </div>
-        </div>
-      )}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-2 rounded-2xl p-1 bg-accent/30 h-11">
+          <TabsTrigger value="list" className="rounded-xl text-xs font-semibold data-[state=active]:bg-background data-[state=active]:shadow-sm">
+            <CreditCard className="h-3.5 w-3.5 mr-2" />
+            Lista de Cartões
+          </TabsTrigger>
+          <TabsTrigger value="validation" className="rounded-xl text-xs font-semibold data-[state=active]:bg-background data-[state=active]:shadow-sm">
+            <AlertCircle className="h-3.5 w-3.5 mr-2" />
+            Validação
+            {validationData?.summary?.discrepanciesFound > 0 && (
+              <Badge variant="destructive" className="ml-2 h-4 min-w-4 px-1 text-[9px] flex items-center justify-center">
+                {validationData.summary.discrepanciesFound}
+              </Badge>
+            )}
+          </TabsTrigger>
+        </TabsList>
 
-      {cards.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-16 text-center rounded-2xl bg-card border border-dashed border-border/50">
-          <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-3">
-            <CreditCard className="h-7 w-7 text-primary" />
-          </div>
-          <p className="text-sm font-semibold text-foreground">Nenhum cartão ainda</p>
-          <p className="text-xs text-muted-foreground mt-1">Adicione seu primeiro cartão abaixo</p>
-        </div>
-      )}
+        <TabsContent value="list" className="mt-5 space-y-5">
+          {cards.length > 0 && (
+            <div className="grid grid-cols-2 gap-3 animate-stagger-in">
+              <div className="rounded-2xl bg-card border border-border/50 p-4">
+                <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Fatura total</p>
+                <p className="mt-1 text-lg font-bold text-foreground tabular-nums">
+                  R$ {totalAllInvoices.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                </p>
+              </div>
+              <div className="rounded-2xl bg-card border border-border/50 p-4">
+                <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Limite disponível</p>
+                <p className="mt-1 text-lg font-bold text-primary tabular-nums">
+                  R$ {totalAvailable.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                </p>
+              </div>
+            </div>
+          )}
 
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-        <SortableContext items={cards.map((c) => c.id)} strategy={verticalListSortingStrategy}>
-          <div className="flex flex-col gap-4">
-            {cards.map((card, i) => {
+          {cards.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-16 text-center rounded-2xl bg-card border border-dashed border-border/50">
+              <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-3">
+                <CreditCard className="h-7 w-7 text-primary" />
+              </div>
+              <p className="text-sm font-semibold text-foreground">Nenhum cartão ainda</p>
+              <p className="text-xs text-muted-foreground mt-1">Adicione seu primeiro cartão abaixo</p>
+            </div>
+          )}
+
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={cards.map((c) => c.id)} strategy={verticalListSortingStrategy}>
+              <div className="flex flex-col gap-4">
+                {cards.map((card, i) => {
       const cardTransactionsFiltered = cardTransactions.filter(t => t.card === card.name);
       const invoicePeriodsCard = groupByBillingCycle(cardTransactionsFiltered, card.closing_day, card.due_day);
       const activeInvoicePeriod = invoicePeriodsCard.find(p => p.key === "current") || invoicePeriodsCard[1] || invoicePeriodsCard[0];
@@ -903,6 +949,107 @@ function CardsPage() {
           </div>
         </SortableContext>
       </DndContext>
+    </TabsContent>
+
+        <TabsContent value="validation" className="mt-5 space-y-4">
+          <div className="rounded-2xl bg-card border border-border/50 p-4 space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-bold text-foreground">Status da Validação</h3>
+                <p className="text-[10px] text-muted-foreground mt-0.5">Sincronização entre Cartões e Faturas</p>
+              </div>
+              <button
+                onClick={runValidation}
+                disabled={isValidating}
+                className="interactive-button flex items-center gap-2 rounded-xl bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-50"
+                id="revalidate-btn"
+              >
+                {isValidating ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+                Revalide Agora
+              </button>
+            </div>
+
+            {validationData ? (
+              <div className="grid grid-cols-3 gap-2">
+                <div className="rounded-xl bg-accent/30 p-2.5 text-center">
+                  <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Cartões</p>
+                  <p className="text-sm font-bold mt-0.5">{validationData.summary.totalCardsChecked}</p>
+                </div>
+                <div className="rounded-xl bg-accent/30 p-2.5 text-center">
+                  <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Faturas</p>
+                  <p className="text-sm font-bold mt-0.5">{validationData.summary.totalInvoicesChecked}</p>
+                </div>
+                <div className="rounded-xl bg-accent/30 p-2.5 text-center">
+                  <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Divergências</p>
+                  <p className={cn("text-sm font-bold mt-0.5", validationData.summary.discrepanciesFound > 0 ? "text-destructive" : "text-emerald-500")}>
+                    {validationData.summary.discrepanciesFound}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="py-8 text-center border border-dashed border-border/50 rounded-xl bg-accent/10">
+                <Info className="h-8 w-8 text-muted-foreground/30 mx-auto mb-2" />
+                <p className="text-xs text-muted-foreground">Nenhuma validação executada recentemente.</p>
+              </div>
+            )}
+          </div>
+
+          {validationData && (
+            <div className="space-y-4" id="validation-tab">
+              {validationData.summary.discrepancyDetails.length > 0 && (
+                <div className="space-y-2">
+                  <h4 className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground ml-1">Discrepâncias Detalhadas</h4>
+                  {validationData.summary.discrepancyDetails.map((d: any, idx: number) => (
+                    <div key={idx} className="rounded-2xl border border-destructive/20 bg-destructive/5 p-3 animate-in slide-in-from-top-2 duration-300">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                          {d.status === 'error' ? <AlertCircle className="h-3.5 w-3.5 text-destructive" /> : <Info className="h-3.5 w-3.5 text-amber-500" />}
+                          {d.cardName}
+                        </span>
+                        <Badge variant={d.status === 'error' ? 'destructive' : 'outline'} className="text-[9px] h-4">
+                          {d.status.toUpperCase()}
+                        </Badge>
+                      </div>
+                      <div className="flex justify-between items-center text-[10px] text-muted-foreground">
+                        <span>Valor no Cartão: <strong>R$ {d.cardValue.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong></span>
+                        <span>Soma da Fatura: <strong>R$ {d.faturaValue.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong></span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <h4 className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground ml-1">Logs de Auditoria</h4>
+                <div className="rounded-2xl bg-card border border-border/50 overflow-hidden">
+                  <div className="max-h-[300px] overflow-y-auto no-scrollbar" id="validation-logs">
+                    <table className="w-full text-left text-[10px] border-collapse">
+                      <thead className="sticky top-0 bg-accent/50 backdrop-blur-sm border-b border-border/50">
+                        <tr>
+                          <th className="px-3 py-2 font-bold text-muted-foreground">Data/Hora (UTC)</th>
+                          <th className="px-3 py-2 font-bold text-muted-foreground">Mensagem</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {validationData.logs.map((log: string, idx: number) => {
+                          const [time, ...msgParts] = log.split(" - ");
+                          const msg = msgParts.join(" - ");
+                          return (
+                            <tr key={idx} className="border-b border-border/30 last:border-0 hover:bg-accent/20 transition-colors">
+                              <td className="px-3 py-2 text-muted-foreground tabular-nums whitespace-nowrap">{time}</td>
+                              <td className="px-3 py-2 font-medium text-foreground">{msg}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
 
       <button
         onClick={openAddDialog}
