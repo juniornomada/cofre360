@@ -1297,9 +1297,13 @@ function CardsPage() {
                           <SelectContent>
                             {bankAccounts.map((acc) => (
                               <SelectItem key={acc.id} value={acc.id} className="text-xs">
-                                {acc.icon} {acc.name} — R$ {acc.balance.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                                <div className="flex items-center gap-2">
+                                  <BankLogo icon={acc.icon || "custom"} color={acc.color || "from-gray-500 to-gray-700"} name={acc.name} size="xs" />
+                                  <span>{acc.name} — R$ {acc.balance.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
+                                </div>
                               </SelectItem>
                             ))}
+
                           </SelectContent>
                         </Select>
                       </div>
