@@ -514,7 +514,7 @@ function Dashboard() {
       }
     }
 
-    try {
+    const promise = (async () => {
       // Balance check for expenses from bank accounts (including transfers which are expenses on the origin side)
       if (editTx.type === "expense" && editTx.bank_account_id) {
         const acc = accountBalances.find(a => a.id === editTx.bank_account_id);
@@ -1420,7 +1420,7 @@ function Dashboard() {
             <div className="flex flex-col gap-3">
               <div>
                 <label className="text-xs text-muted-foreground mb-1 block">Nome</label>
-                <input autoFocus={false} value={editTx.name} onChange={e => setEditTx({ ...editTx, name: e.target.value })} className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground outline-none" />
+                <input autoFocus={false} value={editTx.name} onChange={e => setEditTx({ ...editTx, name: e.target.value })} onKeyDown={e => e.key === "Enter" && handleSaveEdit()} className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground outline-none" />
               </div>
               <Suspense fallback={<div className="h-20 flex items-center justify-center"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>}>
                 <CategoryPicker
@@ -1582,6 +1582,7 @@ function Dashboard() {
                         <CalculatorAmountInput
                           value={editInstallmentFixedValue}
                           onChange={v => setEditInstallmentFixedValue(v)}
+                          onEnter={handleSaveEdit}
                         />
                         <p className="text-[10px] text-muted-foreground leading-relaxed mt-1">
                           Total da compra:{" "}
