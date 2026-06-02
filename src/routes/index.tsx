@@ -1164,7 +1164,6 @@ function Dashboard() {
                   to="/cards" 
                   className="interactive-card flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl bg-background/40 hover:bg-background/60 transition-colors overflow-hidden relative w-full"
                 >
-                  <div className={cn("absolute inset-y-0 left-0 w-1 bg-gradient-to-b", card.color || "from-primary to-primary/60")} />
                   <div className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br text-base", card.color || "from-primary/20 to-primary/10")}>
                     {card.emoji || "💳"}
                   </div>
