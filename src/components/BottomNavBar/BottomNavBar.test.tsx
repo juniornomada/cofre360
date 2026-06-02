@@ -67,13 +67,16 @@ describe('BottomNavBar Accessibility', () => {
 
   it('has correct ARIA attributes', () => {
     renderWithTheme('light');
-    const links = screen.getAllByTestId('nav-link');
+    const links = screen.getAllByTestId(/nav-link-|profile-icon/);
     
-    expect(links[0]).toHaveAttribute('aria-current', 'page');
-    expect(links[0]).toHaveAttribute('aria-label', 'Início');
+    const homeLink = screen.getByTestId('nav-link-início');
+    expect(homeLink).toHaveAttribute('aria-current', 'page');
+    expect(homeLink).toHaveAttribute('aria-label', 'Início');
     
-    links.slice(1).forEach(link => {
-      expect(link).not.toHaveAttribute('aria-current');
+    links.forEach(link => {
+      if (link !== homeLink) {
+        expect(link).not.toHaveAttribute('aria-current');
+      }
     });
   });
 });
