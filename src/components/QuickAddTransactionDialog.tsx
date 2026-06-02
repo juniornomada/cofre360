@@ -152,6 +152,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
     setInstallmentCount(2);
     setInstallmentMode("divide");
     setInstallmentFixedValue(0);
+
     setNewTx({
       icon: copyData ? copyData.icon : (initialType === "income" ? "💰" : "🍔"),
       name: copyData ? copyData.name : "",
@@ -670,7 +671,15 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                               <button
                                 key={n}
                                 type="button"
-                                onClick={() => setInstallmentCount(n)}
+                                onClick={() => {
+                                  if (installmentMode === "divide") {
+                                    // If dividing, we want to keep the total amount typed before selecting installments
+                                    setInstallmentCount(n);
+                                  } else {
+                                    setInstallmentCount(n);
+                                  }
+                                }}
+
                                 className={cn(
                                   "px-2 py-1 rounded text-[10px] font-medium transition-colors border",
                                   installmentCount === n 
