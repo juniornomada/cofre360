@@ -23,6 +23,8 @@ export function BottomNav() {
         {navItems.map((item) => {
           const isPending = isLoading && pendingLocation?.pathname === item.to;
           const isActive = (location.pathname === item.to && !isLoading) || isPending;
+          const shouldHighlight = isActive && item.to !== "/orcametas";
+          
           return (
             <Link
               key={item.to}
@@ -31,7 +33,7 @@ export function BottomNav() {
               preload="intent"
               className={cn(
                 "nav-item-transition flex flex-col items-center gap-0.5 rounded-xl px-1.5 py-2 text-[9px] shrink-0 min-w-[3rem]",
-                isActive
+                shouldHighlight
                   ? "text-primary"
                   : "text-muted-foreground hover:text-foreground"
               )}
@@ -39,16 +41,16 @@ export function BottomNav() {
               <item.icon
                 className={cn(
                   "h-5 w-5 transition-transform duration-200",
-                  isActive && "stroke-[2.5] scale-110"
+                  shouldHighlight && "stroke-[2.5] scale-110"
                 )}
               />
               <span className={cn(
                 "font-medium transition-all duration-200 whitespace-nowrap",
-                isActive && "font-semibold"
+                shouldHighlight && "font-semibold"
               )}>
                 {item.label}
               </span>
-              {isActive && item.to !== "/orcametas" && (
+              {shouldHighlight && (
                 <span className="mt-0.5 h-1 w-1 rounded-full bg-primary animate-scale-in" />
               )}
             </Link>
