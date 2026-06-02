@@ -270,6 +270,7 @@ function InvestPage() {
                 <input
                   value={editItem.name}
                   onChange={e => setEditItem({ ...editItem, name: e.target.value })}
+                  onKeyDown={e => e.key === "Enter" && handleSaveEdit()}
                   className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground outline-none"
                 />
               </div>
@@ -290,6 +291,7 @@ function InvestPage() {
                   step="0.01"
                   value={editItem.value}
                   onChange={e => setEditItem({ ...editItem, value: parseFloat(e.target.value) || 0 })}
+                  onKeyDown={e => e.key === "Enter" && handleSaveEdit()}
                   className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground outline-none"
                 />
               </div>
@@ -300,6 +302,7 @@ function InvestPage() {
                   step="0.01"
                   value={editItem.change}
                   onChange={e => setEditItem({ ...editItem, change: parseFloat(e.target.value) || 0 })}
+                  onKeyDown={e => e.key === "Enter" && handleSaveEdit()}
                   className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground outline-none"
                 />
               </div>
@@ -352,6 +355,7 @@ function InvestPage() {
               <input
                 value={newItem.name}
                 onChange={e => setNewItem({ ...newItem, name: e.target.value })}
+                onKeyDown={e => e.key === "Enter" && newItem.name && newItem.value && handleAdd()}
                 placeholder="Ex: Tesouro Selic"
                 className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none"
               />
@@ -373,6 +377,7 @@ function InvestPage() {
                 step="0.01"
                 value={newItem.value || ""}
                 onChange={e => setNewItem({ ...newItem, value: parseFloat(e.target.value) || 0 })}
+                onKeyDown={e => e.key === "Enter" && newItem.name && newItem.value && handleAdd()}
                 placeholder="0.00"
                 className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none"
               />
@@ -384,6 +389,7 @@ function InvestPage() {
                 step="0.01"
                 value={newItem.change || ""}
                 onChange={e => setNewItem({ ...newItem, change: parseFloat(e.target.value) || 0 })}
+                onKeyDown={e => e.key === "Enter" && newItem.name && newItem.value && handleAdd()}
                 placeholder="0.00"
                 className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none"
               />
