@@ -333,13 +333,6 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
       (document.activeElement as HTMLElement)?.blur();
     }
   };
-    } catch (error: any) {
-      console.error("Error adding transaction:", error);
-      toast.error("Erro ao adicionar transação: " + getFriendlyErrorMessage(error).message);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   return (
     <>
