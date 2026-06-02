@@ -2,11 +2,13 @@
  import { useEffect, useRef, useCallback } from "react";
  import { PrefetchTrigger } from "../lib/metrics";
  
- interface SmartLinkProps extends LinkProps {
-   children: React.ReactNode;
-   className?: string;
-   style?: React.CSSProperties;
- }
+interface SmartLinkProps extends LinkProps {
+  children: React.ReactNode;
+  className?: string;
+  style?: React.CSSProperties;
+  title?: string;
+  "aria-current"?: "page" | "step" | "location" | "date" | "time" | boolean | undefined;
+}
  
  /**
   * A wrapper around TanStack Link that triggers prefetch on:
