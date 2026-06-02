@@ -368,27 +368,22 @@ export function TransactionsPage() {
     if (sortBy === "amount-desc") return b.amount - a.amount;
     if (sortBy === "amount-asc") return a.amount - b.amount;
     if (sortBy === "installments") {
-      // Primary: group by installment_group_id if both have it
-      if (a.installment_group_id && b.installment_group_id && a.installment_group_id === b.installment_group_id) {
-        return (a.installment_number ?? 0) - (b.installment_number ?? 0);
-      }
-      
-      // Secondary: group by clean name
+      // Primary: group by clean name
       const nameA = stripInstallmentSuffix(a.name).toLowerCase();
       const nameB = stripInstallmentSuffix(b.name).toLowerCase();
       
       if (nameA < nameB) return -1;
       if (nameA > nameB) return 1;
       
-      // Tertiary: installment number
-      if ((a.installment_number ?? 0) !== (b.installment_number ?? 0)) {
-        return (a.installment_number ?? 0) - (b.installment_number ?? 0);
+      // Secondary: different groups with same name should stay together but distinct
+      if (a.installment_group_id !== b.installment_group_id) {
+        const dateA = parseTxDate(a.date, a.created_at)?.getTime() ?? 0;
+        const dateB = parseTxDate(b.date, b.created_at)?.getTime() ?? 0;
+        return dateB - dateA;
       }
       
-      // Fallback: date
-      const dateA = parseTxDate(a.date, a.created_at)?.getTime() ?? 0;
-      const dateB = parseTxDate(b.date, b.created_at)?.getTime() ?? 0;
-      return dateB - dateA;
+      // Tertiary: installment number
+      return (a.installment_number ?? 0) - (b.installment_number ?? 0);
     }
     return 0;
   });
