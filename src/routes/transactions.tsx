@@ -11,6 +11,9 @@ const CategoryPieCharts = lazy(() => import("@/components/CategoryPieCharts").th
 const CategoryPicker = lazy(() => import("@/components/CategoryPicker").then(m => ({ default: m.CategoryPicker })));
 const QuickAddTransactionDialog = lazy(() => import("@/components/QuickAddTransactionDialog").then(m => ({ default: m.QuickAddTransactionDialog })));
 import { CalculatorAmountInput } from "@/components/CalculatorAmountInput";
+import { BankLogo } from "@/components/BankLogo";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
  import { format, parse } from "date-fns";
  import { calculateInstallmentDetails } from "@/lib/installment-utils";
 import { ptBR } from "date-fns/locale";
