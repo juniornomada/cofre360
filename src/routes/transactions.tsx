@@ -54,8 +54,11 @@ interface Transaction {
 interface BankAccountOption {
   id: string;
   name: string;
+  icon?: string | null;
+  color?: string | null;
   balance?: number;
 }
+
 
 interface CardOption {
   name: string;
@@ -224,8 +227,11 @@ export function TransactionsPage() {
         setBankAccounts(accts.map(a => ({ 
           id: a.id, 
           name: a.name, 
+          icon: a.icon,
+          color: a.color,
           balance: Number(a.balance) + (incMap[a.id] || 0) - (expMap[a.id] || 0) 
         })));
+
       }
     } catch (error: any) {
       console.error("Error fetching bank accounts:", error);
