@@ -11,8 +11,8 @@ export const validateAgreement = createServerFn({ method: "POST" })
     }
 
     const [cardsRes, txRes] = await Promise.all([
-      supabase.from("cards").select("*").eq("user_id", session.user.id),
-      supabase.from("transactions").select("*").eq("user_id", session.user.id).not("card", "is", null),
+      supabaseAdmin.from("cards").select("*").eq("user_id", session.user.id),
+      supabaseAdmin.from("transactions").select("*").eq("user_id", session.user.id).not("card", "is", null),
     ]);
 
     if (cardsRes.error) throw cardsRes.error;
