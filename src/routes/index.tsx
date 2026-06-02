@@ -1114,7 +1114,7 @@ function Dashboard() {
 
 
         {allCards.length === 0 && !loading ? (
-          <div className="rounded-2xl border border-dashed border-border/50 p-6 text-center">
+          <div className="rounded-xl bg-background/40 border border-dashed border-border/50 p-6 text-center">
             <CreditCard className="mx-auto h-8 w-8 text-muted-foreground/30 mb-2" />
             <p className="text-xs text-muted-foreground">Você ainda não tem cartões cadastrados.</p>
             <Link to="/cards" search={{ action: "add" } as any} className="text-[10px] text-primary font-medium mt-1 inline-block">
@@ -1122,7 +1122,7 @@ function Dashboard() {
             </Link>
           </div>
         ) : allCards.filter(c => c.is_visible !== false && c.is_visible !== null).length === 0 && !loading ? (
-          <div className="rounded-2xl bg-accent/30 p-4 border border-border/30">
+          <div className="rounded-xl bg-background/40 p-4 border border-border/30">
             <div className="flex items-start gap-3">
               <div className="bg-amber-500/10 p-2 rounded-lg">
                 <AlertTriangle className="h-4 w-4 text-amber-500" />
@@ -1139,7 +1139,7 @@ function Dashboard() {
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
             {allCards.filter(c => c.is_visible !== false && c.is_visible !== null).map((card) => {
               const isPaid = cardInvoicePaid[card.id] || false;
               const displayAmount = cardNextInvoices[card.name] || 0;
