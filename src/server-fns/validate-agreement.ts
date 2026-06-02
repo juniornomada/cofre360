@@ -5,16 +5,15 @@ import { groupByBillingCycle, type CardTransaction } from "@/lib/invoice-utils";
 export const validateAgreement = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { userId } = context as { userId: string };
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { supabase, userId } = context as { supabase: any; userId: string };
 
     const [cardsRes, txRes] = await Promise.all([
-      supabaseAdmin.from("cards").select("*").eq("user_id", userId),
-      supabaseAdmin.from("transactions").select("*").eq("user_id", userId).not("card", "is", null),
+      supabase.from("cards").select("*").eq("user_id", userId),
+      supabase.from("transactions").select("*").eq("user_id", userId).not("card", "is", null),
     ]);
 
-    if (cardsRes.error) throw cardsRes.error;
-    if (txRes.error) throw txRes.error;
+    if (cardsRes.error) throw new Error(cardsRes.error.message || "Erro ao carregar cartões para validação.");
+    if (txRes.error) throw new Error(txRes.error.message || "Erro ao carregar transações para validação.");
 
     const cards = cardsRes.data || [];
     const transactions = txRes.data || [];

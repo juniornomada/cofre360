@@ -17,6 +17,7 @@ import { BankLogo, bankPresets } from "@/components/BankLogo";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { useServerFn } from "@tanstack/react-start";
 import { validateAgreement } from "@/server-fns/validate-agreement";
 import { InvoiceInconsistencyAlert } from "@/components/InvoiceInconsistencyAlert";
 import {
@@ -135,6 +136,7 @@ function SortableCardWrapper({ id, children, animationDelay }: { id: string; chi
    component: CardsPage,
  });
 function CardsPage() {
+  const validateAgreementFn = useServerFn(validateAgreement);
   const [cards, setCards] = useState<CardData[]>([]);
   const [cardTotals, setCardTotals] = useState<Record<string, number>>({});
   const [cardPayments, setCardPayments] = useState<Record<string, number>>({});
@@ -195,7 +197,13 @@ function CardsPage() {
   const runValidation = async (silent = true) => {
     setIsValidating(true);
     try {
-      const result = await validateAgreement();
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        if (!silent) toast.error("Sessão expirada. Faça login novamente para validar.");
+        return;
+      }
+
+      const result = await validateAgreementFn();
       setValidationData(result);
       if (!silent) {
         if (result.status === 'ok') {
@@ -208,7 +216,14 @@ function CardsPage() {
       }
     } catch (error: any) {
       console.error("Validation error:", error);
-      if (!silent) toast.error("Erro ao validar: " + error.message);
+      let message = error?.message || "Erro desconhecido";
+      if (error instanceof Response) {
+        message = await error.text().catch(() => "Falha de autorização");
+      }
+      if (message.includes("Unauthorized") || message.includes("authorization")) {
+        message = "Sessão expirada. Faça login novamente para validar.";
+      }
+      if (!silent) toast.error("Erro ao validar: " + message);
     } finally {
       setIsValidating(false);
     }
