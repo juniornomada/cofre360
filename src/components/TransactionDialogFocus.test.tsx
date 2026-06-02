@@ -14,6 +14,11 @@ vi.mock("@/integrations/supabase/client", () => ({
         order: () => ({
           limit: () => Promise.resolve({ data: [], error: null }),
         }),
+        not: () => ({
+          order: () => ({
+            limit: () => Promise.resolve({ data: [], error: null }),
+          }),
+        }),
       }),
       insert: () => ({
         select: () => Promise.resolve({ data: [{}], error: null }),
@@ -82,17 +87,14 @@ describe("Transaction Dialog Keyboard Closure", () => {
     const nameInput = screen.getByPlaceholderText("Ex: Supermercado");
     fireEvent.change(nameInput, { target: { value: "Teste" } });
     
-    // We need to set a value as well
-    // Since it's a tracking app, we just need to satisfy the button's disabled condition
-    // which is !newTx.name || !newTx.amount
-    // We can use fireEvent to simulate typing in the calculator if needed, 
-    // but here we just need to ensure handleAdd is called.
+    // Fill amount (CalculatorAmountInput is an input with aria-label)
+    const amountInput = screen.getByLabelText(/Valor:/i);
+    fireEvent.change(amountInput, { target: { value: "100" } });
     
-    // In our component, handleAdd is called when clicking "Adicionar"
+    // Find the save button
     const salvarButton = screen.getByText("Adicionar");
     
-    // We might need to bypass the disabled state by manually setting amount if the mock doesn't propagate it
-    // But let's see if clicking works.
+    // Click it
     fireEvent.click(salvarButton);
 
     // handleAdd is async and calls blur() at the end
@@ -101,4 +103,5 @@ describe("Transaction Dialog Keyboard Closure", () => {
     }, { timeout: 2000 });
   });
 });
+
 
