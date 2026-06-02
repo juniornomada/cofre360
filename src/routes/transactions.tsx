@@ -884,7 +884,7 @@ export function TransactionsPage() {
               <div className="relative">
                 <label className="text-xs text-muted-foreground mb-1 block">Nome</label>
                 <input
-                  autoFocus
+                  autoFocus={false}
                   inputMode={editNameMode}
                   value={editTx.name}
                   onChange={e => {
@@ -950,6 +950,7 @@ export function TransactionsPage() {
                 <CalculatorAmountInput 
                   value={editTx.amount} 
                   onChange={(v) => setEditTx({ ...editTx, amount: v })}
+                  autoFocus={false}
                 />
               </div>
               <div>
