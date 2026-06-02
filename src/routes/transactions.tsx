@@ -966,7 +966,14 @@ export function TransactionsPage() {
                 <label className="text-xs text-muted-foreground mb-1 block">Valor (R$)</label>
                 <CalculatorAmountInput 
                   value={editTx.amount} 
-                  onChange={(v) => setEditTx({ ...editTx, amount: v })}
+                  onChange={(v) => {
+                    const oldAmount = editTx.amount;
+                    setEditTx({ ...editTx, amount: v });
+                    // Sincroniza o valor fixo se ele for igual ao valor total anterior (ainda não ajustado manualmente)
+                    if (editInstallmentMode === "fixed" && (editInstallmentFixedValue === 0 || editInstallmentFixedValue === oldAmount)) {
+                      setEditInstallmentFixedValue(v);
+                    }
+                  }}
                   autoFocus={false}
                 />
               </div>
@@ -1108,7 +1115,13 @@ export function TransactionsPage() {
                         </button>
                         <button
                           type="button"
-                          onClick={() => setEditInstallmentMode("fixed")}
+                          onClick={() => {
+                            setEditInstallmentMode("fixed");
+                            // Mantém o valor digitado ao selecionar valor fixo
+                            if (editTx && (editInstallmentFixedValue === 0 || editInstallmentFixedValue === editTx.amount / (editTx.total_installments || 1))) {
+                              setEditInstallmentFixedValue(editTx.amount);
+                            }
+                          }}
                           className={`flex-1 rounded-lg py-1.5 text-[11px] font-medium transition-colors ${editInstallmentMode === "fixed" ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground"}`}
                         >
                           Valor por parcela

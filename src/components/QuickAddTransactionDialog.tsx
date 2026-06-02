@@ -535,14 +535,21 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                     </PopoverContent>
                   </Popover>
                 </div>
-                 <div>
-                   <label className="text-[11px] font-semibold text-foreground mb-0.5 block">Valor (R$)</label>
-                   <CalculatorAmountInput 
-                     value={newTx.amount} 
-                     onChange={(v) => setNewTx({ ...newTx, amount: v })} 
-                     onEnter={handleAdd}
-                   />
-                 </div>
+                  <div>
+                    <label className="text-[11px] font-semibold text-foreground mb-0.5 block">Valor (R$)</label>
+                    <CalculatorAmountInput 
+                      value={newTx.amount} 
+                      onChange={(v) => {
+                        const oldAmount = newTx.amount;
+                        setNewTx({ ...newTx, amount: v });
+                        // Sincroniza o valor fixo se ele for igual ao valor total anterior (ainda não ajustado manualmente)
+                        if (installmentMode === "fixed" && (installmentFixedValue === 0 || installmentFixedValue === oldAmount)) {
+                          setInstallmentFixedValue(v);
+                        }
+                      }} 
+                      onEnter={handleAdd}
+                    />
+                  </div>
               </div>
               <div>
                 <label className="text-[11px] font-semibold text-foreground mb-1 flex items-center gap-1">
@@ -680,10 +687,24 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                   {installmentEnabled && (
                     <>
                       <div className="flex gap-1.5">
-                        <button type="button" onClick={() => setInstallmentMode("divide")} className={`flex-1 rounded-lg py-1 text-[10px] font-medium transition-colors ${installmentMode === "divide" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground"}`}>
+                        <button 
+                          type="button" 
+                          onClick={() => setInstallmentMode("divide")} 
+                          className={`flex-1 rounded-lg py-1 text-[10px] font-medium transition-colors ${installmentMode === "divide" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground"}`}
+                        >
                           Dividir total
                         </button>
-                        <button type="button" onClick={() => setInstallmentMode("fixed")} className={`flex-1 rounded-lg py-1 text-[10px] font-medium transition-colors ${installmentMode === "fixed" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground"}`}>
+                        <button 
+                          type="button" 
+                          onClick={() => {
+                            setInstallmentMode("fixed");
+                            // Mantém o valor digitado ao selecionar valor fixo
+                            if (installmentFixedValue === 0 || installmentFixedValue === newTx.amount / (Number(installmentCount) || 1)) {
+                              setInstallmentFixedValue(newTx.amount);
+                            }
+                          }} 
+                          className={`flex-1 rounded-lg py-1 text-[10px] font-medium transition-colors ${installmentMode === "fixed" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground"}`}
+                        >
                           Valor fixo
                         </button>
                       </div>
