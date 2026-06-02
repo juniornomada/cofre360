@@ -535,14 +535,21 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                     </PopoverContent>
                   </Popover>
                 </div>
-                 <div>
-                   <label className="text-[11px] font-semibold text-foreground mb-0.5 block">Valor (R$)</label>
-                   <CalculatorAmountInput 
-                     value={newTx.amount} 
-                     onChange={(v) => setNewTx({ ...newTx, amount: v })} 
-                     onEnter={handleAdd}
-                   />
-                 </div>
+                  <div>
+                    <label className="text-[11px] font-semibold text-foreground mb-0.5 block">Valor (R$)</label>
+                    <CalculatorAmountInput 
+                      value={newTx.amount} 
+                      onChange={(v) => {
+                        const oldAmount = newTx.amount;
+                        setNewTx({ ...newTx, amount: v });
+                        // Sincroniza o valor fixo se ele for igual ao valor total anterior (ainda não ajustado manualmente)
+                        if (installmentMode === "fixed" && (installmentFixedValue === 0 || installmentFixedValue === oldAmount)) {
+                          setInstallmentFixedValue(v);
+                        }
+                      }} 
+                      onEnter={handleAdd}
+                    />
+                  </div>
               </div>
               <div>
                 <label className="text-[11px] font-semibold text-foreground mb-1 flex items-center gap-1">
