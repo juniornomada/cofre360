@@ -938,7 +938,7 @@ function CardsPage() {
                 <div className="relative">
                   <div className="flex justify-between items-start gap-2 mb-1.5">
                     <div className="min-w-0">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-white/90">Fatura atual</p>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-white/90">Fatura {activeInvoicePeriod?.label.split(" (")[0] || "atual"}</p>
                       <p className="text-base font-extrabold text-white tabular-nums drop-shadow-md truncate">
                         R$ {invoiceRemaining.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                       </p>
