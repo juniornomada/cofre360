@@ -161,11 +161,11 @@ export function TransactionItem({
                 {restoreAccents(displayName)}
                 {isInstallment && (
                   <span 
-                    className="ml-1 text-[11px] font-medium text-muted-foreground whitespace-nowrap"
+                    className="ml-1 text-[11px] font-medium text-muted-foreground whitespace-nowrap bg-muted/50 px-1.5 py-0.5 rounded-md border border-border/30"
                     aria-label={`Parcela ${installment_number} de ${total_installments}`}
                     tabIndex={0}
                   >
-                    ({installment_number}/{total_installments})
+                    Parcela {installment_number} de {total_installments} ({installment_number}/{total_installments})
                   </span>
                 )}
               </>
