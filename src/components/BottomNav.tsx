@@ -21,8 +21,10 @@ export function BottomNav() {
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/80 backdrop-blur-xl">
       <div className="mx-auto flex max-w-md items-center justify-around px-1 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] overflow-x-auto no-scrollbar">
         {navItems.map((item) => {
+          // Detect if the current item matches the active route or a pending navigation
           const isPending = isLoading && pendingLocation?.pathname === item.to;
           const isActive = (location.pathname === item.to && !isLoading) || isPending;
+
           
           return (
             <Link
