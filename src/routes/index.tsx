@@ -340,15 +340,27 @@ function Dashboard() {
 
       if (txTotals) {
         for (const card of cards || []) {
-          const cardTx = txTotals.filter(t => t.card === card.name);
-          const totalUsedEver = cardTx.reduce((sum, t) => sum + Number(t.amount), 0);
+          // Get billing cycles for the current card
+          const txList = txTotals.filter(t => t.card === card.name);
+          const formattedTxs = txList.map(t => ({
+            ...t,
+            id: "", // dummy
+            name: "", // dummy
+            icon: "", // dummy
+            category: "", // dummy
+            type: "expense",
+            created_at: t.date || new Date().toISOString()
+          }));
+          const billingCycles = groupByBillingCycle(formattedTxs as any, card.closing_day || 1, card.due_day || 10);
+          const currentCycle = billingCycles.find(p => p.key === "current") || billingCycles[1] || billingCycles[0];
+          const currentInvoiceAmount = currentCycle?.total || 0;
+          
+          const totalUsedEver = txList.reduce((sum, t) => sum + Number(t.amount), 0);
           const totalPaidEver = cardPaymentsTotalMap[card.id] || 0;
+          const outstandingBalance = Math.max(0, totalUsedEver - totalPaidEver);
           
-          // Match Cards.tsx logic: outstanding balance = total used - total paid
-          const currentBalance = Math.max(0, totalUsedEver - totalPaidEver);
-          
-          nextInvoiceTotals[card.name] = currentBalance;
-          invoicePaidStatus[card.id] = (currentBalance < 0.01 && totalUsedEver > 0);
+          nextInvoiceTotals[card.name] = currentInvoiceAmount;
+          invoicePaidStatus[card.id] = (outstandingBalance < 0.01 && totalUsedEver > 0);
           totals[card.name] = totalUsedEver;
         }
       }
