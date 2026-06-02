@@ -979,7 +979,7 @@ function CardsPage() {
                         de R$ {card.card_limit.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                       </p>
                       <p className="text-[10px] text-white/80 tabular-nums">
-                        Disponível <span className="font-bold text-white">R$ {Math.max(0, card.card_limit - invoiceRemaining).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
+                        Disponível <span className="font-bold text-white">R$ {Math.max(0, card.card_limit - outstandingBalance).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
                       </p>
                     </div>
                   )}
