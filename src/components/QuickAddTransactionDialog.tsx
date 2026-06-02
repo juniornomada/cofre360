@@ -440,11 +440,12 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                 </div>
                  <div>
                    <label className="text-[11px] font-semibold text-foreground mb-0.5 block">Valor (R$)</label>
-                   <CalculatorAmountInput 
-                     value={newTx.amount} 
-                     onChange={(v) => setNewTx({ ...newTx, amount: v })} 
-                     onEnter={handleAdd}
-                   />
+                    <CalculatorAmountInput 
+                      value={newTx.amount} 
+                      onChange={(v) => setNewTx({ ...newTx, amount: v })} 
+                      onEnter={handleAdd}
+                      autoFocus
+                    />
                  </div>
               </div>
             </>
