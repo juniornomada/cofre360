@@ -970,7 +970,7 @@ function CardsPage() {
                 <p className="text-[10px] text-muted-foreground mt-0.5">Sincronização entre Cartões e Faturas</p>
               </div>
               <button
-                onClick={runValidation}
+                onClick={() => runValidation(false)}
                 disabled={isValidating}
                 className="interactive-button flex items-center gap-2 rounded-xl bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-50"
                 id="revalidate-btn"
