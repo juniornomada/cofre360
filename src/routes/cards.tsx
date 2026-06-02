@@ -655,37 +655,55 @@ function CardsPage() {
         </div>
       </div>
 
-      {cards.length > 0 && (
-        <div className="grid grid-cols-2 gap-3 animate-stagger-in">
-          <div className="rounded-2xl bg-card border border-border/50 p-4">
-            <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Fatura total</p>
-            <p className="mt-1 text-lg font-bold text-foreground tabular-nums">
-              R$ {totalAllInvoices.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-            </p>
-          </div>
-          <div className="rounded-2xl bg-card border border-border/50 p-4">
-            <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Limite disponível</p>
-            <p className="mt-1 text-lg font-bold text-primary tabular-nums">
-              R$ {totalAvailable.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-            </p>
-          </div>
-        </div>
-      )}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-2 rounded-2xl p-1 bg-accent/30 h-11">
+          <TabsTrigger value="list" className="rounded-xl text-xs font-semibold data-[state=active]:bg-background data-[state=active]:shadow-sm">
+            <CreditCard className="h-3.5 w-3.5 mr-2" />
+            Lista de Cartões
+          </TabsTrigger>
+          <TabsTrigger value="validation" className="rounded-xl text-xs font-semibold data-[state=active]:bg-background data-[state=active]:shadow-sm">
+            <AlertCircle className="h-3.5 w-3.5 mr-2" />
+            Validação
+            {validationData?.summary?.discrepanciesFound > 0 && (
+              <Badge variant="destructive" className="ml-2 h-4 min-w-4 px-1 text-[9px] flex items-center justify-center">
+                {validationData.summary.discrepanciesFound}
+              </Badge>
+            )}
+          </TabsTrigger>
+        </TabsList>
 
-      {cards.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-16 text-center rounded-2xl bg-card border border-dashed border-border/50">
-          <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-3">
-            <CreditCard className="h-7 w-7 text-primary" />
-          </div>
-          <p className="text-sm font-semibold text-foreground">Nenhum cartão ainda</p>
-          <p className="text-xs text-muted-foreground mt-1">Adicione seu primeiro cartão abaixo</p>
-        </div>
-      )}
+        <TabsContent value="list" className="mt-5 space-y-5">
+          {cards.length > 0 && (
+            <div className="grid grid-cols-2 gap-3 animate-stagger-in">
+              <div className="rounded-2xl bg-card border border-border/50 p-4">
+                <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Fatura total</p>
+                <p className="mt-1 text-lg font-bold text-foreground tabular-nums">
+                  R$ {totalAllInvoices.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                </p>
+              </div>
+              <div className="rounded-2xl bg-card border border-border/50 p-4">
+                <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Limite disponível</p>
+                <p className="mt-1 text-lg font-bold text-primary tabular-nums">
+                  R$ {totalAvailable.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                </p>
+              </div>
+            </div>
+          )}
 
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-        <SortableContext items={cards.map((c) => c.id)} strategy={verticalListSortingStrategy}>
-          <div className="flex flex-col gap-4">
-            {cards.map((card, i) => {
+          {cards.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-16 text-center rounded-2xl bg-card border border-dashed border-border/50">
+              <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-3">
+                <CreditCard className="h-7 w-7 text-primary" />
+              </div>
+              <p className="text-sm font-semibold text-foreground">Nenhum cartão ainda</p>
+              <p className="text-xs text-muted-foreground mt-1">Adicione seu primeiro cartão abaixo</p>
+            </div>
+          )}
+
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={cards.map((c) => c.id)} strategy={verticalListSortingStrategy}>
+              <div className="flex flex-col gap-4">
+                {cards.map((card, i) => {
       const cardTransactionsFiltered = cardTransactions.filter(t => t.card === card.name);
       const invoicePeriodsCard = groupByBillingCycle(cardTransactionsFiltered, card.closing_day, card.due_day);
       const activeInvoicePeriod = invoicePeriodsCard.find(p => p.key === "current") || invoicePeriodsCard[1] || invoicePeriodsCard[0];
