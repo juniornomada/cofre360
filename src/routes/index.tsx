@@ -1103,10 +1103,10 @@ function Dashboard() {
       <div className="rounded-2xl bg-gradient-to-br from-primary/15 via-card to-card p-5 border border-border/40">
         <div className="flex items-center justify-between gap-4 mb-2">
           <h2 className="text-sm font-semibold text-foreground flex items-center gap-1.5 uppercase">
-
             <CreditCard className="h-4 w-4 text-primary" />
             CARTÕES
           </h2>
+
           <Link to="/cards" className="text-[10px] font-medium text-primary flex items-center gap-0.5">
             Gerenciar <ChevronRight className="h-3 w-3" />
           </Link>
