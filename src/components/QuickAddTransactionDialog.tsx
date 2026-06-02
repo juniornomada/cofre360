@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
@@ -136,12 +136,32 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
     }
   }, []);
 
+  const isFirstRender = useRef(true);
+
   // Reset state every time the dialog opens with the requested initial type.
   useEffect(() => {
      if (!open) {
        setConfirmInstallmentDiff(false);
-        return;
-      }
+       isFirstRender.current = true;
+       return;
+     }
+
+     if (isFirstRender.current) {
+       // On initial open, handle potential clipboard paste
+       navigator.clipboard.readText().then(text => {
+         if (text && text.trim()) {
+           setNewTx(prev => ({
+             ...prev,
+             name: text.trim().charAt(0).toUpperCase() + text.trim().slice(1)
+           }));
+           toast.success("Texto colado da área de transferência");
+         }
+       }).catch(() => {
+         // Silently fail if clipboard access is denied
+       });
+       isFirstRender.current = false;
+     }
+
     setNameInputMode("none");
     fetchData();
     fetchHistory();
