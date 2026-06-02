@@ -3,7 +3,7 @@ import { SmartLink as Link } from "@/components/SmartLink";
 import { TransactionItem } from "@/components/TransactionItem";
 import { EmptyState } from "@/components/EmptyState";
 import { mainCategories, parseCategoryValue } from "@/lib/categories";
-import { Search, Pencil, Trash2, Plus, CalendarIcon, Loader2, Upload, CheckSquare, Square, X, SlidersHorizontal, ArrowLeftRight, ArrowRight, Eye, EyeOff, FileText } from "lucide-react";
+import { Search, Pencil, Trash2, Plus, CalendarIcon, Loader2, Upload, CheckSquare, Square, X, SlidersHorizontal, ArrowLeft, ArrowLeftRight, ArrowRight, Eye, EyeOff, FileText } from "lucide-react";
 import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react";
 
 const CsvImportDialog = lazy(() => import("@/components/CsvImportDialog").then(m => ({ default: m.CsvImportDialog })));
