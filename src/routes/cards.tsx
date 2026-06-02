@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { validateAgreement } from "@/server-fns/validate-agreement";
+import { InvoiceInconsistencyAlert } from "@/components/InvoiceInconsistencyAlert";
 import {
   DndContext,
   closestCenter,
@@ -191,21 +192,23 @@ function CardsPage() {
   const [isValidating, setIsValidating] = useState(false);
   const [activeTab, setActiveTab] = useState("list");
 
-  const runValidation = async () => {
+  const runValidation = async (silent = true) => {
     setIsValidating(true);
     try {
       const result = await validateAgreement();
       setValidationData(result);
-      if (result.status === 'ok') {
-        toast.success("Validação concluída: Tudo certo!");
-      } else if (result.status === 'partial') {
-        toast.warning("Validação concluída: Algumas divergências encontradas.");
-      } else {
-        toast.error("Validação concluída: Erros críticos detectados!");
+      if (!silent) {
+        if (result.status === 'ok') {
+          toast.success("Validação concluída: Tudo certo!");
+        } else if (result.status === 'partial') {
+          toast.warning("Validação concluída: Algumas divergências encontradas.");
+        } else {
+          toast.error("Validação concluída: Erros críticos detectados!");
+        }
       }
     } catch (error: any) {
       console.error("Validation error:", error);
-      toast.error("Erro ao validar: " + error.message);
+      if (!silent) toast.error("Erro ao validar: " + error.message);
     } finally {
       setIsValidating(false);
     }
@@ -283,8 +286,13 @@ function CardsPage() {
 
   useEffect(() => {
     fetchAll();
+    runValidation(); // Run validation on mount to check for inconsistencies
+    
     // Re-fetch when the window regains focus to avoid stale data
-    const onFocus = () => fetchAll();
+    const onFocus = () => {
+      fetchAll();
+      runValidation();
+    };
     window.addEventListener("focus", onFocus);
     return () => window.removeEventListener("focus", onFocus);
   }, [fetchAll]);
@@ -645,6 +653,9 @@ function CardsPage() {
 
   return (
     <div className="animate-page-enter flex flex-col gap-5 px-4 pt-6 pb-24">
+      <InvoiceInconsistencyAlert 
+        hasInconsistency={validationData?.status === 'failed' || validationData?.status === 'partial'} 
+      />
       <div className="flex items-center gap-3">
         <Link to="/" className="interactive-button flex h-9 w-9 items-center justify-center rounded-xl bg-card border border-border/50">
           <ArrowLeft className="h-4 w-4 text-foreground" />
@@ -959,7 +970,7 @@ function CardsPage() {
                 <p className="text-[10px] text-muted-foreground mt-0.5">Sincronização entre Cartões e Faturas</p>
               </div>
               <button
-                onClick={runValidation}
+                onClick={() => runValidation(false)}
                 disabled={isValidating}
                 className="interactive-button flex items-center gap-2 rounded-xl bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-50"
                 id="revalidate-btn"
