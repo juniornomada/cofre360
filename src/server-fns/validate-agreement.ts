@@ -5,7 +5,7 @@ import { groupByBillingCycle, type CardTransaction } from "@/lib/invoice-utils";
 export const validateAgreement = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { userId } = context;
+    const { userId } = context as { userId: string };
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const [cardsRes, txRes] = await Promise.all([
