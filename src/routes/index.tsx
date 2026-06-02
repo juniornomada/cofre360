@@ -1132,22 +1132,25 @@ function Dashboard() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {allCards.filter(c => c.is_visible !== false && c.is_visible !== null).map((card) => {
-              const total = cardTotals[card.name] || 0;
+              const used = cardTotals[card.name] || 0;
               const paid = cardPayments[card.id] || 0;
-              const remaining = Math.max(0, total - paid);
+              const remaining = Math.max(0, used - paid);
+              const nextInvoice = cardNextInvoices[card.name] || 0;
               
               const today = new Date();
               const todayDay = today.getDate();
               // Compute due date of current invoice
               let currentDue = new Date(today.getFullYear(), today.getMonth(), card.due_day || 1);
               
-              const isPaid = total > 0 && remaining === 0;
+              const isPaid = used > 0 && remaining === 0;
               
               // If invoice is already paid OR it's already closed/near due for next month
               let displayDue = currentDue;
               if (isPaid || (todayDay > (card.due_day || 1))) {
                 displayDue = new Date(today.getFullYear(), today.getMonth() + 1, card.due_day || 1);
               }
+
+              const displayAmount = isPaid ? nextInvoice : remaining;
 
               const formatDueDate = (d: Date) => format(d, "dd/MM");
 
@@ -1171,8 +1174,8 @@ function Dashboard() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className={cn("text-sm font-bold tabular-nums", remaining > 0 ? "text-destructive" : "text-primary")}>
-                      {balanceVisible ? `R$ ${fmt(remaining)}` : "R$ •••"}
+                    <p className={cn("text-sm font-bold tabular-nums", !isPaid && remaining > 0 ? "text-destructive" : "text-primary")}>
+                      {balanceVisible ? `R$ ${fmt(displayAmount)}` : "R$ •••"}
                     </p>
                     {paid > 0 && remaining > 0 && (
                       <p className="text-[9px] text-primary font-medium">
