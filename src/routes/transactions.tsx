@@ -507,7 +507,7 @@ export function TransactionsPage() {
         icon: editTx.icon,
         category: editTx.category,
         date: editTx.date,
-        amount: perInstallment,
+        amount: editTx.amount,
         type: editTx.type,
         card: editTx.card ?? null,
         bank_account_id: editTx.bank_account_id ?? null,
@@ -515,6 +515,8 @@ export function TransactionsPage() {
         current,
         total,
         installmentAmount: perInstallment,
+        installmentMode: editInstallmentMode,
+        installmentSourceAmount: editTx.amount,
         updateAllInGroup: updateScope === "all",
       });
 
