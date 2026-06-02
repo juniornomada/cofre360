@@ -1288,7 +1288,7 @@ function CardsPage() {
                                 if (!acc) return "Conta";
                                 return (
                                   <div className="flex items-center gap-1.5 min-w-0">
-                                    <BankLogo icon={acc.icon} color={acc.color} name={acc.name} size="xs" />
+                                    <BankLogo icon={acc.icon || "custom"} color={acc.color || "from-gray-500 to-gray-700"} name={acc.name} size="xs" />
                                     <span className="truncate max-w-[50px] sm:max-w-none">{acc.name}</span>
                                   </div>
                                 );
