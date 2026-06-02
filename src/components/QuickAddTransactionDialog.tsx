@@ -323,6 +323,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
        });
        if (error) throw error;
      }
+    (document.activeElement as HTMLElement)?.blur();
     onOpenChange(false);
     onSuccess?.();
     toast.success("Transação adicionada com sucesso!");

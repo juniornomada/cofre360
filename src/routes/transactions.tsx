@@ -511,6 +511,7 @@ export function TransactionsPage() {
       console.error(e);
       toast.error("Erro ao salvar transação");
     } finally {
+      (document.activeElement as HTMLElement)?.blur();
       setShowEditDialog(false);
       setEditTx(null);
       fetchTransactions();
@@ -531,6 +532,7 @@ export function TransactionsPage() {
       console.error(e);
       toast.error("Erro ao excluir transação");
     } finally {
+      (document.activeElement as HTMLElement)?.blur();
       setShowDeleteDialog(false);
       setDeleteTarget(null);
       setDeleteScope("single");
@@ -1112,7 +1114,7 @@ export function TransactionsPage() {
           )}
           </div>
           <DialogFooter className="p-4 pt-2 border-t mt-0 flex-row gap-2 sm:gap-2">
-            <Button variant="outline" size="sm" className="flex-1 h-8 text-xs" onClick={() => setShowEditDialog(false)}>Cancelar</Button>
+            <Button variant="outline" size="sm" className="flex-1 h-8 text-xs" onClick={() => { (document.activeElement as HTMLElement)?.blur(); setShowEditDialog(false); }}>Cancelar</Button>
             <Button size="sm" className="flex-1 h-8 text-xs" onClick={handleSaveEdit}>Salvar</Button>
           </DialogFooter>
         </DialogContent>
