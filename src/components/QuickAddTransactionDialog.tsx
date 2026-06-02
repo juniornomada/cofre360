@@ -732,8 +732,9 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
           )}
         </div>
         <DialogFooter className="mt-2 flex-row gap-2 sm:gap-2">
-          <Button variant="outline" size="sm" className="flex-1 h-8 text-xs" onClick={() => onOpenChange(false)}>Cancelar</Button>
+          <Button variant="outline" size="sm" className="flex-1 h-8 text-xs" onClick={() => { (document.activeElement as HTMLElement)?.blur(); onOpenChange(false); }}>Cancelar</Button>
           <Button
+
             size="sm"
             className="flex-1 h-8 text-xs"
             onClick={handleAdd}
