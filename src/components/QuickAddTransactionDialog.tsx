@@ -680,10 +680,24 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                   {installmentEnabled && (
                     <>
                       <div className="flex gap-1.5">
-                        <button type="button" onClick={() => setInstallmentMode("divide")} className={`flex-1 rounded-lg py-1 text-[10px] font-medium transition-colors ${installmentMode === "divide" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground"}`}>
+                        <button 
+                          type="button" 
+                          onClick={() => setInstallmentMode("divide")} 
+                          className={`flex-1 rounded-lg py-1 text-[10px] font-medium transition-colors ${installmentMode === "divide" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground"}`}
+                        >
                           Dividir total
                         </button>
-                        <button type="button" onClick={() => setInstallmentMode("fixed")} className={`flex-1 rounded-lg py-1 text-[10px] font-medium transition-colors ${installmentMode === "fixed" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground"}`}>
+                        <button 
+                          type="button" 
+                          onClick={() => {
+                            setInstallmentMode("fixed");
+                            // Mantém o valor digitado ao selecionar valor fixo
+                            if (installmentFixedValue === 0 || installmentFixedValue === newTx.amount / (Number(installmentCount) || 1)) {
+                              setInstallmentFixedValue(newTx.amount);
+                            }
+                          }} 
+                          className={`flex-1 rounded-lg py-1 text-[10px] font-medium transition-colors ${installmentMode === "fixed" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground"}`}
+                        >
                           Valor fixo
                         </button>
                       </div>
