@@ -73,6 +73,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
   const [installmentCount, setInstallmentCount] = useState<number | "">(2);
   const [installmentMode, setInstallmentMode] = useState<"divide" | "fixed">("divide");
   const [installmentFixedValue, setInstallmentFixedValue] = useState(0);
+  const [nameInputMode, setNameInputMode] = useState<"none" | "text">("none");
 
   const fetchData = useCallback(async () => {
     try {
@@ -139,8 +140,9 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
   useEffect(() => {
      if (!open) {
        setConfirmInstallmentDiff(false);
-       return;
-     }
+        return;
+      }
+    setNameInputMode("none");
     fetchData();
     fetchHistory();
     setIsTransfer(copyData ? (copyData.category === "Transferência" || copyData.category === "Transferências" || copyData.category.startsWith("Transferências >")) : initialType === "transfer");
@@ -438,11 +440,12 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                 </div>
                  <div>
                    <label className="text-[11px] font-semibold text-foreground mb-0.5 block">Valor (R$)</label>
-                   <CalculatorAmountInput 
-                     value={newTx.amount} 
-                     onChange={(v) => setNewTx({ ...newTx, amount: v })} 
-                     onEnter={handleAdd}
-                   />
+                    <CalculatorAmountInput 
+                      value={newTx.amount} 
+                      onChange={(v) => setNewTx({ ...newTx, amount: v })} 
+                      onEnter={handleAdd}
+                      autoFocus
+                    />
                  </div>
               </div>
             </>
@@ -450,9 +453,10 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
             <>
                <div>
                  <label className="text-[11px] font-semibold text-foreground mb-0.5 block">Nome</label>
-                  <input
-                    
-                    id="tx-name-input"
+                   <input
+                     autoFocus
+                     inputMode={nameInputMode}
+                     id="tx-name-input"
                     value={newTx.name}
                     onChange={e => {
                       const name = e.target.value;
@@ -462,6 +466,11 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                       } else {
                         setNewTx({ ...newTx, name });
                       }
+                    }}
+                    onClick={(e) => {
+                      const target = e.currentTarget;
+                      setNameInputMode("text");
+                      setTimeout(() => target.focus(), 0);
                     }}
                    onKeyDown={e => {
                      if (e.key === "Enter") {
