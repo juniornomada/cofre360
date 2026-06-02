@@ -651,6 +651,9 @@ function CardsPage() {
 
   return (
     <div className="animate-page-enter flex flex-col gap-5 px-4 pt-6 pb-24">
+      <InvoiceInconsistencyAlert 
+        hasInconsistency={validationData?.status === 'failed' || validationData?.status === 'partial'} 
+      />
       <div className="flex items-center gap-3">
         <Link to="/" className="interactive-button flex h-9 w-9 items-center justify-center rounded-xl bg-card border border-border/50">
           <ArrowLeft className="h-4 w-4 text-foreground" />
