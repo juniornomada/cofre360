@@ -284,7 +284,7 @@ function SortableAccountItem({
  });
 
 function AccountsPage() {
-  const { balanceVisible, updateBalanceVisible, hideZeroBalances, updateHideZeroBalances } = useUserPreferences();
+  const { balanceVisible, updateBalanceVisible } = useUserPreferences();
   const [accounts, setAccounts] = useState<BankAccount[]>([]);
   const [incomeByAccount, setIncomeByAccount] = useState<Record<string, number>>({});
   const [expenseByAccount, setExpenseByAccount] = useState<Record<string, number>>({});
@@ -644,22 +644,6 @@ function AccountsPage() {
         </div>
         
         <div className="flex items-center gap-1 shrink-0 self-end mb-0.5">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button 
-                onClick={() => updateHideZeroBalances(!hideZeroBalances)} 
-                className={cn(
-                  "interactive-button p-2 rounded-lg hover:bg-accent/50 transition-colors",
-                  hideZeroBalances ? "text-primary bg-primary/10" : "text-muted-foreground"
-                )}
-              >
-                {hideZeroBalances ? <FilterX className="h-4 w-4" /> : <Filter className="h-4 w-4" />}
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">
-              {hideZeroBalances ? "Exibir contas com saldo zero no início" : "Ocultar contas com saldo zero no início"}
-            </TooltipContent>
-          </Tooltip>
           <button onClick={() => updateBalanceVisible(!balanceVisible)} className="interactive-button p-2 rounded-lg hover:bg-accent/50 text-muted-foreground">
             {balanceVisible ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
           </button>
