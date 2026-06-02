@@ -7,7 +7,10 @@ import React from 'react';
 // Mock TanStack Router hooks
 vi.mock('@tanstack/react-router', () => ({
   useLocation: () => ({ pathname: '/' }),
-  useRouterState: () => ({ status: 'idle', location: { pathname: '/' } }),
+  useRouterState: (options: any) => {
+    const state = { status: 'idle', location: { pathname: '/' } };
+    return options?.select ? options.select(state) : state;
+  },
 }));
 
 // Mock SmartLink component
