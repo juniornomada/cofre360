@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 const navItems = [
   { to: "/" as const, icon: Home, label: "Início" },
   { to: "/transactions" as const, icon: ArrowLeftRight, label: "Transações" },
-  { to: "/accounts" as const, icon: PiggyBank, label: "Contas" },
+  { to: "/accounts" as const, icon: Landmark, label: "Contas" },
   { to: "/cards" as const, icon: CreditCard, label: "Cartões" },
   { to: "/insights" as const, icon: Sparkles, label: "Insights IA" },
   { to: "/shop" as const, icon: ShoppingCart, label: "Loja" },
