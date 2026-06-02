@@ -401,6 +401,7 @@ export function TransactionsPage() {
     setEditTx({ ...tx });
     setEditInstallmentMode("divide");
     setEditInstallmentFixedValue(tx.amount || 0);
+    setEditNameMode("none");
     setShowEditDialog(true);
   };
 
