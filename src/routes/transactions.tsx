@@ -847,7 +847,8 @@ export function TransactionsPage() {
           )}
         </div>
       </div>
-    </div>
+
+
 
 
 
