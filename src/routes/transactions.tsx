@@ -795,6 +795,22 @@ export function TransactionsPage() {
                   </div>
 
                   <div>
+                    <label className="text-xs text-muted-foreground mb-1 block">Ordenar por</label>
+                    <Select value={sortBy} onValueChange={(v: any) => setSortBy(v)}>
+                      <SelectTrigger className="w-full rounded-lg bg-card border border-border h-9 text-xs">
+                        <SelectValue placeholder="Ordenar por" />
+                      </SelectTrigger>
+                      <SelectContent className="z-[70]">
+                        <SelectItem value="date-desc" className="text-xs">Data (Mais recente)</SelectItem>
+                        <SelectItem value="date-asc" className="text-xs">Data (Mais antiga)</SelectItem>
+                        <SelectItem value="amount-desc" className="text-xs">Valor (Maior)</SelectItem>
+                        <SelectItem value="amount-asc" className="text-xs">Valor (Menor)</SelectItem>
+                        <SelectItem value="installments" className="text-xs">Sequência de Parcelas</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
                     <label className="text-xs text-muted-foreground mb-1 block">Faixa de valor (R$)</label>
                     <div className="flex gap-2">
                        <CalculatorAmountInput
