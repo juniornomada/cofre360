@@ -119,6 +119,7 @@ export function TransactionsPage() {
   const [transferFromId, setTransferFromId] = useState<string>("");
    const [transferToId, setTransferToId] = useState<string>("");
    const [confirmInstallmentDiff, setConfirmInstallmentDiff] = useState(false);
+   const [editNameMode, setEditNameMode] = useState<"none" | "text">("none");
  
    const installmentDetails = calculateInstallmentDetails(
      newTx.amount,
@@ -883,7 +884,7 @@ export function TransactionsPage() {
                 <label className="text-xs text-muted-foreground mb-1 block">Nome</label>
                 <input
                   autoFocus
-                  inputMode={editTx.nameMode || "none"}
+                  inputMode={editNameMode}
                   value={editTx.name}
                   onChange={e => {
                     setEditTx({ ...editTx, name: e.target.value });
@@ -891,7 +892,7 @@ export function TransactionsPage() {
                   }}
                   onClick={(e) => {
                     const target = e.currentTarget;
-                    setEditTx({ ...editTx, nameMode: "text" });
+                    setEditNameMode("text");
                     setTimeout(() => target.focus(), 0);
                   }}
                   onFocus={() => setShowEditSuggestions(editTx.name.length >= 2)}
