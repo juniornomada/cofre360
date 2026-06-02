@@ -306,7 +306,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
         } else {
           const { error } = await supabase.from("transactions").insert({
             icon: newTx.icon, name: newTx.name, category: newTx.category,
-            date: newTx.date, amount: newTx.amount, type: "type" in newTx ? newTx.type : quickAddType,
+            date: newTx.date, amount: newTx.amount, type: "type" in newTx ? newTx.type : initialType === "income" ? "income" : "expense",
             card: cardValue, bank_account_id: newTx.bank_account_id || null,
             is_visible: true
           });
