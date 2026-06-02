@@ -48,6 +48,8 @@ interface Transaction {
   installment_group_id?: string | null;
   installment_number?: number | null;
   total_installments?: number | null;
+  installment_mode?: "divide" | "fixed" | null;
+  installment_source_amount?: number | null;
   is_visible?: boolean;
 }
 
