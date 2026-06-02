@@ -501,6 +501,8 @@ function Dashboard() {
         type: editTx.type,
         card: editTx.card,
         bank_account_id: editTx.bank_account_id || null,
+        installment_mode: editInstallmentMode,
+        installment_source_amount: editTx.amount,
       }).eq("id", editTx.id);
       if (updErr) throw updErr;
 
