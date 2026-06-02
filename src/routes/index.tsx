@@ -1174,13 +1174,10 @@ function Dashboard() {
                     <p className={cn("text-sm font-bold tabular-nums", !isPaid && remaining > 0 ? "text-destructive" : "text-primary")}>
                       {balanceVisible ? `R$ ${fmt(displayAmount)}` : "R$ •••"}
                     </p>
-                    {paid > 0 && remaining > 0 && (
-                      <p className="text-[9px] text-primary font-medium">
-                        Pago: R$ {fmtShort(paid)}
+                    {paid > 0 && (
+                      <p className="text-[10px] text-primary font-medium">
+                        Pago: R$ {balanceVisible ? fmt(paid) : "•••"}
                       </p>
-                    )}
-                    {remaining === 0 && (
-                      <p className="text-[9px] text-primary font-medium">Fatura paga</p>
                     )}
                   </div>
                 </Link>
