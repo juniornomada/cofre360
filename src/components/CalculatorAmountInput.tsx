@@ -101,12 +101,8 @@ export function CalculatorAmountInput({ value, onChange, className, autoFocus, o
         value={formattedValue}
         onChange={handleInputChange}
         onKeyDown={handleKeyDown}
-        onFocus={(e) => {
-          if (autoFocus) {
-            handleFocus(e);
-          }
-        }}
-
+        onFocus={handleFocus}
+        onBlur={() => setInputMode("none")}
         onClick={(e) => {
           setInputMode("numeric");
           handleClick(e);

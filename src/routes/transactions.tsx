@@ -891,13 +891,16 @@ export function TransactionsPage() {
                     setEditTx({ ...editTx, name: e.target.value });
                     setShowEditSuggestions(e.target.value.length >= 2);
                   }}
+                  onBlur={() => {
+                    setEditNameMode("none");
+                    setTimeout(() => setShowEditSuggestions(false), 200);
+                  }}
                   onClick={(e) => {
                     const target = e.currentTarget;
                     setEditNameMode("text");
                     setTimeout(() => target.focus(), 0);
                   }}
                   onFocus={() => setShowEditSuggestions(editTx.name.length >= 2)}
-                  onBlur={() => setTimeout(() => setShowEditSuggestions(false), 200)}
                   className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground outline-none"
                 />
                 {showEditSuggestions && getAutocompleteSuggestions(editTx.name).length > 0 && (

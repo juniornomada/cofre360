@@ -467,6 +467,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                         setNewTx({ ...newTx, name });
                       }
                     }}
+                    onBlur={() => setNameInputMode("none")}
                     onClick={(e) => {
                       const target = e.currentTarget;
                       setNameInputMode("text");
