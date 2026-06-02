@@ -260,10 +260,10 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
 
       console.log("QuickAdd: Standard transaction validation", { bank_account_id: newTx.bank_account_id, card: newTx.card });
       if (!newTx.bank_account_id && !newTx.card) {
-        toast.error("Por favor, selecione uma conta ou cartão.");
         setIsSubmitting(false);
         return;
       }
+
 
       // We also removed the balance check for standard transactions to maintain consistency
       // as this is a tracking app and users might want to record transactions even with insufficient app-balance.
