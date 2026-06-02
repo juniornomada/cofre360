@@ -846,6 +846,7 @@ function CardsPage() {
                           <CalculatorAmountInput
                             value={parseFloat(editLimit) || 0}
                             onChange={(v) => setEditLimit(v.toString())}
+                            onEnter={() => saveEdit(card.id)}
                             className="h-7 bg-white/20 border-white/30 text-white text-[11px] sm:text-xs"
                           />
                         </div>
