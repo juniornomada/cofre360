@@ -358,7 +358,7 @@ function Dashboard() {
           const totalPaidEver = cardPaymentsTotalMap[card.id] || 0;
           const activeInvoiceRemaining = Math.max(0, totalUsedUntilClosing - totalPaidEver);
           
-          if (activeInvoiceRemaining < 0.01 && totalUsedUntilClosing > 0) {
+          if (activeInvoiceRemaining < 0.01) {
             const nextClosingDate = new Date(closingDate.getFullYear(), closingDate.getMonth() + 1, cDay);
             const nextInvoiceAmount = cardTx
               .filter(t => {
