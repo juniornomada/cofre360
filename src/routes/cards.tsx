@@ -777,7 +777,7 @@ function CardsPage() {
             {cards.map((card, i) => {
       const cardTransactionsFiltered = cardTransactions.filter(t => t.card === card.name);
       const invoicePeriodsCard = groupByBillingCycle(cardTransactionsFiltered, card.closing_day, card.due_day);
-      const activeInvoicePeriod = invoicePeriodsCard[1] || invoicePeriodsCard[0];
+      const activeInvoicePeriod = invoicePeriodsCard.find(p => p.key === "current") || invoicePeriodsCard[1] || invoicePeriodsCard[0];
       const invoiceRemaining = activeInvoicePeriod?.total || 0;
       const totalUsed = cardTotals[card.name] || 0;
       const totalPaid = cardPayments[card.id] || 0;
