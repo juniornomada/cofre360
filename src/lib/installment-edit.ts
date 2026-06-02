@@ -125,6 +125,8 @@ export async function saveInstallmentPlan(input: SaveInstallmentInput): Promise<
         installment_number: 1,
         total_installments: 1,
         installment_group_id: null,
+        installment_mode: null,
+        installment_source_amount: null,
       })
       .eq("id", input.id);
     if (error) throw error;
@@ -143,6 +145,8 @@ export async function saveInstallmentPlan(input: SaveInstallmentInput): Promise<
     installment_number: current,
     total_installments: total,
     installment_group_id: groupId,
+    installment_mode: input.installmentMode || "divide",
+    installment_source_amount: input.installmentSourceAmount ?? perInstallment,
     icon: input.icon,
     category: input.category,
     card: input.card,
