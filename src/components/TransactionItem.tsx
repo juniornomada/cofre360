@@ -54,7 +54,10 @@ export function TransactionItem({
 }: TransactionItemProps) {
   const isInstallment = !!total_installments && total_installments > 1 && !!installment_number;
   const strippedName = isInstallment
-    ? name.replace(/\s*\(\s*\d{1,2}\s*\/\s*\d{1,2}\s*\)\s*$/, "").trim()
+    ? name
+        .replace(/\s*\(\s*\d{1,2}\s*\/\s*\d{1,2}\s*\)\s*$/, "")
+        .replace(/^\s*\(\s*\d{1,2}\s*\/\s*\d{1,2}\s*\)\s*/, "")
+        .trim()
     : name;
   const displayName = isInstallment 
     ? `(${installment_number}/${total_installments}) ${restoreAccents(strippedName)}`
