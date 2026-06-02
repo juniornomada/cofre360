@@ -455,12 +455,22 @@ function OrcaMetasPage() {
             </div>
             <div>
               <label className="text-xs text-muted-foreground mb-1 block">Nome da categoria</label>
-              <input value={newItem.category} onChange={e => setNewItem({ ...newItem, category: e.target.value })} placeholder="Ex: Alimentação" className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none" />
+              <input 
+                value={newItem.category} 
+                onChange={e => setNewItem({ ...newItem, category: e.target.value })} 
+                onKeyDown={e => e.key === "Enter" && newItem.category && handleAddBudget()}
+                placeholder="Ex: Alimentação" 
+                className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none" 
+              />
               <p className="text-[10px] text-muted-foreground mt-1">Use exatamente o mesmo nome usado nas transações.</p>
             </div>
             <div>
               <label className="text-xs text-muted-foreground mb-1 block">Limite (R$)</label>
-              <CalculatorAmountInput value={newItem.budget_limit || 0} onChange={v => setNewItem({ ...newItem, budget_limit: v })} />
+              <CalculatorAmountInput 
+                value={newItem.budget_limit || 0} 
+                onChange={v => setNewItem({ ...newItem, budget_limit: v })} 
+                onEnter={() => newItem.category && handleAddBudget()}
+              />
             </div>
           </div>
           <DialogFooter>
@@ -485,11 +495,20 @@ function OrcaMetasPage() {
               </div>
               <div>
                 <label className="text-xs text-muted-foreground mb-1 block">Nome</label>
-                <input value={editItem.category} onChange={e => setEditItem({ ...editItem, category: e.target.value })} className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground outline-none" />
+                <input 
+                  value={editItem.category} 
+                  onChange={e => setEditItem({ ...editItem, category: e.target.value })} 
+                  onKeyDown={e => e.key === "Enter" && handleSaveBudget()}
+                  className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground outline-none" 
+                />
               </div>
               <div>
                 <label className="text-xs text-muted-foreground mb-1 block">Limite (R$)</label>
-                <CalculatorAmountInput value={editItem.budget_limit || 0} onChange={v => setEditItem({ ...editItem, budget_limit: v })} />
+                <CalculatorAmountInput 
+                  value={editItem.budget_limit || 0} 
+                  onChange={v => setEditItem({ ...editItem, budget_limit: v })} 
+                  onEnter={handleSaveBudget}
+                />
               </div>
               <p className="text-[10px] text-muted-foreground">O gasto é calculado automaticamente a partir das suas transações do mês.</p>
             </div>
@@ -528,19 +547,38 @@ function OrcaMetasPage() {
               </div>
               <div>
                 <label className="text-xs text-muted-foreground mb-1 block">Nome</label>
-                <input value={editGoal.name} onChange={e => setEditGoal({ ...editGoal, name: e.target.value })} className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground outline-none" />
+                <input 
+                  value={editGoal.name} 
+                  onChange={e => setEditGoal({ ...editGoal, name: e.target.value })} 
+                  onKeyDown={e => e.key === "Enter" && handleSaveGoal()}
+                  className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground outline-none" 
+                />
               </div>
               <div>
                 <label className="text-xs text-muted-foreground mb-1 block">Valor atual (R$)</label>
-                <CalculatorAmountInput value={editGoal.current_amount || 0} onChange={v => setEditGoal({ ...editGoal, current_amount: v })} />
+                <CalculatorAmountInput 
+                  value={editGoal.current_amount || 0} 
+                  onChange={v => setEditGoal({ ...editGoal, current_amount: v })} 
+                  onEnter={handleSaveGoal}
+                />
               </div>
               <div>
                 <label className="text-xs text-muted-foreground mb-1 block">Valor alvo (R$)</label>
-                <CalculatorAmountInput value={editGoal.target_amount || 0} onChange={v => setEditGoal({ ...editGoal, target_amount: v })} />
+                <CalculatorAmountInput 
+                  value={editGoal.target_amount || 0} 
+                  onChange={v => setEditGoal({ ...editGoal, target_amount: v })} 
+                  onEnter={handleSaveGoal}
+                />
               </div>
               <div>
                 <label className="text-xs text-muted-foreground mb-1 block">Prazo</label>
-                <input value={editGoal.deadline} onChange={e => setEditGoal({ ...editGoal, deadline: e.target.value })} placeholder="Ex: Dez 2025" className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground outline-none" />
+                <input 
+                  value={editGoal.deadline} 
+                  onChange={e => setEditGoal({ ...editGoal, deadline: e.target.value })} 
+                  onKeyDown={e => e.key === "Enter" && handleSaveGoal()}
+                  placeholder="Ex: Dez 2025" 
+                  className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground outline-none" 
+                />
               </div>
             </div>
           )}
@@ -576,19 +614,39 @@ function OrcaMetasPage() {
             </div>
             <div>
               <label className="text-xs text-muted-foreground mb-1 block">Nome</label>
-              <input value={newGoal.name} onChange={e => setNewGoal({ ...newGoal, name: e.target.value })} placeholder="Ex: Viagem Europa" className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none" />
+              <input 
+                value={newGoal.name} 
+                onChange={e => setNewGoal({ ...newGoal, name: e.target.value })} 
+                onKeyDown={e => e.key === "Enter" && newGoal.name && newGoal.target_amount && handleAddGoal()}
+                placeholder="Ex: Viagem Europa" 
+                className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none" 
+              />
             </div>
             <div>
               <label className="text-xs text-muted-foreground mb-1 block">Valor atual (R$)</label>
-              <CalculatorAmountInput value={newGoal.current_amount || 0} onChange={v => setNewGoal({ ...newGoal, current_amount: v })} />
+              <CalculatorAmountInput 
+                value={newGoal.current_amount || 0} 
+                onChange={v => setNewGoal({ ...newGoal, current_amount: v })} 
+                onEnter={() => newGoal.name && newGoal.target_amount && handleAddGoal()}
+              />
             </div>
             <div>
               <label className="text-xs text-muted-foreground mb-1 block">Valor alvo (R$)</label>
-              <CalculatorAmountInput value={newGoal.target_amount || 0} onChange={v => setNewGoal({ ...newGoal, target_amount: v })} />
+              <CalculatorAmountInput 
+                value={newGoal.target_amount || 0} 
+                onChange={v => setNewGoal({ ...newGoal, target_amount: v })} 
+                onEnter={() => newGoal.name && newGoal.target_amount && handleAddGoal()}
+              />
             </div>
             <div>
               <label className="text-xs text-muted-foreground mb-1 block">Prazo</label>
-              <input value={newGoal.deadline} onChange={e => setNewGoal({ ...newGoal, deadline: e.target.value })} placeholder="Ex: Dez 2025" className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none" />
+              <input 
+                value={newGoal.deadline} 
+                onChange={e => setNewGoal({ ...newGoal, deadline: e.target.value })} 
+                onKeyDown={e => e.key === "Enter" && newGoal.name && newGoal.target_amount && handleAddGoal()}
+                placeholder="Ex: Dez 2025" 
+                className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none" 
+              />
             </div>
           </div>
           <DialogFooter>
