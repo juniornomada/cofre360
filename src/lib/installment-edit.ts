@@ -130,7 +130,7 @@ export async function saveInstallmentPlan(input: SaveInstallmentInput): Promise<
       : input.amount;
 
   const updateData = {
-    name: `${baseName} (${current}/${total})`,
+    name: baseName,
     amount: perInstallment,
     installment_number: current,
     total_installments: total,
@@ -154,7 +154,7 @@ export async function saveInstallmentPlan(input: SaveInstallmentInput): Promise<
         const n = s.installment_number || 1;
         return supabase.from("transactions").update({
           ...updateData,
-          name: `${baseName} (${n}/${total})`,
+          name: baseName,
           installment_number: n,
         }).eq("id", s.id);
       });
@@ -183,7 +183,7 @@ export async function saveInstallmentPlan(input: SaveInstallmentInput): Promise<
     const months = n - current;
     toInsert.push({
       id: uuid(),
-      name: `${baseName} (${n}/${total})`,
+      name: baseName,
       icon: input.icon,
       category: input.category,
       date: addMonthsKeepingFormat(input.date, months),
