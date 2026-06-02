@@ -133,12 +133,12 @@ function SortableAccountItem({ acc, balanceVisible, fmt }: { acc: any; balanceVi
         <Link
           to="/accounts"
           search={{ action: undefined } as any}
-          className="flex-1 flex items-center gap-2.5 rounded-xl bg-background/40 px-2.5 py-1.5 hover:bg-background/60 transition-colors overflow-hidden"
+          className="flex-1 flex items-center gap-2.5 rounded-2xl bg-background/40 px-3 py-2.5 hover:bg-background/60 border border-border/40 transition-all overflow-hidden active:scale-[0.98]"
         >
         <BankLogo icon={acc.icon} color={acc.color} name={acc.name} size="sm" />
-        <p className="text-xs font-medium text-foreground flex-1 min-w-0 truncate">{acc.name}</p>
+        <p className="text-sm font-medium text-foreground flex-1 min-w-0 truncate">{acc.name}</p>
         <p className={cn(
-          "text-xs font-bold tabular-nums",
+          "text-sm font-bold tabular-nums",
           acc.balance >= 0 ? "text-foreground" : "text-destructive"
         )}>
           {balanceVisible ? `R$ ${fmt(acc.balance)}` : "R$ ••••"}
@@ -146,7 +146,7 @@ function SortableAccountItem({ acc, balanceVisible, fmt }: { acc: any; balanceVi
         </Link>
       </div>
       {isDragging && (
-        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-black/5 backdrop-blur-[0.5px] rounded-xl animate-fade-in">
+        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-black/5 backdrop-blur-[0.5px] rounded-2xl animate-fade-in">
           <div className="flex items-center gap-1.5 rounded-full bg-white/95 px-2 py-1 text-[10px] font-bold text-gray-900 shadow-lg ring-1 ring-primary">
             <GripVertical className="h-3 w-3" />
             Mover
@@ -1036,7 +1036,7 @@ function Dashboard() {
         {displayAccounts.length > 0 && (
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
             <SortableContext items={displayAccounts.map((a) => a.id)} strategy={verticalListSortingStrategy}>
-              <div className="mt-3 flex flex-col gap-1">
+              <div className="mt-3 flex flex-col gap-2">
                 {displayAccounts.map((acc) => (
                   <SortableAccountItem key={acc.id} acc={acc} balanceVisible={balanceVisible} fmt={fmt} />
                 ))}
@@ -1414,7 +1414,7 @@ function Dashboard() {
               Ver todos <ChevronRight className="h-3 w-3" />
             </Link>
           </div>
-          <div className="flex flex-col gap-1.5">
+          <div className="flex flex-col gap-2">
             {pendingReminders.map((r) => {
               const linkedAccount = r.bank_account_id ? accountBalances.find(a => a.id === r.bank_account_id) : null;
               const linkedCard = r.card_id ? allCards.find(c => c.id === r.card_id) : null;
