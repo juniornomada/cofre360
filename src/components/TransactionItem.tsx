@@ -53,15 +53,10 @@ export function TransactionItem({
   installment_number, total_installments, style, onEdit, onDelete, amountVisible = true
 }: TransactionItemProps) {
   const isInstallment = !!total_installments && total_installments > 1 && !!installment_number;
-  const strippedName = isInstallment
-    ? name
-        .replace(/\s*\(\s*\d{1,2}\s*\/\s*\d{1,2}\s*\)\s*$/, "")
-        .replace(/^\s*\(\s*\d{1,2}\s*\/\s*\d{1,2}\s*\)\s*/, "")
-        .trim()
+  // Strip the trailing "(n/m)" from the displayed name since we'll show it as a badge.
+  const displayName = isInstallment
+    ? name.replace(/\s*\(\s*\d{1,2}\s*\/\s*\d{1,2}\s*\)\s*$/, "").trim()
     : name;
-  const displayName = isInstallment 
-    ? `(${installment_number}/${total_installments}) ${restoreAccents(strippedName)}`
-    : restoreAccents(name);
   const displayIcon = getCategoryIcon(category) || icon;
   const isCard = !!card;
   const isTransfer = category === "Transferência" || category === "Transferências" || category.startsWith("Transferências >") || isTransferPair;
@@ -162,7 +157,18 @@ export function TransactionItem({
                 </TooltipContent>
               </Tooltip>
             ) : (
-              displayName
+              <>
+                {restoreAccents(displayName)}
+                {isInstallment && (
+                  <span 
+                    className="ml-1 text-[11px] font-medium text-muted-foreground whitespace-nowrap bg-muted/50 px-1.5 py-0.5 rounded-md border border-border/30"
+                    aria-label={`Parcela ${installment_number} de ${total_installments}`}
+                    tabIndex={0}
+                  >
+                    Parcela {installment_number} de {total_installments} ({installment_number}/{total_installments})
+                  </span>
+                )}
+              </>
             )}
           </p>
           <span className={cn(

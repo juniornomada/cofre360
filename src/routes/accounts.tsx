@@ -198,19 +198,19 @@ function SortableAccountItem({
         <div className="flex items-center shrink-0">
           {isEditing ? (
             <div className="flex items-center gap-0.5">
-              <button onClick={() => saveEdit(account.id)} className="interactive-button h-10 w-10 flex items-center justify-center rounded-full bg-foreground text-background transition-colors" aria-label="Salvar">
+              <button onClick={() => saveEdit(account.id)} className="interactive-button h-9 w-9 flex items-center justify-center rounded-full bg-foreground text-background transition-colors" aria-label="Salvar">
                 <Check className="h-4 w-4" />
               </button>
-              <button onClick={cancelEdit} className="interactive-button h-10 w-10 flex items-center justify-center rounded-full hover:bg-accent transition-colors" aria-label="Cancelar">
+              <button onClick={cancelEdit} className="interactive-button h-9 w-9 flex items-center justify-center rounded-full hover:bg-accent transition-colors" aria-label="Cancelar">
                 <X className="h-4 w-4 text-muted-foreground" />
               </button>
             </div>
           ) : deleteConfirm === account.id ? (
             <div className="flex items-center gap-0.5">
-              <button onClick={() => handleDelete(account.id)} className="interactive-button h-10 w-10 flex items-center justify-center rounded-full bg-destructive text-white transition-colors" aria-label="Confirmar exclusão">
+              <button onClick={() => handleDelete(account.id)} className="interactive-button h-9 w-9 flex items-center justify-center rounded-full bg-destructive text-white transition-colors" aria-label="Confirmar exclusão">
                 <Check className="h-4 w-4" />
               </button>
-              <button onClick={() => setDeleteConfirm(null)} className="interactive-button h-10 w-10 flex items-center justify-center rounded-full hover:bg-accent transition-colors" aria-label="Cancelar exclusão">
+              <button onClick={() => setDeleteConfirm(null)} className="interactive-button h-9 w-9 flex items-center justify-center rounded-full hover:bg-accent transition-colors" aria-label="Cancelar exclusão">
                 <X className="h-4 w-4 text-muted-foreground" />
               </button>
             </div>
@@ -222,7 +222,7 @@ function SortableAccountItem({
                   e.stopPropagation();
                   handleToggleVisibility(account.id, account.is_visible);
                 }}
-                className="interactive-button h-10 w-10 flex items-center justify-center rounded-full hover:bg-accent transition-colors"
+                className="interactive-button h-9 w-9 flex items-center justify-center rounded-full hover:bg-accent transition-colors"
                 title={account.is_visible ? "Ocultar do Início" : "Mostrar no Início"}
               >
                 {account.is_visible ? <Eye className="h-4 w-4 text-muted-foreground" /> : <EyeOff className="h-4 w-4 text-muted-foreground/60" />}
@@ -230,7 +230,7 @@ function SortableAccountItem({
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="interactive-button h-10 w-10 flex items-center justify-center rounded-full hover:bg-accent transition-colors" aria-label="Mais ações">
+                  <button className="interactive-button h-9 w-9 flex items-center justify-center rounded-full hover:bg-accent transition-colors" aria-label="Mais ações">
                     <MoreVertical className="h-4 w-4 text-muted-foreground" />
                   </button>
                 </DropdownMenuTrigger>
@@ -660,18 +660,6 @@ function AccountsPage() {
           <p className="text-sm text-muted-foreground max-w-[240px]">Adicione sua primeira conta bancária para acompanhar saldos e movimentações</p>
         </div>
       )}
-
-      {/* Summary Card */}
-      <div className="interactive-card rounded-2xl bg-gradient-to-br from-primary/20 to-card p-5 animate-stagger-in">
-        <p className="text-sm text-muted-foreground mb-1">Saldo consolidado</p>
-        <p className={cn(
-          "text-2xl font-bold tabular-nums",
-          accounts.reduce((s, a) => s + (a.balance + (incomeByAccount[a.id] || 0) - (expenseByAccount[a.id] || 0)), 0) >= 0 ? "text-foreground" : "text-destructive"
-        )}>
-          {balanceVisible ? `R$ ${accounts.reduce((s, a) => s + (a.balance + (incomeByAccount[a.id] || 0) - (expenseByAccount[a.id] || 0)), 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "R$ ••••••"}
-        </p>
-        <p className="text-[10px] text-muted-foreground mt-1">Total entre {accounts.length} contas</p>
-      </div>
 
       {/* Accounts list — grouped card with dividers */}
       {accounts.length > 0 && (

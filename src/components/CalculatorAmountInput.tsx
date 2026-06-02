@@ -76,9 +76,6 @@ export function CalculatorAmountInput({ value, onChange, className, autoFocus, o
   };
 
   const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
-    // Quando o usuário foca no campo, limpamos o valor para permitir uma nova entrada direta
-    setCents(0);
-    onChange(0);
     const length = e.target.value.length;
     e.target.setSelectionRange(length, length);
   };

@@ -3,7 +3,7 @@ import { SmartLink as Link } from "@/components/SmartLink";
 import { TransactionItem } from "@/components/TransactionItem";
 import { EmptyState } from "@/components/EmptyState";
 import { mainCategories, parseCategoryValue } from "@/lib/categories";
-import { Search, Pencil, Trash2, Plus, CalendarIcon, Loader2, Upload, CheckSquare, Square, X, SlidersHorizontal, ArrowLeft, ArrowLeftRight, ArrowRight, Eye, EyeOff, FileText } from "lucide-react";
+import { Search, Pencil, Trash2, Plus, CalendarIcon, Loader2, Upload, CheckSquare, Square, X, SlidersHorizontal, ArrowLeftRight, ArrowRight, Eye, EyeOff, FileText } from "lucide-react";
 import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react";
 
 const CsvImportDialog = lazy(() => import("@/components/CsvImportDialog").then(m => ({ default: m.CsvImportDialog })));
@@ -680,15 +680,8 @@ export function TransactionsPage() {
 
   return (
     <div className="animate-page-enter flex flex-col gap-4 px-4 pt-6 pb-24">
-      <div className="flex items-center gap-3">
-        <Link to="/" className="interactive-button flex h-9 w-9 items-center justify-center rounded-xl bg-card border border-border/50">
-          <ArrowLeft className="h-4 w-4 text-foreground" />
-        </Link>
-        <div className="flex-1">
-          <h1 className="text-xl font-bold text-foreground">Transações</h1>
-          <p className="text-sm text-muted-foreground">Acompanhe sua movimentação financeira</p>
-        </div>
-      </div>
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-bold text-foreground">Transações</h1>
         <div className="flex items-center gap-2">
           <button 
             onClick={() => updateBalanceVisible(!balanceVisible)} 
@@ -847,34 +840,9 @@ export function TransactionsPage() {
           )}
         </div>
       </div>
+    </div>
 
 
-
-
-
-      {/* Summary Card */}
-      <div className="interactive-card rounded-2xl bg-gradient-to-br from-primary/20 to-card p-5 animate-stagger-in">
-        <div className="flex items-center justify-between mb-1">
-          <p className="text-sm text-muted-foreground">Resultado do período</p>
-          <span className={cn("text-xs font-semibold", (totalIncome - totalExpense) >= 0 ? "text-primary" : "text-destructive")}>
-            {(totalIncome - totalExpense) >= 0 ? "+ " : "- "}
-            R$ {Math.abs(totalIncome - totalExpense).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-          </span>
-        </div>
-        <p className="text-2xl font-bold text-foreground tabular-nums">
-          R$ {totalExpense.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-        </p>
-        <div className="flex items-center gap-4 mt-2">
-          <div className="flex items-center gap-1.5">
-            <div className="h-2 w-2 rounded-full bg-primary" />
-            <span className="text-[10px] text-muted-foreground">Entradas: R$ {totalIncome.toLocaleString("pt-BR")}</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="h-2 w-2 rounded-full bg-destructive" />
-            <span className="text-[10px] text-muted-foreground">Saídas: R$ {totalExpense.toLocaleString("pt-BR")}</span>
-          </div>
-        </div>
-      </div>
 
       {/* Source filter (default: todas) */}
       <div className="flex gap-2">
