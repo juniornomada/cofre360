@@ -956,7 +956,7 @@ export function TransactionsPage() {
                       {editTx.date || "Selecionar data"}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0 z-[60]" align="start" portal={false} sideOffset={4}>
+                  <PopoverContent className="w-auto p-0 z-[60]" align="start" sideOffset={4}>
 
                     <Calendar mode="single" selected={(() => { try { return parse(editTx.date, "dd MMM", new Date(), { locale: ptBR }); } catch { return undefined; } })()} onSelect={(date) => { if (date) setEditTx({ ...editTx, date: format(date, "dd MMM", { locale: ptBR }) }); }} initialFocus className={cn("p-3 pointer-events-auto")} />
                   </PopoverContent>
