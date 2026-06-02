@@ -1100,10 +1100,9 @@ function Dashboard() {
 
 
       {/* Credit Cards Summary */}
-      {/* Credit Cards Summary */}
-      <div className="flex flex-col gap-2">
-        <div className="flex items-center justify-between mb-1">
-          <h2 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+      <div className="rounded-2xl bg-gradient-to-br from-primary/15 via-card to-card p-5 border border-border/40">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-sm font-semibold text-foreground flex items-center gap-1.5 uppercase">
             <CreditCard className="h-4 w-4 text-primary" />
             CARTÕES
           </h2>
@@ -1111,6 +1110,7 @@ function Dashboard() {
             Gerenciar <ChevronRight className="h-3 w-3" />
           </Link>
         </div>
+
 
         {allCards.length === 0 && !loading ? (
           <div className="rounded-2xl border border-dashed border-border/50 p-6 text-center">
