@@ -44,7 +44,7 @@ describe('BottomNavBar Accessibility', () => {
     const { container } = renderWithTheme(theme, size);
     
     // Check if at least one icon link has the correct data-size
-    const firstIcon = screen.getAllByTestId('nav-link')[0];
+    const firstIcon = screen.getByTestId('nav-link-início');
     const iconSvg = firstIcon.querySelector('svg');
     expect(iconSvg).toHaveAttribute('data-size', String(size));
 
@@ -55,7 +55,7 @@ describe('BottomNavBar Accessibility', () => {
 
   it('focus outline is visible and meets focus standards (FE-001 to FE-003)', () => {
     renderWithTheme('light');
-    const firstLink = screen.getAllByTestId('nav-link')[0];
+    const firstLink = screen.getByTestId('nav-link-início');
     
     // Simulate focus
     firstLink.focus();
@@ -67,13 +67,16 @@ describe('BottomNavBar Accessibility', () => {
 
   it('has correct ARIA attributes', () => {
     renderWithTheme('light');
-    const links = screen.getAllByTestId('nav-link');
+    const links = screen.getAllByTestId(/nav-link-|profile-icon/);
     
-    expect(links[0]).toHaveAttribute('aria-current', 'page');
-    expect(links[0]).toHaveAttribute('aria-label', 'Início');
+    const homeLink = screen.getByTestId('nav-link-início');
+    expect(homeLink).toHaveAttribute('aria-current', 'page');
+    expect(homeLink).toHaveAttribute('aria-label', 'Início');
     
-    links.slice(1).forEach(link => {
-      expect(link).not.toHaveAttribute('aria-current');
+    links.forEach(link => {
+      if (link !== homeLink) {
+        expect(link).not.toHaveAttribute('aria-current');
+      }
     });
   });
 });
