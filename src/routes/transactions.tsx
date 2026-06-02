@@ -510,7 +510,7 @@ export function TransactionsPage() {
         editInstallmentMode === "fixed" ? editTx.amount : 0
       );
 
-    try {
+    const promise = (async () => {
       // Balance check for expenses from bank accounts
       if (editTx.type === "expense" && editTx.bank_account_id) {
         const acc = bankAccounts.find(a => a.id === editTx.bank_account_id);
@@ -524,8 +524,7 @@ export function TransactionsPage() {
           }
           
           if (perInstallment > availableBalance) {
-            toast.error(`Saldo insuficiente na conta ${acc.name} (Saldo disponível: R$ ${availableBalance.toLocaleString("pt-BR", { minimumFractionDigits: 2 })})`);
-            return;
+            throw new Error(`Saldo insuficiente na conta ${acc.name}`);
           }
         }
       }
@@ -546,7 +545,7 @@ export function TransactionsPage() {
       if (updErr) throw updErr;
 
       // 2) Apply installment plan (creates/clears group + future rows)
-      const result = await saveInstallmentPlan({
+      await saveInstallmentPlan({
         id: editTx.id,
         name: finalName,
         icon: editTx.icon,
@@ -565,26 +564,20 @@ export function TransactionsPage() {
         updateAllInGroup: updateScope === "all",
       });
 
-      if (result.cleared) {
-        toast.success("Parcelamento removido");
-      } else if (result.futureRowsAdded > 0) {
-        toast.success(
-          `Parcelamento salvo (${result.futureRowsAdded} parcela${result.futureRowsAdded > 1 ? "s" : ""} futura${result.futureRowsAdded > 1 ? "s" : ""} criada${result.futureRowsAdded > 1 ? "s" : ""})`
-        );
-      } else {
-        toast.success("Transação atualizada");
-      }
-    } catch (e) {
-      console.error(e);
-      toast.error("Erro ao salvar transação");
-    } finally {
-      (document.activeElement as HTMLElement)?.blur();
-      setShowEditDialog(false);
-      setShowUpdateScopeDialog(false);
-      setUpdateScope("single");
-      setEditTx(null);
-      fetchTransactions();
-    }
+      await fetchTransactions();
+    })();
+
+    toast.promise(promise, {
+      loading: "Salvando alterações...",
+      success: "Transação atualizada com sucesso!",
+      error: (err: any) => err.message || "Erro ao salvar transação",
+    });
+
+    (document.activeElement as HTMLElement)?.blur();
+    setShowEditDialog(false);
+    setShowUpdateScopeDialog(false);
+    setUpdateScope("single");
+    setEditTx(null);
   };
 
 
