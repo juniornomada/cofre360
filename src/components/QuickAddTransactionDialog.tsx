@@ -321,7 +321,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
            installmentMode === "fixed" ? newTx.amount : 0
          );
         rows.push({
-          icon: newTx.icon, name: `${newTx.name} (${i + 1}/${count})`, category: newTx.category,
+          icon: newTx.icon, name: newTx.name, category: newTx.category,
           date: format(installDate, "dd MMM", { locale: ptBR }),
           amount: parcela, type: newTx.type,
           card: cardValue, bank_account_id: newTx.bank_account_id || null,
