@@ -341,40 +341,15 @@ function Dashboard() {
       if (txTotals) {
         for (const card of cards || []) {
           const cardTx = txTotals.filter(t => t.card === card.name);
-          const cDay = card.closing_day || 1;
-          
-          let closingDate = new Date(now.getFullYear(), now.getMonth(), cDay);
-          if (now.getDate() > cDay) {
-            closingDate = new Date(now.getFullYear(), now.getMonth() + 1, cDay);
-          }
-          
-          const totalUsedUntilClosing = cardTx
-            .filter(t => {
-              const d = parseTxDateToDate((t as any).date || "");
-              return d && d <= closingDate;
-            })
-            .reduce((sum, t) => sum + Number(t.amount), 0);
-            
+          const totalUsedEver = cardTx.reduce((sum, t) => sum + Number(t.amount), 0);
           const totalPaidEver = cardPaymentsTotalMap[card.id] || 0;
-          const activeInvoiceRemaining = Math.max(0, totalUsedUntilClosing - totalPaidEver);
           
-          if (activeInvoiceRemaining < 0.01) {
-            const nextClosingDate = new Date(closingDate.getFullYear(), closingDate.getMonth() + 1, cDay);
-            const nextInvoiceAmount = cardTx
-              .filter(t => {
-                const d = parseTxDateToDate((t as any).date || "");
-                return d && d > closingDate && d <= nextClosingDate;
-              })
-              .reduce((sum, t) => sum + Number(t.amount), 0);
-              
-            nextInvoiceTotals[card.name] = nextInvoiceAmount;
-            invoicePaidStatus[card.id] = true;
-          } else {
-            nextInvoiceTotals[card.name] = activeInvoiceRemaining;
-            invoicePaidStatus[card.id] = false;
-          }
+          // Match Cards.tsx logic: outstanding balance = total used - total paid
+          const currentBalance = Math.max(0, totalUsedEver - totalPaidEver);
           
-          totals[card.name] = cardTx.reduce((sum, t) => sum + Number(t.amount), 0);
+          nextInvoiceTotals[card.name] = currentBalance;
+          invoicePaidStatus[card.id] = (currentBalance < 0.01 && totalUsedEver > 0);
+          totals[card.name] = totalUsedEver;
         }
       }
       
@@ -1146,14 +1121,10 @@ function Dashboard() {
               const paidThisMonth = cardPayments[card.id] || 0;
               
               const today = new Date();
-              const todayDay = today.getDate();
-              // Compute due date of current invoice
-              let currentDue = new Date(today.getFullYear(), today.getMonth(), card.due_day || 1);
-              
-              // If invoice is already paid OR it's already closed/near due for next month
-              let displayDue = currentDue;
-              if (isPaid || (todayDay > (card.due_day || 1))) {
-                displayDue = new Date(today.getFullYear(), today.getMonth() + 1, card.due_day || 1);
+              // Compute due date exactly like in Cards.tsx
+              let displayDue = new Date(today.getFullYear(), today.getMonth(), card.due_day || 10);
+              if (displayDue < today) {
+                displayDue.setMonth(displayDue.getMonth() + 1);
               }
 
               const formatDueDate = (d: Date) => format(d, "dd/MM");
