@@ -8,6 +8,7 @@ const navItems = [
   { to: "/transactions" as const, icon: ArrowLeftRight, label: "Transações" },
   { to: "/accounts" as const, icon: Landmark, label: "Contas" },
   { to: "/cards" as const, icon: CreditCard, label: "Cartões" },
+  { to: "/orcametas" as const, icon: Target, label: "OrçaMetas" },
   { to: "/insights" as const, icon: Sparkles, label: "Insights IA" },
 ];
 
