@@ -122,11 +122,13 @@ export function TransactionsPage() {
   const [isTransfer, setIsTransfer] = useState(false);
   const [transferFromId, setTransferFromId] = useState<string>("");
    const [transferToId, setTransferToId] = useState<string>("");
-   const [confirmInstallmentDiff, setConfirmInstallmentDiff] = useState(false);
-   const [editNameMode, setEditNameMode] = useState<"none" | "text">("none");
+    const [confirmInstallmentDiff, setConfirmInstallmentDiff] = useState(false);
+    const [editNameMode, setEditNameMode] = useState<"none" | "text">("none");
+    const [showUpdateScopeDialog, setShowUpdateScopeDialog] = useState(false);
+    const [updateScope, setUpdateScope] = useState<"single" | "all">("single");
  
  
-    const editInstallmentDetails = editTx ? calculateInstallmentDetails(
+     const editInstallmentDetails = editTx ? calculateInstallmentDetails(
       editTx.amount,
       editTx.total_installments ?? 1,
       editInstallmentMode,
@@ -426,6 +428,20 @@ export function TransactionsPage() {
    const handleSaveEdit = async () => {
      if (!editTx) return;
  
+     // If it's part of an installment group and we haven't asked for scope yet
+     if (editTx.installment_group_id && !showUpdateScopeDialog && updateScope === "single") {
+       // Only ask if it's a card expense (user asked for "despesa no cartão") or general installments
+       const originalTx = transactions.find(t => t.id === editTx.id);
+       const nameChanged = originalTx && stripInstallmentSuffix(originalTx.name) !== stripInstallmentSuffix(editTx.name);
+       const amountChanged = originalTx && originalTx.amount !== (editInstallmentMode === "fixed" ? editTx.amount : editInstallmentDetails?.valorParcela);
+       const installmentsChanged = originalTx && originalTx.total_installments !== editTx.total_installments;
+
+       if (nameChanged || amountChanged || installmentsChanged) {
+         setShowUpdateScopeDialog(true);
+         return;
+       }
+     }
+
      if (hasEditDiff && !confirmInstallmentDiff) {
        toast.error("Por favor, confirme o ajuste de centavos no parcelamento.");
        return;
@@ -495,6 +511,7 @@ export function TransactionsPage() {
         current,
         total,
         installmentAmount: perInstallment,
+        updateAllInGroup: updateScope === "all",
       });
 
       if (result.cleared) {
@@ -512,6 +529,8 @@ export function TransactionsPage() {
     } finally {
       (document.activeElement as HTMLElement)?.blur();
       setShowEditDialog(false);
+      setShowUpdateScopeDialog(false);
+      setUpdateScope("single");
       setEditTx(null);
       fetchTransactions();
     }
@@ -1202,6 +1221,50 @@ export function TransactionsPage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>Cancelar</Button>
             <Button variant="destructive" onClick={handleDeleteConfirm}>Excluir</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Update Scope Selection (Single vs All installments) */}
+      <Dialog open={showUpdateScopeDialog} onOpenChange={(open) => {
+        if (!open) {
+          setShowUpdateScopeDialog(false);
+          setUpdateScope("single");
+        }
+      }}>
+        <DialogContent className="max-w-[90vw] rounded-2xl bg-background">
+          <DialogHeader>
+            <DialogTitle>Alterar parcelas</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <p className="text-sm text-muted-foreground">
+              Você alterou uma transação parcelada. Deseja aplicar as alterações apenas nesta parcela ou em todas as demais?
+            </p>
+            <div className="grid gap-2">
+              <Button 
+                variant={updateScope === "single" ? "default" : "outline"}
+                className="justify-start h-auto py-3 px-4 flex flex-col items-start gap-1"
+                onClick={() => setUpdateScope("single")}
+              >
+                <span className="font-semibold text-sm">Apenas esta</span>
+                <span className="text-xs opacity-70">Altera somente o lançamento selecionado</span>
+              </Button>
+              <Button 
+                variant={updateScope === "all" ? "default" : "outline"}
+                className="justify-start h-auto py-3 px-4 flex flex-col items-start gap-1"
+                onClick={() => setUpdateScope("all")}
+              >
+                <span className="font-semibold text-sm">Todas as parcelas</span>
+                <span className="text-xs opacity-70">Atualiza o valor/nome de todo o grupo de parcelas</span>
+              </Button>
+            </div>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="ghost" onClick={() => {
+              setShowUpdateScopeDialog(false);
+              setUpdateScope("single");
+            }}>Cancelar</Button>
+            <Button onClick={handleSaveEdit}>Confirmar e Salvar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

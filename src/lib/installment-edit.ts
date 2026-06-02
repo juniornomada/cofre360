@@ -83,6 +83,11 @@ export type SaveInstallmentInput = {
    *  - "fixed":  pass the user-defined per-installment value
    */
   installmentAmount?: number;
+  /**
+   * If true, updates all existing installments in the same group (siblings).
+   * Useful when changing value or name and wanting it reflected everywhere.
+   */
+  updateAllInGroup?: boolean;
 };
 
 export type SaveInstallmentResult = {
@@ -124,17 +129,44 @@ export async function saveInstallmentPlan(input: SaveInstallmentInput): Promise<
       ? input.installmentAmount
       : input.amount;
 
-  const { error: updErr } = await supabase
-    .from("transactions")
-    .update({
-      name: `${baseName} (${current}/${total})`,
-      amount: perInstallment,
-      installment_number: current,
-      total_installments: total,
-      installment_group_id: groupId,
-    })
-    .eq("id", input.id);
-  if (updErr) throw updErr;
+  const updateData = {
+    name: `${baseName} (${current}/${total})`,
+    amount: perInstallment,
+    installment_number: current,
+    total_installments: total,
+    installment_group_id: groupId,
+    icon: input.icon,
+    category: input.category,
+    card: input.card,
+    bank_account_id: input.bank_account_id,
+  };
+
+  if (input.updateAllInGroup && input.installment_group_id) {
+    // Fetch all siblings to update their names with correct numbering
+    const { data: siblings } = await supabase
+      .from("transactions")
+      .select("id, installment_number")
+      .eq("installment_group_id", groupId);
+
+    if (siblings) {
+      const updates = siblings.map(s => {
+        // We use the sibling's current installment number but update other fields
+        const n = s.installment_number || 1;
+        return supabase.from("transactions").update({
+          ...updateData,
+          name: `${baseName} (${n}/${total})`,
+          installment_number: n,
+        }).eq("id", s.id);
+      });
+      await Promise.all(updates);
+    }
+  } else {
+    const { error: updErr } = await supabase
+      .from("transactions")
+      .update(updateData)
+      .eq("id", input.id);
+    if (updErr) throw updErr;
+  }
 
   // Avoid duplicating siblings already present in this group.
   const { data: siblings } = await supabase
