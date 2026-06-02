@@ -345,7 +345,53 @@ export function TransactionsPage() {
     return matchesCategory && matchesSource && matchesType && matchesMin && matchesMax && matchesDate;
   });
 
-  const activeFilterCount = (filterStartDate || filterEndDate ? 1 : 0) + (minAmt !== null || maxAmt !== null ? 1 : 0) + (filterType !== "all" ? 1 : 0);
+  const activeFilterCount = (filterStartDate || filterEndDate ? 1 : 0) + (minAmt !== null || maxAmt !== null ? 1 : 0) + (filterType !== "all" ? 1 : 0) + (sortBy !== "date-desc" ? 1 : 0);
+
+  const sortedTransactions = [...filtered].sort((a, b) => {
+    if (sortBy === "date-desc") {
+      const dateA = parseTxDate(a.date, a.created_at)?.getTime() ?? 0;
+      const dateB = parseTxDate(b.date, b.created_at)?.getTime() ?? 0;
+      // If dates are equal, sort by created_at desc
+      if (dateB === dateA) {
+        return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
+      }
+      return dateB - dateA;
+    }
+    if (sortBy === "date-asc") {
+      const dateA = parseTxDate(a.date, a.created_at)?.getTime() ?? 0;
+      const dateB = parseTxDate(b.date, b.created_at)?.getTime() ?? 0;
+      if (dateA === dateB) {
+        return new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime();
+      }
+      return dateA - dateB;
+    }
+    if (sortBy === "amount-desc") return b.amount - a.amount;
+    if (sortBy === "amount-asc") return a.amount - b.amount;
+    if (sortBy === "installments") {
+      // Primary: group by installment_group_id if both have it
+      if (a.installment_group_id && b.installment_group_id && a.installment_group_id === b.installment_group_id) {
+        return (a.installment_number ?? 0) - (b.installment_number ?? 0);
+      }
+      
+      // Secondary: group by clean name
+      const nameA = stripInstallmentSuffix(a.name).toLowerCase();
+      const nameB = stripInstallmentSuffix(b.name).toLowerCase();
+      
+      if (nameA < nameB) return -1;
+      if (nameA > nameB) return 1;
+      
+      // Tertiary: installment number
+      if ((a.installment_number ?? 0) !== (b.installment_number ?? 0)) {
+        return (a.installment_number ?? 0) - (b.installment_number ?? 0);
+      }
+      
+      // Fallback: date
+      const dateA = parseTxDate(a.date, a.created_at)?.getTime() ?? 0;
+      const dateB = parseTxDate(b.date, b.created_at)?.getTime() ?? 0;
+      return dateB - dateA;
+    }
+    return 0;
+  });
 
   const clearAdvancedFilters = () => {
     setFilterStartDate(undefined);
@@ -353,6 +399,7 @@ export function TransactionsPage() {
     setFilterMinAmount("");
     setFilterMaxAmount("");
     setFilterType("all");
+    setSortBy("date-desc");
   };
 
   const totalIncome = filtered.filter(t => t.type === "income" && t.is_visible !== false).reduce((s, t) => s + t.amount, 0);
