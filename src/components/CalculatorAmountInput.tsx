@@ -20,6 +20,7 @@ interface Props {
 export function CalculatorAmountInput({ value, onChange, className, autoFocus, onEnter }: Props) {
   // Internal "cents" buffer. e.g. 1234 → R$ 12,34
   const [cents, setCents] = useState<number>(() => Math.round((value || 0) * 100));
+  const [inputMode, setInputMode] = useState<"none" | "numeric">("none");
   const inputRef = useRef<HTMLInputElement>(null);
 
   const formattedValue = (cents / 100).toLocaleString("pt-BR", {
@@ -96,7 +97,7 @@ export function CalculatorAmountInput({ value, onChange, className, autoFocus, o
       <Input
         ref={inputRef}
         type="text"
-        inputMode="numeric"
+        inputMode={inputMode}
         value={formattedValue}
         onChange={handleInputChange}
         onKeyDown={handleKeyDown}
@@ -106,7 +107,11 @@ export function CalculatorAmountInput({ value, onChange, className, autoFocus, o
           }
         }}
 
-        onClick={handleClick}
+        onClick={(e) => {
+          setInputMode("numeric");
+          handleClick(e);
+        }}
+        onTouchStart={() => setInputMode("numeric")}
         onSelect={handleSelect}
         autoFocus={autoFocus}
         className={cn(

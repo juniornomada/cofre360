@@ -882,11 +882,17 @@ export function TransactionsPage() {
               <div className="relative">
                 <label className="text-xs text-muted-foreground mb-1 block">Nome</label>
                 <input
-                  autoFocus={false}
+                  autoFocus
+                  inputMode={editTx.nameMode || "none"}
                   value={editTx.name}
                   onChange={e => {
                     setEditTx({ ...editTx, name: e.target.value });
                     setShowEditSuggestions(e.target.value.length >= 2);
+                  }}
+                  onClick={(e) => {
+                    const target = e.currentTarget;
+                    setEditTx({ ...editTx, nameMode: "text" });
+                    setTimeout(() => target.focus(), 0);
                   }}
                   onFocus={() => setShowEditSuggestions(editTx.name.length >= 2)}
                   onBlur={() => setTimeout(() => setShowEditSuggestions(false), 200)}
