@@ -1,6 +1,6 @@
 import { useLocation, useRouterState } from "@tanstack/react-router";
 import { SmartLink as Link } from "./SmartLink";
-import { Home, ArrowLeftRight, Landmark, CreditCard, Sparkles, PiggyBank, Target } from "lucide-react";
+import { Home, ArrowLeftRight, Landmark, CreditCard, Sparkles, Target } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
