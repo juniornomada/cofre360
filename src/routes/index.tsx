@@ -1167,10 +1167,7 @@ function Dashboard() {
                     </div>
                     <div className="flex flex-col">
                       <p className="text-xs font-bold text-foreground truncate max-w-[120px]">{card.name}</p>
-                      <div className="flex items-center gap-1">
-                        <p className="text-[10px] text-muted-foreground">{isPaid ? "Próx. fatura" : "Fatura atual"}</p>
-                        <span className="text-[9px] font-medium bg-accent/50 px-1 rounded text-muted-foreground">Venc. {formatDueDate(displayDue)}</span>
-                      </div>
+                      <span className="text-[10px] font-medium text-muted-foreground">Venc. {formatDueDate(displayDue)}</span>
                     </div>
                   </div>
                   <div className="text-right">
