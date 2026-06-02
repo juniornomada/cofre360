@@ -184,6 +184,7 @@ function Dashboard() {
   const [goals, setGoals] = useState<{ id: string; name: string | null; icon: string | null; current_amount: number | null; target_amount: number | null }[]>([]);
   const [cardTotals, setCardTotals] = useState<Record<string, number>>({});
   const [cardPayments, setCardPayments] = useState<Record<string, number>>({});
+  const [cardNextInvoices, setCardNextInvoices] = useState<Record<string, number>>({});
 
   const [greeting, setGreeting] = useState<string>("");
 
@@ -273,7 +274,7 @@ function Dashboard() {
 
     // Fire ALL queries in parallel — was sequential before, causing slow load.
     // Also: only select fields we actually use, instead of select("*").
-    const TX_FIELDS = "id, icon, name, category, date, amount, type, card, bank_account_id, installment_group_id, installment_number, total_installments, installment_mode, installment_source_amount, is_visible";
+    const TX_FIELDS = "id, icon, name, category, date, amount, type, card, bank_account_id, installment_group_id, installment_number, total_installments, installment_mode, installment_source_amount, is_visible, created_at";
     const [
       rawRecentRes,
       allTxRes,
@@ -314,12 +315,59 @@ function Dashboard() {
     if (cards) setAllCards(cards as any);
     if (rems) setPendingReminders(rems as any);
     if (gls) setGoals(gls as any);
+    
     if (txTotals) {
       const totals: Record<string, number> = {};
+      const nextInvoiceTotals: Record<string, number> = {};
+      const now = new Date();
+      
       for (const tx of txTotals) {
-        if (tx.card) totals[tx.card] = (totals[tx.card] || 0) + Number(tx.amount);
+        if (tx.card) {
+          const amount = Number(tx.amount);
+          totals[tx.card] = (totals[tx.card] || 0) + amount;
+          
+          // Next invoice logic
+          const cardObj = cards?.find(c => c.name === tx.card);
+          const cDay = cardObj?.closing_day || 1;
+          const txDate = parseTxDateToDate((tx as any).date || "");
+          
+          if (txDate && cardObj) {
+            // Determine the closing date for the current period
+            let closingDate = new Date(now.getFullYear(), now.getMonth(), cDay);
+            if (now > closingDate) {
+              closingDate = new Date(now.getFullYear(), now.getMonth() + 1, cDay);
+            }
+            const prevClosingDate = new Date(closingDate.getFullYear(), closingDate.getMonth() - 1, cDay);
+            
+            // Check if the current invoice is fully paid
+            const paid = payments?.filter(p => p.card_id === cardObj.id).reduce((sum, p) => sum + Number(p.amount), 0) || 0;
+            const currentInvoiceTotal = txTotals
+              .filter(t => t.card === tx.card)
+              .filter(t => {
+                const d = parseTxDateToDate((t as any).date || "");
+                return d && d >= prevClosingDate && d < closingDate;
+              })
+              .reduce((sum, t) => sum + Number(t.amount), 0);
+            
+            const isCurrentInvoicePaid = currentInvoiceTotal > 0 && Math.abs(currentInvoiceTotal - paid) < 0.01;
+            
+            if (isCurrentInvoicePaid) {
+              // If paid, show next month's invoice
+              const nextClosingDate = new Date(closingDate.getFullYear(), closingDate.getMonth() + 1, cDay);
+              if (txDate >= closingDate && txDate < nextClosingDate) {
+                nextInvoiceTotals[tx.card] = (nextInvoiceTotals[tx.card] || 0) + amount;
+              }
+            } else {
+              // If not paid, show current invoice
+              if (txDate >= prevClosingDate && txDate < closingDate) {
+                nextInvoiceTotals[tx.card] = (nextInvoiceTotals[tx.card] || 0) + amount;
+              }
+            }
+          }
+        }
       }
       setCardTotals(totals);
+      setCardNextInvoices(nextInvoiceTotals);
     }
     if (payments) {
       const paid: Record<string, number> = {};
@@ -1084,22 +1132,25 @@ function Dashboard() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {allCards.filter(c => c.is_visible !== false && c.is_visible !== null).map((card) => {
-              const total = cardTotals[card.name] || 0;
+              const used = cardTotals[card.name] || 0;
               const paid = cardPayments[card.id] || 0;
-              const remaining = Math.max(0, total - paid);
+              const remaining = Math.max(0, used - paid);
+              const nextInvoice = cardNextInvoices[card.name] || 0;
               
               const today = new Date();
               const todayDay = today.getDate();
               // Compute due date of current invoice
               let currentDue = new Date(today.getFullYear(), today.getMonth(), card.due_day || 1);
               
-              const isPaid = total > 0 && remaining === 0;
+              const isPaid = used > 0 && remaining === 0;
               
               // If invoice is already paid OR it's already closed/near due for next month
               let displayDue = currentDue;
               if (isPaid || (todayDay > (card.due_day || 1))) {
                 displayDue = new Date(today.getFullYear(), today.getMonth() + 1, card.due_day || 1);
               }
+
+              const displayAmount = isPaid ? nextInvoice : remaining;
 
               const formatDueDate = (d: Date) => format(d, "dd/MM");
 
@@ -1123,8 +1174,8 @@ function Dashboard() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className={cn("text-sm font-bold tabular-nums", remaining > 0 ? "text-destructive" : "text-primary")}>
-                      {balanceVisible ? `R$ ${fmt(remaining)}` : "R$ •••"}
+                    <p className={cn("text-sm font-bold tabular-nums", !isPaid && remaining > 0 ? "text-destructive" : "text-primary")}>
+                      {balanceVisible ? `R$ ${fmt(displayAmount)}` : "R$ •••"}
                     </p>
                     {paid > 0 && remaining > 0 && (
                       <p className="text-[9px] text-primary font-medium">
