@@ -823,9 +823,10 @@ function CardsPage() {
                   <div className="flex justify-between items-start gap-2 mb-1.5">
                     <div className="min-w-0">
                       <p className="text-[10px] font-bold uppercase tracking-wider text-white/90">Fatura {activeInvoicePeriod?.label.split(" (")[0] || "atual"}</p>
-                      <p className="text-base font-extrabold text-white tabular-nums drop-shadow-md truncate">
+                      <p className="text-base font-extrabold text-white tabular-nums drop-shadow-md truncate" data-testid="fatura-atual-valor">
                         R$ {invoiceRemaining.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                       </p>
+
                     </div>
                     <div className="flex items-center gap-1 text-[10px] font-semibold text-white shrink-0 mt-0.5">
                       <span className="rounded-full bg-black/45 px-1.5 py-0.5 ring-1 ring-white/20 tabular-nums">
@@ -960,27 +961,30 @@ function CardsPage() {
 
               <div className="flex gap-1 px-5 pb-3 overflow-x-auto no-scrollbar">
                 {invoicePeriods.map((period, idx) => (
-                  <button
-                    key={period.key}
-                    onClick={() => setActiveInvoiceIdx(idx)}
-                    className={cn(
-                      "whitespace-nowrap rounded-full px-3 py-1 text-[11px] font-medium transition-colors shrink-0",
-                      idx === activeInvoiceIdx
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-accent/50 text-muted-foreground hover:bg-accent"
-                    )}
-                  >
-                    {period.label}
-                  </button>
+                    <button
+                      key={period.key}
+                      onClick={() => setActiveInvoiceIdx(idx)}
+                      data-testid={`period-tab-${period.key}`}
+                      className={cn(
+                        "whitespace-nowrap rounded-full px-3 py-1 text-[11px] font-medium transition-colors shrink-0",
+                        idx === activeInvoiceIdx
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-accent/50 text-muted-foreground hover:bg-accent"
+                      )}
+                    >
+                      {period.label}
+                    </button>
+
                 ))}
               </div>
 
               {activePeriod && (
                 <div className="mx-5 mb-3 rounded-xl bg-accent/50 p-3 flex justify-between items-center">
                   <span className="text-xs font-medium text-muted-foreground">Total da fatura</span>
-                  <span className="text-sm font-bold text-destructive tabular-nums">
+                  <span className="text-sm font-bold text-destructive tabular-nums" data-testid="total-da-fatura-valor">
                     R$ {activePeriod.total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                   </span>
+
                 </div>
               )}
 
