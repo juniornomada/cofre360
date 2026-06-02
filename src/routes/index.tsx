@@ -1158,32 +1158,32 @@ function Dashboard() {
                 <Link 
                   key={card.id} 
                   to="/cards" 
-                  className="interactive-card flex items-center justify-between p-3 rounded-2xl bg-card border border-border/30 overflow-hidden relative"
+                  className="interactive-card flex items-center justify-between p-3.5 rounded-2xl bg-card border border-border/40 overflow-hidden relative shadow-sm"
                 >
                   <div className={cn("absolute inset-y-0 left-0 w-1 bg-gradient-to-b", card.color || "from-primary to-primary/60")} />
-                  <div className="flex items-center gap-3">
-                    <div className={cn("flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br text-lg", card.color || "from-primary/20 to-primary/10")}>
+                  <div className="flex items-center gap-3.5">
+                    <div className={cn("flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br text-xl shadow-inner", card.color || "from-primary/20 to-primary/10")}>
                       {card.emoji || "💳"}
                     </div>
                     <div className="flex flex-col">
                       <p className="text-xs font-bold text-foreground truncate max-w-[120px]">{card.name}</p>
                       <div className="flex items-center gap-1">
                         <p className="text-[10px] text-muted-foreground">{isPaid ? "Próx. fatura" : "Fatura atual"}</p>
-                        <span className="text-[9px] font-medium bg-accent/50 px-1 rounded text-muted-foreground">Venc. {formatDueDate(displayDue)}</span>
+                        <span className="text-[10px] font-semibold bg-accent/60 px-1.5 py-0.5 rounded text-muted-foreground border border-border/30">Venc. {formatDueDate(displayDue)}</span>
                       </div>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className={cn("text-sm font-bold tabular-nums", !isPaid && remaining > 0 ? "text-destructive" : "text-primary")}>
+                  <div className="text-right flex flex-col justify-center">
+                    <p className={cn("text-base font-bold tabular-nums tracking-tight", !isPaid && remaining > 0 ? "text-destructive" : "text-primary")}>
                       {balanceVisible ? `R$ ${fmt(displayAmount)}` : "R$ •••"}
                     </p>
                     {paid > 0 && remaining > 0 && (
-                      <p className="text-[9px] text-primary font-medium">
+                      <p className="text-[10px] text-primary font-semibold mt-0.5">
                         Pago: R$ {fmtShort(paid)}
                       </p>
                     )}
                     {remaining === 0 && (
-                      <p className="text-[9px] text-primary font-medium">Fatura paga</p>
+                      <p className="text-[10px] text-primary font-bold mt-0.5">Fatura paga</p>
                     )}
                   </div>
                 </Link>
