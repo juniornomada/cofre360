@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { validateAgreement } from "@/server-fns/validate-agreement";
+import { InvoiceInconsistencyAlert } from "@/components/InvoiceInconsistencyAlert";
 import {
   DndContext,
   closestCenter,
