@@ -320,14 +320,21 @@ function Dashboard() {
     if (txTotals) {
       const totals: Record<string, number> = {};
       const nextInvoiceTotals: Record<string, number> = {};
-      const cardPaymentsMap: Record<string, number> = {};
+      const cardPaymentsMonthly: Record<string, number> = {};
+      const cardPaymentsTotalMap: Record<string, number> = {};
       const invoicePaidStatus: Record<string, boolean> = {};
       const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
       
-      // Calculate total payments per card
+      // Calculate payments
       if (payments) {
         for (const p of payments) {
-          cardPaymentsMap[p.card_id] = (cardPaymentsMap[p.card_id] || 0) + Number(p.amount);
+          cardPaymentsTotalMap[p.card_id] = (cardPaymentsTotalMap[p.card_id] || 0) + Number(p.amount);
+          
+          const pDate = p.paid_at ? new Date(p.paid_at) : (p.created_at ? new Date(p.created_at) : null);
+          if (pDate && pDate >= startOfMonth) {
+            cardPaymentsMonthly[p.card_id] = (cardPaymentsMonthly[p.card_id] || 0) + Number(p.amount);
+          }
         }
       }
 
@@ -336,15 +343,11 @@ function Dashboard() {
           const cardTx = txTotals.filter(t => t.card === card.name);
           const cDay = card.closing_day || 1;
           
-          // Determine the "active" closing date
           let closingDate = new Date(now.getFullYear(), now.getMonth(), cDay);
           if (now.getDate() > cDay) {
             closingDate = new Date(now.getFullYear(), now.getMonth() + 1, cDay);
           }
           
-          const prevClosingDate = new Date(closingDate.getFullYear(), closingDate.getMonth() - 1, cDay);
-          
-          // Total transactions until the end of the current active period
           const totalUsedUntilClosing = cardTx
             .filter(t => {
               const d = parseTxDateToDate((t as any).date || "");
@@ -352,11 +355,10 @@ function Dashboard() {
             })
             .reduce((sum, t) => sum + Number(t.amount), 0);
             
-          const totalPaid = cardPaymentsMap[card.id] || 0;
-          const activeInvoiceRemaining = Math.max(0, totalUsedUntilClosing - totalPaid);
+          const totalPaidEver = cardPaymentsTotalMap[card.id] || 0;
+          const activeInvoiceRemaining = Math.max(0, totalUsedUntilClosing - totalPaidEver);
           
           if (activeInvoiceRemaining < 0.01 && totalUsedUntilClosing > 0) {
-            // Current is paid, show next period's total
             const nextClosingDate = new Date(closingDate.getFullYear(), closingDate.getMonth() + 1, cDay);
             const nextInvoiceAmount = cardTx
               .filter(t => {
@@ -368,19 +370,17 @@ function Dashboard() {
             nextInvoiceTotals[card.name] = nextInvoiceAmount;
             invoicePaidStatus[card.id] = true;
           } else {
-            // Show what is remaining for the current active invoice
             nextInvoiceTotals[card.name] = activeInvoiceRemaining;
             invoicePaidStatus[card.id] = false;
           }
           
-          // Total balance (everything)
           totals[card.name] = cardTx.reduce((sum, t) => sum + Number(t.amount), 0);
         }
       }
       
       setCardTotals(totals);
       setCardNextInvoices(nextInvoiceTotals);
-      setCardPayments(cardPaymentsMap);
+      setCardPayments(cardPaymentsMonthly);
       setCardInvoicePaid(invoicePaidStatus);
     }
 
