@@ -774,10 +774,14 @@ function CardsPage() {
         <SortableContext items={cards.map((c) => c.id)} strategy={verticalListSortingStrategy}>
           <div className="flex flex-col gap-4">
             {cards.map((card, i) => {
+      const cardTransactionsFiltered = cardTransactions.filter(t => t.card === card.name);
+      const invoicePeriodsCard = groupByBillingCycle(cardTransactionsFiltered, card.closing_day, card.due_day);
+      const currentInvoicePeriod = invoicePeriodsCard.find(p => p.key === "current") || invoicePeriodsCard[1] || invoicePeriodsCard[0];
+      const invoiceRemaining = currentInvoicePeriod?.total || 0;
       const totalUsed = cardTotals[card.name] || 0;
       const totalPaid = cardPayments[card.id] || 0;
-      const invoiceRemaining = Math.max(0, totalUsed - totalPaid);
-      const pct = card.card_limit > 0 ? Math.round((invoiceRemaining / card.card_limit) * 100) : 0;
+      const outstandingBalance = Math.max(0, totalUsed - totalPaid);
+      const pct = card.card_limit > 0 ? Math.round((outstandingBalance / card.card_limit) * 100) : 0;
       const isEditing = editingId === card.id;
       const today = new Date();
       const todayDay = today.getDate();
@@ -966,7 +970,7 @@ function CardsPage() {
                         ✓ R$ {totalPaid.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} pago
                       </p>
                       <p className="text-[10px] text-white/80 tabular-nums" title={`Limite total: R$ ${card.card_limit.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`}>
-                        Disponível <span className="font-bold text-white">R$ {Math.max(0, card.card_limit - invoiceRemaining).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
+                        Disponível <span className="font-bold text-white">R$ {Math.max(0, card.card_limit - outstandingBalance).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
                       </p>
                     </div>
                   ) : (
@@ -975,7 +979,7 @@ function CardsPage() {
                         de R$ {card.card_limit.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                       </p>
                       <p className="text-[10px] text-white/80 tabular-nums">
-                        Disponível <span className="font-bold text-white">R$ {Math.max(0, card.card_limit - invoiceRemaining).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
+                        Disponível <span className="font-bold text-white">R$ {Math.max(0, card.card_limit - outstandingBalance).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
                       </p>
                     </div>
                   )}
