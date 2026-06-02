@@ -804,10 +804,11 @@ function AccountsPage() {
              </div>
               <div className="space-y-1.5">
                 <Label className="text-xs text-muted-foreground">Saldo Inicial (R$)</Label>
-                <CalculatorAmountInput
-                  value={parseFloat(editingAccount ? editBalance : formBalance) || 0}
-                  onChange={(v) => editingAccount ? setEditBalance(v.toString()) : setFormBalance(v.toString())}
-                />
+                 <CalculatorAmountInput
+                   value={parseFloat(editingAccount ? editBalance : formBalance) || 0}
+                   onChange={(v) => editingAccount ? setEditBalance(v.toString()) : setFormBalance(v.toString())}
+                   onEnter={() => editingAccount ? saveEdit(editingAccount.id) : handleAdd()}
+                 />
               </div>
              {((editingAccount ? editIcon : formIcon) === "custom") && (
                <div className="space-y-1.5">
