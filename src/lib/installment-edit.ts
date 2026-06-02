@@ -206,6 +206,8 @@ export async function saveInstallmentPlan(input: SaveInstallmentInput): Promise<
       installment_number: n,
       total_installments: total,
       installment_group_id: groupId,
+      installment_mode: input.installmentMode || "divide",
+      installment_source_amount: input.installmentSourceAmount ?? perInstallment,
     });
   }
 
