@@ -1255,9 +1255,10 @@ function CardsPage() {
                     className="interactive-button flex items-center justify-between gap-2 rounded-xl border border-primary/30 bg-primary/5 px-3 py-2 text-xs text-foreground hover:bg-primary/10 transition-colors"
                   >
                     <span className="flex items-center gap-1.5">
-                      <Wallet className="h-3.5 w-3.5 text-primary" />
-                      Pagar com saldo de {best.icon} {best.name}
+                      <BankLogo icon={best.icon || "custom"} color={best.color || "from-gray-500 to-gray-700"} name={best.name} size="xs" />
+                      Pagar com saldo de {best.name}
                     </span>
+
                     <span className="font-semibold text-primary tabular-nums">
                       R$ {payable.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                     </span>
