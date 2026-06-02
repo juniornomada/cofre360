@@ -35,7 +35,7 @@ export function BottomNav() {
               aria-current={isActive ? "page" : undefined}
               title={item.label}
               className={cn(
-                "nav-item-transition flex flex-col items-center gap-0.5 rounded-xl px-1.5 py-2 text-[9px] shrink-0 min-w-[3rem]",
+                "nav-item-transition flex flex-col items-center gap-0.5 rounded-xl px-1 py-2 text-[9px] sm:text-[10px] shrink-0 min-w-[3.5rem] sm:min-w-[4rem]",
                 isActive
                   ? cn(
                       "text-primary bg-primary/10 shadow-sm ring-1 ring-primary/20",
