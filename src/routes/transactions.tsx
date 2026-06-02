@@ -975,6 +975,7 @@ export function TransactionsPage() {
                     setEditTx({ ...editTx, name });
                     setShowEditSuggestions(name.length >= 2);
                   }}
+                  onKeyDown={e => e.key === "Enter" && handleSaveEdit()}
 
                   onBlur={() => {
                     setEditNameMode("none");
