@@ -966,7 +966,14 @@ export function TransactionsPage() {
                 <label className="text-xs text-muted-foreground mb-1 block">Valor (R$)</label>
                 <CalculatorAmountInput 
                   value={editTx.amount} 
-                  onChange={(v) => setEditTx({ ...editTx, amount: v })}
+                  onChange={(v) => {
+                    const oldAmount = editTx.amount;
+                    setEditTx({ ...editTx, amount: v });
+                    // Sincroniza o valor fixo se ele for igual ao valor total anterior (ainda não ajustado manualmente)
+                    if (editInstallmentMode === "fixed" && (editInstallmentFixedValue === 0 || editInstallmentFixedValue === oldAmount)) {
+                      setEditInstallmentFixedValue(v);
+                    }
+                  }}
                   autoFocus={false}
                 />
               </div>
