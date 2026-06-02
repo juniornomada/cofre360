@@ -59,21 +59,35 @@
     expect(trigger).toHaveAttribute("aria-describedby");
    });
  
-   it("should have correct ARIA labels for screen readers", () => {
-     render(
-       <TooltipProvider>
-         <TransactionItem
-           {...defaultProps}
-           installment_number={1}
-           total_installments={12}
-         />
-       </TooltipProvider>
-     );
- 
-     const installmentBadge = screen.getByLabelText("Parcela 1 de 12");
-     expect(installmentBadge).toBeInTheDocument();
-     expect(installmentBadge).toHaveAttribute("tabindex", "0");
-   });
+    it("should display installment info at the beginning of the name", () => {
+      render(
+        <TooltipProvider>
+          <TransactionItem
+            {...defaultProps}
+            name="Ar condicionado"
+            installment_number={1}
+            total_installments={12}
+          />
+        </TooltipProvider>
+      );
+
+      expect(screen.getByText("(1/12) Ar condicionado")).toBeInTheDocument();
+    });
+
+    it("should strip existing trailing installment info and move it to the front", () => {
+      render(
+        <TooltipProvider>
+          <TransactionItem
+            {...defaultProps}
+            name="Ar condicionado (1/12)"
+            installment_number={1}
+            total_installments={12}
+          />
+        </TooltipProvider>
+      );
+
+      expect(screen.getByText("(1/12) Ar condicionado")).toBeInTheDocument();
+    });
  
    it("should show transfer details tooltip on hover", async () => {
      const user = userEvent.setup();
