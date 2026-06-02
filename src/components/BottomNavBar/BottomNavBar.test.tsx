@@ -44,7 +44,7 @@ describe('BottomNavBar Accessibility', () => {
     const { container } = renderWithTheme(theme, size);
     
     // Check if at least one icon link has the correct data-size
-    const firstIcon = screen.getAllByTestId('nav-link')[0];
+    const firstIcon = screen.getByTestId('nav-link-início');
     const iconSvg = firstIcon.querySelector('svg');
     expect(iconSvg).toHaveAttribute('data-size', String(size));
 
