@@ -1139,7 +1139,7 @@ function Dashboard() {
             </div>
           </div>
         ) : (
-          <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="mt-3 flex flex-col gap-1">
             {allCards.filter(c => c.is_visible !== false && c.is_visible !== null).map((card) => {
               const isPaid = cardInvoicePaid[card.id] || false;
               const displayAmount = cardNextInvoices[card.name] || 0;
@@ -1162,21 +1162,20 @@ function Dashboard() {
                 <Link 
                   key={card.id} 
                   to="/cards" 
-                  className="interactive-card flex items-center justify-between p-3 rounded-xl bg-background/40 hover:bg-background/60 transition-colors overflow-hidden relative"
-
+                  className="interactive-card flex items-center justify-between px-2.5 py-1.5 rounded-xl bg-background/40 hover:bg-background/60 transition-colors overflow-hidden relative"
                 >
                   <div className={cn("absolute inset-y-0 left-0 w-1 bg-gradient-to-b", card.color || "from-primary to-primary/60")} />
-                  <div className="flex items-center gap-3">
-                    <div className={cn("flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br text-lg", card.color || "from-primary/20 to-primary/10")}>
+                  <div className="flex items-center gap-2.5">
+                    <div className={cn("flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br text-base", card.color || "from-primary/20 to-primary/10")}>
                       {card.emoji || "💳"}
                     </div>
                     <div className="flex flex-col">
-                      <p className="text-xs font-bold text-foreground truncate max-w-[120px]">{card.name}</p>
+                      <p className="text-xs font-medium text-foreground truncate max-w-[120px]">{card.name}</p>
                       <span className="text-[10px] font-medium text-muted-foreground">Venc. {formatDueDate(displayDue)}</span>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className={cn("text-sm font-bold tabular-nums", !isPaid && displayAmount > 0 ? "text-destructive" : "text-primary")}>
+                    <p className={cn("text-xs font-bold tabular-nums", !isPaid && displayAmount > 0 ? "text-destructive" : "text-primary")}>
                       {balanceVisible ? `R$ ${fmt(displayAmount)}` : "R$ •••"}
                     </p>
                     {paidThisMonth > 0 && (
