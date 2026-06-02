@@ -1121,14 +1121,10 @@ function Dashboard() {
               const paidThisMonth = cardPayments[card.id] || 0;
               
               const today = new Date();
-              const todayDay = today.getDate();
-              // Compute due date of current invoice
-              let currentDue = new Date(today.getFullYear(), today.getMonth(), card.due_day || 1);
-              
-              // If invoice is already paid OR it's already closed/near due for next month
-              let displayDue = currentDue;
-              if (isPaid || (todayDay > (card.due_day || 1))) {
-                displayDue = new Date(today.getFullYear(), today.getMonth() + 1, card.due_day || 1);
+              // Compute due date exactly like in Cards.tsx
+              let displayDue = new Date(today.getFullYear(), today.getMonth(), card.due_day || 10);
+              if (displayDue < today) {
+                displayDue.setMonth(displayDue.getMonth() + 1);
               }
 
               const formatDueDate = (d: Date) => format(d, "dd/MM");
