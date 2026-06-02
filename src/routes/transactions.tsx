@@ -402,8 +402,11 @@ export function TransactionsPage() {
 
 
   const handleEdit = (tx: Transaction) => {
-    setEditTx({ ...tx });
-    setEditInstallmentMode("divide");
+    setEditTx({ 
+      ...tx, 
+      amount: tx.installment_mode === "divide" ? (tx.installment_source_amount ?? tx.amount) : tx.amount 
+    });
+    setEditInstallmentMode(tx.installment_mode || "divide");
     setEditNameMode("none");
     setShowEditDialog(true);
   };
