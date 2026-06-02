@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { QuickAddTransactionDialog } from "./QuickAddTransactionDialog";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -42,7 +42,7 @@ const queryClient = new QueryClient({
   },
 });
 
-describe("Transaction Dialog Keyboard Closure", () => {
+describe("Transaction Dialog Keyboard Closure and Auto-Focus", () => {
   let blurSpy: any;
 
   beforeEach(() => {
@@ -61,6 +61,7 @@ describe("Transaction Dialog Keyboard Closure", () => {
   afterEach(() => {
     blurSpy.mockRestore();
     vi.clearAllMocks();
+    cleanup();
   });
 
   it("should call blur() when clicking Cancel in QuickAddTransactionDialog", () => {
@@ -102,6 +103,48 @@ describe("Transaction Dialog Keyboard Closure", () => {
       expect(blurSpy).toHaveBeenCalled();
     }, { timeout: 2000 });
   });
+
+  it("should not have any field focused or keyboard open (inputMode='numeric') when opening and re-opening the dialog", () => {
+    const { rerender } = render(
+      <QueryClientProvider client={queryClient}>
+        <QuickAddTransactionDialog open={true} onOpenChange={() => {}} />
+      </QueryClientProvider>
+    );
+
+    // Check no element is auto-focused that triggers keyboard
+    const activeElement = document.activeElement as HTMLElement;
+    // We expect the focus to be either on the Body or the Dialog container (from Radix UI)
+    // but definitely NOT on an input with numeric/text inputMode
+    expect(activeElement.tagName).not.toBe("INPUT");
+    
+    const inputs = screen.getAllByRole("textbox") as HTMLInputElement[];
+    inputs.forEach(input => {
+      expect(input.inputMode).toBe("none");
+    });
+
+    // Close and reopen
+    rerender(
+      <QueryClientProvider client={queryClient}>
+        <QuickAddTransactionDialog open={false} onOpenChange={() => {}} />
+      </QueryClientProvider>
+    );
+    
+    rerender(
+      <QueryClientProvider client={queryClient}>
+        <QuickAddTransactionDialog open={true} onOpenChange={() => {}} />
+      </QueryClientProvider>
+    );
+
+    // Verify again
+    const reActiveElement = document.activeElement as HTMLElement;
+    expect(reActiveElement.tagName).not.toBe("INPUT");
+    
+    const reInputs = screen.getAllByRole("textbox") as HTMLInputElement[];
+    reInputs.forEach(input => {
+      expect(input.inputMode).toBe("none");
+    });
+  });
 });
+
 
 
