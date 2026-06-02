@@ -185,6 +185,7 @@ function Dashboard() {
   const [cardTotals, setCardTotals] = useState<Record<string, number>>({});
   const [cardPayments, setCardPayments] = useState<Record<string, number>>({});
   const [cardNextInvoices, setCardNextInvoices] = useState<Record<string, number>>({});
+  const [cardInvoicePaid, setCardInvoicePaid] = useState<Record<string, boolean>>({});
 
   const [greeting, setGreeting] = useState<string>("");
 
