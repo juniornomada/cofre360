@@ -8,8 +8,9 @@ const navItems = [
   { to: "/transactions" as const, icon: ArrowLeftRight, label: "Transações" },
   { to: "/orcametas" as const, icon: Target, label: "OrçaMetas" },
   { to: "/insights" as const, icon: Sparkles, label: "Insights IA" },
-  { to: "/auth" as const, icon: User, label: "Perfil" },
+  { to: "/profile" as const, icon: User, label: "Perfil" },
 ];
+
 
 export function BottomNav() {
   const location = useLocation();
