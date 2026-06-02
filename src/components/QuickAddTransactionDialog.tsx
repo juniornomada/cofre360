@@ -504,7 +504,8 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                         {newTx.date || "Data"}
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
+                    <PopoverContent className="w-auto p-0 z-[60]" align="start" portal={false} sideOffset={4}>
+
                       <Calendar mode="single" selected={(() => { try { return parse(newTx.date, "dd MMM", new Date(), { locale: ptBR }); } catch { return undefined; } })()} onSelect={(date) => { if (date) setNewTx({ ...newTx, date: format(date, "dd MMM", { locale: ptBR }) }); }} initialFocus className={cn("p-3 pointer-events-auto")} />
                     </PopoverContent>
                   </Popover>
