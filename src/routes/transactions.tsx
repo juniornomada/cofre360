@@ -890,9 +890,14 @@ export function TransactionsPage() {
                   inputMode={editNameMode}
                   value={editTx.name}
                   onChange={e => {
-                    setEditTx({ ...editTx, name: e.target.value });
-                    setShowEditSuggestions(e.target.value.length >= 2);
+                    let name = e.target.value;
+                    if (name.length > 0) {
+                      name = name.charAt(0).toUpperCase() + name.slice(1);
+                    }
+                    setEditTx({ ...editTx, name });
+                    setShowEditSuggestions(name.length >= 2);
                   }}
+
                   onBlur={() => {
                     setEditNameMode("none");
                     setTimeout(() => setShowEditSuggestions(false), 200);

@@ -461,7 +461,10 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                      id="tx-name-input"
                     value={newTx.name}
                     onChange={e => {
-                      const name = e.target.value;
+                      let name = e.target.value;
+                      if (name.length > 0) {
+                        name = name.charAt(0).toUpperCase() + name.slice(1);
+                      }
                       const history = txHistory.get(name.trim().toLowerCase());
                       if (history) {
                         setNewTx({ ...newTx, name, icon: history.icon, category: history.category });
@@ -469,6 +472,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                         setNewTx({ ...newTx, name });
                       }
                     }}
+
                     onBlur={() => setNameInputMode("none")}
                     onClick={(e) => {
                       const target = e.currentTarget;
