@@ -418,7 +418,7 @@ export function TransactionsPage() {
       const dateStr = format(new Date(), "dd/MM/yyyy HH:mm");
       doc.text(`Gerado em: ${dateStr}`, 14, 30);
 
-      const tableRows = filtered.map(tx => [
+      const tableRows = sortedTransactions.map(tx => [
         tx.date,
         tx.name,
         tx.category,
