@@ -1158,32 +1158,59 @@ function Dashboard() {
                 <Link 
                   key={card.id} 
                   to="/cards" 
-                  className="interactive-card flex items-center justify-between p-3.5 rounded-2xl bg-card border border-border/40 overflow-hidden relative shadow-sm h-full"
+                  className="interactive-card flex flex-col p-4 rounded-2xl bg-card border border-border/40 overflow-hidden relative shadow-sm h-full group transition-all duration-300 hover:shadow-md"
                 >
-                  <div className={cn("absolute inset-y-0 left-0 w-1 bg-gradient-to-b", card.color || "from-primary to-primary/60")} />
-                  <div className="flex items-center gap-3 min-w-0 flex-1 mr-2">
-                    <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br text-xl shadow-inner", card.color || "from-primary/20 to-primary/10")}>
-                      {card.emoji || "💳"}
-                    </div>
-                    <div className="flex flex-col min-w-0">
-                      <p className="text-xs font-bold text-foreground truncate">{card.name}</p>
-                      <div className="flex flex-wrap items-center gap-1 mt-0.5">
-                        <p className="text-[10px] text-muted-foreground whitespace-nowrap">{isPaid ? "Próx. fatura" : "Fatura atual"}</p>
-                        <span className="text-[10px] font-semibold bg-accent/60 px-1.5 py-0.5 rounded text-muted-foreground border border-border/30 whitespace-nowrap">Venc. {formatDueDate(displayDue)}</span>
+                  <div className={cn("absolute inset-y-0 left-0 w-1.5 bg-gradient-to-b transition-transform group-hover:scale-y-110", card.color || "from-primary to-primary/60")} />
+                  
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className={cn("flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br text-2xl shadow-inner transition-transform group-hover:scale-105", card.color || "from-primary/20 to-primary/10")}>
+                        {card.emoji || "💳"}
+                      </div>
+                      <div className="flex flex-col min-w-0">
+                        <p className="text-sm font-bold text-foreground truncate">{card.name}</p>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <Clock className="h-3 w-3 text-muted-foreground" />
+                          <p className="text-[10px] font-medium text-muted-foreground whitespace-nowrap">
+                            Venc. <span className="text-foreground">{formatDueDate(displayDue)}</span>
+                          </p>
+                        </div>
                       </div>
                     </div>
+
+                    <div className="flex flex-col items-end shrink-0">
+                      {isPaid ? (
+                        <div className="bg-primary/10 text-primary text-[10px] font-bold px-2 py-1 rounded-full border border-primary/20 flex items-center gap-1 shadow-sm">
+                          <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                          PAGA
+                        </div>
+                      ) : (
+                        <div className="bg-destructive/10 text-destructive text-[10px] font-bold px-2 py-1 rounded-full border border-destructive/20 flex items-center gap-1 shadow-sm">
+                          <div className="h-1.5 w-1.5 rounded-full bg-destructive animate-pulse" />
+                          ABERTA
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <div className="text-right flex flex-col justify-center shrink-0">
-                    <p className={cn("text-sm sm:text-base font-bold tabular-nums tracking-tight", !isPaid && remaining > 0 ? "text-destructive" : "text-primary")}>
-                      {balanceVisible ? `R$ ${fmt(displayAmount)}` : "R$ •••"}
+
+                  <div className="mt-auto space-y-1">
+                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                      {isPaid ? "Próxima Fatura" : "Valor Previsto"}
                     </p>
-                    {paid > 0 && remaining > 0 && (
-                      <p className="text-[9px] sm:text-[10px] text-primary font-semibold mt-0.5">
-                        Pago: R$ {fmtShort(paid)}
+                    <div className="flex items-baseline gap-1">
+                      <p className={cn(
+                        "text-xl sm:text-2xl font-black tabular-nums tracking-tighter transition-colors", 
+                        !isPaid && remaining > 0 ? "text-destructive" : "text-primary"
+                      )}>
+                        {balanceVisible ? `R$ ${fmt(displayAmount)}` : "R$ •••••"}
                       </p>
-                    )}
-                    {remaining === 0 && (
-                      <p className="text-[9px] sm:text-[10px] text-primary font-bold mt-0.5">Fatura paga</p>
+                    </div>
+                    
+                    {paid > 0 && remaining > 0 && (
+                      <div className="flex items-center justify-between pt-2 mt-2 border-t border-border/20">
+                        <p className="text-[10px] text-muted-foreground">Já pago</p>
+                        <p className="text-[10px] font-bold text-primary">R$ {fmt(paid)}</p>
+                      </div>
                     )}
                   </div>
                 </Link>
