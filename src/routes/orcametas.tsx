@@ -190,7 +190,7 @@ function OrcaMetasPage() {
 
   // Budget handlers
   const handleAddBudget = async () => {
-    try {
+    const promise = (async () => {
       const { error } = await supabase.from("budget_categories").insert({
         category: newItem.category, icon: newItem.icon,
         spent: 0, budget_limit: newItem.budget_limit, color: newItem.color,
@@ -198,17 +198,20 @@ function OrcaMetasPage() {
       if (error) throw error;
       setShowAddBudget(false);
       setNewItem({ category: "", icon: "🍔", budget_limit: 0, color: "bg-chart-1" });
-      fetchBudget();
-      toast.success("Orçamento adicionado");
-    } catch (error: any) {
-      console.error("Error adding budget:", error);
-      toast.error("Erro ao adicionar orçamento");
-    }
+      await fetchBudget();
+    })();
+
+    toast.promise(promise, {
+      loading: "Salvando orçamento...",
+      success: "Orçamento adicionado com sucesso!",
+      error: "Erro ao adicionar orçamento",
+    });
   };
 
   const handleSaveBudget = async () => {
-    try {
-      if (!editItem) return;
+    if (!editItem) return;
+    
+    const promise = (async () => {
       const { error } = await supabase.from("budget_categories").update({
         category: editItem.category, icon: editItem.icon,
         budget_limit: editItem.budget_limit, color: editItem.color,
@@ -216,12 +219,14 @@ function OrcaMetasPage() {
       if (error) throw error;
       setShowEditBudget(false);
       setEditItem(null);
-      fetchBudget();
-      toast.success("Orçamento atualizado");
-    } catch (error: any) {
-      console.error("Error saving budget:", error);
-      toast.error("Erro ao salvar orçamento");
-    }
+      await fetchBudget();
+    })();
+
+    toast.promise(promise, {
+      loading: "Salvando alterações...",
+      success: "Orçamento atualizado com sucesso!",
+      error: "Erro ao salvar orçamento",
+    });
   };
 
   const handleDeleteBudget = async () => {
@@ -241,8 +246,9 @@ function OrcaMetasPage() {
 
   // Goals handlers
   const handleSaveGoal = async () => {
-    try {
-      if (!editGoal) return;
+    if (!editGoal) return;
+
+    const promise = (async () => {
       const { error } = await supabase.from("goals").update({
         name: editGoal.name, icon: editGoal.icon,
         current_amount: editGoal.current_amount, target_amount: editGoal.target_amount,
@@ -251,12 +257,14 @@ function OrcaMetasPage() {
       if (error) throw error;
       setShowEditGoal(false);
       setEditGoal(null);
-      fetchGoals();
-      toast.success("Meta atualizada");
-    } catch (error: any) {
-      console.error("Error saving goal:", error);
-      toast.error("Erro ao salvar meta");
-    }
+      await fetchGoals();
+    })();
+
+    toast.promise(promise, {
+      loading: "Salvando meta...",
+      success: "Meta atualizada com sucesso!",
+      error: "Erro ao salvar meta",
+    });
   };
 
   const handleDeleteGoal = async () => {
@@ -275,7 +283,7 @@ function OrcaMetasPage() {
   };
 
   const handleAddGoal = async () => {
-    try {
+    const promise = (async () => {
       const { error } = await supabase.from("goals").insert({
         name: newGoal.name, icon: newGoal.icon,
         current_amount: newGoal.current_amount, target_amount: newGoal.target_amount,
@@ -284,12 +292,14 @@ function OrcaMetasPage() {
       if (error) throw error;
       setShowAddGoal(false);
       setNewGoal({ name: "", icon: "🎯", current_amount: 0, target_amount: 0, deadline: "" });
-      fetchGoals();
-      toast.success("Meta adicionada");
-    } catch (error: any) {
-      console.error("Error adding goal:", error);
-      toast.error("Erro ao adicionar meta");
-    }
+      await fetchGoals();
+    })();
+
+    toast.promise(promise, {
+      loading: "Criando meta...",
+      success: "Meta adicionada com sucesso!",
+      error: "Erro ao adicionar meta",
+    });
   };
 
   const totalSpent = computedItems.reduce((s, b) => s + b.spent, 0);

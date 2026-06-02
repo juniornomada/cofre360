@@ -216,40 +216,30 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
     }
 
     setIsSubmitting(true);
-    try {
+    const promise = (async () => {
       console.log("QuickAdd: Starting handleAdd", { isTransfer, transferFromId, transferToId, amount: newTx.amount });
       
       if (installmentEnabled && !isTransfer && (installmentCount === "" || Number(installmentCount) < 2)) {
-        toast.error("Por favor, insira um número válido de parcelas (mínimo 2).");
-        setIsSubmitting(false);
-        return;
+        throw new Error("Por favor, insira um número válido de parcelas (mínimo 2).");
       }
       
       if (isTransfer) {
         if (!transferFromId || !transferToId || transferFromId === transferToId) {
-          console.warn("QuickAdd: Transfer validation failed", { transferFromId, transferToId });
-          toast.error("Selecione contas diferentes para a transferência.");
-          setIsSubmitting(false);
-          return;
+          throw new Error("Selecione contas diferentes para a transferência.");
         }
 
         const fromAcc = bankAccounts.find(a => a.id === transferFromId);
         if (fromAcc && (fromAcc.balance || 0) < newTx.amount) {
-          toast.error(`Saldo insuficiente na conta ${fromAcc.name}. Saldo disponível: R$ ${(fromAcc.balance || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`);
-          setIsSubmitting(false);
-          return;
+          throw new Error(`Saldo insuficiente na conta ${fromAcc.name}.`);
         }
 
-        const toAcc = bankAccounts.find(a => a.id === transferToId);
         const fromName = fromAcc?.name || "Conta";
-        const toName = toAcc?.name || "Conta";
+        const toName = (bankAccounts.find(a => a.id === transferToId))?.name || "Conta";
         const groupId = (typeof crypto !== "undefined" && "randomUUID" in crypto)
           ? crypto.randomUUID()
           : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
         
-        console.log("QuickAdd: Inserting transfer transactions", { groupId, fromName, toName });
-        
-        const { error, data } = await supabase.from("transactions").insert([
+        const { error } = await supabase.from("transactions").insert([
           {
             icon: "🔄", name: `Transferência → ${toName}`, category: "Transferências > Outros",
             date: newTx.date, amount: newTx.amount, type: "expense",
@@ -262,97 +252,85 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
             card: null, bank_account_id: transferToId, installment_group_id: groupId,
             is_visible: true
           },
-        ]).select();
+        ]);
 
-        if (error) {
-          console.error("QuickAdd: Supabase insertion error", error);
-          toast.error("Erro na comunicação com o banco de dados. Tente novamente.");
-          throw error;
+        if (error) throw error;
+      } else {
+        if (!newTx.bank_account_id && !newTx.card) return;
+
+        if (newTx.type === "expense" && newTx.bank_account_id) {
+          const acc = bankAccounts.find(a => a.id === newTx.bank_account_id);
+          if (acc && (acc.balance || 0) < newTx.amount) {
+            throw new Error(`Saldo insuficiente na conta ${acc.name}.`);
+          }
         }
         
-        console.log("QuickAdd: Transfer successful", data);
-        onOpenChange(false);
-        onSuccess?.();
-        toast.success("Transferência realizada com sucesso!");
-        return;
-      }
+        const cardValue = newTx.card === "Nenhum" ? null : newTx.card;
+        let baseDate: Date;
+        try {
+          baseDate = parse(newTx.date, "dd MMM", new Date(), { locale: ptBR });
+        } catch {
+          baseDate = new Date();
+        }
 
-      console.log("QuickAdd: Standard transaction validation", { bank_account_id: newTx.bank_account_id, card: newTx.card });
-      if (!newTx.bank_account_id && !newTx.card) {
-        setIsSubmitting(false);
-        return;
-      }
-
-
-      // We also removed the balance check for standard transactions to maintain consistency
-      // as this is a tracking app and users might want to record transactions even with insufficient app-balance.
-
-      // Balance check for expenses from bank accounts
-      if (newTx.type === "expense" && newTx.bank_account_id) {
-        const acc = bankAccounts.find(a => a.id === newTx.bank_account_id);
-        if (acc && (acc.balance || 0) < newTx.amount) {
-          toast.error(`Saldo insuficiente na conta ${acc.name}. Saldo disponível: R$ ${(acc.balance || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`);
-          setIsSubmitting(false);
-          return;
+        if (installmentEnabled && cardValue && Number(installmentCount) > 1) {
+          const groupId = (typeof crypto !== "undefined" && "randomUUID" in crypto)
+            ? crypto.randomUUID()
+            : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+          const rows = [];
+          const count = Number(installmentCount) || 1;
+          for (let i = 0; i < count; i++) {
+            const installDate = new Date(baseDate);
+            installDate.setMonth(installDate.getMonth() + i);
+            const { valorParcela: parcela } = calculateInstallmentDetails(
+              newTx.amount,
+              count,
+              installmentMode,
+              installmentMode === "fixed" ? newTx.amount : 0
+            );
+            rows.push({
+              icon: newTx.icon, name: newTx.name, category: newTx.category,
+              date: format(installDate, "dd MMM", { locale: ptBR }),
+              amount: parcela, type: newTx.type,
+              card: cardValue, bank_account_id: newTx.bank_account_id || null,
+              installment_number: i + 1,
+              total_installments: count,
+              installment_group_id: groupId,
+              installment_mode: installmentMode,
+              installment_source_amount: newTx.amount,
+              is_visible: true
+            });
+          }
+          const { error } = await supabase.from("transactions").insert(rows);
+          if (error) throw error;
+        } else {
+          const { error } = await supabase.from("transactions").insert({
+            icon: newTx.icon, name: newTx.name, category: newTx.category,
+            date: newTx.date, amount: newTx.amount, type: newTx.type,
+            card: cardValue, bank_account_id: newTx.bank_account_id || null,
+            is_visible: true
+          });
+          if (error) throw error;
         }
       }
       
-      const cardValue = newTx.card === "Nenhum" ? null : newTx.card;
-    let baseDate: Date;
-    try {
-      baseDate = parse(newTx.date, "dd MMM", new Date(), { locale: ptBR });
-    } catch {
-      baseDate = new Date();
-    }
+      onOpenChange(false);
+      onSuccess?.();
+    })();
 
-    if (installmentEnabled && cardValue && Number(installmentCount) > 1) {
-      const groupId = (typeof crypto !== "undefined" && "randomUUID" in crypto)
-        ? crypto.randomUUID()
-        : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-      const rows = [];
-      const count = Number(installmentCount) || 1;
-      for (let i = 0; i < count; i++) {
-        const installDate = new Date(baseDate);
-        installDate.setMonth(installDate.getMonth() + i);
-         const { valorParcela: parcela } = calculateInstallmentDetails(
-           newTx.amount,
-           count,
-           installmentMode,
-           installmentMode === "fixed" ? newTx.amount : 0
-         );
-        rows.push({
-          icon: newTx.icon, name: newTx.name, category: newTx.category,
-          date: format(installDate, "dd MMM", { locale: ptBR }),
-          amount: parcela, type: newTx.type,
-          card: cardValue, bank_account_id: newTx.bank_account_id || null,
-          installment_number: i + 1,
-          total_installments: count,
-          installment_group_id: groupId,
-          installment_mode: installmentMode,
-          installment_source_amount: newTx.amount,
-          is_visible: true
-        });
-       }
-       const { error } = await supabase.from("transactions").insert(rows);
-       if (error) throw error;
-     } else {
-       const { error } = await supabase.from("transactions").insert({
-         icon: newTx.icon, name: newTx.name, category: newTx.category,
-         date: newTx.date, amount: newTx.amount, type: newTx.type,
-         card: cardValue, bank_account_id: newTx.bank_account_id || null,
-         is_visible: true
-       });
-       if (error) throw error;
-     }
-    (document.activeElement as HTMLElement)?.blur();
-    onOpenChange(false);
-    onSuccess?.();
-    toast.success("Transação adicionada com sucesso!");
-    } catch (error: any) {
-      console.error("Error adding transaction:", error);
-      toast.error("Erro ao adicionar transação: " + getFriendlyErrorMessage(error).message);
+    toast.promise(promise, {
+      loading: "Salvando transação...",
+      success: "Transação adicionada com sucesso!",
+      error: (err: any) => err.message || "Erro ao adicionar transação",
+    });
+
+    try {
+      await promise;
+    } catch (e) {
+      console.error(e);
     } finally {
       setIsSubmitting(false);
+      (document.activeElement as HTMLElement)?.blur();
     }
   };
 

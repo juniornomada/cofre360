@@ -116,12 +116,12 @@ function RemindersPage() {
   }, [fetchReminders]);
 
   const handleAdd = async () => {
-    try {
-      if (!newReminder.title || !newReminder.due_date) {
-        toast.error("Preencha o título e a data");
-        return;
-      }
+    if (!newReminder.title || !newReminder.due_date) {
+      toast.error("Preencha o título e a data");
+      return;
+    }
 
+    const promise = (async () => {
       let recurrenceDay = null;
       if (newReminder.is_recurring) {
         const d = parseDate(newReminder.due_date || "");
@@ -144,18 +144,20 @@ function RemindersPage() {
       if (error) throw error;
       setShowAddDialog(false);
       setNewReminder({ title: "", amount: 0, due_date: "", type: "expense", category: "Moradia > Aluguel", icon: "🏠", notes: "", bank_account_id: null, card_id: null, is_recurring: false, recurrence_day: null });
-      toast.success("Lembrete criado!");
-      fetchReminders();
-    } catch (error: any) {
-      console.error("Error adding reminder:", error);
-      toast.error("Erro ao criar lembrete: " + (error.message || "Erro desconhecido"));
-    }
+      await fetchReminders();
+    })();
+
+    toast.promise(promise, {
+      loading: "Criando lembrete...",
+      success: "Lembrete criado com sucesso!",
+      error: (err) => `Erro ao criar lembrete: ${err.message || err}`,
+    });
   };
 
   const handleSaveEdit = async () => {
-    try {
-      if (!editReminder) return;
-      
+    if (!editReminder) return;
+
+    const promise = (async () => {
       const amountToSave = Number(editReminder.amount);
       
       let recurrenceDay = null;
@@ -183,18 +185,12 @@ function RemindersPage() {
         recurrence_day: recurrenceDay,
       };
       
-      console.log("Saving reminder with data:", updateData);
-
-      const { data: updatedData, error } = await supabase
+      const { error } = await supabase
         .from("reminders")
         .update(updateData)
-        .eq("id", editReminder.id)
-        .select();
+        .eq("id", editReminder.id);
 
-      if (error) {
-        console.error("Supabase update error:", error);
-        throw error;
-      }
+      if (error) throw error;
 
       // Se o lembrete for recorrente, atualizar também as próximas instâncias pendentes (não concluídas) com o mesmo título
       if (editReminder.is_recurring) {
@@ -217,24 +213,16 @@ function RemindersPage() {
         if (batchError) console.error("Error updating future instances:", batchError);
       }
       
-      const finalData = (updatedData && updatedData.length > 0) ? updatedData[0] : { ...editReminder, ...updateData };
-      
-      // Atualizar o estado local imediatamente
-      setReminders(prev => {
-        const newList = prev.map(r => r.id === editReminder.id ? finalData : r);
-        return [...newList];
-      });
-      
       setShowEditDialog(false);
       setEditReminder(null);
-      toast.success("Alterações salvas com sucesso!");
-      
-      // Recarregar tudo do banco para garantir consistência total
-      setTimeout(() => fetchReminders(), 100);
-    } catch (error: any) {
-      console.error("Error updating reminder:", error);
-      toast.error("Erro ao atualizar lembrete: " + (error.message || "Erro desconhecido"));
-    }
+      await fetchReminders();
+    })();
+
+    toast.promise(promise, {
+      loading: "Salvando alterações...",
+      success: "Lembrete atualizado com sucesso!",
+      error: (err) => `Erro ao atualizar lembrete: ${err.message || err}`,
+    });
   };
 
   // Cria a próxima ocorrência mensal de um lembrete recorrente

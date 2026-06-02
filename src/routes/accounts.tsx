@@ -471,7 +471,7 @@ function AccountsPage() {
     if (!valid || isSubmitting) return;
 
     setIsSubmitting(true);
-    try {
+    const promise = (async () => {
       const payload = {
         id: crypto.randomUUID(),
         ...valid,
@@ -481,11 +481,17 @@ function AccountsPage() {
       const { error } = await supabase.from("bank_accounts").insert(payload);
       if (error) throw error;
       setDialogOpen(false);
-      fetchAccounts();
-      toast.success("Conta adicionada com sucesso");
-    } catch (error: any) {
-      console.error("Error adding account:", error);
-      toast.error("Erro ao adicionar conta: " + (error.message || "Erro desconhecido"));
+      await fetchAccounts();
+    })();
+
+    toast.promise(promise, {
+      loading: "Adicionando conta...",
+      success: "Conta adicionada com sucesso!",
+      error: (err) => `Erro ao adicionar conta: ${err.message || err}`,
+    });
+
+    try {
+      await promise;
     } finally {
       setIsSubmitting(false);
     }
@@ -788,19 +794,21 @@ function AccountsPage() {
              </div>
              <div className="space-y-1.5">
                <Label className="text-xs text-muted-foreground">Nome da conta</Label>
-               <Input
-                 value={editingAccount ? editName : formName}
-                 onChange={(e) => editingAccount ? setEditName(e.target.value) : setFormName(e.target.value)}
-                 placeholder="Ex: Banco do Brasil"
-                 className="rounded-xl"
-               />
+                <Input
+                  value={editingAccount ? editName : formName}
+                  onChange={(e) => editingAccount ? setEditName(e.target.value) : setFormName(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && (editingAccount ? saveEdit(editingAccount.id) : handleAdd())}
+                  placeholder="Ex: Banco do Brasil"
+                  className="rounded-xl"
+                />
              </div>
               <div className="space-y-1.5">
                 <Label className="text-xs text-muted-foreground">Saldo Inicial (R$)</Label>
-                <CalculatorAmountInput
-                  value={parseFloat(editingAccount ? editBalance : formBalance) || 0}
-                  onChange={(v) => editingAccount ? setEditBalance(v.toString()) : setFormBalance(v.toString())}
-                />
+                 <CalculatorAmountInput
+                   value={parseFloat(editingAccount ? editBalance : formBalance) || 0}
+                   onChange={(v) => editingAccount ? setEditBalance(v.toString()) : setFormBalance(v.toString())}
+                   onEnter={() => editingAccount ? saveEdit(editingAccount.id) : handleAdd()}
+                 />
               </div>
              {((editingAccount ? editIcon : formIcon) === "custom") && (
                <div className="space-y-1.5">
@@ -857,6 +865,7 @@ function AccountsPage() {
                     <Input
                       value={confirmText}
                       onChange={(e) => setConfirmText(e.target.value.toUpperCase())}
+                      onKeyDown={(e) => e.key === "Enter" && confirmText === "CONFIRMAR" && editingAccount && saveEdit(editingAccount.id)}
                       placeholder="Digite CONFIRMAR"
                       className="h-9 text-center uppercase font-bold border-destructive/20 focus-visible:ring-destructive"
                     />
