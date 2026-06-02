@@ -863,6 +863,7 @@ function AccountsPage() {
                     <Input
                       value={confirmText}
                       onChange={(e) => setConfirmText(e.target.value.toUpperCase())}
+                      onKeyDown={(e) => e.key === "Enter" && confirmText === "CONFIRMAR" && editingAccount && saveEdit(editingAccount.id)}
                       placeholder="Digite CONFIRMAR"
                       className="h-9 text-center uppercase font-bold border-destructive/20 focus-visible:ring-destructive"
                     />
