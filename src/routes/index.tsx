@@ -867,7 +867,7 @@ function Dashboard() {
     <div className="animate-page-enter flex flex-col gap-5 px-4 pt-5 pb-24">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex flex-col">
+        <div className="flex flex-col items-center">
           <div
             className="flex flex-col leading-none select-none rounded-xl border px-3 py-1.5 mb-1"
             style={{
@@ -884,7 +884,7 @@ function Dashboard() {
             </span>
           </div>
           {userEmail && (
-            <span className="text-[10px] text-muted-foreground px-1 truncate max-w-[150px]">
+            <span className="text-[10px] text-muted-foreground px-1 truncate max-w-[150px] text-center w-full">
               {userEmail}
             </span>
           )}
