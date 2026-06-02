@@ -1,7 +1,8 @@
 import { useLocation, useRouterState } from "@tanstack/react-router";
-import { SmartLink as Link } from "./SmartLink";
+import { SmartLink as Link } from "../SmartLink";
 import { Home, ArrowLeftRight, Sparkles, Target, User } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Icon } from "../Icon/Icon";
 
 const navItems = [
   { to: "/" as const, icon: Home, label: "Início" },
@@ -11,8 +12,11 @@ const navItems = [
   { to: "/profile" as const, icon: User, label: "Perfil" },
 ];
 
+interface BottomNavBarProps {
+  iconSize?: number;
+}
 
-export function BottomNav() {
+export function BottomNavBar({ iconSize = 24 }: BottomNavBarProps) {
   const location = useLocation();
   const isLoading = useRouterState({ select: (s) => s.status === 'pending' });
   const pendingLocation = useRouterState({ select: (s) => s.location });
@@ -34,19 +38,23 @@ export function BottomNav() {
               search={{} as any}
               preload="intent"
               data-test="nav-icon"
+              data-testid="nav-link"
               aria-current={isActive ? "page" : undefined}
               aria-label={item.label}
               title={item.label}
               className={cn(
-                "nav-item-transition flex flex-col items-center gap-1 rounded-xl px-2 py-2 text-[10px] shrink-0 min-w-[3rem] min-h-[3rem] justify-center transition-all duration-200",
+                "nav-item-transition flex flex-col items-center gap-1 rounded-xl px-2 py-2 text-[10px] shrink-0 min-w-[3rem] min-h-[3rem] justify-center transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2684FF] focus-visible:ring-offset-2",
                 isActive
                   ? "text-primary bg-primary/10 shadow-sm"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
               )}
             >
-              <item.icon
+              <Icon
+                icon={item.icon}
+                size={iconSize}
+                data-size={iconSize}
                 className={cn(
-                  "h-6 w-6 transition-transform duration-200",
+                  "transition-transform duration-200",
                   isActive && "stroke-[2.5] scale-110"
                 )}
               />
@@ -66,4 +74,3 @@ export function BottomNav() {
     </nav>
   );
 }
-
