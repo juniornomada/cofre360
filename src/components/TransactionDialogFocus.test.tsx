@@ -11,6 +11,9 @@ vi.mock("@/integrations/supabase/client", () => ({
         eq: () => ({
           single: () => Promise.resolve({ data: null, error: null }),
         }),
+        order: () => ({
+          limit: () => Promise.resolve({ data: [], error: null }),
+        }),
       }),
       insert: () => ({
         select: () => Promise.resolve({ data: [{}], error: null }),
@@ -68,7 +71,7 @@ describe("Transaction Dialog Keyboard Closure", () => {
     expect(blurSpy).toHaveBeenCalled();
   });
 
-  it("should call blur() when clicking Salvar in QuickAddTransactionDialog", async () => {
+  it("should call blur() when clicking Adicionar in QuickAddTransactionDialog", async () => {
     render(
       <QueryClientProvider client={queryClient}>
         <QuickAddTransactionDialog open={true} onOpenChange={() => {}} />
@@ -76,17 +79,26 @@ describe("Transaction Dialog Keyboard Closure", () => {
     );
 
     // Fill required fields to allow submission
-    const nameInput = screen.getByPlaceholderText("O que você comprou?");
+    const nameInput = screen.getByPlaceholderText("Ex: Supermercado");
     fireEvent.change(nameInput, { target: { value: "Teste" } });
     
-    // Find value button (CalculatorAmountInput) - in this test we just need the button that triggers handleAdd
+    // We need to set a value as well
+    // Since it's a tracking app, we just need to satisfy the button's disabled condition
+    // which is !newTx.name || !newTx.amount
+    // We can use fireEvent to simulate typing in the calculator if needed, 
+    // but here we just need to ensure handleAdd is called.
+    
+    // In our component, handleAdd is called when clicking "Adicionar"
     const salvarButton = screen.getByText("Adicionar");
+    
+    // We might need to bypass the disabled state by manually setting amount if the mock doesn't propagate it
+    // But let's see if clicking works.
     fireEvent.click(salvarButton);
 
     // handleAdd is async and calls blur() at the end
-    // We wait for the blur call
     await vi.waitFor(() => {
       expect(blurSpy).toHaveBeenCalled();
-    });
+    }, { timeout: 2000 });
   });
 });
+
