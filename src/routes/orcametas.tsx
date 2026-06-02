@@ -307,8 +307,15 @@ function OrcaMetasPage() {
   return (
     <div className="animate-page-enter flex flex-col gap-6 px-4 pt-6 pb-24">
       <div className="flex items-center gap-3">
-        <Link to="/" className="interactive-button flex h-9 w-9 items-center justify-center rounded-xl bg-card">
-          <ArrowLeft className="h-4 w-4 text-foreground" />
+        <Link to="/" 
+          className="interactive-button flex h-10 w-10 items-center justify-center rounded-full bg-card border"
+          style={{
+            borderColor: "hsl(142 95% 55%)",
+            boxShadow:
+              "0 0 10px hsl(142 95% 55% / 0.9), 0 0 20px hsl(142 95% 55% / 0.6), inset 0 0 6px hsl(142 95% 55% / 0.35)",
+          }}
+        >
+          <ArrowLeft className="h-5 w-5 text-foreground" />
         </Link>
         <div>
           <h1 className="text-xl font-bold text-foreground">OrçaMetas</h1>
