@@ -192,21 +192,23 @@ function CardsPage() {
   const [isValidating, setIsValidating] = useState(false);
   const [activeTab, setActiveTab] = useState("list");
 
-  const runValidation = async () => {
+  const runValidation = async (silent = true) => {
     setIsValidating(true);
     try {
       const result = await validateAgreement();
       setValidationData(result);
-      if (result.status === 'ok') {
-        toast.success("Validação concluída: Tudo certo!");
-      } else if (result.status === 'partial') {
-        toast.warning("Validação concluída: Algumas divergências encontradas.");
-      } else {
-        toast.error("Validação concluída: Erros críticos detectados!");
+      if (!silent) {
+        if (result.status === 'ok') {
+          toast.success("Validação concluída: Tudo certo!");
+        } else if (result.status === 'partial') {
+          toast.warning("Validação concluída: Algumas divergências encontradas.");
+        } else {
+          toast.error("Validação concluída: Erros críticos detectados!");
+        }
       }
     } catch (error: any) {
       console.error("Validation error:", error);
-      toast.error("Erro ao validar: " + error.message);
+      if (!silent) toast.error("Erro ao validar: " + error.message);
     } finally {
       setIsValidating(false);
     }
