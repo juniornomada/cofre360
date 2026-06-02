@@ -185,6 +185,7 @@ function Dashboard() {
   const [cardTotals, setCardTotals] = useState<Record<string, number>>({});
   const [cardPayments, setCardPayments] = useState<Record<string, number>>({});
   const [cardNextInvoices, setCardNextInvoices] = useState<Record<string, number>>({});
+  const [cardInvoicePaid, setCardInvoicePaid] = useState<Record<string, boolean>>({});
 
   const [greeting, setGreeting] = useState<string>("");
 
@@ -291,8 +292,8 @@ function Dashboard() {
       supabase.from("cards").select("id, name, emoji, color, is_visible, closing_day, due_day").eq("user_id", session.user.id).order("sort_order", { ascending: true }).order("created_at", { ascending: true }),
       supabase.from("reminders").select("id, title, icon, due_date, amount, type, bank_account_id, card_id").eq("user_id", session.user.id).eq("is_completed", false).order("due_date", { ascending: true }).limit(3),
       supabase.from("goals").select("id, name, icon, current_amount, target_amount").eq("user_id", session.user.id),
-      supabase.from("transactions").select("card, amount").eq("user_id", session.user.id).not("card", "is", null),
-      supabase.from("card_payments").select("card_id, amount").eq("user_id", session.user.id),
+      supabase.from("transactions").select("card, amount, date").eq("user_id", session.user.id).not("card", "is", null),
+      supabase.from("card_payments").select("card_id, amount, paid_at").eq("user_id", session.user.id),
     ]);
 
     if (rawRecentRes.error) throw rawRecentRes.error;
@@ -319,62 +320,68 @@ function Dashboard() {
     if (txTotals) {
       const totals: Record<string, number> = {};
       const nextInvoiceTotals: Record<string, number> = {};
+      const cardPaymentsMonthly: Record<string, number> = {};
+      const cardPaymentsTotalMap: Record<string, number> = {};
+      const invoicePaidStatus: Record<string, boolean> = {};
       const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
       
-      for (const tx of txTotals) {
-        if (tx.card) {
-          const amount = Number(tx.amount);
-          totals[tx.card] = (totals[tx.card] || 0) + amount;
+      // Calculate payments
+      if (payments) {
+        for (const p of payments) {
+          cardPaymentsTotalMap[p.card_id] = (cardPaymentsTotalMap[p.card_id] || 0) + Number(p.amount);
           
-          // Next invoice logic
-          const cardObj = cards?.find(c => c.name === tx.card);
-          const cDay = cardObj?.closing_day || 1;
-          const txDate = parseTxDateToDate((tx as any).date || "");
-          
-          if (txDate && cardObj) {
-            // Determine the closing date for the current period
-            let closingDate = new Date(now.getFullYear(), now.getMonth(), cDay);
-            if (now > closingDate) {
-              closingDate = new Date(now.getFullYear(), now.getMonth() + 1, cDay);
-            }
-            const prevClosingDate = new Date(closingDate.getFullYear(), closingDate.getMonth() - 1, cDay);
-            
-            // Check if the current invoice is fully paid
-            const paid = payments?.filter(p => p.card_id === cardObj.id).reduce((sum, p) => sum + Number(p.amount), 0) || 0;
-            const currentInvoiceTotal = txTotals
-              .filter(t => t.card === tx.card)
-              .filter(t => {
-                const d = parseTxDateToDate((t as any).date || "");
-                return d && d >= prevClosingDate && d < closingDate;
-              })
-              .reduce((sum, t) => sum + Number(t.amount), 0);
-            
-            const isCurrentInvoicePaid = currentInvoiceTotal > 0 && Math.abs(currentInvoiceTotal - paid) < 0.01;
-            
-            if (isCurrentInvoicePaid) {
-              // If paid, show next month's invoice
-              const nextClosingDate = new Date(closingDate.getFullYear(), closingDate.getMonth() + 1, cDay);
-              if (txDate >= closingDate && txDate < nextClosingDate) {
-                nextInvoiceTotals[tx.card] = (nextInvoiceTotals[tx.card] || 0) + amount;
-              }
-            } else {
-              // If not paid, show current invoice
-              if (txDate >= prevClosingDate && txDate < closingDate) {
-                nextInvoiceTotals[tx.card] = (nextInvoiceTotals[tx.card] || 0) + amount;
-              }
-            }
+          const pDate = p.paid_at ? new Date(p.paid_at) : (p.created_at ? new Date(p.created_at) : null);
+          if (pDate && pDate >= startOfMonth) {
+            cardPaymentsMonthly[p.card_id] = (cardPaymentsMonthly[p.card_id] || 0) + Number(p.amount);
           }
         }
       }
+
+      if (txTotals) {
+        for (const card of cards || []) {
+          const cardTx = txTotals.filter(t => t.card === card.name);
+          const cDay = card.closing_day || 1;
+          
+          let closingDate = new Date(now.getFullYear(), now.getMonth(), cDay);
+          if (now.getDate() > cDay) {
+            closingDate = new Date(now.getFullYear(), now.getMonth() + 1, cDay);
+          }
+          
+          const totalUsedUntilClosing = cardTx
+            .filter(t => {
+              const d = parseTxDateToDate((t as any).date || "");
+              return d && d <= closingDate;
+            })
+            .reduce((sum, t) => sum + Number(t.amount), 0);
+            
+          const totalPaidEver = cardPaymentsTotalMap[card.id] || 0;
+          const activeInvoiceRemaining = Math.max(0, totalUsedUntilClosing - totalPaidEver);
+          
+          if (activeInvoiceRemaining < 0.01) {
+            const nextClosingDate = new Date(closingDate.getFullYear(), closingDate.getMonth() + 1, cDay);
+            const nextInvoiceAmount = cardTx
+              .filter(t => {
+                const d = parseTxDateToDate((t as any).date || "");
+                return d && d > closingDate && d <= nextClosingDate;
+              })
+              .reduce((sum, t) => sum + Number(t.amount), 0);
+              
+            nextInvoiceTotals[card.name] = nextInvoiceAmount;
+            invoicePaidStatus[card.id] = true;
+          } else {
+            nextInvoiceTotals[card.name] = activeInvoiceRemaining;
+            invoicePaidStatus[card.id] = false;
+          }
+          
+          totals[card.name] = cardTx.reduce((sum, t) => sum + Number(t.amount), 0);
+        }
+      }
+      
       setCardTotals(totals);
       setCardNextInvoices(nextInvoiceTotals);
-    }
-    if (payments) {
-      const paid: Record<string, number> = {};
-      for (const p of payments) {
-        paid[p.card_id] = (paid[p.card_id] || 0) + Number(p.amount);
-      }
-      setCardPayments(paid);
+      setCardPayments(cardPaymentsMonthly);
+      setCardInvoicePaid(invoicePaidStatus);
     }
 
     const acctNameById: Record<string, string> = {};
@@ -1133,25 +1140,20 @@ function Dashboard() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {allCards.filter(c => c.is_visible !== false && c.is_visible !== null).map((card) => {
-              const used = cardTotals[card.name] || 0;
-              const paid = cardPayments[card.id] || 0;
-              const remaining = Math.max(0, used - paid);
-              const nextInvoice = cardNextInvoices[card.name] || 0;
+              const isPaid = cardInvoicePaid[card.id] || false;
+              const displayAmount = cardNextInvoices[card.name] || 0;
+              const paidThisMonth = cardPayments[card.id] || 0;
               
               const today = new Date();
               const todayDay = today.getDate();
               // Compute due date of current invoice
               let currentDue = new Date(today.getFullYear(), today.getMonth(), card.due_day || 1);
               
-              const isPaid = used > 0 && remaining === 0;
-              
               // If invoice is already paid OR it's already closed/near due for next month
               let displayDue = currentDue;
               if (isPaid || (todayDay > (card.due_day || 1))) {
                 displayDue = new Date(today.getFullYear(), today.getMonth() + 1, card.due_day || 1);
               }
-
-              const displayAmount = isPaid ? nextInvoice : remaining;
 
               const formatDueDate = (d: Date) => format(d, "dd/MM");
 
@@ -1172,12 +1174,12 @@ function Dashboard() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className={cn("text-sm font-bold tabular-nums", !isPaid && remaining > 0 ? "text-destructive" : "text-primary")}>
+                    <p className={cn("text-sm font-bold tabular-nums", !isPaid && displayAmount > 0 ? "text-destructive" : "text-primary")}>
                       {balanceVisible ? `R$ ${fmt(displayAmount)}` : "R$ •••"}
                     </p>
-                    {paid > 0 && (
+                    {paidThisMonth > 0 && (
                       <p className="text-[10px] text-primary font-medium">
-                        Pago: R$ {balanceVisible ? fmt(paid) : "•••"}
+                        Pago: R$ {balanceVisible ? fmt(paidThisMonth) : "•••"}
                       </p>
                     )}
                   </div>
