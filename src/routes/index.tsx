@@ -1157,9 +1157,10 @@ function Dashboard() {
                     <span className="text-[10px] font-medium text-muted-foreground">Fatura Atual · Venc. {formatDueDate(displayDue)}</span>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className={cn("text-xs font-bold tabular-nums", !isPaid && displayAmount > 0 ? "text-destructive" : "text-primary")}>
+                    <p className={cn("text-xs font-bold tabular-nums", !isPaid && displayAmount > 0 ? "text-destructive" : "text-primary")} data-testid="fatura-atual-valor">
                       {balanceVisible ? `R$ ${fmt(displayAmount)}` : "R$ •••"}
                     </p>
+
                     {paidThisMonth > 0 && (
                       <p className="text-[10px] text-primary font-medium">
                         Pago: R$ {balanceVisible ? fmt(paidThisMonth) : "•••"}
