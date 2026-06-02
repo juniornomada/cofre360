@@ -1252,7 +1252,7 @@ function Dashboard() {
                   </div>
                   <div className="flex flex-col flex-1 min-w-0">
                     <p className="text-xs font-medium text-foreground truncate">{card.name}</p>
-                    <span className="text-[10px] font-medium text-muted-foreground">Venc. {formatDueDate(displayDue)}</span>
+                    <span className="text-[10px] font-medium text-muted-foreground">Fatura Atual · Venc. {formatDueDate(displayDue)}</span>
                   </div>
                   <div className="text-right shrink-0">
                     <p className={cn("text-xs font-bold tabular-nums", !isPaid && displayAmount > 0 ? "text-destructive" : "text-primary")}>

@@ -776,8 +776,8 @@ function CardsPage() {
             {cards.map((card, i) => {
       const cardTransactionsFiltered = cardTransactions.filter(t => t.card === card.name);
       const invoicePeriodsCard = groupByBillingCycle(cardTransactionsFiltered, card.closing_day, card.due_day);
-      const currentInvoicePeriod = invoicePeriodsCard.find(p => p.key === "current") || invoicePeriodsCard[1] || invoicePeriodsCard[0];
-      const invoiceRemaining = currentInvoicePeriod?.total || 0;
+      const activeInvoicePeriod = invoicePeriodsCard[activeInvoiceIdx] || invoicePeriodsCard[1] || invoicePeriodsCard[0];
+      const invoiceRemaining = activeInvoicePeriod?.total || 0;
       const totalUsed = cardTotals[card.name] || 0;
       const totalPaid = cardPayments[card.id] || 0;
       const outstandingBalance = Math.max(0, totalUsed - totalPaid);
@@ -938,7 +938,7 @@ function CardsPage() {
                 <div className="relative">
                   <div className="flex justify-between items-start gap-2 mb-1.5">
                     <div className="min-w-0">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-white/90">Fatura atual</p>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-white/90">Fatura {activeInvoicePeriod?.label.split(" (")[0] || "atual"}</p>
                       <p className="text-base font-extrabold text-white tabular-nums drop-shadow-md truncate">
                         R$ {invoiceRemaining.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                       </p>
