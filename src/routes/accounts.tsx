@@ -166,6 +166,7 @@ function SortableAccountItem({
                   <CalculatorAmountInput
                     value={parseFloat(editBalance) || 0}
                     onChange={(v) => setEditBalance(v.toString())}
+                    onEnter={() => saveEdit(account.id)}
                     className="h-8 text-xs sm:text-sm"
                   />
                 </div>
