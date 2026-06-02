@@ -335,7 +335,7 @@ function CardsPage() {
 
       const [cardsRes, txRes, accountsRes, paymentsRes] = await Promise.all([
         supabase.from("cards").select("*").eq("user_id", session.user.id).order("sort_order", { ascending: true }).order("created_at", { ascending: true }),
-        supabase.from("transactions").select("card, amount").eq("user_id", session.user.id).not("card", "is", null),
+        supabase.from("transactions").select("id, name, amount, date, created_at, card, icon, category, type, total_installments, installment_number, installment_group_id").eq("user_id", session.user.id).not("card", "is", null),
         supabase.from("bank_accounts").select("*").eq("user_id", session.user.id).order("created_at", { ascending: true }),
         supabase.from("card_payments").select("card_id, amount").eq("user_id", session.user.id),
       ]);
@@ -353,6 +353,7 @@ function CardsPage() {
           if (tx.card) totals[tx.card] = (totals[tx.card] || 0) + Number(tx.amount);
         }
         setCardTotals(totals);
+        setCardTransactions(txRes.data as CardTransaction[]);
       }
       if (paymentsRes.data) {
         const paid: Record<string, number> = {};
@@ -776,7 +777,7 @@ function CardsPage() {
             {cards.map((card, i) => {
       const cardTransactionsFiltered = cardTransactions.filter(t => t.card === card.name);
       const invoicePeriodsCard = groupByBillingCycle(cardTransactionsFiltered, card.closing_day, card.due_day);
-      const activeInvoicePeriod = invoicePeriodsCard[activeInvoiceIdx] || invoicePeriodsCard[1] || invoicePeriodsCard[0];
+      const activeInvoicePeriod = invoicePeriodsCard[1] || invoicePeriodsCard[0];
       const invoiceRemaining = activeInvoicePeriod?.total || 0;
       const totalUsed = cardTotals[card.name] || 0;
       const totalPaid = cardPayments[card.id] || 0;
