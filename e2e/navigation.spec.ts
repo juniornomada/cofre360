@@ -6,8 +6,8 @@ test.describe('Navigation', () => {
     // If there's auth redirect, we'll handle it or just test the click logic
     await page.goto('/');
 
-    // Find the profile link in the bottom nav
-    const profileLink = page.getByRole('link', { name: /perfil/i });
+    // Find the profile link in the bottom nav using the new testid
+    const profileLink = page.getByTestId('profile-icon');
     
     // Check if it exists
     await expect(profileLink).toBeVisible();
