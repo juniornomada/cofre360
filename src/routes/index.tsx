@@ -987,6 +987,7 @@ function Dashboard() {
         <div className="flex items-center justify-between gap-4 mb-2">
           <div className="flex flex-col min-w-0">
             <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+              <Landmark className="h-3 w-3 text-primary" />
               CONTAS
             </p>
             <p className={cn(
