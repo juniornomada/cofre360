@@ -1002,11 +1002,36 @@ export function TransactionsPage() {
               {editTx.bank_account_id !== null && (
                 <div>
                   <label className="text-xs text-muted-foreground mb-1 block">Conta Bancária</label>
-                  <select value={editTx.bank_account_id || ""} onChange={e => setEditTx({ ...editTx, bank_account_id: e.target.value || null, card: null })} className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground outline-none">
-                    {bankAccounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
-                  </select>
+                  <Select value={editTx.bank_account_id || ""} onValueChange={(v) => setEditTx({ ...editTx, bank_account_id: v || null, card: null })}>
+                    <SelectTrigger className="w-full rounded-xl bg-card border-none h-10 text-sm">
+                      <SelectValue placeholder="Selecionar conta">
+                        {editTx.bank_account_id && (() => {
+                          const acc = bankAccounts.find(a => a.id === editTx.bank_account_id);
+                          if (!acc) return "Selecionar conta";
+                          return (
+                            <div className="flex items-center gap-2 min-w-0">
+                              <BankLogo icon={acc.icon || "custom"} color={acc.color || "from-gray-500 to-gray-700"} name={acc.name} size="xs" />
+                              <span className="truncate">{acc.name}</span>
+                            </div>
+                          );
+                        })()}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {bankAccounts.map(a => (
+                        <SelectItem key={a.id} value={a.id} className="text-sm">
+                          <div className="flex items-center gap-2">
+                            <BankLogo icon={a.icon || "custom"} color={a.color || "from-gray-500 to-gray-700"} name={a.name} size="xs" />
+                            <span>{a.name}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               )}
+
+
 
               {/* Parcelamento */}
               <div className="rounded-xl bg-card p-3 space-y-2">
