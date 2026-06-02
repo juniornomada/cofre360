@@ -38,7 +38,7 @@ export function BottomNavBar({ iconSize = 24 }: BottomNavBarProps) {
               search={{} as any}
               preload="intent"
               data-test="nav-icon"
-              data-testid="nav-link"
+              data-testid={item.to === "/profile" ? "profile-icon" : `nav-link-${item.label.toLowerCase()}`}
               aria-current={isActive ? "page" : undefined}
               aria-label={item.label}
               title={item.label}
