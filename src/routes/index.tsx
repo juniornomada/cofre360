@@ -1229,7 +1229,7 @@ function Dashboard() {
           <div className="mt-3 flex flex-col gap-1">
             {allCards.filter(c => c.is_visible !== false && c.is_visible !== null).map((card) => {
               const isPaid = cardInvoicePaid[card.id] || false;
-              const displayAmount = cardNextInvoices[card.name] || 0;
+              const displayAmount = cardNextInvoices[card.name] || 0; // Sincronizado com Faturas > Atual
               const paidThisMonth = cardPayments[card.id] || 0;
               
               const today = new Date();
