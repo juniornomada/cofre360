@@ -661,6 +661,18 @@ function AccountsPage() {
         </div>
       )}
 
+      {/* Summary Card */}
+      <div className="interactive-card rounded-2xl bg-gradient-to-br from-primary/20 to-card p-5 animate-stagger-in">
+        <p className="text-sm text-muted-foreground mb-1">Saldo consolidado</p>
+        <p className={cn(
+          "text-2xl font-bold tabular-nums",
+          accounts.reduce((s, a) => s + (a.balance + (incomeByAccount[a.id] || 0) - (expenseByAccount[a.id] || 0)), 0) >= 0 ? "text-foreground" : "text-destructive"
+        )}>
+          {balanceVisible ? `R$ ${accounts.reduce((s, a) => s + (a.balance + (incomeByAccount[a.id] || 0) - (expenseByAccount[a.id] || 0)), 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "R$ ••••••"}
+        </p>
+        <p className="text-[10px] text-muted-foreground mt-1">Total entre {accounts.length} contas</p>
+      </div>
+
       {/* Accounts list — grouped card with dividers */}
       {accounts.length > 0 && (
         <div className="space-y-3">
