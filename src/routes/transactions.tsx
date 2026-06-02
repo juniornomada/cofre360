@@ -1069,7 +1069,7 @@ export function TransactionsPage() {
                   <div className="col-span-2 space-y-2">
                     <label className="text-[10px] text-muted-foreground mb-1 block">Total de parcelas</label>
                     <div className="flex flex-wrap gap-1 mb-2">
-                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 24].map((n) => (
+                      {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
                         <button
                           key={n}
                           type="button"
