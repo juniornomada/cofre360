@@ -163,9 +163,7 @@ function SortableAccountItem({ acc, balanceVisible, fmt }: { acc: any; balanceVi
 function Dashboard() {
   const {
     balanceVisible,
-    hideZeroBalances,
     updateBalanceVisible,
-    updateHideZeroBalances
   } = useUserPreferences();
   const [userEmail, setUserEmail] = useState<string | null>(null);
 
@@ -847,10 +845,8 @@ function Dashboard() {
   const currentMonthName = new Date().toLocaleDateString("pt-BR", { month: "long" });
 
   const displayAccounts = useMemo(() => {
-    const visible = accountBalances.filter(a => a.is_visible !== false);
-    if (!hideZeroBalances) return visible;
-    return visible.filter(acc => Math.abs(acc.balance) >= 0.01);
-  }, [accountBalances, hideZeroBalances]);
+    return accountBalances.filter(a => a.is_visible !== false);
+  }, [accountBalances]);
 
   return (
     <div className="animate-page-enter flex flex-col gap-5 px-4 pt-5 pb-24">
@@ -1006,22 +1002,6 @@ function Dashboard() {
               </div>
             )}
             <div className="flex items-center gap-1">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button 
-                    onClick={() => updateHideZeroBalances(!hideZeroBalances)} 
-                    className={cn(
-                      "interactive-button p-1.5 rounded-lg hover:bg-accent/50 transition-colors",
-                      hideZeroBalances ? "text-primary bg-primary/10" : "text-muted-foreground"
-                    )}
-                  >
-                    {hideZeroBalances ? <FilterX className="h-4 w-4" /> : <Filter className="h-4 w-4" />}
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="top">
-                  {hideZeroBalances ? "Exibir contas com saldo zero" : "Ocultar contas com saldo zero"}
-                </TooltipContent>
-              </Tooltip>
               <button onClick={() => updateBalanceVisible(!balanceVisible)} className="interactive-button p-1.5 rounded-lg hover:bg-accent/50 text-muted-foreground">
                 {balanceVisible ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
               </button>
