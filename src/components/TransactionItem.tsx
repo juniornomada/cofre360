@@ -165,7 +165,7 @@ export function TransactionItem({
                     aria-label={`Parcela ${installment_number} de ${total_installments}`}
                     tabIndex={0}
                   >
-                    {installment_number}/{total_installments}
+                    Parcela {installment_number} de {total_installments} ({installment_number}/{total_installments})
                   </span>
                 )}
               </>

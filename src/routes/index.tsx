@@ -349,7 +349,7 @@ function Dashboard() {
               })
               .reduce((sum, t) => sum + Number(t.amount), 0);
             
-            const isCurrentInvoicePaid = currentInvoiceTotal > 0 && (currentInvoiceTotal - paid) <= 0.01;
+            const isCurrentInvoicePaid = currentInvoiceTotal > 0 && Math.abs(currentInvoiceTotal - paid) < 0.01;
             
             if (isCurrentInvoicePaid) {
               // If paid, show next month's invoice
@@ -1142,16 +1142,14 @@ function Dashboard() {
               // Compute due date of current invoice
               let currentDue = new Date(today.getFullYear(), today.getMonth(), card.due_day || 1);
               
-              // A fatura é considerada "paga" se o saldo restante for zero (ou quase zero)
-              const isPaid = used > 0 && remaining <= 0.01;
+              const isPaid = used > 0 && remaining === 0;
               
-              // Se a fatura estiver paga OU se já passou do dia de vencimento, mostramos o vencimento do próximo mês
+              // If invoice is already paid OR it's already closed/near due for next month
               let displayDue = currentDue;
               if (isPaid || (todayDay > (card.due_day || 1))) {
                 displayDue = new Date(today.getFullYear(), today.getMonth() + 1, card.due_day || 1);
               }
 
-              // Se a fatura estiver paga, mostramos o valor previsto para a próxima. Caso contrário, mostramos o restante da atual.
               const displayAmount = isPaid ? nextInvoice : remaining;
 
               const formatDueDate = (d: Date) => format(d, "dd/MM");
@@ -1170,6 +1168,7 @@ function Dashboard() {
                     <div className="flex flex-col">
                       <p className="text-xs font-bold text-foreground truncate max-w-[120px]">{card.name}</p>
                       <div className="flex items-center gap-1">
+                        <p className="text-[10px] text-muted-foreground">{isPaid ? "Próx. fatura" : "Fatura atual"}</p>
                         <span className="text-[9px] font-medium bg-accent/50 px-1 rounded text-muted-foreground">Venc. {formatDueDate(displayDue)}</span>
                       </div>
                     </div>
