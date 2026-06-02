@@ -48,6 +48,8 @@ interface Transaction {
   installment_group_id?: string | null;
   installment_number?: number | null;
   total_installments?: number | null;
+  installment_mode?: "divide" | "fixed" | null;
+  installment_source_amount?: number | null;
   is_visible?: boolean;
 }
 
@@ -400,8 +402,11 @@ export function TransactionsPage() {
 
 
   const handleEdit = (tx: Transaction) => {
-    setEditTx({ ...tx });
-    setEditInstallmentMode("divide");
+    setEditTx({ 
+      ...tx, 
+      amount: tx.installment_mode === "divide" ? (tx.installment_source_amount ?? tx.amount) : tx.amount 
+    });
+    setEditInstallmentMode(tx.installment_mode || "divide");
     setEditNameMode("none");
     setShowEditDialog(true);
   };
@@ -492,6 +497,8 @@ export function TransactionsPage() {
         type: editTx.type,
         card: editTx.card,
         bank_account_id: editTx.bank_account_id || null,
+        installment_mode: editInstallmentMode,
+        installment_source_amount: editTx.amount,
       }).eq("id", editTx.id);
       if (updErr) throw updErr;
 
@@ -502,7 +509,7 @@ export function TransactionsPage() {
         icon: editTx.icon,
         category: editTx.category,
         date: editTx.date,
-        amount: perInstallment,
+        amount: editTx.amount,
         type: editTx.type,
         card: editTx.card ?? null,
         bank_account_id: editTx.bank_account_id ?? null,
@@ -510,6 +517,8 @@ export function TransactionsPage() {
         current,
         total,
         installmentAmount: perInstallment,
+        installmentMode: editInstallmentMode,
+        installmentSourceAmount: editTx.amount,
         updateAllInGroup: updateScope === "all",
       });
 

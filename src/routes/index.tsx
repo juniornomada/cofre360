@@ -60,6 +60,8 @@ interface Transaction {
   installment_group_id?: string | null;
   installment_number?: number | null;
   total_installments?: number | null;
+  installment_mode?: "divide" | "fixed" | null;
+  installment_source_amount?: number | null;
   // For unified transfer rendering
   isTransferPair?: boolean;
   transferFromName?: string;
@@ -271,7 +273,7 @@ function Dashboard() {
 
     // Fire ALL queries in parallel — was sequential before, causing slow load.
     // Also: only select fields we actually use, instead of select("*").
-    const TX_FIELDS = "id, icon, name, category, date, amount, type, card, bank_account_id, installment_group_id, installment_number, total_installments, is_visible";
+    const TX_FIELDS = "id, icon, name, category, date, amount, type, card, bank_account_id, installment_group_id, installment_number, total_installments, installment_mode, installment_source_amount, is_visible";
     const [
       rawRecentRes,
       allTxRes,
@@ -440,9 +442,12 @@ function Dashboard() {
   };
 
   const handleEdit = (tx: Transaction) => {
-    setEditTx({ ...tx });
-    setEditInstallmentMode("divide");
-    setEditInstallmentFixedValue(tx.amount || 0);
+    setEditTx({ 
+      ...tx, 
+      amount: tx.installment_mode === "divide" ? (tx.installment_source_amount ?? tx.amount) : tx.amount 
+    });
+    setEditInstallmentMode(tx.installment_mode || "divide");
+    setEditInstallmentFixedValue(tx.installment_mode === "fixed" ? (tx.installment_source_amount ?? tx.amount) : (tx.amount || 0));
     setShowEditDialog(true);
   };
 
@@ -496,6 +501,8 @@ function Dashboard() {
         type: editTx.type,
         card: editTx.card,
         bank_account_id: editTx.bank_account_id || null,
+        installment_mode: editInstallmentMode,
+        installment_source_amount: editTx.amount,
       }).eq("id", editTx.id);
       if (updErr) throw updErr;
 
@@ -505,7 +512,7 @@ function Dashboard() {
         icon: editTx.icon,
         category: editTx.category,
         date: editTx.date,
-        amount: perInstallment,
+        amount: editTx.amount,
         type: editTx.type,
         card: editTx.card ?? null,
         bank_account_id: editTx.bank_account_id ?? null,
@@ -513,6 +520,8 @@ function Dashboard() {
         current,
         total,
         installmentAmount: perInstallment,
+        installmentMode: editInstallmentMode,
+        installmentSourceAmount: editTx.amount,
       });
 
       if (result.cleared) {

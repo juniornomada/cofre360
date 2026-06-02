@@ -406,7 +406,9 @@ export type Database = {
           icon: string | null
           id: string
           installment_group_id: string | null
+          installment_mode: string | null
           installment_number: number | null
+          installment_source_amount: number | null
           is_visible: boolean | null
           name: string
           total_installments: number | null
@@ -424,7 +426,9 @@ export type Database = {
           icon?: string | null
           id?: string
           installment_group_id?: string | null
+          installment_mode?: string | null
           installment_number?: number | null
+          installment_source_amount?: number | null
           is_visible?: boolean | null
           name: string
           total_installments?: number | null
@@ -442,7 +446,9 @@ export type Database = {
           icon?: string | null
           id?: string
           installment_group_id?: string | null
+          installment_mode?: string | null
           installment_number?: number | null
+          installment_source_amount?: number | null
           is_visible?: boolean | null
           name?: string
           total_installments?: number | null

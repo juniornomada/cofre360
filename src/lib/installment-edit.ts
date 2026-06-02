@@ -84,6 +84,14 @@ export type SaveInstallmentInput = {
    */
   installmentAmount?: number;
   /**
+   * The mode used for calculations: "divide" or "fixed".
+   */
+  installmentMode?: string;
+  /**
+   * The original source amount typed by the user.
+   */
+  installmentSourceAmount?: number;
+  /**
    * If true, updates all existing installments in the same group (siblings).
    * Useful when changing value or name and wanting it reflected everywhere.
    */
@@ -117,6 +125,8 @@ export async function saveInstallmentPlan(input: SaveInstallmentInput): Promise<
         installment_number: 1,
         total_installments: 1,
         installment_group_id: null,
+        installment_mode: null,
+        installment_source_amount: null,
       })
       .eq("id", input.id);
     if (error) throw error;
@@ -135,6 +145,8 @@ export async function saveInstallmentPlan(input: SaveInstallmentInput): Promise<
     installment_number: current,
     total_installments: total,
     installment_group_id: groupId,
+    installment_mode: input.installmentMode || "divide",
+    installment_source_amount: input.installmentSourceAmount ?? perInstallment,
     icon: input.icon,
     category: input.category,
     card: input.card,
@@ -194,6 +206,8 @@ export async function saveInstallmentPlan(input: SaveInstallmentInput): Promise<
       installment_number: n,
       total_installments: total,
       installment_group_id: groupId,
+      installment_mode: input.installmentMode || "divide",
+      installment_source_amount: input.installmentSourceAmount ?? perInstallment,
     });
   }
 

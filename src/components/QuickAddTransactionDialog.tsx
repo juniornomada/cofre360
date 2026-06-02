@@ -325,11 +325,13 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
           date: format(installDate, "dd MMM", { locale: ptBR }),
           amount: parcela, type: newTx.type,
           card: cardValue, bank_account_id: newTx.bank_account_id || null,
-           installment_number: i + 1,
-           total_installments: count,
-           installment_group_id: groupId,
-           is_visible: true
-         });
+          installment_number: i + 1,
+          total_installments: count,
+          installment_group_id: groupId,
+          installment_mode: installmentMode,
+          installment_source_amount: newTx.amount,
+          is_visible: true
+        });
        }
        const { error } = await supabase.from("transactions").insert(rows);
        if (error) throw error;
