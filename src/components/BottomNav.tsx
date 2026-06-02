@@ -48,7 +48,7 @@ export function BottomNav() {
               )}>
                 {item.label}
               </span>
-              {isActive && (
+              {isActive && item.to !== "/orcametas" && (
                 <span className="mt-0.5 h-1 w-1 rounded-full bg-primary animate-scale-in" />
               )}
             </Link>
