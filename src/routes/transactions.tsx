@@ -440,12 +440,12 @@ export function TransactionsPage() {
     const finalName = total > 1 ? `${baseName} (${current}/${total})` : baseName;
 
      // Compute per-installment value
-     const { valorParcela: perInstallment } = calculateInstallmentDetails(
-       editTx.amount,
-       total,
-       editInstallmentMode,
-       editInstallmentFixedValue
-     );
+      const { valorParcela: perInstallment } = calculateInstallmentDetails(
+        editTx.amount,
+        total,
+        editInstallmentMode,
+        editInstallmentMode === "fixed" ? editTx.amount : 0
+      );
 
     try {
       // Balance check for expenses from bank accounts
