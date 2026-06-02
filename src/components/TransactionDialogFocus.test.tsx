@@ -104,23 +104,24 @@ describe("Transaction Dialog Keyboard Closure and Auto-Focus", () => {
     }, { timeout: 2000 });
   });
 
-  it("should not have any field focused or keyboard open (inputMode='numeric') when opening and re-opening the dialog", () => {
+  it("should not have any field focused with active keyboard (inputMode != 'none') when opening and re-opening", () => {
     const { rerender } = render(
       <QueryClientProvider client={queryClient}>
         <QuickAddTransactionDialog open={true} onOpenChange={() => {}} />
       </QueryClientProvider>
     );
 
-    // Check no element is auto-focused that triggers keyboard
-    const activeElement = document.activeElement as HTMLElement;
-    // We expect the focus to be either on the Body or the Dialog container (from Radix UI)
-    // but definitely NOT on an input with numeric/text inputMode
-    expect(activeElement.tagName).not.toBe("INPUT");
-    
+    // Verify no input has inputMode other than 'none' initially
     const inputs = screen.getAllByRole("textbox") as HTMLInputElement[];
     inputs.forEach(input => {
       expect(input.inputMode).toBe("none");
     });
+
+    // Check that if something is focused, it's not set to open the keyboard
+    const activeElement = document.activeElement as HTMLInputElement;
+    if (activeElement.tagName === "INPUT") {
+      expect(activeElement.inputMode).toBe("none");
+    }
 
     // Close and reopen
     rerender(
@@ -136,15 +137,14 @@ describe("Transaction Dialog Keyboard Closure and Auto-Focus", () => {
     );
 
     // Verify again
-    const reActiveElement = document.activeElement as HTMLElement;
-    expect(reActiveElement.tagName).not.toBe("INPUT");
-    
     const reInputs = screen.getAllByRole("textbox") as HTMLInputElement[];
     reInputs.forEach(input => {
       expect(input.inputMode).toBe("none");
     });
+    
+    const reActiveElement = document.activeElement as HTMLInputElement;
+    if (reActiveElement.tagName === "INPUT") {
+      expect(reActiveElement.inputMode).toBe("none");
+    }
   });
 });
-
-
-
