@@ -511,6 +511,7 @@ export function TransactionsPage() {
       console.error(e);
       toast.error("Erro ao salvar transação");
     } finally {
+      (document.activeElement as HTMLElement)?.blur();
       setShowEditDialog(false);
       setEditTx(null);
       fetchTransactions();
