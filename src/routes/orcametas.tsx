@@ -190,7 +190,7 @@ function OrcaMetasPage() {
 
   // Budget handlers
   const handleAddBudget = async () => {
-    const promise = (async () => {
+    try {
       const { error } = await supabase.from("budget_categories").insert({
         category: newItem.category, icon: newItem.icon,
         spent: 0, budget_limit: newItem.budget_limit, color: newItem.color,
@@ -198,20 +198,17 @@ function OrcaMetasPage() {
       if (error) throw error;
       setShowAddBudget(false);
       setNewItem({ category: "", icon: "🍔", budget_limit: 0, color: "bg-chart-1" });
-      await fetchBudget();
-    })();
-
-    toast.promise(promise, {
-      loading: "Salvando orçamento...",
-      success: "Orçamento adicionado com sucesso!",
-      error: "Erro ao adicionar orçamento",
-    });
+      fetchBudget();
+      toast.success("Orçamento adicionado");
+    } catch (error: any) {
+      console.error("Error adding budget:", error);
+      toast.error("Erro ao adicionar orçamento");
+    }
   };
 
   const handleSaveBudget = async () => {
-    if (!editItem) return;
-    
-    const promise = (async () => {
+    try {
+      if (!editItem) return;
       const { error } = await supabase.from("budget_categories").update({
         category: editItem.category, icon: editItem.icon,
         budget_limit: editItem.budget_limit, color: editItem.color,
@@ -219,14 +216,12 @@ function OrcaMetasPage() {
       if (error) throw error;
       setShowEditBudget(false);
       setEditItem(null);
-      await fetchBudget();
-    })();
-
-    toast.promise(promise, {
-      loading: "Salvando alterações...",
-      success: "Orçamento atualizado com sucesso!",
-      error: "Erro ao salvar orçamento",
-    });
+      fetchBudget();
+      toast.success("Orçamento atualizado");
+    } catch (error: any) {
+      console.error("Error saving budget:", error);
+      toast.error("Erro ao salvar orçamento");
+    }
   };
 
   const handleDeleteBudget = async () => {
@@ -246,9 +241,8 @@ function OrcaMetasPage() {
 
   // Goals handlers
   const handleSaveGoal = async () => {
-    if (!editGoal) return;
-
-    const promise = (async () => {
+    try {
+      if (!editGoal) return;
       const { error } = await supabase.from("goals").update({
         name: editGoal.name, icon: editGoal.icon,
         current_amount: editGoal.current_amount, target_amount: editGoal.target_amount,
@@ -257,14 +251,12 @@ function OrcaMetasPage() {
       if (error) throw error;
       setShowEditGoal(false);
       setEditGoal(null);
-      await fetchGoals();
-    })();
-
-    toast.promise(promise, {
-      loading: "Salvando meta...",
-      success: "Meta atualizada com sucesso!",
-      error: "Erro ao salvar meta",
-    });
+      fetchGoals();
+      toast.success("Meta atualizada");
+    } catch (error: any) {
+      console.error("Error saving goal:", error);
+      toast.error("Erro ao salvar meta");
+    }
   };
 
   const handleDeleteGoal = async () => {
@@ -283,7 +275,7 @@ function OrcaMetasPage() {
   };
 
   const handleAddGoal = async () => {
-    const promise = (async () => {
+    try {
       const { error } = await supabase.from("goals").insert({
         name: newGoal.name, icon: newGoal.icon,
         current_amount: newGoal.current_amount, target_amount: newGoal.target_amount,
@@ -292,14 +284,12 @@ function OrcaMetasPage() {
       if (error) throw error;
       setShowAddGoal(false);
       setNewGoal({ name: "", icon: "🎯", current_amount: 0, target_amount: 0, deadline: "" });
-      await fetchGoals();
-    })();
-
-    toast.promise(promise, {
-      loading: "Criando meta...",
-      success: "Meta adicionada com sucesso!",
-      error: "Erro ao adicionar meta",
-    });
+      fetchGoals();
+      toast.success("Meta adicionada");
+    } catch (error: any) {
+      console.error("Error adding goal:", error);
+      toast.error("Erro ao adicionar meta");
+    }
   };
 
   const totalSpent = computedItems.reduce((s, b) => s + b.spent, 0);
@@ -465,22 +455,12 @@ function OrcaMetasPage() {
             </div>
             <div>
               <label className="text-xs text-muted-foreground mb-1 block">Nome da categoria</label>
-              <input 
-                value={newItem.category} 
-                onChange={e => setNewItem({ ...newItem, category: e.target.value })} 
-                onKeyDown={e => e.key === "Enter" && newItem.category && handleAddBudget()}
-                placeholder="Ex: Alimentação" 
-                className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none" 
-              />
+              <input value={newItem.category} onChange={e => setNewItem({ ...newItem, category: e.target.value })} placeholder="Ex: Alimentação" className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none" />
               <p className="text-[10px] text-muted-foreground mt-1">Use exatamente o mesmo nome usado nas transações.</p>
             </div>
             <div>
               <label className="text-xs text-muted-foreground mb-1 block">Limite (R$)</label>
-              <CalculatorAmountInput 
-                value={newItem.budget_limit || 0} 
-                onChange={v => setNewItem({ ...newItem, budget_limit: v })} 
-                onEnter={() => newItem.category && handleAddBudget()}
-              />
+              <CalculatorAmountInput value={newItem.budget_limit || 0} onChange={v => setNewItem({ ...newItem, budget_limit: v })} />
             </div>
           </div>
           <DialogFooter>
@@ -505,20 +485,11 @@ function OrcaMetasPage() {
               </div>
               <div>
                 <label className="text-xs text-muted-foreground mb-1 block">Nome</label>
-                <input 
-                  value={editItem.category} 
-                  onChange={e => setEditItem({ ...editItem, category: e.target.value })} 
-                  onKeyDown={e => e.key === "Enter" && handleSaveBudget()}
-                  className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground outline-none" 
-                />
+                <input value={editItem.category} onChange={e => setEditItem({ ...editItem, category: e.target.value })} className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground outline-none" />
               </div>
               <div>
                 <label className="text-xs text-muted-foreground mb-1 block">Limite (R$)</label>
-                <CalculatorAmountInput 
-                  value={editItem.budget_limit || 0} 
-                  onChange={v => setEditItem({ ...editItem, budget_limit: v })} 
-                  onEnter={handleSaveBudget}
-                />
+                <CalculatorAmountInput value={editItem.budget_limit || 0} onChange={v => setEditItem({ ...editItem, budget_limit: v })} />
               </div>
               <p className="text-[10px] text-muted-foreground">O gasto é calculado automaticamente a partir das suas transações do mês.</p>
             </div>
@@ -557,38 +528,19 @@ function OrcaMetasPage() {
               </div>
               <div>
                 <label className="text-xs text-muted-foreground mb-1 block">Nome</label>
-                <input 
-                  value={editGoal.name} 
-                  onChange={e => setEditGoal({ ...editGoal, name: e.target.value })} 
-                  onKeyDown={e => e.key === "Enter" && handleSaveGoal()}
-                  className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground outline-none" 
-                />
+                <input value={editGoal.name} onChange={e => setEditGoal({ ...editGoal, name: e.target.value })} className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground outline-none" />
               </div>
               <div>
                 <label className="text-xs text-muted-foreground mb-1 block">Valor atual (R$)</label>
-                <CalculatorAmountInput 
-                  value={editGoal.current_amount || 0} 
-                  onChange={v => setEditGoal({ ...editGoal, current_amount: v })} 
-                  onEnter={handleSaveGoal}
-                />
+                <CalculatorAmountInput value={editGoal.current_amount || 0} onChange={v => setEditGoal({ ...editGoal, current_amount: v })} />
               </div>
               <div>
                 <label className="text-xs text-muted-foreground mb-1 block">Valor alvo (R$)</label>
-                <CalculatorAmountInput 
-                  value={editGoal.target_amount || 0} 
-                  onChange={v => setEditGoal({ ...editGoal, target_amount: v })} 
-                  onEnter={handleSaveGoal}
-                />
+                <CalculatorAmountInput value={editGoal.target_amount || 0} onChange={v => setEditGoal({ ...editGoal, target_amount: v })} />
               </div>
               <div>
                 <label className="text-xs text-muted-foreground mb-1 block">Prazo</label>
-                <input 
-                  value={editGoal.deadline} 
-                  onChange={e => setEditGoal({ ...editGoal, deadline: e.target.value })} 
-                  onKeyDown={e => e.key === "Enter" && handleSaveGoal()}
-                  placeholder="Ex: Dez 2025" 
-                  className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground outline-none" 
-                />
+                <input value={editGoal.deadline} onChange={e => setEditGoal({ ...editGoal, deadline: e.target.value })} placeholder="Ex: Dez 2025" className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground outline-none" />
               </div>
             </div>
           )}
@@ -624,39 +576,19 @@ function OrcaMetasPage() {
             </div>
             <div>
               <label className="text-xs text-muted-foreground mb-1 block">Nome</label>
-              <input 
-                value={newGoal.name} 
-                onChange={e => setNewGoal({ ...newGoal, name: e.target.value })} 
-                onKeyDown={e => e.key === "Enter" && newGoal.name && newGoal.target_amount && handleAddGoal()}
-                placeholder="Ex: Viagem Europa" 
-                className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none" 
-              />
+              <input value={newGoal.name} onChange={e => setNewGoal({ ...newGoal, name: e.target.value })} placeholder="Ex: Viagem Europa" className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none" />
             </div>
             <div>
               <label className="text-xs text-muted-foreground mb-1 block">Valor atual (R$)</label>
-              <CalculatorAmountInput 
-                value={newGoal.current_amount || 0} 
-                onChange={v => setNewGoal({ ...newGoal, current_amount: v })} 
-                onEnter={() => newGoal.name && newGoal.target_amount && handleAddGoal()}
-              />
+              <CalculatorAmountInput value={newGoal.current_amount || 0} onChange={v => setNewGoal({ ...newGoal, current_amount: v })} />
             </div>
             <div>
               <label className="text-xs text-muted-foreground mb-1 block">Valor alvo (R$)</label>
-              <CalculatorAmountInput 
-                value={newGoal.target_amount || 0} 
-                onChange={v => setNewGoal({ ...newGoal, target_amount: v })} 
-                onEnter={() => newGoal.name && newGoal.target_amount && handleAddGoal()}
-              />
+              <CalculatorAmountInput value={newGoal.target_amount || 0} onChange={v => setNewGoal({ ...newGoal, target_amount: v })} />
             </div>
             <div>
               <label className="text-xs text-muted-foreground mb-1 block">Prazo</label>
-              <input 
-                value={newGoal.deadline} 
-                onChange={e => setNewGoal({ ...newGoal, deadline: e.target.value })} 
-                onKeyDown={e => e.key === "Enter" && newGoal.name && newGoal.target_amount && handleAddGoal()}
-                placeholder="Ex: Dez 2025" 
-                className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none" 
-              />
+              <input value={newGoal.deadline} onChange={e => setNewGoal({ ...newGoal, deadline: e.target.value })} placeholder="Ex: Dez 2025" className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none" />
             </div>
           </div>
           <DialogFooter>

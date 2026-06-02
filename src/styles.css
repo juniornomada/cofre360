@@ -221,10 +221,6 @@
        transform: none !important;
      }
   }
-  .active {
-    font-weight: bold !important;
-    color: var(--color-primary) !important;
-  }
 }
 
 a[href*="lovable.dev"], 

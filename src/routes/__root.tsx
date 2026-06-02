@@ -12,7 +12,7 @@ import { Loader2 } from "lucide-react";
 import { Toaster } from "@/components/ui/sonner";
 import appCss from "../styles.css?url";
 
-const BottomNavBar = lazy(() => import("@/components/BottomNavBar/BottomNavBar").then(m => ({ default: m.BottomNavBar })));
+const BottomNav = lazy(() => import("@/components/BottomNav").then(m => ({ default: m.BottomNav })));
 
 
 function ErrorComponent({ error }: { error: any }) {
@@ -194,7 +194,7 @@ function RootShell({ children }: { children: React.ReactNode }) {
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
             </div>
           }>
-           <BottomNavBar />
+           <BottomNav />
            
          </Suspense>
          )}

@@ -510,7 +510,7 @@ export function TransactionsPage() {
         editInstallmentMode === "fixed" ? editTx.amount : 0
       );
 
-    const promise = (async () => {
+    try {
       // Balance check for expenses from bank accounts
       if (editTx.type === "expense" && editTx.bank_account_id) {
         const acc = bankAccounts.find(a => a.id === editTx.bank_account_id);
@@ -524,7 +524,8 @@ export function TransactionsPage() {
           }
           
           if (perInstallment > availableBalance) {
-            throw new Error(`Saldo insuficiente na conta ${acc.name}`);
+            toast.error(`Saldo insuficiente na conta ${acc.name} (Saldo disponível: R$ ${availableBalance.toLocaleString("pt-BR", { minimumFractionDigits: 2 })})`);
+            return;
           }
         }
       }
@@ -545,7 +546,7 @@ export function TransactionsPage() {
       if (updErr) throw updErr;
 
       // 2) Apply installment plan (creates/clears group + future rows)
-      await saveInstallmentPlan({
+      const result = await saveInstallmentPlan({
         id: editTx.id,
         name: finalName,
         icon: editTx.icon,
@@ -564,20 +565,26 @@ export function TransactionsPage() {
         updateAllInGroup: updateScope === "all",
       });
 
-      await fetchTransactions();
-    })();
-
-    toast.promise(promise, {
-      loading: "Salvando alterações...",
-      success: "Transação atualizada com sucesso!",
-      error: (err: any) => err.message || "Erro ao salvar transação",
-    });
-
-    (document.activeElement as HTMLElement)?.blur();
-    setShowEditDialog(false);
-    setShowUpdateScopeDialog(false);
-    setUpdateScope("single");
-    setEditTx(null);
+      if (result.cleared) {
+        toast.success("Parcelamento removido");
+      } else if (result.futureRowsAdded > 0) {
+        toast.success(
+          `Parcelamento salvo (${result.futureRowsAdded} parcela${result.futureRowsAdded > 1 ? "s" : ""} futura${result.futureRowsAdded > 1 ? "s" : ""} criada${result.futureRowsAdded > 1 ? "s" : ""})`
+        );
+      } else {
+        toast.success("Transação atualizada");
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error("Erro ao salvar transação");
+    } finally {
+      (document.activeElement as HTMLElement)?.blur();
+      setShowEditDialog(false);
+      setShowUpdateScopeDialog(false);
+      setUpdateScope("single");
+      setEditTx(null);
+      fetchTransactions();
+    }
   };
 
 
@@ -975,7 +982,6 @@ export function TransactionsPage() {
                     setEditTx({ ...editTx, name });
                     setShowEditSuggestions(name.length >= 2);
                   }}
-                  onKeyDown={e => e.key === "Enter" && handleSaveEdit()}
 
                   onBlur={() => {
                     setEditNameMode("none");
@@ -1039,7 +1045,6 @@ export function TransactionsPage() {
                   onChange={(v) => {
                     setEditTx({ ...editTx, amount: v });
                   }}  
-                  onEnter={handleSaveEdit}
                   autoFocus={false}
                 />
               </div>
@@ -1129,7 +1134,6 @@ export function TransactionsPage() {
                         const val = e.target.value;
                         setEditTx({ ...editTx, installment_number: val === "" ? null : Math.max(1, parseInt(val) || 1) });
                       }}
-                      onKeyDown={e => e.key === "Enter" && handleSaveEdit()}
                       className="w-full rounded-lg bg-background px-2 py-1.5 text-sm text-foreground outline-none"
                     />
                   </div>
@@ -1162,7 +1166,6 @@ export function TransactionsPage() {
                           const val = e.target.value;
                           setEditTx({ ...editTx, total_installments: val === "" ? null : Math.max(1, parseInt(val) || 1) });
                         }}
-                        onKeyDown={e => e.key === "Enter" && handleSaveEdit()}
                         className="w-full rounded-lg bg-background px-2 py-1.5 text-sm text-foreground outline-none border border-border focus:border-primary/50"
                       />
                     </div>

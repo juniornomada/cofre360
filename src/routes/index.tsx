@@ -514,7 +514,7 @@ function Dashboard() {
       }
     }
 
-    const promise = (async () => {
+    try {
       // Balance check for expenses from bank accounts (including transfers which are expenses on the origin side)
       if (editTx.type === "expense" && editTx.bank_account_id) {
         const acc = accountBalances.find(a => a.id === editTx.bank_account_id);
@@ -528,7 +528,8 @@ function Dashboard() {
           }
           
           if (perInstallment > availableBalance) {
-            throw new Error(`Saldo insuficiente na conta ${acc.name}`);
+            toast.error(`Saldo insuficiente na conta ${acc.name} (Saldo disponível: R$ ${availableBalance.toLocaleString("pt-BR", { minimumFractionDigits: 2 })})`);
+            return;
           }
         }
       }
@@ -547,7 +548,7 @@ function Dashboard() {
       }).eq("id", editTx.id);
       if (updErr) throw updErr;
 
-      await saveInstallmentPlan({
+      const result = await saveInstallmentPlan({
         id: editTx.id,
         name: finalName,
         icon: editTx.icon,
@@ -565,17 +566,23 @@ function Dashboard() {
         installmentSourceAmount: editTx.amount,
       });
 
-      await fetchAll();
-    })();
-
-    toast.promise(promise, {
-      loading: "Salvando alterações...",
-      success: "Transação atualizada com sucesso!",
-      error: (err: any) => err.message || "Erro ao salvar transação",
-    });
-
-    setShowEditDialog(false);
-    setEditTx(null);
+      if (result.cleared) {
+        toast.success("Parcelamento removido");
+      } else if (result.futureRowsAdded > 0) {
+        toast.success(
+          `Parcelamento salvo (${result.futureRowsAdded} parcela${result.futureRowsAdded > 1 ? "s" : ""} futura${result.futureRowsAdded > 1 ? "s" : ""})`
+        );
+      } else {
+        toast.success("Transação atualizada");
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error("Erro ao salvar transação");
+    } finally {
+      setShowEditDialog(false);
+      setEditTx(null);
+      fetchTransactions();
+    }
   };
 
   const handleCopy = (tx: Transaction) => {
@@ -1413,7 +1420,7 @@ function Dashboard() {
             <div className="flex flex-col gap-3">
               <div>
                 <label className="text-xs text-muted-foreground mb-1 block">Nome</label>
-                <input autoFocus={false} value={editTx.name} onChange={e => setEditTx({ ...editTx, name: e.target.value })} onKeyDown={e => e.key === "Enter" && handleSaveEdit()} className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground outline-none" />
+                <input autoFocus={false} value={editTx.name} onChange={e => setEditTx({ ...editTx, name: e.target.value })} className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground outline-none" />
               </div>
               <Suspense fallback={<div className="h-20 flex items-center justify-center"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>}>
                 <CategoryPicker
@@ -1438,7 +1445,7 @@ function Dashboard() {
               </div>
               <div>
                 <label className="text-xs text-muted-foreground mb-1 block">Valor (R$)</label>
-                <CalculatorAmountInput value={editTx.amount} onChange={v => setEditTx({ ...editTx, amount: v })} onEnter={handleSaveEdit} />
+                <CalculatorAmountInput value={editTx.amount} onChange={v => setEditTx({ ...editTx, amount: v })} />
               </div>
               <div>
                 <label className="text-xs text-muted-foreground mb-1 block">Tipo</label>
@@ -1504,7 +1511,6 @@ function Dashboard() {
                         const val = e.target.value;
                         setEditTx({ ...editTx, installment_number: val === "" ? null : Math.max(1, parseInt(val) || 1) });
                       }}
-                      onKeyDown={e => e.key === "Enter" && handleSaveEdit()}
                       className="w-full rounded-lg bg-background px-2 py-1.5 text-sm text-foreground outline-none"
                     />
                   </div>
@@ -1537,7 +1543,6 @@ function Dashboard() {
                           const val = e.target.value;
                           setEditTx({ ...editTx, total_installments: val === "" ? null : Math.max(1, parseInt(val) || 1) });
                         }}
-                        onKeyDown={e => e.key === "Enter" && handleSaveEdit()}
                         className="w-full rounded-lg bg-background px-2 py-1.5 text-sm text-foreground outline-none border border-border focus:border-primary/50"
                       />
                     </div>
@@ -1577,7 +1582,6 @@ function Dashboard() {
                         <CalculatorAmountInput
                           value={editInstallmentFixedValue}
                           onChange={v => setEditInstallmentFixedValue(v)}
-                          onEnter={handleSaveEdit}
                         />
                         <p className="text-[10px] text-muted-foreground leading-relaxed mt-1">
                           Total da compra:{" "}
