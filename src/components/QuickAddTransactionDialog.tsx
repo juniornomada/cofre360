@@ -72,7 +72,6 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
   const [installmentEnabled, setInstallmentEnabled] = useState(false);
   const [installmentCount, setInstallmentCount] = useState<number | "">(2);
   const [installmentMode, setInstallmentMode] = useState<"divide" | "fixed">("divide");
-  const [installmentFixedValue, setInstallmentFixedValue] = useState(0);
   const [nameInputMode, setNameInputMode] = useState<"none" | "text">("none");
 
   const fetchData = useCallback(async () => {
@@ -171,7 +170,6 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
     setInstallmentEnabled(false);
     setInstallmentCount(2);
     setInstallmentMode("divide");
-    setInstallmentFixedValue(0);
 
     setNewTx({
       icon: copyData ? copyData.icon : (initialType === "income" ? "💰" : "🍔"),
@@ -197,7 +195,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
     newTx.amount,
     Number(installmentCount) || 1,
     installmentMode,
-    installmentFixedValue
+    installmentMode === "fixed" ? newTx.amount : 0
   );
   const hasDiff = installmentEnabled && !isTransfer && installmentMode === "divide" && installmentDetails.diff !== 0;
 
@@ -320,7 +318,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
            newTx.amount,
            count,
            installmentMode,
-           installmentFixedValue
+           installmentMode === "fixed" ? newTx.amount : 0
          );
         rows.push({
           icon: newTx.icon, name: `${newTx.name} (${i + 1}/${count})`, category: newTx.category,
@@ -540,12 +538,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                     <CalculatorAmountInput 
                       value={newTx.amount} 
                       onChange={(v) => {
-                        const oldAmount = newTx.amount;
                         setNewTx({ ...newTx, amount: v });
-                        // Sincroniza o valor fixo se ele for igual ao valor total anterior (ainda não ajustado manualmente)
-                        if (installmentMode === "fixed" && (installmentFixedValue === 0 || installmentFixedValue === oldAmount)) {
-                          setInstallmentFixedValue(v);
-                        }
                       }} 
                       onEnter={handleAdd}
                     />
@@ -698,11 +691,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                           type="button" 
                           onClick={() => {
                             setInstallmentMode("fixed");
-                            // Mantém o valor digitado ao selecionar valor fixo
-                            if (installmentFixedValue === 0 || installmentFixedValue === newTx.amount / (Number(installmentCount) || 1)) {
-                              setInstallmentFixedValue(newTx.amount);
-                            }
-                          }} 
+                          }}  
                           className={`flex-1 rounded-lg py-1 text-[10px] font-medium transition-colors ${installmentMode === "fixed" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground"}`}
                         >
                           Valor fixo
@@ -752,12 +741,6 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                                 placeholder="Ex: 15"
                               />
                             </div>
-                            {installmentMode === "fixed" && (
-                              <div className="flex-1">
-                                <label className="text-[11px] font-semibold text-foreground mb-0.5 block">Valor/parcela</label>
-                                <CalculatorAmountInput value={installmentFixedValue} onChange={setInstallmentFixedValue} />
-                              </div>
-                            )}
                           </div>
                         </div>
                       </div>
