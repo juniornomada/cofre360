@@ -94,7 +94,10 @@ function OrcaMetasPage() {
 
   const fetchBudget = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
+    if (!session) {
+      setLoadingBudget(false);
+      return;
+    }
 
     try {
 
@@ -117,7 +120,10 @@ function OrcaMetasPage() {
 
   const fetchGoals = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
+    if (!session) {
+      setLoadingGoals(false);
+      return;
+    }
 
     try {
 
