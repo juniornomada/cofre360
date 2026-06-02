@@ -111,6 +111,7 @@ export function TransactionsPage() {
   const [filterMinAmount, setFilterMinAmount] = useState<string>("");
   const [filterMaxAmount, setFilterMaxAmount] = useState<string>("");
   const [filterType, setFilterType] = useState<"all" | "income" | "expense">("all");
+  const [sortBy, setSortBy] = useState<"date-desc" | "date-asc" | "amount-desc" | "amount-asc" | "installments">("date-desc");
   const todayFormatted = format(new Date(), "dd MMM", { locale: ptBR });
   const [newTx, setNewTx] = useState<Omit<Transaction, "id">>({
     icon: "🍔", name: "", category: "Alimentação > Outros", date: todayFormatted, amount: 0, type: "expense", card: null, bank_account_id: null,
