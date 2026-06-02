@@ -154,7 +154,7 @@ export async function saveInstallmentPlan(input: SaveInstallmentInput): Promise<
         const n = s.installment_number || 1;
         return supabase.from("transactions").update({
           ...updateData,
-          name: `${baseName} (${n}/${total})`,
+          name: baseName,
           installment_number: n,
         }).eq("id", s.id);
       });
