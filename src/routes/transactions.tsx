@@ -452,8 +452,7 @@ export function TransactionsPage() {
     }
     const total = Math.max(1, Math.floor(Number(editTx.total_installments)));
     const current = Math.max(1, Math.min(total, Math.floor(Number(editTx.installment_number) || 1)));
-    const baseName = stripInstallmentSuffix(editTx.name);
-    const finalName = total > 1 ? `${baseName} (${current}/${total})` : baseName;
+    const finalName = stripInstallmentSuffix(editTx.name);
 
      // Compute per-installment value
       const { valorParcela: perInstallment } = calculateInstallmentDetails(
