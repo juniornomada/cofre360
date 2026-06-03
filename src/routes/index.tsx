@@ -1169,7 +1169,7 @@ function Dashboard() {
                       )}>
                         <div className="absolute top-1.5 left-1.5 h-1.5 w-2.5 rounded-[1px] bg-white/30" />
                       </div>
-                      <span className="text-xl">{card.emoji || "💳"}</span>
+                      <div className="text-xl">{card.emoji || "💳"}</div>
                     </div>
                     
                     <div className="flex-1 flex flex-col justify-center py-2">
@@ -1183,13 +1183,13 @@ function Dashboard() {
 
                     <div className="flex items-center justify-between pt-2 border-t border-border/20">
                       <div className="flex flex-col">
-                        <span className="text-[11px] font-bold text-foreground">{formatDueDate(displayDue)}</span>
+                        <div className="text-[11px] font-bold text-foreground">{formatDueDate(displayDue)}</div>
                       </div>
                       {paidThisMonth > 0 && (
                         <div className="flex flex-col items-end">
-                          <span className="text-[11px] font-bold text-primary">
+                          <div className="text-[11px] font-bold text-primary">
                             R$ {balanceVisible ? fmt(paidThisMonth) : "•••"}
-                          </span>
+                          </div>
                         </div>
                       )}
                     </div>
