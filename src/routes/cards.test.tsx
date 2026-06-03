@@ -78,6 +78,7 @@ describe('CardsPage Validation Integration', () => {
   });
 
   it('should trigger validation on mount', async () => {
+    (mockRoute.useSearch as any).mockReturnValue({});
     render(
       <QueryClientProvider client={queryClient}>
         <CardsPage />
