@@ -47,6 +47,7 @@ axiosInstance.interceptors.response.use(
         setAuthToken(newToken);
         isRefreshing = false;
         
+        console.log('[authInterceptor] Refresh successful, flusing queue and retrying original');
         // Execute all queued requests
         retryQueue.forEach((callback) => callback());
         retryQueue = [];
@@ -55,6 +56,7 @@ axiosInstance.interceptors.response.use(
         if (config.headers) {
           config.headers['Authorization'] = `Bearer ${newToken}`;
         }
+        console.log('[authInterceptor] Retrying original request');
         return axiosInstance(config);
       } catch (refreshError) {
         isRefreshing = false;
