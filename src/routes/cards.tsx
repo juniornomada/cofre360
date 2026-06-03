@@ -143,7 +143,8 @@ export function CardsPage() {
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
-   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null); const listRef = useRef<HTMLDivElement>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const listRef = useRef<HTMLDivElement>(null);
    
    
 
