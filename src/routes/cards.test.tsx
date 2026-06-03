@@ -446,6 +446,41 @@ describe('CardsPage Validation Integration', () => {
     vi.useRealTimers();
   });
 
+  it('should NOT reset debounce on non-retryable 4xx errors (e.g. 400 Bad Request)', async () => {
+    vi.useFakeTimers();
+    render(
+      <QueryClientProvider client={queryClient}>
+        <CardsPage />
+      </QueryClientProvider>
+    );
+
+    // 1. Initial successful validation on mount
+    await act(async () => { vi.runOnlyPendingTimers(); });
+    expect(mockValidateAgreement).toHaveBeenCalledTimes(1);
+
+    // 2. Mock a 400 Bad Request error
+    const mockResponse = new Response('Bad Request', { status: 400 });
+    mockValidateAgreement.mockRejectedValueOnce(mockResponse);
+
+    await act(async () => {
+      vi.advanceTimersByTime(2100); // Pass different reason window (mount -> focus)
+      window.dispatchEvent(new Event('focus'));
+    });
+    expect(mockValidateAgreement).toHaveBeenCalledTimes(2);
+
+    // 3. Debounce should NOT be reset for non-retryable errors.
+    // Triggering focus again immediately should be blocked.
+    await act(async () => {
+      vi.advanceTimersByTime(100); 
+      window.dispatchEvent(new Event('focus'));
+    });
+    
+    // Should still be 2 because 400 is not a retryable error in our current logic
+    expect(mockValidateAgreement).toHaveBeenCalledTimes(2);
+
+    vi.useRealTimers();
+  });
+
   it('should reset debounce when session is missing to allow immediate retry after login', async () => {
     vi.useFakeTimers();
     
