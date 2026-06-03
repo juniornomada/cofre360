@@ -1157,8 +1157,9 @@ function Dashboard() {
                 <Link 
                   key={card.id} 
                   to="/cards" 
-                  className="interactive-card flex-none w-[160px] flex flex-col gap-3 p-3.5 rounded-2xl bg-background/50 border border-border/40 hover:bg-background/80 transition-all relative group"
+                  className="interactive-card flex-none w-[170px] sm:w-[190px] aspect-[1.58/1] flex flex-col justify-between p-3.5 rounded-2xl bg-background/50 border border-border/40 hover:bg-background/80 transition-all relative group"
                 >
+
                   <div className="flex items-start justify-between">
                     <div className={cn(
                       "flex h-9 w-12 shrink-0 items-end justify-start p-1 rounded-md bg-gradient-to-br text-base shadow-sm relative overflow-hidden", 
