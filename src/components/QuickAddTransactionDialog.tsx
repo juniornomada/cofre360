@@ -381,6 +381,30 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
 
           {isTransfer ? (
             <>
+               <div>
+                 <label className="text-[11px] font-semibold text-foreground mb-0.5 block">Nome (Opcional)</label>
+                   <input
+                     autoFocus
+                     inputMode={nameInputMode}
+                     id="tx-transfer-name-input"
+                    value={newTx.name}
+                    onChange={e => {
+                      let name = e.target.value;
+                      if (name.length > 0) {
+                        name = name.charAt(0).toUpperCase() + name.slice(1);
+                      }
+                      setNewTx({ ...newTx, name });
+                    }}
+                    onBlur={() => setNameInputMode("none")}
+                    onClick={(e) => {
+                      const target = e.currentTarget;
+                      setNameInputMode("text");
+                      setTimeout(() => target.focus(), 0);
+                    }}
+                    placeholder="Ex: Transferência aluguel"
+                    className="w-full rounded-lg bg-card px-2.5 py-1.5 text-xs text-foreground placeholder:text-muted-foreground outline-none"
+                  />
+               </div>
               <div className="rounded-xl bg-card/50 p-2.5 space-y-2">
                 <div>
                   <label className="text-[11px] font-semibold text-foreground mb-1 block">De (origem)</label>
