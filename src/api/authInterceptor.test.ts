@@ -130,5 +130,4 @@ describe('authInterceptor', () => {
     expect(mock.history.get.length).toBeGreaterThanOrEqual(2);
     expect(retryHandler).toHaveBeenCalled();
   });
-  });
 });
