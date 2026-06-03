@@ -377,4 +377,77 @@ describe('CardsPage Validation Integration', () => {
 
     vi.useRealTimers();
   });
+
+  it('should reset debounce and allow immediate retry on 401 Unauthorized error', async () => {
+    vi.useFakeTimers();
+    render(
+      <QueryClientProvider client={queryClient}>
+        <CardsPage />
+      </QueryClientProvider>
+    );
+
+    // 1. Initial successful validation on mount
+    await act(async () => { vi.runOnlyPendingTimers(); });
+    expect(mockValidateAgreement).toHaveBeenCalledTimes(1);
+
+    // 2. Mock a 401 Response error
+    const mockResponse = new Response('Unauthorized', { status: 401 });
+    mockValidateAgreement.mockRejectedValueOnce(mockResponse);
+
+    await act(async () => {
+      vi.advanceTimersByTime(2100); // Pass different reason window
+      window.dispatchEvent(new Event('focus'));
+    });
+    expect(mockValidateAgreement).toHaveBeenCalledTimes(2);
+
+    // 3. Debounce should be reset. Verify immediate retry is possible.
+    mockValidateAgreement.mockResolvedValueOnce(mockResult);
+    await act(async () => {
+      vi.advanceTimersByTime(100); 
+      window.dispatchEvent(new Event('focus'));
+    });
+    
+    expect(mockValidateAgreement).toHaveBeenCalledTimes(3);
+
+    vi.useRealTimers();
+  });
+
+  it('should reset debounce when session is missing to allow immediate retry after login', async () => {
+    vi.useFakeTimers();
+    
+    // Start with no session for ALL calls initially
+    (supabase.auth.getSession as any).mockResolvedValue({
+      data: { session: null },
+      error: null,
+    });
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <CardsPage />
+      </QueryClientProvider>
+    );
+
+    // 1. Initial mount call (should check session and stop)
+    await act(async () => { vi.runOnlyPendingTimers(); });
+    expect(mockValidateAgreement).not.toHaveBeenCalled();
+
+    // 2. Mock session being restored
+    (supabase.auth.getSession as any).mockResolvedValue({
+      data: { session: { access_token: 'valid-token', user: { id: 'user-1' } } },
+      error: null,
+    });
+
+    // 3. Trigger SIGNED_IN event (this is what happens when user logs in)
+    await act(async () => {
+      // Even though 'mount' attempted validation 100ms ago, 
+      // the failure to find a session should have reset the debounce.
+      vi.advanceTimersByTime(100);
+      authChangeHandler('SIGNED_IN', { access_token: 'valid-token' });
+    });
+
+    // Should trigger immediately because of reset
+    expect(mockValidateAgreement).toHaveBeenCalledTimes(1);
+
+    vi.useRealTimers();
+  });
 });
