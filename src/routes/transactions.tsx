@@ -305,6 +305,36 @@ export function TransactionsPage() {
     }
   }, [searchParams.action, searchParams.type]);
 
+  useEffect(() => {
+    if (!showEditDialog) return;
+
+    const handleGlobalPasteTransactions = (e: ClipboardEvent) => {
+      const activeElement = document.activeElement;
+      const isOtherInput = (activeElement instanceof HTMLInputElement || activeElement instanceof HTMLTextAreaElement) && 
+                           activeElement.id !== "edit-tx-name-input-page";
+
+      if (!isOtherInput) {
+        const pastedText = e.clipboardData?.getData("text");
+        if (pastedText && editTx) {
+          const nameInput = document.getElementById("edit-tx-name-input-page");
+          if (nameInput && activeElement !== nameInput) {
+            e.preventDefault();
+            let formattedText = pastedText.trim();
+            if (formattedText.length > 0) {
+              formattedText = formattedText.charAt(0).toUpperCase() + formattedText.slice(1);
+            }
+            setEditTx(prev => prev ? { ...prev, name: formattedText } : null);
+            (nameInput as HTMLInputElement).focus();
+          }
+        }
+      }
+    };
+
+    window.addEventListener("paste", handleGlobalPasteTransactions);
+    return () => window.removeEventListener("paste", handleGlobalPasteTransactions);
+  }, [showEditDialog, editTx]);
+
+
   // Parse "dd MMM" using created_at as the reference year (UTC) to avoid timezone/year drift.
   const parseTxDate = (s: string, refIso?: string): Date | null => {
     if (!s) return null;
