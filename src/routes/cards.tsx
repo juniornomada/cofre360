@@ -977,14 +977,14 @@ export function CardsPage() {
                       <p className="text-[10px] text-emerald-300 font-bold tabular-nums drop-shadow-sm truncate">
                         ✓ R$ {totalPaid.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} pago
                       </p>
-                      <p className="text-[10px] text-white/80 tabular-nums" title={`Limite total: R$ ${card.card_limit.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`}>
+                      <p className="text-[10px] text-white/80 tabular-nums" title={`Limite total: R$ ${(card.card_limit || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`}>
                         Disponível <span className="font-bold text-white">R$ {Math.max(0, card.card_limit - outstandingBalance).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
                       </p>
                     </div>
                   ) : (
                     <div className="flex items-center justify-between gap-2 mt-1">
                       <p className="text-[10px] text-white/70 tabular-nums">
-                        de R$ {card.card_limit.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                        de R$ {(card.card_limit || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                       </p>
                       <p className="text-[10px] text-white/80 tabular-nums">
                         Disponível <span className="font-bold text-white">R$ {Math.max(0, card.card_limit - outstandingBalance).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
