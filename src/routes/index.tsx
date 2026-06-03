@@ -1138,7 +1138,7 @@ function Dashboard() {
             </div>
           </div>
         ) : (
-          <div className="mt-2 flex gap-3 overflow-x-auto no-scrollbar pb-1 pt-1 -mx-5 px-5">
+          <div className="mt-2 flex gap-3 overflow-x-auto no-scrollbar pb-1 pt-1 -mx-5 px-5 snap-x snap-mandatory">
 
             {allCards.filter(c => c.is_visible !== false && c.is_visible !== null).map((card) => {
               const isPaid = cardInvoicePaid[card.id] || false;
@@ -1157,7 +1157,7 @@ function Dashboard() {
                 <Link 
                   key={card.id} 
                   to="/cards" 
-                  className="interactive-card flex-none w-[170px] sm:w-[190px] aspect-[1.58/1] flex flex-col justify-between p-3.5 rounded-2xl bg-background/50 border border-border/40 hover:bg-background/80 transition-all relative group"
+                  className="interactive-card flex-none w-[170px] sm:w-[190px] aspect-[1.58/1] flex flex-col justify-between p-3.5 rounded-2xl bg-background/50 border border-border/40 hover:bg-background/80 transition-all relative group snap-center first:snap-start last:snap-end"
                 >
 
                   <div className="flex items-start justify-between">
