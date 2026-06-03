@@ -415,8 +415,8 @@ describe('CardsPage Validation Integration', () => {
   it('should reset debounce when session is missing to allow immediate retry after login', async () => {
     vi.useFakeTimers();
     
-    // Start with no session
-    (supabase.auth.getSession as any).mockResolvedValueOnce({
+    // Start with no session for ALL calls initially
+    (supabase.auth.getSession as any).mockResolvedValue({
       data: { session: null },
       error: null,
     });
