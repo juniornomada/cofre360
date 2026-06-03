@@ -1087,10 +1087,14 @@ export function CardsPage() {
                           {d.status.toUpperCase()}
                         </Badge>
                       </div>
-                      <div className="flex justify-between items-center text-[10px] text-muted-foreground">
-                        <span>Valor no Cartão: <strong>R$ {d.cardValue.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong></span>
-                        <span>Soma da Fatura: <strong>R$ {d.faturaValue.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong></span>
-                      </div>
+                      {d.type === 'amount' ? (
+                        <div className="flex justify-between items-center text-[10px] text-muted-foreground">
+                          <span>Valor no Cartão: <strong>R$ {(d.cardValue || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong></span>
+                          <span>Soma da Fatura: <strong>R$ {(d.faturaValue || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong></span>
+                        </div>
+                      ) : (
+                        <p className="text-[10px] text-muted-foreground">Nenhuma fatura encontrada para este cartão nos últimos meses.</p>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -1416,7 +1420,7 @@ export function CardsPage() {
                               <SelectItem key={acc.id} value={acc.id} className="text-xs">
                                 <div className="flex items-center gap-2">
                                   <BankLogo icon={acc.icon || "custom"} color={acc.color || "from-gray-500 to-gray-700"} name={acc.name} size="xs" />
-                                  <span>{acc.name} — R$ {acc.balance.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
+                                  <span>{acc.name} — R$ {(acc.balance || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
                                 </div>
                               </SelectItem>
                             ))}
