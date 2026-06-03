@@ -1138,14 +1138,14 @@ function Dashboard() {
             </div>
           </div>
         ) : (
-          <div className="mt-2 flex gap-3 overflow-x-auto no-scrollbar pb-1 pt-1 -mx-5 px-5 snap-x snap-mandatory">
-
+          <div className="mt-3 flex flex-col gap-1">
             {allCards.filter(c => c.is_visible !== false && c.is_visible !== null).map((card) => {
               const isPaid = cardInvoicePaid[card.id] || false;
-              const displayAmount = cardNextInvoices[card.name] || 0;
+              const displayAmount = cardNextInvoices[card.name] || 0; // Sincronizado com Faturas > Atual
               const paidThisMonth = cardPayments[card.id] || 0;
               
               const today = new Date();
+              // Compute due date exactly like in Cards.tsx
               let displayDue = new Date(today.getFullYear(), today.getMonth(), card.due_day || 10);
               if (displayDue < today) {
                 displayDue.setMonth(displayDue.getMonth() + 1);
@@ -1157,53 +1157,31 @@ function Dashboard() {
                 <Link 
                   key={card.id} 
                   to="/cards" 
-                  className="interactive-card flex-none w-[185px] sm:w-[210px] aspect-[1.58/1] flex flex-col justify-between p-4 rounded-2xl bg-background/50 border border-border/40 hover:bg-background/80 hover:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all relative group snap-center first:snap-start last:snap-end active:scale-[0.98]"
+                  className="interactive-card flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl bg-background/40 hover:bg-background/60 transition-colors overflow-hidden relative w-full"
                 >
-
-
-                  <div className="flex flex-col h-full">
-                    <div className="flex items-start justify-between">
-                      <div className={cn(
-                        "flex h-9 w-12 shrink-0 items-end justify-start p-1 rounded-md bg-gradient-to-br text-base shadow-sm relative overflow-hidden", 
-                        card.color || "from-primary/20 to-primary/10"
-                      )}>
-                        <div className="absolute top-1.5 left-1.5 h-1.5 w-2.5 rounded-[1px] bg-white/30" />
-                      </div>
-                      <div className="text-xl">{card.emoji || "💳"}</div>
-                    </div>
-                    
-                    <div className="flex-1 flex flex-col justify-center py-2">
-                      <p className={cn(
-                        "text-2xl font-bold tabular-nums tracking-tight text-center", 
-                        !isPaid && displayAmount > 0 ? "text-destructive" : "text-primary"
-                      )}>
-                        {balanceVisible ? `R$ ${fmt(displayAmount)}` : "R$ •••"}
-                      </p>
-                    </div>
-
-                    <div className="flex items-center justify-between pt-2 border-t border-border/20">
-                      <div className="flex flex-col">
-                        <div className="text-[11px] font-bold text-foreground">{formatDueDate(displayDue)}</div>
-                      </div>
-                      {paidThisMonth > 0 && (
-                        <div className="flex flex-col items-end">
-                          <div className="text-[11px] font-bold text-primary">
-                            R$ {balanceVisible ? fmt(paidThisMonth) : "•••"}
-                          </div>
-                        </div>
-                      )}
-                    </div>
+                  <div className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br text-base", card.color || "from-primary/20 to-primary/10")}>
+                    {card.emoji || "💳"}
                   </div>
-                  
-                  <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <ChevronRight className="h-3 w-3 text-muted-foreground" />
+                  <div className="flex flex-col flex-1 min-w-0">
+                    <p className="text-xs font-medium text-foreground truncate">{card.name}</p>
+                    <span className="text-[10px] font-medium text-muted-foreground">Fatura Atual · Venc. {formatDueDate(displayDue)}</span>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className={cn("text-xs font-bold tabular-nums", !isPaid && displayAmount > 0 ? "text-destructive" : "text-primary")} data-testid="fatura-atual-valor">
+                      {balanceVisible ? `R$ ${fmt(displayAmount)}` : "R$ •••"}
+                    </p>
+
+                    {paidThisMonth > 0 && (
+                      <p className="text-[10px] text-primary font-medium">
+                        Pago: R$ {balanceVisible ? fmt(paidThisMonth) : "•••"}
+                      </p>
+                    )}
                   </div>
                 </Link>
               );
             })}
           </div>
         )}
-
       </div>
 
       {/* Recent Transactions — moved to right below balance */}
