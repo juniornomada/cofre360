@@ -143,7 +143,8 @@ export function CardsPage() {
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
-   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null); const listRef = useRef<HTMLDivElement>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const listRef = useRef<HTMLDivElement>(null);
    
    
 
@@ -192,9 +193,13 @@ export function CardsPage() {
   // Validation state
   const [validationData, setValidationData] = useState<any>({
     status: 'ok',
-    totalCardsChecked: 0,
-    totalInconsistencies: 0,
-    details: []
+    summary: {
+      totalCardsChecked: 0,
+      totalInvoicesChecked: 0,
+      discrepanciesFound: 0,
+      discrepancyDetails: []
+    },
+    logs: []
   });
   const [isValidating, setIsValidating] = useState(false);
   const [activeTab, setActiveTab] = useState("list");
