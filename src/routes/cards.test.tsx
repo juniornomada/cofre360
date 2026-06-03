@@ -10,7 +10,7 @@ const mockResult = {
   totalInconsistencies: 0, 
   details: [] 
 };
-const mockValidateAgreement = vi.fn().mockResolvedValue(mockResult);
+const mockValidateAgreement = vi.fn().mockImplementation(() => Promise.resolve(mockResult));
 
 // Mock ALL TanStack related modules completely
 vi.mock('@tanstack/react-start', async (importOriginal) => {
