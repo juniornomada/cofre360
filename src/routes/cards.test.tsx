@@ -96,6 +96,8 @@ describe('CardsPage Validation Integration', () => {
   });
 
   it('should trigger validation on mount and respect dynamic debounce', async () => {
+    vi.useFakeTimers();
+    
     render(
       <QueryClientProvider client={queryClient}>
         <CardsPage />
@@ -103,24 +105,27 @@ describe('CardsPage Validation Integration', () => {
     );
 
     // 1. Mount trigger
-    await waitFor(() => expect(mockValidateAgreement).toHaveBeenCalledTimes(1));
+    // Since runValidation is async, we need to run timers until it's called
+    await act(async () => {
+      vi.runOnlyPendingTimers();
+    });
+    
+    expect(mockValidateAgreement).toHaveBeenCalledTimes(1);
 
     // 2. Debounce check: different reason (mount vs focus) requires 2s
-    vi.useFakeTimers();
-    
     // Attempt within 1s -> should skip
     await act(async () => {
-      vi.advanceTimersByTime(1176);
+      vi.advanceTimersByTime(1000);
       window.dispatchEvent(new Event('focus'));
     });
     expect(mockValidateAgreement).toHaveBeenCalledTimes(1);
 
     // Attempt after 2s -> should run
     await act(async () => {
-      vi.advanceTimersByTime(2100); // More than 2s total
+      vi.advanceTimersByTime(1100); // Total 2.1s
       window.dispatchEvent(new Event('focus'));
     });
-    await waitFor(() => expect(mockValidateAgreement).toHaveBeenCalledTimes(2));
+    expect(mockValidateAgreement).toHaveBeenCalledTimes(2);
 
     // 3. Same reason debounce (focus -> focus) requires 5s
     await act(async () => {
@@ -133,7 +138,7 @@ describe('CardsPage Validation Integration', () => {
       vi.advanceTimersByTime(2100); // Now >5s total since last focus
       window.dispatchEvent(new Event('focus'));
     });
-    await waitFor(() => expect(mockValidateAgreement).toHaveBeenCalledTimes(3));
+    expect(mockValidateAgreement).toHaveBeenCalledTimes(3);
 
     vi.useRealTimers();
   });
