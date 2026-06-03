@@ -8,6 +8,7 @@ describe('authInterceptor', () => {
   let globalMock: AxiosMockAdapter;
 
   beforeEach(() => {
+    resetAuthInterceptor();
     mock = new AxiosMockAdapter(axiosInstance);
     globalMock = new AxiosMockAdapter(axios);
     vi.useFakeTimers();
