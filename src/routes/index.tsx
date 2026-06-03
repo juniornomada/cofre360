@@ -1138,7 +1138,8 @@ function Dashboard() {
             </div>
           </div>
         ) : (
-          <div className="mt-4 flex gap-3 overflow-x-auto no-scrollbar pb-2 pt-1 -mx-1 px-1">
+          <div className="mt-2 flex gap-3 overflow-x-auto no-scrollbar pb-1 pt-1 -mx-5 px-5">
+
             {allCards.filter(c => c.is_visible !== false && c.is_visible !== null).map((card) => {
               const isPaid = cardInvoicePaid[card.id] || false;
               const displayAmount = cardNextInvoices[card.name] || 0;
