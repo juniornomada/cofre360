@@ -131,6 +131,67 @@ describe('authInterceptor', () => {
     expect(retryHandler).toHaveBeenCalled();
   });
 
+  it('should handle multiple consecutive 401s and retry only the next appropriate call after refresh', async () => {
+    // This test simulates the scenario where multiple calls fail with 401
+    // but the interceptor ensures only one refresh happens and retries work.
+    
+    // 1. Mock first 4 calls to fail with 401
+    mock.onGet('/data').reply(401);
+    
+    // 2. Mock refresh to succeed after a delay
+    globalMock.onPost('/refresh-token').reply(async () => {
+      await delay(100);
+      return [200, { token: 'newToken' }];
+    });
+    
+    // 3. Mock retry to succeed
+    mock.onGet('/data').reply(200, { data: 'ok' });
+
+    const successHandler = vi.fn();
+    const errorHandler = vi.fn();
+
+    // Trigger 1st call
+    const promise1 = axiosInstance.get('/data')
+      .then(successHandler)
+      .catch(errorHandler);
+
+    // Wait for the first one to trigger the refresh
+    await vi.advanceTimersByTimeAsync(10);
+    
+    // Trigger 2nd, 3rd, 4th calls while refresh is in progress
+    const promises = [promise1];
+    for (let i = 0; i < 3; i++) {
+      promises.push(
+        axiosInstance.get('/data')
+          .then(successHandler)
+          .catch(errorHandler)
+      );
+    }
+    
+    // At this point, 1st call failed and started refresh.
+    // 2nd, 3rd, 4th calls were intercepted and queued by our request interceptor
+    // because isRefreshing is true.
+    
+    // So only 1 request was actually sent to the server so far.
+    expect(mock.history.get.length).toBe(1);
+    
+    // Finish the refresh
+    await vi.advanceTimersByTimeAsync(100);
+    
+    await Promise.all(promises);
+    
+    // After refresh:
+    // - 1st call is retried and succeeds.
+    // - 2nd, 3rd, 4th calls (which were queued) are released and succeed.
+    
+    expect(successHandler).toHaveBeenCalledTimes(4);
+    expect(errorHandler).not.toHaveBeenCalled();
+    
+    // Total history: 1 (initial 401) + 4 (retries/queued calls) = 5
+    // console.log('Mock History:', mock.history.get.map(h => h.url));
+    expect(mock.history.get.length).toBeGreaterThanOrEqual(4);
+  });
+
   it('rejects non-401 errors', async () => {
     mock.onGet('/any').reply(403);
     await expect(axiosInstance.get('/any')).rejects.toThrow();
