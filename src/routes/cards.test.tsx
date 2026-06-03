@@ -481,6 +481,57 @@ describe('CardsPage Validation Integration', () => {
     vi.useRealTimers();
   });
 
+  it('should allow immediate retry after 401 followed by session restoration, then resume debounce', async () => {
+    vi.useFakeTimers();
+    render(
+      <QueryClientProvider client={queryClient}>
+        <CardsPage />
+      </QueryClientProvider>
+    );
+
+    // 1. Initial successful validation on mount
+    await act(async () => { vi.runOnlyPendingTimers(); });
+    expect(mockValidateAgreement).toHaveBeenCalledTimes(1);
+
+    // 2. Pass 2.1s (different reason window), then trigger 401
+    vi.advanceTimersByTime(2100);
+    const mock401 = new Response('Unauthorized', { status: 401 });
+    mockValidateAgreement.mockRejectedValueOnce(mock401);
+    
+    await act(async () => {
+      window.dispatchEvent(new Event('focus'));
+    });
+    expect(mockValidateAgreement).toHaveBeenCalledTimes(2);
+
+    // 3. Debounce should be reset due to 401.
+    // Simulate session restoration (TOKEN_REFRESHED) after 100ms
+    mockValidateAgreement.mockResolvedValueOnce(mockResult);
+    await act(async () => {
+      vi.advanceTimersByTime(100);
+      authChangeHandler('TOKEN_REFRESHED', { access_token: 'new-valid-token' });
+    });
+    
+    // Should trigger immediately (total 3)
+    expect(mockValidateAgreement).toHaveBeenCalledTimes(3);
+
+    // 4. After success, debounce for 'TOKEN_REFRESHED' category should be 5s.
+    // Attempt another TOKEN_REFRESHED at 3s -> should skip
+    await act(async () => {
+      vi.advanceTimersByTime(3000);
+      authChangeHandler('TOKEN_REFRESHED', { access_token: 'another-token' });
+    });
+    expect(mockValidateAgreement).toHaveBeenCalledTimes(3);
+
+    // After 5.1s -> should run
+    await act(async () => {
+      vi.advanceTimersByTime(2100); // 3000 + 2100 = 5100ms
+      authChangeHandler('TOKEN_REFRESHED', { access_token: 'final-token' });
+    });
+    expect(mockValidateAgreement).toHaveBeenCalledTimes(4);
+
+    vi.useRealTimers();
+  });
+
   it('should reset debounce when session is missing to allow immediate retry after login', async () => {
     vi.useFakeTimers();
     
