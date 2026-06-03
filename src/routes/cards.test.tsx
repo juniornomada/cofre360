@@ -6,14 +6,18 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
 const mockValidateAgreement = vi.fn();
+
+// Pre-create the route mock
+const mockRoute = {
+  useSearch: vi.fn(() => ({})),
+};
+
 vi.mock('@tanstack/react-start', async (importOriginal) => {
   const actual = await importOriginal() as any;
   return {
     ...actual,
     useServerFn: () => mockValidateAgreement,
-    createFileRoute: () => ({
-      useSearch: () => ({}),
-    }),
+    createFileRoute: () => mockRoute,
   };
 });
 
