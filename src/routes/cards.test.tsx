@@ -412,6 +412,40 @@ describe('CardsPage Validation Integration', () => {
     vi.useRealTimers();
   });
 
+  it('should reset debounce and allow immediate retry on 403 Forbidden error', async () => {
+    vi.useFakeTimers();
+    render(
+      <QueryClientProvider client={queryClient}>
+        <CardsPage />
+      </QueryClientProvider>
+    );
+
+    // 1. Initial successful validation on mount
+    await act(async () => { vi.runOnlyPendingTimers(); });
+    expect(mockValidateAgreement).toHaveBeenCalledTimes(1);
+
+    // 2. Mock a 403 Response error
+    const mockResponse = new Response('Forbidden', { status: 403 });
+    mockValidateAgreement.mockRejectedValueOnce(mockResponse);
+
+    await act(async () => {
+      vi.advanceTimersByTime(2100);
+      window.dispatchEvent(new Event('focus'));
+    });
+    expect(mockValidateAgreement).toHaveBeenCalledTimes(2);
+
+    // 3. Debounce should be reset. Verify immediate retry is possible.
+    mockValidateAgreement.mockResolvedValueOnce(mockResult);
+    await act(async () => {
+      vi.advanceTimersByTime(100); 
+      window.dispatchEvent(new Event('focus'));
+    });
+    
+    expect(mockValidateAgreement).toHaveBeenCalledTimes(3);
+
+    vi.useRealTimers();
+  });
+
   it('should reset debounce when session is missing to allow immediate retry after login', async () => {
     vi.useFakeTimers();
     
