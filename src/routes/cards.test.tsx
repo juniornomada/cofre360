@@ -330,4 +330,51 @@ describe('CardsPage Validation Integration', () => {
 
     vi.useRealTimers();
   });
+
+  it('should strictly respect debounce intervals after a sequence of failures followed by a success', async () => {
+    vi.useFakeTimers();
+    render(
+      <QueryClientProvider client={queryClient}>
+        <CardsPage />
+      </QueryClientProvider>
+    );
+
+    // 1. Initial successful validation on mount
+    await act(async () => { vi.runOnlyPendingTimers(); });
+    expect(mockValidateAgreement).toHaveBeenCalledTimes(1);
+
+    // 2. Simulate a failure
+    mockValidateAgreement.mockRejectedValueOnce(new Error('Temporary Failure'));
+    await act(async () => {
+      vi.advanceTimersByTime(2100); // Pass different reason window
+      window.dispatchEvent(new Event('focus'));
+    });
+    expect(mockValidateAgreement).toHaveBeenCalledTimes(2);
+
+    // 3. Immediate retry after failure should work (reset logic)
+    mockValidateAgreement.mockResolvedValueOnce(mockResult);
+    await act(async () => {
+      vi.advanceTimersByTime(100); 
+      window.dispatchEvent(new Event('focus'));
+    });
+    expect(mockValidateAgreement).toHaveBeenCalledTimes(3);
+
+    // 4. NOW it succeeded. The 5s debounce for 'focus' MUST be strictly respected.
+    
+    // Attempt at 4.9s -> Should skip
+    await act(async () => {
+      vi.advanceTimersByTime(4800); // 100 + 4800 = 4900ms since last success
+      window.dispatchEvent(new Event('focus'));
+    });
+    expect(mockValidateAgreement).toHaveBeenCalledTimes(3);
+
+    // Attempt at 5.1s -> Should run
+    await act(async () => {
+      vi.advanceTimersByTime(200); // 4900 + 200 = 5100ms since last success
+      window.dispatchEvent(new Event('focus'));
+    });
+    expect(mockValidateAgreement).toHaveBeenCalledTimes(4);
+
+    vi.useRealTimers();
+  });
 });
