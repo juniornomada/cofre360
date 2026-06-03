@@ -1157,8 +1157,9 @@ function Dashboard() {
                 <Link 
                   key={card.id} 
                   to="/cards" 
-                  className="interactive-card flex-none w-[170px] sm:w-[190px] aspect-[1.58/1] flex flex-col justify-between p-3.5 rounded-2xl bg-background/50 border border-border/40 hover:bg-background/80 transition-all relative group snap-center first:snap-start last:snap-end"
+                  className="interactive-card flex-none w-[185px] sm:w-[210px] aspect-[1.58/1] flex flex-col justify-between p-4 rounded-2xl bg-background/50 border border-border/40 hover:bg-background/80 hover:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all relative group snap-center first:snap-start last:snap-end active:scale-[0.98]"
                 >
+
 
                   <div className="flex items-start justify-between">
                     <div className={cn(
