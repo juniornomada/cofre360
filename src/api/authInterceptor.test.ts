@@ -1,13 +1,22 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import axiosInstance from './authInterceptor';
+import axios from 'axios';
 import AxiosMockAdapter from 'axios-mock-adapter';
 
 describe('authInterceptor', () => {
   let mock: AxiosMockAdapter;
+  let globalMock: AxiosMockAdapter;
 
   beforeEach(() => {
     mock = new AxiosMockAdapter(axiosInstance);
+    globalMock = new AxiosMockAdapter(axios);
     vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    mock.restore();
+    globalMock.restore();
+    vi.useRealTimers();
   });
 
   const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -16,10 +25,8 @@ describe('authInterceptor', () => {
     // 1. 401 on first call to protected endpoint
     mock.onGet('/protected-resource').replyOnce(401);
     
-    // 2. Successful refresh reply (simulated with a delay)
-    // We use axios (the global one) for the refresh call in our interceptor
-    const axiosMock = new AxiosMockAdapter(require('axios').default);
-    axiosMock.onPost('/refresh-token').reply(async () => {
+    // 2. Successful refresh reply
+    globalMock.onPost('/refresh-token').reply(async () => {
       await delay(100);
       return [200, { token: 'newToken' }];
     });
@@ -33,7 +40,7 @@ describe('authInterceptor', () => {
     await vi.advanceTimersByTimeAsync(10);
     
     // Original call must not be retried until refresh completes
-    expect(mock.history.get.length).toBe(1); // only original request
+    expect(mock.history.get.length).toBe(1); 
     
     // Finish the refresh
     await vi.advanceTimersByTimeAsync(100);
@@ -44,34 +51,29 @@ describe('authInterceptor', () => {
     // Verify that the retry used the new token
     expect(mock.history.get.length).toBe(2);
     expect(mock.history.get[1].headers?.Authorization).toBe('Bearer newToken');
-    
-    axiosMock.restore();
   });
 
   it('multiple 401s during a single refresh are queued and sent once after token is refreshed', async () => {
     mock.onGet('/protected-resource').replyOnce(401);
     
-    const axiosMock = new AxiosMockAdapter(require('axios').default);
-    axiosMock.onPost('/refresh-token').reply(async () => {
+    globalMock.onPost('/refresh-token').reply(async () => {
       await delay(200);
       return [200, { token: 'newToken' }];
     });
     
+    // The retry of the first call and subsequent queued calls
     mock.onGet('/protected-resource').reply(200, { data: 'ok' });
 
     const call1 = axiosInstance.get('/protected-resource');
     
-    // Advance time so call1 fails with 401 and starts refresh
     await vi.advanceTimersByTimeAsync(10);
     
-    // While refresh is happening, make call2 which would also fail with 401 if it were sent
-    // But it should be queued
-    mock.onGet('/protected-resource').replyOnce(401);
+    // While refresh is happening, make call2
     const call2 = axiosInstance.get('/protected-resource');
     
     await vi.advanceTimersByTimeAsync(10);
     
-    // Still only 1 call should have been made to /protected-resource so far
+    // Only 1 call should have been made to /protected-resource so far (the first one that failed)
     expect(mock.history.get.length).toBe(1);
     
     // Complete the refresh
@@ -83,15 +85,8 @@ describe('authInterceptor', () => {
     expect(res2.data).toEqual({ data: 'ok' });
     
     // Total calls should be 3: 
-    // 1 (call1 original) + 1 (call1 retry) + 1 (call2 original was never sent, it was queued and sent as "retry")
-    // Wait, let's think about the logic. 
-    // Call 1 fails -> refresh starts.
-    // Call 2 arrives -> isRefreshing is true -> queued.
-    // Refresh finishes -> retryQueue flushes -> Call 2 is executed -> Call 1 retry is executed.
-    // So total 3 calls to /protected-resource.
+    // 1 (call1 fail) + 1 (call1 retry) + 1 (call2 queued then sent)
     expect(mock.history.get.length).toBe(3);
-    
-    axiosMock.restore();
   });
 
   it('debounce continues to block further retries if another 401 occurs after refresh', async () => {
@@ -103,8 +98,7 @@ describe('authInterceptor', () => {
     // Now a 401 happens
     mock.onGet('/protected-resource').replyOnce(401);
     
-    const axiosMock = new AxiosMockAdapter(require('axios').default);
-    axiosMock.onPost('/refresh-token').reply(async () => {
+    globalMock.onPost('/refresh-token').reply(async () => {
       await delay(50);
       return [200, { token: 'token2' }];
     });
@@ -113,12 +107,18 @@ describe('authInterceptor', () => {
     mock.onGet('/protected-resource').reply(200, { data: 'ok2' });
 
     const call = axiosInstance.get('/protected-resource');
-    await vi.advanceTimersByTimeAsync(100);
-    const res = await call;
     
+    // Wait for the first call to fail and start refresh
+    await vi.advanceTimersByTimeAsync(10);
+    expect(mock.history.get.length).toBe(2); // 1 success + 1 fail
+    
+    // Complete refresh
+    await vi.advanceTimersByTimeAsync(50);
+    
+    const res = await call;
     expect(res.data).toEqual({ data: 'ok2' });
     expect(mock.history.get.length).toBe(3); // 1 success + 1 fail + 1 retry
-    
-    axiosMock.restore();
   });
+});
+
 });
