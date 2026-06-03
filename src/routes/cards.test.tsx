@@ -5,14 +5,17 @@ import { CardsPage } from './cards';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
-// Mock validateAgreement server function
 const mockValidateAgreement = vi.fn();
-vi.mock('@tanstack/react-start', () => ({
-  useServerFn: () => mockValidateAgreement,
-  createFileRoute: () => ({
-    useSearch: () => ({}),
-  }),
-}));
+vi.mock('@tanstack/react-start', async (importOriginal) => {
+  const actual = await importOriginal() as any;
+  return {
+    ...actual,
+    useServerFn: () => mockValidateAgreement,
+    createFileRoute: () => ({
+      useSearch: () => ({}),
+    }),
+  };
+});
 
 // Mock supabase
 vi.mock('@/integrations/supabase/client', () => ({
