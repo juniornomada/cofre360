@@ -6,8 +6,11 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 const mockResult = { 
   status: 'ok', 
-  totalCardsChecked: 0, 
-  totalInconsistencies: 0, 
+  summary: {
+    totalCardsChecked: 0, 
+    totalInvoicesChecked: 0,
+    discrepanciesFound: 0,
+  },
   details: [] 
 };
 const mockValidateAgreement = vi.fn().mockImplementation(() => Promise.resolve(mockResult));
