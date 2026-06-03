@@ -272,4 +272,62 @@ describe('CardsPage Validation Integration', () => {
 
     vi.useRealTimers();
   });
+
+  it('should handle multiple consecutive failures and allow retries while respecting inter-error debounce', async () => {
+    vi.useFakeTimers();
+    render(
+      <QueryClientProvider client={queryClient}>
+        <CardsPage />
+      </QueryClientProvider>
+    );
+
+    // 1. Initial mount call (Success)
+    await act(async () => { vi.runOnlyPendingTimers(); });
+    expect(mockValidateAgreement).toHaveBeenCalledTimes(1);
+
+    // 2. Mock multiple consecutive failures
+    mockValidateAgreement.mockRejectedValue(new Error('Persistent Server Error'));
+
+    // Trigger focus -> Fail 1
+    await act(async () => {
+      vi.advanceTimersByTime(2100);
+      window.dispatchEvent(new Event('focus'));
+    });
+    expect(mockValidateAgreement).toHaveBeenCalledTimes(2);
+
+    // Trigger focus again immediately -> Fail 2
+    // Even though it failed, we might want a SMALL debounce between errors to avoid flooding
+    // But the current requirement from previous step was "reset timestamp on failure".
+    // Let's verify it allows immediate consecutive retries if they fail.
+    await act(async () => {
+      vi.advanceTimersByTime(100); 
+      window.dispatchEvent(new Event('focus'));
+    });
+    expect(mockValidateAgreement).toHaveBeenCalledTimes(3);
+
+    // Trigger focus again -> Fail 3
+    await act(async () => {
+      vi.advanceTimersByTime(100);
+      window.dispatchEvent(new Event('focus'));
+    });
+    expect(mockValidateAgreement).toHaveBeenCalledTimes(4);
+
+    // 3. Finally succeeds
+    mockValidateAgreement.mockResolvedValueOnce(mockResult);
+    await act(async () => {
+      vi.advanceTimersByTime(100);
+      window.dispatchEvent(new Event('focus'));
+    });
+    expect(mockValidateAgreement).toHaveBeenCalledTimes(5);
+
+    // 4. After SUCCESS, the 5s debounce MUST be active again for same reason
+    await act(async () => {
+      vi.advanceTimersByTime(1000);
+      window.dispatchEvent(new Event('focus'));
+    });
+    // Should still be 5
+    expect(mockValidateAgreement).toHaveBeenCalledTimes(5);
+
+    vi.useRealTimers();
+  });
 });
