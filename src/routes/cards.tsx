@@ -194,7 +194,17 @@ function CardsPage() {
   const [isValidating, setIsValidating] = useState(false);
   const [activeTab, setActiveTab] = useState("list");
 
+  const lastValidationRef = useRef<number>(0);
+  const DEBOUNCE_TIME = 2000; // 2 seconds debounce
+
   const runValidation = async (silent = true) => {
+    const now = Date.now();
+    if (now - lastValidationRef.current < DEBOUNCE_TIME) {
+      console.log("[cards] Validation skipped due to debounce");
+      return;
+    }
+    lastValidationRef.current = now;
+
     setIsValidating(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
