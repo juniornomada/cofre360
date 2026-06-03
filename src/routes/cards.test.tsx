@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, waitFor } from '@testing-library/react';
+import { render, waitFor, act } from '@testing-library/react';
 import { supabase } from '@/integrations/supabase/client';
 import { CardsPage } from './cards';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
