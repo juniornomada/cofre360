@@ -18,12 +18,19 @@ vi.mock('@tanstack/react-start', async (importOriginal) => {
   };
 });
 
-vi.mock('@tanstack/react-router', () => ({
-  useSearch: () => ({}),
-  useRouter: () => ({ state: { location: { search: {} } } }),
-  useMatch: () => ({}),
-  Link: ({ children }: any) => children,
-}));
+vi.mock('@tanstack/react-router', async (importOriginal) => {
+  const actual = await importOriginal() as any;
+  return {
+    ...actual,
+    useSearch: () => ({}),
+    useRouter: () => ({ state: { location: { search: {} } } }),
+    useMatch: () => ({}),
+    Link: ({ children }: any) => children,
+    createFileRoute: () => () => ({
+      useSearch: () => ({}),
+    }),
+  };
+});
 
 // Mock supabase
 vi.mock('@/integrations/supabase/client', () => ({
