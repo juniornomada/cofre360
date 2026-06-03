@@ -12,6 +12,20 @@ const mockRoute = {
   useSearch: vi.fn(() => ({})),
 };
 
+vi.mock('@tanstack/react-start', async (importOriginal) => {
+  const actual = await importOriginal() as any;
+  return {
+    ...actual,
+    useServerFn: () => mockValidateAgreement,
+    createFileRoute: (path: string) => {
+      return {
+        ...mockRoute,
+        useSearch: mockRoute.useSearch,
+      };
+    },
+  };
+});
+
 vi.mock('@tanstack/react-router', async (importOriginal) => {
   const actual = await importOriginal() as any;
   return {
@@ -21,15 +35,6 @@ vi.mock('@tanstack/react-router', async (importOriginal) => {
     }),
     useMatch: () => ({}),
     useSearch: () => ({}),
-  };
-});
-
-vi.mock('@tanstack/react-start', async (importOriginal) => {
-  const actual = await importOriginal() as any;
-  return {
-    ...actual,
-    useServerFn: () => mockValidateAgreement,
-    createFileRoute: () => mockRoute,
   };
 });
 
