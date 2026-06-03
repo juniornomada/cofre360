@@ -12,6 +12,18 @@ const mockRoute = {
   useSearch: vi.fn(() => ({})),
 };
 
+vi.mock('@tanstack/react-router', async (importOriginal) => {
+  const actual = await importOriginal() as any;
+  return {
+    ...actual,
+    useRouter: () => ({
+      state: { location: { search: {} } },
+    }),
+    useMatch: () => ({}),
+    useSearch: () => ({}),
+  };
+});
+
 vi.mock('@tanstack/react-start', async (importOriginal) => {
   const actual = await importOriginal() as any;
   return {
