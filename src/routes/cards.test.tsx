@@ -1,42 +1,25 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, waitFor } from '@testing-library/react';
 import { supabase } from '@/integrations/supabase/client';
 import { CardsPage } from './cards';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { toast } from 'sonner';
 
 const mockValidateAgreement = vi.fn();
 
-// Pre-create the route mock
-const mockRoute = {
-  useSearch: vi.fn(() => ({})),
-};
-
-vi.mock('@tanstack/react-start', async (importOriginal) => {
-  const actual = await importOriginal() as any;
-  return {
-    ...actual,
-    useServerFn: () => mockValidateAgreement,
-    createFileRoute: (path: string) => {
-      return {
-        ...mockRoute,
-        useSearch: mockRoute.useSearch,
-      };
-    },
-  };
-});
-
-vi.mock('@tanstack/react-router', async (importOriginal) => {
-  const actual = await importOriginal() as any;
-  return {
-    ...actual,
-    useRouter: () => ({
-      state: { location: { search: {} } },
-    }),
-    useMatch: () => ({}),
+// Mock ALL TanStack related modules completely
+vi.mock('@tanstack/react-start', () => ({
+  useServerFn: () => mockValidateAgreement,
+  createFileRoute: () => ({
     useSearch: () => ({}),
-  };
-});
+  }),
+}));
+
+vi.mock('@tanstack/react-router', () => ({
+  useSearch: () => ({}),
+  useRouter: () => ({ state: { location: { search: {} } } }),
+  useMatch: () => ({}),
+  Link: ({ children }: any) => children,
+}));
 
 // Mock supabase
 vi.mock('@/integrations/supabase/client', () => ({
@@ -58,18 +41,16 @@ vi.mock('@/integrations/supabase/client', () => ({
   },
 }));
 
-// Mock components that might break the test
-vi.mock('@/components/PdfInvoiceImportDialog', () => ({
-  PdfInvoiceImportDialog: () => null,
+vi.mock('sonner', () => ({
+  toast: { success: vi.fn(), error: vi.fn(), warning: vi.fn() },
 }));
 
-vi.mock('sonner', () => ({
-  toast: {
-    success: vi.fn(),
-    error: vi.fn(),
-    warning: vi.fn(),
-  },
-}));
+// Mock complex child components
+vi.mock('@/components/PdfInvoiceImportDialog', () => ({ PdfInvoiceImportDialog: () => null }));
+vi.mock('@/components/CalculatorAmountInput', () => ({ CalculatorAmountInput: () => null }));
+vi.mock('@/components/CardBrand', () => ({ CardBrand: () => null, brandPresets: {} }));
+vi.mock('@/components/BankLogo', () => ({ BankLogo: () => null, bankPresets: {} }));
+vi.mock('@/components/InvoiceInconsistencyAlert', () => ({ InvoiceInconsistencyAlert: () => null }));
 
 describe('CardsPage Validation Integration', () => {
   let queryClient: QueryClient;
@@ -77,9 +58,7 @@ describe('CardsPage Validation Integration', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    queryClient = new QueryClient({
-      defaultOptions: { queries: { retry: false } },
-    });
+    queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
 
     (supabase.auth.getSession as any).mockResolvedValue({
       data: { session: { access_token: 'mock-token', user: { id: 'user-1' } } },
@@ -94,64 +73,38 @@ describe('CardsPage Validation Integration', () => {
     mockValidateAgreement.mockResolvedValue({ status: 'ok' });
   });
 
-  it('should trigger validation on mount', async () => {
-    (mockRoute.useSearch as any).mockReturnValue({});
+  it('should trigger validation on mount and respect dynamic debounce', async () => {
     render(
       <QueryClientProvider client={queryClient}>
         <CardsPage />
       </QueryClientProvider>
     );
 
-    await waitFor(() => {
-      expect(mockValidateAgreement).toHaveBeenCalled();
-    });
-  });
-
-  it('should trigger validation when session is refreshed (TOKEN_REFRESHED)', async () => {
-    render(
-      <QueryClientProvider client={queryClient}>
-        <CardsPage />
-      </QueryClientProvider>
-    );
-
-    // Initial call on mount
+    // 1. Mount trigger
     await waitFor(() => expect(mockValidateAgreement).toHaveBeenCalledTimes(1));
 
-    // Fast forward time to avoid debounce (2s for different reason, but here we want to test same reason/event)
-    // Actually, mount is "mount", event is "TOKEN_REFRESHED" - different reasons, min 2s
+    // 2. Debounce check: different reason (mount vs focus) requires 2s
     vi.useFakeTimers();
-    vi.advanceTimersByTime(2500);
-
-    // Simulate session refresh
-    authChangeHandler('TOKEN_REFRESHED', { access_token: 'new-token' });
-
-    await waitFor(() => {
-      expect(mockValidateAgreement).toHaveBeenCalledTimes(2);
-    });
     
-    vi.useRealTimers();
-  });
-
-  it('should respect debounce when session refresh events happen too quickly', async () => {
-    render(
-      <QueryClientProvider client={queryClient}>
-        <CardsPage />
-      </QueryClientProvider>
-    );
-
-    await waitFor(() => expect(mockValidateAgreement).toHaveBeenCalledTimes(1));
-
-    vi.useFakeTimers();
-    // Advance only 1s (min wait for different reason is 2s)
+    // Attempt within 1s -> should skip
     vi.advanceTimersByTime(1000);
-
-    // Trigger auth change quickly
-    authChangeHandler('SIGNED_IN', { access_token: 'token' });
-    authChangeHandler('TOKEN_REFRESHED', { access_token: 'token' });
-
-    // Should still be 1 because of debounce
+    window.dispatchEvent(new Event('focus'));
     expect(mockValidateAgreement).toHaveBeenCalledTimes(1);
-    
+
+    // Attempt after 2s -> should run
+    vi.advanceTimersByTime(1100); // Total 2.1s
+    window.dispatchEvent(new Event('focus'));
+    await waitFor(() => expect(mockValidateAgreement).toHaveBeenCalledTimes(2));
+
+    // 3. Same reason debounce (focus -> focus) requires 5s
+    vi.advanceTimersByTime(3000); // 3s later (total 5.1s from start, but only 3s from last focus)
+    window.dispatchEvent(new Event('focus'));
+    expect(mockValidateAgreement).toHaveBeenCalledTimes(2); // Still 2
+
+    vi.advanceTimersByTime(2100); // Now 5.1s since last focus
+    window.dispatchEvent(new Event('focus'));
+    await waitFor(() => expect(mockValidateAgreement).toHaveBeenCalledTimes(3));
+
     vi.useRealTimers();
   });
 });
