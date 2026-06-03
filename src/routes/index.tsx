@@ -1163,6 +1163,15 @@ function Dashboard() {
 
                   <div className="flex flex-col h-full">
                     <div className="flex items-start justify-between mb-auto">
+                      <div className={cn(
+                        "flex h-9 w-12 shrink-0 items-end justify-start p-1 rounded-md bg-gradient-to-br text-base shadow-sm relative overflow-hidden", 
+                        card.color || "from-primary/20 to-primary/10"
+                      )}>
+                        <div className="absolute top-1.5 left-1.5 h-1.5 w-2.5 rounded-[1px] bg-white/30" />
+                        <span className="text-[7px] font-bold text-white/90 leading-none truncate max-w-full tracking-tighter relative">
+                          {card.name.toUpperCase()}
+                        </span>
+                      </div>
                       <span className="text-xl">{card.emoji || "💳"}</span>
                     </div>
                     
