@@ -238,11 +238,7 @@ describe('CardsPage Validation Integration', () => {
     vi.useRealTimers();
   });
 
-  it('should allow retry after a failed validation even if within the same reason debounce window', async () => {
-    // Note: The current implementation sets lastValidationRef.current *before* the try/catch.
-    // However, if the call fails, we might want to allow a retry sooner.
-    // Let's check how it behaves currently and if we need to adjust the code.
-    
+  it('should allow immediate retry after a failed validation', async () => {
     vi.useFakeTimers();
     render(
       <QueryClientProvider client={queryClient}>
@@ -250,35 +246,30 @@ describe('CardsPage Validation Integration', () => {
       </QueryClientProvider>
     );
 
-    // Initial mount call
+    // 1. Initial mount call
     await act(async () => { vi.runOnlyPendingTimers(); });
     expect(mockValidateAgreement).toHaveBeenCalledTimes(1);
 
-    // Fail the next call
+    // 2. Mock a failure for the next call
     mockValidateAgreement.mockRejectedValueOnce(new Error('Server Error'));
 
-    vi.advanceTimersByTime(2100); // Pass different reason debounce
-    
+    // Trigger focus - should attempt and fail
     await act(async () => {
+      vi.advanceTimersByTime(2100); // Pass different reason debounce
       window.dispatchEvent(new Event('focus'));
     });
     expect(mockValidateAgreement).toHaveBeenCalledTimes(2);
 
-    // Now it failed. The user might click a manual "Retry" button (silent = false)
-    // The current code ALWAYS allows manual triggers (silent = false) regardless of debounce.
-    
+    // 3. Debounce should be reset because of the error. 
+    // Triggering focus AGAIN immediately should work.
     await act(async () => {
-      // Manual trigger should NOT be debounced
-      // We can't easily trigger the exact runValidation with silent=false from window event,
-      // but we can test if the logic supports it.
+      vi.advanceTimersByTime(100); // Very short time
+      window.dispatchEvent(new Event('focus'));
     });
+    
+    // Total should be 3 because the error reset the debounce
+    expect(mockValidateAgreement).toHaveBeenCalledTimes(3);
 
     vi.useRealTimers();
-  });
-
-  it('should reset last validation timestamp on failure to allow immediate retry if logic allows', async () => {
-    // I need to modify the source code to support "retry on failure" or confirm manual bypass works.
-    // The user asked to "ensure debounce doesn't mask retries when it makes sense".
-    // Usually, if a validation fails, we SHOULD allow a retry sooner than 5s.
   });
 });
