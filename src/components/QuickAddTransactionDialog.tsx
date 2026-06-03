@@ -146,18 +146,6 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
      }
 
      if (isFirstRender.current) {
-       // On initial open, handle potential clipboard paste
-       navigator.clipboard.readText().then(text => {
-         if (text && text.trim()) {
-           setNewTx(prev => ({
-             ...prev,
-             name: text.trim().charAt(0).toUpperCase() + text.trim().slice(1)
-           }));
-           toast.success("Texto colado da área de transferência");
-         }
-       }).catch(() => {
-         // Silently fail if clipboard access is denied
-       });
        isFirstRender.current = false;
      }
 
@@ -251,13 +239,13 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
         
         const { error, data } = await supabase.from("transactions").insert([
           {
-            icon: "🔄", name: `Transferência → ${toName}`, category: "Transferências > Outros",
+            icon: "🔄", name: newTx.name.trim() || `Transferência → ${toName}`, category: "Transferências > Outros",
             date: newTx.date, amount: newTx.amount, type: "expense",
             card: null, bank_account_id: transferFromId, installment_group_id: groupId,
             is_visible: true
           },
           {
-            icon: "🔄", name: `Transferência ← ${fromName}`, category: "Transferências > Outros",
+            icon: "🔄", name: newTx.name.trim() || `Transferência ← ${fromName}`, category: "Transferências > Outros",
             date: newTx.date, amount: newTx.amount, type: "income",
             card: null, bank_account_id: transferToId, installment_group_id: groupId,
             is_visible: true
@@ -393,6 +381,30 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
 
           {isTransfer ? (
             <>
+               <div>
+                 <label className="text-[11px] font-semibold text-foreground mb-0.5 block">Nome (Opcional)</label>
+                   <input
+                     autoFocus
+                     inputMode={nameInputMode}
+                     id="tx-transfer-name-input"
+                    value={newTx.name}
+                    onChange={e => {
+                      let name = e.target.value;
+                      if (name.length > 0) {
+                        name = name.charAt(0).toUpperCase() + name.slice(1);
+                      }
+                      setNewTx({ ...newTx, name });
+                    }}
+                    onBlur={() => setNameInputMode("none")}
+                    onClick={(e) => {
+                      const target = e.currentTarget;
+                      setNameInputMode("text");
+                      setTimeout(() => target.focus(), 0);
+                    }}
+                    placeholder="Ex: Transferência aluguel"
+                    className="w-full rounded-lg bg-card px-2.5 py-1.5 text-xs text-foreground placeholder:text-muted-foreground outline-none"
+                  />
+               </div>
               <div className="rounded-xl bg-card/50 p-2.5 space-y-2">
                 <div>
                   <label className="text-[11px] font-semibold text-foreground mb-1 block">De (origem)</label>
