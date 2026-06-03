@@ -237,4 +237,39 @@ describe('CardsPage Validation Integration', () => {
 
     vi.useRealTimers();
   });
+
+  it('should allow immediate retry after a failed validation', async () => {
+    vi.useFakeTimers();
+    render(
+      <QueryClientProvider client={queryClient}>
+        <CardsPage />
+      </QueryClientProvider>
+    );
+
+    // 1. Initial mount call
+    await act(async () => { vi.runOnlyPendingTimers(); });
+    expect(mockValidateAgreement).toHaveBeenCalledTimes(1);
+
+    // 2. Mock a failure for the next call
+    mockValidateAgreement.mockRejectedValueOnce(new Error('Server Error'));
+
+    // Trigger focus - should attempt and fail
+    await act(async () => {
+      vi.advanceTimersByTime(2100); // Pass different reason debounce
+      window.dispatchEvent(new Event('focus'));
+    });
+    expect(mockValidateAgreement).toHaveBeenCalledTimes(2);
+
+    // 3. Debounce should be reset because of the error. 
+    // Triggering focus AGAIN immediately should work.
+    await act(async () => {
+      vi.advanceTimersByTime(100); // Very short time
+      window.dispatchEvent(new Event('focus'));
+    });
+    
+    // Total should be 3 because the error reset the debounce
+    expect(mockValidateAgreement).toHaveBeenCalledTimes(3);
+
+    vi.useRealTimers();
+  });
 });

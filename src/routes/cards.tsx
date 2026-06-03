@@ -224,6 +224,8 @@ export function CardsPage() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) {
         if (!silent) toast.error("Sessão expirada. Faça login novamente para validar.");
+        // Reset timestamp so it can retry immediately once session is restored
+        lastValidationRef.current = { timestamp: 0, reason: "session_reset" };
         return;
       }
 
@@ -240,6 +242,10 @@ export function CardsPage() {
       }
     } catch (error: any) {
       console.error("Validation error:", error);
+      
+      // On error, we reset the timestamp to allow a retry sooner if triggered again
+      lastValidationRef.current = { timestamp: 0, reason: "error_retry" };
+
       let message = error?.message || "Erro desconhecido";
       if (error instanceof Response) {
         message = await error.text().catch(() => "Falha de autorização");
