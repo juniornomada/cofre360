@@ -977,14 +977,14 @@ export function CardsPage() {
                       <p className="text-[10px] text-emerald-300 font-bold tabular-nums drop-shadow-sm truncate">
                         ✓ R$ {totalPaid.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} pago
                       </p>
-                      <p className="text-[10px] text-white/80 tabular-nums" title={`Limite total: R$ ${card.card_limit.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`}>
+                      <p className="text-[10px] text-white/80 tabular-nums" title={`Limite total: R$ ${(card.card_limit || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`}>
                         Disponível <span className="font-bold text-white">R$ {Math.max(0, card.card_limit - outstandingBalance).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
                       </p>
                     </div>
                   ) : (
                     <div className="flex items-center justify-between gap-2 mt-1">
                       <p className="text-[10px] text-white/70 tabular-nums">
-                        de R$ {card.card_limit.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                        de R$ {(card.card_limit || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                       </p>
                       <p className="text-[10px] text-white/80 tabular-nums">
                         Disponível <span className="font-bold text-white">R$ {Math.max(0, card.card_limit - outstandingBalance).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
@@ -1087,10 +1087,14 @@ export function CardsPage() {
                           {d.status.toUpperCase()}
                         </Badge>
                       </div>
-                      <div className="flex justify-between items-center text-[10px] text-muted-foreground">
-                        <span>Valor no Cartão: <strong>R$ {d.cardValue.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong></span>
-                        <span>Soma da Fatura: <strong>R$ {d.faturaValue.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong></span>
-                      </div>
+                      {d.type === 'amount' ? (
+                        <div className="flex justify-between items-center text-[10px] text-muted-foreground">
+                          <span>Valor no Cartão: <strong>R$ {(d.cardValue || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong></span>
+                          <span>Soma da Fatura: <strong>R$ {(d.faturaValue || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong></span>
+                        </div>
+                      ) : (
+                        <p className="text-[10px] text-muted-foreground">Nenhuma fatura encontrada para este cartão nos últimos meses.</p>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -1206,7 +1210,7 @@ export function CardsPage() {
                 <div className="mx-5 mb-3 rounded-xl bg-accent/50 p-3 flex justify-between items-center">
                   <span className="text-xs font-medium text-muted-foreground">Total da fatura</span>
                   <span className="text-sm font-bold text-destructive tabular-nums" data-testid="total-da-fatura-valor">
-                    R$ {activePeriod.total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                    R$ {(activePeriod.total || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                   </span>
 
                 </div>
@@ -1416,7 +1420,7 @@ export function CardsPage() {
                               <SelectItem key={acc.id} value={acc.id} className="text-xs">
                                 <div className="flex items-center gap-2">
                                   <BankLogo icon={acc.icon || "custom"} color={acc.color || "from-gray-500 to-gray-700"} name={acc.name} size="xs" />
-                                  <span>{acc.name} — R$ {acc.balance.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
+                                  <span>{acc.name} — R$ {(acc.balance || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
                                 </div>
                               </SelectItem>
                             ))}
