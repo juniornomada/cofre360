@@ -1138,14 +1138,13 @@ function Dashboard() {
             </div>
           </div>
         ) : (
-          <div className="mt-3 flex flex-col gap-1">
+          <div className="mt-4 flex gap-3 overflow-x-auto no-scrollbar pb-2 pt-1 -mx-1 px-1">
             {allCards.filter(c => c.is_visible !== false && c.is_visible !== null).map((card) => {
               const isPaid = cardInvoicePaid[card.id] || false;
-              const displayAmount = cardNextInvoices[card.name] || 0; // Sincronizado com Faturas > Atual
+              const displayAmount = cardNextInvoices[card.name] || 0;
               const paidThisMonth = cardPayments[card.id] || 0;
               
               const today = new Date();
-              // Compute due date exactly like in Cards.tsx
               let displayDue = new Date(today.getFullYear(), today.getMonth(), card.due_day || 10);
               if (displayDue < today) {
                 displayDue.setMonth(displayDue.getMonth() + 1);
@@ -1157,31 +1156,49 @@ function Dashboard() {
                 <Link 
                   key={card.id} 
                   to="/cards" 
-                  className="interactive-card flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl bg-background/40 hover:bg-background/60 transition-colors overflow-hidden relative w-full"
+                  className="interactive-card flex-none w-[160px] flex flex-col gap-3 p-3.5 rounded-2xl bg-background/50 border border-border/40 hover:bg-background/80 transition-all relative group"
                 >
-                  <div className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br text-base", card.color || "from-primary/20 to-primary/10")}>
-                    {card.emoji || "💳"}
+                  <div className="flex items-start justify-between">
+                    <div className={cn(
+                      "flex h-9 w-12 shrink-0 items-end justify-start p-1 rounded-md bg-gradient-to-br text-base shadow-sm relative overflow-hidden", 
+                      card.color || "from-primary/20 to-primary/10"
+                    )}>
+                      <div className="absolute top-1.5 left-1.5 h-1.5 w-2.5 rounded-[1px] bg-white/30" />
+                      <span className="text-[7px] font-bold text-white/90 leading-none truncate max-w-full tracking-tighter relative">
+                        {card.name.toUpperCase()}
+                      </span>
+                    </div>
+                    <span className="text-lg">{card.emoji || "💳"}</span>
                   </div>
-                  <div className="flex flex-col flex-1 min-w-0">
-                    <p className="text-xs font-medium text-foreground truncate">{card.name}</p>
-                    <span className="text-[10px] font-medium text-muted-foreground">Fatura Atual · Venc. {formatDueDate(displayDue)}</span>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <p className={cn("text-xs font-bold tabular-nums", !isPaid && displayAmount > 0 ? "text-destructive" : "text-primary")} data-testid="fatura-atual-valor">
+                  
+                  <div className="flex flex-col min-w-0">
+                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-0.5">Venc. {formatDueDate(displayDue)}</p>
+                    <p className={cn(
+                      "text-sm font-bold tabular-nums tracking-tight", 
+                      !isPaid && displayAmount > 0 ? "text-destructive" : "text-primary"
+                    )}>
                       {balanceVisible ? `R$ ${fmt(displayAmount)}` : "R$ •••"}
                     </p>
+                  </div>
 
-                    {paidThisMonth > 0 && (
-                      <p className="text-[10px] text-primary font-medium">
-                        Pago: R$ {balanceVisible ? fmt(paidThisMonth) : "•••"}
-                      </p>
-                    )}
+                  {paidThisMonth > 0 && (
+                    <div className="pt-2 border-t border-border/20 flex items-center justify-between">
+                      <span className="text-[9px] text-muted-foreground">Pago</span>
+                      <span className="text-[9px] font-bold text-primary tabular-nums">
+                        R$ {balanceVisible ? fmt(paidThisMonth) : "•••"}
+                      </span>
+                    </div>
+                  )}
+                  
+                  <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <ChevronRight className="h-3 w-3 text-muted-foreground" />
                   </div>
                 </Link>
               );
             })}
           </div>
         )}
+
       </div>
 
       {/* Recent Transactions — moved to right below balance */}
