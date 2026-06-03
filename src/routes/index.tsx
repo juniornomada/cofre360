@@ -1420,8 +1420,15 @@ function Dashboard() {
             <div className="flex flex-col gap-3">
               <div>
                 <label className="text-xs text-muted-foreground mb-1 block">Nome</label>
-                <input autoFocus={false} value={editTx.name} onChange={e => setEditTx({ ...editTx, name: e.target.value })} className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground outline-none" />
+                <input 
+                  id="edit-tx-name-input-home"
+                  autoFocus={true} 
+                  value={editTx.name} 
+                  onChange={e => setEditTx({ ...editTx, name: e.target.value })} 
+                  className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground outline-none" 
+                />
               </div>
+
               <Suspense fallback={<div className="h-20 flex items-center justify-center"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>}>
                 <CategoryPicker
                   value={editTx.category}
