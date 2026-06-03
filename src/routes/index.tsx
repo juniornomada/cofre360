@@ -193,6 +193,36 @@ function Dashboard() {
     setGreeting(getGreeting());
   }, []);
 
+  useEffect(() => {
+    if (!showEditDialog) return;
+
+    const handleGlobalPasteEdit = (e: ClipboardEvent) => {
+      const activeElement = document.activeElement;
+      const isOtherInput = (activeElement instanceof HTMLInputElement || activeElement instanceof HTMLTextAreaElement) && 
+                           activeElement.id !== "edit-tx-name-input-home";
+
+      if (!isOtherInput) {
+        const pastedText = e.clipboardData?.getData("text");
+        if (pastedText && editTx) {
+          const nameInput = document.getElementById("edit-tx-name-input-home");
+          if (nameInput && activeElement !== nameInput) {
+            e.preventDefault();
+            let formattedText = pastedText.trim();
+            if (formattedText.length > 0) {
+              formattedText = formattedText.charAt(0).toUpperCase() + formattedText.slice(1);
+            }
+            setEditTx(prev => prev ? { ...prev, name: formattedText } : null);
+            (nameInput as HTMLInputElement).focus();
+          }
+        }
+      }
+    };
+
+    window.addEventListener("paste", handleGlobalPasteEdit);
+    return () => window.removeEventListener("paste", handleGlobalPasteEdit);
+  }, [showEditDialog, editTx]);
+
+
 
 
   const handleLogout = async () => {
@@ -1420,8 +1450,15 @@ function Dashboard() {
             <div className="flex flex-col gap-3">
               <div>
                 <label className="text-xs text-muted-foreground mb-1 block">Nome</label>
-                <input autoFocus={false} value={editTx.name} onChange={e => setEditTx({ ...editTx, name: e.target.value })} className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground outline-none" />
+                <input 
+                  id="edit-tx-name-input-home"
+                  autoFocus={true} 
+                  value={editTx.name} 
+                  onChange={e => setEditTx({ ...editTx, name: e.target.value })} 
+                  className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground outline-none" 
+                />
               </div>
+
               <Suspense fallback={<div className="h-20 flex items-center justify-center"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>}>
                 <CategoryPicker
                   value={editTx.category}
