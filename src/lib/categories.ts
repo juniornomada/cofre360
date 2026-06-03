@@ -95,14 +95,14 @@ export const categoryTree: CategoryGroup[] = [
   },
   {
     label: "Compras",
-    icon: "🛍️",
+    icon: "💳",
     type: "expense",
     subcategories: [
       { label: "Roupas/Calçados", icon: "👕" },
       { label: "Eletrônicos", icon: "📱" },
       { label: "Compras Online", icon: "🛒" },
       { label: "Casa/Decoração", icon: "🛋️" },
-      { label: "Outros", icon: "🛍️" },
+      { label: "Outros", icon: "💳" },
     ],
   },
   {
