@@ -142,4 +142,44 @@ describe('CardsPage Validation Integration', () => {
 
     vi.useRealTimers();
   });
+
+  it('should trigger validation on auth events (SIGNED_IN, TOKEN_REFRESHED)', async () => {
+    vi.useFakeTimers();
+    render(
+      <QueryClientProvider client={queryClient}>
+        <CardsPage />
+      </QueryClientProvider>
+    );
+
+    // Initial mount call
+    await act(async () => { vi.runOnlyPendingTimers(); });
+    expect(mockValidateAgreement).toHaveBeenCalledTimes(1);
+
+    // SIGNED_IN after 2.1s (different reason than 'mount')
+    await act(async () => {
+      vi.advanceTimersByTime(2100);
+      authChangeHandler('SIGNED_IN', { access_token: 'token' });
+    });
+    expect(mockValidateAgreement).toHaveBeenCalledTimes(2);
+
+    // TOKEN_REFRESHED after 1s (same reason category 'SIGNED_IN'/'TOKEN_REFRESHED' categories are not same string but events)
+    // Actually the code uses the event string as reason.
+    // 'SIGNED_IN' vs 'TOKEN_REFRESHED' are different strings, so min wait is 2s.
+    
+    // Within 1s -> skip
+    await act(async () => {
+      vi.advanceTimersByTime(1000);
+      authChangeHandler('TOKEN_REFRESHED', { access_token: 'token' });
+    });
+    expect(mockValidateAgreement).toHaveBeenCalledTimes(2); // Still 2
+
+    // After 2.1s total -> run
+    await act(async () => {
+      vi.advanceTimersByTime(1100);
+      authChangeHandler('TOKEN_REFRESHED', { access_token: 'token' });
+    });
+    expect(mockValidateAgreement).toHaveBeenCalledTimes(3);
+
+    vi.useRealTimers();
+  });
 });
