@@ -1162,7 +1162,7 @@ function Dashboard() {
 
 
                   <div className="flex flex-col h-full">
-                    <div className="flex items-start justify-between mb-auto">
+                    <div className="flex items-start justify-between">
                       <div className={cn(
                         "flex h-9 w-12 shrink-0 items-end justify-start p-1 rounded-md bg-gradient-to-br text-base shadow-sm relative overflow-hidden", 
                         card.color || "from-primary/20 to-primary/10"
@@ -1175,24 +1175,30 @@ function Dashboard() {
                       <span className="text-xl">{card.emoji || "💳"}</span>
                     </div>
                     
-                    <div className="mt-2">
-                      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-0.5">Venc. {formatDueDate(displayDue)}</p>
+                    <div className="flex-1 flex flex-col justify-center py-2">
+                      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 text-center">Fatura Atual</p>
                       <p className={cn(
-                        "text-lg font-bold tabular-nums tracking-tight", 
+                        "text-2xl font-bold tabular-nums tracking-tight text-center", 
                         !isPaid && displayAmount > 0 ? "text-destructive" : "text-primary"
                       )}>
                         {balanceVisible ? `R$ ${fmt(displayAmount)}` : "R$ •••"}
                       </p>
                     </div>
 
-                    {paidThisMonth > 0 && (
-                      <div className="mt-2 pt-2 border-t border-border/20 flex items-center justify-between">
-                        <span className="text-[10px] text-muted-foreground">Pago este mês</span>
-                        <span className="text-[10px] font-bold text-primary tabular-nums">
-                          R$ {balanceVisible ? fmt(paidThisMonth) : "•••"}
-                        </span>
+                    <div className="flex items-center justify-between pt-2 border-t border-border/20">
+                      <div className="flex flex-col">
+                        <span className="text-[9px] text-muted-foreground uppercase font-medium">Vencimento</span>
+                        <span className="text-[11px] font-bold text-foreground">{formatDueDate(displayDue)}</span>
                       </div>
-                    )}
+                      {paidThisMonth > 0 && (
+                        <div className="flex flex-col items-end">
+                          <span className="text-[9px] text-muted-foreground uppercase font-medium">Pago</span>
+                          <span className="text-[11px] font-bold text-primary">
+                            R$ {balanceVisible ? fmt(paidThisMonth) : "•••"}
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                   
                   <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
