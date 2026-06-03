@@ -971,8 +971,10 @@ export function TransactionsPage() {
               <div className="relative">
                 <label className="text-xs text-muted-foreground mb-1 block">Nome</label>
                 <input
+                  id="edit-tx-name-input-page"
                   autoFocus={true}
                   inputMode={editNameMode}
+
                   value={editTx.name}
                   onChange={e => {
                     let name = e.target.value;
