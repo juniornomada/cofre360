@@ -194,19 +194,25 @@ function CardsPage() {
   const [isValidating, setIsValidating] = useState(false);
   const [activeTab, setActiveTab] = useState("list");
 
-  const lastValidationRef = useRef<number>(0);
-  const DEBOUNCE_TIME = 2000; // 2 seconds debounce
-
-  const runValidation = async (silent = true) => {
+  const lastValidationRef = useRef<{ timestamp: number; reason: string }>({ timestamp: 0, reason: "initial" });
+  
+  const runValidation = async (silent = true, reason = "manual") => {
     const now = Date.now();
-    if (now - lastValidationRef.current < DEBOUNCE_TIME) {
-      console.log("[cards] Validation skipped due to debounce");
+    const timeSinceLast = now - lastValidationRef.current.timestamp;
+    
+    // Dynamic debounce logic:
+    // - Always allow manual triggers (silent = false)
+    // - If it's the same reason (e.g. repeated 'focus' or 'TOKEN_REFRESHED'), wait at least 5 seconds
+    // - If it's a different reason, wait at least 2 seconds
+    const minWait = reason === lastValidationRef.current.reason ? 5000 : 2000;
+
+    if (silent && timeSinceLast < minWait) {
+      console.log(`[cards] Validation skipped. Reason: ${reason}, last was: ${lastValidationRef.current.reason}. Elapsed: ${timeSinceLast}ms, required: ${minWait}ms`);
       return;
     }
-    lastValidationRef.current = now;
 
-    setIsValidating(true);
-    try {
+    lastValidationRef.current = { timestamp: now, reason };
+    console.log(`[cards] Running validation. Reason: ${reason}`);
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) {
         if (!silent) toast.error("Sessão expirada. Faça login novamente para validar.");
@@ -311,20 +317,19 @@ function CardsPage() {
 
   useEffect(() => {
     fetchAll();
-    runValidation(); // Run validation on mount to check for inconsistencies
+    runValidation(true, "mount"); // Run validation on mount to check for inconsistencies
     
     // Subscribe to auth changes to retry validation when the user signs in or refreshes session
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-        console.log(`[cards] Auth event: ${event}, retrying validation...`);
-        runValidation(true);
+        runValidation(true, event);
       }
     });
 
     // Re-fetch when the window regains focus to avoid stale data
     const onFocus = () => {
       fetchAll();
-      runValidation();
+      runValidation(true, "focus");
     };
     window.addEventListener("focus", onFocus);
     return () => {
