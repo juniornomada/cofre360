@@ -213,6 +213,9 @@ function CardsPage() {
 
     lastValidationRef.current = { timestamp: now, reason };
     console.log(`[cards] Running validation. Reason: ${reason}`);
+
+    setIsValidating(true);
+    try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) {
         if (!silent) toast.error("Sessão expirada. Faça login novamente para validar.");
@@ -225,7 +228,7 @@ function CardsPage() {
         if (result.status === 'ok') {
           toast.success("Validação concluída: Tudo certo!");
         } else if (result.status === 'partial') {
-          toast.warning("Validação concluída: Algumas divergências encontradas.");
+          toast.warning("Validation concluída: Algumas divergências encontradas.");
         } else {
           toast.error("Validação concluída: Erros críticos detectados!");
         }
