@@ -109,22 +109,30 @@ describe('CardsPage Validation Integration', () => {
     vi.useFakeTimers();
     
     // Attempt within 1s -> should skip
-    vi.advanceTimersByTime(1000);
-    window.dispatchEvent(new Event('focus'));
+    await act(async () => {
+      vi.advanceTimersByTime(1176);
+      window.dispatchEvent(new Event('focus'));
+    });
     expect(mockValidateAgreement).toHaveBeenCalledTimes(1);
 
     // Attempt after 2s -> should run
-    vi.advanceTimersByTime(1100); // Total 2.1s
-    window.dispatchEvent(new Event('focus'));
+    await act(async () => {
+      vi.advanceTimersByTime(2100); // More than 2s total
+      window.dispatchEvent(new Event('focus'));
+    });
     await waitFor(() => expect(mockValidateAgreement).toHaveBeenCalledTimes(2));
 
     // 3. Same reason debounce (focus -> focus) requires 5s
-    vi.advanceTimersByTime(3000); // 3s later (total 5.1s from start, but only 3s from last focus)
-    window.dispatchEvent(new Event('focus'));
+    await act(async () => {
+      vi.advanceTimersByTime(3000); // 3s later
+      window.dispatchEvent(new Event('focus'));
+    });
     expect(mockValidateAgreement).toHaveBeenCalledTimes(2); // Still 2
 
-    vi.advanceTimersByTime(2100); // Now 5.1s since last focus
-    window.dispatchEvent(new Event('focus'));
+    await act(async () => {
+      vi.advanceTimersByTime(2100); // Now >5s total since last focus
+      window.dispatchEvent(new Event('focus'));
+    });
     await waitFor(() => expect(mockValidateAgreement).toHaveBeenCalledTimes(3));
 
     vi.useRealTimers();
