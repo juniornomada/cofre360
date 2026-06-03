@@ -12,7 +12,8 @@ const mockResult = {
     discrepanciesFound: 0,
     discrepancyDetails: [],
   },
-  details: [] 
+  details: [],
+  logs: []
 };
 const mockValidateAgreement = vi.fn().mockImplementation(() => Promise.resolve(mockResult));
 
