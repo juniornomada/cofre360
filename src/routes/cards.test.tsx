@@ -182,4 +182,59 @@ describe('CardsPage Validation Integration', () => {
 
     vi.useRealTimers();
   });
+
+  it('should handle rapid sequences of session refreshes and respect dynamic debounce', async () => {
+    vi.useFakeTimers();
+    render(
+      <QueryClientProvider client={queryClient}>
+        <CardsPage />
+      </QueryClientProvider>
+    );
+
+    // 1. Initial mount call
+    await act(async () => { vi.runOnlyPendingTimers(); });
+    expect(mockValidateAgreement).toHaveBeenCalledTimes(1);
+
+    // 2. Rapid sequence of same event (TOKEN_REFRESHED)
+    // Wait 2.1s since mount to allow a new trigger (different reason: mount -> TOKEN_REFRESHED)
+    vi.advanceTimersByTime(2100);
+
+    await act(async () => {
+      // Trigger 5 times in 1 second
+      for (let i = 0; i < 5; i++) {
+        vi.advanceTimersByTime(200);
+        authChangeHandler('TOKEN_REFRESHED', { access_token: `token-${i}` });
+      }
+    });
+
+    // Should only have been called once more (total 2) because minWait for same reason is 5s
+    expect(mockValidateAgreement).toHaveBeenCalledTimes(2);
+
+    // 3. Rapid sequence of alternating events
+    // Wait 5.1s since last TOKEN_REFRESHED to allow a new trigger
+    vi.advanceTimersByTime(5100);
+
+    await act(async () => {
+      // Trigger SIGNED_IN (different reason -> 2s wait)
+      authChangeHandler('SIGNED_IN', { access_token: 'token-signed-in' });
+    });
+    expect(mockValidateAgreement).toHaveBeenCalledTimes(3);
+
+    await act(async () => {
+      // Trigger TOKEN_REFRESHED immediately (different reason -> 2s wait required)
+      vi.advanceTimersByTime(500);
+      authChangeHandler('TOKEN_REFRESHED', { access_token: 'token-refreshed-fast' });
+    });
+    // Should still be 3 because 500ms < 2000ms
+    expect(mockValidateAgreement).toHaveBeenCalledTimes(3);
+
+    await act(async () => {
+      // Trigger TOKEN_REFRESHED after 2.1s (different reason -> 2s wait)
+      vi.advanceTimersByTime(1600); // Total 2.1s since last successful validation
+      authChangeHandler('TOKEN_REFRESHED', { access_token: 'token-refreshed-ok' });
+    });
+    expect(mockValidateAgreement).toHaveBeenCalledTimes(4);
+
+    vi.useRealTimers();
+  });
 });
