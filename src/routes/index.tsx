@@ -1176,7 +1176,6 @@ function Dashboard() {
                     </div>
                     
                     <div className="flex-1 flex flex-col justify-center py-2">
-                      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 text-center">Fatura Atual</p>
                       <p className={cn(
                         "text-2xl font-bold tabular-nums tracking-tight text-center", 
                         !isPaid && displayAmount > 0 ? "text-destructive" : "text-primary"
@@ -1187,12 +1186,10 @@ function Dashboard() {
 
                     <div className="flex items-center justify-between pt-2 border-t border-border/20">
                       <div className="flex flex-col">
-                        <span className="text-[9px] text-muted-foreground uppercase font-medium">Vencimento</span>
                         <span className="text-[11px] font-bold text-foreground">{formatDueDate(displayDue)}</span>
                       </div>
                       {paidThisMonth > 0 && (
                         <div className="flex flex-col items-end">
-                          <span className="text-[9px] text-muted-foreground uppercase font-medium">Pago</span>
                           <span className="text-[11px] font-bold text-primary">
                             R$ {balanceVisible ? fmt(paidThisMonth) : "•••"}
                           </span>
