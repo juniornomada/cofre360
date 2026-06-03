@@ -10,6 +10,25 @@ export const setAuthToken = (token: string | null) => {
 
 const axiosInstance = axios.create();
 
+axiosInstance.interceptors.request.use((config) => {
+  if (isRefreshing) {
+    return new Promise((resolve) => {
+      retryQueue.push(() => {
+        if (config.headers && authToken) {
+          config.headers['Authorization'] = `Bearer ${authToken}`;
+        }
+        resolve(config);
+      });
+    });
+  }
+  
+  if (authToken && config.headers) {
+    config.headers['Authorization'] = `Bearer ${authToken}`;
+  }
+  
+  return config;
+});
+
 axiosInstance.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -44,7 +63,8 @@ axiosInstance.interceptors.response.use(
       }
     }
 
-    // While refreshing, queue the requests
+    // This part might not be reached if request interceptor is working,
+    // but it's good for robustness in case multiple requests are sent simultaneously
     return new Promise((resolve) => {
       retryQueue.push(() => {
         if (config.headers && authToken) {
