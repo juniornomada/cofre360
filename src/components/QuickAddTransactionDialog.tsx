@@ -177,6 +177,44 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
     }
   }, [open, initialType, fetchData, fetchHistory]);
 
+  useEffect(() => {
+    if (!open) return;
+
+    const handleGlobalPaste = (e: ClipboardEvent) => {
+      // Don't intercept if we're already in an input/textarea, 
+      // unless it's the name input itself (where we want standard behavior)
+      const activeElement = document.activeElement;
+      const isOtherInput = (activeElement instanceof HTMLInputElement || activeElement instanceof HTMLTextAreaElement) && 
+                           activeElement.id !== "tx-name-input" && 
+                           activeElement.id !== "tx-transfer-name-input";
+
+      if (!isOtherInput) {
+        const pastedText = e.clipboardData?.getData("text");
+        if (pastedText) {
+          // If we're not already focused on a name input, we focus it and let the paste happen, 
+          // or we manually update the state if needed. 
+          // Actually, if we focus it, the browser will paste into it automatically if we don't preventDefault.
+          const nameInputId = isTransfer ? "tx-transfer-name-input" : "tx-name-input";
+          const nameInput = document.getElementById(nameInputId);
+          
+          if (nameInput && activeElement !== nameInput) {
+            e.preventDefault();
+            let formattedText = pastedText.trim();
+            if (formattedText.length > 0) {
+              formattedText = formattedText.charAt(0).toUpperCase() + formattedText.slice(1);
+            }
+            setNewTx(prev => ({ ...prev, name: formattedText }));
+            (nameInput as HTMLInputElement).focus();
+          }
+        }
+      }
+    };
+
+    window.addEventListener("paste", handleGlobalPaste);
+    return () => window.removeEventListener("paste", handleGlobalPaste);
+  }, [open, isTransfer]);
+
+
   const [confirmInstallmentDiff, setConfirmInstallmentDiff] = useState(false);
 
   const installmentDetails = calculateInstallmentDetails(
