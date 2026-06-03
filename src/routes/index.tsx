@@ -193,6 +193,36 @@ function Dashboard() {
     setGreeting(getGreeting());
   }, []);
 
+  useEffect(() => {
+    if (!showEditDialog) return;
+
+    const handleGlobalPasteEdit = (e: ClipboardEvent) => {
+      const activeElement = document.activeElement;
+      const isOtherInput = (activeElement instanceof HTMLInputElement || activeElement instanceof HTMLTextAreaElement) && 
+                           activeElement.id !== "edit-tx-name-input-home";
+
+      if (!isOtherInput) {
+        const pastedText = e.clipboardData?.getData("text");
+        if (pastedText && editTx) {
+          const nameInput = document.getElementById("edit-tx-name-input-home");
+          if (nameInput && activeElement !== nameInput) {
+            e.preventDefault();
+            let formattedText = pastedText.trim();
+            if (formattedText.length > 0) {
+              formattedText = formattedText.charAt(0).toUpperCase() + formattedText.slice(1);
+            }
+            setEditTx(prev => prev ? { ...prev, name: formattedText } : null);
+            (nameInput as HTMLInputElement).focus();
+          }
+        }
+      }
+    };
+
+    window.addEventListener("paste", handleGlobalPasteEdit);
+    return () => window.removeEventListener("paste", handleGlobalPasteEdit);
+  }, [showEditDialog, editTx]);
+
+
 
 
   const handleLogout = async () => {
