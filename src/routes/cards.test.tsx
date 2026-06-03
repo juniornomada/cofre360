@@ -4,7 +4,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { CardsPage } from './cards';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
-const mockValidateAgreement = vi.fn();
+const mockResult = { 
+  status: 'ok', 
+  totalCardsChecked: 0, 
+  totalInconsistencies: 0, 
+  details: [] 
+};
+const mockValidateAgreement = vi.fn().mockResolvedValue(mockResult);
 
 // Mock ALL TanStack related modules completely
 vi.mock('@tanstack/react-start', async (importOriginal) => {
