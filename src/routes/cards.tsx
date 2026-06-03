@@ -243,8 +243,14 @@ export function CardsPage() {
     } catch (error: any) {
       console.error("Validation error:", error);
       
-      // On error, we reset the timestamp to allow a retry sooner if triggered again
-      lastValidationRef.current = { timestamp: 0, reason: "error_retry" };
+      // Only reset the timestamp for retryable errors (network/timeout or 401/403/5xx)
+      // 400, 404, etc. should usually not be retried immediately as they imply a client-side or static resource issue
+      const status = error instanceof Response ? error.status : 500;
+      const isRetryable = !status || status === 401 || status === 403 || status >= 500;
+
+      if (isRetryable) {
+        lastValidationRef.current = { timestamp: 0, reason: "error_retry" };
+      }
 
       let message = error?.message || "Erro desconhecido";
       if (error instanceof Response) {
