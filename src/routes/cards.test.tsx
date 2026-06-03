@@ -10,6 +10,7 @@ const mockResult = {
     totalCardsChecked: 0, 
     totalInvoicesChecked: 0,
     discrepanciesFound: 0,
+    discrepancyDetails: [],
   },
   details: [] 
 };
