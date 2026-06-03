@@ -190,7 +190,12 @@ export function CardsPage() {
   const [pdfImportCard, setPdfImportCard] = useState<CardData | null>(null);
 
   // Validation state
-  const [validationData, setValidationData] = useState<any>(null);
+  const [validationData, setValidationData] = useState<any>({
+    status: 'ok',
+    totalCardsChecked: 0,
+    totalInconsistencies: 0,
+    details: []
+  });
   const [isValidating, setIsValidating] = useState(false);
   const [activeTab, setActiveTab] = useState("list");
 
