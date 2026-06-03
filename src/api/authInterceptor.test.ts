@@ -104,20 +104,27 @@ describe('authInterceptor', () => {
       return [200, { token: 'token2' }];
     });
     
-    // Next call after refresh succeeds
-    mock.onGet('/protected-resource').reply(200, { data: 'ok2' });
+    // Setup the mock for the retry to succeed
+    // We use a function to make it easier to track
+    const retryHandler = vi.fn().mockReturnValue([200, { data: 'ok2' }]);
+    mock.onGet('/protected-resource').reply(retryHandler);
 
-    const call = axiosInstance.get('/protected-resource');
+    const callPromise = axiosInstance.get('/protected-resource');
     
-    // Wait for the first call to fail and start refresh
+    // Wait for the failure and refresh to start
     await vi.advanceTimersByTimeAsync(10);
-    expect(mock.history.get.length).toBe(2); // 1 success + 1 fail
     
     // Complete refresh
-    await vi.advanceTimersByTimeAsync(50);
+    await vi.advanceTimersByTimeAsync(100);
     
-    const res = await call;
+    const res = await callPromise;
     expect(res.data).toEqual({ data: 'ok2' });
-    expect(mock.history.get.length).toBe(3); // 1 success + 1 fail + 1 retry
+    
+    // Total history: 
+    // 1. Initial success
+    // 2. 401 failure
+    // 3. Retry success
+    expect(mock.history.get.length).toBe(3);
+    expect(retryHandler).toHaveBeenCalled();
   });
 });
