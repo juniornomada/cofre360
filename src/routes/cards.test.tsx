@@ -81,7 +81,12 @@ describe('CardsPage Validation Integration', () => {
       return { data: { subscription: { unsubscribe: vi.fn() } } };
     });
 
-    mockValidateAgreement.mockResolvedValue({ status: 'ok' });
+    mockValidateAgreement.mockResolvedValue({ 
+      status: 'ok', 
+      totalCardsChecked: 0, 
+      totalInconsistencies: 0, 
+      details: [] 
+    });
   });
 
   it('should trigger validation on mount and respect dynamic debounce', async () => {
