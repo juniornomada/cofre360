@@ -27,7 +27,10 @@ describe('useApiAuth when receiving multiple 401s in sequence', () => {
     mock.onGet('/data').replyOnce(401);
     
     // 2. Mock refresh success
-    globalMock.onPost('/refresh-token').reply(200, { token: 'new-token' });
+    globalMock.onPost('/refresh-token').reply(async () => {
+      await new Promise(r => setTimeout(r, 100));
+      return [200, { token: 'new-token' }];
+    });
     
     // 3. Mock retry success
     mock.onGet('/data').reply(200, { success: true });
