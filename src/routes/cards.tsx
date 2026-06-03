@@ -192,9 +192,13 @@ export function CardsPage() {
   // Validation state
   const [validationData, setValidationData] = useState<any>({
     status: 'ok',
-    totalCardsChecked: 0,
-    totalInconsistencies: 0,
-    details: []
+    summary: {
+      totalCardsChecked: 0,
+      totalInvoicesChecked: 0,
+      discrepanciesFound: 0,
+      discrepancyDetails: []
+    },
+    logs: []
   });
   const [isValidating, setIsValidating] = useState(false);
   const [activeTab, setActiveTab] = useState("list");
