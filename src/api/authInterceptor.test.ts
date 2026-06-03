@@ -150,18 +150,23 @@ describe('authInterceptor', () => {
     const successHandler = vi.fn();
     const errorHandler = vi.fn();
 
-    // Trigger 4 calls
-    const promises = [];
-    for (let i = 0; i < 4; i++) {
+    // Trigger 1st call
+    const promise1 = axiosInstance.get('/data')
+      .then(successHandler)
+      .catch(errorHandler);
+
+    // Wait for the first one to trigger the refresh
+    await vi.advanceTimersByTimeAsync(10);
+    
+    // Trigger 2nd, 3rd, 4th calls while refresh is in progress
+    const promises = [promise1];
+    for (let i = 0; i < 3; i++) {
       promises.push(
         axiosInstance.get('/data')
           .then(successHandler)
           .catch(errorHandler)
       );
     }
-
-    // Wait for the first one to trigger the refresh
-    await vi.advanceTimersByTimeAsync(10);
     
     // At this point, 1st call failed and started refresh.
     // 2nd, 3rd, 4th calls were intercepted and queued by our request interceptor
