@@ -4,6 +4,12 @@ let isRefreshing = false;
 let retryQueue: Array<() => void> = [];
 let authToken: string | null = null;
 
+export const resetAuthInterceptor = () => {
+  isRefreshing = false;
+  retryQueue = [];
+  authToken = null;
+};
+
 export const setAuthToken = (token: string | null) => {
   authToken = token;
 };
