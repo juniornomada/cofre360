@@ -1161,37 +1161,39 @@ function Dashboard() {
                 >
 
 
-                  <div className="flex items-start justify-between">
-                    <div className={cn(
-                      "flex h-9 w-12 shrink-0 items-end justify-start p-1 rounded-md bg-gradient-to-br text-base shadow-sm relative overflow-hidden", 
-                      card.color || "from-primary/20 to-primary/10"
-                    )}>
-                      <div className="absolute top-1.5 left-1.5 h-1.5 w-2.5 rounded-[1px] bg-white/30" />
-                      <span className="text-[7px] font-bold text-white/90 leading-none truncate max-w-full tracking-tighter relative">
-                        {card.name.toUpperCase()}
-                      </span>
+                  <div className="flex flex-col h-full">
+                    <div className="flex items-start justify-between mb-auto">
+                      <div className={cn(
+                        "flex h-9 w-12 shrink-0 items-end justify-start p-1 rounded-md bg-gradient-to-br text-base shadow-sm relative overflow-hidden", 
+                        card.color || "from-primary/20 to-primary/10"
+                      )}>
+                        <div className="absolute top-1.5 left-1.5 h-1.5 w-2.5 rounded-[1px] bg-white/30" />
+                        <span className="text-[7px] font-bold text-white/90 leading-none truncate max-w-full tracking-tighter relative">
+                          {card.name.toUpperCase()}
+                        </span>
+                      </div>
+                      <span className="text-xl">{card.emoji || "💳"}</span>
                     </div>
-                    <span className="text-lg">{card.emoji || "💳"}</span>
-                  </div>
-                  
-                  <div className="flex flex-col min-w-0">
-                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-0.5">Venc. {formatDueDate(displayDue)}</p>
-                    <p className={cn(
-                      "text-sm font-bold tabular-nums tracking-tight", 
-                      !isPaid && displayAmount > 0 ? "text-destructive" : "text-primary"
-                    )}>
-                      {balanceVisible ? `R$ ${fmt(displayAmount)}` : "R$ •••"}
-                    </p>
-                  </div>
+                    
+                    <div className="mt-2">
+                      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-0.5">Venc. {formatDueDate(displayDue)}</p>
+                      <p className={cn(
+                        "text-lg font-bold tabular-nums tracking-tight", 
+                        !isPaid && displayAmount > 0 ? "text-destructive" : "text-primary"
+                      )}>
+                        {balanceVisible ? `R$ ${fmt(displayAmount)}` : "R$ •••"}
+                      </p>
+                    </div>
 
-                  {paidThisMonth > 0 && (
-                    <div className="pt-2 border-t border-border/20 flex items-center justify-between">
-                      <span className="text-[9px] text-muted-foreground">Pago</span>
-                      <span className="text-[9px] font-bold text-primary tabular-nums">
-                        R$ {balanceVisible ? fmt(paidThisMonth) : "•••"}
-                      </span>
-                    </div>
-                  )}
+                    {paidThisMonth > 0 && (
+                      <div className="mt-2 pt-2 border-t border-border/20 flex items-center justify-between">
+                        <span className="text-[10px] text-muted-foreground">Pago este mês</span>
+                        <span className="text-[10px] font-bold text-primary tabular-nums">
+                          R$ {balanceVisible ? fmt(paidThisMonth) : "•••"}
+                        </span>
+                      </div>
+                    )}
+                  </div>
                   
                   <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
                     <ChevronRight className="h-3 w-3 text-muted-foreground" />
