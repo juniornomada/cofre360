@@ -61,7 +61,9 @@ describe('useApiAuth when receiving multiple 401s in sequence', () => {
     expect(successHandler).toHaveBeenCalledTimes(0);
 
     // Finish the refresh
-    await vi.advanceTimersByTimeAsync(100);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(100);
+    });
     
     // Now the 1st call's retry should have finished
     expect(successHandler).toHaveBeenCalledTimes(1);
