@@ -303,13 +303,24 @@ function CardsPage() {
     fetchAll();
     runValidation(); // Run validation on mount to check for inconsistencies
     
+    // Subscribe to auth changes to retry validation when the user signs in or refreshes session
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        console.log(`[cards] Auth event: ${event}, retrying validation...`);
+        runValidation(true);
+      }
+    });
+
     // Re-fetch when the window regains focus to avoid stale data
     const onFocus = () => {
       fetchAll();
       runValidation();
     };
     window.addEventListener("focus", onFocus);
-    return () => window.removeEventListener("focus", onFocus);
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      subscription.unsubscribe();
+    };
   }, [fetchAll]);
 
   const searchParams = Route.useSearch();
