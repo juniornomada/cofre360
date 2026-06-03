@@ -7,12 +7,16 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 const mockValidateAgreement = vi.fn();
 
 // Mock ALL TanStack related modules completely
-vi.mock('@tanstack/react-start', () => ({
-  useServerFn: () => mockValidateAgreement,
-  createFileRoute: () => ({
-    useSearch: () => ({}),
-  }),
-}));
+vi.mock('@tanstack/react-start', async (importOriginal) => {
+  const actual = await importOriginal() as any;
+  return {
+    ...actual,
+    useServerFn: () => mockValidateAgreement,
+    createFileRoute: () => ({
+      useSearch: () => ({}),
+    }),
+  };
+});
 
 vi.mock('@tanstack/react-router', () => ({
   useSearch: () => ({}),
