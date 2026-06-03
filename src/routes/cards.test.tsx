@@ -70,8 +70,8 @@ vi.mock('sonner', () => ({
 // Mock complex child components
 vi.mock('@/components/PdfInvoiceImportDialog', () => ({ PdfInvoiceImportDialog: () => null }));
 vi.mock('@/components/CalculatorAmountInput', () => ({ CalculatorAmountInput: () => null }));
-vi.mock('@/components/CardBrand', () => ({ CardBrand: () => null, brandPresets: {} }));
-vi.mock('@/components/BankLogo', () => ({ BankLogo: () => null, bankPresets: {} }));
+vi.mock('@/components/CardBrand', () => ({ CardBrand: () => null, brandPresets: [] }));
+vi.mock('@/components/BankLogo', () => ({ BankLogo: () => null, bankPresets: [] }));
 vi.mock('@/components/InvoiceInconsistencyAlert', () => ({ InvoiceInconsistencyAlert: () => null }));
 
 describe('CardsPage Validation Integration', () => {
