@@ -411,4 +411,43 @@ describe('CardsPage Validation Integration', () => {
 
     vi.useRealTimers();
   });
+
+  it('should reset debounce when session is missing to allow immediate retry after login', async () => {
+    vi.useFakeTimers();
+    
+    // Start with no session
+    (supabase.auth.getSession as any).mockResolvedValueOnce({
+      data: { session: null },
+      error: null,
+    });
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <CardsPage />
+      </QueryClientProvider>
+    );
+
+    // 1. Initial mount call (should check session and stop)
+    await act(async () => { vi.runOnlyPendingTimers(); });
+    expect(mockValidateAgreement).not.toHaveBeenCalled();
+
+    // 2. Mock session being restored
+    (supabase.auth.getSession as any).mockResolvedValue({
+      data: { session: { access_token: 'valid-token', user: { id: 'user-1' } } },
+      error: null,
+    });
+
+    // 3. Trigger SIGNED_IN event (this is what happens when user logs in)
+    await act(async () => {
+      // Even though 'mount' attempted validation 100ms ago, 
+      // the failure to find a session should have reset the debounce.
+      vi.advanceTimersByTime(100);
+      authChangeHandler('SIGNED_IN', { access_token: 'valid-token' });
+    });
+
+    // Should trigger immediately because of reset
+    expect(mockValidateAgreement).toHaveBeenCalledTimes(1);
+
+    vi.useRealTimers();
+  });
 });
