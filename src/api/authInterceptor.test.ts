@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import axiosInstance from './authInterceptor';
+import axiosInstance, { resetAuthInterceptor } from './authInterceptor';
 import axios from 'axios';
 import AxiosMockAdapter from 'axios-mock-adapter';
 
