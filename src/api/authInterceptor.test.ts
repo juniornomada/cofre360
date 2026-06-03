@@ -120,5 +120,3 @@ describe('authInterceptor', () => {
     expect(mock.history.get.length).toBe(3); // 1 success + 1 fail + 1 retry
   });
 });
-
-});
