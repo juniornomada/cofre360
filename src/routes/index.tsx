@@ -843,7 +843,7 @@ function Dashboard() {
       const d = parseTxDateToDate(tx.date);
       let key: string;
       let label: string;
-      if (d && isToday(d)) { key = "1-today"; label = "Hoje"; }
+      if (d && isTodayLocal(d)) { key = "1-today"; label = "Hoje"; }
       else if (d && isYesterday(d)) { key = "2-yesterday"; label = "Ontem"; }
       else if (d) {
         const monthsAbbr = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
