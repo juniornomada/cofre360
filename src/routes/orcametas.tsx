@@ -135,9 +135,10 @@ function OrcaMetasPage() {
 
   useEffect(() => { fetchBudget(); fetchGoals(); }, [fetchBudget, fetchGoals]);
 
-  const now = new Date();
-  const currentMonth = now.getMonth();
-  const currentYear = now.getFullYear();
+  const userZone = 'America/Sao_Paulo';
+  const nowLocal = DateTime.now().setZone(userZone);
+  const currentMonth = nowLocal.month - 1;
+  const currentYear = nowLocal.year;
   const monthLabel = `${MONTH_NAMES[currentMonth]} ${currentYear}`;
 
   const { spentByFull, spentByGroup, spentBySub } = useMemo(() => {
