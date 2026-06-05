@@ -148,7 +148,8 @@ function OrcaMetasPage() {
     for (const tx of transactions) {
       const d = parseTxDate(tx.date);
       if (!d) continue;
-      if (d.getMonth() !== currentMonth || d.getFullYear() !== currentYear) continue;
+      const dTime = DateTime.fromJSDate(d).setZone(userZone);
+      if (dTime.month - 1 !== currentMonth || dTime.year !== currentYear) continue;
       const raw = (tx.category || "").trim();
       if (!raw) continue;
       const amount = Number(tx.amount || 0);
