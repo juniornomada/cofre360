@@ -208,7 +208,7 @@ export function CardsPage() {
   const lastValidationRef = useRef<{ timestamp: number; reason: string }>({ timestamp: 0, reason: "initial" });
   
   const runValidation = async (silent = true, reason = "manual") => {
-    const now = Date.now();
+    const now = DateTime.now().setZone('America/Sao_Paulo').toMillis();
     const timeSinceLast = now - lastValidationRef.current.timestamp;
     
     // Dynamic debounce logic:
