@@ -1,8 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Bell, Plus, Check, Trash2, Pencil, CalendarIcon, Loader2, Clock, Wallet, CreditCard, Repeat, Search, Landmark } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
-import { format, parse, isPast, isToday, isTomorrow, differenceInDays } from "date-fns";
+import { format, parse, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { DateTime } from "luxon";
+import { isTodayLocal } from "@/lib/date-utils";
 import { cn, normalizeText } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
