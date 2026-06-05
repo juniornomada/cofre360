@@ -1012,7 +1012,7 @@ function RemindersPage() {
                     className={cn("w-full justify-start text-left font-normal", !payDate && "text-muted-foreground")}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {isToday(payDate) ? "Hoje" : format(payDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                    {isTodayLocal(payDate) ? "Hoje" : format(payDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
