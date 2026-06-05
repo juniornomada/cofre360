@@ -12,6 +12,20 @@ import { Button } from "@/components/ui/button";
 import { Toaster } from "@/components/ui/sonner";
 import appCss from "../styles.css?url";
 
+type AlertType = 'success' | 'error' | 'warning' | 'info';
+
+interface AlertContextType {
+  showAlert: (message: string, type?: AlertType) => void;
+}
+
+const AlertContext = createContext<AlertContextType | undefined>(undefined);
+
+export const useAlert = () => {
+  const context = useContext(AlertContext);
+  if (!context) throw new Error("useAlert must be used within an AlertProvider");
+  return context;
+};
+
 const BottomNav = lazy(() => import("@/components/BottomNav").then(m => ({ default: m.BottomNav })));
 
 
