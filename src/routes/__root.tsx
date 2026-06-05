@@ -184,6 +184,22 @@ function RootShell({ children }: { children: React.ReactNode }) {
     }
   }, [session, authLoading, router.state.location.pathname]);
 
+  const showAlert = useCallback((message: string, type: AlertType = 'info') => {
+    switch (type) {
+      case 'success':
+        toast.success(message, { icon: <CheckCircle2 className="h-4 w-4 text-green-500" /> });
+        break;
+      case 'error':
+        toast.error(message, { icon: <AlertCircle className="h-4 w-4 text-destructive" /> });
+        break;
+      case 'warning':
+        toast.warning(message, { icon: <AlertTriangle className="h-4 w-4 text-amber-500" /> });
+        break;
+      default:
+        toast(message, { icon: <Info className="h-4 w-4 text-blue-500" /> });
+    }
+  }, []);
+
   if (authLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
@@ -196,13 +212,14 @@ function RootShell({ children }: { children: React.ReactNode }) {
    const isComparisonMode = search.compare === 'theme';
 
   return (
-    <TooltipProvider>
-      <div className={cn(
-        "mx-auto min-h-screen bg-background pb-20",
-        !isComparisonMode && "max-w-md"
-      )}>
-        <Outlet />
-        {!isComparisonMode && (
+    <AlertContext.Provider value={{ showAlert }}>
+      <TooltipProvider>
+        <div className={cn(
+          "mx-auto min-h-screen bg-background pb-20",
+          !isComparisonMode && "max-w-md"
+        )}>
+          <Outlet />
+          {!isComparisonMode && (
           <Suspense fallback={
             <div className="fixed bottom-0 left-0 right-0 h-16 bg-card/80 flex items-center justify-center border-t border-border">
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
