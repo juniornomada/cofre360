@@ -50,34 +50,13 @@ vi.mock('@/components/SmartLink', () => ({
 }));
 
 // Mock lucide-react icons
-vi.mock('lucide-react', () => ({
-  TrendingUp: () => <div data-testid="icon-trending-up" />,
-  Eye: () => <div data-testid="icon-eye" />,
-  EyeOff: () => <div data-testid="icon-eye-off" />,
-  Bell: () => <div data-testid="icon-bell" />,
-  Pencil: () => <div />,
-  Trash2: () => <div />,
-  CalendarIcon: () => <div />,
-  Loader2: () => <div />,
-  Clock: () => <div />,
-  Wallet: () => <div />,
-  ChevronRight: () => <div />,
-  ArrowUpRight: () => <div />,
-  ArrowDownRight: () => <div />,
-  AlertTriangle: () => <div />,
-  Sparkles: () => <div />,
-  Flame: () => <div />,
-  Plus: () => <div />,
-  Minus: () => <div />,
-  ArrowLeftRight: () => <div />,
-  Layers: () => <div />,
-  GripVertical: () => <div />,
-  Filter: () => <div />,
-  FilterX: () => <div />,
-  LogOut: () => <div />,
-  CreditCard: () => <div />,
-  Landmark: () => <div />,
-}));
+vi.mock('lucide-react', async (importOriginal) => {
+  const actual: any = await importOriginal();
+  return {
+    ...actual,
+    // Add any specific overrides if needed, otherwise use actual
+  };
+});
 
 describe('Dashboard (Home Page)', () => {
   beforeEach(() => {
