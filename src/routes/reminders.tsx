@@ -64,7 +64,7 @@ function RemindersPage() {
   const [showPayDialog, setShowPayDialog] = useState(false);
   const [payingReminder, setPayingReminder] = useState<Reminder | null>(null);
   const [paying, setPaying] = useState(false);
-  const [payDate, setPayDate] = useState<Date>(new Date());
+  const [payDate, setPayDate] = useState<Date>(DateTime.now().setZone('America/Sao_Paulo').toJSDate());
   const [payDateOpen, setPayDateOpen] = useState(false);
 
   const [newReminder, setNewReminder] = useState({
