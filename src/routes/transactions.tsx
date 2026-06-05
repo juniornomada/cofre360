@@ -374,8 +374,8 @@ export function TransactionsPage() {
       const d = parseTxDate(tx.date, tx.created_at);
       if (!d) matchesDate = false;
       else {
-        if (filterStartDate && d.getTime() < toUtcDay(filterStartDate).getTime()) matchesDate = false;
-        if (filterEndDate && d.getTime() > toUtcDay(filterEndDate, true).getTime()) matchesDate = false;
+        if (filterStartDate && d.getTime() < toLocalDayStart(filterStartDate).toMillis()) matchesDate = false;
+        if (filterEndDate && d.getTime() > toLocalDayEnd(filterEndDate).toMillis()) matchesDate = false;
       }
     }
     return matchesCategory && matchesSource && matchesType && matchesMin && matchesMax && matchesDate;
