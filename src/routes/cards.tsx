@@ -137,6 +137,7 @@ function SortableCardWrapper({ id, children, animationDelay }: { id: string; chi
    component: CardsPage,
  });
 export function CardsPage() {
+  const { showAlert } = useAlert();
   const validateAgreementFn = useServerFn(validateAgreement);
   const [cards, setCards] = useState<CardData[]>([]);
   const [cardTotals, setCardTotals] = useState<Record<string, number>>({});
