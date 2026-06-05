@@ -1,14 +1,14 @@
 import { Outlet, Link, createRootRoute, HeadContent, Scripts, useRouter, redirect } from "@tanstack/react-router";
 import { z } from "zod";
-import { lazy, Suspense, useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState, createContext, useContext, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
-
+import { toast } from "sonner";
+import { AlertCircle, CheckCircle2, Info, AlertTriangle, Loader2 } from "lucide-react";
 
 import { useContrastChecker } from "@/hooks/useContrastChecker";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
 import { Toaster } from "@/components/ui/sonner";
 import appCss from "../styles.css?url";
 
