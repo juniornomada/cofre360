@@ -501,10 +501,16 @@ function RemindersPage() {
     try {
       const date = parseDate(dateStr);
       const displayDate = translateDate(dateStr);
-      if (isToday(date)) return { label: "Hoje", color: "text-warning" };
-      if (isTomorrow(date)) return { label: "Amanhã", color: "text-warning" };
-      if (isPast(date)) return { label: "Atrasado", color: "text-destructive" };
-      const days = differenceInDays(date, new Date());
+      const userZone = 'America/Sao_Paulo';
+      const dt = DateTime.fromJSDate(date).setZone(userZone);
+      const now = DateTime.now().setZone(userZone).startOf('day');
+      const tomorrow = now.plus({ days: 1 });
+
+      if (dt.hasSame(now, 'day')) return { label: "Hoje", color: "text-warning" };
+      if (dt.hasSame(tomorrow, 'day')) return { label: "Amanhã", color: "text-warning" };
+      if (dt < now) return { label: "Atrasado", color: "text-destructive" };
+      
+      const days = Math.floor(dt.diff(now, 'days').days);
       if (days <= 7) return { label: `${days} dias`, color: "text-primary" };
       return { label: displayDate, color: "text-muted-foreground" };
     } catch {
