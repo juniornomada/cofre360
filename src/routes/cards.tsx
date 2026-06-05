@@ -240,9 +240,9 @@ export function CardsPage() {
       setValidationData(result);
       if (!silent) {
         if (result.status === 'ok') {
-          showAlert("Validação concluída: Tudo certo!", "error");
+          showAlert("Validação concluída: Tudo certo!", "success");
         } else if (result.status === 'partial') {
-          showAlert("Validation concluída: Algumas divergências encontradas.", "error");
+          showAlert("Validação concluída: Algumas divergências encontradas.", "warning");
         } else {
           showAlert("Validação concluída: Erros críticos detectados!", "error");
         }
@@ -402,7 +402,7 @@ export function CardsPage() {
       if (error) throw error;
       setDialogOpen(false);
       fetchAll();
-      showAlert("Cartão adicionado com sucesso", "error");
+      showAlert("Cartão adicionado com sucesso", "success");
     } catch (error: any) {
       console.error("Error adding card:", error);
       showAlert("Erro ao adicionar cartão: " + (error.message || "Erro desconhecido", "error"));
@@ -430,7 +430,7 @@ export function CardsPage() {
       }).eq("id", id);
       if (error) throw error;
       setEditingId(null);
-      showAlert("Cartão atualizado", "error");
+      showAlert("Cartão atualizado", "success");
       fetchAll();
     } catch (error: any) {
       console.error("Error updating card:", error);
@@ -446,7 +446,7 @@ export function CardsPage() {
       if (error) throw error;
       setDeleteConfirm(null);
       fetchAll();
-      showAlert("Cartão excluído", "error");
+      showAlert("Cartão excluído", "success");
     } catch (error: any) {
       console.error("Error deleting card:", error);
       showAlert("Erro ao excluir cartão: " + (error.message || "Erro desconhecido", "error"));
