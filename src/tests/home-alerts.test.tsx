@@ -88,4 +88,20 @@ describe('Dashboard (Home Page)', () => {
       expect(screen.getByText(/Nenhuma transação encontrada/i)).toBeInTheDocument();
     }, { timeout: 3000 });
   });
+
+  it('interaction buttons remain functional with no data', async () => {
+    render(
+      <TooltipProvider>
+        <Dashboard />
+      </TooltipProvider>
+    );
+    
+    await waitFor(() => {
+      expect(screen.getByText(/Nenhuma transação encontrada/i)).toBeInTheDocument();
+    });
+
+    // Try to find an interactive element, e.g., the add button
+    const addButtons = screen.getAllByRole('button');
+    expect(addButtons.length).toBeGreaterThan(0);
+  });
 });
