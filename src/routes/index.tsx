@@ -830,22 +830,6 @@ function Dashboard() {
       }
     }
 
-    // 4. No transactions registered today (motivational)
-    const hasTodayTx = allTransactions.some(tx => {
-      const d = parseTxDateToDate(tx.date);
-      return d && isToday(d);
-    });
-    if (!hasTodayTx && allTransactions.length > 0 && alerts.length < 3) {
-      alerts.push({
-        id: "no-today",
-        icon: Flame,
-        iconColor: "text-amber-400",
-        bg: "bg-amber-500/10",
-        title: "Você ainda não registrou nada hoje",
-        subtitle: "Manter o hábito diário melhora seu controle financeiro 🔥",
-        to: "/transactions",
-      });
-    }
 
     return alerts.slice(0, 3);
   }, [pendingReminders, goals, allTransactions]);
@@ -1422,26 +1406,6 @@ function Dashboard() {
       )}
 
 
-      {/* "Você ainda não registrou nada hoje" — moved to end of page */}
-      {smartAlerts.filter(a => a.id === "no-today").map((alert) => {
-        const inner = (
-          <>
-            <div className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-lg", alert.bg)}>
-              <alert.icon className={cn("h-4 w-4", alert.iconColor)} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-foreground truncate">{alert.title}</p>
-              <p className="text-[11px] text-muted-foreground truncate">{alert.subtitle}</p>
-            </div>
-            {alert.to && <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />}
-          </>
-        );
-        const className = "interactive-card flex items-center gap-3 rounded-xl bg-card px-3 py-2.5 border border-border/30";
-        if (alert.to) {
-          return <Link key={alert.id} to={alert.to} className={className}>{inner}</Link>;
-        }
-        return <div key={alert.id} className={className}>{inner}</div>;
-      })}
 
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
         <DialogContent className="max-w-[90vw] rounded-2xl bg-background">
