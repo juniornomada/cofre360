@@ -38,9 +38,9 @@ vi.mock('@/hooks/use-user-preferences', () => ({
 
 // Mock TanStack Router
 vi.mock('@tanstack/react-router', () => ({
-  createFileRoute: () => ({
+  createFileRoute: vi.fn(() => vi.fn(() => ({
     useSearch: () => ({}),
-  }),
+  }))),
   Link: ({ children }: any) => <a>{children}</a>,
 }));
 
