@@ -113,7 +113,9 @@ export function TransactionsPage() {
   const [filterMaxAmount, setFilterMaxAmount] = useState<string>("");
   const [filterType, setFilterType] = useState<"all" | "income" | "expense">("all");
   const [sortBy, setSortBy] = useState<"date-desc" | "date-asc" | "amount-desc" | "amount-asc" | "installments">("date-desc");
-  const todayFormatted = format(new Date(), "dd MMM", { locale: ptBR });
+  const userZone = 'America/Sao_Paulo';
+  const nowLocal = DateTime.now().setZone(userZone);
+  const todayFormatted = nowLocal.toFormat("dd LLL", { locale: 'pt-BR' });
   const [newTx, setNewTx] = useState<Omit<Transaction, "id">>({
     icon: "🍔", name: "", category: "Alimentação > Outros", date: todayFormatted, amount: 0, type: "expense", card: null, bank_account_id: null,
   });
