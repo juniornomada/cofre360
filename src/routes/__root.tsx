@@ -220,17 +220,17 @@ function RootShell({ children }: { children: React.ReactNode }) {
         )}>
           <Outlet />
           {!isComparisonMode && (
-          <Suspense fallback={
-            <div className="fixed bottom-0 left-0 right-0 h-16 bg-card/80 flex items-center justify-center border-t border-border">
-              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-            </div>
-          }>
-           <BottomNav />
-           
-         </Suspense>
-         )}
-      </div>
-      <Toaster />
-    </TooltipProvider>
+            <Suspense fallback={
+              <div className="fixed bottom-0 left-0 right-0 h-16 bg-card/80 flex items-center justify-center border-t border-border">
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              </div>
+            }>
+              <BottomNav />
+            </Suspense>
+          )}
+        </div>
+        <Toaster />
+      </TooltipProvider>
+    </AlertContext.Provider>
   );
 }
