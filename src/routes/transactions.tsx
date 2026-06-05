@@ -341,17 +341,20 @@ export function TransactionsPage() {
   // Parse "dd MMM" using created_at as the reference year (UTC) to avoid timezone/year drift.
   const parseTxDate = (s: string, refIso?: string): Date | null => {
     if (!s) return null;
-    const refYear = refIso ? new Date(refIso).getUTCFullYear() : new Date().getUTCFullYear();
-    try {
-      const parsed = parse(s, "dd MMM", new Date(Date.UTC(refYear, 0, 1)), { locale: ptBR });
-      if (isNaN(parsed.getTime())) return null;
-      // Reconstruct in UTC to neutralize local timezone offset.
-      return new Date(Date.UTC(refYear, parsed.getMonth(), parsed.getDate()));
-    } catch { return null; }
+    const userZone = 'America/Sao_Paulo';
+    const refYear = refIso ? DateTime.fromISO(refIso).setZone(userZone).year : DateTime.now().setZone(userZone).year;
+    
+    // Try to parse "dd LLL" format
+    const dt = DateTime.fromFormat(s, "dd LLL", { locale: 'pt-BR', zone: userZone }).set({ year: refYear });
+    if (dt.isValid) return dt.toJSDate();
+
+    // Fallback to JS Date for ISO strings
+    const fallback = new Date(s);
+    return isNaN(fallback.getTime()) ? null : fallback;
   };
 
-  const toUtcDay = (d: Date, endOfDay = false) =>
-    new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate(), endOfDay ? 23 : 0, endOfDay ? 59 : 0, endOfDay ? 59 : 0));
+  const toLocalDayStart = (d: Date) => DateTime.fromJSDate(d).setZone('America/Sao_Paulo').startOf('day');
+  const toLocalDayEnd = (d: Date) => DateTime.fromJSDate(d).setZone('America/Sao_Paulo').endOf('day');
 
   const minAmt = filterMinAmount ? parseFloat(filterMinAmount) : null;
   const maxAmt = filterMaxAmount ? parseFloat(filterMaxAmount) : null;
