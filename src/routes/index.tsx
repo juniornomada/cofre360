@@ -4,8 +4,9 @@ import { TrendingUp, Eye, EyeOff, Bell, Pencil, Trash2, CalendarIcon, Loader2, C
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { TransactionItem } from "@/components/TransactionItem";
 import { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense } from "react";
-import { format, parse, isToday, isYesterday, differenceInDays } from "date-fns";
+import { format, parse, isYesterday, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { isTodayLocal } from "@/lib/date-utils";
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
