@@ -830,22 +830,6 @@ function Dashboard() {
       }
     }
 
-    // 4. No transactions registered today (motivational)
-    const hasTodayTx = allTransactions.some(tx => {
-      const d = parseTxDateToDate(tx.date);
-      return d && isToday(d);
-    });
-    if (!hasTodayTx && allTransactions.length > 0 && alerts.length < 3) {
-      alerts.push({
-        id: "no-today",
-        icon: Flame,
-        iconColor: "text-amber-400",
-        bg: "bg-amber-500/10",
-        title: "Você ainda não registrou nada hoje",
-        subtitle: "Manter o hábito diário melhora seu controle financeiro 🔥",
-        to: "/transactions",
-      });
-    }
 
     return alerts.slice(0, 3);
   }, [pendingReminders, goals, allTransactions]);
