@@ -1,3 +1,4 @@
+import { DateTime } from 'luxon';
 
 export type CardTransaction = {
   id: string;
@@ -50,48 +51,64 @@ export function parseTxDate(dateStr: string, fallback: string): Date {
 export function groupByBillingCycle(txs: CardTransaction[], closingDay: number | null, dueDay: number | null): InvoicePeriod[] {
   const cDay = closingDay || 1;
   const dDay = dueDay || 10;
-  const now = new Date();
-  const currentMonth = now.getMonth();
-  const currentYear = now.getFullYear();
+  const userZone = 'America/Sao_Paulo';
+  const now = DateTime.now().setZone(userZone);
 
-  let closingDate = new Date(currentYear, currentMonth, cDay);
+  // We want to determine the "next" closing date relative to today.
+  let closingDate = now.set({ day: cDay, hour: 0, minute: 0, second: 0, millisecond: 0 });
   if (now > closingDate) {
-    closingDate = new Date(currentYear, currentMonth + 1, cDay);
+    closingDate = closingDate.plus({ months: 1 });
   }
 
-  const prevClosing = new Date(closingDate.getFullYear(), closingDate.getMonth() - 1, cDay);
-  const pastClosing = new Date(prevClosing.getFullYear(), prevClosing.getMonth() - 1, cDay);
+  const prevClosing = closingDate.minus({ months: 1 });
+  const pastClosing = prevClosing.minus({ months: 1 });
 
-  const makeDue = (closing: Date) => {
-    const d = new Date(closing.getFullYear(), closing.getMonth(), dDay);
-    if (d <= closing) d.setMonth(d.getMonth() + 1);
-    return d;
+  const makeDue = (closing: DateTime) => {
+    let d = closing.set({ day: dDay });
+    if (d <= closing) d = d.plus({ months: 1 });
+    return d.toJSDate();
   };
 
-  // Find the max future date from all transactions based on their actual date field
+  // Find the max future date from all transactions
   let maxFutureDate = now;
   for (const tx of txs) {
-    const txDate = parseTxDate(tx.date, tx.created_at);
+    const txDate = DateTime.fromJSDate(parseTxDate(tx.date, tx.created_at)).setZone(userZone);
     if (txDate > maxFutureDate) maxFutureDate = txDate;
   }
 
-  const formatLabel = (prefix: string, endDate: Date) =>
-    `${prefix} (${monthNames[endDate.getMonth()]}/${endDate.getFullYear().toString().slice(2)})`;
+  const formatLabel = (prefix: string, endDate: DateTime) =>
+    `${prefix} (${monthNames[endDate.month - 1]}/${endDate.year.toString().slice(2)})`;
 
   const periods: InvoicePeriod[] = [
-    { label: formatLabel("Anterior", prevClosing), key: "past", startDate: pastClosing, endDate: prevClosing, dueDate: makeDue(prevClosing), transactions: [], total: 0 },
-    { label: formatLabel("Atual", closingDate), key: "current", startDate: prevClosing, endDate: closingDate, dueDate: makeDue(closingDate), transactions: [], total: 0 },
+    { 
+      label: formatLabel("Anterior", prevClosing), 
+      key: "past", 
+      startDate: pastClosing.toJSDate(), 
+      endDate: prevClosing.toJSDate(), 
+      dueDate: makeDue(prevClosing), 
+      transactions: [], 
+      total: 0 
+    },
+    { 
+      label: formatLabel("Atual", closingDate), 
+      key: "current", 
+      startDate: prevClosing.toJSDate(), 
+      endDate: closingDate.toJSDate(), 
+      dueDate: makeDue(closingDate), 
+      transactions: [], 
+      total: 0 
+    },
   ];
 
-  let futureStart = new Date(closingDate);
+  let futureStart = closingDate;
   let futureIndex = 0;
   while (futureStart < maxFutureDate || futureIndex === 0) {
-    const futureEnd = new Date(futureStart.getFullYear(), futureStart.getMonth() + 1, cDay);
+    const futureEnd = futureStart.plus({ months: 1 }).set({ day: cDay });
     periods.push({
       label: formatLabel("Próxima", futureEnd),
       key: `future_${futureIndex}`,
-      startDate: new Date(futureStart),
-      endDate: futureEnd,
+      startDate: futureStart.toJSDate(),
+      endDate: futureEnd.toJSDate(),
       dueDate: makeDue(futureEnd),
       transactions: [],
       total: 0,
@@ -101,13 +118,14 @@ export function groupByBillingCycle(txs: CardTransaction[], closingDay: number |
     if (futureIndex > 24) break;
   }
 
-  // Place each transaction in the correct period based on its DATE field
+  // Place each transaction
   for (const tx of txs) {
-    const txDate = parseTxDate(tx.date, tx.created_at);
+    const txJSDate = parseTxDate(tx.date, tx.created_at);
+    const txTime = txJSDate.getTime();
 
     let periodIdx = -1;
     for (let pi = 0; pi < periods.length; pi++) {
-      if (txDate >= periods[pi].startDate && txDate < periods[pi].endDate) {
+      if (txTime >= periods[pi].startDate.getTime() && txTime < periods[pi].endDate.getTime()) {
         periodIdx = pi;
         break;
       }

@@ -4,8 +4,9 @@ import { TrendingUp, Eye, EyeOff, Bell, Pencil, Trash2, CalendarIcon, Loader2, C
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { TransactionItem } from "@/components/TransactionItem";
 import { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense } from "react";
-import { format, parse, isToday, isYesterday, differenceInDays } from "date-fns";
+import { format, parse, isYesterday, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { isTodayLocal } from "@/lib/date-utils";
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -842,7 +843,7 @@ function Dashboard() {
       const d = parseTxDateToDate(tx.date);
       let key: string;
       let label: string;
-      if (d && isToday(d)) { key = "1-today"; label = "Hoje"; }
+      if (d && isTodayLocal(d)) { key = "1-today"; label = "Hoje"; }
       else if (d && isYesterday(d)) { key = "2-yesterday"; label = "Ontem"; }
       else if (d) {
         const monthsAbbr = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];

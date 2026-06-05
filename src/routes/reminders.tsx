@@ -1,8 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Bell, Plus, Check, Trash2, Pencil, CalendarIcon, Loader2, Clock, Wallet, CreditCard, Repeat, Search, Landmark } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
-import { format, parse, isPast, isToday, isTomorrow, differenceInDays } from "date-fns";
+import { format, parse, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { DateTime } from "luxon";
+import { isTodayLocal } from "@/lib/date-utils";
 import { cn, normalizeText } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -62,7 +64,7 @@ function RemindersPage() {
   const [showPayDialog, setShowPayDialog] = useState(false);
   const [payingReminder, setPayingReminder] = useState<Reminder | null>(null);
   const [paying, setPaying] = useState(false);
-  const [payDate, setPayDate] = useState<Date>(new Date());
+  const [payDate, setPayDate] = useState<Date>(DateTime.now().setZone('America/Sao_Paulo').toJSDate());
   const [payDateOpen, setPayDateOpen] = useState(false);
 
   const [newReminder, setNewReminder] = useState({
@@ -499,10 +501,16 @@ function RemindersPage() {
     try {
       const date = parseDate(dateStr);
       const displayDate = translateDate(dateStr);
-      if (isToday(date)) return { label: "Hoje", color: "text-warning" };
-      if (isTomorrow(date)) return { label: "Amanhã", color: "text-warning" };
-      if (isPast(date)) return { label: "Atrasado", color: "text-destructive" };
-      const days = differenceInDays(date, new Date());
+      const userZone = 'America/Sao_Paulo';
+      const dt = DateTime.fromJSDate(date).setZone(userZone);
+      const now = DateTime.now().setZone(userZone).startOf('day');
+      const tomorrow = now.plus({ days: 1 });
+
+      if (dt.hasSame(now, 'day')) return { label: "Hoje", color: "text-warning" };
+      if (dt.hasSame(tomorrow, 'day')) return { label: "Amanhã", color: "text-warning" };
+      if (dt < now) return { label: "Atrasado", color: "text-destructive" };
+      
+      const days = Math.floor(dt.diff(now, 'days').days);
       if (days <= 7) return { label: `${days} dias`, color: "text-primary" };
       return { label: displayDate, color: "text-muted-foreground" };
     } catch {
@@ -1004,7 +1012,7 @@ function RemindersPage() {
                     className={cn("w-full justify-start text-left font-normal", !payDate && "text-muted-foreground")}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {isToday(payDate) ? "Hoje" : format(payDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                    {isTodayLocal(payDate) ? "Hoje" : format(payDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
