@@ -161,7 +161,7 @@ function SortableAccountItem({ acc, balanceVisible, fmt }: { acc: any; balanceVi
 }
 
 
-function Dashboard() {
+export function Dashboard() {
   const {
     balanceVisible,
     updateBalanceVisible,
