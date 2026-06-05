@@ -230,7 +230,7 @@ export function CardsPage() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) {
-        if (!silent) toast.error("Sessão expirada. Faça login novamente para validar.");
+        if (!silent) showAlert("Sessão expirada. Faça login novamente para validar.", "error");
         // Reset timestamp so it can retry immediately once session is restored
         lastValidationRef.current = { timestamp: 0, reason: "session_reset" };
         return;
@@ -240,11 +240,11 @@ export function CardsPage() {
       setValidationData(result);
       if (!silent) {
         if (result.status === 'ok') {
-          toast.success("Validação concluída: Tudo certo!");
+          showAlert("Validação concluída: Tudo certo!", "error");
         } else if (result.status === 'partial') {
-          toast.warning("Validation concluída: Algumas divergências encontradas.");
+          showAlert("Validation concluída: Algumas divergências encontradas.", "error");
         } else {
-          toast.error("Validação concluída: Erros críticos detectados!");
+          showAlert("Validação concluída: Erros críticos detectados!", "error");
         }
       }
     } catch (error: any) {
@@ -266,7 +266,7 @@ export function CardsPage() {
       if (message.includes("Unauthorized") || message.includes("authorization")) {
         message = "Sessão expirada. Faça login novamente para validar.";
       }
-      if (!silent) toast.error("Erro ao validar: " + message);
+      if (!silent) showAlert("Erro ao validar: " + message, "error");
     } finally {
       setIsValidating(false);
     }
@@ -294,7 +294,7 @@ export function CardsPage() {
     const results = await Promise.all(updates);
     const failed = results.some((r) => r.error);
     if (failed) {
-      toast.error("Erro ao salvar nova ordem");
+      showAlert("Erro ao salvar nova ordem", "error");
       fetchAll();
     }
   }, [cards]);
@@ -336,7 +336,7 @@ export function CardsPage() {
       }
     } catch (error: any) {
       console.error("Error fetching data:", error);
-      toast.error("Erro ao carregar dados: " + (error.message || "Erro desconhecido"));
+      showAlert("Erro ao carregar dados: " + (error.message || "Erro desconhecido", "error"));
     } finally {
       setLoading(false);
     }
@@ -402,10 +402,10 @@ export function CardsPage() {
       if (error) throw error;
       setDialogOpen(false);
       fetchAll();
-      toast.success("Cartão adicionado com sucesso");
+      showAlert("Cartão adicionado com sucesso", "error");
     } catch (error: any) {
       console.error("Error adding card:", error);
-      toast.error("Erro ao adicionar cartão: " + (error.message || "Erro desconhecido"));
+      showAlert("Erro ao adicionar cartão: " + (error.message || "Erro desconhecido", "error"));
     }
   };
 
@@ -430,11 +430,11 @@ export function CardsPage() {
       }).eq("id", id);
       if (error) throw error;
       setEditingId(null);
-      toast.success("Cartão atualizado");
+      showAlert("Cartão atualizado", "error");
       fetchAll();
     } catch (error: any) {
       console.error("Error updating card:", error);
-      toast.error("Erro ao atualizar cartão: " + (error.message || "Erro desconhecido"));
+      showAlert("Erro ao atualizar cartão: " + (error.message || "Erro desconhecido", "error"));
     }
   };
 
@@ -446,10 +446,10 @@ export function CardsPage() {
       if (error) throw error;
       setDeleteConfirm(null);
       fetchAll();
-      toast.success("Cartão excluído");
+      showAlert("Cartão excluído", "error");
     } catch (error: any) {
       console.error("Error deleting card:", error);
-      toast.error("Erro ao excluir cartão: " + (error.message || "Erro desconhecido"));
+      showAlert("Erro ao excluir cartão: " + (error.message || "Erro desconhecido", "error"));
     }
   };
 
@@ -458,10 +458,10 @@ export function CardsPage() {
       const { error } = await supabase.from("cards").update({ is_visible: !current }).eq("id", id);
       if (error) throw error;
       fetchAll();
-      toast.success(current ? "Cartão ocultado da página inicial" : "Cartão agora visível na página inicial");
+      showAlert(current ? "Cartão ocultado da página inicial" : "Cartão agora visível na página inicial", "error");
     } catch (error: any) {
       console.error("Error toggling visibility:", error);
-      toast.error("Erro ao alterar visibilidade");
+      showAlert("Erro ao alterar visibilidade", "error");
     }
   };
 
@@ -481,7 +481,7 @@ export function CardsPage() {
       setCardTransactions((data as CardTransaction[]) || []);
     } catch (error: any) {
       console.error("Error fetching card transactions:", error);
-      toast.error("Erro ao carregar transações do cartão");
+      showAlert("Erro ao carregar transações do cartão", "error");
     } finally {
       setLoadingTx(false);
     }
@@ -529,7 +529,7 @@ export function CardsPage() {
     const total = parseInt(installmentTotal);
     const current = parseInt(installmentCurrent);
     if (!isFinite(total) || !isFinite(current) || total < 1 || current < 1 || current > total) {
-      toast.error("Parcelas inválidas");
+      showAlert("Parcelas inválidas", "error");
       return;
     }
 
@@ -548,7 +548,7 @@ export function CardsPage() {
           })
           .eq("id", installmentTx.id);
         if (error) throw error;
-        toast.success("Parcelamento removido");
+        showAlert("Parcelamento removido", "error");
       } else {
         const groupId =
           installmentTx.installment_group_id ||
@@ -610,7 +610,7 @@ export function CardsPage() {
           const { error: insErr } = await supabase.from("transactions").insert(toInsert);
           if (insErr) throw insErr;
         }
-        toast.success(
+        showAlert(
           toInsert.length > 0
             ? `Parcelamento criado (${toInsert.length} parcela${toInsert.length > 1 ? "s" : ""} futura${toInsert.length > 1 ? "s" : ""})`
             : "Parcelamento atualizado"
@@ -623,7 +623,7 @@ export function CardsPage() {
       await openInvoiceDialog(invoiceCard);
     } catch (e) {
       console.error(e);
-      toast.error("Erro ao salvar parcelamento");
+      showAlert("Erro ao salvar parcelamento", "error");
     } finally {
       setInstallmentSaving(false);
     }
@@ -692,12 +692,12 @@ export function CardsPage() {
         }
       }
       
-      toast.success(`${paymentName} de R$ ${paymentTotal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} realizado!`);
+      showAlert(`${paymentName} de R$ ${paymentTotal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} realizado!`);
       setPayDialogOpen(false);
       fetchAll();
     } catch (error) {
       console.error("Payment error:", error);
-      toast.error("Erro ao processar pagamento");
+      showAlert("Erro ao processar pagamento", "error");
     } finally {
       setPayingSaving(false);
     }
@@ -1546,7 +1546,7 @@ export function CardsPage() {
             cardId={pdfImportCard.id}
             cardName={pdfImportCard.name}
             onSuccess={() => {
-              toast.success("Fatura importada com sucesso!");
+              showAlert("Fatura importada com sucesso!", "error");
               fetchAll();
             }}
           />
