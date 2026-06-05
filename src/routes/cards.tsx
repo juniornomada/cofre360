@@ -1108,7 +1108,7 @@ export function CardsPage() {
                     <table className="w-full text-left text-[10px] border-collapse">
                       <thead className="sticky top-0 bg-accent/50 backdrop-blur-sm border-b border-border/50">
                         <tr>
-                          <th className="px-3 py-2 font-bold text-muted-foreground">Data/Hora (UTC)</th>
+                          <th className="px-3 py-2 font-bold text-muted-foreground">Data/Hora (Local)</th>
                           <th className="px-3 py-2 font-bold text-muted-foreground">Mensagem</th>
                         </tr>
                       </thead>
