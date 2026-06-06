@@ -17,15 +17,16 @@ type ParsedInvoiceTx = {
 type DocumentKind = "card_invoice" | "bank_statement";
 
 async function extractPdfText(base64: string): Promise<string> {
-  // Use Buffer for reliable base64 decoding on the server (Bun/Node)
-  const bytes = Buffer.from(base64, "base64");
+  // Use Uint8Array for PDF.js compatibility (it rejects plain Buffers in Node)
+  const bytes = new Uint8Array(Buffer.from(base64, "base64"));
 
   // Dynamic import of pdfjs-dist legacy build
   const pdfjs: any = await import("pdfjs-dist/legacy/build/pdf.mjs");
-  // Set workerSrc to the relative path within node_modules.
-  // In a server environment (Node/Bun), this allows PDF.js to find and load the worker
-  // without needing a complex workerPort setup.
-  pdfjs.GlobalWorkerOptions.workerSrc = "./node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs";
+
+  // On the server, we set workerSrc to the absolute path of the worker file.
+  // We use an absolute path to ensure it's found regardless of the current CWD.
+  pdfjs.GlobalWorkerOptions.workerSrc = path.resolve("./node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs");
+
 
 
   const loadingTask = pdfjs.getDocument({
