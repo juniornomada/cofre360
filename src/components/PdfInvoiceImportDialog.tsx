@@ -126,6 +126,7 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
     setDedupResult(null);
     setComparisonItems([]);
     setIsComparisonOpen(false);
+    setFilterDuplicatesOnly(false);
     setChecking(false);
     setSaving(false);
 
