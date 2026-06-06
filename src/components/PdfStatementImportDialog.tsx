@@ -25,6 +25,7 @@ type ParsedRow = {
   amount: number;
   type: "expense" | "income";
   confidence?: "low" | "high";
+  approved?: boolean;
 };
 
 type TransactionInsert = TablesInsert<"transactions">;
@@ -179,6 +180,7 @@ export function PdfStatementImportDialog({ open, onOpenChange, bankAccountId, ba
 
     const toImport: TransactionInsert[] = [];
     for (const row of preview) {
+      if (row.approved === false) continue;
       const { category, icon } = categorizeTransaction(row.name);
       const transaction: TransactionInsert = {
         id: crypto.randomUUID(),

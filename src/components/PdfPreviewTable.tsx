@@ -9,6 +9,7 @@ export type PdfPreviewRow = {
   type: "expense" | "income";
   isFuture?: boolean;
   confidence?: "low" | "high";
+  approved?: boolean;
 };
 
 type Props = {
@@ -56,6 +57,7 @@ export function PdfPreviewTable({ rows, onChange, itemLabel = "transações" }: 
       <table className="w-full text-xs">
         <thead className="bg-muted/50 sticky top-0">
           <tr>
+            <th className="p-2 w-[32px]"></th>
             <th className="text-left p-2 w-[88px]">Data</th>
             <th className="text-left p-2">Estabelecimento / Descrição</th>
             <th className="text-right p-2 w-[110px]">Valor</th>
@@ -65,9 +67,19 @@ export function PdfPreviewTable({ rows, onChange, itemLabel = "transações" }: 
         <tbody>
           {visibleRows.map((r, i) => {
             const isEditing = editingIndex === i;
+            const isApproved = r.approved !== false;
+            
+            const toggleApproval = (e: React.MouseEvent) => {
+              e.stopPropagation();
+              const next = [...rows];
+              next[i] = { ...r, approved: !isApproved };
+              onChange(next);
+            };
+
             if (isEditing && draft) {
               return (
                 <tr key={i} className="border-t border-border bg-accent/40">
+                  <td className="p-1.5"></td>
                   <td className="p-1.5">
                     <Input
                       type="date"
@@ -122,10 +134,19 @@ export function PdfPreviewTable({ rows, onChange, itemLabel = "transações" }: 
             return (
               <tr 
                 key={i} 
-                className={`border-t border-border group transition-colors hover:bg-muted/30 cursor-pointer ${r.isFuture ? "bg-muted/10" : ""} ${r.confidence === "low" ? "bg-amber-50/50" : ""}`}
+                className={`border-t border-border group transition-colors hover:bg-muted/30 cursor-pointer ${!isApproved ? "opacity-40 grayscale" : ""} ${r.isFuture ? "bg-muted/10" : ""} ${r.confidence === "low" && isApproved ? "bg-amber-50/50" : ""}`}
                 onClick={() => startEdit(i)}
-                title="Clique para editar"
+                title={isApproved ? "Clique para editar" : "Rejeitado"}
               >
+                <td className="p-1.5" onClick={(e) => e.stopPropagation()}>
+                  <button 
+                    onClick={toggleApproval}
+                    className={`p-1 rounded-md transition-colors ${isApproved ? "text-primary hover:bg-primary/10" : "text-muted-foreground hover:bg-muted"}`}
+                    title={isApproved ? "Rejeitar lançamento" : "Aprovar lançamento"}
+                  >
+                    {isApproved ? <Check className="h-3.5 w-3.5" /> : <X className="h-3.5 w-3.5" />}
+                  </button>
+                </td>
                 <td className="p-2 text-muted-foreground whitespace-nowrap">{r.date}</td>
                 <td className="p-2 truncate max-w-[140px]">
                   <span className="align-middle">{r.name}</span>
