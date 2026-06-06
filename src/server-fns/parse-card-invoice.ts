@@ -270,7 +270,7 @@ export const parseCardInvoicePdf = createServerFn({ method: "POST" })
           throw new Error("A IA não encontrou transações claras neste arquivo. Verifique se o layout do PDF é suportado.");
         }
         
-        return { transactions, charsExtracted: text.length, attempts: attempt + 1 };
+        return { transactions, charsExtracted: text.length, attempts: attempt + 1, rawPdfText: text };
       } catch (err: any) {
         lastError = err;
         console.warn(`Tentativa ${attempt + 1} de extração falhou:`, err.message);
