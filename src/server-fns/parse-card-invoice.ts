@@ -139,7 +139,8 @@ Regras:
   const bankPrompt = `Você recebe o texto bruto extraído de um EXTRATO BANCÁRIO brasileiro (conta corrente / poupança / digital). Extraia TODAS as movimentações (débitos e créditos) presentes no extrato.
 
 Regras:
-- "date" no formato YYYY-MM-DD. Se faltar o ano no PDF, infira pelo período do extrato ou use o ano atual.
+- "date" no formato YYYY-MM-DD.
+- IMPORTANTE: Se o PDF não contém o ANO em cada linha, procure por "Período", "Data de Emissão" ou datas no cabeçalho para inferir o ano correto. Atualmente estamos em 2026.
 - "name" é a descrição da movimentação limpa (ex.: "PIX recebido - João", "Compra débito - Padaria X", "Tarifa mensal", "Salário").
 - "amount" é número positivo em reais (sem R$, sem ponto de milhar; use ponto decimal — sempre positivo).
 - "original_amount_text" é a string exata do valor como aparece no texto original.
