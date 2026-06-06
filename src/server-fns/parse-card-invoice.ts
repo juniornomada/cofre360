@@ -20,24 +20,20 @@ async function extractPdfText(base64: string): Promise<string> {
 
   // Dynamic import of pdfjs-dist legacy build
   const pdfjs: any = await import("pdfjs-dist/legacy/build/pdf.mjs");
+  const worker: any = await import("pdfjs-dist/legacy/build/pdf.worker.mjs");
 
-  // Modern way to set worker in Bun/Node environments for pdfjs-dist 4.x+
-  // We use import.meta.resolve to get a valid URL/path for the worker file
-  try {
-    // @ts-ignore
-    pdfjs.GlobalWorkerOptions.workerSrc = import.meta.resolve("pdfjs-dist/legacy/build/pdf.worker.mjs");
-  } catch (e) {
-    // Fallback if import.meta.resolve is not available or fails
-    try {
-      const worker = await import("pdfjs-dist/legacy/build/pdf.worker.mjs");
-      pdfjs.GlobalWorkerOptions.workerPort = worker;
-      pdfjs.GlobalWorkerOptions.workerSrc = "true"; 
-    } catch (e2) {
-      console.error("Failed to set up pdfjs worker:", e2);
-      // Last resort: dummy workerSrc
-      pdfjs.GlobalWorkerOptions.workerSrc = "dummy";
-    }
+  // In a server environment (Node/Bun), we can use the WorkerMessageHandler 
+  // from the worker module to act as a "fake worker" on the main thread.
+  // This avoids the need for a separate worker file and bypasses workerSrc checks.
+  if (worker.WorkerMessageHandler) {
+    pdfjs.GlobalWorkerOptions.workerPort = new worker.WorkerMessageHandler();
+  } else {
+    // Fallback for different versions
+    pdfjs.GlobalWorkerOptions.workerPort = worker;
   }
+  
+  // We still set a dummy workerSrc to satisfy some internal checks in certain versions
+  pdfjs.GlobalWorkerOptions.workerSrc = "fake";
 
   const loadingTask = pdfjs.getDocument({
     data: bytes,
