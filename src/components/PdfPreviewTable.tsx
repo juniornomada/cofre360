@@ -235,6 +235,7 @@ export function PdfPreviewTable({ rows, onChange, itemLabel = "transações" }: 
           <p className="text-[10px] text-muted-foreground text-center py-3">Nenhuma linha — adicione um PDF novamente.</p>
         )}
       </div>
-    </TooltipProvider>
-  );
+    </div>
+  </TooltipProvider>
+);
 }
