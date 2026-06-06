@@ -259,7 +259,9 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
 
     const toImport: TransactionInsert[] = [];
     for (const row of preview) {
+      // Se estiver explicitamente rejeitado, pula
       if (row.approved === false) continue;
+
       const { category, icon } = categorizeTransaction(row.name);
       const transaction: TransactionInsert = {
         id: crypto.randomUUID(),
@@ -276,6 +278,7 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
         installment_number: row.installment_number ?? 1,
         total_installments: row.total_installments ?? 1,
       };
+
       const key = buildDedupKey({
         card: cardName,
         date: transaction.date,
@@ -283,14 +286,26 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
         amount: Number(transaction.amount),
         type: transaction.type,
       });
-      if (seen.has(key)) continue;
+
+      // Se for duplicada e NÃO estiver explicitamente aprovada pelo usuário, pula
+      // No preview, se isDuplicate for true, o usuário pode clicar em "Manter" (approved: true)
+      // Se ele não fizer nada, o comportamento padrão depende se queremos ser conservadores.
+      // Vamos assumir que se o usuário vê que é duplicada e deixa como "aprovada" (padrão), ele quer importar.
+      // MAS, para "ignorar automaticamente", o ideal é que por padrão as duplicatas venham DESAPROVADAS.
+      
+      if (seen.has(key) && row.approved !== true) {
+        continue;
+      }
+
       seen.add(key);
       toImport.push(transaction);
     }
 
-    const duplicateCount = preview.length - toImport.length;
+    const duplicateCount = preview.filter(r => r.isDuplicate).length;
+    const ignoredCount = preview.filter(r => r.isDuplicate && r.approved === false).length;
+
     if (toImport.length === 0) {
-      setError("Todas as transações desta fatura já foram importadas.");
+      setError("Todas as transações selecionadas já existem no sistema ou foram rejeitadas.");
       setChecking(false);
       return;
     }
