@@ -10,6 +10,7 @@ import { useContrastChecker } from "@/hooks/useContrastChecker";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { Toaster } from "@/components/ui/sonner";
+import SealVerifier from "@/components/SealVerifier";
 import appCss from "../styles.css?url";
 
 type AlertType = 'success' | 'error' | 'warning' | 'info';
