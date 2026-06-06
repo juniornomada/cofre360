@@ -17,6 +17,7 @@ export type PdfPreviewRow = {
   approved?: boolean;
   original_amount_text?: string;
   isDuplicate?: boolean;
+  duplicateReason?: string;
 };
 
 type Props = {
@@ -302,9 +303,16 @@ export function PdfPreviewTable({ rows, onChange, itemLabel = "transações", ra
                         </span>
                       )}
                       {r.isDuplicate && (
-                        <span className="ml-1 inline-block align-middle text-[9px] font-semibold px-1 py-0.5 rounded bg-red-100 text-red-700 border border-red-200">
-                          duplicada?
-                        </span>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className="ml-1 inline-block align-middle text-[9px] font-semibold px-1 py-0.5 rounded bg-red-100 text-red-700 border border-red-200 cursor-help">
+                              duplicada?
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent className="text-[10px] p-2">
+                            {r.duplicateReason || "Detectada transação similar no sistema"}
+                          </TooltipContent>
+                        </Tooltip>
                       )}
                     </td>
                     <td className={`p-2 text-right font-medium tabular-nums ${r.type === "income" ? "text-primary" : "text-destructive"}`}>

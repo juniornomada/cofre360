@@ -36,6 +36,7 @@ type ParsedRow = {
   original_amount_text?: string;
   approved?: boolean;
   isDuplicate?: boolean;
+  duplicateReason?: string;
 };
 
 type InstallmentMeta = {
@@ -57,30 +58,47 @@ type DedupOptions = {
   amountToleranceCents: number;
 };
 
+function getDuplicateReason(
+  pdf: { date: string; name: string; amount: number; type: string },
+  existing: { date: string; name: string; amount: number; type: string },
+  options: DedupOptions = { dateToleranceDays: 0, amountToleranceCents: 0 }
+): { isDuplicate: boolean; reason?: string } {
+  const normPdfName = normalize(pdf.name).replace(/\s+/g, " ");
+  const normSysName = normalize(existing.name).replace(/\s+/g, " ");
+  
+  const sameName = normPdfName === normSysName || normPdfName.includes(normSysName) || normSysName.includes(normPdfName);
+  if (!sameName) return { isDuplicate: false };
+
+  const sameType = pdf.type === existing.type;
+  if (!sameType) return { isDuplicate: false };
+
+  const pdfDate = new Date(pdf.date);
+  const sysDate = new Date(existing.date);
+  const diffTime = Math.abs(pdfDate.getTime() - sysDate.getTime());
+  const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+  
+  const withinDateTolerance = diffDays <= options.dateToleranceDays;
+  if (!withinDateTolerance) return { isDuplicate: false };
+
+  const diffAmount = Math.abs(pdf.amount - existing.amount);
+  const withinAmountTolerance = diffAmount <= (options.amountToleranceCents / 100);
+  
+  if (!withinAmountTolerance) return { isDuplicate: false };
+
+  let reason = "";
+  if (diffDays > 0) reason += `${diffDays}d de dif. `;
+  if (diffAmount > 0.001) reason += `R$ ${diffAmount.toFixed(2)} de dif.`;
+  if (!reason) reason = "Exatamente igual";
+
+  return { isDuplicate: true, reason };
+}
+
 function isPossibleDuplicate(
   pdf: { date: string; name: string; amount: number; type: string },
   existing: { date: string; name: string; amount: number; type: string },
   options: DedupOptions = { dateToleranceDays: 0, amountToleranceCents: 0 }
 ): boolean {
-  const normPdfName = normalize(pdf.name).replace(/\s+/g, " ");
-  const normSysName = normalize(existing.name).replace(/\s+/g, " ");
-  
-  const sameName = normPdfName === normSysName || normPdfName.includes(normSysName) || normSysName.includes(normPdfName);
-  if (!sameName) return false;
-
-  const sameType = pdf.type === existing.type;
-  if (!sameType) return false;
-
-  const pdfDate = new Date(pdf.date).getTime();
-  const sysDate = new Date(existing.date).getTime();
-  const diffDays = Math.abs(pdfDate - sysDate) / (1000 * 60 * 60 * 24);
-  const withinDateTolerance = diffDays <= options.dateToleranceDays;
-  if (!withinDateTolerance) return false;
-
-  const diffAmount = Math.abs(pdf.amount - existing.amount);
-  const withinAmountTolerance = diffAmount <= (options.amountToleranceCents / 100);
-  
-  return withinAmountTolerance;
+  return getDuplicateReason(pdf, existing, options).isDuplicate;
 }
 
 function buildDedupKey(input: { card: string; date: string; name: string; amount: number; type: string }) {
@@ -224,20 +242,23 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
       setPreview(rows);
       setParsingProgress(95);
 
-      // Chamada automática para verificar duplicatas assim que carrega
       const { data: existing } = await fetchExistingForCard(cardName);
       if (existing) {
         const rowsWithDup = rows.map(r => {
-          const isDuplicate = existing.some(ext => 
-            isPossibleDuplicate(
+          let foundReason = "";
+          const isDuplicate = existing.some(ext => {
+            const res = getDuplicateReason(
               { date: r.date, name: r.name, amount: r.amount, type: r.type },
               { date: ext.date, name: ext.name, amount: Number(ext.amount), type: ext.type },
               { dateToleranceDays: dateTolerance, amountToleranceCents: amountTolerance }
-            )
-          );
+            );
+            if (res.isDuplicate) foundReason = res.reason || "";
+            return res.isDuplicate;
+          });
           return {
             ...r,
             isDuplicate,
+            duplicateReason: foundReason,
             // Por padrão, se for duplicado, desativamos a aprovação para "ignorar automaticamente"
             approved: isDuplicate ? false : true 
           };
@@ -340,18 +361,20 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
 
       for (const pdf of pdfRows) {
         let matchIdx = -1;
+        let matchReason = "";
         for (let i = 0; i < systemRows.length; i++) {
           if (usedSystemIdx.has(i)) continue;
           const sys = systemRows[i];
           
-          const sameDate = pdf.date === sys.date;
-          const sameAmount = Math.abs(pdf.amount - sys.amount) < 0.01;
-          const sameName = pdf.name.toLowerCase().trim() === sys.name.toLowerCase().trim() || 
-                           pdf.name.toLowerCase().includes(sys.name.toLowerCase()) || 
-                           sys.name.toLowerCase().includes(pdf.name.toLowerCase());
+          const res = getDuplicateReason(
+            { date: pdf.date, name: pdf.name, amount: pdf.amount, type: pdf.type },
+            { date: sys.date, name: sys.name, amount: sys.amount, type: sys.type },
+            { dateToleranceDays: dateTolerance, amountToleranceCents: amountTolerance }
+          );
           
-          if (sameDate && sameAmount && sameName) {
+          if (res.isDuplicate) {
             matchIdx = i;
+            matchReason = res.reason || "";
             break;
           }
         }
@@ -363,6 +386,8 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
             name: pdf.name,
             amount: pdf.amount,
             systemAmount: systemRows[matchIdx].amount,
+            systemDate: systemRows[matchIdx].date,
+            duplicateReason: matchReason,
             status: "match"
           });
         } else {
@@ -381,11 +406,13 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
           
           if (mismatchIdx !== -1) {
             usedSystemIdx.add(mismatchIdx);
+            const diffAmount = pdf.amount - systemRows[mismatchIdx].amount;
             comparison.push({
               date: pdf.date,
               name: pdf.name,
               amount: pdf.amount,
               systemAmount: systemRows[mismatchIdx].amount,
+              duplicateReason: `Dif. valor: R$ ${diffAmount.toFixed(2)}`,
               status: "mismatch"
             });
           } else {
@@ -618,16 +645,19 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
                             // Recalcular duplicatas imediatamente ao mudar a tolerância
                             fetchExistingForCard(cardName).then(({ data: existing }) => {
                               if (existing) {
-                                setPreview(prev => prev.map(r => ({
-                                  ...r,
-                                  isDuplicate: existing.some(ext => 
-                                    isPossibleDuplicate(
+                                setPreview(prev => prev.map(r => {
+                                  let foundReason = "";
+                                  const isDuplicate = existing.some(ext => {
+                                    const res = getDuplicateReason(
                                       { date: r.date, name: r.name, amount: r.amount, type: r.type },
                                       { date: ext.date, name: ext.name, amount: Number(ext.amount), type: ext.type },
                                       { dateToleranceDays: val, amountToleranceCents: amountTolerance }
-                                    )
-                                  )
-                                })));
+                                    );
+                                    if (res.isDuplicate) foundReason = res.reason || "";
+                                    return res.isDuplicate;
+                                  });
+                                  return { ...r, isDuplicate, duplicateReason: foundReason };
+                                }));
                               }
                             });
                           }}
@@ -650,16 +680,19 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
                             setAmountTolerance(val);
                             fetchExistingForCard(cardName).then(({ data: existing }) => {
                               if (existing) {
-                                setPreview(prev => prev.map(r => ({
-                                  ...r,
-                                  isDuplicate: existing.some(ext => 
-                                    isPossibleDuplicate(
+                                setPreview(prev => prev.map(r => {
+                                  let foundReason = "";
+                                  const isDuplicate = existing.some(ext => {
+                                    const res = getDuplicateReason(
                                       { date: r.date, name: r.name, amount: r.amount, type: r.type },
                                       { date: ext.date, name: ext.name, amount: Number(ext.amount), type: ext.type },
                                       { dateToleranceDays: dateTolerance, amountToleranceCents: val }
-                                    )
-                                  )
-                                })));
+                                    );
+                                    if (res.isDuplicate) foundReason = res.reason || "";
+                                    return res.isDuplicate;
+                                  });
+                                  return { ...r, isDuplicate, duplicateReason: foundReason };
+                                }));
                               }
                             });
                           }}

@@ -10,6 +10,8 @@ export type ComparisonItem = {
   amount: number;
   status: "match" | "pdf_only" | "system_only" | "mismatch";
   systemAmount?: number;
+  duplicateReason?: string;
+  systemDate?: string;
 };
 
 interface InvoiceComparisonViewProps {
@@ -50,8 +52,9 @@ export function InvoiceComparisonView({ items, pdfTotal, systemTotal, title }: I
               <TableRow>
                 <TableHead className="w-[100px]">Data</TableHead>
                 <TableHead>Descrição</TableHead>
-                <TableHead className="text-right">Valor (PDF)</TableHead>
-                <TableHead className="text-right">Valor (Sistema)</TableHead>
+                <TableHead className="text-right">PDF</TableHead>
+                <TableHead className="text-right">Sistema</TableHead>
+                <TableHead>Diferença / Motivo</TableHead>
                 <TableHead className="w-[120px]">Status</TableHead>
               </TableRow>
             </TableHeader>
@@ -69,6 +72,10 @@ export function InvoiceComparisonView({ items, pdfTotal, systemTotal, title }: I
                   </TableCell>
                   <TableCell className="text-right text-[11px] py-2">
                     {item.systemAmount !== undefined ? `R$ ${item.systemAmount.toFixed(2)}` : "-"}
+                  </TableCell>
+                  <TableCell className="text-[10px] py-2 text-muted-foreground italic">
+                    {item.duplicateReason || (item.status === 'mismatch' && item.systemAmount !== undefined ? 
+                      `Dif: R$ ${(item.amount - item.systemAmount).toFixed(2)}` : "")}
                   </TableCell>
                   <TableCell className="py-2">
                     {item.status === 'match' && (
