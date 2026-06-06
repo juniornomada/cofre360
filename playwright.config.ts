@@ -22,8 +22,9 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'bun run dev',
+    command: process.env.NODE_ENV === 'production' ? 'bun run build && bun run preview' : 'bun run dev',
     url: 'http://localhost:8080',
     reuseExistingServer: !process.env.CI,
+    timeout: 120000,
   },
 });
