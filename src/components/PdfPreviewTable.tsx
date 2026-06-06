@@ -23,8 +23,11 @@ type Props = {
   documentKind?: "card_invoice" | "bank_statement";
 };
 
-export function PdfPreviewTable({ rows, onChange, itemLabel = "transações" }: Props) {
+import { aiRetrySingleTransaction } from "../server-fns/parse-card-invoice";
+
+export function PdfPreviewTable({ rows, onChange, itemLabel = "transações", rawPdfText, documentKind = "card_invoice" }: Props) {
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [retryingIndex, setRetryingIndex] = useState<number | null>(null);
   const [draft, setDraft] = useState<PdfPreviewRow | null>(null);
 
   const startEdit = (i: number) => {
