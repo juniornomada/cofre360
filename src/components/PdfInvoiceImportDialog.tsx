@@ -276,7 +276,6 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
 
     const toImport: TransactionInsert[] = [];
     for (const row of preview) {
-      // Se estiver explicitamente rejeitado, pula
       if (row.approved === false) continue;
 
       const { category, icon } = categorizeTransaction(row.name);
@@ -296,25 +295,12 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
         total_installments: row.total_installments ?? 1,
       };
 
-      const key = buildDedupKey({
-        card: cardName,
-        date: transaction.date,
-        name: transaction.name,
-        amount: Number(transaction.amount),
-        type: transaction.type,
-      });
-
-      // Se for duplicada e NÃO estiver explicitamente aprovada pelo usuário, pula
-      // No preview, se isDuplicate for true, o usuário pode clicar em "Manter" (approved: true)
-      // Se ele não fizer nada, o comportamento padrão depende se queremos ser conservadores.
-      // Vamos assumir que se o usuário vê que é duplicada e deixa como "aprovada" (padrão), ele quer importar.
-      // MAS, para "ignorar automaticamente", o ideal é que por padrão as duplicatas venham DESAPROVADAS.
-      
-      if (seen.has(key) && row.approved !== true) {
+      // Se for duplicada detectada na fase de prévia e o usuário não marcou manualmente como aprovada (approved: true),
+      // nós pulamos ela para evitar duplicar. Se o usuário marcou para manter, importamos.
+      if (row.isDuplicate && row.approved !== true) {
         continue;
       }
 
-      seen.add(key);
       toImport.push(transaction);
     }
 
