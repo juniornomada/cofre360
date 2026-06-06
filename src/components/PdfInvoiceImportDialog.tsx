@@ -160,14 +160,6 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
         confidence_score: t.confidence_score,
         original_amount_text: t.original_amount_text,
       }));
-      // Detect installment markers ("3/12", "3 de 12") and project missing future parcelas.
-      const presentKeys = new Set(baseRows.map((r) => {
-        const det = detectInstallment(r.name);
-        const base = det ? (r.name.split(/[\s(]\d{1,2}[\/de]+\d{1,2}/)[0].trim()) : r.name;
-        const nameKey = det ? `${base} (${det.current}/${det.total})` : r.name;
-        return `${r.date}|${nameKey}|${r.amount.toFixed(2)}|${r.type}`;
-      }));
-      
       const expanded = expandInstallments(baseRows);
       const rows: ParsedRow[] = expanded.rows.map((r) => ({
         date: r.date,
@@ -179,9 +171,7 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
         total_installments: r.total_installments,
         confidence_score: r.confidence_score,
         original_amount_text: r.original_amount_text,
-        isFuture:
-          r.installment_group_id !== null &&
-          !presentKeys.has(`${r.date}|${r.name}|${r.amount.toFixed(2)}|${r.type}`),
+        isFuture: r.is_future,
       }));
       if (rows.length === 0) {
         setError("Nenhuma transação detectada no PDF.");
