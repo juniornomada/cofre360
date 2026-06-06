@@ -17,6 +17,7 @@ export type PdfPreviewRow = {
   approved?: boolean;
   original_amount_text?: string;
   isDuplicate?: boolean;
+  duplicateReason?: string;
 };
 
 type Props = {
