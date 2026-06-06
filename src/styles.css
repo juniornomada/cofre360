@@ -223,14 +223,21 @@
   }
 }
 
+/* Ensure Lovable badge is hidden in all environments */
 a[href*="lovable.dev"], 
 iframe[src*="lovable.dev"],
 div[style*="Edit with Lovable"],
-.lovable-badge {
+.lovable-badge,
+#lovable-badge {
   display: none !important;
   opacity: 0 !important;
   visibility: hidden !important;
   pointer-events: none !important;
   position: absolute !important;
+  top: -9999px !important;
+  left: -9999px !important;
   z-index: -9999 !important;
+  width: 0 !important;
+  height: 0 !important;
+  overflow: hidden !important;
 }
