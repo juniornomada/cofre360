@@ -503,7 +503,31 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
                   </Button>
                 )}
               </div>
-              <Button variant="ghost" size="sm" className="text-xs h-7" onClick={reset}>Trocar PDF</Button>
+              <div className="flex items-center gap-2">
+                {!isComparisonOpen ? (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="h-7 gap-1.5 text-[10px] rounded-lg"
+                    onClick={handleCompareWithSystem}
+                    disabled={checking}
+                  >
+                    {checking ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Scale className="h-3.5 w-3.5" />}
+                    Comparar com Sistema
+                  </Button>
+                ) : (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="h-7 gap-1.5 text-[10px] rounded-lg"
+                    onClick={() => setIsComparisonOpen(false)}
+                  >
+                    Voltar para Lista
+                  </Button>
+                )}
+                <Button variant="ghost" size="sm" className="text-xs h-7" onClick={reset}>Trocar PDF</Button>
+              </div>
+
             </div>
             
             <div className={`flex flex-1 gap-4 overflow-hidden ${showPdf ? "min-h-[400px]" : ""}`}>
