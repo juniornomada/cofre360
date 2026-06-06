@@ -29,7 +29,7 @@ type ParsedRow = {
   installment_number?: number;
   total_installments?: number;
   isFuture?: boolean; // generated parcela future row, not present in PDF
-  confidence?: "low" | "high";
+  confidence_score?: number;
   original_amount_text?: string;
   approved?: boolean;
 };
@@ -157,7 +157,7 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
         name: restoreAccents(t.name),
         amount: Math.abs(Number(t.amount) || 0),
         type: t.type,
-        confidence: t.confidence,
+        confidence_score: t.confidence_score,
         original_amount_text: t.original_amount_text,
       }));
       // Detect installment markers ("3/12", "3 de 12") and project missing future parcelas.
@@ -171,7 +171,7 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
         installment_group_id: r.installment_group_id,
         installment_number: r.installment_number,
         total_installments: r.total_installments,
-        confidence: r.confidence,
+        confidence_score: r.confidence_score,
         original_amount_text: r.original_amount_text,
         isFuture:
           r.installment_group_id !== null &&

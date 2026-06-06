@@ -9,7 +9,7 @@ type ParsedInvoiceTx = {
   amount: number;
   original_amount_text?: string;
   type: "expense" | "income";
-  confidence?: "low" | "high";
+  confidence_score?: number; // 0-100
 };
 
 type DocumentKind = "card_invoice" | "bank_statement";
@@ -57,7 +57,7 @@ Regras:
 - "amount" é número positivo em reais (sem R$, sem ponto de milhar; use ponto decimal).
 - "original_amount_text" é a string exata do valor como aparece no texto (ex: "1.234,56" ou "R$ 50,00").
 - "type": "expense" para compras/débitos. "income" para estornos, créditos, pagamentos recebidos.
-- "confidence": use "low" se houver incerteza sobre a data, valor ou nome (ex: texto cortado, data ambígua), senão use "high".
+- "confidence_score": número de 0 a 100 indicando sua certeza sobre os dados extraídos desta linha.
 - Inclua parcelas individuais (se a linha indica "02/12" use isso no nome: "Loja X (2/12)").
 - Ignore: total da fatura, juros consolidados, saldo anterior, limites, pagamentos do cliente à fatura.
 - Se não houver transações claras, retorne lista vazia.`;
@@ -70,7 +70,7 @@ Regras:
 - "amount" é número positivo em reais (sem R$, sem ponto de milhar; use ponto decimal — sempre positivo).
 - "original_amount_text" é a string exata do valor como aparece no texto original.
 - "type": "expense" para débitos/saídas/pagamentos/PIX enviado/compras. "income" para créditos/entradas/PIX recebido/depósitos/salário/rendimentos.
-- "confidence": use "low" se houver incerteza sobre a data, valor ou nome, senão use "high".
+- "confidence_score": número de 0 a 100 indicando sua certeza sobre os dados desta linha.
 - Ignore: saldo do dia, saldo anterior, saldo final, totais, cabeçalhos, limite de cheque especial.
 - Não duplique a mesma linha. Se houver "Detalhe" abaixo de uma linha, junte na descrição.
 - Se não houver movimentações claras, retorne lista vazia.`;
@@ -119,9 +119,9 @@ ${trimmed}
                       amount: { type: "number" },
                       original_amount_text: { type: "string" },
                       type: { type: "string", enum: ["expense", "income"] },
-                      confidence: { type: "string", enum: ["low", "high"] },
+                      confidence_score: { type: "number", minimum: 0, maximum: 100 },
                     },
-                    required: ["date", "name", "amount", "original_amount_text", "type", "confidence"],
+                    required: ["date", "name", "amount", "original_amount_text", "type", "confidence_score"],
                     additionalProperties: false,
                   },
                 },
@@ -244,7 +244,7 @@ Retorne apenas os dados corrigidos no formato JSON.`;
     
     return {
       ...args,
-      confidence: "high",
+      confidence_score: 100,
       original_amount_text: data.transaction.original_amount_text // Keep for reference
     } as ParsedInvoiceTx;
   });
