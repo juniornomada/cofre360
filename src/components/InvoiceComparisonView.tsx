@@ -16,9 +16,10 @@ interface InvoiceComparisonViewProps {
   items: ComparisonItem[];
   pdfTotal: number;
   systemTotal: number;
+  title?: string;
 }
-
-export function InvoiceComparisonView({ items, pdfTotal, systemTotal }: InvoiceComparisonViewProps) {
+ 
+export function InvoiceComparisonView({ items, pdfTotal, systemTotal, title }: InvoiceComparisonViewProps) {
   const diff = pdfTotal - systemTotal;
 
   return (
