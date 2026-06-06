@@ -345,60 +345,93 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
         )}
 
         {preview.length > 0 && !parsing && (
-          <>
+          <div className="flex-1 overflow-hidden flex flex-col space-y-3">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <FileText className="h-4 w-4" />
-                {fileName} — {preview.length} transações
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <FileText className="h-4 w-4" />
+                  {fileName} — {preview.length} transações
+                </div>
+                {fileUrl && (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className={`h-7 gap-1.5 text-[10px] rounded-lg ${showPdf ? "bg-primary/10 border-primary/20 text-primary" : ""}`}
+                    onClick={() => setShowPdf(!showPdf)}
+                  >
+                    {showPdf ? <LayoutPanelLeft className="h-3.5 w-3.5" /> : <FileSearch className="h-3.5 w-3.5" />}
+                    {showPdf ? "Ocultar PDF" : "Visualizar PDF"}
+                  </Button>
+                )}
               </div>
               <Button variant="ghost" size="sm" className="text-xs h-7" onClick={reset}>Trocar PDF</Button>
             </div>
-            {preview.some((p) => p.isFuture) && (
-              <p className="text-[11px] text-muted-foreground -mt-1">
-                <span className="inline-block text-[9px] font-semibold px-1 py-0.5 rounded bg-primary/10 text-primary mr-1">futura</span>
-                = parcela detectada e projetada para meses seguintes ({preview.filter((p) => p.isFuture).length} adicionada{preview.filter((p) => p.isFuture).length > 1 ? "s" : ""}).
-              </p>
-            )}
-
-            <PdfPreviewTable
-              rows={preview}
-              onChange={(rows) => { setPreview(rows); setDedupResult(null); }}
-              itemLabel="transações"
-            />
-
-            {!dedupResult ? (
-              <div className="flex gap-2">
-                <Button variant="outline" className="flex-1 rounded-xl" onClick={reset}>Cancelar</Button>
-                <Button className="flex-1 rounded-xl gap-2" onClick={handleCheckDuplicates} disabled={checking}>
-                  {checking && <Loader2 className="h-4 w-4 animate-spin" />}
-                  Verificar {preview.length}
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <div className="rounded-xl bg-muted/50 p-3 space-y-1.5">
-                  <div className="flex items-center gap-2 text-xs font-medium text-primary">
-                    <CheckCircle2 className="h-4 w-4" />
-                    {dedupResult.toImport.length} transações serão importadas
+            
+            <div className={`flex flex-1 gap-4 overflow-hidden ${showPdf ? "min-h-[400px]" : ""}`}>
+              {showPdf && fileUrl && (
+                <div className="flex-1 border rounded-xl overflow-hidden bg-muted/20">
+                  <iframe 
+                    src={fileUrl} 
+                    className="w-full h-full border-0"
+                    title="Visualização do PDF"
+                  />
+                </div>
+              )}
+              
+              <div className={`${showPdf ? "flex-[0.8]" : "w-full"} flex flex-col overflow-hidden`}>
+                <div className="flex-1 overflow-hidden flex flex-col space-y-3">
+                  {preview.some((p) => p.isFuture) && (
+                    <p className="text-[11px] text-muted-foreground">
+                      <span className="inline-block text-[9px] font-semibold px-1 py-0.5 rounded bg-primary/10 text-primary mr-1">futura</span>
+                      = parcela detectada e projetada ({preview.filter((p) => p.isFuture).length}).
+                    </p>
+                  )}
+      
+                  <div className="flex-1 overflow-y-auto">
+                    <PdfPreviewTable
+                      rows={preview}
+                      onChange={(rows) => { setPreview(rows); setDedupResult(null); }}
+                      itemLabel="transações"
+                    />
                   </div>
-                  {dedupResult.duplicateCount > 0 && (
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <AlertCircle className="h-3.5 w-3.5" />
-                      {dedupResult.duplicateCount} duplicada{dedupResult.duplicateCount > 1 ? "s" : ""} ignorada{dedupResult.duplicateCount > 1 ? "s" : ""}
+
+                  {!dedupResult ? (
+                    <div className="flex gap-2">
+                      <Button variant="outline" className="flex-1 rounded-xl" onClick={reset}>Cancelar</Button>
+                      <Button className="flex-1 rounded-xl gap-2" onClick={handleCheckDuplicates} disabled={checking}>
+                        {checking && <Loader2 className="h-4 w-4 animate-spin" />}
+                        Verificar {preview.length}
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="rounded-xl bg-muted/50 p-3 space-y-1.5">
+                        <div className="flex items-center gap-2 text-xs font-medium text-primary">
+                          <CheckCircle2 className="h-4 w-4" />
+                          {dedupResult.toImport.length} transações serão importadas
+                        </div>
+                        {dedupResult.duplicateCount > 0 && (
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <AlertCircle className="h-3.5 w-3.5" />
+                            {dedupResult.duplicateCount} duplicada{dedupResult.duplicateCount > 1 ? "s" : ""} ignorada
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex gap-2">
+                        <Button variant="outline" className="flex-1 rounded-xl" onClick={() => setDedupResult(null)}>Voltar</Button>
+                        <Button className="flex-1 rounded-xl gap-2" onClick={handleConfirmImport} disabled={saving}>
+                          {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+                          Confirmar importação
+                        </Button>
+                      </div>
                     </div>
                   )}
                 </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" className="flex-1 rounded-xl" onClick={() => setDedupResult(null)}>Voltar</Button>
-                  <Button className="flex-1 rounded-xl gap-2" onClick={handleConfirmImport} disabled={saving}>
-                    {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-                    Confirmar importação
-                  </Button>
-                </div>
               </div>
-            )}
+            </div>
           </div>
         )}
+
 
       </DialogContent>
     </Dialog>
