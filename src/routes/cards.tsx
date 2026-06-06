@@ -1226,11 +1226,21 @@ export function CardsPage() {
 
               {activePeriod && (
                 <div className="mx-5 mb-3 rounded-xl bg-accent/50 p-3 flex justify-between items-center">
-                  <span className="text-xs font-medium text-muted-foreground">Total da fatura</span>
+                  <div className="flex flex-col">
+                    <span className="text-xs font-medium text-muted-foreground">Total da fatura</span>
+                    {invoiceCard && Math.abs(invoiceCard.used - (activePeriod.total || 0)) > 0.01 && (
+                      <button 
+                        onClick={() => handleRecalculateUsedLimit(invoiceCard.id, activePeriod.total || 0)}
+                        className="text-[9px] font-bold text-primary hover:underline flex items-center gap-1 mt-0.5"
+                      >
+                        <RefreshCw className="h-2 w-2" />
+                        Sincronizar com Limite Utilizado
+                      </button>
+                    )}
+                  </div>
                   <span className="text-sm font-bold text-destructive tabular-nums" data-testid="total-da-fatura-valor">
                     R$ {(activePeriod.total || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                   </span>
-
                 </div>
               )}
 
