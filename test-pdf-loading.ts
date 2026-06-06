@@ -1,11 +1,13 @@
 import { createServerFn } from "@tanstack/react-start";
 import * as fs from "fs";
+import path from "path";
 
 // Mock minimal version of the function logic to test PDF.js loading
 async function testPdfLoading() {
   try {
     const pdfjs: any = await import("pdfjs-dist/legacy/build/pdf.mjs");
-    pdfjs.GlobalWorkerOptions.workerSrc = "./node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs";
+    pdfjs.GlobalWorkerOptions.workerSrc = path.resolve("./node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs");
+
 
     console.log("PDF.js and workerSrc set. Attempting to load a dummy PDF...");
     
