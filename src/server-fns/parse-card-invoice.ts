@@ -1,4 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
+import path from "path";
+
 
 // Parse a credit-card invoice OR bank-account statement PDF using pdfjs-dist
 // (text extraction) and Lovable AI Gateway (structured transaction extraction).
@@ -15,25 +17,17 @@ type ParsedInvoiceTx = {
 type DocumentKind = "card_invoice" | "bank_statement";
 
 async function extractPdfText(base64: string): Promise<string> {
-  // Use Buffer for reliable base64 decoding on the server (Bun/Node)
-  const bytes = Buffer.from(base64, "base64");
+  // Use Uint8Array for PDF.js compatibility (it rejects plain Buffers in Node)
+  const bytes = new Uint8Array(Buffer.from(base64, "base64"));
 
   // Dynamic import of pdfjs-dist legacy build
   const pdfjs: any = await import("pdfjs-dist/legacy/build/pdf.mjs");
-  const worker: any = await import("pdfjs-dist/legacy/build/pdf.worker.mjs");
 
-  // In a server environment (Node/Bun), we can use the WorkerMessageHandler 
-  // from the worker module to act as a "fake worker" on the main thread.
-  // This avoids the need for a separate worker file and bypasses workerSrc checks.
-  if (worker.WorkerMessageHandler) {
-    pdfjs.GlobalWorkerOptions.workerPort = new worker.WorkerMessageHandler();
-  } else {
-    // Fallback for different versions
-    pdfjs.GlobalWorkerOptions.workerPort = worker;
-  }
-  
-  // We still set a dummy workerSrc to satisfy some internal checks in certain versions
-  pdfjs.GlobalWorkerOptions.workerSrc = "fake";
+  // On the server, we set workerSrc to the absolute path of the worker file.
+  // We use an absolute path to ensure it's found regardless of the current CWD.
+  pdfjs.GlobalWorkerOptions.workerSrc = path.resolve("./node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs");
+
+
 
   const loadingTask = pdfjs.getDocument({
     data: bytes,
