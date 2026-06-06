@@ -267,7 +267,120 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
     setChecking(false);
   };
 
+  const handleCompareWithSystem = async () => {
+    setChecking(true);
+    try {
+      const { data: existing, error: existErr } = await fetchExistingForCard(cardName);
+      if (existErr || !existing) {
+        setError("Erro ao consultar transações existentes.");
+        return;
+      }
+
+      if (preview.length === 0) return;
+      
+      const { data: cardData } = await supabase.from("cards").select("closing_day, due_day").eq("name", cardName).maybeSingle();
+      
+      const pdfRows = preview;
+      const comparison: ComparisonItem[] = [];
+      const usedSystemIdx = new Set<number>();
+      
+      const systemRows = existing.map(t => ({
+        ...t,
+        amount: Number(t.amount),
+      }));
+
+      for (const pdf of pdfRows) {
+        let matchIdx = -1;
+        for (let i = 0; i < systemRows.length; i++) {
+          if (usedSystemIdx.has(i)) continue;
+          const sys = systemRows[i];
+          
+          const sameDate = pdf.date === sys.date;
+          const sameAmount = Math.abs(pdf.amount - sys.amount) < 0.01;
+          const sameName = pdf.name.toLowerCase().trim() === sys.name.toLowerCase().trim() || 
+                           pdf.name.toLowerCase().includes(sys.name.toLowerCase()) || 
+                           sys.name.toLowerCase().includes(pdf.name.toLowerCase());
+          
+          if (sameDate && sameAmount && sameName) {
+            matchIdx = i;
+            break;
+          }
+        }
+
+        if (matchIdx !== -1) {
+          usedSystemIdx.add(matchIdx);
+          comparison.push({
+            date: pdf.date,
+            name: pdf.name,
+            amount: pdf.amount,
+            systemAmount: systemRows[matchIdx].amount,
+            status: "match"
+          });
+        } else {
+          let mismatchIdx = -1;
+          for (let i = 0; i < systemRows.length; i++) {
+            if (usedSystemIdx.has(i)) continue;
+            const sys = systemRows[i];
+            const sameDate = pdf.date === sys.date;
+            const sameName = pdf.name.toLowerCase().trim() === sys.name.toLowerCase().trim();
+            
+            if (sameDate && sameName) {
+              mismatchIdx = i;
+              break;
+            }
+          }
+          
+          if (mismatchIdx !== -1) {
+            usedSystemIdx.add(mismatchIdx);
+            comparison.push({
+              date: pdf.date,
+              name: pdf.name,
+              amount: pdf.amount,
+              systemAmount: systemRows[mismatchIdx].amount,
+              status: "mismatch"
+            });
+          } else {
+            comparison.push({
+              date: pdf.date,
+              name: pdf.name,
+              amount: pdf.amount,
+              status: "pdf_only"
+            });
+          }
+        }
+      }
+
+      const pdfDates = pdfRows.map(p => new Date(p.date).getTime()).sort();
+      const minPdf = pdfDates[0];
+      const maxPdf = pdfDates[pdfDates.length - 1];
+      
+      for (let i = 0; i < systemRows.length; i++) {
+        if (usedSystemIdx.has(i)) continue;
+        const sys = systemRows[i];
+        const sysTime = new Date(sys.date).getTime();
+        
+        if (sysTime >= minPdf - 2 * 86400000 && sysTime <= maxPdf + 2 * 86400000) {
+          comparison.push({
+            date: sys.date,
+            name: sys.name,
+            amount: 0,
+            systemAmount: sys.amount,
+            status: "system_only"
+          });
+        }
+      }
+
+      setComparisonItems(comparison);
+      setIsComparisonOpen(true);
+    } catch (err: any) {
+      setError("Erro ao comparar com o sistema: " + err.message);
+    } finally {
+      setChecking(false);
+    }
+  };
+
   const handleConfirmImport = async () => {
+
     if (!dedupResult) return;
     setSaving(true);
     setError("");
