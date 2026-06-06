@@ -204,16 +204,21 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
           )
         );
 
-        const rowsWithDup = rows.map(r => ({
-          ...r,
-          isDuplicate: seen.has(buildDedupKey({
+        const rowsWithDup = rows.map(r => {
+          const isDuplicate = seen.has(buildDedupKey({
             card: cardName,
             date: r.date,
             name: r.name,
             amount: r.amount,
             type: r.type,
-          }))
-        }));
+          }));
+          return {
+            ...r,
+            isDuplicate,
+            // Por padrão, se for duplicado, desativamos a aprovação para "ignorar automaticamente"
+            approved: isDuplicate ? false : true 
+          };
+        });
         setPreview(rowsWithDup);
       }
 
