@@ -79,6 +79,7 @@ export function PdfPreviewTable({ rows, onChange, itemLabel = "transações" }: 
                     <Input
                       value={draft.name}
                       onChange={(e) => setDraft({ ...draft, name: e.target.value })}
+                      onKeyDown={(e) => e.key === "Enter" && saveEdit()}
                       className="h-7 text-xs px-2 rounded-md"
                       autoFocus
                     />
@@ -116,7 +117,12 @@ export function PdfPreviewTable({ rows, onChange, itemLabel = "transações" }: 
               );
             }
             return (
-              <tr key={i} className={`border-t border-border group ${r.isFuture ? "bg-muted/20" : ""}`}>
+              <tr 
+                key={i} 
+                className={`border-t border-border group transition-colors hover:bg-muted/30 cursor-pointer ${r.isFuture ? "bg-muted/10" : ""}`}
+                onClick={() => startEdit(i)}
+                title="Clique para editar"
+              >
                 <td className="p-2 text-muted-foreground whitespace-nowrap">{r.date}</td>
                 <td className="p-2 truncate max-w-[140px]">
                   <span className="align-middle">{r.name}</span>
@@ -129,8 +135,8 @@ export function PdfPreviewTable({ rows, onChange, itemLabel = "transações" }: 
                 <td className={`p-2 text-right font-medium tabular-nums ${r.type === "income" ? "text-primary" : "text-destructive"}`}>
                   {r.type === "expense" ? "-" : "+"}R$ {r.amount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                 </td>
-                <td className="p-1.5">
-                  <div className="flex items-center justify-end gap-0.5 opacity-60 group-hover:opacity-100 transition-opacity">
+                <td className="p-1.5" onClick={(e) => e.stopPropagation()}>
+                  <div className="flex items-center justify-end gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button onClick={() => startEdit(i)} className="p-1 rounded hover:bg-accent text-muted-foreground" title="Editar">
                       <Pencil className="h-3.5 w-3.5" />
                     </button>
