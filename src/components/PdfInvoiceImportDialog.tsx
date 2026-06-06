@@ -406,11 +406,13 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
           
           if (mismatchIdx !== -1) {
             usedSystemIdx.add(mismatchIdx);
+            const diffAmount = pdf.amount - systemRows[mismatchIdx].amount;
             comparison.push({
               date: pdf.date,
               name: pdf.name,
               amount: pdf.amount,
               systemAmount: systemRows[mismatchIdx].amount,
+              duplicateReason: `Dif. valor: R$ ${diffAmount.toFixed(2)}`,
               status: "mismatch"
             });
           } else {
