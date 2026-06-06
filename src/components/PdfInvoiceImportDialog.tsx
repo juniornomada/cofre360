@@ -52,6 +52,37 @@ function normalize(str: string): string {
   return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
 }
 
+type DedupOptions = {
+  dateToleranceDays: number;
+  amountToleranceCents: number;
+};
+
+function isPossibleDuplicate(
+  pdf: { date: string; name: string; amount: number; type: string },
+  existing: { date: string; name: string; amount: number; type: string },
+  options: DedupOptions = { dateToleranceDays: 0, amountToleranceCents: 0 }
+): boolean {
+  const normPdfName = normalize(pdf.name).replace(/\s+/g, " ");
+  const normSysName = normalize(existing.name).replace(/\s+/g, " ");
+  
+  const sameName = normPdfName === normSysName || normPdfName.includes(normSysName) || normSysName.includes(normPdfName);
+  if (!sameName) return false;
+
+  const sameType = pdf.type === existing.type;
+  if (!sameType) return false;
+
+  const pdfDate = new Date(pdf.date).getTime();
+  const sysDate = new Date(existing.date).getTime();
+  const diffDays = Math.abs(pdfDate - sysDate) / (1000 * 60 * 60 * 24);
+  const withinDateTolerance = diffDays <= options.dateToleranceDays;
+  if (!withinDateTolerance) return false;
+
+  const diffAmount = Math.abs(pdf.amount - existing.amount);
+  const withinAmountTolerance = diffAmount <= (options.amountToleranceCents / 100);
+  
+  return withinAmountTolerance;
+}
+
 function buildDedupKey(input: { card: string; date: string; name: string; amount: number; type: string }) {
   return [
     input.card,
@@ -108,6 +139,8 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
   const [comparisonItems, setComparisonItems] = useState<ComparisonItem[]>([]);
   const [isComparisonOpen, setIsComparisonOpen] = useState(false);
   const [filterDuplicatesOnly, setFilterDuplicatesOnly] = useState(false);
+  const [dateTolerance, setDateTolerance] = useState(0);
+  const [amountTolerance, setAmountTolerance] = useState(0);
 
 
   const reset = () => {
@@ -194,26 +227,14 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
       // Chamada automática para verificar duplicatas assim que carrega
       const { data: existing } = await fetchExistingForCard(cardName);
       if (existing) {
-        const seen = new Set(
-          existing.map((t) =>
-            buildDedupKey({
-              card: cardName,
-              date: t.date,
-              name: t.name,
-              amount: Number(t.amount),
-              type: t.type,
-            })
-          )
-        );
-
         const rowsWithDup = rows.map(r => {
-          const isDuplicate = seen.has(buildDedupKey({
-            card: cardName,
-            date: r.date,
-            name: r.name,
-            amount: r.amount,
-            type: r.type,
-          }));
+          const isDuplicate = existing.some(ext => 
+            isPossibleDuplicate(
+              { date: r.date, name: r.name, amount: r.amount, type: r.type },
+              { date: ext.date, name: ext.name, amount: Number(ext.amount), type: ext.type },
+              { dateToleranceDays: dateTolerance, amountToleranceCents: amountTolerance }
+            )
+          );
           return {
             ...r,
             isDuplicate,
@@ -243,17 +264,6 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
       setError("Erro ao consultar transações existentes.");
       return;
     }
-    const seen = new Set(
-      existing.map((t) =>
-        buildDedupKey({
-          card: cardName,
-          date: t.date,
-          name: t.name,
-          amount: Number(t.amount),
-          type: t.type,
-        })
-      )
-    );
 
     const { data: { session } } = await supabase.auth.getSession();
     const userId = session?.user?.id;
@@ -266,7 +276,6 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
 
     const toImport: TransactionInsert[] = [];
     for (const row of preview) {
-      // Se estiver explicitamente rejeitado, pula
       if (row.approved === false) continue;
 
       const { category, icon } = categorizeTransaction(row.name);
@@ -286,25 +295,12 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
         total_installments: row.total_installments ?? 1,
       };
 
-      const key = buildDedupKey({
-        card: cardName,
-        date: transaction.date,
-        name: transaction.name,
-        amount: Number(transaction.amount),
-        type: transaction.type,
-      });
-
-      // Se for duplicada e NÃO estiver explicitamente aprovada pelo usuário, pula
-      // No preview, se isDuplicate for true, o usuário pode clicar em "Manter" (approved: true)
-      // Se ele não fizer nada, o comportamento padrão depende se queremos ser conservadores.
-      // Vamos assumir que se o usuário vê que é duplicada e deixa como "aprovada" (padrão), ele quer importar.
-      // MAS, para "ignorar automaticamente", o ideal é que por padrão as duplicatas venham DESAPROVADAS.
-      
-      if (seen.has(key) && row.approved !== true) {
+      // Se for duplicada detectada na fase de prévia e o usuário não marcou manualmente como aprovada (approved: true),
+      // nós pulamos ela para evitar duplicar. Se o usuário marcou para manter, importamos.
+      if (row.isDuplicate && row.approved !== true) {
         continue;
       }
 
-      seen.add(key);
       toImport.push(transaction);
     }
 
@@ -603,6 +599,76 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
               
               <div className={`${showPdf ? "flex-[0.8]" : "w-full"} flex flex-col overflow-hidden`}>
                 <div className="flex-1 overflow-hidden flex flex-col space-y-3">
+                  <div className="flex flex-col gap-2 p-3 bg-muted/30 rounded-xl border border-border/50">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex-1 space-y-2">
+                        <label className="text-[10px] font-medium text-muted-foreground flex items-center justify-between">
+                          <span>Tolerância de Data (± {dateTolerance} dias)</span>
+                          <span className="text-primary">{dateTolerance}d</span>
+                        </label>
+                        <input 
+                          type="range" 
+                          min="0" 
+                          max="7" 
+                          step="1" 
+                          value={dateTolerance} 
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value);
+                            setDateTolerance(val);
+                            // Recalcular duplicatas imediatamente ao mudar a tolerância
+                            fetchExistingForCard(cardName).then(({ data: existing }) => {
+                              if (existing) {
+                                setPreview(prev => prev.map(r => ({
+                                  ...r,
+                                  isDuplicate: existing.some(ext => 
+                                    isPossibleDuplicate(
+                                      { date: r.date, name: r.name, amount: r.amount, type: r.type },
+                                      { date: ext.date, name: ext.name, amount: Number(ext.amount), type: ext.type },
+                                      { dateToleranceDays: val, amountToleranceCents: amountTolerance }
+                                    )
+                                  )
+                                })));
+                              }
+                            });
+                          }}
+                          className="w-full h-1.5 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
+                        />
+                      </div>
+                      <div className="flex-1 space-y-2">
+                        <label className="text-[10px] font-medium text-muted-foreground flex items-center justify-between">
+                          <span>Tolerância de Valor (± {amountTolerance} centavos)</span>
+                          <span className="text-primary">{amountTolerance}¢</span>
+                        </label>
+                        <input 
+                          type="range" 
+                          min="0" 
+                          max="100" 
+                          step="5" 
+                          value={amountTolerance} 
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value);
+                            setAmountTolerance(val);
+                            fetchExistingForCard(cardName).then(({ data: existing }) => {
+                              if (existing) {
+                                setPreview(prev => prev.map(r => ({
+                                  ...r,
+                                  isDuplicate: existing.some(ext => 
+                                    isPossibleDuplicate(
+                                      { date: r.date, name: r.name, amount: r.amount, type: r.type },
+                                      { date: ext.date, name: ext.name, amount: Number(ext.amount), type: ext.type },
+                                      { dateToleranceDays: dateTolerance, amountToleranceCents: val }
+                                    )
+                                  )
+                                })));
+                              }
+                            });
+                          }}
+                          className="w-full h-1.5 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="flex flex-col gap-1.5">
                     <div className="flex items-center justify-between gap-2">
                       {preview.some((p) => p.isFuture) && (
