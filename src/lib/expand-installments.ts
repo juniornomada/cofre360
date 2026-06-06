@@ -10,7 +10,7 @@ export type InstallmentInputRow = {
   name: string;
   amount: number;
   type: "expense" | "income";
-  confidence?: "low" | "high";
+  confidence_score?: number;
   original_amount_text?: string;
 };
 
@@ -116,7 +116,7 @@ export function expandInstallments(input: InstallmentInputRow[]): ExpandResult {
       type: "expense" | "income";
       amount: number;
       presentNumbers: Set<number>;
-      confidence: "low" | "high";
+      confidence_score: number;
       original_amount_text?: string;
     }
   >();
@@ -130,7 +130,7 @@ export function expandInstallments(input: InstallmentInputRow[]): ExpandResult {
         installment_group_id: null,
         installment_number: 1,
         total_installments: 1,
-        confidence: r.confidence ?? "high",
+        confidence_score: r.confidence_score ?? 100,
         original_amount_text: r.original_amount_text,
       });
       continue;
@@ -148,7 +148,7 @@ export function expandInstallments(input: InstallmentInputRow[]): ExpandResult {
         type: r.type,
         amount: r.amount,
         presentNumbers: new Set<number>(),
-        confidence: r.confidence ?? "high",
+        confidence_score: r.confidence_score ?? 100,
         original_amount_text: r.original_amount_text,
       };
       series.set(seriesKey, s);
@@ -169,7 +169,7 @@ export function expandInstallments(input: InstallmentInputRow[]): ExpandResult {
       installment_group_id: s.groupId,
       installment_number: det.current,
       total_installments: det.total,
-      confidence: s.confidence,
+      confidence_score: s.confidence_score,
       original_amount_text: s.original_amount_text,
     });
   }
@@ -189,7 +189,7 @@ export function expandInstallments(input: InstallmentInputRow[]): ExpandResult {
         installment_group_id: s.groupId,
         installment_number: n,
         total_installments: s.total,
-        confidence: s.confidence,
+        confidence_score: s.confidence_score,
         original_amount_text: s.original_amount_text,
       });
       s.presentNumbers.add(n);
