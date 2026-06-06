@@ -170,6 +170,78 @@ ${trimmed}
   return txs;
 }
 
+export const aiRetrySingleTransaction = createServerFn({ method: "POST" })
+  .inputValidator((input: { rawText: string; transaction: ParsedInvoiceTx; kind: DocumentKind }) => {
+    if (!input || !input.rawText || !input.transaction) {
+      throw new Error("Dados ausentes para reprocessamento.");
+    }
+    return input;
+  })
+  .handler(async ({ data }) => {
+    const LOVABLE_API_KEY = process.env.LOVABLE_API_KEY;
+    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY ausente.");
+
+    // Narrow down the context to help AI find the specific transaction
+    const prompt = `Você recebeu o texto de um documento financeiro e uma transação que foi extraída com baixa confiança.
+Sua tarefa é analisar o texto novamente e tentar extrair os dados CORRETOS para esta transação específica.
+
+Transação com dúvida:
+- Data original: ${data.transaction.date}
+- Nome original: ${data.transaction.name}
+- Valor original: ${data.transaction.amount} (Texto lido: ${data.transaction.original_amount_text})
+
+Texto do PDF:
+"""
+${data.rawText.slice(0, 15000)}
+"""
+
+Retorne apenas os dados corrigidos no formato JSON.`;
+
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-1.5-flash",
+        messages: [
+          { role: "system", content: "Você é um especialista em extração de dados financeiros. Retorne JSON válido via function call." },
+          { role: "user", content: prompt },
+        ],
+        tools: [
+          {
+            type: "function",
+            function: {
+              name: "submit_corrected_transaction",
+              parameters: {
+                type: "object",
+                properties: {
+                  date: { type: "string" },
+                  name: { type: "string" },
+                  amount: { type: "number" },
+                  type: { type: "string", enum: ["expense", "income"] },
+                },
+                required: ["date", "name", "amount", "type"],
+              },
+            },
+          },
+        ],
+        tool_choice: { type: "function", function: { name: "submit_corrected_transaction" } },
+      }),
+    });
+
+    if (!response.ok) throw new Error("Erro na chamada da IA.");
+    const result = await response.json();
+    const args = JSON.parse(result?.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments || "{}");
+    
+    return {
+      ...args,
+      confidence: "high",
+      original_amount_text: data.transaction.original_amount_text // Keep for reference
+    } as ParsedInvoiceTx;
+  });
+
 export const parseCardInvoicePdf = createServerFn({ method: "POST" })
   .inputValidator((input: { fileBase64: string; fileName: string; kind?: DocumentKind }) => {
     if (!input || typeof input.fileBase64 !== "string" || !input.fileBase64) {
