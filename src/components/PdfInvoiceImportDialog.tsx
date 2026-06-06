@@ -114,6 +114,8 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
     try {
       const fileBase64 = await fileToBase64(file);
       const result = await parseCardInvoicePdf({ data: { fileBase64, fileName: file.name, kind: "card_invoice" } });
+      console.log("PDF extraction result:", { transactions: result.transactions?.length, chars: result.charsExtracted });
+
       const baseRows = (result.transactions || []).map((t) => ({
         date: t.date,
         name: restoreAccents(t.name),
