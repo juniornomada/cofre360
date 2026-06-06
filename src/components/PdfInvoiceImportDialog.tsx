@@ -107,6 +107,7 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
   const [saving, setSaving] = useState(false);
   const [comparisonItems, setComparisonItems] = useState<ComparisonItem[]>([]);
   const [isComparisonOpen, setIsComparisonOpen] = useState(false);
+  const [filterDuplicatesOnly, setFilterDuplicatesOnly] = useState(false);
 
 
   const reset = () => {
@@ -125,6 +126,7 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
     setDedupResult(null);
     setComparisonItems([]);
     setIsComparisonOpen(false);
+    setFilterDuplicatesOnly(false);
     setChecking(false);
     setSaving(false);
 
@@ -430,6 +432,13 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
     }
   };
 
+  const handleCompareDuplicates = async () => {
+    setFilterDuplicatesOnly(true);
+    // Mesmo se já houver itens, recalculamos para garantir que está atualizado com o preview atual
+    await handleCompareWithSystem();
+  };
+
+
   const handleConfirmImport = async () => {
 
     if (!dedupResult) return;
@@ -560,7 +569,7 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
                     variant="outline" 
                     size="sm" 
                     className="h-7 gap-1.5 text-[10px] rounded-lg"
-                    onClick={handleCompareWithSystem}
+                    onClick={() => { setFilterDuplicatesOnly(false); handleCompareWithSystem(); }}
                     disabled={checking}
                   >
                     {checking ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Scale className="h-3.5 w-3.5" />}
@@ -603,10 +612,21 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
                         </p>
                       )}
                       {preview.some((p) => p.isDuplicate) && (
-                        <p className="text-[11px] text-amber-600 font-medium">
-                          <AlertCircle className="inline-block h-3.5 w-3.5 mr-1 align-text-top" />
-                          {preview.filter(p => p.isDuplicate).length} possíveis duplicatas detectadas.
-                        </p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-[11px] text-amber-600 font-medium">
+                            <AlertCircle className="inline-block h-3.5 w-3.5 mr-1 align-text-top" />
+                            {preview.filter(p => p.isDuplicate).length} possíveis duplicatas detectadas.
+                          </p>
+                          <Button 
+                            variant="link" 
+                            size="sm" 
+                            className="h-auto p-0 text-[11px] text-amber-600 underline hover:text-amber-700 font-semibold"
+                            onClick={handleCompareDuplicates}
+                            disabled={checking}
+                          >
+                            {checking ? "Verificando..." : "Ver duplicatas"}
+                          </Button>
+                        </div>
                       )}
                       <p className="text-[10px] text-muted-foreground ml-auto italic">
                         Dica: clique em uma linha para editar.
@@ -617,9 +637,10 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
                   <div className="flex-1 overflow-y-auto">
                     {isComparisonOpen ? (
                       <InvoiceComparisonView 
-                        items={comparisonItems}
+                        items={filterDuplicatesOnly ? comparisonItems.filter(i => i.status === 'match' || i.status === 'mismatch' || i.status === 'system_only') : comparisonItems}
                         pdfTotal={preview.reduce((sum, r) => sum + r.amount, 0)}
                         systemTotal={comparisonItems.reduce((sum, r) => sum + (r.systemAmount || 0), 0)}
+                        title={filterDuplicatesOnly ? "Comparação: Apenas Duplicatas" : "Comparação Completa"}
                       />
                     ) : (
                       <PdfPreviewTable
