@@ -432,6 +432,13 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
     }
   };
 
+  const handleCompareDuplicates = async () => {
+    setFilterDuplicatesOnly(true);
+    // Mesmo se já houver itens, recalculamos para garantir que está atualizado com o preview atual
+    await handleCompareWithSystem();
+  };
+
+
   const handleConfirmImport = async () => {
 
     if (!dedupResult) return;
