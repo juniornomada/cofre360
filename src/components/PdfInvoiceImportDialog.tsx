@@ -208,12 +208,22 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
       )
     );
 
+    const { data: { session } } = await supabase.auth.getSession();
+    const userId = session?.user?.id;
+
+    if (!userId) {
+      setChecking(false);
+      setError("Sessão não encontrada. Por favor, faça login novamente.");
+      return;
+    }
+
     const toImport: TransactionInsert[] = [];
     for (const row of preview) {
       if (row.approved === false) continue;
       const { category, icon } = categorizeTransaction(row.name);
       const transaction: TransactionInsert = {
         id: crypto.randomUUID(),
+        user_id: userId,
         date: row.date,
         name: row.name,
         amount: row.amount,
