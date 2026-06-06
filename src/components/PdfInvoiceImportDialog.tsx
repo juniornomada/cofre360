@@ -227,26 +227,14 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
       // Chamada automática para verificar duplicatas assim que carrega
       const { data: existing } = await fetchExistingForCard(cardName);
       if (existing) {
-        const seen = new Set(
-          existing.map((t) =>
-            buildDedupKey({
-              card: cardName,
-              date: t.date,
-              name: t.name,
-              amount: Number(t.amount),
-              type: t.type,
-            })
-          )
-        );
-
         const rowsWithDup = rows.map(r => {
-          const isDuplicate = seen.has(buildDedupKey({
-            card: cardName,
-            date: r.date,
-            name: r.name,
-            amount: r.amount,
-            type: r.type,
-          }));
+          const isDuplicate = existing.some(ext => 
+            isPossibleDuplicate(
+              { date: r.date, name: r.name, amount: r.amount, type: r.type },
+              { date: ext.date, name: ext.name, amount: Number(ext.amount), type: ext.type },
+              { dateToleranceDays: dateTolerance, amountToleranceCents: amountTolerance }
+            )
+          );
           return {
             ...r,
             isDuplicate,
