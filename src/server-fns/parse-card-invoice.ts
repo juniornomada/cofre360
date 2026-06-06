@@ -15,18 +15,25 @@ type ParsedInvoiceTx = {
 type DocumentKind = "card_invoice" | "bank_statement";
 
 async function extractPdfText(base64: string): Promise<string> {
-  // Decode base64 → Uint8Array
-  const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  // Use Buffer for reliable base64 decoding on the server (Bun/Node)
+  const bytes = Buffer.from(base64, "base64");
 
-  // Dynamic import — pdfjs-dist legacy build is Worker-compatible (pure JS, no DOM)
+  // Dynamic import of pdfjs-dist legacy build
   const pdfjs: any = await import("pdfjs-dist/legacy/build/pdf.mjs");
-  // Load the worker module as a side effect so pdfjs can use it as a fake worker.
-  // Also set workerSrc to a non-empty string to bypass the "workerSrc not specified" check.
-  await import("pdfjs-dist/legacy/build/pdf.worker.mjs");
-  if (pdfjs.GlobalWorkerOptions) {
-    pdfjs.GlobalWorkerOptions.workerSrc = "pdfjs-dist/legacy/build/pdf.worker.mjs";
+
+  // To fix "No GlobalWorkerOptions.workerSrc specified", we must provide either workerSrc or workerPort.
+  // In a server environment, we don't really need a real Worker, so we point it to the worker module
+  // and satisfy the check by providing a non-empty workerSrc string.
+  try {
+    const worker = await import("pdfjs-dist/legacy/build/pdf.worker.mjs");
+    pdfjs.GlobalWorkerOptions.workerPort = worker;
+  } catch (e) {
+    console.warn("Could not load pdfjs worker module, falling back to fake worker:", e);
+  }
+  
+  // Even with workerPort, some versions check if workerSrc is set.
+  if (!pdfjs.GlobalWorkerOptions.workerSrc) {
+    pdfjs.GlobalWorkerOptions.workerSrc = "true"; // Dummy value to satisfy the check
   }
 
   const loadingTask = pdfjs.getDocument({
@@ -35,8 +42,11 @@ async function extractPdfText(base64: string): Promise<string> {
     useSystemFonts: false,
     disableFontFace: true,
     useWorkerFetch: false,
+    // Ensure we don't try to use standard browser fetch for the fake worker
+    stopAtErrors: true,
   });
   const doc = await loadingTask.promise;
+
 
   let full = "";
   for (let p = 1; p <= doc.numPages; p++) {
