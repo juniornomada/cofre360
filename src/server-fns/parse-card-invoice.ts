@@ -95,7 +95,7 @@ ${trimmed}
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "google/gemini-1.5-flash",
+      model: "google/gemini-2.5-flash",
       messages: [
         { role: "system", content: systemMsg },
         { role: "user", content: prompt },
@@ -211,7 +211,7 @@ Retorne apenas os dados corrigidos no formato JSON.`;
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-1.5-flash",
+        model: "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: "Você é um especialista em extração de dados financeiros. Retorne JSON válido via function call." },
           { role: "user", content: prompt },
