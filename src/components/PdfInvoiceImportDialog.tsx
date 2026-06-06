@@ -97,6 +97,7 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
 
 
   const [preview, setPreview] = useState<ParsedRow[]>([]);
+  const [rawText, setRawText] = useState<string | null>(null);
   const [dedupResult, setDedupResult] = useState<{ toImport: TransactionInsert[]; duplicateCount: number } | null>(null);
   const [checking, setChecking] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -113,6 +114,7 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
 
     setError("");
     setPreview([]);
+    setRawText(null);
     setDedupResult(null);
     setChecking(false);
     setSaving(false);
@@ -144,6 +146,7 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
       setParsingStep("extracting");
       setParsingProgress(50);
       const result = await parseCardInvoicePdf({ data: { fileBase64, fileName: file.name, kind: "card_invoice" } });
+      setRawText(result.rawPdfText);
       setParsingStep("processing");
       setParsingProgress(85);
       console.log("PDF extraction result:", { transactions: result.transactions?.length, chars: result.charsExtracted });
@@ -405,6 +408,8 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
                       rows={preview}
                       onChange={(rows) => { setPreview(rows); setDedupResult(null); }}
                       itemLabel="transações"
+                      rawPdfText={rawText}
+                      documentKind="card_invoice"
                     />
                   </div>
 

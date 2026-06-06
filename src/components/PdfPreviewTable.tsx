@@ -1,4 +1,4 @@
-import { Trash2, Pencil, Check, X, AlertTriangle } from "lucide-react";
+import { Trash2, Pencil, Check, X, AlertTriangle, RefreshCw, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -19,10 +19,15 @@ type Props = {
   rows: PdfPreviewRow[];
   onChange: (rows: PdfPreviewRow[]) => void;
   itemLabel?: string; // "transações" | "movimentações"
+  rawPdfText?: string | null;
+  documentKind?: "card_invoice" | "bank_statement";
 };
 
-export function PdfPreviewTable({ rows, onChange, itemLabel = "transações" }: Props) {
+import { aiRetrySingleTransaction } from "../server-fns/parse-card-invoice";
+
+export function PdfPreviewTable({ rows, onChange, itemLabel = "transações", rawPdfText, documentKind = "card_invoice" }: Props) {
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [retryingIndex, setRetryingIndex] = useState<number | null>(null);
   const [draft, setDraft] = useState<PdfPreviewRow | null>(null);
 
   const startEdit = (i: number) => {
@@ -51,6 +56,27 @@ export function PdfPreviewTable({ rows, onChange, itemLabel = "transações" }: 
   const removeRow = (i: number) => {
     if (editingIndex === i) cancelEdit();
     onChange(rows.filter((_, idx) => idx !== i));
+  };
+
+  const retryTransaction = async (i: number) => {
+    if (!rawPdfText) return;
+    setRetryingIndex(i);
+    try {
+      const result = await aiRetrySingleTransaction({
+        data: {
+          rawText: rawPdfText,
+          transaction: rows[i] as any,
+          kind: documentKind
+        }
+      });
+      const next = [...rows];
+      next[i] = { ...rows[i], ...result };
+      onChange(next);
+    } catch (err) {
+      console.error("Retry failed:", err);
+    } finally {
+      setRetryingIndex(null);
+    }
   };
 
   const visibleRows = rows.slice(0, 50);
@@ -211,16 +237,30 @@ export function PdfPreviewTable({ rows, onChange, itemLabel = "transações" }: 
                     <span>{r.type === "expense" ? "-" : "+"}R$ {r.amount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
                   </div>
                 </td>
-                  <td className="p-1.5" onClick={(e) => e.stopPropagation()}>
-                    <div className="flex items-center justify-end gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button onClick={() => startEdit(i)} className="p-1 rounded hover:bg-accent text-muted-foreground" title="Editar">
-                        <Pencil className="h-3.5 w-3.5" />
+                <td className="p-1.5" onClick={(e) => e.stopPropagation()}>
+                  <div className="flex items-center justify-end gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {rawPdfText && (r.confidence === "low" || hasDivergence(r)) && (
+                      <button 
+                        onClick={() => retryTransaction(i)} 
+                        disabled={retryingIndex === i}
+                        className="p-1 rounded hover:bg-accent text-primary disabled:opacity-50" 
+                        title="Reprocessar com IA"
+                      >
+                        {retryingIndex === i ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <RefreshCw className="h-3.5 w-3.5" />
+                        )}
                       </button>
-                      <button onClick={() => removeRow(i)} className="p-1 rounded hover:bg-destructive/15 text-destructive" title="Remover">
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  </td>
+                    )}
+                    <button onClick={() => startEdit(i)} className="p-1 rounded hover:bg-accent text-muted-foreground" title="Editar">
+                      <Pencil className="h-3.5 w-3.5" />
+                    </button>
+                    <button onClick={() => removeRow(i)} className="p-1 rounded hover:bg-destructive/15 text-destructive" title="Remover">
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </td>
                 </tr>
               );
             })}
