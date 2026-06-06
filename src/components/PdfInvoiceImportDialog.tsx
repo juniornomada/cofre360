@@ -637,9 +637,10 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
                   <div className="flex-1 overflow-y-auto">
                     {isComparisonOpen ? (
                       <InvoiceComparisonView 
-                        items={comparisonItems}
+                        items={filterDuplicatesOnly ? comparisonItems.filter(i => i.status === 'match' || i.status === 'mismatch' || i.status === 'system_only') : comparisonItems}
                         pdfTotal={preview.reduce((sum, r) => sum + r.amount, 0)}
                         systemTotal={comparisonItems.reduce((sum, r) => sum + (r.systemAmount || 0), 0)}
+                        title={filterDuplicatesOnly ? "Comparação: Apenas Duplicatas" : "Comparação Completa"}
                       />
                     ) : (
                       <PdfPreviewTable
