@@ -569,7 +569,7 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
                     variant="outline" 
                     size="sm" 
                     className="h-7 gap-1.5 text-[10px] rounded-lg"
-                    onClick={handleCompareWithSystem}
+                    onClick={() => { setFilterDuplicatesOnly(false); handleCompareWithSystem(); }}
                     disabled={checking}
                   >
                     {checking ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Scale className="h-3.5 w-3.5" />}
