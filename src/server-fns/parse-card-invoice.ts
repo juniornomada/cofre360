@@ -15,19 +15,25 @@ type ParsedInvoiceTx = {
 type DocumentKind = "card_invoice" | "bank_statement";
 
 async function extractPdfText(base64: string): Promise<string> {
-  // Decode base64 → Uint8Array
-  const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  // Use Buffer for reliable base64 decoding on the server (Bun/Node)
+  const bytes = Buffer.from(base64, "base64");
 
-  // Dynamic import — pdfjs-dist legacy build is Worker-compatible (pure JS, no DOM)
+  // Dynamic import of pdfjs-dist legacy build
   const pdfjs: any = await import("pdfjs-dist/legacy/build/pdf.mjs");
-  // Load the worker module as a side effect so pdfjs can use it as a fake worker.
-  // Also set workerSrc to a non-empty string to bypass the "workerSrc not specified" check.
-  await import("pdfjs-dist/legacy/build/pdf.worker.mjs");
-  if (pdfjs.GlobalWorkerOptions) {
-    pdfjs.GlobalWorkerOptions.workerSrc = "pdfjs-dist/legacy/build/pdf.worker.mjs";
+  const worker: any = await import("pdfjs-dist/legacy/build/pdf.worker.mjs");
+
+  // In a server environment (Node/Bun), we can use the WorkerMessageHandler 
+  // from the worker module to act as a "fake worker" on the main thread.
+  // This avoids the need for a separate worker file and bypasses workerSrc checks.
+  if (worker.WorkerMessageHandler) {
+    pdfjs.GlobalWorkerOptions.workerPort = new worker.WorkerMessageHandler();
+  } else {
+    // Fallback for different versions
+    pdfjs.GlobalWorkerOptions.workerPort = worker;
   }
+  
+  // We still set a dummy workerSrc to satisfy some internal checks in certain versions
+  pdfjs.GlobalWorkerOptions.workerSrc = "fake";
 
   const loadingTask = pdfjs.getDocument({
     data: bytes,
@@ -35,6 +41,7 @@ async function extractPdfText(base64: string): Promise<string> {
     useSystemFonts: false,
     disableFontFace: true,
     useWorkerFetch: false,
+    stopAtErrors: true,
   });
   const doc = await loadingTask.promise;
 
