@@ -122,8 +122,11 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
     setPreview([]);
     setRawText(null);
     setDedupResult(null);
+    setComparisonItems([]);
+    setIsComparisonOpen(false);
     setChecking(false);
     setSaving(false);
+
     if (fileRef.current) fileRef.current.value = "";
   };
 
