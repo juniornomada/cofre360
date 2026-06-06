@@ -18,6 +18,7 @@ export type InstallmentExpandedRow = InstallmentInputRow & {
   installment_group_id: string | null;
   installment_number: number;
   total_installments: number;
+  is_future?: boolean;
 };
 
 // Patterns we accept inside the description.
