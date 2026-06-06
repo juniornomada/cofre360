@@ -109,6 +109,11 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
       setError("Selecione um arquivo PDF.");
       return;
     }
+    if (file.size > 10 * 1024 * 1024) {
+      setError("O arquivo é muito grande (máximo 10MB).");
+      return;
+    }
+
     setFileName(file.name);
     setParsing(true);
     try {

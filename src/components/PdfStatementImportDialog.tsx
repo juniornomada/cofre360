@@ -97,6 +97,11 @@ export function PdfStatementImportDialog({ open, onOpenChange, bankAccountId, ba
       setError("Selecione um arquivo PDF.");
       return;
     }
+    if (file.size > 10 * 1024 * 1024) {
+      setError("O arquivo é muito grande (máximo 10MB).");
+      return;
+    }
+
     setFileName(file.name);
     setParsing(true);
     try {
