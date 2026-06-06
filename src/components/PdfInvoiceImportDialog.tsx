@@ -599,6 +599,76 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
               
               <div className={`${showPdf ? "flex-[0.8]" : "w-full"} flex flex-col overflow-hidden`}>
                 <div className="flex-1 overflow-hidden flex flex-col space-y-3">
+                  <div className="flex flex-col gap-2 p-3 bg-muted/30 rounded-xl border border-border/50">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex-1 space-y-2">
+                        <label className="text-[10px] font-medium text-muted-foreground flex items-center justify-between">
+                          <span>Tolerância de Data (± {dateTolerance} dias)</span>
+                          <span className="text-primary">{dateTolerance}d</span>
+                        </label>
+                        <input 
+                          type="range" 
+                          min="0" 
+                          max="7" 
+                          step="1" 
+                          value={dateTolerance} 
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value);
+                            setDateTolerance(val);
+                            // Recalcular duplicatas imediatamente ao mudar a tolerância
+                            fetchExistingForCard(cardName).then(({ data: existing }) => {
+                              if (existing) {
+                                setPreview(prev => prev.map(r => ({
+                                  ...r,
+                                  isDuplicate: existing.some(ext => 
+                                    isPossibleDuplicate(
+                                      { date: r.date, name: r.name, amount: r.amount, type: r.type },
+                                      { date: ext.date, name: ext.name, amount: Number(ext.amount), type: ext.type },
+                                      { dateToleranceDays: val, amountToleranceCents: amountTolerance }
+                                    )
+                                  )
+                                })));
+                              }
+                            });
+                          }}
+                          className="w-full h-1.5 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
+                        />
+                      </div>
+                      <div className="flex-1 space-y-2">
+                        <label className="text-[10px] font-medium text-muted-foreground flex items-center justify-between">
+                          <span>Tolerância de Valor (± {amountTolerance} centavos)</span>
+                          <span className="text-primary">{amountTolerance}¢</span>
+                        </label>
+                        <input 
+                          type="range" 
+                          min="0" 
+                          max="100" 
+                          step="5" 
+                          value={amountTolerance} 
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value);
+                            setAmountTolerance(val);
+                            fetchExistingForCard(cardName).then(({ data: existing }) => {
+                              if (existing) {
+                                setPreview(prev => prev.map(r => ({
+                                  ...r,
+                                  isDuplicate: existing.some(ext => 
+                                    isPossibleDuplicate(
+                                      { date: r.date, name: r.name, amount: r.amount, type: r.type },
+                                      { date: ext.date, name: ext.name, amount: Number(ext.amount), type: ext.type },
+                                      { dateToleranceDays: dateTolerance, amountToleranceCents: val }
+                                    )
+                                  )
+                                })));
+                              }
+                            });
+                          }}
+                          className="w-full h-1.5 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="flex flex-col gap-1.5">
                     <div className="flex items-center justify-between gap-2">
                       {preview.some((p) => p.isFuture) && (
