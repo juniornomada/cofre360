@@ -145,56 +145,46 @@ ${trimmed}
     : "Você é um parser preciso de faturas de cartão de crédito brasileiras. Sempre retorne JSON válido.";
 
   const model = "google/gemini-2.5-flash";
-  validateModel(model);
-
-  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${LOVABLE_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: model,
-
-      messages: [
-        { role: "system", content: systemMsg },
-        { role: "user", content: prompt },
-      ],
-      tools: [
-        {
-          type: "function",
-          function: {
-            name: "submit_transactions",
-            description: "Envia a lista de transações extraídas do PDF.",
-            parameters: {
-              type: "object",
-              properties: {
-                transactions: {
-                  type: "array",
-                  items: {
-                    type: "object",
-                    properties: {
-                      date: { type: "string", description: "YYYY-MM-DD" },
-                      name: { type: "string" },
-                      amount: { type: "number" },
-                      original_amount_text: { type: "string" },
-                      type: { type: "string", enum: ["expense", "income"] },
-                      confidence_score: { type: "number", minimum: 0, maximum: 100 },
-                    },
-                    required: ["date", "name", "amount", "original_amount_text", "type", "confidence_score"],
-                    additionalProperties: false,
+  const response = await fetchAiWithFallback({
+    messages: [
+      { role: "system", content: systemMsg },
+      { role: "user", content: prompt },
+    ],
+    tools: [
+      {
+        type: "function",
+        function: {
+          name: "submit_transactions",
+          description: "Envia a lista de transações extraídas do PDF.",
+          parameters: {
+            type: "object",
+            properties: {
+              transactions: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    date: { type: "string", description: "YYYY-MM-DD" },
+                    name: { type: "string" },
+                    amount: { type: "number" },
+                    original_amount_text: { type: "string" },
+                    type: { type: "string", enum: ["expense", "income"] },
+                    confidence_score: { type: "number", minimum: 0, maximum: 100 },
                   },
+                  required: ["date", "name", "amount", "original_amount_text", "type", "confidence_score"],
+                  additionalProperties: false,
                 },
               },
-              required: ["transactions"],
-              additionalProperties: false,
             },
+            required: ["transactions"],
+            additionalProperties: false,
           },
         },
-      ],
-      tool_choice: { type: "function", function: { name: "submit_transactions" } },
-    }),
-  });
+      },
+    ],
+    tool_choice: { type: "function", function: { name: "submit_transactions" } },
+  }, model);
+
 
   if (!response.ok) {
     const body = await response.text();
