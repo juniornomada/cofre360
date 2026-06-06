@@ -688,22 +688,9 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
                           onChange={(e) => {
                             const val = parseInt(e.target.value);
                             setAmountTolerance(val);
-                            fetchExistingForCard(cardName).then(({ data: existing }) => {
-                              if (existing) {
-                                setPreview(prev => prev.map(r => {
-                                  let foundReason = "";
-                                  const isDuplicate = existing.some(ext => {
-                                    const res = getDuplicateReason(
-                                      { date: r.date, name: r.name, amount: r.amount, type: r.type },
-                                      { date: ext.date, name: ext.name, amount: Number(ext.amount), type: ext.type },
-                                      { dateToleranceDays: dateTolerance, amountToleranceCents: val }
-                                    );
-                                    if (res.isDuplicate) foundReason = res.reason || "";
-                                    return res.isDuplicate;
-                                  });
-                                  return { ...r, isDuplicate, duplicateReason: foundReason };
-                                }));
-                              }
+                            updatePreviewWithDuplicates(preview, dateTolerance, val).then(updated => {
+                              setPreview(updated);
+                              if (isComparisonOpen) handleCompareWithSystem();
                             });
                           }}
                           className="w-full h-1.5 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
