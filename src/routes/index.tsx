@@ -18,6 +18,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { BankLogo } from "@/components/BankLogo";
 import { EmptyState } from "@/components/EmptyState";
 import { SmartLink as Link } from "@/components/SmartLink";
+import { AISettingsDialog } from "@/components/AISettingsDialog";
 import {
   DndContext,
   closestCenter,
