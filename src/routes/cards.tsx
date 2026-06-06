@@ -1583,6 +1583,7 @@ export function CardsPage() {
             onSuccess={() => {
               showAlert("Fatura importada com sucesso!", "success");
               fetchAll();
+              runValidation(true, "pdf_import");
             }}
           />
         )}
