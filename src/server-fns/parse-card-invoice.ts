@@ -285,7 +285,7 @@ ${data.rawText.slice(0, 15000)}
 
 Retorne apenas os dados corrigidos no formato JSON.`;
 
-    const model = "google/gemini-2.5-flash";
+    // O modelo já foi determinado via perfil do usuário
     const response = await fetchAiWithFallback({
       messages: [
         { role: "system", content: "Você é um especialista em extração de dados financeiros. Retorne JSON válido via function call." },
