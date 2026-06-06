@@ -8,6 +8,7 @@ type ParsedInvoiceTx = {
   name: string;
   amount: number;
   type: "expense" | "income";
+  confidence?: "low" | "high";
 };
 
 type DocumentKind = "card_invoice" | "bank_statement";
@@ -112,8 +113,9 @@ ${trimmed}
                       name: { type: "string" },
                       amount: { type: "number" },
                       type: { type: "string", enum: ["expense", "income"] },
+                      confidence: { type: "string", enum: ["low", "high"] },
                     },
-                    required: ["date", "name", "amount", "type"],
+                    required: ["date", "name", "amount", "type", "confidence"],
                     additionalProperties: false,
                   },
                 },

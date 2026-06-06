@@ -24,6 +24,7 @@ type ParsedRow = {
   name: string;
   amount: number;
   type: "expense" | "income";
+  confidence?: "low" | "high";
 };
 
 type TransactionInsert = TablesInsert<"transactions">;
@@ -139,6 +140,7 @@ export function PdfStatementImportDialog({ open, onOpenChange, bankAccountId, ba
         name: restoreAccents(t.name),
         amount: Math.abs(Number(t.amount) || 0),
         type: t.type,
+        confidence: t.confidence,
       }));
       if (rows.length === 0) {
         setError("Nenhuma movimentação detectada no PDF.");

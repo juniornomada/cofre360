@@ -8,6 +8,7 @@ export type PdfPreviewRow = {
   amount: number;
   type: "expense" | "income";
   isFuture?: boolean;
+  confidence?: "low" | "high";
 };
 
 type Props = {
@@ -121,7 +122,7 @@ export function PdfPreviewTable({ rows, onChange, itemLabel = "transações" }: 
             return (
               <tr 
                 key={i} 
-                className={`border-t border-border group transition-colors hover:bg-muted/30 cursor-pointer ${r.isFuture ? "bg-muted/10" : ""}`}
+                className={`border-t border-border group transition-colors hover:bg-muted/30 cursor-pointer ${r.isFuture ? "bg-muted/10" : ""} ${r.confidence === "low" ? "bg-amber-50/50" : ""}`}
                 onClick={() => startEdit(i)}
                 title="Clique para editar"
               >
@@ -131,6 +132,11 @@ export function PdfPreviewTable({ rows, onChange, itemLabel = "transações" }: 
                   {r.isFuture && (
                     <span className="ml-1 inline-block align-middle text-[9px] font-semibold px-1 py-0.5 rounded bg-primary/10 text-primary">
                       futura
+                    </span>
+                  )}
+                  {r.confidence === "low" && (
+                    <span className="ml-1 inline-block align-middle text-[9px] font-semibold px-1 py-0.5 rounded bg-amber-100 text-amber-700 border border-amber-200">
+                      revisar
                     </span>
                   )}
                 </td>

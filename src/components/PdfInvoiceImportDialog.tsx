@@ -29,6 +29,7 @@ type ParsedRow = {
   installment_number?: number;
   total_installments?: number;
   isFuture?: boolean; // generated parcela future row, not present in PDF
+  confidence?: "low" | "high";
 };
 
 type InstallmentMeta = {
@@ -151,6 +152,7 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
         name: restoreAccents(t.name),
         amount: Math.abs(Number(t.amount) || 0),
         type: t.type,
+        confidence: t.confidence,
       }));
       // Detect installment markers ("3/12", "3 de 12") and project missing future parcelas.
       const presentKeys = new Set(baseRows.map((r) => `${r.date}|${r.name}|${r.amount.toFixed(2)}|${r.type}`));
@@ -163,6 +165,7 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
         installment_group_id: r.installment_group_id,
         installment_number: r.installment_number,
         total_installments: r.total_installments,
+        confidence: r.confidence,
         isFuture:
           r.installment_group_id !== null &&
           !presentKeys.has(`${r.date}|${r.name}|${r.amount.toFixed(2)}|${r.type}`),
