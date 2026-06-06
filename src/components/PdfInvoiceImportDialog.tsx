@@ -107,6 +107,7 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
   const [saving, setSaving] = useState(false);
   const [comparisonItems, setComparisonItems] = useState<ComparisonItem[]>([]);
   const [isComparisonOpen, setIsComparisonOpen] = useState(false);
+  const [filterDuplicatesOnly, setFilterDuplicatesOnly] = useState(false);
 
 
   const reset = () => {
