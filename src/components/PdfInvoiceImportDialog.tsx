@@ -11,6 +11,9 @@ import { restoreAccents } from "@/lib/restore-accents";
 import { parseCardInvoicePdf } from "../server-fns/parse-card-invoice";
 import { PdfPreviewTable } from "@/components/PdfPreviewTable";
 import { expandInstallments } from "@/lib/expand-installments";
+import { InvoiceComparisonView, type ComparisonItem } from "./InvoiceComparisonView";
+import { groupByBillingCycle } from "@/lib/invoice-utils";
+
 
 type Props = {
   open: boolean;
