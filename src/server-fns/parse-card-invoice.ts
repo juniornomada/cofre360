@@ -20,20 +20,11 @@ async function extractPdfText(base64: string): Promise<string> {
 
   // Dynamic import of pdfjs-dist legacy build
   const pdfjs: any = await import("pdfjs-dist/legacy/build/pdf.mjs");
-  const worker: any = await import("pdfjs-dist/legacy/build/pdf.worker.mjs");
+  // Set workerSrc to the relative path within node_modules.
+  // In a server environment (Node/Bun), this allows PDF.js to find and load the worker
+  // without needing a complex workerPort setup.
+  pdfjs.GlobalWorkerOptions.workerSrc = "./node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs";
 
-  // In a server environment (Node/Bun), we can use the WorkerMessageHandler 
-  // from the worker module to act as a "fake worker" on the main thread.
-  // This avoids the need for a separate worker file and bypasses workerSrc checks.
-  if (worker.WorkerMessageHandler) {
-    pdfjs.GlobalWorkerOptions.workerPort = new worker.WorkerMessageHandler();
-  } else {
-    // Fallback for different versions
-    pdfjs.GlobalWorkerOptions.workerPort = worker;
-  }
-  
-  // We still set a dummy workerSrc to satisfy some internal checks in certain versions
-  pdfjs.GlobalWorkerOptions.workerSrc = "fake";
 
   const loadingTask = pdfjs.getDocument({
     data: bytes,
