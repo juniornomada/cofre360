@@ -104,6 +104,9 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
   const [dedupResult, setDedupResult] = useState<{ toImport: TransactionInsert[]; duplicateCount: number } | null>(null);
   const [checking, setChecking] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [comparisonItems, setComparisonItems] = useState<ComparisonItem[]>([]);
+  const [isComparisonOpen, setIsComparisonOpen] = useState(false);
+
 
   const reset = () => {
     setFileName("");
