@@ -16,6 +16,7 @@ export type PdfPreviewRow = {
   confidence_score?: number;
   approved?: boolean;
   original_amount_text?: string;
+  isDuplicate?: boolean;
 };
 
 type Props = {
@@ -250,7 +251,7 @@ export function PdfPreviewTable({ rows, onChange, itemLabel = "transações", ra
                 return (
                   <tr 
                     key={i} 
-                    className={`border-t border-border group transition-colors hover:bg-muted/30 cursor-pointer ${!isApproved ? "opacity-40 grayscale" : ""} ${r.isFuture ? "bg-muted/10" : ""} ${(isLowConfidence(r) || hasDivergence(r)) && isApproved ? "bg-amber-50/50" : ""}`}
+                    className={`border-t border-border group transition-colors hover:bg-muted/30 cursor-pointer ${!isApproved ? "opacity-40 grayscale" : ""} ${r.isFuture ? "bg-muted/10" : ""} ${(isLowConfidence(r) || hasDivergence(r) || r.isDuplicate) && isApproved ? "bg-amber-50/50" : ""}`}
                     onClick={() => startEdit(i)}
                     title={isApproved ? "Clique para editar" : "Rejeitado"}
                   >
@@ -274,6 +275,11 @@ export function PdfPreviewTable({ rows, onChange, itemLabel = "transações", ra
                       {isLowConfidence(r) && (
                         <span className="ml-1 inline-block align-middle text-[9px] font-semibold px-1 py-0.5 rounded bg-amber-100 text-amber-700 border border-amber-200">
                           revisar ({r.confidence_score}%)
+                        </span>
+                      )}
+                      {r.isDuplicate && (
+                        <span className="ml-1 inline-block align-middle text-[9px] font-semibold px-1 py-0.5 rounded bg-red-100 text-red-700 border border-red-200">
+                          duplicada?
                         </span>
                       )}
                     </td>
