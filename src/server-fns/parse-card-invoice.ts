@@ -12,15 +12,30 @@ type ParsedInvoiceTx = {
 
 type DocumentKind = "card_invoice" | "bank_statement";
 
-async function extractPdfText(base64: string): Promise<string> {
+async function validateAndExtractPdfText(base64: string): Promise<string> {
   const bytes = new Uint8Array(Buffer.from(base64, "base64"));
 
   // unpdf works in Node/Bun/Workers without worker setup
   const { extractText, getDocumentProxy } = await import("unpdf");
-  const pdf = await getDocumentProxy(bytes);
+  
+  let pdf;
+  try {
+    pdf = await getDocumentProxy(bytes);
+  } catch (err: any) {
+    if (err?.message?.includes("password") || err?.name === "PasswordException") {
+      throw new Error("Este PDF está protegido por senha. Remova a proteção antes de enviar.");
+    }
+    throw new Error("Não foi possível abrir o PDF. O arquivo pode estar corrompido ou ser inválido.");
+  }
+
+  if (pdf.numPages > 50) {
+    throw new Error(`Este PDF tem muitas páginas (${pdf.numPages}). O limite é de 50 páginas.`);
+  }
+
   const { text } = await extractText(pdf, { mergePages: true });
   return Array.isArray(text) ? text.join("\n\n") : text;
 }
+
 
 
 async function aiExtractTransactions(rawText: string, kind: DocumentKind): Promise<ParsedInvoiceTx[]> {
@@ -156,7 +171,8 @@ export const parseCardInvoicePdf = createServerFn({ method: "POST" })
     return { ...input, kind: input.kind ?? "card_invoice" as DocumentKind };
   })
   .handler(async ({ data }) => {
-    const text = await extractPdfText(data.fileBase64);
+    const text = await validateAndExtractPdfText(data.fileBase64);
+
     if (!text || text.trim().length < 30) {
       throw new Error("Não foi possível extrair texto deste PDF (talvez seja imagem escaneada).");
     }
