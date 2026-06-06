@@ -24,7 +24,7 @@ type ParsedRow = {
   name: string;
   amount: number;
   type: "expense" | "income";
-  confidence?: "low" | "high";
+  confidence_score?: number;
   original_amount_text?: string;
   approved?: boolean;
 };
@@ -145,7 +145,7 @@ export function PdfStatementImportDialog({ open, onOpenChange, bankAccountId, ba
         name: restoreAccents(t.name),
         amount: Math.abs(Number(t.amount) || 0),
         type: t.type,
-        confidence: t.confidence,
+        confidence_score: t.confidence_score,
         original_amount_text: t.original_amount_text,
       }));
       if (rows.length === 0) {
