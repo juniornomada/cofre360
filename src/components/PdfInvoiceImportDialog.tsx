@@ -612,10 +612,21 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
                         </p>
                       )}
                       {preview.some((p) => p.isDuplicate) && (
-                        <p className="text-[11px] text-amber-600 font-medium">
-                          <AlertCircle className="inline-block h-3.5 w-3.5 mr-1 align-text-top" />
-                          {preview.filter(p => p.isDuplicate).length} possíveis duplicatas detectadas.
-                        </p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-[11px] text-amber-600 font-medium">
+                            <AlertCircle className="inline-block h-3.5 w-3.5 mr-1 align-text-top" />
+                            {preview.filter(p => p.isDuplicate).length} possíveis duplicatas detectadas.
+                          </p>
+                          <Button 
+                            variant="link" 
+                            size="sm" 
+                            className="h-auto p-0 text-[11px] text-amber-600 underline hover:text-amber-700 font-semibold"
+                            onClick={handleCompareDuplicates}
+                            disabled={checking}
+                          >
+                            {checking ? "Verificando..." : "Ver duplicatas"}
+                          </Button>
+                        </div>
                       )}
                       <p className="text-[10px] text-muted-foreground ml-auto italic">
                         Dica: clique em uma linha para editar.
