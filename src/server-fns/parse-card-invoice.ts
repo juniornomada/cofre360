@@ -45,7 +45,6 @@ async function extractPdfText(base64: string): Promise<string> {
   });
   const doc = await loadingTask.promise;
 
-
   let full = "";
   for (let p = 1; p <= doc.numPages; p++) {
     const page = await doc.getPage(p);
