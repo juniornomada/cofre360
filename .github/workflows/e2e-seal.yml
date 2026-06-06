@@ -1,0 +1,51 @@
+name: E2E Seal Hiding Tests
+
+on:
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  test-dev:
+    name: Test Seal (Development)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      
+      - name: Install dependencies
+        run: bun install
+        
+      - name: Install Playwright Browsers
+        run: bunx playwright install --with-deps chromium
+        
+      - name: Run E2E Tests (Dev Environment)
+        run: |
+          cp .env.development .env
+          bunx playwright test e2e/seal-hidden.spec.ts --project=chromium
+        env:
+          NODE_ENV: development
+          CI: true
+
+  test-prod:
+    name: Test Seal (Production)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      
+      - name: Install dependencies
+        run: bun install
+        
+      - name: Install Playwright Browsers
+        run: bunx playwright install --with-deps chromium
+        
+      - name: Run E2E Tests (Prod Environment)
+        run: |
+          cp .env.production .env
+          bun run build
+          # Override webServer command to use preview for production testing
+          bunx playwright test e2e/seal-hidden.spec.ts --project=chromium
+        env:
+          NODE_ENV: production
+          CI: true

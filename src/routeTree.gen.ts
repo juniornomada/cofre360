@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TransactionsRouteImport } from './routes/transactions'
+import { Route as TestSealRouteImport } from './routes/test-seal'
 import { Route as ShopRouteImport } from './routes/shop'
 import { Route as RemindersRouteImport } from './routes/reminders'
 import { Route as OrcametasRouteImport } from './routes/orcametas'
@@ -27,6 +28,11 @@ import { Route as IndexRouteImport } from './routes/index'
 const TransactionsRoute = TransactionsRouteImport.update({
   id: '/transactions',
   path: '/transactions',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TestSealRoute = TestSealRouteImport.update({
+  id: '/test-seal',
+  path: '/test-seal',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ShopRoute = ShopRouteImport.update({
@@ -109,6 +115,7 @@ export interface FileRoutesByFullPath {
   '/orcametas': typeof OrcametasRoute
   '/reminders': typeof RemindersRoute
   '/shop': typeof ShopRoute
+  '/test-seal': typeof TestSealRoute
   '/transactions': typeof TransactionsRoute
 }
 export interface FileRoutesByTo {
@@ -125,6 +132,7 @@ export interface FileRoutesByTo {
   '/orcametas': typeof OrcametasRoute
   '/reminders': typeof RemindersRoute
   '/shop': typeof ShopRoute
+  '/test-seal': typeof TestSealRoute
   '/transactions': typeof TransactionsRoute
 }
 export interface FileRoutesById {
@@ -142,6 +150,7 @@ export interface FileRoutesById {
   '/orcametas': typeof OrcametasRoute
   '/reminders': typeof RemindersRoute
   '/shop': typeof ShopRoute
+  '/test-seal': typeof TestSealRoute
   '/transactions': typeof TransactionsRoute
 }
 export interface FileRouteTypes {
@@ -160,6 +169,7 @@ export interface FileRouteTypes {
     | '/orcametas'
     | '/reminders'
     | '/shop'
+    | '/test-seal'
     | '/transactions'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -176,6 +186,7 @@ export interface FileRouteTypes {
     | '/orcametas'
     | '/reminders'
     | '/shop'
+    | '/test-seal'
     | '/transactions'
   id:
     | '__root__'
@@ -192,6 +203,7 @@ export interface FileRouteTypes {
     | '/orcametas'
     | '/reminders'
     | '/shop'
+    | '/test-seal'
     | '/transactions'
   fileRoutesById: FileRoutesById
 }
@@ -209,6 +221,7 @@ export interface RootRouteChildren {
   OrcametasRoute: typeof OrcametasRoute
   RemindersRoute: typeof RemindersRoute
   ShopRoute: typeof ShopRoute
+  TestSealRoute: typeof TestSealRoute
   TransactionsRoute: typeof TransactionsRoute
 }
 
@@ -219,6 +232,13 @@ declare module '@tanstack/react-router' {
       path: '/transactions'
       fullPath: '/transactions'
       preLoaderRoute: typeof TransactionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/test-seal': {
+      id: '/test-seal'
+      path: '/test-seal'
+      fullPath: '/test-seal'
+      preLoaderRoute: typeof TestSealRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/shop': {
@@ -329,6 +349,7 @@ const rootRouteChildren: RootRouteChildren = {
   OrcametasRoute: OrcametasRoute,
   RemindersRoute: RemindersRoute,
   ShopRoute: ShopRoute,
+  TestSealRoute: TestSealRoute,
   TransactionsRoute: TransactionsRoute,
 }
 export const routeTree = rootRouteImport
