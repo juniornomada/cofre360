@@ -36,6 +36,7 @@ type ParsedRow = {
   original_amount_text?: string;
   approved?: boolean;
   isDuplicate?: boolean;
+  duplicateReason?: string;
 };
 
 type InstallmentMeta = {
