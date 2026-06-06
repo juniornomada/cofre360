@@ -172,6 +172,7 @@ export function expandInstallments(input: InstallmentInputRow[]): ExpandResult {
       total_installments: det.total,
       confidence_score: s.confidence_score,
       original_amount_text: s.original_amount_text,
+      is_future: false,
     });
   }
 
