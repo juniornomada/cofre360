@@ -21,19 +21,22 @@ async function extractPdfText(base64: string): Promise<string> {
   // Dynamic import of pdfjs-dist legacy build
   const pdfjs: any = await import("pdfjs-dist/legacy/build/pdf.mjs");
 
-  // To fix "No GlobalWorkerOptions.workerSrc specified", we must provide either workerSrc or workerPort.
-  // In a server environment, we don't really need a real Worker, so we point it to the worker module
-  // and satisfy the check by providing a non-empty workerSrc string.
+  // Modern way to set worker in Bun/Node environments for pdfjs-dist 4.x+
+  // We use import.meta.resolve to get a valid URL/path for the worker file
   try {
-    const worker = await import("pdfjs-dist/legacy/build/pdf.worker.mjs");
-    pdfjs.GlobalWorkerOptions.workerPort = worker;
+    // @ts-ignore
+    pdfjs.GlobalWorkerOptions.workerSrc = import.meta.resolve("pdfjs-dist/legacy/build/pdf.worker.mjs");
   } catch (e) {
-    console.warn("Could not load pdfjs worker module, falling back to fake worker:", e);
-  }
-  
-  // Even with workerPort, some versions check if workerSrc is set.
-  if (!pdfjs.GlobalWorkerOptions.workerSrc) {
-    pdfjs.GlobalWorkerOptions.workerSrc = "true"; // Dummy value to satisfy the check
+    // Fallback if import.meta.resolve is not available or fails
+    try {
+      const worker = await import("pdfjs-dist/legacy/build/pdf.worker.mjs");
+      pdfjs.GlobalWorkerOptions.workerPort = worker;
+      pdfjs.GlobalWorkerOptions.workerSrc = "true"; 
+    } catch (e2) {
+      console.error("Failed to set up pdfjs worker:", e2);
+      // Last resort: dummy workerSrc
+      pdfjs.GlobalWorkerOptions.workerSrc = "dummy";
+    }
   }
 
   const loadingTask = pdfjs.getDocument({
@@ -42,7 +45,6 @@ async function extractPdfText(base64: string): Promise<string> {
     useSystemFonts: false,
     disableFontFace: true,
     useWorkerFetch: false,
-    // Ensure we don't try to use standard browser fetch for the fake worker
     stopAtErrors: true,
   });
   const doc = await loadingTask.promise;
