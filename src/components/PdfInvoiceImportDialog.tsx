@@ -160,6 +160,30 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
   const [dateTolerance, setDateTolerance] = useState(0);
   const [amountTolerance, setAmountTolerance] = useState(0);
 
+  const updatePreviewWithDuplicates = async (rows: ParsedRow[], dateTol: number, amountTol: number) => {
+    const { data: existing } = await fetchExistingForCard(cardName);
+    if (!existing) return rows;
+
+    return rows.map(r => {
+      let foundReason = "";
+      const isDuplicate = existing.some(ext => {
+        const res = getDuplicateReason(
+          { date: r.date, name: r.name, amount: r.amount, type: r.type },
+          { date: ext.date, name: ext.name, amount: Number(ext.amount), type: ext.type },
+          { dateToleranceDays: dateTol, amountToleranceCents: amountTol }
+        );
+        if (res.isDuplicate) foundReason = res.reason || "";
+        return res.isDuplicate;
+      });
+      return {
+        ...r,
+        isDuplicate,
+        duplicateReason: foundReason,
+        approved: isDuplicate ? false : true
+      };
+    });
+  };
+
 
   const reset = () => {
     setFileName("");
@@ -242,29 +266,8 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
       setPreview(rows);
       setParsingProgress(95);
 
-      const { data: existing } = await fetchExistingForCard(cardName);
-      if (existing) {
-        const rowsWithDup = rows.map(r => {
-          let foundReason = "";
-          const isDuplicate = existing.some(ext => {
-            const res = getDuplicateReason(
-              { date: r.date, name: r.name, amount: r.amount, type: r.type },
-              { date: ext.date, name: ext.name, amount: Number(ext.amount), type: ext.type },
-              { dateToleranceDays: dateTolerance, amountToleranceCents: amountTolerance }
-            );
-            if (res.isDuplicate) foundReason = res.reason || "";
-            return res.isDuplicate;
-          });
-          return {
-            ...r,
-            isDuplicate,
-            duplicateReason: foundReason,
-            // Por padrão, se for duplicado, desativamos a aprovação para "ignorar automaticamente"
-            approved: isDuplicate ? false : true 
-          };
-        });
-        setPreview(rowsWithDup);
-      }
+      const rowsWithDup = await updatePreviewWithDuplicates(rows, dateTolerance, amountTolerance);
+      setPreview(rowsWithDup);
 
       setParsingProgress(100);
 
@@ -315,12 +318,6 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
         installment_number: row.installment_number ?? 1,
         total_installments: row.total_installments ?? 1,
       };
-
-      // Se for duplicada detectada na fase de prévia e o usuário não marcou manualmente como aprovada (approved: true),
-      // nós pulamos ela para evitar duplicar. Se o usuário marcou para manter, importamos.
-      if (row.isDuplicate && row.approved !== true) {
-        continue;
-      }
 
       toImport.push(transaction);
     }
@@ -642,23 +639,9 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
                           onChange={(e) => {
                             const val = parseInt(e.target.value);
                             setDateTolerance(val);
-                            // Recalcular duplicatas imediatamente ao mudar a tolerância
-                            fetchExistingForCard(cardName).then(({ data: existing }) => {
-                              if (existing) {
-                                setPreview(prev => prev.map(r => {
-                                  let foundReason = "";
-                                  const isDuplicate = existing.some(ext => {
-                                    const res = getDuplicateReason(
-                                      { date: r.date, name: r.name, amount: r.amount, type: r.type },
-                                      { date: ext.date, name: ext.name, amount: Number(ext.amount), type: ext.type },
-                                      { dateToleranceDays: val, amountToleranceCents: amountTolerance }
-                                    );
-                                    if (res.isDuplicate) foundReason = res.reason || "";
-                                    return res.isDuplicate;
-                                  });
-                                  return { ...r, isDuplicate, duplicateReason: foundReason };
-                                }));
-                              }
+                            updatePreviewWithDuplicates(preview, val, amountTolerance).then(updated => {
+                              setPreview(updated);
+                              if (isComparisonOpen) handleCompareWithSystem();
                             });
                           }}
                           className="w-full h-1.5 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
@@ -678,22 +661,9 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
                           onChange={(e) => {
                             const val = parseInt(e.target.value);
                             setAmountTolerance(val);
-                            fetchExistingForCard(cardName).then(({ data: existing }) => {
-                              if (existing) {
-                                setPreview(prev => prev.map(r => {
-                                  let foundReason = "";
-                                  const isDuplicate = existing.some(ext => {
-                                    const res = getDuplicateReason(
-                                      { date: r.date, name: r.name, amount: r.amount, type: r.type },
-                                      { date: ext.date, name: ext.name, amount: Number(ext.amount), type: ext.type },
-                                      { dateToleranceDays: dateTolerance, amountToleranceCents: val }
-                                    );
-                                    if (res.isDuplicate) foundReason = res.reason || "";
-                                    return res.isDuplicate;
-                                  });
-                                  return { ...r, isDuplicate, duplicateReason: foundReason };
-                                }));
-                              }
+                            updatePreviewWithDuplicates(preview, dateTolerance, val).then(updated => {
+                              setPreview(updated);
+                              if (isComparisonOpen) handleCompareWithSystem();
                             });
                           }}
                           className="w-full h-1.5 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
