@@ -124,7 +124,9 @@ async function aiExtractTransactions(rawText: string, kind: DocumentKind, isRetr
   const cardPrompt = `Você recebe o texto bruto extraído de uma fatura de cartão de crédito brasileira. Extraia TODAS as transações (compras, parcelas, estornos, taxas) presentes na fatura.
 
 Regras:
-- "date" no formato YYYY-MM-DD. Se faltar o ano no PDF, infira pelo período da fatura ou use o ano atual.
+- "date" no formato YYYY-MM-DD.
+- IMPORTANTE: Se o PDF não contém o ANO em cada linha, procure por "Data de Emissão", "Vencimento" ou o período da fatura no cabeçalho para inferir o ano correto. Atualmente estamos em 2026.
+- Se a fatura é de Janeiro de 2026, lembre-se que compras feitas no final de Dezembro terão o ano 2025.
 - "name" é a descrição do estabelecimento/lançamento (limpo, sem códigos longos).
 - "amount" é número positivo em reais (sem R$, sem ponto de milhar; use ponto decimal).
 - "original_amount_text" é a string exata do valor como aparece no texto (ex: "1.234,56" ou "R$ 50,00").
