@@ -1,33 +1,14 @@
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render } from '@testing-library/react';
-import { createRootRoute, createRouter, RouterProvider, createRoute } from '@tanstack/react-router';
+import React from 'react';
 import SealVerifier from './SealVerifier';
 
+// Mock do TanStack Router
+vi.mock('@tanstack/react-router', () => ({
+  useLocation: vi.fn(() => ({ pathname: '/test' }))
+}));
+
 describe('SealVerifier', () => {
-  const rootRoute = createRootRoute({
-    component: () => (
-      <>
-        <SealVerifier />
-        <div id="outlet" />
-      </>
-    ),
-  });
-
-  const indexRoute = createRoute({
-    getParentRoute: () => rootRoute,
-    path: '/',
-    component: () => <div className="seal">selinho</div>,
-  });
-
-  const safeRoute = createRoute({
-    getParentRoute: () => rootRoute,
-    path: '/safe',
-    component: () => <div>Safe route</div>,
-  });
-
-  const routeTree = rootRoute.addChildren([indexRoute, safeRoute]);
-  const router = createRouter({ routeTree });
-
   beforeEach(() => {
     document.body.innerHTML = '';
   });
@@ -39,22 +20,40 @@ describe('SealVerifier', () => {
   test('deve emitir aviso no console se um seletor de selo for encontrado', async () => {
     const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     
-    render(<RouterProvider router={router} />);
+    // Simula a presença de um selo antes da renderização
+    const div = document.createElement('div');
+    div.className = 'seal';
+    div.innerText = 'selinho';
+    document.body.appendChild(div);
+
+    render(<SealVerifier />);
     
-    // O MutationObserver e o useEffect podem levar um ciclo de microtask
+    // O useEffect roda após o render
+    expect(consoleWarnSpy).toHaveBeenCalled();
+  });
+
+  test('não deve emitir aviso se nenhum selo for encontrado', async () => {
+    const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    
+    render(<SealVerifier />);
+    
+    expect(consoleWarnSpy).not.toHaveBeenCalled();
+  });
+
+  test('deve detectar selos adicionados dinamicamente via MutationObserver', async () => {
+    const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    
+    render(<SealVerifier />);
+    expect(consoleWarnSpy).not.toHaveBeenCalled();
+
+    // Adiciona dinamicamente
+    const badge = document.createElement('div');
+    badge.id = 'lovable-badge';
+    document.body.appendChild(badge);
+
+    // Aguarda o MutationObserver disparar
     await vi.waitFor(() => {
       expect(consoleWarnSpy).toHaveBeenCalled();
     });
-  });
-
-  test('não deve emitir aviso em rotas sem selos', async () => {
-    const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    
-    const routerSafe = createRouter({ routeTree, initialEntries: ['/safe'] });
-    render(<RouterProvider router={routerSafe} />);
-    
-    // Aguarda um pouco para garantir que não houve chamada
-    await new Promise(resolve => setTimeout(resolve, 50));
-    expect(consoleWarnSpy).not.toHaveBeenCalled();
   });
 });
