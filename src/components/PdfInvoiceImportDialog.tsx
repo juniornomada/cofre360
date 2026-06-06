@@ -160,6 +160,30 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
   const [dateTolerance, setDateTolerance] = useState(0);
   const [amountTolerance, setAmountTolerance] = useState(0);
 
+  const updatePreviewWithDuplicates = async (rows: ParsedRow[], dateTol: number, amountTol: number) => {
+    const { data: existing } = await fetchExistingForCard(cardName);
+    if (!existing) return rows;
+
+    return rows.map(r => {
+      let foundReason = "";
+      const isDuplicate = existing.some(ext => {
+        const res = getDuplicateReason(
+          { date: r.date, name: r.name, amount: r.amount, type: r.type },
+          { date: ext.date, name: ext.name, amount: Number(ext.amount), type: ext.type },
+          { dateToleranceDays: dateTol, amountToleranceCents: amountTol }
+        );
+        if (res.isDuplicate) foundReason = res.reason || "";
+        return res.isDuplicate;
+      });
+      return {
+        ...r,
+        isDuplicate,
+        duplicateReason: foundReason,
+        approved: isDuplicate ? false : true
+      };
+    });
+  };
+
 
   const reset = () => {
     setFileName("");
