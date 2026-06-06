@@ -703,6 +703,22 @@ export function CardsPage() {
     }
   };
 
+  const handleRecalculateUsedLimit = async (cardId: string, newValue: number) => {
+    try {
+      const { error } = await supabase
+        .from("cards")
+        .update({ used: newValue })
+        .eq("id", cardId);
+      if (error) throw error;
+      showAlert("Limite utilizado atualizado com sucesso!", "success");
+      fetchAll();
+      runValidation(true, "recalculate");
+    } catch (error: any) {
+      console.error("Error recalculating limit:", error);
+      showAlert("Erro ao atualizar limite: " + (error.message || "Erro desconhecido"), "error");
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -1090,9 +1106,18 @@ export function CardsPage() {
                         </Badge>
                       </div>
                       {d.type === 'amount' ? (
-                        <div className="flex justify-between items-center text-[10px] text-muted-foreground">
-                          <span>Valor no Cartão: <strong>R$ {(d.cardValue || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong></span>
-                          <span>Soma da Fatura: <strong>R$ {(d.faturaValue || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong></span>
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-center text-[10px] text-muted-foreground">
+                            <span>Valor no Cartão: <strong>R$ {(d.cardValue || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong></span>
+                            <span>Soma da Fatura: <strong>R$ {(d.faturaValue || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong></span>
+                          </div>
+                          <button
+                            onClick={() => handleRecalculateUsedLimit(d.cardId, d.faturaValue)}
+                            className="w-full flex items-center justify-center gap-1.5 rounded-lg bg-primary/10 py-1.5 text-[10px] font-bold text-primary hover:bg-primary/20 transition-colors border border-primary/20"
+                          >
+                            <RefreshCw className="h-3 w-3" />
+                            Corrigir Limite Utilizado
+                          </button>
                         </div>
                       ) : (
                         <p className="text-[10px] text-muted-foreground">Nenhuma fatura encontrada para este cartão nos últimos meses.</p>
@@ -1210,11 +1235,21 @@ export function CardsPage() {
 
               {activePeriod && (
                 <div className="mx-5 mb-3 rounded-xl bg-accent/50 p-3 flex justify-between items-center">
-                  <span className="text-xs font-medium text-muted-foreground">Total da fatura</span>
+                  <div className="flex flex-col">
+                    <span className="text-xs font-medium text-muted-foreground">Total da fatura</span>
+                    {invoiceCard && Math.abs(invoiceCard.used - (activePeriod.total || 0)) > 0.01 && (
+                      <button 
+                        onClick={() => handleRecalculateUsedLimit(invoiceCard.id, activePeriod.total || 0)}
+                        className="text-[9px] font-bold text-primary hover:underline flex items-center gap-1 mt-0.5"
+                      >
+                        <RefreshCw className="h-2 w-2" />
+                        Sincronizar com Limite Utilizado
+                      </button>
+                    )}
+                  </div>
                   <span className="text-sm font-bold text-destructive tabular-nums" data-testid="total-da-fatura-valor">
                     R$ {(activePeriod.total || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                   </span>
-
                 </div>
               )}
 
@@ -1548,6 +1583,7 @@ export function CardsPage() {
             onSuccess={() => {
               showAlert("Fatura importada com sucesso!", "success");
               fetchAll();
+              runValidation(true, "pdf_import");
             }}
           />
         )}
