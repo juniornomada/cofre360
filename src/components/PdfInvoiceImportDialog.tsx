@@ -30,6 +30,7 @@ type ParsedRow = {
   total_installments?: number;
   isFuture?: boolean; // generated parcela future row, not present in PDF
   confidence?: "low" | "high";
+  approved?: boolean;
 };
 
 type InstallmentMeta = {
@@ -207,6 +208,7 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
 
     const toImport: TransactionInsert[] = [];
     for (const row of preview) {
+      if (row.approved === false) continue;
       const { category, icon } = categorizeTransaction(row.name);
       const transaction: TransactionInsert = {
         id: crypto.randomUUID(),
