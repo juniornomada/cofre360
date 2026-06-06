@@ -102,6 +102,8 @@ export function PdfStatementImportDialog({ open, onOpenChange, bankAccountId, ba
     try {
       const fileBase64 = await fileToBase64(file);
       const result = await parseCardInvoicePdf({ data: { fileBase64, fileName: file.name, kind: "bank_statement" } });
+      console.log("PDF extraction result:", { transactions: result.transactions?.length, chars: result.charsExtracted });
+
       const rows: ParsedRow[] = (result.transactions || []).map((t) => ({
         date: t.date,
         name: restoreAccents(t.name),
