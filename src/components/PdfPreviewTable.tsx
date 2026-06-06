@@ -237,16 +237,30 @@ export function PdfPreviewTable({ rows, onChange, itemLabel = "transações", ra
                     <span>{r.type === "expense" ? "-" : "+"}R$ {r.amount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
                   </div>
                 </td>
-                  <td className="p-1.5" onClick={(e) => e.stopPropagation()}>
-                    <div className="flex items-center justify-end gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button onClick={() => startEdit(i)} className="p-1 rounded hover:bg-accent text-muted-foreground" title="Editar">
-                        <Pencil className="h-3.5 w-3.5" />
+                <td className="p-1.5" onClick={(e) => e.stopPropagation()}>
+                  <div className="flex items-center justify-end gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {rawPdfText && (r.confidence === "low" || hasDivergence(r)) && (
+                      <button 
+                        onClick={() => retryTransaction(i)} 
+                        disabled={retryingIndex === i}
+                        className="p-1 rounded hover:bg-accent text-primary disabled:opacity-50" 
+                        title="Reprocessar com IA"
+                      >
+                        {retryingIndex === i ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <RefreshCw className="h-3.5 w-3.5" />
+                        )}
                       </button>
-                      <button onClick={() => removeRow(i)} className="p-1 rounded hover:bg-destructive/15 text-destructive" title="Remover">
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  </td>
+                    )}
+                    <button onClick={() => startEdit(i)} className="p-1 rounded hover:bg-accent text-muted-foreground" title="Editar">
+                      <Pencil className="h-3.5 w-3.5" />
+                    </button>
+                    <button onClick={() => removeRow(i)} className="p-1 rounded hover:bg-destructive/15 text-destructive" title="Remover">
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </td>
                 </tr>
               );
             })}
