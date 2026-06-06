@@ -56,7 +56,7 @@ export function PdfPreviewTable({ rows, onChange, itemLabel = "transações" }: 
         <thead className="bg-muted/50 sticky top-0">
           <tr>
             <th className="text-left p-2 w-[88px]">Data</th>
-            <th className="text-left p-2">Descrição</th>
+            <th className="text-left p-2">Estabelecimento / Descrição</th>
             <th className="text-right p-2 w-[110px]">Valor</th>
             <th className="p-2 w-[64px]"></th>
           </tr>
