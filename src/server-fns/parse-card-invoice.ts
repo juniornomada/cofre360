@@ -14,6 +14,23 @@ type ParsedInvoiceTx = {
 
 type DocumentKind = "card_invoice" | "bank_statement";
 
+const ALLOWED_MODELS = [
+  "google/gemini-2.0-flash",
+  "google/gemini-2.5-flash",
+  "google/gemini-2.5-flash-image",
+  "google/gemini-2.5-flash-lite",
+  "google/gemini-2.5-pro",
+  "anthropic/claude-3-5-sonnet",
+  "openai/gpt-4o",
+  "openai/gpt-4o-mini"
+];
+
+function validateModel(model: string) {
+  if (!ALLOWED_MODELS.includes(model)) {
+    throw new Error(`Modelo de IA não suportado ou expirado: ${model}. Por favor, use um dos seguintes: ${ALLOWED_MODELS.join(", ")}`);
+  }
+}
+
 async function validateAndExtractPdfText(base64: string): Promise<string> {
   const bytes = new Uint8Array(Buffer.from(base64, "base64"));
 
@@ -37,6 +54,7 @@ async function validateAndExtractPdfText(base64: string): Promise<string> {
   const { text } = await extractText(pdf, { mergePages: true });
   return Array.isArray(text) ? text.join("\n\n") : text;
 }
+
 
 
 
@@ -88,6 +106,9 @@ ${trimmed}
     ? "Você é um parser preciso de extratos bancários brasileiros. Sempre retorne JSON válido."
     : "Você é um parser preciso de faturas de cartão de crédito brasileiras. Sempre retorne JSON válido.";
 
+  const model = "google/gemini-2.5-flash";
+  validateModel(model);
+
   const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -95,7 +116,8 @@ ${trimmed}
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "google/gemini-2.5-flash",
+      model: model,
+
       messages: [
         { role: "system", content: systemMsg },
         { role: "user", content: prompt },
@@ -204,6 +226,9 @@ ${data.rawText.slice(0, 15000)}
 
 Retorne apenas os dados corrigidos no formato JSON.`;
 
+    const model = "google/gemini-2.5-flash";
+    validateModel(model);
+
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -211,7 +236,8 @@ Retorne apenas os dados corrigidos no formato JSON.`;
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: model,
+
         messages: [
           { role: "system", content: "Você é um especialista em extração de dados financeiros. Retorne JSON válido via function call." },
           { role: "user", content: prompt },
