@@ -1,11 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
-import path from "path";
 
-
-// Parse a credit-card invoice OR bank-account statement PDF using pdfjs-dist
-// (text extraction) and Lovable AI Gateway (structured transaction extraction).
-//
-// Returns an array of { date: "YYYY-MM-DD", name: string, amount: number, type: "expense"|"income" }.
+// Parse a credit-card invoice OR bank-account statement PDF using unpdf
+// (text extraction, edge-runtime friendly) and Lovable AI Gateway.
 
 type ParsedInvoiceTx = {
   date: string;
@@ -17,62 +13,15 @@ type ParsedInvoiceTx = {
 type DocumentKind = "card_invoice" | "bank_statement";
 
 async function extractPdfText(base64: string): Promise<string> {
-  // Use Uint8Array for PDF.js compatibility (it rejects plain Buffers in Node)
   const bytes = new Uint8Array(Buffer.from(base64, "base64"));
 
-  // Dynamic import of pdfjs-dist legacy build
-  const pdfjs: any = await import("pdfjs-dist/legacy/build/pdf.mjs");
-
-  // On the server, we set workerSrc to the absolute path of the worker file.
-  // We use an absolute path to ensure it's found regardless of the current CWD.
-  pdfjs.GlobalWorkerOptions.workerSrc = path.resolve("./node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs");
-
-
-
-  const loadingTask = pdfjs.getDocument({
-    data: bytes,
-    isEvalSupported: false,
-    useSystemFonts: false,
-    disableFontFace: true,
-    useWorkerFetch: false,
-    stopAtErrors: true,
-  });
-  const doc = await loadingTask.promise;
-
-  let full = "";
-  for (let p = 1; p <= doc.numPages; p++) {
-    const page = await doc.getPage(p);
-    const content = await page.getTextContent();
-    // Reassemble lines from text items by Y coordinate
-    const items = (content.items as any[])
-      .map((it) => ({
-        str: it.str as string,
-        x: it.transform[4] as number,
-        y: it.transform[5] as number,
-      }))
-      .filter((it) => it.str && it.str.trim());
-
-    // Group items by Y (rounded) to form lines, then sort by X
-    const linesMap = new Map<number, { x: number; str: string }[]>();
-    for (const it of items) {
-      const key = Math.round(it.y);
-      if (!linesMap.has(key)) linesMap.set(key, []);
-      linesMap.get(key)!.push({ x: it.x, str: it.str });
-    }
-    const sortedY = [...linesMap.keys()].sort((a, b) => b - a); // top → bottom
-    const pageLines = sortedY.map((y) =>
-      linesMap
-        .get(y)!
-        .sort((a, b) => a.x - b.x)
-        .map((i) => i.str)
-        .join(" ")
-        .replace(/\s+/g, " ")
-        .trim()
-    );
-    full += pageLines.join("\n") + "\n\n";
-  }
-  return full;
+  // unpdf works in Node/Bun/Workers without worker setup
+  const { extractText, getDocumentProxy } = await import("unpdf");
+  const pdf = await getDocumentProxy(bytes);
+  const { text } = await extractText(pdf, { mergePages: true });
+  return Array.isArray(text) ? text.join("\n\n") : text;
 }
+
 
 async function aiExtractTransactions(rawText: string, kind: DocumentKind): Promise<ParsedInvoiceTx[]> {
   const LOVABLE_API_KEY = process.env.LOVABLE_API_KEY;
