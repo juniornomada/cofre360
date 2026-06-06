@@ -1,7 +1,9 @@
 import { useState, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import { Upload, FileText, Loader2, AlertCircle, CheckCircle2, Sparkles } from "lucide-react";
+
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables, TablesInsert } from "@/integrations/supabase/types";
 import { categorizeTransaction } from "@/lib/categorize-transaction";
@@ -85,6 +87,9 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
   const [fileName, setFileName] = useState("");
   const [parsing, setParsing] = useState(false);
   const [error, setError] = useState("");
+  const [parsingStep, setParsingStep] = useState<"idle" | "uploading" | "extracting" | "processing">("idle");
+  const [parsingProgress, setParsingProgress] = useState(0);
+
   const [preview, setPreview] = useState<ParsedRow[]>([]);
   const [dedupResult, setDedupResult] = useState<{ toImport: TransactionInsert[]; duplicateCount: number } | null>(null);
   const [checking, setChecking] = useState(false);
@@ -93,6 +98,9 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
   const reset = () => {
     setFileName("");
     setParsing(false);
+    setParsingStep("idle");
+    setParsingProgress(0);
+
     setError("");
     setPreview([]);
     setDedupResult(null);
@@ -116,10 +124,17 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
 
     setFileName(file.name);
     setParsing(true);
+    setParsingStep("uploading");
+    setParsingProgress(20);
     try {
       const fileBase64 = await fileToBase64(file);
+      setParsingStep("extracting");
+      setParsingProgress(50);
       const result = await parseCardInvoicePdf({ data: { fileBase64, fileName: file.name, kind: "card_invoice" } });
+      setParsingStep("processing");
+      setParsingProgress(85);
       console.log("PDF extraction result:", { transactions: result.transactions?.length, chars: result.charsExtracted });
+
 
       const baseRows = (result.transactions || []).map((t) => ({
         date: t.date,
@@ -146,6 +161,8 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
         setError("Nenhuma transação detectada no PDF.");
       }
       setPreview(rows);
+      setParsingProgress(100);
+
     } catch (err: any) {
       setError(err?.message || "Erro ao processar o PDF.");
       setPreview([]);
@@ -264,12 +281,30 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
         )}
 
         {parsing && (
-          <div className="flex flex-col items-center justify-center gap-2 py-6">
-            <Loader2 className="h-5 w-5 animate-spin text-primary" />
-            <p className="text-xs text-muted-foreground">Extraindo transações com IA...</p>
-            <p className="text-[10px] text-muted-foreground">Isso pode levar alguns segundos.</p>
+          <div className="flex flex-col items-center justify-center gap-4 py-6">
+            <div className="relative flex items-center justify-center">
+              <Loader2 className="h-8 w-8 animate-spin text-primary/30" />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <Sparkles className="h-4 w-4 text-primary animate-pulse" />
+              </div>
+            </div>
+            <div className="w-full space-y-2">
+              <div className="flex justify-between text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
+                <span>
+                  {parsingStep === "uploading" && "Carregando arquivo..."}
+                  {parsingStep === "extracting" && "Extraindo texto com IA..."}
+                  {parsingStep === "processing" && "Processando transações..."}
+                </span>
+                <span>{parsingProgress}%</span>
+              </div>
+              <Progress value={parsingProgress} className="h-1.5" />
+            </div>
+            <p className="text-[10px] text-muted-foreground text-center">
+              Isso pode levar alguns segundos dependendo do tamanho do PDF.
+            </p>
           </div>
         )}
+
 
         {error && (
           <div className="rounded-xl bg-destructive/10 p-3 space-y-2">
