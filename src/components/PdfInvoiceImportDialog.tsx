@@ -635,15 +635,21 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
                     </div>
                   ) : (
                     <div className="space-y-3">
-                      <div className="rounded-xl bg-muted/50 p-3 space-y-1.5">
+                      <div className="rounded-xl bg-muted/50 p-3 space-y-1.5 border border-border/50">
                         <div className="flex items-center gap-2 text-xs font-medium text-primary">
                           <CheckCircle2 className="h-4 w-4" />
-                          {dedupResult.toImport.length} transações serão importadas
+                          {dedupResult.toImport.length} transações confirmadas para importação
                         </div>
-                        {dedupResult.duplicateCount > 0 && (
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        {preview.filter(r => r.isDuplicate && r.approved === false).length > 0 && (
+                          <div className="flex items-center gap-2 text-[10px] text-amber-600 font-medium">
                             <AlertCircle className="h-3.5 w-3.5" />
-                            {dedupResult.duplicateCount} duplicada{dedupResult.duplicateCount > 1 ? "s" : ""} ignorada
+                            {preview.filter(r => r.isDuplicate && r.approved === false).length} duplicadas foram automaticamente ignoradas
+                          </div>
+                        )}
+                        {preview.filter(r => r.isDuplicate && r.approved === true).length > 0 && (
+                          <div className="flex items-center gap-2 text-[10px] text-blue-600 font-medium">
+                            <CheckCircle2 className="h-3.5 w-3.5" />
+                            {preview.filter(r => r.isDuplicate && r.approved === true).length} duplicadas mantidas manualmente
                           </div>
                         )}
                       </div>
