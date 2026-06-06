@@ -38,7 +38,7 @@ async function validateAndExtractPdfText(base64: string): Promise<string> {
 
 
 
-async function aiExtractTransactions(rawText: string, kind: DocumentKind): Promise<ParsedInvoiceTx[]> {
+async function aiExtractTransactions(rawText: string, kind: DocumentKind, isRetry: boolean = false): Promise<ParsedInvoiceTx[]> {
   const LOVABLE_API_KEY = process.env.LOVABLE_API_KEY;
   if (!LOVABLE_API_KEY) {
     throw new Error("LOVABLE_API_KEY ausente — não foi possível processar o PDF.");
@@ -69,7 +69,9 @@ Regras:
 - Não duplique a mesma linha. Se houver "Detalhe" abaixo de uma linha, junte na descrição.
 - Se não houver movimentações claras, retorne lista vazia.`;
 
-  const prompt = `${kind === "bank_statement" ? bankPrompt : cardPrompt}
+  const retryPrompt = isRetry ? "\nATENÇÃO: A tentativa anterior falhou em encontrar dados. Por favor, analise o texto com cuidado extra, ignorando ruídos de formatação ou caracteres estranhos resultantes da extração do PDF." : "";
+  const prompt = `${kind === "bank_statement" ? bankPrompt : cardPrompt}${retryPrompt}
+
 
 Texto do PDF:
 """
@@ -174,8 +176,37 @@ export const parseCardInvoicePdf = createServerFn({ method: "POST" })
     const text = await validateAndExtractPdfText(data.fileBase64);
 
     if (!text || text.trim().length < 30) {
-      throw new Error("Não foi possível extrair texto deste PDF (talvez seja imagem escaneada).");
+      throw new Error("Não foi possível extrair texto deste PDF. Se for uma imagem ou escaneado, tente usar um PDF original gerado pelo banco.");
     }
-    const transactions = await aiExtractTransactions(text, data.kind);
-    return { transactions, charsExtracted: text.length };
+
+    let lastError = null;
+    const MAX_RETRIES = 2;
+    
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        const transactions = await aiExtractTransactions(text, data.kind, attempt > 0);
+        
+        if (transactions.length === 0) {
+          throw new Error("A IA não encontrou transações claras neste arquivo. Verifique se o layout do PDF é suportado.");
+        }
+        
+        return { transactions, charsExtracted: text.length, attempts: attempt + 1 };
+      } catch (err: any) {
+        lastError = err;
+        console.warn(`Tentativa ${attempt + 1} de extração falhou:`, err.message);
+        
+        // Don't retry if it's a credit/auth error
+        if (err.message?.includes("LOVABLE_API_KEY") || err.message?.includes("Créditos")) {
+          throw err;
+        }
+        
+        // Wait a bit before retrying (exponential backoff)
+        if (attempt < MAX_RETRIES) {
+          await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+        }
+      }
+    }
+
+    throw lastError || new Error("Falha na extração por IA após várias tentativas.");
   });
+
