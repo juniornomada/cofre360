@@ -319,12 +319,6 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
         total_installments: row.total_installments ?? 1,
       };
 
-      // Se for duplicada detectada na fase de prévia e o usuário não marcou manualmente como aprovada (approved: true),
-      // nós pulamos ela para evitar duplicar. Se o usuário marcou para manter, importamos.
-      if (row.isDuplicate && row.approved !== true) {
-        continue;
-      }
-
       toImport.push(transaction);
     }
 
