@@ -24,6 +24,10 @@ export function InvoiceComparisonView({ items, pdfTotal, systemTotal, title }: I
 
   return (
     <div className="space-y-4">
+      {title && <h3 className="text-sm font-semibold text-amber-600 flex items-center gap-2">
+        <AlertCircle className="h-4 w-4" />
+        {title}
+      </h3>}
       <div className="grid grid-cols-3 gap-4 mb-4">
         <div className="p-3 rounded-xl bg-muted/50 border">
           <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Total no PDF</p>
