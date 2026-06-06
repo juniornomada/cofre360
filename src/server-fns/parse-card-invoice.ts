@@ -251,6 +251,21 @@ export const aiRetrySingleTransaction = createServerFn({ method: "POST" })
     return input;
   })
   .handler(async ({ data }) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    let model = "google/gemini-2.5-flash";
+
+    if (user) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("gemini_model")
+        .eq("user_id", user.id)
+        .single();
+      
+      if (profile?.gemini_model) {
+        model = profile.gemini_model;
+      }
+    }
+
     const LOVABLE_API_KEY = process.env.LOVABLE_API_KEY;
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY ausente.");
 
