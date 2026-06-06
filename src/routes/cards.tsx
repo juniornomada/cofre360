@@ -1111,13 +1111,29 @@ export function CardsPage() {
                             <span>Valor no Cartão: <strong>R$ {(d.cardValue || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong></span>
                             <span>Soma da Fatura: <strong>R$ {(d.faturaValue || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong></span>
                           </div>
-                          <button
-                            onClick={() => handleRecalculateUsedLimit(d.cardId, d.faturaValue)}
-                            className="w-full flex items-center justify-center gap-1.5 rounded-lg bg-primary/10 py-1.5 text-[10px] font-bold text-primary hover:bg-primary/20 transition-colors border border-primary/20"
-                          >
-                            <RefreshCw className="h-3 w-3" />
-                            Corrigir Limite Utilizado
-                          </button>
+                          <div className="grid grid-cols-2 gap-2">
+                            <button
+                              onClick={() => handleRecalculateUsedLimit(d.cardId, d.faturaValue)}
+                              className="flex items-center justify-center gap-1.5 rounded-lg bg-primary/10 py-1.5 text-[10px] font-bold text-primary hover:bg-primary/20 transition-colors border border-primary/20"
+                            >
+                              <RefreshCw className="h-3 w-3" />
+                              Sincronizar Limite
+                            </button>
+                            <button
+                              onClick={() => {
+                                const card = cards.find(c => c.id === d.cardId);
+                                if (card) {
+                                  setPdfImportCard(card);
+                                  setPdfImportOpen(true);
+                                }
+                              }}
+                              className="flex items-center justify-center gap-1.5 rounded-lg bg-accent py-1.5 text-[10px] font-bold text-muted-foreground hover:bg-accent/80 transition-colors border border-border"
+                            >
+                              <FileUp className="h-3 w-3" />
+                              Comparar com PDF
+                            </button>
+                          </div>
+
                         </div>
                       ) : (
                         <p className="text-[10px] text-muted-foreground">Nenhuma fatura encontrada para este cartão nos últimos meses.</p>

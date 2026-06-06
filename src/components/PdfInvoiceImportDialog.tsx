@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Upload, FileText, Loader2, AlertCircle, CheckCircle2, Sparkles, LayoutPanelLeft, FileSearch } from "lucide-react";
+import { Upload, FileText, Loader2, AlertCircle, CheckCircle2, Sparkles, LayoutPanelLeft, FileSearch, Scale } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables, TablesInsert } from "@/integrations/supabase/types";
@@ -11,6 +11,9 @@ import { restoreAccents } from "@/lib/restore-accents";
 import { parseCardInvoicePdf } from "../server-fns/parse-card-invoice";
 import { PdfPreviewTable } from "@/components/PdfPreviewTable";
 import { expandInstallments } from "@/lib/expand-installments";
+import { InvoiceComparisonView, type ComparisonItem } from "./InvoiceComparisonView";
+import { groupByBillingCycle } from "@/lib/invoice-utils";
+
 
 type Props = {
   open: boolean;
@@ -101,6 +104,9 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
   const [dedupResult, setDedupResult] = useState<{ toImport: TransactionInsert[]; duplicateCount: number } | null>(null);
   const [checking, setChecking] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [comparisonItems, setComparisonItems] = useState<ComparisonItem[]>([]);
+  const [isComparisonOpen, setIsComparisonOpen] = useState(false);
+
 
   const reset = () => {
     setFileName("");
@@ -116,8 +122,11 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
     setPreview([]);
     setRawText(null);
     setDedupResult(null);
+    setComparisonItems([]);
+    setIsComparisonOpen(false);
     setChecking(false);
     setSaving(false);
+
     if (fileRef.current) fileRef.current.value = "";
   };
 
@@ -258,7 +267,120 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
     setChecking(false);
   };
 
+  const handleCompareWithSystem = async () => {
+    setChecking(true);
+    try {
+      const { data: existing, error: existErr } = await fetchExistingForCard(cardName);
+      if (existErr || !existing) {
+        setError("Erro ao consultar transações existentes.");
+        return;
+      }
+
+      if (preview.length === 0) return;
+      
+      const { data: cardData } = await supabase.from("cards").select("closing_day, due_day").eq("name", cardName).maybeSingle();
+      
+      const pdfRows = preview;
+      const comparison: ComparisonItem[] = [];
+      const usedSystemIdx = new Set<number>();
+      
+      const systemRows = existing.map(t => ({
+        ...t,
+        amount: Number(t.amount),
+      }));
+
+      for (const pdf of pdfRows) {
+        let matchIdx = -1;
+        for (let i = 0; i < systemRows.length; i++) {
+          if (usedSystemIdx.has(i)) continue;
+          const sys = systemRows[i];
+          
+          const sameDate = pdf.date === sys.date;
+          const sameAmount = Math.abs(pdf.amount - sys.amount) < 0.01;
+          const sameName = pdf.name.toLowerCase().trim() === sys.name.toLowerCase().trim() || 
+                           pdf.name.toLowerCase().includes(sys.name.toLowerCase()) || 
+                           sys.name.toLowerCase().includes(pdf.name.toLowerCase());
+          
+          if (sameDate && sameAmount && sameName) {
+            matchIdx = i;
+            break;
+          }
+        }
+
+        if (matchIdx !== -1) {
+          usedSystemIdx.add(matchIdx);
+          comparison.push({
+            date: pdf.date,
+            name: pdf.name,
+            amount: pdf.amount,
+            systemAmount: systemRows[matchIdx].amount,
+            status: "match"
+          });
+        } else {
+          let mismatchIdx = -1;
+          for (let i = 0; i < systemRows.length; i++) {
+            if (usedSystemIdx.has(i)) continue;
+            const sys = systemRows[i];
+            const sameDate = pdf.date === sys.date;
+            const sameName = pdf.name.toLowerCase().trim() === sys.name.toLowerCase().trim();
+            
+            if (sameDate && sameName) {
+              mismatchIdx = i;
+              break;
+            }
+          }
+          
+          if (mismatchIdx !== -1) {
+            usedSystemIdx.add(mismatchIdx);
+            comparison.push({
+              date: pdf.date,
+              name: pdf.name,
+              amount: pdf.amount,
+              systemAmount: systemRows[mismatchIdx].amount,
+              status: "mismatch"
+            });
+          } else {
+            comparison.push({
+              date: pdf.date,
+              name: pdf.name,
+              amount: pdf.amount,
+              status: "pdf_only"
+            });
+          }
+        }
+      }
+
+      const pdfDates = pdfRows.map(p => new Date(p.date).getTime()).sort();
+      const minPdf = pdfDates[0];
+      const maxPdf = pdfDates[pdfDates.length - 1];
+      
+      for (let i = 0; i < systemRows.length; i++) {
+        if (usedSystemIdx.has(i)) continue;
+        const sys = systemRows[i];
+        const sysTime = new Date(sys.date).getTime();
+        
+        if (sysTime >= minPdf - 2 * 86400000 && sysTime <= maxPdf + 2 * 86400000) {
+          comparison.push({
+            date: sys.date,
+            name: sys.name,
+            amount: 0,
+            systemAmount: sys.amount,
+            status: "system_only"
+          });
+        }
+      }
+
+      setComparisonItems(comparison);
+      setIsComparisonOpen(true);
+    } catch (err: any) {
+      setError("Erro ao comparar com o sistema: " + err.message);
+    } finally {
+      setChecking(false);
+    }
+  };
+
   const handleConfirmImport = async () => {
+
     if (!dedupResult) return;
     setSaving(true);
     setError("");
@@ -381,7 +503,31 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
                   </Button>
                 )}
               </div>
-              <Button variant="ghost" size="sm" className="text-xs h-7" onClick={reset}>Trocar PDF</Button>
+              <div className="flex items-center gap-2">
+                {!isComparisonOpen ? (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="h-7 gap-1.5 text-[10px] rounded-lg"
+                    onClick={handleCompareWithSystem}
+                    disabled={checking}
+                  >
+                    {checking ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Scale className="h-3.5 w-3.5" />}
+                    Comparar com Sistema
+                  </Button>
+                ) : (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="h-7 gap-1.5 text-[10px] rounded-lg"
+                    onClick={() => setIsComparisonOpen(false)}
+                  >
+                    Voltar para Lista
+                  </Button>
+                )}
+                <Button variant="ghost" size="sm" className="text-xs h-7" onClick={reset}>Trocar PDF</Button>
+              </div>
+
             </div>
             
             <div className={`flex flex-1 gap-4 overflow-hidden ${showPdf ? "min-h-[400px]" : ""}`}>
@@ -410,14 +556,23 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
                   </div>
       
                   <div className="flex-1 overflow-y-auto">
-                    <PdfPreviewTable
-                      rows={preview}
-                      onChange={(rows) => { setPreview(rows); setDedupResult(null); }}
-                      itemLabel="transações"
-                      rawPdfText={rawText}
-                      documentKind="card_invoice"
-                    />
+                    {isComparisonOpen ? (
+                      <InvoiceComparisonView 
+                        items={comparisonItems}
+                        pdfTotal={preview.reduce((sum, r) => sum + r.amount, 0)}
+                        systemTotal={comparisonItems.reduce((sum, r) => sum + (r.systemAmount || 0), 0)}
+                      />
+                    ) : (
+                      <PdfPreviewTable
+                        rows={preview}
+                        onChange={(rows) => { setPreview(rows); setDedupResult(null); }}
+                        itemLabel="transações"
+                        rawPdfText={rawText}
+                        documentKind="card_invoice"
+                      />
+                    )}
                   </div>
+
 
                   {!dedupResult ? (
                     <div className="flex gap-2">
