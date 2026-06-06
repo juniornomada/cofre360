@@ -19,6 +19,8 @@ type Props = {
   rows: PdfPreviewRow[];
   onChange: (rows: PdfPreviewRow[]) => void;
   itemLabel?: string; // "transações" | "movimentações"
+  rawPdfText?: string | null;
+  documentKind?: "card_invoice" | "bank_statement";
 };
 
 export function PdfPreviewTable({ rows, onChange, itemLabel = "transações" }: Props) {
