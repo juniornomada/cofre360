@@ -1106,9 +1106,18 @@ export function CardsPage() {
                         </Badge>
                       </div>
                       {d.type === 'amount' ? (
-                        <div className="flex justify-between items-center text-[10px] text-muted-foreground">
-                          <span>Valor no Cartão: <strong>R$ {(d.cardValue || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong></span>
-                          <span>Soma da Fatura: <strong>R$ {(d.faturaValue || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong></span>
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-center text-[10px] text-muted-foreground">
+                            <span>Valor no Cartão: <strong>R$ {(d.cardValue || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong></span>
+                            <span>Soma da Fatura: <strong>R$ {(d.faturaValue || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong></span>
+                          </div>
+                          <button
+                            onClick={() => handleRecalculateUsedLimit(d.cardId, d.faturaValue)}
+                            className="w-full flex items-center justify-center gap-1.5 rounded-lg bg-primary/10 py-1.5 text-[10px] font-bold text-primary hover:bg-primary/20 transition-colors border border-primary/20"
+                          >
+                            <RefreshCw className="h-3 w-3" />
+                            Corrigir Limite Utilizado
+                          </button>
                         </div>
                       ) : (
                         <p className="text-[10px] text-muted-foreground">Nenhuma fatura encontrada para este cartão nos últimos meses.</p>
