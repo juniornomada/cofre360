@@ -58,6 +58,27 @@ export function PdfPreviewTable({ rows, onChange, itemLabel = "transações", ra
     onChange(rows.filter((_, idx) => idx !== i));
   };
 
+  const retryTransaction = async (i: number) => {
+    if (!rawPdfText) return;
+    setRetryingIndex(i);
+    try {
+      const result = await aiRetrySingleTransaction({
+        data: {
+          rawText: rawPdfText,
+          transaction: rows[i] as any,
+          kind: documentKind
+        }
+      });
+      const next = [...rows];
+      next[i] = { ...rows[i], ...result };
+      onChange(next);
+    } catch (err) {
+      console.error("Retry failed:", err);
+    } finally {
+      setRetryingIndex(null);
+    }
+  };
+
   const visibleRows = rows.slice(0, 50);
 
   const hasDivergence = (r: PdfPreviewRow) => {
