@@ -18,6 +18,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { BankLogo } from "@/components/BankLogo";
 import { EmptyState } from "@/components/EmptyState";
 import { SmartLink as Link } from "@/components/SmartLink";
+import { AISettingsDialog } from "@/components/AISettingsDialog";
 import {
   DndContext,
   closestCenter,
@@ -929,6 +930,16 @@ export function Dashboard() {
             }}
           >
             <ThemeToggle />
+          </div>
+          <div
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-card border"
+            style={{
+              borderColor: "hsl(142 95% 55%)",
+              boxShadow:
+                "0 0 10px hsl(142 95% 55% / 0.9), 0 0 20px hsl(142 95% 55% / 0.6), inset 0 0 6px hsl(142 95% 55% / 0.35)",
+            }}
+          >
+            <AISettingsDialog />
           </div>
           <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
             <PopoverTrigger asChild>

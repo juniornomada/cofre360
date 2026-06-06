@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { supabase } from "@/integrations/supabase/client";
 
 // Parse a credit-card invoice OR bank-account statement PDF using unpdf
 // (text extraction, edge-runtime friendly) and Lovable AI Gateway.
@@ -97,6 +98,21 @@ async function validateAndExtractPdfText(base64: string): Promise<string> {
 
 
 async function aiExtractTransactions(rawText: string, kind: DocumentKind, isRetry: boolean = false): Promise<ParsedInvoiceTx[]> {
+  const { data: { user } } = await supabase.auth.getUser();
+  let model = "google/gemini-2.5-flash";
+
+  if (user) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("gemini_model")
+      .eq("user_id", user.id)
+      .single();
+    
+    if (profile?.gemini_model) {
+      model = profile.gemini_model;
+    }
+  }
+
   const LOVABLE_API_KEY = process.env.LOVABLE_API_KEY;
   if (!LOVABLE_API_KEY) {
     throw new Error("LOVABLE_API_KEY ausente — não foi possível processar o PDF.");
@@ -144,7 +160,7 @@ ${trimmed}
     ? "Você é um parser preciso de extratos bancários brasileiros. Sempre retorne JSON válido."
     : "Você é um parser preciso de faturas de cartão de crédito brasileiras. Sempre retorne JSON válido.";
 
-  const model = "google/gemini-2.5-flash";
+  // O modelo já foi determinado no início da função via perfil do usuário
   const response = await fetchAiWithFallback({
     messages: [
       { role: "system", content: systemMsg },
@@ -235,6 +251,21 @@ export const aiRetrySingleTransaction = createServerFn({ method: "POST" })
     return input;
   })
   .handler(async ({ data }) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    let model = "google/gemini-2.5-flash";
+
+    if (user) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("gemini_model")
+        .eq("user_id", user.id)
+        .single();
+      
+      if (profile?.gemini_model) {
+        model = profile.gemini_model;
+      }
+    }
+
     const LOVABLE_API_KEY = process.env.LOVABLE_API_KEY;
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY ausente.");
 
@@ -254,7 +285,7 @@ ${data.rawText.slice(0, 15000)}
 
 Retorne apenas os dados corrigidos no formato JSON.`;
 
-    const model = "google/gemini-2.5-flash";
+    // O modelo já foi determinado via perfil do usuário
     const response = await fetchAiWithFallback({
       messages: [
         { role: "system", content: "Você é um especialista em extração de dados financeiros. Retorne JSON válido via function call." },
