@@ -703,6 +703,22 @@ export function CardsPage() {
     }
   };
 
+  const handleRecalculateUsedLimit = async (cardId: string, newValue: number) => {
+    try {
+      const { error } = await supabase
+        .from("cards")
+        .update({ used: newValue })
+        .eq("id", cardId);
+      if (error) throw error;
+      showAlert("Limite utilizado atualizado com sucesso!", "success");
+      fetchAll();
+      runValidation(true, "recalculate");
+    } catch (error: any) {
+      console.error("Error recalculating limit:", error);
+      showAlert("Erro ao atualizar limite: " + (error.message || "Erro desconhecido"), "error");
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
