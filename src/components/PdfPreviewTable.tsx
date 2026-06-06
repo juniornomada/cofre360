@@ -72,6 +72,7 @@ export function PdfPreviewTable({ rows, onChange, itemLabel = "transações" }: 
                       type="date"
                       value={draft.date}
                       onChange={(e) => setDraft({ ...draft, date: e.target.value })}
+                      onKeyDown={(e) => e.key === "Enter" && saveEdit()}
                       className="h-7 text-xs px-2 rounded-md"
                     />
                   </td>
@@ -99,6 +100,7 @@ export function PdfPreviewTable({ rows, onChange, itemLabel = "transações" }: 
                         step="0.01"
                         value={draft.amount}
                         onChange={(e) => setDraft({ ...draft, amount: Number(e.target.value) })}
+                        onKeyDown={(e) => e.key === "Enter" && saveEdit()}
                         className="h-7 text-xs px-2 rounded-md text-right tabular-nums"
                       />
                     </div>
