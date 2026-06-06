@@ -30,6 +30,44 @@ function validateModel(model: string) {
     throw new Error(`Modelo de IA não suportado ou expirado: ${model}. Por favor, use um dos seguintes: ${ALLOWED_MODELS.join(", ")}`);
   }
 }
+async function fetchAiWithFallback(payload: any, requestedModel: string): Promise<Response> {
+  const FALLBACK_MODEL = "google/gemini-2.5-flash";
+  const LOVABLE_API_KEY = process.env.LOVABLE_API_KEY;
+
+  if (!LOVABLE_API_KEY) {
+    throw new Error("LOVABLE_API_KEY ausente — não foi possível processar o PDF.");
+  }
+
+  const call = async (model: string) => {
+    validateModel(model);
+    return fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ ...payload, model }),
+    });
+  };
+
+  let response = await call(requestedModel);
+
+  // Se falhar com erro 400 e a mensagem contiver "model", ou se for 400 e o modelo for diferente do fallback
+  if (!response.ok && response.status === 400 && requestedModel !== FALLBACK_MODEL) {
+    try {
+      const errorBody = await response.clone().text();
+      if (errorBody.toLowerCase().includes("model")) {
+        console.warn(`Modelo ${requestedModel} indisponível. Tentando fallback: ${FALLBACK_MODEL}`);
+        return await call(FALLBACK_MODEL);
+      }
+    } catch {
+      // Fallback silencioso em caso de erro 400 genérico
+      return await call(FALLBACK_MODEL);
+    }
+  }
+
+  return response;
+}
 
 async function validateAndExtractPdfText(base64: string): Promise<string> {
   const bytes = new Uint8Array(Buffer.from(base64, "base64"));
