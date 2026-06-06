@@ -1,8 +1,10 @@
-import { Trash2, Pencil, Check, X, AlertTriangle, RefreshCw, Loader2 } from "lucide-react";
+import { Trash2, Pencil, Check, X, AlertTriangle, RefreshCw, Loader2, Settings2 } from "lucide-react";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Slider } from "@/components/ui/slider";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 export type PdfPreviewRow = {
   date: string;
@@ -10,7 +12,7 @@ export type PdfPreviewRow = {
   amount: number;
   type: "expense" | "income";
   isFuture?: boolean;
-  confidence?: "low" | "high";
+  confidence_score?: number;
   approved?: boolean;
   original_amount_text?: string;
 };
@@ -29,6 +31,9 @@ export function PdfPreviewTable({ rows, onChange, itemLabel = "transações", ra
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [retryingIndex, setRetryingIndex] = useState<number | null>(null);
   const [draft, setDraft] = useState<PdfPreviewRow | null>(null);
+
+  const [confThreshold, setConfThreshold] = useState(80);
+  const [divThreshold, setDivThreshold] = useState(0.01);
 
   const startEdit = (i: number) => {
     setEditingIndex(i);
@@ -193,12 +198,12 @@ export function PdfPreviewTable({ rows, onChange, itemLabel = "transações", ra
                 );
               }
               return (
-                <tr 
-                  key={i} 
-                  className={`border-t border-border group transition-colors hover:bg-muted/30 cursor-pointer ${!isApproved ? "opacity-40 grayscale" : ""} ${r.isFuture ? "bg-muted/10" : ""} ${r.confidence === "low" && isApproved ? "bg-amber-50/50" : ""}`}
-                  onClick={() => startEdit(i)}
-                  title={isApproved ? "Clique para editar" : "Rejeitado"}
-                >
+              <tr 
+                key={i} 
+                className={`border-t border-border group transition-colors hover:bg-muted/30 cursor-pointer ${!isApproved ? "opacity-40 grayscale" : ""} ${r.isFuture ? "bg-muted/10" : ""} ${(isLowConfidence(r) || hasDivergence(r)) && isApproved ? "bg-amber-50/50" : ""}`}
+                onClick={() => startEdit(i)}
+                title={isApproved ? "Clique para editar" : "Rejeitado"}
+              >
                   <td className="p-1.5" onClick={(e) => e.stopPropagation()}>
                     <button 
                       onClick={toggleApproval}
@@ -213,15 +218,15 @@ export function PdfPreviewTable({ rows, onChange, itemLabel = "transações", ra
                     <span className="align-middle">{r.name}</span>
                     {r.isFuture && (
                       <span className="ml-1 inline-block align-middle text-[9px] font-semibold px-1 py-0.5 rounded bg-primary/10 text-primary">
-                        futura
-                      </span>
-                    )}
-                    {r.confidence === "low" && (
-                      <span className="ml-1 inline-block align-middle text-[9px] font-semibold px-1 py-0.5 rounded bg-amber-100 text-amber-700 border border-amber-200">
-                        revisar
-                      </span>
-                    )}
-                  </td>
+                      futura
+                    </span>
+                  )}
+                  {isLowConfidence(r) && (
+                    <span className="ml-1 inline-block align-middle text-[9px] font-semibold px-1 py-0.5 rounded bg-amber-100 text-amber-700 border border-amber-200">
+                      revisar ({r.confidence_score}%)
+                    </span>
+                  )}
+                </td>
                 <td className={`p-2 text-right font-medium tabular-nums ${r.type === "income" ? "text-primary" : "text-destructive"}`}>
                   <div className="flex items-center justify-end gap-1.5">
                     {hasDivergence(r) && (
@@ -239,7 +244,7 @@ export function PdfPreviewTable({ rows, onChange, itemLabel = "transações", ra
                 </td>
                 <td className="p-1.5" onClick={(e) => e.stopPropagation()}>
                   <div className="flex items-center justify-end gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                    {rawPdfText && (r.confidence === "low" || hasDivergence(r)) && (
+                    {rawPdfText && (isLowConfidence(r) || hasDivergence(r)) && (
                       <button 
                         onClick={() => retryTransaction(i)} 
                         disabled={retryingIndex === i}
