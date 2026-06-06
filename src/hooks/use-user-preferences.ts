@@ -11,6 +11,13 @@ export function useUserPreferences() {
     return true;
   });
 
+  const [geminiModel, setGeminiModel] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("geminiModel") || "google/gemini-2.5-flash";
+    }
+    return "google/gemini-2.5-flash";
+  });
+
 
   const [loading, setLoading] = useState(true);
 
