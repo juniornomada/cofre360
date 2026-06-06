@@ -204,16 +204,21 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
           )
         );
 
-        const rowsWithDup = rows.map(r => ({
-          ...r,
-          isDuplicate: seen.has(buildDedupKey({
+        const rowsWithDup = rows.map(r => {
+          const isDuplicate = seen.has(buildDedupKey({
             card: cardName,
             date: r.date,
             name: r.name,
             amount: r.amount,
             type: r.type,
-          }))
-        }));
+          }));
+          return {
+            ...r,
+            isDuplicate,
+            // Por padrão, se for duplicado, desativamos a aprovação para "ignorar automaticamente"
+            approved: isDuplicate ? false : true 
+          };
+        });
         setPreview(rowsWithDup);
       }
 
@@ -259,7 +264,9 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
 
     const toImport: TransactionInsert[] = [];
     for (const row of preview) {
+      // Se estiver explicitamente rejeitado, pula
       if (row.approved === false) continue;
+
       const { category, icon } = categorizeTransaction(row.name);
       const transaction: TransactionInsert = {
         id: crypto.randomUUID(),
@@ -276,6 +283,7 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
         installment_number: row.installment_number ?? 1,
         total_installments: row.total_installments ?? 1,
       };
+
       const key = buildDedupKey({
         card: cardName,
         date: transaction.date,
@@ -283,14 +291,26 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
         amount: Number(transaction.amount),
         type: transaction.type,
       });
-      if (seen.has(key)) continue;
+
+      // Se for duplicada e NÃO estiver explicitamente aprovada pelo usuário, pula
+      // No preview, se isDuplicate for true, o usuário pode clicar em "Manter" (approved: true)
+      // Se ele não fizer nada, o comportamento padrão depende se queremos ser conservadores.
+      // Vamos assumir que se o usuário vê que é duplicada e deixa como "aprovada" (padrão), ele quer importar.
+      // MAS, para "ignorar automaticamente", o ideal é que por padrão as duplicatas venham DESAPROVADAS.
+      
+      if (seen.has(key) && row.approved !== true) {
+        continue;
+      }
+
       seen.add(key);
       toImport.push(transaction);
     }
 
-    const duplicateCount = preview.length - toImport.length;
+    const duplicateCount = preview.filter(r => r.isDuplicate).length;
+    const ignoredCount = preview.filter(r => r.isDuplicate && r.approved === false).length;
+
     if (toImport.length === 0) {
-      setError("Todas as transações desta fatura já foram importadas.");
+      setError("Todas as transações selecionadas já existem no sistema ou foram rejeitadas.");
       setChecking(false);
       return;
     }
@@ -574,16 +594,24 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
               
               <div className={`${showPdf ? "flex-[0.8]" : "w-full"} flex flex-col overflow-hidden`}>
                 <div className="flex-1 overflow-hidden flex flex-col space-y-3">
-                  <div className="flex items-center justify-between gap-2">
-                    {preview.some((p) => p.isFuture) && (
-                      <p className="text-[11px] text-muted-foreground">
-                        <span className="inline-block text-[9px] font-semibold px-1 py-0.5 rounded bg-primary/10 text-primary mr-1">futura</span>
-                        = parcela projetada ({preview.filter((p) => p.isFuture).length}).
+                  <div className="flex flex-col gap-1.5">
+                    <div className="flex items-center justify-between gap-2">
+                      {preview.some((p) => p.isFuture) && (
+                        <p className="text-[11px] text-muted-foreground">
+                          <span className="inline-block text-[9px] font-semibold px-1 py-0.5 rounded bg-primary/10 text-primary mr-1">futura</span>
+                          = parcela projetada ({preview.filter((p) => p.isFuture).length}).
+                        </p>
+                      )}
+                      {preview.some((p) => p.isDuplicate) && (
+                        <p className="text-[11px] text-amber-600 font-medium">
+                          <AlertCircle className="inline-block h-3.5 w-3.5 mr-1 align-text-top" />
+                          {preview.filter(p => p.isDuplicate).length} possíveis duplicatas detectadas.
+                        </p>
+                      )}
+                      <p className="text-[10px] text-muted-foreground ml-auto italic">
+                        Dica: clique em uma linha para editar.
                       </p>
-                    )}
-                    <p className="text-[10px] text-muted-foreground ml-auto italic">
-                      Dica: clique em uma linha para editar.
-                    </p>
+                    </div>
                   </div>
       
                   <div className="flex-1 overflow-y-auto">
@@ -615,15 +643,21 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
                     </div>
                   ) : (
                     <div className="space-y-3">
-                      <div className="rounded-xl bg-muted/50 p-3 space-y-1.5">
+                      <div className="rounded-xl bg-muted/50 p-3 space-y-1.5 border border-border/50">
                         <div className="flex items-center gap-2 text-xs font-medium text-primary">
                           <CheckCircle2 className="h-4 w-4" />
-                          {dedupResult.toImport.length} transações serão importadas
+                          {dedupResult.toImport.length} transações confirmadas para importação
                         </div>
-                        {dedupResult.duplicateCount > 0 && (
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        {preview.filter(r => r.isDuplicate && r.approved === false).length > 0 && (
+                          <div className="flex items-center gap-2 text-[10px] text-amber-600 font-medium">
                             <AlertCircle className="h-3.5 w-3.5" />
-                            {dedupResult.duplicateCount} duplicada{dedupResult.duplicateCount > 1 ? "s" : ""} ignorada
+                            {preview.filter(r => r.isDuplicate && r.approved === false).length} duplicadas foram automaticamente ignoradas
+                          </div>
+                        )}
+                        {preview.filter(r => r.isDuplicate && r.approved === true).length > 0 && (
+                          <div className="flex items-center gap-2 text-[10px] text-blue-600 font-medium">
+                            <CheckCircle2 className="h-3.5 w-3.5" />
+                            {preview.filter(r => r.isDuplicate && r.approved === true).length} duplicadas mantidas manualmente
                           </div>
                         )}
                       </div>

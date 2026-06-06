@@ -102,7 +102,7 @@ export function PdfPreviewTable({ rows, onChange, itemLabel = "transações", ra
     <TooltipProvider>
       <div className="flex flex-col space-y-2">
         <div className="flex items-center justify-between gap-2 px-1">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Button 
               variant="outline" 
               size="sm" 
@@ -121,6 +121,30 @@ export function PdfPreviewTable({ rows, onChange, itemLabel = "transações", ra
               <X className="h-3 w-3" />
               Rejeitar todas
             </Button>
+
+            {rows.some(r => r.isDuplicate) && (
+              <div className="flex items-center gap-1.5 ml-2 border-l pl-3 border-border/50">
+                <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Duplicadas:</span>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="h-7 text-[10px] gap-1.5 rounded-lg border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-700"
+                  onClick={() => onChange(rows.map(r => r.isDuplicate ? { ...r, approved: false } : r))}
+                >
+                  <X className="h-3 w-3" />
+                  Ignorar
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="h-7 text-[10px] gap-1.5 rounded-lg border-primary/20 bg-primary/5 hover:bg-primary/10"
+                  onClick={() => onChange(rows.map(r => r.isDuplicate ? { ...r, approved: true } : r))}
+                >
+                  <Check className="h-3 w-3" />
+                  Manter
+                </Button>
+              </div>
+            )}
           </div>
 
           <Popover>
