@@ -170,6 +170,13 @@ ${trimmed}
   return txs;
 }
 
+export type ParsePdfResult = {
+  transactions: ParsedInvoiceTx[];
+  charsExtracted: number;
+  attempts: number;
+  rawPdfText: string;
+};
+
 export const aiRetrySingleTransaction = createServerFn({ method: "POST" })
   .inputValidator((input: { rawText: string; transaction: ParsedInvoiceTx; kind: DocumentKind }) => {
     if (!input || !input.rawText || !input.transaction) {
