@@ -214,6 +214,7 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
   return (
     <AlertContext.Provider value={{ showAlert }}>
+      <SealVerifier />
       <TooltipProvider>
         <div className={cn(
           "mx-auto min-h-screen bg-background pb-20",
