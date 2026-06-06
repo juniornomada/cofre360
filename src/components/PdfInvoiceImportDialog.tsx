@@ -361,18 +361,20 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
 
       for (const pdf of pdfRows) {
         let matchIdx = -1;
+        let matchReason = "";
         for (let i = 0; i < systemRows.length; i++) {
           if (usedSystemIdx.has(i)) continue;
           const sys = systemRows[i];
           
-          const sameDate = pdf.date === sys.date;
-          const sameAmount = Math.abs(pdf.amount - sys.amount) < 0.01;
-          const sameName = pdf.name.toLowerCase().trim() === sys.name.toLowerCase().trim() || 
-                           pdf.name.toLowerCase().includes(sys.name.toLowerCase()) || 
-                           sys.name.toLowerCase().includes(pdf.name.toLowerCase());
+          const res = getDuplicateReason(
+            { date: pdf.date, name: pdf.name, amount: pdf.amount, type: pdf.type },
+            { date: sys.date, name: sys.name, amount: sys.amount, type: sys.type },
+            { dateToleranceDays: dateTolerance, amountToleranceCents: amountTolerance }
+          );
           
-          if (sameDate && sameAmount && sameName) {
+          if (res.isDuplicate) {
             matchIdx = i;
+            matchReason = res.reason || "";
             break;
           }
         }
@@ -384,6 +386,8 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
             name: pdf.name,
             amount: pdf.amount,
             systemAmount: systemRows[matchIdx].amount,
+            systemDate: systemRows[matchIdx].date,
+            duplicateReason: matchReason,
             status: "match"
           });
         } else {
