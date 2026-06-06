@@ -35,6 +35,7 @@ type ParsedRow = {
   confidence_score?: number;
   original_amount_text?: string;
   approved?: boolean;
+  isDuplicate?: boolean;
 };
 
 type InstallmentMeta = {
@@ -186,6 +187,36 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
         setError("Nenhuma transação detectada no PDF.");
       }
       setPreview(rows);
+      setParsingProgress(95);
+
+      // Chamada automática para verificar duplicatas assim que carrega
+      const { data: existing } = await fetchExistingForCard(cardName);
+      if (existing) {
+        const seen = new Set(
+          existing.map((t) =>
+            buildDedupKey({
+              card: cardName,
+              date: t.date,
+              name: t.name,
+              amount: Number(t.amount),
+              type: t.type,
+            })
+          )
+        );
+
+        const rowsWithDup = rows.map(r => ({
+          ...r,
+          isDuplicate: seen.has(buildDedupKey({
+            card: cardName,
+            date: r.date,
+            name: r.name,
+            amount: r.amount,
+            type: r.type,
+          }))
+        }));
+        setPreview(rowsWithDup);
+      }
+
       setParsingProgress(100);
 
     } catch (err: any) {
