@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { supabase } from "@/integrations/supabase/client";
 
 // Parse a credit-card invoice OR bank-account statement PDF using unpdf
 // (text extraction, edge-runtime friendly) and Lovable AI Gateway.
