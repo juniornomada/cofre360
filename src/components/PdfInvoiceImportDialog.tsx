@@ -266,29 +266,8 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
       setPreview(rows);
       setParsingProgress(95);
 
-      const { data: existing } = await fetchExistingForCard(cardName);
-      if (existing) {
-        const rowsWithDup = rows.map(r => {
-          let foundReason = "";
-          const isDuplicate = existing.some(ext => {
-            const res = getDuplicateReason(
-              { date: r.date, name: r.name, amount: r.amount, type: r.type },
-              { date: ext.date, name: ext.name, amount: Number(ext.amount), type: ext.type },
-              { dateToleranceDays: dateTolerance, amountToleranceCents: amountTolerance }
-            );
-            if (res.isDuplicate) foundReason = res.reason || "";
-            return res.isDuplicate;
-          });
-          return {
-            ...r,
-            isDuplicate,
-            duplicateReason: foundReason,
-            // Por padrão, se for duplicado, desativamos a aprovação para "ignorar automaticamente"
-            approved: isDuplicate ? false : true 
-          };
-        });
-        setPreview(rowsWithDup);
-      }
+      const rowsWithDup = await updatePreviewWithDuplicates(rows, dateTolerance, amountTolerance);
+      setPreview(rowsWithDup);
 
       setParsingProgress(100);
 
