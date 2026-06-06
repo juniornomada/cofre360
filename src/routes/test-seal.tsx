@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 
-export const Route = createFileRoute('/test-seal' as any)({
+export const Route = createFileRoute('/test-seal')({
   component: TestSealPage,
 });
 
