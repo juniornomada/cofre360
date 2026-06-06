@@ -22,12 +22,11 @@ async function extractPdfText(base64: string): Promise<string> {
 
   // Dynamic import — pdfjs-dist legacy build is Worker-compatible (pure JS, no DOM)
   const pdfjs: any = await import("pdfjs-dist/legacy/build/pdf.mjs");
-  // pdfjs requires a workerSrc to be set even when running in a single thread.
-  // Point it to the legacy worker module — pdfjs will load it via dynamic import.
+  // Load the worker module as a side effect so pdfjs can use it as a fake worker.
+  // Also set workerSrc to a non-empty string to bypass the "workerSrc not specified" check.
+  await import("pdfjs-dist/legacy/build/pdf.worker.mjs");
   if (pdfjs.GlobalWorkerOptions) {
-    pdfjs.GlobalWorkerOptions.workerSrc = await import(
-      "pdfjs-dist/legacy/build/pdf.worker.mjs?url"
-    ).then((m: any) => m.default).catch(() => "pdfjs-dist/legacy/build/pdf.worker.mjs");
+    pdfjs.GlobalWorkerOptions.workerSrc = "pdfjs-dist/legacy/build/pdf.worker.mjs";
   }
 
   const loadingTask = pdfjs.getDocument({
@@ -35,6 +34,7 @@ async function extractPdfText(base64: string): Promise<string> {
     isEvalSupported: false,
     useSystemFonts: false,
     disableFontFace: true,
+    useWorkerFetch: false,
   });
   const doc = await loadingTask.promise;
 
