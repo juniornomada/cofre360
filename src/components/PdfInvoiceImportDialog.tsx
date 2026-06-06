@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Upload, FileText, Loader2, AlertCircle, CheckCircle2, Sparkles, LayoutPanelLeft, FileSearch } from "lucide-react";
+import { Upload, FileText, Loader2, AlertCircle, CheckCircle2, Sparkles, LayoutPanelLeft, FileSearch, Scale } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables, TablesInsert } from "@/integrations/supabase/types";
