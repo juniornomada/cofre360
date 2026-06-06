@@ -264,17 +264,6 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
       setError("Erro ao consultar transações existentes.");
       return;
     }
-    const seen = new Set(
-      existing.map((t) =>
-        buildDedupKey({
-          card: cardName,
-          date: t.date,
-          name: t.name,
-          amount: Number(t.amount),
-          type: t.type,
-        })
-      )
-    );
 
     const { data: { session } } = await supabase.auth.getSession();
     const userId = session?.user?.id;
