@@ -38,7 +38,7 @@ async function validateAndExtractPdfText(base64: string): Promise<string> {
 
 
 
-async function aiExtractTransactions(rawText: string, kind: DocumentKind): Promise<ParsedInvoiceTx[]> {
+async function aiExtractTransactions(rawText: string, kind: DocumentKind, isRetry: boolean = false): Promise<ParsedInvoiceTx[]> {
   const LOVABLE_API_KEY = process.env.LOVABLE_API_KEY;
   if (!LOVABLE_API_KEY) {
     throw new Error("LOVABLE_API_KEY ausente — não foi possível processar o PDF.");
@@ -69,7 +69,9 @@ Regras:
 - Não duplique a mesma linha. Se houver "Detalhe" abaixo de uma linha, junte na descrição.
 - Se não houver movimentações claras, retorne lista vazia.`;
 
-  const prompt = `${kind === "bank_statement" ? bankPrompt : cardPrompt}
+  const retryPrompt = isRetry ? "\nATENÇÃO: A tentativa anterior falhou em encontrar dados. Por favor, analise o texto com cuidado extra, ignorando ruídos de formatação ou caracteres estranhos resultantes da extração do PDF." : "";
+  const prompt = `${kind === "bank_statement" ? bankPrompt : cardPrompt}${retryPrompt}
+
 
 Texto do PDF:
 """
@@ -182,7 +184,7 @@ export const parseCardInvoicePdf = createServerFn({ method: "POST" })
     
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
       try {
-        const transactions = await aiExtractTransactions(text, data.kind);
+        const transactions = await aiExtractTransactions(text, data.kind, attempt > 0);
         
         if (transactions.length === 0) {
           throw new Error("A IA não encontrou transações claras neste arquivo. Verifique se o layout do PDF é suportado.");
