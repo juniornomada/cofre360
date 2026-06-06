@@ -349,7 +349,10 @@ export function PdfStatementImportDialog({ open, onOpenChange, bankAccountId, ba
               )}
               
               <div className={`${showPdf ? "flex-[0.8]" : "w-full"} flex flex-col overflow-hidden`}>
-                <div className="flex-1 overflow-y-auto">
+                <div className="flex-1 overflow-y-auto space-y-2">
+                  <p className="text-[10px] text-muted-foreground text-right italic">
+                    Dica: clique em uma linha para editar.
+                  </p>
                   <PdfPreviewTable
                     rows={preview}
                     onChange={(rows) => { setPreview(rows); setDedupResult(null); }}

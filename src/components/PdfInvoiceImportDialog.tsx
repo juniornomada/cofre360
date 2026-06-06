@@ -380,12 +380,17 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
               
               <div className={`${showPdf ? "flex-[0.8]" : "w-full"} flex flex-col overflow-hidden`}>
                 <div className="flex-1 overflow-hidden flex flex-col space-y-3">
-                  {preview.some((p) => p.isFuture) && (
-                    <p className="text-[11px] text-muted-foreground">
-                      <span className="inline-block text-[9px] font-semibold px-1 py-0.5 rounded bg-primary/10 text-primary mr-1">futura</span>
-                      = parcela detectada e projetada ({preview.filter((p) => p.isFuture).length}).
+                  <div className="flex items-center justify-between gap-2">
+                    {preview.some((p) => p.isFuture) && (
+                      <p className="text-[11px] text-muted-foreground">
+                        <span className="inline-block text-[9px] font-semibold px-1 py-0.5 rounded bg-primary/10 text-primary mr-1">futura</span>
+                        = parcela projetada ({preview.filter((p) => p.isFuture).length}).
+                      </p>
+                    )}
+                    <p className="text-[10px] text-muted-foreground ml-auto italic">
+                      Dica: clique em uma linha para editar.
                     </p>
-                  )}
+                  </div>
       
                   <div className="flex-1 overflow-y-auto">
                     <PdfPreviewTable
