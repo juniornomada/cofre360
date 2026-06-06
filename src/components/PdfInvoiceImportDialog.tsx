@@ -52,6 +52,37 @@ function normalize(str: string): string {
   return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
 }
 
+type DedupOptions = {
+  dateToleranceDays: number;
+  amountToleranceCents: number;
+};
+
+function isPossibleDuplicate(
+  pdf: { date: string; name: string; amount: number; type: string },
+  existing: { date: string; name: string; amount: number; type: string },
+  options: DedupOptions = { dateToleranceDays: 0, amountToleranceCents: 0 }
+): boolean {
+  const normPdfName = normalize(pdf.name).replace(/\s+/g, " ");
+  const normSysName = normalize(existing.name).replace(/\s+/g, " ");
+  
+  const sameName = normPdfName === normSysName || normPdfName.includes(normSysName) || normSysName.includes(normPdfName);
+  if (!sameName) return false;
+
+  const sameType = pdf.type === existing.type;
+  if (!sameType) return false;
+
+  const pdfDate = new Date(pdf.date).getTime();
+  const sysDate = new Date(existing.date).getTime();
+  const diffDays = Math.abs(pdfDate - sysDate) / (1000 * 60 * 60 * 24);
+  const withinDateTolerance = diffDays <= options.dateToleranceDays;
+  if (!withinDateTolerance) return false;
+
+  const diffAmount = Math.abs(pdf.amount - existing.amount);
+  const withinAmountTolerance = diffAmount <= (options.amountToleranceCents / 100);
+  
+  return withinAmountTolerance;
+}
+
 function buildDedupKey(input: { card: string; date: string; name: string; amount: number; type: string }) {
   return [
     input.card,
