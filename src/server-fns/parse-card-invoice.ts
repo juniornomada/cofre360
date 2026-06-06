@@ -55,6 +55,7 @@ Regras:
 - "name" é a descrição do estabelecimento/lançamento (limpo, sem códigos longos).
 - "amount" é número positivo em reais (sem R$, sem ponto de milhar; use ponto decimal).
 - "type": "expense" para compras/débitos. "income" para estornos, créditos, pagamentos recebidos.
+- "confidence": use "low" se houver incerteza sobre a data, valor ou nome (ex: texto cortado, data ambígua), senão use "high".
 - Inclua parcelas individuais (se a linha indica "02/12" use isso no nome: "Loja X (2/12)").
 - Ignore: total da fatura, juros consolidados, saldo anterior, limites, pagamentos do cliente à fatura.
 - Se não houver transações claras, retorne lista vazia.`;
@@ -66,6 +67,7 @@ Regras:
 - "name" é a descrição da movimentação limpa (ex.: "PIX recebido - João", "Compra débito - Padaria X", "Tarifa mensal", "Salário").
 - "amount" é número positivo em reais (sem R$, sem ponto de milhar; use ponto decimal — sempre positivo).
 - "type": "expense" para débitos/saídas/pagamentos/PIX enviado/compras. "income" para créditos/entradas/PIX recebido/depósitos/salário/rendimentos.
+- "confidence": use "low" se houver incerteza sobre a data, valor ou nome, senão use "high".
 - Ignore: saldo do dia, saldo anterior, saldo final, totais, cabeçalhos, limite de cheque especial.
 - Não duplique a mesma linha. Se houver "Detalhe" abaixo de uma linha, junte na descrição.
 - Se não houver movimentações claras, retorne lista vazia.`;
