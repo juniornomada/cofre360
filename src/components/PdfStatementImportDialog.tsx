@@ -25,6 +25,7 @@ type ParsedRow = {
   amount: number;
   type: "expense" | "income";
   confidence?: "low" | "high";
+  original_amount_text?: string;
   approved?: boolean;
 };
 
@@ -142,6 +143,7 @@ export function PdfStatementImportDialog({ open, onOpenChange, bankAccountId, ba
         amount: Math.abs(Number(t.amount) || 0),
         type: t.type,
         confidence: t.confidence,
+        original_amount_text: t.original_amount_text,
       }));
       if (rows.length === 0) {
         setError("Nenhuma movimentação detectada no PDF.");

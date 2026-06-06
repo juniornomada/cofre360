@@ -7,6 +7,7 @@ type ParsedInvoiceTx = {
   date: string;
   name: string;
   amount: number;
+  original_amount_text?: string;
   type: "expense" | "income";
   confidence?: "low" | "high";
 };
@@ -54,6 +55,7 @@ Regras:
 - "date" no formato YYYY-MM-DD. Se faltar o ano no PDF, infira pelo período da fatura ou use o ano atual.
 - "name" é a descrição do estabelecimento/lançamento (limpo, sem códigos longos).
 - "amount" é número positivo em reais (sem R$, sem ponto de milhar; use ponto decimal).
+- "original_amount_text" é a string exata do valor como aparece no texto (ex: "1.234,56" ou "R$ 50,00").
 - "type": "expense" para compras/débitos. "income" para estornos, créditos, pagamentos recebidos.
 - "confidence": use "low" se houver incerteza sobre a data, valor ou nome (ex: texto cortado, data ambígua), senão use "high".
 - Inclua parcelas individuais (se a linha indica "02/12" use isso no nome: "Loja X (2/12)").
@@ -66,6 +68,7 @@ Regras:
 - "date" no formato YYYY-MM-DD. Se faltar o ano no PDF, infira pelo período do extrato ou use o ano atual.
 - "name" é a descrição da movimentação limpa (ex.: "PIX recebido - João", "Compra débito - Padaria X", "Tarifa mensal", "Salário").
 - "amount" é número positivo em reais (sem R$, sem ponto de milhar; use ponto decimal — sempre positivo).
+- "original_amount_text" é a string exata do valor como aparece no texto original.
 - "type": "expense" para débitos/saídas/pagamentos/PIX enviado/compras. "income" para créditos/entradas/PIX recebido/depósitos/salário/rendimentos.
 - "confidence": use "low" se houver incerteza sobre a data, valor ou nome, senão use "high".
 - Ignore: saldo do dia, saldo anterior, saldo final, totais, cabeçalhos, limite de cheque especial.
@@ -114,10 +117,11 @@ ${trimmed}
                       date: { type: "string", description: "YYYY-MM-DD" },
                       name: { type: "string" },
                       amount: { type: "number" },
+                      original_amount_text: { type: "string" },
                       type: { type: "string", enum: ["expense", "income"] },
                       confidence: { type: "string", enum: ["low", "high"] },
                     },
-                    required: ["date", "name", "amount", "type", "confidence"],
+                    required: ["date", "name", "amount", "original_amount_text", "type", "confidence"],
                     additionalProperties: false,
                   },
                 },

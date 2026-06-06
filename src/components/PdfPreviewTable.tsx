@@ -1,7 +1,8 @@
-import { Trash2, Pencil, Check, X } from "lucide-react";
+import { Trash2, Pencil, Check, X, AlertTriangle } from "lucide-react";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 export type PdfPreviewRow = {
   date: string;
@@ -11,6 +12,7 @@ export type PdfPreviewRow = {
   isFuture?: boolean;
   confidence?: "low" | "high";
   approved?: boolean;
+  original_amount_text?: string;
 };
 
 type Props = {
@@ -53,8 +55,19 @@ export function PdfPreviewTable({ rows, onChange, itemLabel = "transações" }: 
 
   const visibleRows = rows.slice(0, 50);
 
+  const hasDivergence = (r: PdfPreviewRow) => {
+    if (!r.original_amount_text) return false;
+    // Clean original text to extract numbers (e.g. "R$ 1.234,56" -> "1234.56")
+    const cleanOrig = r.original_amount_text.replace(/[^\d,.-]/g, "").replace(",", ".");
+    const numOrig = parseFloat(cleanOrig);
+    if (isNaN(numOrig)) return true;
+    // Difference > 0.01 is considered divergence
+    return Math.abs(numOrig - r.amount) > 0.01;
+  };
+
   return (
-    <div className="flex flex-col space-y-2">
+    <TooltipProvider>
+      <div className="flex flex-col space-y-2">
       <div className="flex items-center gap-2 px-1">
         <Button 
           variant="outline" 
@@ -183,9 +196,21 @@ export function PdfPreviewTable({ rows, onChange, itemLabel = "transações" }: 
                       </span>
                     )}
                   </td>
-                  <td className={`p-2 text-right font-medium tabular-nums ${r.type === "income" ? "text-primary" : "text-destructive"}`}>
-                    {r.type === "expense" ? "-" : "+"}R$ {r.amount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                  </td>
+                <td className={`p-2 text-right font-medium tabular-nums ${r.type === "income" ? "text-primary" : "text-destructive"}`}>
+                  <div className="flex items-center justify-end gap-1.5">
+                    {hasDivergence(r) && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <AlertTriangle className="h-3 w-3 text-amber-500 shrink-0" />
+                        </TooltipTrigger>
+                        <TooltipContent className="text-[10px] p-2 max-w-[200px]">
+                          O valor extraído (R$ {r.amount.toFixed(2)}) diverge do texto lido no PDF ("{r.original_amount_text}").
+                        </TooltipContent>
+                      </Tooltip>
+                    )}
+                    <span>{r.type === "expense" ? "-" : "+"}R$ {r.amount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
+                  </div>
+                </td>
                   <td className="p-1.5" onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center justify-end gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button onClick={() => startEdit(i)} className="p-1 rounded hover:bg-accent text-muted-foreground" title="Editar">
@@ -211,5 +236,6 @@ export function PdfPreviewTable({ rows, onChange, itemLabel = "transações" }: 
         )}
       </div>
     </div>
-  );
+  </TooltipProvider>
+);
 }
