@@ -161,7 +161,13 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
         original_amount_text: t.original_amount_text,
       }));
       // Detect installment markers ("3/12", "3 de 12") and project missing future parcelas.
-      const presentKeys = new Set(baseRows.map((r) => `${r.date}|${r.name}|${r.amount.toFixed(2)}|${r.type}`));
+      const presentKeys = new Set(baseRows.map((r) => {
+        const det = detectInstallment(r.name);
+        const base = det ? (r.name.split(/[\s(]\d{1,2}[\/de]+\d{1,2}/)[0].trim()) : r.name;
+        const nameKey = det ? `${base} (${det.current}/${det.total})` : r.name;
+        return `${r.date}|${nameKey}|${r.amount.toFixed(2)}|${r.type}`;
+      }));
+      
       const expanded = expandInstallments(baseRows);
       const rows: ParsedRow[] = expanded.rows.map((r) => ({
         date: r.date,
