@@ -1546,7 +1546,7 @@ export function CardsPage() {
             cardId={pdfImportCard.id}
             cardName={pdfImportCard.name}
             onSuccess={() => {
-              showAlert("Fatura importada com sucesso!", "error");
+              showAlert("Fatura importada com sucesso!", "success");
               fetchAll();
             }}
           />
