@@ -10,6 +10,7 @@ import { useContrastChecker } from "@/hooks/useContrastChecker";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { Toaster } from "@/components/ui/sonner";
+import SealVerifier from "@/components/SealVerifier";
 import appCss from "../styles.css?url";
 
 type AlertType = 'success' | 'error' | 'warning' | 'info';
@@ -213,6 +214,7 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
   return (
     <AlertContext.Provider value={{ showAlert }}>
+      <SealVerifier />
       <TooltipProvider>
         <div className={cn(
           "mx-auto min-h-screen bg-background pb-20",
