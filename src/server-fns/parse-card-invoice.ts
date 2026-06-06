@@ -30,6 +30,44 @@ function validateModel(model: string) {
     throw new Error(`Modelo de IA não suportado ou expirado: ${model}. Por favor, use um dos seguintes: ${ALLOWED_MODELS.join(", ")}`);
   }
 }
+async function fetchAiWithFallback(payload: any, requestedModel: string): Promise<Response> {
+  const FALLBACK_MODEL = "google/gemini-2.5-flash";
+  const LOVABLE_API_KEY = process.env.LOVABLE_API_KEY;
+
+  if (!LOVABLE_API_KEY) {
+    throw new Error("LOVABLE_API_KEY ausente — não foi possível processar o PDF.");
+  }
+
+  const call = async (model: string) => {
+    validateModel(model);
+    return fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ ...payload, model }),
+    });
+  };
+
+  let response = await call(requestedModel);
+
+  // Se falhar com erro 400 e a mensagem contiver "model", ou se for 400 e o modelo for diferente do fallback
+  if (!response.ok && response.status === 400 && requestedModel !== FALLBACK_MODEL) {
+    try {
+      const errorBody = await response.clone().text();
+      if (errorBody.toLowerCase().includes("model")) {
+        console.warn(`Modelo ${requestedModel} indisponível. Tentando fallback: ${FALLBACK_MODEL}`);
+        return await call(FALLBACK_MODEL);
+      }
+    } catch {
+      // Fallback silencioso em caso de erro 400 genérico
+      return await call(FALLBACK_MODEL);
+    }
+  }
+
+  return response;
+}
 
 async function validateAndExtractPdfText(base64: string): Promise<string> {
   const bytes = new Uint8Array(Buffer.from(base64, "base64"));
@@ -107,56 +145,46 @@ ${trimmed}
     : "Você é um parser preciso de faturas de cartão de crédito brasileiras. Sempre retorne JSON válido.";
 
   const model = "google/gemini-2.5-flash";
-  validateModel(model);
-
-  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${LOVABLE_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: model,
-
-      messages: [
-        { role: "system", content: systemMsg },
-        { role: "user", content: prompt },
-      ],
-      tools: [
-        {
-          type: "function",
-          function: {
-            name: "submit_transactions",
-            description: "Envia a lista de transações extraídas do PDF.",
-            parameters: {
-              type: "object",
-              properties: {
-                transactions: {
-                  type: "array",
-                  items: {
-                    type: "object",
-                    properties: {
-                      date: { type: "string", description: "YYYY-MM-DD" },
-                      name: { type: "string" },
-                      amount: { type: "number" },
-                      original_amount_text: { type: "string" },
-                      type: { type: "string", enum: ["expense", "income"] },
-                      confidence_score: { type: "number", minimum: 0, maximum: 100 },
-                    },
-                    required: ["date", "name", "amount", "original_amount_text", "type", "confidence_score"],
-                    additionalProperties: false,
+  const response = await fetchAiWithFallback({
+    messages: [
+      { role: "system", content: systemMsg },
+      { role: "user", content: prompt },
+    ],
+    tools: [
+      {
+        type: "function",
+        function: {
+          name: "submit_transactions",
+          description: "Envia a lista de transações extraídas do PDF.",
+          parameters: {
+            type: "object",
+            properties: {
+              transactions: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    date: { type: "string", description: "YYYY-MM-DD" },
+                    name: { type: "string" },
+                    amount: { type: "number" },
+                    original_amount_text: { type: "string" },
+                    type: { type: "string", enum: ["expense", "income"] },
+                    confidence_score: { type: "number", minimum: 0, maximum: 100 },
                   },
+                  required: ["date", "name", "amount", "original_amount_text", "type", "confidence_score"],
+                  additionalProperties: false,
                 },
               },
-              required: ["transactions"],
-              additionalProperties: false,
             },
+            required: ["transactions"],
+            additionalProperties: false,
           },
         },
-      ],
-      tool_choice: { type: "function", function: { name: "submit_transactions" } },
-    }),
-  });
+      },
+    ],
+    tool_choice: { type: "function", function: { name: "submit_transactions" } },
+  }, model);
+
 
   if (!response.ok) {
     const body = await response.text();
@@ -227,42 +255,32 @@ ${data.rawText.slice(0, 15000)}
 Retorne apenas os dados corrigidos no formato JSON.`;
 
     const model = "google/gemini-2.5-flash";
-    validateModel(model);
-
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: model,
-
-        messages: [
-          { role: "system", content: "Você é um especialista em extração de dados financeiros. Retorne JSON válido via function call." },
-          { role: "user", content: prompt },
-        ],
-        tools: [
-          {
-            type: "function",
-            function: {
-              name: "submit_corrected_transaction",
-              parameters: {
-                type: "object",
-                properties: {
-                  date: { type: "string" },
-                  name: { type: "string" },
-                  amount: { type: "number" },
-                  type: { type: "string", enum: ["expense", "income"] },
-                },
-                required: ["date", "name", "amount", "type"],
+    const response = await fetchAiWithFallback({
+      messages: [
+        { role: "system", content: "Você é um especialista em extração de dados financeiros. Retorne JSON válido via function call." },
+        { role: "user", content: prompt },
+      ],
+      tools: [
+        {
+          type: "function",
+          function: {
+            name: "submit_corrected_transaction",
+            parameters: {
+              type: "object",
+              properties: {
+                date: { type: "string" },
+                name: { type: "string" },
+                amount: { type: "number" },
+                type: { type: "string", enum: ["expense", "income"] },
               },
+              required: ["date", "name", "amount", "type"],
             },
           },
-        ],
-        tool_choice: { type: "function", function: { name: "submit_corrected_transaction" } },
-      }),
-    });
+        },
+      ],
+      tool_choice: { type: "function", function: { name: "submit_corrected_transaction" } },
+    }, model);
+
 
     if (!response.ok) throw new Error("Erro na chamada da IA.");
     const result = await response.json();
