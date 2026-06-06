@@ -18,6 +18,7 @@ export type InstallmentExpandedRow = InstallmentInputRow & {
   installment_group_id: string | null;
   installment_number: number;
   total_installments: number;
+  is_future?: boolean;
 };
 
 // Patterns we accept inside the description.
@@ -171,6 +172,7 @@ export function expandInstallments(input: InstallmentInputRow[]): ExpandResult {
       total_installments: det.total,
       confidence_score: s.confidence_score,
       original_amount_text: s.original_amount_text,
+      is_future: false,
     });
   }
 
@@ -191,6 +193,7 @@ export function expandInstallments(input: InstallmentInputRow[]): ExpandResult {
         total_installments: s.total,
         confidence_score: s.confidence_score,
         original_amount_text: s.original_amount_text,
+        is_future: true,
       });
       s.presentNumbers.add(n);
       futureRowsAdded++;

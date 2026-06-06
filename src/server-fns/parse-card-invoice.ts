@@ -124,7 +124,9 @@ async function aiExtractTransactions(rawText: string, kind: DocumentKind, isRetr
   const cardPrompt = `Você recebe o texto bruto extraído de uma fatura de cartão de crédito brasileira. Extraia TODAS as transações (compras, parcelas, estornos, taxas) presentes na fatura.
 
 Regras:
-- "date" no formato YYYY-MM-DD. Se faltar o ano no PDF, infira pelo período da fatura ou use o ano atual.
+- "date" no formato YYYY-MM-DD.
+- IMPORTANTE: Se o PDF não contém o ANO em cada linha, procure por "Data de Emissão", "Vencimento" ou o período da fatura no cabeçalho para inferir o ano correto. Atualmente estamos em 2026.
+- Se a fatura é de Janeiro de 2026, lembre-se que compras feitas no final de Dezembro terão o ano 2025.
 - "name" é a descrição do estabelecimento/lançamento (limpo, sem códigos longos).
 - "amount" é número positivo em reais (sem R$, sem ponto de milhar; use ponto decimal).
 - "original_amount_text" é a string exata do valor como aparece no texto (ex: "1.234,56" ou "R$ 50,00").
@@ -137,7 +139,8 @@ Regras:
   const bankPrompt = `Você recebe o texto bruto extraído de um EXTRATO BANCÁRIO brasileiro (conta corrente / poupança / digital). Extraia TODAS as movimentações (débitos e créditos) presentes no extrato.
 
 Regras:
-- "date" no formato YYYY-MM-DD. Se faltar o ano no PDF, infira pelo período do extrato ou use o ano atual.
+- "date" no formato YYYY-MM-DD.
+- IMPORTANTE: Se o PDF não contém o ANO em cada linha, procure por "Período", "Data de Emissão" ou datas no cabeçalho para inferir o ano correto. Atualmente estamos em 2026.
 - "name" é a descrição da movimentação limpa (ex.: "PIX recebido - João", "Compra débito - Padaria X", "Tarifa mensal", "Salário").
 - "amount" é número positivo em reais (sem R$, sem ponto de milhar; use ponto decimal — sempre positivo).
 - "original_amount_text" é a string exata do valor como aparece no texto original.

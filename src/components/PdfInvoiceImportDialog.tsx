@@ -160,8 +160,6 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
         confidence_score: t.confidence_score,
         original_amount_text: t.original_amount_text,
       }));
-      // Detect installment markers ("3/12", "3 de 12") and project missing future parcelas.
-      const presentKeys = new Set(baseRows.map((r) => `${r.date}|${r.name}|${r.amount.toFixed(2)}|${r.type}`));
       const expanded = expandInstallments(baseRows);
       const rows: ParsedRow[] = expanded.rows.map((r) => ({
         date: r.date,
@@ -173,9 +171,7 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
         total_installments: r.total_installments,
         confidence_score: r.confidence_score,
         original_amount_text: r.original_amount_text,
-        isFuture:
-          r.installment_group_id !== null &&
-          !presentKeys.has(`${r.date}|${r.name}|${r.amount.toFixed(2)}|${r.type}`),
+        isFuture: r.is_future,
       }));
       if (rows.length === 0) {
         setError("Nenhuma transação detectada no PDF.");
@@ -212,12 +208,22 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
       )
     );
 
+    const { data: { session } } = await supabase.auth.getSession();
+    const userId = session?.user?.id;
+
+    if (!userId) {
+      setChecking(false);
+      setError("Sessão não encontrada. Por favor, faça login novamente.");
+      return;
+    }
+
     const toImport: TransactionInsert[] = [];
     for (const row of preview) {
       if (row.approved === false) continue;
       const { category, icon } = categorizeTransaction(row.name);
       const transaction: TransactionInsert = {
         id: crypto.randomUUID(),
+        user_id: userId,
         date: row.date,
         name: row.name,
         amount: row.amount,
