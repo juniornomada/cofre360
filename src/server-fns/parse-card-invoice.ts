@@ -174,8 +174,37 @@ export const parseCardInvoicePdf = createServerFn({ method: "POST" })
     const text = await validateAndExtractPdfText(data.fileBase64);
 
     if (!text || text.trim().length < 30) {
-      throw new Error("Não foi possível extrair texto deste PDF (talvez seja imagem escaneada).");
+      throw new Error("Não foi possível extrair texto deste PDF. Se for uma imagem ou escaneado, tente usar um PDF original gerado pelo banco.");
     }
-    const transactions = await aiExtractTransactions(text, data.kind);
-    return { transactions, charsExtracted: text.length };
+
+    let lastError = null;
+    const MAX_RETRIES = 2;
+    
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        const transactions = await aiExtractTransactions(text, data.kind);
+        
+        if (transactions.length === 0) {
+          throw new Error("A IA não encontrou transações claras neste arquivo. Verifique se o layout do PDF é suportado.");
+        }
+        
+        return { transactions, charsExtracted: text.length, attempts: attempt + 1 };
+      } catch (err: any) {
+        lastError = err;
+        console.warn(`Tentativa ${attempt + 1} de extração falhou:`, err.message);
+        
+        // Don't retry if it's a credit/auth error
+        if (err.message?.includes("LOVABLE_API_KEY") || err.message?.includes("Créditos")) {
+          throw err;
+        }
+        
+        // Wait a bit before retrying (exponential backoff)
+        if (attempt < MAX_RETRIES) {
+          await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+        }
+      }
+    }
+
+    throw lastError || new Error("Falha na extração por IA após várias tentativas.");
   });
+
