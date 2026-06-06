@@ -1,6 +1,7 @@
 import { Trash2, Pencil, Check, X } from "lucide-react";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 export type PdfPreviewRow = {
   date: string;
@@ -53,7 +54,28 @@ export function PdfPreviewTable({ rows, onChange, itemLabel = "transações" }: 
   const visibleRows = rows.slice(0, 50);
 
   return (
-    <div className="max-h-72 overflow-y-auto rounded-xl border border-border">
+    <div className="flex flex-col space-y-2">
+      <div className="flex items-center gap-2 px-1">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="h-7 text-[10px] gap-1.5 rounded-lg"
+          onClick={() => onChange(rows.map(r => ({ ...r, approved: true })))}
+        >
+          <Check className="h-3 w-3" />
+          Aprovar todas
+        </Button>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="h-7 text-[10px] gap-1.5 rounded-lg"
+          onClick={() => onChange(rows.map(r => ({ ...r, approved: false })))}
+        >
+          <X className="h-3 w-3" />
+          Rejeitar todas
+        </Button>
+      </div>
+      <div className="max-h-72 overflow-y-auto rounded-xl border border-border">
       <table className="w-full text-xs">
         <thead className="bg-muted/50 sticky top-0">
           <tr>
@@ -172,7 +194,8 @@ export function PdfPreviewTable({ rows, onChange, itemLabel = "transações" }: 
                     <button onClick={() => removeRow(i)} className="p-1 rounded hover:bg-destructive/15 text-destructive" title="Remover">
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
-                  </div>
+      </div>
+    </div>
                 </td>
               </tr>
             );
