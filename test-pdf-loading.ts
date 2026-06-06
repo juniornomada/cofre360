@@ -11,7 +11,7 @@ async function testPdfLoading() {
     
     // A minimal 1-page blank PDF in base64
     const minPdf = "JVBERi0xLjcKMSAwIG9iajw8L1R5cGUvQ2F0YWxvZy9QYWdlcyAyIDAgUj4+ZW5kb2JqMiAwIG9iajw8L1R5cGUvUGFnZXMvQ291bnQgMS9LaWRzWzMgMCBSXT4+ZW5kb2JqMyAwIG9iajw8L1R5cGUvUGFnZS9QYXJlbnQgMiAwIFIvTWVkaWFCb3hbMCAwIDYxMiA3OTJdL1Jlc291cmNlczw8Pj4+PmVuZG9iagp0cmFpbGVyPDwvUm9vdCAxIDAgUi9TaXplIDQ+Pgp%%EOF";
-    const bytes = Buffer.from(minPdf, "base64");
+    const bytes = new Uint8Array(Buffer.from(minPdf, "base64"));
 
     const loadingTask = pdfjs.getDocument({
       data: bytes,
