@@ -259,7 +259,7 @@ export const parseCardInvoicePdf = createServerFn({ method: "POST" })
     }
     return { ...input, kind: input.kind ?? "card_invoice" as DocumentKind };
   })
-  .handler(async ({ data }) => {
+  .handler(async ({ data }): Promise<ParsePdfResult> => {
     const text = await validateAndExtractPdfText(data.fileBase64);
 
     if (!text || text.trim().length < 30) {
