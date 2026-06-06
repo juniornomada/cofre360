@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Upload, FileText, Loader2, AlertCircle, CheckCircle2, Sparkles } from "lucide-react";
+import { Upload, FileText, Loader2, AlertCircle, CheckCircle2, Sparkles, LayoutPanelLeft, FileSearch } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables, TablesInsert } from "@/integrations/supabase/types";
@@ -77,6 +77,9 @@ export function PdfStatementImportDialog({ open, onOpenChange, bankAccountId, ba
   const [error, setError] = useState("");
   const [parsingStep, setParsingStep] = useState<"idle" | "uploading" | "extracting" | "processing">("idle");
   const [parsingProgress, setParsingProgress] = useState(0);
+  const [fileUrl, setFileUrl] = useState<string | null>(null);
+  const [showPdf, setShowPdf] = useState(false);
+
 
   const [preview, setPreview] = useState<ParsedRow[]>([]);
   const [dedupResult, setDedupResult] = useState<{ toImport: TransactionInsert[]; duplicateCount: number } | null>(null);
@@ -88,6 +91,10 @@ export function PdfStatementImportDialog({ open, onOpenChange, bankAccountId, ba
     setParsing(false);
     setParsingStep("idle");
     setParsingProgress(0);
+    if (fileUrl) URL.revokeObjectURL(fileUrl);
+    setFileUrl(null);
+    setShowPdf(false);
+
 
     setError("");
     setPreview([]);
@@ -111,7 +118,10 @@ export function PdfStatementImportDialog({ open, onOpenChange, bankAccountId, ba
     }
 
     setFileName(file.name);
+    const url = URL.createObjectURL(file);
+    setFileUrl(url);
     setParsing(true);
+
     setParsingStep("uploading");
     setParsingProgress(20);
     try {
@@ -229,7 +239,8 @@ export function PdfStatementImportDialog({ open, onOpenChange, bankAccountId, ba
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) reset(); onOpenChange(v); }}>
-      <DialogContent className="max-w-md mx-auto rounded-2xl">
+      <DialogContent className={`${preview.length > 0 ? "max-w-4xl" : "max-w-md"} mx-auto rounded-2xl transition-all duration-300 max-h-[90vh] overflow-hidden flex flex-col`}>
+
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-primary" />
@@ -350,8 +361,9 @@ export function PdfStatementImportDialog({ open, onOpenChange, bankAccountId, ba
                 </div>
               </div>
             )}
-          </>
+          </div>
         )}
+
       </DialogContent>
     </Dialog>
   );
