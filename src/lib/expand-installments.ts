@@ -11,6 +11,7 @@ export type InstallmentInputRow = {
   amount: number;
   type: "expense" | "income";
   confidence?: "low" | "high";
+  original_amount_text?: string;
 };
 
 export type InstallmentExpandedRow = InstallmentInputRow & {
@@ -116,6 +117,7 @@ export function expandInstallments(input: InstallmentInputRow[]): ExpandResult {
       amount: number;
       presentNumbers: Set<number>;
       confidence: "low" | "high";
+      original_amount_text?: string;
     }
   >();
 
@@ -129,6 +131,7 @@ export function expandInstallments(input: InstallmentInputRow[]): ExpandResult {
         installment_number: 1,
         total_installments: 1,
         confidence: r.confidence ?? "high",
+        original_amount_text: r.original_amount_text,
       });
       continue;
     }
@@ -146,6 +149,7 @@ export function expandInstallments(input: InstallmentInputRow[]): ExpandResult {
         amount: r.amount,
         presentNumbers: new Set<number>(),
         confidence: r.confidence ?? "high",
+        original_amount_text: r.original_amount_text,
       };
       series.set(seriesKey, s);
     } else {
@@ -166,6 +170,7 @@ export function expandInstallments(input: InstallmentInputRow[]): ExpandResult {
       installment_number: det.current,
       total_installments: det.total,
       confidence: s.confidence,
+      original_amount_text: s.original_amount_text,
     });
   }
 
@@ -185,6 +190,7 @@ export function expandInstallments(input: InstallmentInputRow[]): ExpandResult {
         installment_number: n,
         total_installments: s.total,
         confidence: s.confidence,
+        original_amount_text: s.original_amount_text,
       });
       s.presentNumbers.add(n);
       futureRowsAdded++;
