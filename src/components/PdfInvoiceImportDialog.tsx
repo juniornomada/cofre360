@@ -556,14 +556,23 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
                   </div>
       
                   <div className="flex-1 overflow-y-auto">
-                    <PdfPreviewTable
-                      rows={preview}
-                      onChange={(rows) => { setPreview(rows); setDedupResult(null); }}
-                      itemLabel="transações"
-                      rawPdfText={rawText}
-                      documentKind="card_invoice"
-                    />
+                    {isComparisonOpen ? (
+                      <InvoiceComparisonView 
+                        items={comparisonItems}
+                        pdfTotal={preview.reduce((sum, r) => sum + r.amount, 0)}
+                        systemTotal={comparisonItems.reduce((sum, r) => sum + (r.systemAmount || 0), 0)}
+                      />
+                    ) : (
+                      <PdfPreviewTable
+                        rows={preview}
+                        onChange={(rows) => { setPreview(rows); setDedupResult(null); }}
+                        itemLabel="transações"
+                        rawPdfText={rawText}
+                        documentKind="card_invoice"
+                      />
+                    )}
                   </div>
+
 
                   {!dedupResult ? (
                     <div className="flex gap-2">
