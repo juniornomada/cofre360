@@ -160,7 +160,7 @@ ${trimmed}
     ? "Você é um parser preciso de extratos bancários brasileiros. Sempre retorne JSON válido."
     : "Você é um parser preciso de faturas de cartão de crédito brasileiras. Sempre retorne JSON válido.";
 
-  const model = "google/gemini-2.5-flash";
+  // O modelo já foi determinado no início da função via perfil do usuário
   const response = await fetchAiWithFallback({
     messages: [
       { role: "system", content: systemMsg },
