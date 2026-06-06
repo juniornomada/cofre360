@@ -1,4 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
+import path from "path";
+
 
 // Parse a credit-card invoice OR bank-account statement PDF using pdfjs-dist
 // (text extraction) and Lovable AI Gateway (structured transaction extraction).
