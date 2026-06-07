@@ -994,7 +994,7 @@ export function Dashboard() {
         <div className="flex items-end justify-between gap-4 mb-8">
           <div className="flex flex-col">
             <h2 className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-3">
-              Patrimônio Líquido
+              Saldo
             </h2>
             <div className="flex items-center gap-3">
               <p className={cn(
