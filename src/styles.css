@@ -162,7 +162,7 @@
   }
 
   .nav-item-glow {
-    @apply relative after:absolute after:-bottom-2 after:left-1/2 after:-translate-x-1/2 after:h-1 after:w-4 after:rounded-full after:bg-primary after:shadow-[0_0_15px_oklch(from var(--color-primary) l c h)];
+    @apply relative after:absolute after:-bottom-2 after:left-1/2 after:-translate-x-1/2 after:h-1 after:w-4 after:rounded-full after:bg-primary;
   }
 
   .premium-input-container {
