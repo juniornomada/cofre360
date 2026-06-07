@@ -18,7 +18,7 @@ export function BottomNav() {
   const pendingLocation = useRouterState({ select: (s) => s.location });
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/80 backdrop-blur-xl">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-white/[0.05] bg-card/60 backdrop-blur-2xl">
       <div className="mx-auto flex max-w-md items-center justify-around px-1 py-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))] overflow-x-auto no-scrollbar sm:justify-center sm:gap-4 md:gap-8">
         {navItems.map((item) => {
           const isPending = isLoading && pendingLocation?.pathname === item.to;
@@ -51,7 +51,7 @@ export function BottomNav() {
                 {item.label}
               </span>
               {shouldHighlight && (
-                <span className="mt-0.5 h-1 w-1 rounded-full bg-primary animate-scale-in" />
+                <span className="mt-1 h-1 w-1 rounded-full bg-primary shadow-[0_0_8px_rgba(var(--primary),0.8)] animate-scale-in" />
               )}
             </Link>
           );
