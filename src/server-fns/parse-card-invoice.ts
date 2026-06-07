@@ -66,12 +66,14 @@ async function fetchAiWithFallback(payload: any, requestedModel: string): Promis
   // Se falhar com erro 400 e a mensagem contiver "model", ou se for 400 e o modelo for diferente do fallback
   if (!response.ok && response.status === 400 && requestedModel !== FALLBACK_MODEL) {
     try {
-      const errorBody = await response.clone().text();
+      const clonedResponse = response.clone();
+      const errorBody = await clonedResponse.text();
       if (errorBody.toLowerCase().includes("model")) {
         console.warn(`Modelo ${requestedModel} indisponível. Tentando fallback: ${FALLBACK_MODEL}`);
         return await call(FALLBACK_MODEL);
       }
-    } catch {
+    } catch (e) {
+      console.error("Error checking for fallback:", e);
       // Fallback silencioso em caso de erro 400 genérico
       return await call(FALLBACK_MODEL);
     }

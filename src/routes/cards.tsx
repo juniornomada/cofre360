@@ -260,12 +260,14 @@ export function CardsPage() {
       }
 
       let message = error?.message || "Erro desconhecido";
-      if (error instanceof Response) {
+      if (error instanceof Response || (error && typeof error === 'object' && 'status' in error)) {
         try {
-          const body = await error.json();
+          const body = typeof error.json === 'function' ? await error.json() : error;
           message = body.message || body.error || message;
         } catch {
-          message = await error.text().catch(() => "Falha de autorização");
+          if (typeof error.text === 'function') {
+            message = await error.text().catch(() => "Falha de autorização");
+          }
         }
       }
       if (message.includes("Unauthorized") || message.includes("authorization") || status === 401) {
