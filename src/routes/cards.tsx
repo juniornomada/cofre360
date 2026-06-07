@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { SmartLink as Link } from "@/components/SmartLink";
-import { ArrowLeft, Plus, CreditCard, Trash2, X, Check, Loader2, Wallet, Landmark, ChevronLeft, ChevronRight, Receipt, FileUp, GripVertical, Layers, Pencil, MoreVertical, Eye, EyeOff, Copy, AlertCircle, CheckCircle2, Info, RefreshCw } from "lucide-react";
+import { ArrowLeft, Plus, CreditCard, Trash2, X, Check, Loader2, Wallet, Landmark, ChevronLeft, ChevronRight, Receipt, FileUp, GripVertical, Layers, Pencil, MoreVertical, Eye, EyeOff, Copy, Info } from "lucide-react";
 import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react";
 import { DateTime } from "luxon";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
@@ -19,7 +19,7 @@ import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { validateAgreement } from "@/server-fns/validate-agreement";
-import { InvoiceInconsistencyAlert } from "@/components/InvoiceInconsistencyAlert";
+
 import {
   DndContext,
   closestCenter,
@@ -622,7 +622,7 @@ export function CardsPage() {
       if (error) throw error;
       showAlert("Limite utilizado atualizado com sucesso!", "success");
       fetchAll();
-      runValidation(true, "recalculate");
+      
     } catch (error: any) {
       console.error("Error recalculating limit:", error);
       showAlert("Erro ao atualizar limite: " + (error.message || "Erro desconhecido"), "error");
@@ -647,9 +647,6 @@ export function CardsPage() {
 
   return (
     <div className="animate-page-enter flex flex-col gap-5 px-4 pt-6 pb-24">
-      <InvoiceInconsistencyAlert 
-        hasInconsistency={validationData?.status === 'failed' || validationData?.status === 'partial'} 
-      />
       <div className="flex items-center gap-3">
         <Link to="/" className="interactive-button flex h-9 w-9 items-center justify-center rounded-xl bg-card border border-border/50">
           <ArrowLeft className="h-4 w-4 text-foreground" />
@@ -660,24 +657,9 @@ export function CardsPage() {
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2 rounded-2xl p-1 bg-accent/30 h-11">
-          <TabsTrigger value="list" className="rounded-xl text-xs font-semibold data-[state=active]:bg-background data-[state=active]:shadow-sm">
-            <CreditCard className="h-3.5 w-3.5 mr-2" />
-            Lista de Cartões
-          </TabsTrigger>
-          <TabsTrigger value="validation" className="rounded-xl text-xs font-semibold data-[state=active]:bg-background data-[state=active]:shadow-sm">
-            <AlertCircle className="h-3.5 w-3.5 mr-2" />
-            Validação
-            {validationData?.summary?.discrepanciesFound > 0 && (
-              <Badge variant="destructive" className="ml-2 h-4 min-w-4 px-1 text-[9px] flex items-center justify-center">
-                {validationData.summary.discrepanciesFound}
-              </Badge>
-            )}
-          </TabsTrigger>
-        </TabsList>
+      <div className="w-full">
 
-        <TabsContent value="list" className="mt-5 space-y-5">
+        <div className="mt-5 space-y-5">
           {cards.length > 0 && (
             <div className="grid grid-cols-2 gap-3 animate-stagger-in">
               <div className="rounded-2xl bg-card border border-border/50 p-4">
@@ -957,133 +939,6 @@ export function CardsPage() {
     </TabsContent>
 
         <TabsContent value="validation" className="mt-5 space-y-4">
-          <div className="rounded-2xl bg-card border border-border/50 p-4 space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-bold text-foreground">Status da Validação</h3>
-                <p className="text-[10px] text-muted-foreground mt-0.5">Sincronização entre Cartões e Faturas</p>
-              </div>
-              <button
-                onClick={() => runValidation(false)}
-                disabled={isValidating}
-                className="interactive-button flex items-center gap-2 rounded-xl bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-50"
-                id="revalidate-btn"
-              >
-                {isValidating ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
-                Revalide Agora
-              </button>
-            </div>
-
-            {validationData ? (
-              <div className="grid grid-cols-3 gap-2">
-                <div className="rounded-xl bg-accent/30 p-2.5 text-center">
-                  <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Cartões</p>
-                  <p className="text-sm font-bold mt-0.5">{validationData.summary.totalCardsChecked}</p>
-                </div>
-                <div className="rounded-xl bg-accent/30 p-2.5 text-center">
-                  <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Faturas</p>
-                  <p className="text-sm font-bold mt-0.5">{validationData.summary.totalInvoicesChecked}</p>
-                </div>
-                <div className="rounded-xl bg-accent/30 p-2.5 text-center">
-                  <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Divergências</p>
-                  <p className={cn("text-sm font-bold mt-0.5", validationData.summary.discrepanciesFound > 0 ? "text-destructive" : "text-emerald-500")}>
-                    {validationData.summary.discrepanciesFound}
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <div className="py-8 text-center border border-dashed border-border/50 rounded-xl bg-accent/10">
-                <Info className="h-8 w-8 text-muted-foreground/30 mx-auto mb-2" />
-                <p className="text-xs text-muted-foreground">Nenhuma validação executada recentemente.</p>
-              </div>
-            )}
-          </div>
-
-          {validationData && (
-            <div className="space-y-4" id="validation-tab">
-              {validationData.summary.discrepancyDetails.length > 0 && (
-                <div className="space-y-2">
-                  <h4 className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground ml-1">Discrepâncias Detalhadas</h4>
-                  {validationData.summary.discrepancyDetails.map((d: any, idx: number) => (
-                    <div key={idx} className="rounded-2xl border border-destructive/20 bg-destructive/5 p-3 animate-in slide-in-from-top-2 duration-300">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                          {d.status === 'error' ? <AlertCircle className="h-3.5 w-3.5 text-destructive" /> : <Info className="h-3.5 w-3.5 text-amber-500" />}
-                          {d.cardName}
-                        </span>
-                        <Badge variant={d.status === 'error' ? 'destructive' : 'outline'} className="text-[9px] h-4">
-                          {d.status.toUpperCase()}
-                        </Badge>
-                      </div>
-                      {d.type === 'amount' ? (
-                        <div className="space-y-2">
-                          <div className="flex justify-between items-center text-[10px] text-muted-foreground">
-                            <span>Valor no Cartão: <strong>R$ {(d.cardValue || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong></span>
-                            <span>Soma da Fatura: <strong>R$ {(d.faturaValue || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong></span>
-                          </div>
-                          <div className="grid grid-cols-2 gap-2">
-                            <button
-                              onClick={() => handleRecalculateUsedLimit(d.cardId, d.faturaValue)}
-                              className="flex items-center justify-center gap-1.5 rounded-lg bg-primary/10 py-1.5 text-[10px] font-bold text-primary hover:bg-primary/20 transition-colors border border-primary/20"
-                            >
-                              <RefreshCw className="h-3 w-3" />
-                              Sincronizar Limite
-                            </button>
-                            <button
-                              onClick={() => {
-                                const card = cards.find(c => c.id === d.cardId);
-                                if (card) {
-                                  setPdfImportCard(card);
-                                  setPdfImportOpen(true);
-                                }
-                              }}
-                              className="flex items-center justify-center gap-1.5 rounded-lg bg-accent py-1.5 text-[10px] font-bold text-muted-foreground hover:bg-accent/80 transition-colors border border-border"
-                            >
-                              <FileUp className="h-3 w-3" />
-                              Comparar com PDF
-                            </button>
-                          </div>
-
-                        </div>
-                      ) : (
-                        <p className="text-[10px] text-muted-foreground">Nenhuma fatura encontrada para este cartão nos últimos meses.</p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              <div className="space-y-2">
-                <h4 className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground ml-1">Logs de Auditoria</h4>
-                <div className="rounded-2xl bg-card border border-border/50 overflow-hidden">
-                  <div className="max-h-[300px] overflow-y-auto no-scrollbar" id="validation-logs">
-                    <table className="w-full text-left text-[10px] border-collapse">
-                      <thead className="sticky top-0 bg-accent/50 backdrop-blur-sm border-b border-border/50">
-                        <tr>
-                          <th className="px-3 py-2 font-bold text-muted-foreground">Data/Hora (Local)</th>
-                          <th className="px-3 py-2 font-bold text-muted-foreground">Mensagem</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {validationData.logs.map((log: string, idx: number) => {
-                          const [time, ...msgParts] = log.split(" - ");
-                          const msg = msgParts.join(" - ");
-                          return (
-                            <tr key={idx} className="border-b border-border/30 last:border-0 hover:bg-accent/20 transition-colors">
-                              <td className="px-3 py-2 text-muted-foreground tabular-nums whitespace-nowrap">{time}</td>
-                              <td className="px-3 py-2 font-medium text-foreground">{msg}</td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </TabsContent>
-      </Tabs>
 
       <button
         onClick={openAddDialog}
@@ -1509,7 +1364,7 @@ export function CardsPage() {
             onSuccess={() => {
               showAlert("Fatura importada com sucesso!", "success");
               fetchAll();
-              runValidation(true, "pdf_import");
+              
             }}
           />
         )}
