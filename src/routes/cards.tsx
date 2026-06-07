@@ -6,18 +6,28 @@ import { DateTime } from "luxon";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 
 const PdfInvoiceImportDialog = lazy(() => import("@/components/PdfInvoiceImportDialog").then(m => ({ default: m.PdfInvoiceImportDialog })));
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+const Dialog = lazy(() => import("@/components/ui/dialog").then(m => ({ default: m.Dialog })));
+const DialogContent = lazy(() => import("@/components/ui/dialog").then(m => ({ default: m.DialogContent })));
+const DialogHeader = lazy(() => import("@/components/ui/dialog").then(m => ({ default: m.DialogHeader })));
+const DialogTitle = lazy(() => import("@/components/ui/dialog").then(m => ({ default: m.DialogTitle })));
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+const Select = lazy(() => import("@/components/ui/select").then(m => ({ default: m.Select })));
+const SelectContent = lazy(() => import("@/components/ui/select").then(m => ({ default: m.SelectContent })));
+const SelectItem = lazy(() => import("@/components/ui/select").then(m => ({ default: m.SelectItem })));
+const SelectTrigger = lazy(() => import("@/components/ui/select").then(m => ({ default: m.SelectTrigger })));
+const SelectValue = lazy(() => import("@/components/ui/select").then(m => ({ default: m.SelectValue })));
 import { supabase } from "@/integrations/supabase/client";
 import { useAlert } from "@/routes/__root";
-import { CalculatorAmountInput } from "@/components/CalculatorAmountInput";
+const CalculatorAmountInput = lazy(() => import("@/components/CalculatorAmountInput").then(m => ({ default: m.CalculatorAmountInput })));
 import { CardBrand, brandPresets } from "@/components/CardBrand";
 import { BankLogo, bankPresets } from "@/components/BankLogo";
 import { cn } from "@/lib/utils";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
+const Tabs = lazy(() => import("@/components/ui/tabs").then(m => ({ default: m.Tabs })));
+const TabsContent = lazy(() => import("@/components/ui/tabs").then(m => ({ default: m.TabsContent })));
+const TabsList = lazy(() => import("@/components/ui/tabs").then(m => ({ default: m.TabsList })));
+const TabsTrigger = lazy(() => import("@/components/ui/tabs").then(m => ({ default: m.TabsTrigger })));
+const Badge = lazy(() => import("@/components/ui/badge").then(m => ({ default: m.Badge })));
 import { validateAgreement } from "@/server-fns/validate-agreement";
 
 import {

@@ -8,10 +8,16 @@ import { format, parse, isYesterday, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { isTodayLocal } from "@/lib/date-utils";
 import { cn } from "@/lib/utils";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+const Dialog = lazy(() => import("@/components/ui/dialog").then(m => ({ default: m.Dialog })));
+const DialogContent = lazy(() => import("@/components/ui/dialog").then(m => ({ default: m.DialogContent })));
+const DialogHeader = lazy(() => import("@/components/ui/dialog").then(m => ({ default: m.DialogHeader })));
+const DialogTitle = lazy(() => import("@/components/ui/dialog").then(m => ({ default: m.DialogTitle })));
+const DialogFooter = lazy(() => import("@/components/ui/dialog").then(m => ({ default: m.DialogFooter })));
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+const Calendar = lazy(() => import("@/components/ui/calendar").then(m => ({ default: m.Calendar })));
+const Popover = lazy(() => import("@/components/ui/popover").then(m => ({ default: m.Popover })));
+const PopoverContent = lazy(() => import("@/components/ui/popover").then(m => ({ default: m.PopoverContent })));
+const PopoverTrigger = lazy(() => import("@/components/ui/popover").then(m => ({ default: m.PopoverTrigger })));
 import { supabase } from "@/integrations/supabase/client";
 import { parseCategoryValue, getCategoryIcon } from "@/lib/categories";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -40,7 +46,7 @@ import { CSS } from "@dnd-kit/utilities";
 
 const CategoryPicker = lazy(() => import("@/components/CategoryPicker").then(m => ({ default: m.CategoryPicker })));
 const QuickAddTransactionDialog = lazy(() => import("@/components/QuickAddTransactionDialog").then(m => ({ default: m.QuickAddTransactionDialog })));
-import { CalculatorAmountInput } from "@/components/CalculatorAmountInput";
+const CalculatorAmountInput = lazy(() => import("@/components/CalculatorAmountInput").then(m => ({ default: m.CalculatorAmountInput })));
 
 import type { QuickAddInitialType } from "@/components/QuickAddTransactionDialog";
 import { saveInstallmentPlan, stripInstallmentSuffix } from "@/lib/installment-edit";
