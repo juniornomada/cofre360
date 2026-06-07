@@ -230,6 +230,8 @@ export function CardsPage() {
     console.log(`[cards] Running validation. Reason: ${reason}${retryCount > 0 ? ` (retry ${retryCount})` : ""}`);
 
     setIsValidating(true);
+    let shouldFinish = true;
+
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) {
@@ -262,48 +264,38 @@ export function CardsPage() {
       console.error("Validation error:", error);
       
       // Only reset the timestamp for retryable errors (network/timeout or 401/403/5xx)
-      // 400, 404, etc. should usually not be retried immediately as they imply a client-side or static resource issue
       const status = error?.status || (error instanceof Response ? error.status : 500);
       const isRetryable = !status || status === 401 || status === 403 || status >= 500;
 
-      if (isRetryable) {
+      if (isRetryable && retryCount < 2) {
         lastValidationRef.current = { timestamp: 0, reason: "error_retry" };
-        
-        // Automatic retry logic for temporary failures (max 2 retries with exponential backoff)
-        if (retryCount < 2) {
-          const nextRetry = retryCount + 1;
-          const delay = Math.pow(2, nextRetry) * 1000; // 2s, 4s
-          console.log(`[cards] Retrying validation in ${delay}ms... (attempt ${nextRetry})`);
-          setTimeout(() => {
-            runValidation(silent, reason, nextRetry);
-          }, delay);
-          return; // Don't set isValidating(false) yet as we are still in flight
-        }
-      }
-
-      let message = error?.message || "Erro desconhecido";
-      if (error instanceof Response || (error && typeof error === 'object' && 'status' in error)) {
-        try {
-          const body = typeof error.json === 'function' ? await error.json() : error;
-          message = body.message || body.error || message;
-        } catch {
-          if (typeof error.text === 'function') {
-            message = await error.text().catch(() => "Falha de autorização");
+        shouldFinish = false;
+        const nextRetry = retryCount + 1;
+        const delay = Math.pow(2, nextRetry) * 1000; // 2s, 4s
+        console.log(`[cards] Retrying validation in ${delay}ms... (attempt ${nextRetry})`);
+        setTimeout(() => {
+          runValidation(silent, reason, nextRetry);
+        }, delay);
+      } else {
+        let message = error?.message || "Erro desconhecido";
+        if (error instanceof Response || (error && typeof error === 'object' && 'status' in error)) {
+          try {
+            const body = typeof error.json === 'function' ? await error.json() : error;
+            message = body.message || body.error || message;
+          } catch {
+            if (typeof error.text === 'function') {
+              message = await error.text().catch(() => "Falha de autorização");
+            }
           }
         }
+        if (message.includes("Unauthorized") || message.includes("authorization") || status === 401) {
+          message = "Sessão expirada. Faça login novamente para validar.";
+        }
+        if (!silent) showAlert("Erro ao validar: " + message, "error");
       }
-      if (message.includes("Unauthorized") || message.includes("authorization") || status === 401) {
-        message = "Sessão expirada. Faça login novamente para validar.";
-      }
-      if (!silent) showAlert("Erro ao validar: " + message, "error");
     } finally {
-      // Only reset loading state if we are not retrying
-      // If we are retrying, the final attempt will eventually call this.
-      if (retryCount >= 2 || !error_was_retryable_and_within_limit) {
-         // Need a way to check if we are actually exiting the whole flow.
-         // Actually, always setting false is safer to avoid infinite loading if setTimeout fails,
-         // but runValidation resets it to true anyway.
-         setIsValidating(false);
+      if (shouldFinish) {
+        setIsValidating(false);
       }
     }
   };
