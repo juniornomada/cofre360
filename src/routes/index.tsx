@@ -987,51 +987,50 @@ export function Dashboard() {
         </div>
       </div>
 
-      {/* Balance Card — refined with health score + daily available */}
-      <div className="rounded-3xl bg-gradient-to-br from-primary/10 via-card to-card p-6 border border-white/[0.05] shadow-2xl relative overflow-hidden group">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 blur-3xl rounded-full -mr-16 -mt-16 transition-all group-hover:bg-primary/10" />
-        <div className="flex items-center justify-between gap-4 mb-2">
-          <div className="flex flex-col min-w-0">
-            <h2 className="text-sm font-semibold text-foreground flex items-center gap-1.5 uppercase">
-              <Landmark className="h-4 w-4 text-primary" />
-              CONTAS
+      {/* Balance Card — premium look */}
+      <div className="glass-card p-8 relative overflow-hidden group border-white/[0.03]">
+        <div className="absolute top-0 right-0 w-48 h-48 bg-primary/10 blur-[100px] rounded-full -mr-24 -mt-24 transition-all duration-1000 group-hover:bg-primary/20" />
+        
+        <div className="flex items-end justify-between gap-4 mb-8">
+          <div className="flex flex-col">
+            <h2 className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-3">
+              Patrimônio Líquido
             </h2>
-            <p className={cn(
-              "text-2xl font-bold tabular-nums transition-all duration-300 truncate",
-              balance >= 0 ? "text-foreground" : "text-destructive"
-            )}>
-              {balanceVisible ? `R$ ${fmt(balance)}` : "R$ ••••••"}
-            </p>
-          </div>
-          
-          <div className="flex items-center gap-2 shrink-0 self-end mb-0.5">
-            {healthScore !== null && balanceVisible && healthScore >= 40 && (
-              <div className={cn(
-                "hidden sm:flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold",
-                healthScore >= 80 ? "bg-primary/15 text-primary" :
-                healthScore >= 60 ? "bg-blue-500/15 text-blue-400" :
-                "bg-amber-500/15 text-amber-400"
+            <div className="flex items-center gap-3">
+              <p className={cn(
+                "text-4xl font-black tabular-nums tracking-tighter transition-all duration-500",
+                balance >= 0 ? "text-foreground" : "text-destructive"
               )}>
-                {healthScore >= 80 ? "Saudável" : healthScore >= 60 ? "Estável" : "Atenção"}
-              </div>
-            )}
-            <div className="flex items-center gap-1">
+                {balanceVisible ? `R$ ${fmt(balance)}` : "R$ ••••••"}
+              </p>
               <button 
                 onClick={() => updateBalanceVisible(!balanceVisible)} 
-                className="interactive-button p-1.5 rounded-lg hover:bg-accent/50 text-muted-foreground focus-visible:ring-2 focus-visible:ring-primary"
+                className="interactive-button p-2 rounded-2xl bg-white/5 hover:bg-white/10 text-muted-foreground transition-all"
                 aria-label={balanceVisible ? "Ocultar saldos" : "Mostrar saldos"}
               >
                 {balanceVisible ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
               </button>
             </div>
           </div>
+          
+          {healthScore !== null && balanceVisible && (
+            <div className={cn(
+              "flex items-center gap-2 rounded-2xl px-3 py-1.5 text-[10px] font-black uppercase tracking-wider shadow-lg",
+              healthScore >= 80 ? "bg-primary/10 text-primary border border-primary/20" :
+              healthScore >= 60 ? "bg-blue-500/10 text-blue-400 border border-blue-500/20" :
+              "bg-amber-500/10 text-amber-400 border border-amber-500/20"
+            )}>
+              <Flame className="h-3 w-3" />
+              Score {healthScore}
+            </div>
+          )}
         </div>
 
-        {/* Per-account balances */}
+        {/* Per-account balances with refined spacing */}
         {displayAccounts.length > 0 && (
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
             <SortableContext items={displayAccounts.map((a) => a.id)} strategy={verticalListSortingStrategy}>
-              <div className="mt-3 flex flex-col gap-1">
+              <div className="flex flex-col gap-3">
                 {displayAccounts.map((acc) => (
                   <SortableAccountItem key={acc.id} acc={acc} balanceVisible={balanceVisible} fmt={fmt} />
                 ))}
@@ -1040,48 +1039,31 @@ export function Dashboard() {
           </DndContext>
         )}
 
-        {/* Saldo inicial do mês + previsão fim do mês — moved to bottom */}
-        <div className="mt-3 grid grid-cols-2 gap-2">
-          <div className="rounded-xl bg-background/40 px-3 py-2 flex flex-col justify-between min-h-[58px]">
-            <p className="text-[10px] text-muted-foreground leading-none mb-1 flex items-center gap-1.5 min-h-[18px]">
-              Saldo inicial do mês
-            </p>
-            <p className={cn(
-              "text-sm font-semibold tabular-nums",
-              monthInitialBalance >= 0 ? "text-muted-foreground" : "text-destructive"
-            )}>
+        <div className="mt-8 pt-6 border-t border-white/[0.05] grid grid-cols-2 gap-4">
+          <div className="flex flex-col">
+            <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-1">Mês Inicial</span>
+            <span className="text-xs font-bold tabular-nums text-foreground/70">
               {balanceVisible ? `R$ ${fmt(monthInitialBalance)}` : "R$ ••••"}
-            </p>
+            </span>
           </div>
           <Link
             to="/insights"
             search={{
-              ask: `Olha meu saldo previsto para o fim do mês: R$ ${fmt(forecastBalance)} (saldo atual R$ ${fmt(balance)}). Considerando minhas receitas e despesas previstas, parcelas futuras e lembretes pendentes, esse saldo está saudável? Aponte os 3 maiores riscos do mês, sugira ajustes específicos por categoria (ex.: reduzir alimentação, evitar gastos aleatórios) com valores em R$, e diga se algum orçamento já está estourado ou prestes a estourar. Foque em ações práticas para manter ou melhorar esse saldo previsto.`,
+              ask: `Análise de saldo previsto: R$ ${fmt(forecastBalance)}.`,
             } as any}
-            className="interactive-card rounded-xl bg-background/40 px-3 py-2 hover:bg-background/60 transition-colors text-left flex flex-col justify-between min-h-[58px]"
+            className="flex flex-col items-end group/link"
           >
-            <p className="text-[10px] text-muted-foreground leading-none mb-1 flex items-center gap-1.5 min-h-[18px]">
-              Previsto fim do mês
-              <span
-                className="inline-flex items-center justify-center rounded-full p-1 bg-background"
-                style={{
-                  border: "1px solid hsl(142 95% 55%)",
-                  boxShadow:
-                    "0 0 6px hsl(142 95% 55% / 0.7), 0 0 12px hsl(142 95% 55% / 0.4), inset 0 0 4px hsl(142 95% 55% / 0.3)",
-                }}
-              >
-                <Sparkles className="h-2.5 w-2.5" style={{ color: "hsl(142 95% 55%)" }} />
-              </span>
-            </p>
-            <p className={cn(
-              "text-sm font-semibold tabular-nums",
-              forecastBalance >= 0 ? "text-muted-foreground" : "text-destructive"
+            <span className="text-[9px] font-black text-primary uppercase tracking-widest mb-1 flex items-center gap-1.5">
+              Previsão Fim do Mês <Sparkles className="h-2.5 w-2.5" />
+            </span>
+            <span className={cn(
+              "text-xs font-bold tabular-nums transition-colors group-hover/link:text-primary",
+              forecastBalance >= 0 ? "text-foreground/70" : "text-destructive"
             )}>
               {balanceVisible ? `R$ ${fmt(forecastBalance)}` : "R$ ••••"}
-            </p>
+            </span>
           </Link>
         </div>
-
       </div>
 
 
