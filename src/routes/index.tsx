@@ -993,7 +993,7 @@ export function Dashboard() {
         <div className="flex items-end justify-between gap-4 mb-4">
           <div className="flex flex-col">
             <h2 className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-2 opacity-80">
-              Saldo
+              CONTAS
             </h2>
             <div className="flex items-center gap-2">
               <p className={cn(
