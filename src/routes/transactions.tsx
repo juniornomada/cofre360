@@ -731,7 +731,7 @@ export function TransactionsPage() {
   }
 
   return (
-    <div className="animate-page-enter flex flex-col gap-4 px-4 pt-6 pb-24">
+    <div className="animate-page-enter flex flex-col gap-4 px-4 pt-6 pb-24 min-h-[80vh]">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-foreground">Transações</h1>
         <div className="flex items-center gap-2">
