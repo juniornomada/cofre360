@@ -144,7 +144,7 @@ function SortableAccountItem({ acc, balanceVisible, fmt }: { acc: any; balanceVi
       <Link
         to="/accounts"
         search={{ action: undefined } as any}
-        className="flex items-center gap-4 rounded-3xl bg-card/20 backdrop-blur-3xl border border-white/[0.03] px-4 py-3 hover:bg-card/40 transition-all duration-500 overflow-hidden shadow-sm hover:shadow-md hover:border-white/[0.08]"
+        className="flex items-center gap-3 rounded-2xl bg-card/20 backdrop-blur-3xl border border-white/[0.03] px-3 py-2 hover:bg-card/40 transition-all duration-500 overflow-hidden shadow-sm hover:shadow-md hover:border-white/[0.08]"
       >
         <div className="shrink-0">
           <BankLogo icon={acc.icon} color={acc.color} name={acc.name} size="md" />
@@ -997,7 +997,7 @@ export function Dashboard() {
             </h2>
             <div className="flex items-center gap-3">
               <p className={cn(
-                "text-4xl font-black tabular-nums tracking-tighter transition-all duration-500",
+                "text-2xl font-black tabular-nums tracking-tighter transition-all duration-500",
                 balance >= 0 ? "text-foreground" : "text-destructive"
               )}>
                 {balanceVisible ? `R$ ${fmt(balance)}` : "R$ ••••••"}
@@ -1029,7 +1029,7 @@ export function Dashboard() {
         {displayAccounts.length > 0 && (
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
             <SortableContext items={displayAccounts.map((a) => a.id)} strategy={verticalListSortingStrategy}>
-              <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-1.5">
                 {displayAccounts.map((acc) => (
                   <SortableAccountItem key={acc.id} acc={acc} balanceVisible={balanceVisible} fmt={fmt} />
                 ))}
