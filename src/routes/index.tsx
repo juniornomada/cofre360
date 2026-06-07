@@ -1038,7 +1038,7 @@ export function Dashboard() {
           </DndContext>
         )}
 
-        <div className="mt-8 pt-6 border-t border-white/[0.05] grid grid-cols-2 gap-4">
+        <div className="mt-5 pt-4 border-t border-white/[0.05] grid grid-cols-2 gap-4">
           <div className="flex flex-col">
             <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-1">Mês Inicial</span>
             <span className="text-xs font-bold tabular-nums text-foreground/70">
