@@ -916,6 +916,7 @@ export function CardsPage() {
         </TabsContent>
 
 
+
         <TabsContent value="validation" className="mt-5 space-y-4">
           <div className="rounded-2xl bg-card border border-border/50 p-4 space-y-4">
             <div className="flex items-center justify-between">
