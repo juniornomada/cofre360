@@ -1159,12 +1159,15 @@ export function Dashboard() {
         )}
       </div>
 
-      {/* Recent Transactions — moved to right below balance */}
-      <div>
-        <div className="mb-2 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-foreground">Recentes</h2>
-          <Link to="/transactions" preload="intent" search={{ action: undefined, type: undefined } as any} className="text-[10px] font-medium text-primary flex items-center gap-0.5">
-            Ver tudo <ChevronRight className="h-3 w-3" />
+      {/* Recent Transactions — premium list */}
+      <div className="space-y-4">
+        <div className="flex items-end justify-between px-2">
+          <div className="flex flex-col">
+            <h2 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Atividade Recente</h2>
+            <div className="h-0.5 w-6 bg-primary mt-1 rounded-full" />
+          </div>
+          <Link to="/transactions" preload="intent" search={{ action: undefined, type: undefined } as any} className="text-[10px] font-bold text-primary hover:opacity-80 transition-opacity uppercase tracking-wider">
+            Ver Extrato Completo
           </Link>
         </div>
          {loading ? (
