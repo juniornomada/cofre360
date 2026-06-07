@@ -1068,7 +1068,7 @@ export function Dashboard() {
 
 
       {/* Credit Cards Summary */}
-      <div className="rounded-3xl bg-gradient-to-br from-primary/5 via-card to-card p-6 border border-white/[0.05] shadow-xl relative overflow-hidden">
+      <div className="rounded-3xl bg-gradient-to-br from-primary/5 via-card to-card p-4 border border-white/[0.05] shadow-xl relative overflow-hidden">
         <div className="absolute bottom-0 left-0 w-24 h-24 bg-primary/5 blur-3xl rounded-full -ml-12 -mb-12" />
         <div className="flex items-center justify-between gap-4 mb-2">
           <h2 className="text-sm font-semibold text-foreground flex items-center gap-1.5 uppercase">
