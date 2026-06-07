@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { SmartLink as Link } from "@/components/SmartLink";
-import { ArrowLeft, Plus, CreditCard, Trash2, X, Check, Loader2, Wallet, Landmark, ChevronLeft, ChevronRight, Receipt, FileUp, GripVertical, Layers, Pencil, MoreVertical, Eye, EyeOff, Copy, AlertCircle, CheckCircle2, Info, RefreshCw, LayoutGrid, List } from "lucide-react";
-import { useState, useEffect, useCallback, useRef, lazy, Suspense, useMemo } from "react";
+import { ArrowLeft, Plus, CreditCard, Trash2, X, Check, Loader2, Wallet, Landmark, ChevronLeft, ChevronRight, Receipt, FileUp, GripVertical, Layers, Pencil, MoreVertical, Eye, EyeOff, Copy, AlertCircle, CheckCircle2, Info, RefreshCw } from "lucide-react";
+import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react";
 import { DateTime } from "luxon";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 
@@ -21,8 +21,6 @@ import { Badge } from "@/components/ui/badge";
 import { useServerFn } from "@tanstack/react-start";
 import { validateAgreement } from "@/server-fns/validate-agreement";
 import { InvoiceInconsistencyAlert } from "@/components/InvoiceInconsistencyAlert";
-import { CreditCardComponent, type CardData } from "@/components/CreditCardComponent";
-
 import {
   DndContext,
   closestCenter,
@@ -43,6 +41,19 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 
 
+type CardData = {
+  id: string;
+  name: string;
+  last_four: string | number | null;
+  brand: string;
+  card_limit: number;
+  used: number;
+  color: string | null;
+  emoji: string | null;
+  closing_day: number | null;
+  due_day: number | null;
+  is_visible: boolean | null;
+};
 
 type BankAccount = {
   id: string;
@@ -194,8 +205,6 @@ export function CardsPage() {
   });
   const [isValidating, setIsValidating] = useState(false);
   const [activeTab, setActiveTab] = useState("list");
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-
 
   const lastValidationRef = useRef<{ timestamp: number; reason: string }>({ timestamp: 0, reason: "initial" });
   
@@ -786,136 +795,284 @@ export function CardsPage() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="list" className="mt-5 space-y-6">
+        <TabsContent value="list" className="mt-5 space-y-5">
           {cards.length > 0 && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-stagger-in">
-              <div className="rounded-2xl bg-card border border-border/50 p-5 shadow-sm">
-                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/80">Fatura total</p>
-                <p className="mt-1 text-2xl font-black text-foreground tabular-nums">
+            <div className="grid grid-cols-2 gap-3 animate-stagger-in">
+              <div className="rounded-2xl bg-card border border-border/50 p-4">
+                <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Fatura total</p>
+                <p className="mt-1 text-lg font-bold text-foreground tabular-nums">
                   R$ {totalAllInvoices.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                 </p>
               </div>
-              <div className="rounded-2xl bg-card border border-border/50 p-5 shadow-sm">
-                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/80">Limite disponível</p>
-                <p className="mt-1 text-2xl font-black text-primary tabular-nums">
+              <div className="rounded-2xl bg-card border border-border/50 p-4">
+                <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Limite disponível</p>
+                <p className="mt-1 text-lg font-bold text-primary tabular-nums">
                   R$ {totalAvailable.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                 </p>
               </div>
             </div>
           )}
 
-          <div className="flex items-center justify-between">
-            <h2 id="cards-heading" className="text-sm font-bold text-foreground/80 flex items-center gap-2">
-              <CreditCard className="h-4 w-4 text-primary" />
-              Seus Cartões
-            </h2>
-            <div className="flex items-center gap-2 bg-accent/30 p-1 rounded-xl border border-border/50">
-              <button 
-                onClick={() => setViewMode("grid")}
-                className={cn(
-                  "p-1.5 rounded-lg transition-all",
-                  viewMode === "grid" ? "bg-background shadow-sm text-primary" : "text-muted-foreground hover:text-foreground"
-                )}
-                aria-label="Ver em grade"
-              >
-                <LayoutGrid className="h-4 w-4" />
-              </button>
-              <button 
-                onClick={() => setViewMode("list")}
-                className={cn(
-                  "p-1.5 rounded-lg transition-all",
-                  viewMode === "list" ? "bg-background shadow-sm text-primary" : "text-muted-foreground hover:text-foreground"
-                )}
-                aria-label="Ver em lista"
-              >
-                <List className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-
           {cards.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-20 text-center rounded-2xl bg-card border-2 border-dashed border-border/50 animate-in fade-in zoom-in-95 duration-500">
-              <div className="h-16 w-16 rounded-3xl bg-primary/10 flex items-center justify-center mb-4">
-                <CreditCard className="h-8 w-8 text-primary" />
+            <div className="flex flex-col items-center justify-center py-16 text-center rounded-2xl bg-card border border-dashed border-border/50">
+              <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-3">
+                <CreditCard className="h-7 w-7 text-primary" />
               </div>
-              <h3 className="text-base font-bold text-foreground">Ainda não há cartões</h3>
-              <p className="text-xs text-muted-foreground mt-2 max-w-[200px]">Adicione seus cartões de crédito para gerenciar limites e faturas.</p>
-              <button 
-                onClick={openAddDialog}
-                className="mt-6 interactive-button flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-xs font-bold text-primary-foreground shadow-lg shadow-primary/20"
-              >
-                <Plus className="h-4 w-4" />
-                Adicionar Cartão
-              </button>
+              <p className="text-sm font-semibold text-foreground">Nenhum cartão ainda</p>
+              <p className="text-xs text-muted-foreground mt-1">Adicione seu primeiro cartão abaixo</p>
             </div>
           )}
 
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
             <SortableContext items={cards.map((c) => c.id)} strategy={verticalListSortingStrategy}>
-              <div className={cn(
-                "cards-grid transition-all duration-500",
-                viewMode === "grid" ? "grid gap-6 sm:grid-cols-2 lg:grid-cols-3" : "flex flex-col gap-4"
-              )}>
+              <div className="flex flex-col gap-4">
                 {cards.map((card, i) => {
-                  const cardTransactionsFiltered = cardTransactions.filter(t => t.card === card.name);
-                  const invoicePeriodsCard = groupByBillingCycle(cardTransactionsFiltered, card.closing_day, card.due_day);
-                  const activeInvoicePeriod = invoicePeriodsCard.find(p => p.key === "current") || invoicePeriodsCard[1] || invoicePeriodsCard[0];
-                  const invoiceRemaining = activeInvoicePeriod?.total || 0;
-                  const totalUsed = cardTotals[card.name] || 0;
-                  const totalPaid = cardPayments[card.id] || 0;
-                  const outstandingBalance = Math.max(0, totalUsed - totalPaid);
-                  const pct = card.card_limit > 0 ? Math.round((outstandingBalance / card.card_limit) * 100) : 0;
-                  const isEditing = editingId === card.id;
-                  const today = new Date();
-                  const formatDueDate = (d: Date) => `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`;
-                  
-                  const currentDue = new Date(today.getFullYear(), today.getMonth(), card.due_day || 1);
-                  if (currentDue < today) currentDue.setMonth(currentDue.getMonth() + 1);
-                  const currentClose = new Date(today.getFullYear(), today.getMonth(), card.closing_day || 1);
-                  if (currentClose < today) currentClose.setMonth(currentClose.getMonth() + 1);
-
-                  return (
-                    <SortableCardWrapper key={card.id} id={card.id} animationDelay={60 + i * 80}>
-                      <CreditCardComponent
-                        card={card}
-                        isEditing={isEditing}
-                        editName={editName}
-                        editBrand={editBrand}
-                        editLimit={editLimit}
-                        editClosing={editClosing}
-                        editDue={editDue}
-                        deleteConfirm={deleteConfirm}
-                        outstandingBalance={outstandingBalance}
-                        invoiceRemaining={invoiceRemaining}
-                        totalPaid={totalPaid}
-                        pct={pct}
-                        activeInvoiceLabel={activeInvoicePeriod?.label || ""}
-                        formattedClosingDate={formatDueDate(currentClose)}
-                        formattedDueDate={formatDueDate(currentDue)}
-                        onStartEdit={startEdit}
-                        onSaveEdit={saveEdit}
-                        onCancelEdit={cancelEdit}
-                        onDelete={handleDelete}
-                        onSetDeleteConfirm={setDeleteConfirm}
-                        onToggleVisibility={handleToggleVisibility}
-                        onSetEditName={setEditName}
-                        onSetEditBrand={setEditBrand}
-                        onSetEditLimit={setEditLimit}
-                        onSetEditClosing={setEditClosing}
-                        onSetEditDue={setEditDue}
-                        onOpenPayDialog={openPayDialog}
-                        onOpenInvoiceDialog={openInvoiceDialog}
-                        onOpenPdfImport={(c) => { setPdfImportCard(c); setPdfImportOpen(true); }}
+      const cardTransactionsFiltered = cardTransactions.filter(t => t.card === card.name);
+      const invoicePeriodsCard = groupByBillingCycle(cardTransactionsFiltered, card.closing_day, card.due_day);
+      const activeInvoicePeriod = invoicePeriodsCard.find(p => p.key === "current") || invoicePeriodsCard[1] || invoicePeriodsCard[0];
+      const invoiceRemaining = activeInvoicePeriod?.total || 0;
+      const totalUsed = cardTotals[card.name] || 0;
+      const totalPaid = cardPayments[card.id] || 0;
+      const outstandingBalance = Math.max(0, totalUsed - totalPaid);
+      const pct = card.card_limit > 0 ? Math.round((outstandingBalance / card.card_limit) * 100) : 0;
+      const isEditing = editingId === card.id;
+      const today = new Date();
+      const todayDay = today.getDate();
+      const invoiceClosed = todayDay > card.closing_day;
+      const isPaid = totalUsed > 0 && invoiceRemaining === 0;
+      // Compute due date of current invoice (next due_day after today)
+      const currentDue = new Date(today.getFullYear(), today.getMonth(), card.due_day);
+      if (currentDue < today) currentDue.setMonth(currentDue.getMonth() + 1);
+      // Compute closing date of current invoice (next closing_day after today)
+      const currentClose = new Date(today.getFullYear(), today.getMonth(), card.closing_day);
+      if (currentClose < today) currentClose.setMonth(currentClose.getMonth() + 1);
+      // Next invoice due date (one month after current)
+      const nextDue = new Date(currentDue.getFullYear(), currentDue.getMonth() + 1, card.due_day);
+      const formatDueDate = (d: Date) => `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`;
+      void nextDue; void isPaid; void invoiceClosed;
+          return (
+            <SortableCardWrapper key={card.id} id={card.id} animationDelay={60 + i * 80}>
+              <div className="rounded-2xl shadow-md shadow-black/5 overflow-hidden border border-border/40">
+                <div className={`interactive-card bg-gradient-to-br ${card.color} px-3.5 py-2.5 text-white relative overflow-hidden`}>
+                  <div className="absolute -top-10 -right-10 h-28 w-28 rounded-full bg-white/10 blur-2xl pointer-events-none" />
+                  <div className="flex items-center justify-between gap-2 mb-2 relative z-10">
+                    {isEditing ? (
+                      <Input
+                        value={editName}
+                        onChange={(e) => setEditName(e.target.value)}
+                        className="h-7 w-40 rounded-lg bg-white/20 border-white/30 text-white text-sm placeholder:text-white/50"
+                        autoFocus
+                        onKeyDown={(e) => { if (e.key === "Enter") saveEdit(card.id); if (e.key === "Escape") cancelEdit(); }}
                       />
-                    </SortableCardWrapper>
-                  );
-                })}
+                    ) : (
+                      <button
+                        onClick={() => startEdit(card)}
+                        className="flex items-center gap-x-3 gap-y-1 flex-wrap min-w-0 flex-1 text-left hover:underline transition-all group/name"
+                      >
+                        <span className="text-sm font-bold truncate max-w-full">{card.name}</span>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className="text-[11px] font-mono tabular-nums text-white/85">•••• {card.last_four}</span>
+                          <CardBrand brand={card.brand} size="sm" />
+                        </div>
+                        <Pencil className="h-3 w-3 opacity-0 group-hover/name:opacity-100 transition-opacity ml-1" />
+                      </button>
+                    )}
+                    <div className="flex items-center gap-1 shrink-0 relative z-20">
+                      {isEditing ? (
+                        <div className="flex items-center gap-1 bg-white/20 backdrop-blur-md p-1 rounded-full border border-white/10 shadow-sm">
+                          <button onClick={() => saveEdit(card.id)} className="p-1.5 rounded-full hover:bg-white/20 text-white transition-colors" title="Salvar">
+                            <Check className="h-3.5 w-3.5" />
+                          </button>
+                          <button onClick={cancelEdit} className="p-1.5 rounded-full hover:bg-white/20 text-white transition-colors" title="Cancelar">
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1">
+                          {deleteConfirm === card.id ? (
+                            <div className="flex items-center gap-1 bg-destructive/80 backdrop-blur-md p-1 rounded-full border border-white/10 shadow-sm animate-in zoom-in-95 duration-200">
+                              <button onClick={() => handleDelete(card.id)} className="p-1.5 rounded-full hover:bg-white/20 text-white transition-colors">
+                                <Check className="h-3.5 w-3.5" />
+                              </button>
+                              <button onClick={() => setDeleteConfirm(null)} className="p-1.5 rounded-full hover:bg-white/20 text-white transition-colors">
+                                <X className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-0.5">
+                              <button
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handleToggleVisibility(card.id, card.is_visible);
+                                }}
+                                className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors border border-white/10 shadow-sm"
+                                title={card.is_visible ? "Ocultar do Início" : "Mostrar no Início"}
+                              >
+                                {card.is_visible ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5 text-white/60" />}
+                              </button>
+
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <button className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors border border-white/10 shadow-sm">
+                                    <MoreVertical className="h-3.5 w-3.5" />
+                                  </button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="rounded-xl">
+                                  <DropdownMenuItem onClick={() => startEdit(card)} className="cursor-pointer">
+                                    <Pencil className="h-4 w-4 mr-2" />
+                                    Editar cartão
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem onClick={() => setDeleteConfirm(card.id)} className="cursor-pointer text-destructive focus:text-destructive">
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Excluir cartão
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  {isEditing ? (
+                    <div className="flex flex-col gap-2 mb-2 relative z-10">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] opacity-70 w-14">Bandeira</span>
+                        <div className="flex gap-1 flex-wrap">
+                          {brandPresets.map((bp) => (
+                            <button
+                              key={bp.id}
+                              onClick={() => setEditBrand(bp.id)}
+                              className={`px-2 py-0.5 rounded-md text-[10px] font-medium transition-colors ${editBrand.toLowerCase() === bp.id ? "bg-white text-black" : "bg-white/20 text-white hover:bg-white/30"}`}
+                            >
+                              {bp.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] opacity-70 w-14">Limite R$</span>
+                        <div className="w-24 sm:w-28 shrink-0">
+                          <CalculatorAmountInput
+                            value={parseFloat(editLimit) || 0}
+                            onChange={(v) => setEditLimit(v.toString())}
+                            className="h-7 bg-white/20 border-white/30 text-white text-[11px] sm:text-xs"
+                          />
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] opacity-70 w-14">Fecha dia</span>
+                        <Input
+                          type="number"
+                          value={editClosing}
+                          onChange={(e) => setEditClosing(e.target.value.replace(/\D/g, "").slice(0, 2))}
+                          className="h-7 w-16 rounded-lg bg-white/20 border-white/30 text-white text-xs"
+                          min={1} max={31}
+                          onKeyDown={(e) => { if (e.key === "Enter") saveEdit(card.id); if (e.key === "Escape") cancelEdit(); }}
+                        />
+                        <span className="text-[10px] opacity-70 w-14">Vence dia</span>
+                        <Input
+                          type="number"
+                          value={editDue}
+                          onChange={(e) => setEditDue(e.target.value.replace(/\D/g, "").slice(0, 2))}
+                          className="h-7 w-16 rounded-lg bg-white/20 border-white/30 text-white text-xs"
+                          min={1} max={31}
+                          onKeyDown={(e) => { if (e.key === "Enter") saveEdit(card.id); if (e.key === "Escape") cancelEdit(); }}
+                        />
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+
+              <div className={`bg-gradient-to-br ${card.color} px-3.5 pb-3 pt-1 text-white relative`}>
+                <div className="absolute inset-0 bg-black/55 pointer-events-none" />
+                <div className="relative">
+                  <div className="flex justify-between items-start gap-2 mb-1.5">
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-white/90">Fatura {activeInvoicePeriod?.label.split(" (")[0] || "atual"}</p>
+                      <p className="text-base font-extrabold text-white tabular-nums drop-shadow-md truncate" data-testid="fatura-atual-valor">
+                        R$ {invoiceRemaining.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                      </p>
+
+                    </div>
+                    <div className="flex items-center gap-1 text-[10px] font-semibold text-white shrink-0 mt-0.5">
+                      <span className="rounded-full bg-black/45 px-1.5 py-0.5 ring-1 ring-white/20 tabular-nums">
+                        F {formatDueDate(currentClose)}
+                      </span>
+                      <span className="rounded-full bg-black/45 px-1.5 py-0.5 ring-1 ring-white/20 tabular-nums">
+                        V {formatDueDate(currentDue)}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="relative h-4 rounded-full bg-black/30 overflow-hidden ring-1 ring-white/20">
+                    <div
+                      className={cn(
+                        "h-full rounded-full transition-all duration-500 opacity-70",
+                        pct >= 80 ? "bg-red-400" : pct >= 50 ? "bg-amber-300" : "bg-emerald-300"
+                      )}
+                      style={{ width: `${Math.min(pct, 100)}%` }}
+                    />
+                    <span className="absolute inset-0 flex items-center justify-center text-[10px] font-semibold text-white/90 tabular-nums drop-shadow-[0_1px_1px_rgba(0,0,0,0.6)]">
+                      {pct}% usado
+                    </span>
+                  </div>
+                  {totalPaid > 0 ? (
+                    <div className="flex items-center justify-between gap-2 mt-1">
+                      <p className="text-[10px] text-emerald-300 font-bold tabular-nums drop-shadow-sm truncate">
+                        ✓ R$ {totalPaid.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} pago
+                      </p>
+                      <p className="text-[10px] text-white/80 tabular-nums" title={`Limite total: R$ ${(card.card_limit || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`}>
+                        Disponível <span className="font-bold text-white">R$ {Math.max(0, card.card_limit - outstandingBalance).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between gap-2 mt-1">
+                      <p className="text-[10px] text-white/70 tabular-nums">
+                        de R$ {(card.card_limit || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                      </p>
+                      <p className="text-[10px] text-white/80 tabular-nums">
+                        Disponível <span className="font-bold text-white">R$ {Math.max(0, card.card_limit - outstandingBalance).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
+                      </p>
+                    </div>
+                  )}
+                  <div className="flex gap-1.5 mt-2">
+                    {(totalUsed > 0 || card.used > 0) && (
+                      <button
+                        onClick={() => openPayDialog(card)}
+                        className="interactive-button flex flex-1 items-center justify-center gap-1 rounded-lg bg-white py-2 text-xs font-bold text-gray-900 hover:bg-white/90 transition-colors shadow-md ring-2 ring-white/60"
+                      >
+                        <Wallet className="h-3 w-3" strokeWidth={2.5} />
+                        Pagar
+                      </button>
+                    )}
+                    <button
+                      onClick={() => openInvoiceDialog(card)}
+                      className="interactive-button flex flex-1 items-center justify-center gap-1 rounded-lg bg-black/60 py-2 text-xs font-bold text-white hover:bg-black/70 transition-colors ring-2 ring-white/50"
+                    >
+                      <Receipt className="h-3 w-3" strokeWidth={2.5} />
+                      Faturas
+                    </button>
+                    <button
+                      onClick={() => { setPdfImportCard(card); setPdfImportOpen(true); }}
+                      className="interactive-button flex items-center justify-center rounded-lg bg-black/60 w-9 text-white hover:bg-black/70 transition-colors ring-2 ring-white/50"
+                      title="Importar PDF"
+                    >
+                      <FileUp className="h-3 w-3" strokeWidth={2.5} />
+                    </button>
+                  </div>
+                </div>
               </div>
-            </SortableContext>
-          </DndContext>
-        </TabsContent>
+                 </div>
 
-
+            </SortableCardWrapper>
+          );
+        })}
+          </div>
+        </SortableContext>
+      </DndContext>
+    </TabsContent>
 
         <TabsContent value="validation" className="mt-5 space-y-4">
           <div className="rounded-2xl bg-card border border-border/50 p-4 space-y-4">
@@ -945,83 +1102,113 @@ export function CardsPage() {
                   <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Faturas</p>
                   <p className="text-sm font-bold mt-0.5">{validationData.summary.totalInvoicesChecked}</p>
                 </div>
-                <div className={cn(
-                  "rounded-xl p-2.5 text-center",
-                  validationData.summary.discrepanciesFound > 0 ? "bg-destructive/10 text-destructive" : "bg-emerald-500/10 text-emerald-600"
-                )}>
-                  <p className="text-[9px] uppercase tracking-wider font-medium opacity-80">Erros</p>
-                  <p className="text-sm font-bold mt-0.5">{validationData.summary.discrepanciesFound}</p>
+                <div className="rounded-xl bg-accent/30 p-2.5 text-center">
+                  <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Divergências</p>
+                  <p className={cn("text-sm font-bold mt-0.5", validationData.summary.discrepanciesFound > 0 ? "text-destructive" : "text-emerald-500")}>
+                    {validationData.summary.discrepanciesFound}
+                  </p>
                 </div>
               </div>
-            ) : null}
-          </div>
-
-          <div className="space-y-3">
-            <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground pl-1">Detalhes das Divergências</h4>
-            {validationData?.summary?.discrepancyDetails?.length > 0 ? (
-              validationData.summary.discrepancyDetails.map((disc: any, idx: number) => (
-                <div key={idx} className="rounded-2xl bg-card border border-destructive/20 p-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                  <div className="flex items-start gap-3">
-                    <div className="mt-0.5 h-8 w-8 shrink-0 rounded-xl bg-destructive/10 flex items-center justify-center">
-                      <AlertCircle className="h-4 w-4 text-destructive" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="text-xs font-bold text-foreground truncate">{disc.cardName}</p>
-                        <Badge variant="outline" className="text-[9px] h-4 border-destructive/30 text-destructive bg-destructive/5">
-                          {disc.type}
-                        </Badge>
-                      </div>
-                      <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
-                        {disc.message}
-                      </p>
-                      {disc.expected !== undefined && disc.actual !== undefined && (
-                        <div className="mt-3 flex items-center gap-4 text-[10px] font-mono bg-accent/30 p-2 rounded-lg border border-border/50">
-                          <div>
-                            <span className="text-muted-foreground mr-1">Esperado:</span>
-                            <span className="text-foreground font-bold">R$ {disc.expected.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
-                          </div>
-                          <div className="h-3 w-px bg-border" />
-                          <div>
-                            <span className="text-muted-foreground mr-1">Atual:</span>
-                            <span className="text-destructive font-bold">R$ {disc.actual.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
-                          </div>
-                        </div>
-                      )}
-                      
-                      {disc.cardId && disc.actual !== undefined && (
-                        <button
-                          onClick={() => handleRecalculateUsedLimit(disc.cardId, disc.expected)}
-                          className="mt-3 w-full flex items-center justify-center gap-2 rounded-lg bg-foreground py-1.5 text-[10px] font-bold text-background transition-colors hover:bg-foreground/90"
-                        >
-                          <RefreshCw className="h-3 w-3" />
-                          Corrigir Automaticamente
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))
             ) : (
-              <div className="flex flex-col items-center justify-center py-12 text-center rounded-2xl bg-card border border-border/50">
-                <div className="h-12 w-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center mb-3">
-                  <CheckCircle2 className="h-6 w-6 text-emerald-500" />
-                </div>
-                <p className="text-xs font-bold text-foreground">Nenhuma divergência</p>
-                <p className="text-[10px] text-muted-foreground mt-1">Sua fatura de cartões está em dia!</p>
+              <div className="py-8 text-center border border-dashed border-border/50 rounded-xl bg-accent/10">
+                <Info className="h-8 w-8 text-muted-foreground/30 mx-auto mb-2" />
+                <p className="text-xs text-muted-foreground">Nenhuma validação executada recentemente.</p>
               </div>
             )}
           </div>
+
+          {validationData && (
+            <div className="space-y-4" id="validation-tab">
+              {validationData.summary.discrepancyDetails.length > 0 && (
+                <div className="space-y-2">
+                  <h4 className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground ml-1">Discrepâncias Detalhadas</h4>
+                  {validationData.summary.discrepancyDetails.map((d: any, idx: number) => (
+                    <div key={idx} className="rounded-2xl border border-destructive/20 bg-destructive/5 p-3 animate-in slide-in-from-top-2 duration-300">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                          {d.status === 'error' ? <AlertCircle className="h-3.5 w-3.5 text-destructive" /> : <Info className="h-3.5 w-3.5 text-amber-500" />}
+                          {d.cardName}
+                        </span>
+                        <Badge variant={d.status === 'error' ? 'destructive' : 'outline'} className="text-[9px] h-4">
+                          {d.status.toUpperCase()}
+                        </Badge>
+                      </div>
+                      {d.type === 'amount' ? (
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-center text-[10px] text-muted-foreground">
+                            <span>Valor no Cartão: <strong>R$ {(d.cardValue || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong></span>
+                            <span>Soma da Fatura: <strong>R$ {(d.faturaValue || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong></span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <button
+                              onClick={() => handleRecalculateUsedLimit(d.cardId, d.faturaValue)}
+                              className="flex items-center justify-center gap-1.5 rounded-lg bg-primary/10 py-1.5 text-[10px] font-bold text-primary hover:bg-primary/20 transition-colors border border-primary/20"
+                            >
+                              <RefreshCw className="h-3 w-3" />
+                              Sincronizar Limite
+                            </button>
+                            <button
+                              onClick={() => {
+                                const card = cards.find(c => c.id === d.cardId);
+                                if (card) {
+                                  setPdfImportCard(card);
+                                  setPdfImportOpen(true);
+                                }
+                              }}
+                              className="flex items-center justify-center gap-1.5 rounded-lg bg-accent py-1.5 text-[10px] font-bold text-muted-foreground hover:bg-accent/80 transition-colors border border-border"
+                            >
+                              <FileUp className="h-3 w-3" />
+                              Comparar com PDF
+                            </button>
+                          </div>
+
+                        </div>
+                      ) : (
+                        <p className="text-[10px] text-muted-foreground">Nenhuma fatura encontrada para este cartão nos últimos meses.</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <h4 className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground ml-1">Logs de Auditoria</h4>
+                <div className="rounded-2xl bg-card border border-border/50 overflow-hidden">
+                  <div className="max-h-[300px] overflow-y-auto no-scrollbar" id="validation-logs">
+                    <table className="w-full text-left text-[10px] border-collapse">
+                      <thead className="sticky top-0 bg-accent/50 backdrop-blur-sm border-b border-border/50">
+                        <tr>
+                          <th className="px-3 py-2 font-bold text-muted-foreground">Data/Hora (Local)</th>
+                          <th className="px-3 py-2 font-bold text-muted-foreground">Mensagem</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {validationData.logs.map((log: string, idx: number) => {
+                          const [time, ...msgParts] = log.split(" - ");
+                          const msg = msgParts.join(" - ");
+                          return (
+                            <tr key={idx} className="border-b border-border/30 last:border-0 hover:bg-accent/20 transition-colors">
+                              <td className="px-3 py-2 text-muted-foreground tabular-nums whitespace-nowrap">{time}</td>
+                              <td className="px-3 py-2 font-medium text-foreground">{msg}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </TabsContent>
       </Tabs>
 
-      {/* Floating Add Button */}
-      <button 
+      <button
         onClick={openAddDialog}
-        className="fixed bottom-24 right-6 h-14 w-14 rounded-2xl bg-primary text-primary-foreground shadow-xl shadow-primary/30 flex items-center justify-center interactive-button z-40 transition-transform hover:scale-105 active:scale-95"
-        aria-label="Adicionar novo cartão"
+        className="interactive-button flex items-center justify-center gap-2 rounded-2xl bg-primary py-3 text-sm font-medium text-primary-foreground"
       >
-        <Plus className="h-6 w-6 stroke-[3]" />
+        <Plus className="h-4 w-4" />
+        Adicionar cartão
       </button>
 
       {/* Invoice Dialog */}
@@ -1155,133 +1342,73 @@ export function CardsPage() {
 
       {/* Add card dialog (new cards only) */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="rounded-3xl max-w-[92vw] sm:max-w-[400px] p-0 overflow-hidden border-none shadow-2xl">
-          <div className="bg-primary p-6 text-primary-foreground">
-            <DialogHeader className="p-0">
-              <DialogTitle className="text-xl font-black flex items-center gap-3">
-                <div className="h-10 w-10 rounded-2xl bg-white/20 flex items-center justify-center">
-                  <CreditCard className="h-5 w-5" />
-                </div>
-                Novo Cartão
-              </DialogTitle>
-            </DialogHeader>
-          </div>
-          
-          <div className="p-6 space-y-5 bg-card">
-            <div className="space-y-4">
+        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-sm mx-auto rounded-2xl p-4 sm:p-6">
+          <DialogHeader>
+            <DialogTitle>Novo cartão</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-4 mt-2">
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">Nome do cartão</Label>
+              <Input value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="Ex: Nubank" className="rounded-xl" />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">Últimos 4 dígitos</Label>
+              <Input value={formNumber} onChange={(e) => setFormNumber(e.target.value.replace(/\D/g, "").slice(0, 4))} placeholder="0000" maxLength={4} className="rounded-xl font-mono" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label htmlFor="name" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Nome do Cartão</Label>
-                <Input
-                  id="name"
-                  value={formName}
-                  onChange={(e) => setFormName(e.target.value)}
-                  placeholder="Ex: Nubank, Inter..."
-                  className="rounded-xl border-border/50 h-11 focus:ring-primary/20"
-                />
+                <Label className="text-xs text-muted-foreground">Bandeira</Label>
+                <Select value={formBrand} onValueChange={setFormBrand}>
+                  <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {brandPresets.filter(b => b.id !== "custom").map((b) => (
+                      <SelectItem key={b.id} value={b.label}>{b.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label htmlFor="number" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Últimos 4 Dígitos</Label>
-                  <Input
-                    id="number"
-                    value={formNumber}
-                    onChange={(e) => setFormNumber(e.target.value.replace(/\D/g, "").slice(0, 4))}
-                    placeholder="0000"
-                    className="rounded-xl border-border/50 h-11 tabular-nums"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Bandeira</Label>
-                  <Select value={formBrand} onValueChange={setFormBrand}>
-                    <SelectTrigger className="rounded-xl border-border/50 h-11">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-xl">
-                      {brandPresets.map((bp) => (
-                        <SelectItem key={bp.id} value={bp.id}>
-                          <div className="flex items-center gap-2">
-                            <CardBrand brand={bp.id} size="sm" />
-                            {bp.label}
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label htmlFor="limit" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Limite (R$)</Label>
-                  <CalculatorAmountInput
-                    value={parseFloat(formLimit) || 0}
-                    onChange={(v) => setFormLimit(v.toString())}
-                    className="rounded-xl border-border/50 h-11"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="color" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Cor / Estilo</Label>
-                  <Select value={formColor} onValueChange={setFormColor}>
-                    <SelectTrigger className="rounded-xl border-border/50 h-11">
-                      <div className="flex items-center gap-2">
-                        <div className={cn("h-4 w-4 rounded-full bg-gradient-to-br", formColor)} />
-                        <SelectValue />
-                      </div>
-                    </SelectTrigger>
-                    <SelectContent className="rounded-xl">
-                      {colorOptions.map((co) => (
-                        <SelectItem key={co.value} value={co.value}>
-                          <div className="flex items-center gap-2">
-                            <div className={cn("h-4 w-4 rounded-full bg-gradient-to-br", co.value)} />
-                            {co.label}
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label htmlFor="closing" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Dia de Fechamento</Label>
-                  <Input
-                    id="closing"
-                    type="number"
-                    value={formClosingDay}
-                    onChange={(e) => setFormClosingDay(e.target.value.replace(/\D/g, "").slice(0, 2))}
-                    placeholder="1"
-                    min={1} max={31}
-                    className="rounded-xl border-border/50 h-11"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="due" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Dia de Vencimento</Label>
-                  <Input
-                    id="due"
-                    type="number"
-                    value={formDueDay}
-                    onChange={(e) => setFormDueDay(e.target.value.replace(/\D/g, "").slice(0, 2))}
-                    placeholder="10"
-                    min={1} max={31}
-                    className="rounded-xl border-border/50 h-11"
-                  />
-                </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Cor</Label>
+                <Select value={formColor} onValueChange={setFormColor}>
+                  <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {colorOptions.map((c) => (
+                      <SelectItem key={c.value} value={c.value}>{c.emoji} {c.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
-
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Limite (R$)</Label>
+                <CalculatorAmountInput value={parseFloat(formLimit) || 0} onChange={(v) => setFormLimit(v.toString())} />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Fatura atual (R$)</Label>
+                <CalculatorAmountInput value={parseFloat(formUsed) || 0} onChange={(v) => setFormUsed(v.toString())} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Dia do fechamento</Label>
+                <Input type="number" value={formClosingDay} onChange={(e) => setFormClosingDay(e.target.value.replace(/\D/g, "").slice(0, 2))} placeholder="1" min={1} max={31} className="rounded-xl" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Dia do vencimento</Label>
+                <Input type="number" value={formDueDay} onChange={(e) => setFormDueDay(e.target.value.replace(/\D/g, "").slice(0, 2))} placeholder="10" min={1} max={31} className="rounded-xl" />
+              </div>
+            </div>
             <button
               onClick={handleAdd}
-              className="w-full interactive-button flex items-center justify-center gap-2 rounded-2xl bg-primary py-3.5 text-sm font-black text-primary-foreground shadow-xl shadow-primary/20"
+              disabled={!formName.trim()}
+              className="interactive-button flex items-center justify-center gap-2 rounded-2xl bg-primary py-3 text-sm font-medium text-primary-foreground disabled:opacity-50 mt-2"
             >
-              Criar Cartão
+              Adicionar cartão
             </button>
           </div>
         </DialogContent>
       </Dialog>
-
-
 
       {/* Pay invoice dialog */}
       <Dialog open={payDialogOpen} onOpenChange={setPayDialogOpen}>
