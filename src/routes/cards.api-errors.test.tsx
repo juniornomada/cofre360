@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, act, waitFor } from '@testing-library/react';
+import { render, act } from '@testing-library/react';
 import { supabase } from '@/integrations/supabase/client';
 import { CardsPage } from './cards';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -98,6 +98,17 @@ function renderPage(mockShowAlert = vi.fn()) {
   return { ...utils, mockShowAlert };
 }
 
+// Flush pending microtasks + timers under fake timers.
+async function flush() {
+  await act(async () => {
+    vi.runOnlyPendingTimers();
+    // Allow chained promise resolutions to settle
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+  });
+}
+
 describe('CardsPage - /api/cards error handling integration', () => {
   let authChangeHandler: any;
   let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
@@ -120,22 +131,22 @@ describe('CardsPage - /api/cards error handling integration', () => {
 
   afterEach(() => {
     consoleErrorSpy.mockRestore();
+    vi.useRealTimers();
   });
 
   it('handles 500 Response without crashing and resets debounce for retry', async () => {
     vi.useFakeTimers();
-    const error500 = new Response(JSON.stringify({ message: 'Internal Server Error' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
-    mockValidateAgreement.mockRejectedValueOnce(error500);
+    mockValidateAgreement.mockRejectedValueOnce(
+      new Response(JSON.stringify({ message: 'Internal Server Error' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    );
 
     const { container } = renderPage();
+    await flush();
 
-    await act(async () => { vi.runOnlyPendingTimers(); });
-    await waitFor(() => expect(mockValidateAgreement).toHaveBeenCalledTimes(1));
-
-    // Page still rendered (didn't throw to error boundary)
+    expect(mockValidateAgreement).toHaveBeenCalledTimes(1);
     expect(container.firstChild).toBeTruthy();
     expect(consoleErrorSpy).toHaveBeenCalledWith('Validation error:', expect.anything());
 
@@ -144,10 +155,10 @@ describe('CardsPage - /api/cards error handling integration', () => {
     await act(async () => {
       vi.advanceTimersByTime(100);
       window.dispatchEvent(new Event('focus'));
+      await Promise.resolve();
+      await Promise.resolve();
     });
     expect(mockValidateAgreement).toHaveBeenCalledTimes(2);
-
-    vi.useRealTimers();
   });
 
   it('handles plain Error (network failure, no status) as retryable', async () => {
@@ -155,71 +166,68 @@ describe('CardsPage - /api/cards error handling integration', () => {
     mockValidateAgreement.mockRejectedValueOnce(new Error('Network request failed'));
 
     const { container } = renderPage();
-    await act(async () => { vi.runOnlyPendingTimers(); });
-    await waitFor(() => expect(mockValidateAgreement).toHaveBeenCalledTimes(1));
+    await flush();
 
+    expect(mockValidateAgreement).toHaveBeenCalledTimes(1);
     expect(container.firstChild).toBeTruthy();
 
-    // Retry should be allowed immediately
     mockValidateAgreement.mockResolvedValueOnce(okResult);
     await act(async () => {
       vi.advanceTimersByTime(50);
       window.dispatchEvent(new Event('focus'));
+      await Promise.resolve();
+      await Promise.resolve();
     });
     expect(mockValidateAgreement).toHaveBeenCalledTimes(2);
-
-    vi.useRealTimers();
   });
 
-  it('handles unexpected response shape (null) without crashing', async () => {
+  it('handles unexpected response (null) without crashing the render', async () => {
     vi.useFakeTimers();
     mockValidateAgreement.mockResolvedValueOnce(null);
 
     const { container } = renderPage();
-    await act(async () => { vi.runOnlyPendingTimers(); });
-    await waitFor(() => expect(mockValidateAgreement).toHaveBeenCalledTimes(1));
+    await flush();
 
+    expect(mockValidateAgreement).toHaveBeenCalledTimes(1);
     expect(container.firstChild).toBeTruthy();
-    vi.useRealTimers();
+    // Defensive shape check should have logged the error
+    expect(consoleErrorSpy).toHaveBeenCalledWith('Validation error:', expect.anything());
   });
 
-  it('handles unexpected response shape (string instead of object)', async () => {
+  it('handles unexpected response (string payload) without crashing', async () => {
     vi.useFakeTimers();
     mockValidateAgreement.mockResolvedValueOnce('unexpected-string-payload' as any);
 
     const { container } = renderPage();
-    await act(async () => { vi.runOnlyPendingTimers(); });
-    await waitFor(() => expect(mockValidateAgreement).toHaveBeenCalledTimes(1));
+    await flush();
 
     expect(container.firstChild).toBeTruthy();
-    vi.useRealTimers();
+    expect(consoleErrorSpy).toHaveBeenCalledWith('Validation error:', expect.anything());
   });
 
-  it('handles unexpected response missing summary/details fields', async () => {
+  it('handles unexpected response missing summary field', async () => {
     vi.useFakeTimers();
     mockValidateAgreement.mockResolvedValueOnce({ status: 'ok' } as any);
 
     const { container } = renderPage();
-    await act(async () => { vi.runOnlyPendingTimers(); });
-    await waitFor(() => expect(mockValidateAgreement).toHaveBeenCalledTimes(1));
+    await flush();
 
     expect(container.firstChild).toBeTruthy();
-    vi.useRealTimers();
+    expect(consoleErrorSpy).toHaveBeenCalledWith('Validation error:', expect.anything());
   });
 
   it('handles Response with non-JSON body by falling back to text()', async () => {
     vi.useFakeTimers();
-    const badBody = new Response('<html>Server Error</html>', {
-      status: 502,
-      headers: { 'Content-Type': 'text/html' },
-    });
-    mockValidateAgreement.mockRejectedValueOnce(badBody);
+    mockValidateAgreement.mockRejectedValueOnce(
+      new Response('<html>Server Error</html>', {
+        status: 502,
+        headers: { 'Content-Type': 'text/html' },
+      })
+    );
 
     const { container } = renderPage();
-    await act(async () => { vi.runOnlyPendingTimers(); });
-    await waitFor(() => expect(mockValidateAgreement).toHaveBeenCalledTimes(1));
+    await flush();
 
-    // Should not crash even though JSON parse fails
     expect(container.firstChild).toBeTruthy();
     expect(consoleErrorSpy).toHaveBeenCalledWith('Validation error:', expect.anything());
 
@@ -228,32 +236,33 @@ describe('CardsPage - /api/cards error handling integration', () => {
     await act(async () => {
       vi.advanceTimersByTime(100);
       window.dispatchEvent(new Event('focus'));
+      await Promise.resolve();
+      await Promise.resolve();
     });
     expect(mockValidateAgreement).toHaveBeenCalledTimes(2);
-
-    vi.useRealTimers();
   });
 
   it('does NOT reset debounce for non-retryable 4xx (e.g. 422 Unprocessable)', async () => {
     vi.useFakeTimers();
-    const err422 = new Response(JSON.stringify({ message: 'Invalid' }), {
-      status: 422,
-      headers: { 'Content-Type': 'application/json' },
-    });
-    mockValidateAgreement.mockRejectedValueOnce(err422);
+    mockValidateAgreement.mockRejectedValueOnce(
+      new Response(JSON.stringify({ message: 'Invalid' }), {
+        status: 422,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    );
 
     renderPage();
-    await act(async () => { vi.runOnlyPendingTimers(); });
-    await waitFor(() => expect(mockValidateAgreement).toHaveBeenCalledTimes(1));
+    await flush();
 
-    // Immediate focus -> should be blocked by debounce
+    expect(mockValidateAgreement).toHaveBeenCalledTimes(1);
+
     await act(async () => {
       vi.advanceTimersByTime(100);
       window.dispatchEvent(new Event('focus'));
+      await Promise.resolve();
     });
+    // Same-reason debounce (mount->focus needs 2s) blocks immediate retry on non-retryable
     expect(mockValidateAgreement).toHaveBeenCalledTimes(1);
-
-    vi.useRealTimers();
   });
 
   it('keeps page interactive across multiple consecutive 500s', async () => {
@@ -266,38 +275,36 @@ describe('CardsPage - /api/cards error handling integration', () => {
       .mockResolvedValueOnce(okResult);
 
     const { container } = renderPage();
-    await act(async () => { vi.runOnlyPendingTimers(); });
-    await waitFor(() => expect(mockValidateAgreement).toHaveBeenCalledTimes(1));
+    await flush();
+    expect(mockValidateAgreement).toHaveBeenCalledTimes(1);
 
     for (let i = 0; i < 3; i++) {
       await act(async () => {
         vi.advanceTimersByTime(50);
         window.dispatchEvent(new Event('focus'));
+        await Promise.resolve();
+        await Promise.resolve();
       });
     }
 
-    // 1 (mount) + 3 (focus retries) = 4 calls
-    await waitFor(() => expect(mockValidateAgreement).toHaveBeenCalledTimes(4));
+    expect(mockValidateAgreement).toHaveBeenCalledTimes(4);
     expect(container.firstChild).toBeTruthy();
-    vi.useRealTimers();
   });
 
   it('does not surface alerts when silent validation (mount) fails', async () => {
     vi.useFakeTimers();
     mockValidateAgreement.mockRejectedValueOnce(new Response('boom', { status: 500 }));
     const { mockShowAlert } = renderPage();
-    await act(async () => { vi.runOnlyPendingTimers(); });
-    await waitFor(() => expect(mockValidateAgreement).toHaveBeenCalledTimes(1));
+    await flush();
 
-    // Silent mode -> no user-facing alerts
+    expect(mockValidateAgreement).toHaveBeenCalledTimes(1);
     expect(mockShowAlert).not.toHaveBeenCalledWith(
       expect.stringContaining('Erro ao validar'),
       'error'
     );
-    vi.useRealTimers();
   });
 
-  it('treats missing session as a non-error short-circuit (no validation call)', async () => {
+  it('treats missing session as a non-error short-circuit (no validation call, no alert)', async () => {
     vi.useFakeTimers();
     (supabase.auth.getSession as any).mockResolvedValue({
       data: { session: null },
@@ -305,12 +312,10 @@ describe('CardsPage - /api/cards error handling integration', () => {
     });
 
     const { container, mockShowAlert } = renderPage();
-    await act(async () => { vi.runOnlyPendingTimers(); });
+    await flush();
 
     expect(mockValidateAgreement).not.toHaveBeenCalled();
     expect(container.firstChild).toBeTruthy();
-    // Silent: no alert displayed
     expect(mockShowAlert).not.toHaveBeenCalled();
-    vi.useRealTimers();
   });
 });
