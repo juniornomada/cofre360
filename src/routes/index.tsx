@@ -1007,7 +1007,8 @@ export function Dashboard() {
       </div>
 
       {/* Balance Card — refined with health score + daily available */}
-      <div className="rounded-2xl bg-gradient-to-br from-primary/15 via-card to-card p-5 border border-border/40">
+      <div className="rounded-3xl bg-gradient-to-br from-primary/10 via-card to-card p-6 border border-white/[0.05] shadow-2xl relative overflow-hidden group">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 blur-3xl rounded-full -mr-16 -mt-16 transition-all group-hover:bg-primary/10" />
         <div className="flex items-center justify-between gap-4 mb-2">
           <div className="flex flex-col min-w-0">
             <h2 className="text-sm font-semibold text-foreground flex items-center gap-1.5 uppercase">
@@ -1105,7 +1106,8 @@ export function Dashboard() {
 
 
       {/* Credit Cards Summary */}
-      <div className="rounded-2xl bg-gradient-to-br from-primary/15 via-card to-card p-5 border border-border/40">
+      <div className="rounded-3xl bg-gradient-to-br from-primary/5 via-card to-card p-6 border border-white/[0.05] shadow-xl relative overflow-hidden">
+        <div className="absolute bottom-0 left-0 w-24 h-24 bg-primary/5 blur-3xl rounded-full -ml-12 -mb-12" />
         <div className="flex items-center justify-between gap-4 mb-2">
           <h2 className="text-sm font-semibold text-foreground flex items-center gap-1.5 uppercase">
             <CreditCard className="h-4 w-4 text-primary" />
