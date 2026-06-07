@@ -708,22 +708,33 @@ export function TransactionsPage() {
 
   if (loading && transactions.length === 0) {
     return (
-      <div className="animate-page-enter p-4 flex flex-col gap-6">
+      <div className="animate-page-enter p-4 flex flex-col gap-8">
         <div className="flex items-center justify-between">
-          <div className="space-y-2">
-            <div className="h-6 w-32 bg-muted animate-pulse rounded-lg" />
-            <div className="h-3 w-48 bg-muted animate-pulse rounded" />
+          <div className="space-y-3">
+            <div className="h-7 w-32 bg-muted/50 animate-pulse rounded-xl" />
+            <div className="h-2.5 w-56 bg-muted/30 animate-pulse rounded-full" />
           </div>
-          <div className="h-10 w-10 rounded-xl bg-muted animate-pulse" />
+          <div className="h-10 w-10 rounded-full bg-muted/30 animate-pulse" />
         </div>
-        <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+        
+        <div className="flex gap-2.5 overflow-x-auto pb-1 no-scrollbar">
           {[1, 2, 3, 4].map(i => (
-            <div key={i} className="h-8 w-20 rounded-full bg-muted animate-pulse shrink-0" />
+            <div key={i} className="h-9 w-24 rounded-full bg-card border border-border/10 animate-pulse shrink-0" />
           ))}
         </div>
-        <div className="space-y-3">
+
+        <div className="space-y-4">
           {[1, 2, 3, 4, 5, 6].map(i => (
-            <div key={i} className="h-20 w-full rounded-2xl bg-muted/40 animate-pulse" />
+            <div key={i} className="h-20 w-full rounded-2xl bg-card border border-border/10 flex items-center px-4 gap-4">
+               <div className="h-11 w-11 rounded-xl bg-muted/40 animate-pulse shrink-0" />
+               <div className="flex-1 space-y-2.5">
+                 <div className="flex justify-between items-center">
+                   <div className="h-4 w-1/2 bg-muted/40 animate-pulse rounded-lg" />
+                   <div className="h-4 w-16 bg-muted/50 animate-pulse rounded-lg" />
+                 </div>
+                 <div className="h-2.5 w-1/3 bg-muted/30 animate-pulse rounded-lg" />
+               </div>
+            </div>
           ))}
         </div>
       </div>
