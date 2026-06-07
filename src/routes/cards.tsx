@@ -132,7 +132,7 @@ export function CardsPage() {
     <div className="animate-page-enter p-4 pb-24">
       <header className="mb-6 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Link to="/" className="interactive-button flex h-10 w-10 items-center justify-center rounded-xl bg-card border border-border/50 text-muted-foreground shadow-sm">
+          <Link to="/" className="interactive-button flex h-11 w-11 items-center justify-center rounded-2xl bg-card/40 backdrop-blur-md border border-white/[0.05] text-muted-foreground shadow-sm">
             <ArrowLeft className="h-5 w-5" />
           </Link>
           <div>
@@ -141,7 +141,7 @@ export function CardsPage() {
           </div>
         </div>
         <button 
-          className="interactive-button flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/20"
+          className="interactive-button flex h-11 w-11 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-xl shadow-primary/20 border border-primary/20"
           aria-label="Adicionar novo cartão"
         >
           <Plus className="h-5 w-5" />
@@ -149,7 +149,8 @@ export function CardsPage() {
       </header>
 
       {/* Summary Widget */}
-      <div className="mb-6 rounded-2xl bg-card border border-border/50 p-4 shadow-sm">
+      <div className="mb-6 rounded-3xl bg-card/40 backdrop-blur-xl border border-white/[0.05] p-6 shadow-xl relative overflow-hidden group">
+        <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 blur-2xl rounded-full -mr-12 -mt-12 transition-all group-hover:bg-primary/10" />
         <div className="flex items-center gap-2 mb-3 text-muted-foreground">
           <Info className="h-3.5 w-3.5" />
           <span className="text-[10px] font-bold uppercase tracking-wider">Visão Geral</span>
