@@ -3,7 +3,7 @@ import { SmartLink as Link } from "@/components/SmartLink";
 import { TransactionItem } from "@/components/TransactionItem";
 import { EmptyState } from "@/components/EmptyState";
 import { mainCategories, parseCategoryValue } from "@/lib/categories";
-import { Search, Pencil, Trash2, Plus, CalendarIcon, Loader2, Upload, CheckSquare, Square, X, SlidersHorizontal, ArrowLeftRight, ArrowRight, Eye, EyeOff, FileText } from "lucide-react";
+import { Search, Pencil, Trash2, Plus, CalendarIcon, Loader2, Upload, CheckSquare, Square, X, SlidersHorizontal, ArrowLeftRight, ArrowRight, Eye, EyeOff, FileText, Info } from "lucide-react";
 import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react";
 import { DateTime } from "luxon";
 
@@ -243,28 +243,30 @@ export function TransactionsPage() {
   const [loadingMore, setLoadingMore] = useState(false);
   const offsetRef = useRef(0);
 
+  const [error, setError] = useState<string | null>(null);
+
   const fetchTransactionsPage = useCallback(async (reset = false) => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
 
     try {
-
       if (reset) {
         offsetRef.current = 0;
         setHasMore(true);
+        setError(null);
       }
       const from = reset ? 0 : offsetRef.current;
       const to = from + PAGE_SIZE - 1;
       if (reset) setLoading(true); else setLoadingMore(true);
 
-      const { data, error } = await supabase
+      const { data, error: fetchError } = await supabase
         .from("transactions")
         .select("*")
-        .eq("user_id", session.user.id) // Ensure we filter by the logged-in user
+        .eq("user_id", session.user.id)
         .order("created_at", { ascending: false })
         .range(from, to);
 
-      if (error) throw error;
+      if (fetchError) throw fetchError;
 
       if (data) {
         const brandMap = cardNameToBrandRef.current;
@@ -276,9 +278,10 @@ export function TransactionsPage() {
         offsetRef.current = from + data.length;
         if (data.length < PAGE_SIZE) setHasMore(false);
       }
-    } catch (error: any) {
-      console.error("Error fetching transactions:", error);
-      toast.error("Erro ao carregar transações: " + (error.message || "Erro desconhecido"));
+    } catch (err: any) {
+      console.error("Error fetching transactions:", err);
+      setError(err.message || "Ocorreu um problema ao carregar as transações.");
+      toast.error("Erro ao carregar transações");
     } finally {
       setLoading(false);
       setLoadingMore(false);
@@ -706,16 +709,59 @@ export function TransactionsPage() {
     fetchTransactions();
   };
 
-  if (loading) {
+  if (loading && transactions.length === 0) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+      <div className="animate-page-enter p-4 flex flex-col gap-8">
+        <div className="flex items-center justify-between">
+          <div className="space-y-3">
+            <div className="h-7 w-32 bg-muted/50 animate-pulse rounded-xl" />
+            <div className="h-2.5 w-56 bg-muted/30 animate-pulse rounded-full" />
+          </div>
+          <div className="h-10 w-10 rounded-full bg-muted/30 animate-pulse" />
+        </div>
+        
+        <div className="flex gap-2.5 overflow-x-auto pb-1 no-scrollbar">
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} className="h-9 w-24 rounded-full bg-card border border-border/10 animate-pulse shrink-0" />
+          ))}
+        </div>
+
+        <div className="space-y-4">
+          {[1, 2, 3, 4, 5, 6].map(i => (
+            <div key={i} className="h-20 w-full rounded-2xl bg-card border border-border/10 flex items-center px-4 gap-4">
+               <div className="h-11 w-11 rounded-xl bg-muted/40 animate-pulse shrink-0" />
+               <div className="flex-1 space-y-2.5">
+                 <div className="flex justify-between items-center">
+                   <div className="h-4 w-1/2 bg-muted/40 animate-pulse rounded-lg" />
+                   <div className="h-4 w-16 bg-muted/50 animate-pulse rounded-lg" />
+                 </div>
+                 <div className="h-2.5 w-1/3 bg-muted/30 animate-pulse rounded-lg" />
+               </div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="animate-page-enter flex flex-col gap-4 px-4 pt-6 pb-24">
+    <div className="animate-page-enter flex flex-col gap-4 px-4 pt-6 pb-24 min-h-[80vh]">
+      {error && transactions.length === 0 && (
+        <div className="flex flex-col items-center justify-center py-12 px-4 text-center bg-destructive/5 rounded-3xl border border-destructive/10 animate-in fade-in zoom-in duration-500 mt-4">
+          <div className="h-16 w-16 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
+            <Info className="h-8 w-8 text-destructive" />
+          </div>
+          <h3 className="text-lg font-bold text-foreground mb-2">Erro ao carregar</h3>
+          <p className="text-sm text-muted-foreground max-w-[260px] mb-6">{error}</p>
+          <Button 
+            onClick={() => fetchTransactions()} 
+            variant="outline" 
+            className="rounded-xl border-destructive/20 hover:bg-destructive/5"
+          >
+            Tentar carregar de novo
+          </Button>
+        </div>
+      )}
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-foreground">Transações</h1>
         <div className="flex items-center gap-2">
@@ -965,8 +1011,8 @@ export function TransactionsPage() {
               }
               setShowAddDialog(true);
             }} 
-            title="Tudo limpo por aqui"
-            description="Nenhuma transação corresponde aos filtros selecionados ou ainda não há registros."
+            title="Sua lista está limpa"
+            description="Nenhuma movimentação foi encontrada para os filtros aplicados ou sua carteira ainda está em branco."
           />
         )}
         {hasMore && (

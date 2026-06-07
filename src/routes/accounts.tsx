@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { SmartLink as Link } from "@/components/SmartLink";
-import { ArrowLeft, Plus, Landmark, Trash2, X, Check, Loader2, Upload, FileText, MoreVertical, GripVertical, Pencil, Eye, EyeOff, CheckSquare, Square, Filter, FilterX } from "lucide-react";
+import { ArrowLeft, Plus, Landmark, Trash2, X, Check, Loader2, Upload, FileText, MoreVertical, GripVertical, Pencil, Eye, EyeOff, CheckSquare, Square, Filter, FilterX, Info } from "lucide-react";
 import { useUserPreferences } from "@/hooks/use-user-preferences";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
@@ -10,6 +10,7 @@ import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react"
 const CsvImportDialog = lazy(() => import("@/components/CsvImportDialog").then(m => ({ default: m.CsvImportDialog })));
 const PdfStatementImportDialog = lazy(() => import("@/components/PdfStatementImportDialog").then(m => ({ default: m.PdfStatementImportDialog })));
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -349,14 +350,17 @@ function AccountsPage() {
     });
   };
 
+  const [error, setError] = useState<string | null>(null);
+
   const fetchAccounts = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
 
     try {
-
-      const { data, error } = await supabase.from("bank_accounts").select("*").eq("user_id", session.user.id).order("sort_order", { ascending: true }).order("created_at", { ascending: true });
-      if (error) throw error;
+      setLoading(true);
+      setError(null);
+      const { data, error: fetchError } = await supabase.from("bank_accounts").select("*").eq("user_id", session.user.id).order("sort_order", { ascending: true }).order("created_at", { ascending: true });
+      if (fetchError) throw fetchError;
       if (data) setAccounts(data);
 
       const { data: txData, error: txError } = await supabase.from("transactions").select("bank_account_id, amount, type").eq("user_id", session.user.id).not("bank_account_id", "is", null);
@@ -376,9 +380,10 @@ function AccountsPage() {
         setIncomeByAccount(incMap);
         setExpenseByAccount(expMap);
       }
-    } catch (error: any) {
-      console.error("Error fetching accounts:", error);
-      toast.error("Erro ao carregar contas: " + (error.message || "Erro desconhecido"));
+    } catch (err: any) {
+      console.error("Error fetching accounts:", err);
+      setError(err.message || "Não foi possível carregar suas contas.");
+      toast.error("Erro ao carregar contas");
     } finally {
       setLoading(false);
     }
@@ -617,10 +622,32 @@ function AccountsPage() {
     }
   };
 
-  if (loading) {
+  if (loading && accounts.length === 0) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+      <div className="animate-page-enter flex flex-col gap-8 px-2 sm:px-4 pt-6 pb-28">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-full bg-muted/40 animate-pulse" />
+            <div className="space-y-2.5">
+              <div className="h-2.5 w-12 bg-muted/40 animate-pulse rounded-full" />
+              <div className="h-7 w-36 bg-muted/50 animate-pulse rounded-xl" />
+            </div>
+          </div>
+          <div className="h-8 w-8 rounded-lg bg-muted/30 animate-pulse self-end" />
+        </div>
+        <div className="space-y-5">
+          <div className="h-3 w-20 bg-muted/30 animate-pulse rounded-full ml-1" />
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="h-16 w-full rounded-2xl bg-card border border-border/10 flex items-center px-4 gap-4">
+               <div className="h-10 w-10 rounded-xl bg-muted/40 animate-pulse shrink-0" />
+               <div className="flex-1 space-y-2">
+                 <div className="h-3.5 w-1/2 bg-muted/40 animate-pulse rounded-lg" />
+                 <div className="h-2.5 w-1/4 bg-muted/30 animate-pulse rounded-lg" />
+               </div>
+               <div className="h-4 w-20 bg-muted/50 animate-pulse rounded-lg shrink-0" />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -628,7 +655,23 @@ function AccountsPage() {
   const totalCurrent = accounts.reduce((sum, a) => sum + a.balance + (incomeByAccount[a.id] || 0) - (expenseByAccount[a.id] || 0), 0);
 
   return (
-    <div className="animate-page-enter flex flex-col gap-8 px-2 sm:px-4 pt-6 pb-28">
+    <div className="animate-page-enter flex flex-col gap-8 px-2 sm:px-4 pt-6 pb-28 min-h-[80vh]">
+      {error && accounts.length === 0 && (
+        <div className="flex flex-col items-center justify-center py-12 px-4 text-center bg-destructive/5 rounded-3xl border border-destructive/10 animate-in fade-in zoom-in duration-500">
+          <div className="h-16 w-16 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
+            <Info className="h-8 w-8 text-destructive" />
+          </div>
+          <h3 className="text-lg font-bold text-foreground mb-2">Ops! Algo deu errado</h3>
+          <p className="text-sm text-muted-foreground max-w-[260px] mb-6">{error}</p>
+          <Button 
+            onClick={() => fetchAccounts()} 
+            variant="outline" 
+            className="rounded-xl border-destructive/20 hover:bg-destructive/5"
+          >
+            Tentar novamente
+          </Button>
+        </div>
+      )}
       {/* Header and Total Balance */}
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3 min-w-0">
@@ -653,11 +696,16 @@ function AccountsPage() {
       {/* Empty state */}
       {accounts.length === 0 && (
         <div className="flex flex-col items-center justify-center py-20 text-center">
-          <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
-            <Landmark className="h-7 w-7 text-muted-foreground" />
+          <div className="relative mb-6">
+            <div className="h-24 w-24 rounded-full bg-primary/5 flex items-center justify-center ring-1 ring-primary/10">
+              <Landmark className="h-10 w-10 text-primary/40" />
+            </div>
+            <div className="absolute -right-1 -bottom-1 h-8 w-8 rounded-full bg-background flex items-center justify-center shadow-sm border border-border">
+              <Plus className="h-4 w-4 text-primary" />
+            </div>
           </div>
-          <p className="text-base font-medium text-foreground mb-1.5 tracking-tight">Nenhuma conta ainda</p>
-          <p className="text-sm text-muted-foreground max-w-[240px]">Adicione sua primeira conta bancária para acompanhar saldos e movimentações</p>
+          <p className="text-xl font-bold text-foreground mb-3 tracking-tight">Sua carteira está vazia</p>
+          <p className="text-sm text-muted-foreground max-w-[280px]">Conecte suas contas bancárias para gerenciar seus saldos e fluxo de caixa de forma centralizada.</p>
         </div>
       )}
 
