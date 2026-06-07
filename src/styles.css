@@ -146,11 +146,11 @@
 
 @layer components {
   .app-container {
-    @apply mx-auto w-full max-w-lg px-6 sm:px-8 py-8 space-y-8 animate-page-enter;
+    @apply mx-auto w-full max-w-lg px-4 sm:px-6 py-4 space-y-4 animate-page-enter;
   }
 
   .grid-standard {
-    @apply grid grid-cols-1 gap-6 sm:gap-8;
+    @apply grid grid-cols-1 gap-4 sm:gap-6;
   }
 
   .glass-card {
