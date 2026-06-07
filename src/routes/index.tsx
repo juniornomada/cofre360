@@ -880,134 +880,108 @@ export function Dashboard() {
   return (
     <div className="grid-standard">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex flex-col items-center">
-          <div
-            className="flex flex-col leading-none select-none rounded-xl border px-3 py-1.5 mb-1"
-            style={{
-              borderColor: "hsl(142 95% 55%)",
-              boxShadow:
-                "0 0 10px hsl(142 95% 55% / 0.9), 0 0 20px hsl(142 95% 55% / 0.6), inset 0 0 6px hsl(142 95% 55% / 0.35)",
-            }}
-          >
-            <span className="text-xl font-extrabold tracking-tight text-primary dark:text-[hsl(142_95%_62%)] dark:[text-shadow:0_0_10px_hsl(142_95%_55%/0.85),0_0_20px_hsl(142_95%_55%/0.55)]">
-              cofre <span className="text-primary/80 dark:text-[hsl(142_95%_70%)]">360</span>
-            </span>
-            <span className="mt-0.5 text-[10px] font-medium tracking-wide text-primary/70 dark:text-[hsl(142_90%_68%)] dark:[text-shadow:0_0_6px_hsl(142_95%_55%/0.65)]">
-              Seu dinheiro. Seu controle.
-            </span>
-          </div>
-          {userEmail && (
-            <span className="text-[10px] text-muted-foreground px-1 truncate max-w-[150px] text-center w-full">
-              {userEmail}
-            </span>
-          )}
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex flex-col">
+          <h1 className="text-2xl font-black tracking-tighter premium-gradient-text uppercase leading-none">
+            Cofre 360
+          </h1>
+          <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mt-1">
+            {greeting}, {userEmail?.split('@')[0]}
+          </p>
         </div>
 
         <div className="flex items-center gap-2">
-          <button
-            onClick={handleLogout}
-            className="interactive-button flex h-10 w-10 items-center justify-center rounded-full bg-card border"
-            style={{
-              borderColor: "hsl(142 95% 55%)",
-              boxShadow:
-                "0 0 10px hsl(142 95% 55% / 0.9), 0 0 20px hsl(142 95% 55% / 0.6), inset 0 0 6px hsl(142 95% 55% / 0.35)",
-            }}
-            title="Sair"
-          >
-            <LogOut className="h-5 w-5 text-muted-foreground" />
-          </button>
-          <Link
-
-            to="/reminders"
-            className="interactive-button relative flex h-10 w-10 items-center justify-center rounded-full bg-card border"
-            style={{
-              borderColor: "hsl(142 95% 55%)",
-              boxShadow:
-                "0 0 10px hsl(142 95% 55% / 0.9), 0 0 20px hsl(142 95% 55% / 0.6), inset 0 0 6px hsl(142 95% 55% / 0.35)",
-            }}
-          >
-            <Bell className="h-5 w-5 text-muted-foreground" />
-            {pendingReminders.length > 0 && (
-              <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[9px] font-bold text-destructive-foreground">
-                {pendingReminders.length}
-              </span>
-            )}
-          </Link>
-          <div
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-card border"
-            style={{
-              borderColor: "hsl(142 95% 55%)",
-              boxShadow:
-                "0 0 10px hsl(142 95% 55% / 0.9), 0 0 20px hsl(142 95% 55% / 0.6), inset 0 0 6px hsl(142 95% 55% / 0.35)",
-            }}
-          >
-            <ThemeToggle />
+          <div className="flex -space-x-1">
+            <Link
+              to="/reminders"
+              className="interactive-button relative flex h-9 w-9 items-center justify-center rounded-2xl bg-card/40 border border-white/[0.05] shadow-sm hover:bg-card/60 transition-all"
+            >
+              <Bell className="h-4 w-4 text-muted-foreground" />
+              {pendingReminders.length > 0 && (
+                <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[8px] font-black text-primary-foreground animate-pulse shadow-[0_0_8px_oklch(from_var(--color-primary)_l_c_h)]">
+                  {pendingReminders.length}
+                </span>
+              )}
+            </Link>
           </div>
-          <div
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-card border"
-            style={{
-              borderColor: "hsl(142 95% 55%)",
-              boxShadow:
-                "0 0 10px hsl(142 95% 55% / 0.9), 0 0 20px hsl(142 95% 55% / 0.6), inset 0 0 6px hsl(142 95% 55% / 0.35)",
-            }}
-          >
-            <AISettingsDialog />
-          </div>
+          
           <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
             <PopoverTrigger asChild>
               <button
                 aria-label="Adicionar transação"
-                className="interactive-button flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground border"
-                style={{
-                  borderColor: "hsl(142 95% 55%)",
-                  boxShadow:
-                    "0 0 10px hsl(142 95% 55% / 0.9), 0 0 20px hsl(142 95% 55% / 0.6), inset 0 0 6px hsl(142 95% 55% / 0.35)",
-                }}
+                className="interactive-button flex h-10 w-10 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-[0_0_20px_oklch(from_var(--color-primary)_l_c_h_/_0.3)] transition-all"
               >
-                <Plus className="h-5 w-5" />
+                <Plus className="h-5 w-5 stroke-[2.5]" />
               </button>
             </PopoverTrigger>
-            <PopoverContent align="end" className="w-44 p-2">
-              <div className="flex flex-col gap-1">
+            <PopoverContent align="end" className="w-48 p-2 rounded-3xl bg-card/80 backdrop-blur-2xl border-white/[0.05]">
+              <div className="flex flex-col gap-1.5">
                 <button
                   type="button"
                   onClick={() => openQuickAdd("expense")}
-                  className="flex items-center gap-2 rounded-md px-2 py-2 text-sm hover:bg-accent text-left"
+                  className="flex items-center gap-3 rounded-2xl px-3 py-2.5 text-xs font-bold hover:bg-destructive/10 text-foreground transition-all group"
                 >
-                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-destructive/15 text-destructive">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-destructive/15 text-destructive group-hover:scale-110 transition-transform">
                     <Minus className="h-4 w-4" />
                   </span>
-                  Despesa
+                  Lançar Despesa
                 </button>
                 <button
                   type="button"
                   onClick={() => openQuickAdd("income")}
-                  className="flex items-center gap-2 rounded-md px-2 py-2 text-sm hover:bg-accent text-left"
+                  className="flex items-center gap-3 rounded-2xl px-3 py-2.5 text-xs font-bold hover:bg-primary/10 text-foreground transition-all group"
                 >
-                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/15 text-primary">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/15 text-primary group-hover:scale-110 transition-transform">
                     <Plus className="h-4 w-4" />
                   </span>
-                  Receita
+                  Lançar Receita
                 </button>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      type="button"
-                      onClick={() => openQuickAdd("transfer")}
-                      className="flex items-center gap-2 rounded-md px-2 py-2 text-sm hover:bg-accent text-left w-full group"
-                    >
-                      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-500/15 text-blue-500 group-hover:bg-blue-500/25 transition-colors">
-                        <ArrowLeftRight className="h-4 w-4" />
-                      </span>
-                      Transf
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="top" align="center" sideOffset={10}>
-                    Transferência
-                  </TooltipContent>
-                </Tooltip>
+                <button
+                  type="button"
+                  onClick={() => openQuickAdd("transfer")}
+                  className="flex items-center gap-3 rounded-2xl px-3 py-2.5 text-xs font-bold hover:bg-blue-500/10 text-foreground transition-all group"
+                >
+                  <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-500/15 text-blue-500 group-hover:scale-110 transition-transform">
+                    <ArrowLeftRight className="h-4 w-4" />
+                  </span>
+                  Transferência
+                </button>
               </div>
+            </PopoverContent>
+          </Popover>
+          
+          <Popover>
+            <PopoverTrigger asChild>
+              <button className="interactive-button flex h-9 w-9 items-center justify-center rounded-2xl bg-card/40 border border-white/[0.05] shadow-sm hover:bg-card/60 transition-all">
+                <div className="h-6 w-6 rounded-full bg-gradient-to-br from-primary/20 to-primary/40 flex items-center justify-center text-[10px] font-black text-primary">
+                  {userEmail?.[0].toUpperCase()}
+                </div>
+              </button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-56 p-2 rounded-3xl bg-card/80 backdrop-blur-2xl border-white/[0.05]">
+               <div className="px-3 py-2 mb-2 border-b border-white/[0.05]">
+                 <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Sua Conta</p>
+                 <p className="text-xs font-semibold truncate mt-1">{userEmail}</p>
+               </div>
+               <div className="flex flex-col gap-1">
+                 <div className="flex items-center justify-between px-3 py-2 text-xs font-bold">
+                   <span>Tema do App</span>
+                   <ThemeToggle />
+                 </div>
+                 <button 
+                   onClick={() => {/* open settings */}}
+                   className="flex items-center gap-3 rounded-2xl px-3 py-2 text-xs font-bold hover:bg-white/5 text-foreground transition-all"
+                 >
+                   <AISettingsDialog />
+                 </button>
+                 <button
+                   onClick={handleLogout}
+                   className="flex items-center gap-3 rounded-2xl px-3 py-2 text-xs font-bold hover:bg-destructive/10 text-destructive transition-all mt-2"
+                 >
+                   <LogOut className="h-4 w-4" />
+                   Sair do Sistema
+                 </button>
+               </div>
             </PopoverContent>
           </Popover>
         </div>
