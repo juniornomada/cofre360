@@ -745,7 +745,7 @@ export function TransactionsPage() {
   }
 
   return (
-    <div className="animate-page-enter flex flex-col gap-4 px-4 pt-6 pb-24 min-h-[80vh]">
+    <div className="app-container">
       {error && transactions.length === 0 && (
         <div className="flex flex-col items-center justify-center py-12 px-4 text-center bg-destructive/5 rounded-3xl border border-destructive/10 animate-in fade-in zoom-in duration-500 mt-4">
           <div className="h-16 w-16 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
