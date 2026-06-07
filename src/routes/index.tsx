@@ -987,10 +987,10 @@ export function Dashboard() {
       </div>
 
       {/* Balance Card — premium look */}
-      <div className="glass-card p-8 relative overflow-hidden group border-white/[0.03]">
+      <div className="glass-card p-5 relative overflow-hidden group border-white/[0.03]">
         <div className="absolute top-0 right-0 w-48 h-48 bg-primary/10 blur-[100px] rounded-full -mr-24 -mt-24 transition-all duration-1000 group-hover:bg-primary/20" />
         
-        <div className="flex items-end justify-between gap-4 mb-8">
+        <div className="flex items-end justify-between gap-4 mb-4">
           <div className="flex flex-col">
             <h2 className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-3">
               Saldo
