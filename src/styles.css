@@ -145,15 +145,19 @@
 
 @layer components {
   .glass-card {
-    @apply bg-card/40 backdrop-blur-2xl border border-white/[0.08] shadow-[0_8px_40px_-12px_rgba(0,0,0,0.3)];
+    @apply bg-card/40 backdrop-blur-2xl border border-white/[0.08] shadow-[0_8px_40px_-12px_rgba(0,0,0,0.3)] rounded-2xl transition-all duration-300 hover:bg-card/50;
   }
   
   .premium-gradient-text {
-    @apply bg-clip-text text-transparent bg-gradient-to-br from-primary via-primary/90 to-primary/40;
+    @apply bg-clip-text text-transparent bg-gradient-to-br from-primary via-primary/90 to-primary/40 font-bold tracking-tight;
   }
 
   .nav-item-glow {
-    @apply relative after:absolute after:-bottom-1 after:left-1/2 after:-translate-x-1/2 after:h-1 after:w-1 after:rounded-full after:bg-primary after:shadow-[0_0_12px_rgba(var(--primary),0.8)];
+    @apply relative after:absolute after:-bottom-1 after:left-1/2 after:-translate-x-1/2 after:h-1.5 after:w-1.5 after:rounded-full after:bg-primary after:shadow-[0_0_12px_rgba(var(--primary),1)];
+  }
+
+  .premium-input-container {
+    @apply relative flex flex-col gap-1.5;
   }
 }
 
