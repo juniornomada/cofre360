@@ -327,17 +327,20 @@ describe('CardsPage - /api/cards error handling integration', () => {
       .mockResolvedValueOnce(okResult); // retry 2
 
     renderPage();
+    // The initial call is triggered by the mount effect.
+    // flush() ensures it runs and schedules the retry.
     await flush();
 
-    // Initial call failed, first retry scheduled
     expect(mockValidateAgreement).toHaveBeenCalledTimes(1);
 
     // Wait for first retry (2s)
     await act(async () => {
       vi.advanceTimersByTime(2000);
+      // We don't need another flush() immediately here, act handles the timer
     });
-    // flush() handles the promise from retry 1
+    // Now flush to allow the retry call (which is async) to finish
     await flush();
+    
     expect(mockValidateAgreement).toHaveBeenCalledTimes(2);
 
     // Wait for second retry (4s)
@@ -345,6 +348,7 @@ describe('CardsPage - /api/cards error handling integration', () => {
       vi.advanceTimersByTime(4000);
     });
     await flush();
+    
     expect(mockValidateAgreement).toHaveBeenCalledTimes(3);
   });
 
