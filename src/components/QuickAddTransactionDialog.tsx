@@ -280,13 +280,13 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
             icon: "🔄", name: newTx.name.trim() || `Transferência → ${toName}`, category: "Transferências > Outros",
             date: newTx.date, amount: newTx.amount, type: "expense",
             card: null, bank_account_id: transferFromId, installment_group_id: groupId,
-            is_visible: true
+            is_visible: true, user_id: (await supabase.auth.getUser()).data.user?.id
           },
           {
             icon: "🔄", name: newTx.name.trim() || `Transferência ← ${fromName}`, category: "Transferências > Outros",
             date: newTx.date, amount: newTx.amount, type: "income",
             card: null, bank_account_id: transferToId, installment_group_id: groupId,
-            is_visible: true
+            is_visible: true, user_id: (await supabase.auth.getUser()).data.user?.id
           },
         ]).select();
 
@@ -356,7 +356,8 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
           installment_group_id: groupId,
           installment_mode: installmentMode,
           installment_source_amount: newTx.amount,
-          is_visible: true
+          is_visible: true,
+          user_id: (await supabase.auth.getUser()).data.user?.id
         });
        }
        const { error } = await supabase.from("transactions").insert(rows);
@@ -366,7 +367,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
          icon: newTx.icon, name: newTx.name, category: newTx.category,
          date: newTx.date, amount: newTx.amount, type: newTx.type,
          card: cardValue, bank_account_id: newTx.bank_account_id || null,
-         is_visible: true
+         is_visible: true, user_id: (await supabase.auth.getUser()).data.user?.id
        });
        if (error) throw error;
      }
