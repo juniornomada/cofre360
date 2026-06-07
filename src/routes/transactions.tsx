@@ -1039,9 +1039,9 @@ export function TransactionsPage() {
 
       </div>
 
-      {/* Pie Charts */}
+      {/* Bar Charts */}
       <div className="mt-8 mb-8">
-        <CategoryPieCharts transactions={filtered} formatCurrency={formatCurrency} />
+        <CategoryBarCharts transactions={filtered} formatCurrency={formatCurrency} />
       </div>
 
       {/* Edit Dialog */}
