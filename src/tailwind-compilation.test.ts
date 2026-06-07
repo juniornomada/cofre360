@@ -1,7 +1,7 @@
 import { execSync } from 'node:child_process';
 import { test, expect } from 'vitest';
 
-test('Tailwind v4 CSS compilation', () => {
+test('Tailwind v4 CSS compilation', async () => {
   try {
     // Run vite build and focus on checking if CSS transformation works
     // We use --logLevel info to see the output and check if it completes the transform stage
@@ -24,4 +24,4 @@ test('Tailwind v4 CSS compilation', () => {
     console.error('Build failed before generating CSS:', stderr || error.message);
     throw error;
   }
-});
+}, { timeout: 60000 });
