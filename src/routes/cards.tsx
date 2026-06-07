@@ -1214,7 +1214,6 @@ export function CardsPage() {
                 <div className="space-y-1.5">
                   <Label htmlFor="limit" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Limite (R$)</Label>
                   <CalculatorAmountInput
-                    id="limit"
                     value={parseFloat(formLimit) || 0}
                     onChange={(v) => setFormLimit(v.toString())}
                     className="rounded-xl border-border/50 h-11"
