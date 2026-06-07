@@ -72,6 +72,8 @@ const filterCategories = ["Todas", ...mainCategories];
 const iconOptions = ["🛵", "🏠", "💰", "🎬", "⛽", "🛒", "💊", "🎮", "💸", "🍕", "🚗", "👕", "📱", "🎵", "✈️", "🏥", "📚", "🐾"];
 
 export function TransactionsPage() {
+  return (
+    <div className="grid-standard">
   const searchParams = Route.useSearch();
   const { balanceVisible, updateBalanceVisible } = useUserPreferences();
 

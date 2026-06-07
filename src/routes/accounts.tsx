@@ -285,6 +285,8 @@ function SortableAccountItem({
  });
 
 function AccountsPage() {
+  return (
+    <div className="grid-standard">
   const { balanceVisible, updateBalanceVisible } = useUserPreferences();
   const [accounts, setAccounts] = useState<BankAccount[]>([]);
   const [incomeByAccount, setIncomeByAccount] = useState<Record<string, number>>({});
