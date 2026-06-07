@@ -256,7 +256,7 @@ export function CardsPage() {
       }
     } catch (error: any) {
       console.error("Error fetching data:", error);
-      showAlert("Erro ao carregar dados: " + (error.message || "Erro desconhecido", "error"));
+      showAlert("Erro ao carregar dados: " + (error.message || "Erro desconhecido"), "error");
     } finally {
       setLoading(false);
     }
@@ -315,7 +315,7 @@ export function CardsPage() {
       showAlert("Cartão adicionado com sucesso", "success");
     } catch (error: any) {
       console.error("Error adding card:", error);
-      showAlert("Erro ao adicionar cartão: " + (error.message || "Erro desconhecido", "error"));
+      showAlert("Erro ao adicionar cartão: " + (error.message || "Erro desconhecido"), "error");
     }
   };
 
@@ -344,7 +344,7 @@ export function CardsPage() {
       fetchAll();
     } catch (error: any) {
       console.error("Error updating card:", error);
-      showAlert("Erro ao atualizar cartão: " + (error.message || "Erro desconhecido", "error"));
+      showAlert("Erro ao atualizar cartão: " + (error.message || "Erro desconhecido"), "error");
     }
   };
 
@@ -359,7 +359,7 @@ export function CardsPage() {
       showAlert("Cartão excluído", "success");
     } catch (error: any) {
       console.error("Error deleting card:", error);
-      showAlert("Erro ao excluir cartão: " + (error.message || "Erro desconhecido", "error"));
+      showAlert("Erro ao excluir cartão: " + (error.message || "Erro desconhecido"), "error");
     }
   };
 

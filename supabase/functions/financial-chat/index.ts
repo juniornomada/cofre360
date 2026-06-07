@@ -285,13 +285,13 @@ ${catLines || "(sem despesas no período)"}
 ${txLines || "(nenhuma transação encontrada)"}`;
 }
 
-async function buildFinancialContext(supabase: any, periodHint?: string): Promise<string> {
+async function buildFinancialContext(supabase: any, userId: string, periodHint?: string): Promise<string> {
   const [txRes, accRes, cardsRes, goalsRes, budgetsRes] = await Promise.all([
-    supabase.from("transactions").select("*"),
-    supabase.from("bank_accounts").select("*"),
-    supabase.from("cards").select("*"),
-    supabase.from("goals").select("*"),
-    supabase.from("budget_categories").select("*"),
+    supabase.from("transactions").select("*").eq("user_id", userId),
+    supabase.from("bank_accounts").select("*").eq("user_id", userId),
+    supabase.from("cards").select("*").eq("user_id", userId),
+    supabase.from("goals").select("*").eq("user_id", userId),
+    supabase.from("budget_categories").select("*").eq("user_id", userId),
   ]);
 
   const transactions = (txRes.data || []) as any[];
@@ -453,10 +453,28 @@ serve(async (req) => {
   try {
     const url = new URL(req.url);
     const mode = url.searchParams.get("mode");
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "No authorization header" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const { messages } = (await req.json()) as { messages: ChatMessage[] };
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
-    const SUPABASE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? Deno.env.get("SUPABASE_ANON_KEY");
+    const SUPABASE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+
+    const supabase = createClient(SUPABASE_URL!, SUPABASE_KEY!);
+    const { data: { user }, error: authError } = await supabase.auth.getUser(authHeader.replace("Bearer ", ""));
+
+    if (authError || !user) {
+      return new Response(JSON.stringify({ error: "Invalid token" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     if (!LOVABLE_API_KEY) {
       return new Response(JSON.stringify({ error: "LOVABLE_API_KEY não configurada" }), {
@@ -472,9 +490,8 @@ serve(async (req) => {
       });
     }
 
-    const supabase = createClient(SUPABASE_URL!, SUPABASE_KEY!);
     const lastUser = [...messages].reverse().find((m) => m.role === "user")?.content ?? "";
-    const context = await buildFinancialContext(supabase, lastUser);
+    const context = await buildFinancialContext(supabase, user.id, lastUser);
 
     const fullSystem = `${SYSTEM_PROMPT}
 
