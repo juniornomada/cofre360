@@ -18,7 +18,6 @@ import { BankLogo, bankPresets } from "@/components/BankLogo";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { useServerFn } from "@tanstack/react-start";
 import { validateAgreement } from "@/server-fns/validate-agreement";
 import { InvoiceInconsistencyAlert } from "@/components/InvoiceInconsistencyAlert";
 import {
@@ -138,7 +137,7 @@ function SortableCardWrapper({ id, children, animationDelay }: { id: string; chi
  });
 export function CardsPage() {
   const { showAlert } = useAlert();
-  const validateAgreementFn = useServerFn(validateAgreement);
+  
   const [cards, setCards] = useState<CardData[]>([]);
   const [cardTotals, setCardTotals] = useState<Record<string, number>>({});
   const [cardPayments, setCardPayments] = useState<Record<string, number>>({});
@@ -192,113 +191,6 @@ export function CardsPage() {
   const [pdfImportOpen, setPdfImportOpen] = useState(false);
   const [pdfImportCard, setPdfImportCard] = useState<CardData | null>(null);
 
-  // Validation state
-  const [validationData, setValidationData] = useState<any>({
-    status: 'ok',
-    summary: {
-      totalCardsChecked: 0,
-      totalInvoicesChecked: 0,
-      discrepanciesFound: 0,
-      discrepancyDetails: []
-    },
-    logs: []
-  });
-  const [isValidating, setIsValidating] = useState(false);
-  const [activeTab, setActiveTab] = useState("list");
-
-  const lastValidationRef = useRef<{ timestamp: number; reason: string }>({ timestamp: 0, reason: "initial" });
-  
-  const runValidation = async (silent = true, reason = "manual", retryCount = 0) => {
-    const now = DateTime.now().setZone('America/Sao_Paulo').toMillis();
-    const timeSinceLast = now - lastValidationRef.current.timestamp;
-    
-    // Dynamic debounce logic:
-    // - Always allow manual triggers (silent = false)
-    // - If it's the same reason (e.g. repeated 'focus' or 'TOKEN_REFRESHED'), wait at least 5 seconds
-    // - If it's a different reason, wait at least 2 seconds
-    const minWait = reason === lastValidationRef.current.reason ? 5000 : 2000;
-
-    if (silent && timeSinceLast < minWait && retryCount === 0) {
-      console.log(`[cards] Validation skipped. Reason: ${reason}, last was: ${lastValidationRef.current.reason}. Elapsed: ${timeSinceLast}ms, required: ${minWait}ms`);
-      return;
-    }
-
-    if (retryCount === 0) {
-      lastValidationRef.current = { timestamp: now, reason };
-    }
-    
-    console.log(`[cards] Running validation. Reason: ${reason}${retryCount > 0 ? ` (retry ${retryCount})` : ""}`);
-
-    setIsValidating(true);
-    let shouldFinish = true;
-
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        if (!silent) showAlert("Sessão expirada. Faça login novamente para validar.", "error");
-        // Reset timestamp so it can retry immediately once session is restored
-        lastValidationRef.current = { timestamp: 0, reason: "session_reset" };
-        return;
-      }
-
-      const result = await validateAgreementFn();
-      // Defensive: server fn may return unexpected payloads on partial outages.
-      // Require the minimal shape before committing to state to avoid render crashes.
-      const isValidShape =
-        result && typeof result === 'object' && 'summary' in result && (result as any).summary;
-      if (!isValidShape) {
-        throw new Error("Resposta inesperada do servidor de validação.");
-      }
-      setValidationData(result);
-      if (!silent) {
-        if (result.status === 'ok') {
-          showAlert("Validação concluída: Tudo certo!", "success");
-        } else if (result.status === 'partial') {
-          showAlert("Validação concluída: Algumas divergências encontradas.", "warning");
-        } else {
-          showAlert("Validação concluída: Erros críticos detectados!", "error");
-        }
-      }
-
-    } catch (error: any) {
-      console.error("Validation error:", error);
-      
-      // Only reset the timestamp for retryable errors (network/timeout or 401/403/5xx)
-      const status = error?.status || (error instanceof Response ? error.status : 500);
-      const isRetryable = !status || status === 401 || status === 403 || status >= 500;
-
-      if (isRetryable && retryCount < 2) {
-        lastValidationRef.current = { timestamp: 0, reason: "error_retry" };
-        shouldFinish = false;
-        const nextRetry = retryCount + 1;
-        const delay = Math.pow(2, nextRetry) * 1000; // 2s, 4s
-        console.log(`[cards] Retrying validation in ${delay}ms... (attempt ${nextRetry})`);
-        setTimeout(() => {
-          runValidation(silent, reason, nextRetry);
-        }, delay);
-      } else {
-        let message = error?.message || "Erro desconhecido";
-        if (error instanceof Response || (error && typeof error === 'object' && 'status' in error)) {
-          try {
-            const body = typeof error.json === 'function' ? await error.json() : error;
-            message = body.message || body.error || message;
-          } catch {
-            if (typeof error.text === 'function') {
-              message = await error.text().catch(() => "Falha de autorização");
-            }
-          }
-        }
-        if (message.includes("Unauthorized") || message.includes("authorization") || status === 401) {
-          message = "Sessão expirada. Faça login novamente para validar.";
-        }
-        if (!silent) showAlert("Erro ao validar: " + message, "error");
-      }
-    } finally {
-      if (shouldFinish) {
-        setIsValidating(false);
-      }
-    }
-  };
 
   // Drag-and-drop sensors — pressionar 1s (mouse e toque) inicia a ordenação
   const sensors = useSensors(
@@ -372,24 +264,14 @@ export function CardsPage() {
 
   useEffect(() => {
     fetchAll();
-    runValidation(true, "mount"); // Run validation on mount to check for inconsistencies
     
-    // Subscribe to auth changes to retry validation when the user signs in or refreshes session
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-        runValidation(true, event);
-      }
-    });
-
     // Re-fetch when the window regains focus to avoid stale data
     const onFocus = () => {
       fetchAll();
-      runValidation(true, "focus");
     };
     window.addEventListener("focus", onFocus);
     return () => {
       window.removeEventListener("focus", onFocus);
-      subscription.unsubscribe();
     };
   }, [fetchAll]);
 
