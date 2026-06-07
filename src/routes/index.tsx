@@ -141,27 +141,32 @@ function SortableAccountItem({ acc, balanceVisible, fmt }: { acc: any; balanceVi
         isDragging && "ring-2 ring-primary/50 ring-offset-2 ring-offset-background rounded-2xl shadow-2xl scale-[1.01] z-50",
       )}
     >
-      <div className="flex flex-1 items-center gap-2 overflow-hidden">
-        <Link
-          to="/accounts"
-          search={{ action: undefined } as any}
-          className="flex-1 flex items-center gap-3 rounded-2xl bg-card/30 backdrop-blur-md border border-border/10 px-3 py-2 hover:bg-card/50 transition-all overflow-hidden shadow-sm"
-        >
-        <BankLogo icon={acc.icon} color={acc.color} name={acc.name} size="sm" />
-        <p className="text-xs font-semibold text-foreground/90 flex-1 min-w-0 truncate">{acc.name}</p>
-        <p className={cn(
-          "text-xs font-bold tabular-nums tracking-tight",
-          acc.balance >= 0 ? "text-foreground" : "text-destructive"
-        )}>
-          {balanceVisible ? `R$ ${fmt(acc.balance)}` : "R$ ••••"}
-        </p>
-        </Link>
-      </div>
+      <Link
+        to="/accounts"
+        search={{ action: undefined } as any}
+        className="flex items-center gap-4 rounded-3xl bg-card/20 backdrop-blur-3xl border border-white/[0.03] px-4 py-3 hover:bg-card/40 transition-all duration-500 overflow-hidden shadow-sm hover:shadow-md hover:border-white/[0.08]"
+      >
+        <div className="shrink-0">
+          <BankLogo icon={acc.icon} color={acc.color} name={acc.name} size="md" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-xs font-bold text-foreground/90 truncate tracking-tight">{acc.name}</p>
+          <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-widest mt-0.5">Saldo Disponível</p>
+        </div>
+        <div className="text-right">
+          <p className={cn(
+            "text-sm font-extrabold tabular-nums tracking-tighter transition-all duration-500",
+            acc.balance >= 0 ? "text-foreground" : "text-destructive"
+          )}>
+            {balanceVisible ? `R$ ${fmt(acc.balance)}` : "R$ ••••"}
+          </p>
+        </div>
+      </Link>
       {isDragging && (
-        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-black/5 backdrop-blur-[0.5px] rounded-xl animate-fade-in">
-          <div className="flex items-center gap-1.5 rounded-full bg-white/95 px-2 py-1 text-[10px] font-bold text-gray-900 shadow-lg ring-1 ring-primary">
-            <GripVertical className="h-3 w-3" />
-            Mover
+        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-black/5 backdrop-blur-[1px] rounded-3xl animate-fade-in">
+          <div className="flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1.5 text-[10px] font-bold text-gray-900 shadow-xl ring-1 ring-primary/30">
+            <GripVertical className="h-3.5 w-3.5" />
+            Reposicionar
           </div>
         </div>
       )}
