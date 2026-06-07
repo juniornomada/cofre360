@@ -19,7 +19,7 @@ export function BottomNav() {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/80 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-md items-center justify-around px-1 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] overflow-x-auto no-scrollbar">
+      <div className="mx-auto flex max-w-md items-center justify-around px-1 py-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))] overflow-x-auto no-scrollbar sm:justify-center sm:gap-4 md:gap-8">
         {navItems.map((item) => {
           const isPending = isLoading && pendingLocation?.pathname === item.to;
           const isActive = (location.pathname === item.to && !isLoading) || isPending;
