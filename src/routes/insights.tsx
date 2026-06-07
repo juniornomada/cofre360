@@ -232,7 +232,7 @@ function AIInsightsDashboard() {
   }, [results]);
 
   return (
-    <div className="animate-page-enter flex flex-col gap-6 px-4 pt-6 pb-24 max-w-5xl mx-auto">
+    <div className="app-container max-w-5xl">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
