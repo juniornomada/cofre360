@@ -21,6 +21,7 @@ import { ptBR } from "date-fns/locale";
 import { cn, normalizeText } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { supabase } from "@/integrations/supabase/client";
@@ -711,31 +712,31 @@ export function TransactionsPage() {
 
   if (loading && transactions.length === 0) {
     return (
-      <div className="animate-page-enter p-4 flex flex-col gap-8">
+      <div className="app-container">
         <div className="flex items-center justify-between">
-          <div className="space-y-3">
-            <div className="h-7 w-32 bg-muted/50 animate-pulse rounded-xl" />
-            <div className="h-2.5 w-56 bg-muted/30 animate-pulse rounded-full" />
+          <div className="space-y-2">
+            <Skeleton className="h-6 w-32" />
+            <Skeleton className="h-3 w-56 opacity-50" />
           </div>
-          <div className="h-10 w-10 rounded-full bg-muted/30 animate-pulse" />
+          <Skeleton className="h-10 w-10 rounded-full" />
         </div>
         
         <div className="flex gap-2.5 overflow-x-auto pb-1 no-scrollbar">
           {[1, 2, 3, 4].map(i => (
-            <div key={i} className="h-9 w-24 rounded-full bg-card border border-border/10 animate-pulse shrink-0" />
+            <Skeleton key={i} className="h-9 w-24 rounded-full shrink-0" />
           ))}
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-4 pt-4">
           {[1, 2, 3, 4, 5, 6].map(i => (
-            <div key={i} className="h-20 w-full rounded-2xl bg-card border border-border/10 flex items-center px-4 gap-4">
-               <div className="h-11 w-11 rounded-xl bg-muted/40 animate-pulse shrink-0" />
-               <div className="flex-1 space-y-2.5">
+            <div key={i} className="glass-card flex items-center p-4 gap-4">
+               <Skeleton className="h-11 w-11 rounded-xl shrink-0" />
+               <div className="flex-1 space-y-2">
                  <div className="flex justify-between items-center">
-                   <div className="h-4 w-1/2 bg-muted/40 animate-pulse rounded-lg" />
-                   <div className="h-4 w-16 bg-muted/50 animate-pulse rounded-lg" />
+                   <Skeleton className="h-4 w-1/2" />
+                   <Skeleton className="h-4 w-16" />
                  </div>
-                 <div className="h-2.5 w-1/3 bg-muted/30 animate-pulse rounded-lg" />
+                 <Skeleton className="h-3 w-1/3 opacity-50" />
                </div>
             </div>
           ))}
