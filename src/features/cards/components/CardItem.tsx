@@ -43,7 +43,10 @@ export function CardItem({
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="p-1.5 rounded-full hover:bg-white/10 transition-colors">
+            <button 
+              className="p-1.5 rounded-full hover:bg-white/10 transition-colors focus-visible:ring-2 focus-visible:ring-white"
+              aria-label={`Opções do cartão ${card.name}`}
+            >
               <MoreVertical className="h-4 w-4" />
             </button>
           </DropdownMenuTrigger>

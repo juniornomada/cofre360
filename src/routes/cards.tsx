@@ -140,7 +140,10 @@ export function CardsPage() {
             <p className="text-xs text-muted-foreground">Gerencie seus limites e faturas</p>
           </div>
         </div>
-        <button className="interactive-button flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/20">
+        <button 
+          className="interactive-button flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/20"
+          aria-label="Adicionar novo cartão"
+        >
           <Plus className="h-5 w-5" />
         </button>
       </header>
