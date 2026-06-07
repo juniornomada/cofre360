@@ -33,7 +33,7 @@ export function CardItem({
       <div className="flex justify-between items-start mb-4">
         <div className="flex items-center gap-2">
           <div className="bg-white/20 p-1.5 rounded-lg backdrop-blur-md">
-            <CardBrand brand={card.brand} size="sm" className="text-white" />
+            <CardBrand brand={card.brand} size="sm" />
           </div>
           <div>
             <h3 className="font-bold text-sm truncate max-w-[120px]">{card.name}</h3>
