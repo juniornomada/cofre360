@@ -51,7 +51,17 @@ async function fetchAiWithFallback(payload: any, requestedModel: string): Promis
     });
   };
 
-  let response = await call(requestedModel);
+  let response;
+  try {
+    response = await call(requestedModel);
+  } catch (err: any) {
+    console.error(`Error calling AI model ${requestedModel}:`, err);
+    if (requestedModel !== FALLBACK_MODEL) {
+      console.warn(`Tentando fallback devido a erro de rede: ${FALLBACK_MODEL}`);
+      return await call(FALLBACK_MODEL);
+    }
+    throw err;
+  }
 
   // Se falhar com erro 400 e a mensagem contiver "model", ou se for 400 e o modelo for diferente do fallback
   if (!response.ok && response.status === 400 && requestedModel !== FALLBACK_MODEL) {
@@ -338,7 +348,13 @@ export const parseCardInvoicePdf = createServerFn({ method: "POST" })
     return { ...input, kind: input.kind ?? "card_invoice" as DocumentKind };
   })
   .handler(async ({ data }): Promise<ParsePdfResult> => {
-    const text = await validateAndExtractPdfText(data.fileBase64);
+    let text = "";
+    try {
+      text = await validateAndExtractPdfText(data.fileBase64);
+    } catch (err: any) {
+      console.error("PDF extraction error:", err);
+      throw err;
+    }
 
     if (!text || text.trim().length < 30) {
       throw new Error("Não foi possível extrair texto deste PDF. Se for uma imagem ou escaneado, tente usar um PDF original gerado pelo banco.");
@@ -358,7 +374,7 @@ export const parseCardInvoicePdf = createServerFn({ method: "POST" })
         return { transactions, charsExtracted: text.length, attempts: attempt + 1, rawPdfText: text };
       } catch (err: any) {
         lastError = err;
-        console.warn(`Tentativa ${attempt + 1} de extração falhou:`, err.message);
+        console.error(`Tentativa ${attempt + 1} de extração falhou:`, err);
         
         // Don't retry if it's a credit/auth error
         if (err.message?.includes("LOVABLE_API_KEY") || err.message?.includes("Créditos")) {
