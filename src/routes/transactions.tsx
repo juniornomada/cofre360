@@ -980,37 +980,43 @@ export function TransactionsPage() {
         </div>
       </div>
 
-       <div ref={listRef} tabIndex={-1} className="flex flex-col gap-2 focus:outline-none">
-         {sortedTransactions.map((tx, i) => (
-          <div
-            key={tx.id}
-            className={`group relative ${selectionMode && selectedIds.has(tx.id) ? "ring-1 ring-primary rounded-xl" : ""}`}
-            style={{ animationDelay: `${i * 40}ms` }}
-            onClick={selectionMode ? () => toggleSelect(tx.id) : undefined}
-          >
-            <div className="flex items-center gap-2 group/tx-row">
-              {selectionMode && (
-                <button className="shrink-0 ml-1" onClick={(e) => { e.stopPropagation(); toggleSelect(tx.id); }}>
-                  {selectedIds.has(tx.id) ? (
-                    <CheckSquare className="h-5 w-5 text-primary" />
-                  ) : (
-                    <Square className="h-5 w-5 text-muted-foreground" />
-                  )}
-                </button>
-              )}
-              <div className="flex-1 min-w-0">
-                <TransactionItem 
-                  {...tx} 
-                  card={tx.card ?? undefined} 
-                  cardBrand={tx.cardBrand ?? undefined} 
-                  amount={Number(tx.amount)} 
-                  amountVisible={balanceVisible}
-                  style={{ animationDelay: `${i * 40}ms` }} 
-                  onEdit={selectionMode ? undefined : () => handleEdit(tx)}
-                  onDelete={selectionMode ? undefined : () => { setDeleteTarget(tx); setDeleteScope("single"); setShowDeleteDialog(true); }}
-                  
-                />
-              </div>
+       <div ref={listRef} tabIndex={-1} className="flex flex-col gap-2.5 focus:outline-none">
+         {groupedTransactions.map((group) => (
+          <div key={group.label} className="space-y-1">
+            <p className="text-[10px] font-black text-muted-foreground/50 uppercase tracking-[0.2em] px-2 mb-1">{group.label}</p>
+            <div className="flex flex-col gap-1">
+              {group.items.map((tx, i) => (
+                <div
+                  key={tx.id}
+                  className={`group relative ${selectionMode && selectedIds.has(tx.id) ? "ring-1 ring-primary rounded-xl" : ""}`}
+                  style={{ animationDelay: `${i * 40}ms` }}
+                  onClick={selectionMode ? () => toggleSelect(tx.id) : undefined}
+                >
+                  <div className="flex items-center gap-2 group/tx-row">
+                    {selectionMode && (
+                      <button className="shrink-0 ml-1" onClick={(e) => { e.stopPropagation(); toggleSelect(tx.id); }}>
+                        {selectedIds.has(tx.id) ? (
+                          <CheckSquare className="h-5 w-5 text-primary" />
+                        ) : (
+                          <Square className="h-5 w-5 text-muted-foreground" />
+                        )}
+                      </button>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <TransactionItem 
+                        {...tx} 
+                        card={tx.card ?? undefined} 
+                        cardBrand={tx.cardBrand ?? undefined} 
+                        amount={Number(tx.amount)} 
+                        amountVisible={balanceVisible}
+                        style={{ animationDelay: `${i * 40}ms` }} 
+                        onEdit={selectionMode ? undefined : () => handleEdit(tx)}
+                        onDelete={selectionMode ? undefined : () => { setDeleteTarget(tx); setDeleteScope("single"); setShowDeleteDialog(true); }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         ))}
