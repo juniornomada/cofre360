@@ -755,7 +755,7 @@ function RemindersPage() {
   );
 
   return (
-    <div className="animate-page-enter flex flex-col gap-4 px-4 pt-6 pb-24">
+    <div className="app-container">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Bell className="h-5 w-5 text-primary" />
