@@ -124,7 +124,15 @@ function AIInsightsDashboard() {
         }),
       });
 
-      if (!resp.ok) throw new Error(`HTTP error! status: ${resp.status}`);
+      if (!resp.ok) {
+        const errorText = await resp.text();
+        let errorMessage = `HTTP error! status: ${resp.status}`;
+        try {
+          const errorJson = JSON.parse(errorText);
+          if (errorJson.error) errorMessage = errorJson.error;
+        } catch (e) {}
+        throw new Error(errorMessage);
+      }
       
       const reader = resp.body?.getReader();
       const decoder = new TextDecoder();
