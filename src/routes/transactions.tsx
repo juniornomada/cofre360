@@ -428,6 +428,20 @@ export function TransactionsPage() {
     return 0;
   });
 
+  const groupedTransactions = useMemo(() => {
+    const groups: { label: string; items: Transaction[] }[] = [];
+    sortedTransactions.forEach((tx) => {
+      const label = tx.date;
+      const lastGroup = groups[groups.length - 1];
+      if (lastGroup && lastGroup.label === label) {
+        lastGroup.items.push(tx);
+      } else {
+        groups.push({ label, items: [tx] });
+      }
+    });
+    return groups;
+  }, [sortedTransactions]);
+
   const clearAdvancedFilters = () => {
     setFilterStartDate(undefined);
     setFilterEndDate(undefined);
