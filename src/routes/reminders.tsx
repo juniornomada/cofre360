@@ -8,6 +8,7 @@ import { isTodayLocal } from "@/lib/date-utils";
 import { cn, normalizeText } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { supabase } from "@/integrations/supabase/client";
@@ -538,8 +539,36 @@ function RemindersPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+      <div className="app-container">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-9 w-9 rounded-xl" />
+            <Skeleton className="h-6 w-32" />
+          </div>
+          <Skeleton className="h-9 w-9 rounded-full" />
+        </div>
+
+        <div className="grid grid-cols-2 gap-3 mt-6">
+          {[1, 2].map(i => (
+            <div key={i} className="glass-card p-4">
+              <Skeleton className="h-3 w-16 mb-2 opacity-50" />
+              <Skeleton className="h-5 w-24" />
+            </div>
+          ))}
+        </div>
+
+        <div className="space-y-3 mt-8">
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} className="glass-card flex items-center gap-3 p-4">
+              <Skeleton className="h-10 w-10 rounded-full" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-4 w-1/2" />
+                <Skeleton className="h-3 w-1/4 opacity-50" />
+              </div>
+              <Skeleton className="h-4 w-16" />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }

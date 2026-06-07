@@ -8,6 +8,7 @@ import { useCards } from "@/features/cards/hooks/useCards";
 import { useCardActions } from "@/features/cards/hooks/useCardActions";
 import { CardItem } from "@/features/cards/components/CardItem";
 import { CardData } from "@/features/cards/types";
+import { Skeleton } from "@/components/ui/skeleton";
 
 import {
   DndContext,
@@ -115,8 +116,50 @@ export function CardsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+      <div className="app-container">
+        <header className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-11 w-11 rounded-2xl" />
+            <div className="space-y-2">
+              <Skeleton className="h-6 w-32" />
+              <Skeleton className="h-3 w-48 opacity-50" />
+            </div>
+          </div>
+          <Skeleton className="h-11 w-11 rounded-2xl" />
+        </header>
+
+        <div className="glass-card p-6 mt-6">
+          <Skeleton className="h-3 w-20 mb-4" />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Skeleton className="h-3 w-24" />
+              <Skeleton className="h-7 w-28" />
+            </div>
+            <div className="space-y-2 flex flex-col items-end">
+              <Skeleton className="h-3 w-24" />
+              <Skeleton className="h-7 w-28" />
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-4 mt-8">
+          {[1, 2].map(i => (
+            <div key={i} className="glass-card h-48 p-6 flex flex-col justify-between">
+              <div className="flex justify-between items-start">
+                <Skeleton className="h-10 w-16 rounded-lg" />
+                <Skeleton className="h-6 w-24 rounded-full" />
+              </div>
+              <div className="space-y-3">
+                <Skeleton className="h-4 w-1/3" />
+                <Skeleton className="h-3 w-full rounded-full" />
+                <div className="flex justify-between">
+                  <Skeleton className="h-3 w-20" />
+                  <Skeleton className="h-3 w-20" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
