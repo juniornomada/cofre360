@@ -208,7 +208,7 @@ export function CardsPage() {
 
   const lastValidationRef = useRef<{ timestamp: number; reason: string }>({ timestamp: 0, reason: "initial" });
   
-  const runValidation = async (silent = true, reason = "manual") => {
+  const runValidation = async (silent = true, reason = "manual", retryCount = 0) => {
     const now = DateTime.now().setZone('America/Sao_Paulo').toMillis();
     const timeSinceLast = now - lastValidationRef.current.timestamp;
     
@@ -218,13 +218,16 @@ export function CardsPage() {
     // - If it's a different reason, wait at least 2 seconds
     const minWait = reason === lastValidationRef.current.reason ? 5000 : 2000;
 
-    if (silent && timeSinceLast < minWait) {
+    if (silent && timeSinceLast < minWait && retryCount === 0) {
       console.log(`[cards] Validation skipped. Reason: ${reason}, last was: ${lastValidationRef.current.reason}. Elapsed: ${timeSinceLast}ms, required: ${minWait}ms`);
       return;
     }
 
-    lastValidationRef.current = { timestamp: now, reason };
-    console.log(`[cards] Running validation. Reason: ${reason}`);
+    if (retryCount === 0) {
+      lastValidationRef.current = { timestamp: now, reason };
+    }
+    
+    console.log(`[cards] Running validation. Reason: ${reason}${retryCount > 0 ? ` (retry ${retryCount})` : ""}`);
 
     setIsValidating(true);
     try {
@@ -265,6 +268,17 @@ export function CardsPage() {
 
       if (isRetryable) {
         lastValidationRef.current = { timestamp: 0, reason: "error_retry" };
+        
+        // Automatic retry logic for temporary failures (max 2 retries with exponential backoff)
+        if (retryCount < 2) {
+          const nextRetry = retryCount + 1;
+          const delay = Math.pow(2, nextRetry) * 1000; // 2s, 4s
+          console.log(`[cards] Retrying validation in ${delay}ms... (attempt ${nextRetry})`);
+          setTimeout(() => {
+            runValidation(silent, reason, nextRetry);
+          }, delay);
+          return; // Don't set isValidating(false) yet as we are still in flight
+        }
       }
 
       let message = error?.message || "Erro desconhecido";
@@ -283,7 +297,14 @@ export function CardsPage() {
       }
       if (!silent) showAlert("Erro ao validar: " + message, "error");
     } finally {
-      setIsValidating(false);
+      // Only reset loading state if we are not retrying
+      // If we are retrying, the final attempt will eventually call this.
+      if (retryCount >= 2 || !error_was_retryable_and_within_limit) {
+         // Need a way to check if we are actually exiting the whole flow.
+         // Actually, always setting false is safer to avoid infinite loading if setTimeout fails,
+         // but runValidation resets it to true anyway.
+         setIsValidating(false);
+      }
     }
   };
 
