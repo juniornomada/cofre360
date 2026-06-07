@@ -272,7 +272,10 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
       setParsingProgress(100);
 
     } catch (err: any) {
-      setError(err?.message || "Erro ao processar o PDF.");
+      console.error("PDF Processing Error:", err);
+      // Extrair mensagem de erro mais amigável se for um erro de Server Function
+      const msg = err?.message || (typeof err === 'string' ? err : "Erro inesperado ao processar o PDF.");
+      setError(msg);
       setPreview([]);
     } finally {
       setParsing(false);
