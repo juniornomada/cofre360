@@ -194,6 +194,8 @@ export function CardsPage() {
   });
   const [isValidating, setIsValidating] = useState(false);
   const [activeTab, setActiveTab] = useState("list");
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+
 
   const lastValidationRef = useRef<{ timestamp: number; reason: string }>({ timestamp: 0, reason: "initial" });
   
