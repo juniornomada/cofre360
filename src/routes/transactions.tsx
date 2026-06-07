@@ -981,8 +981,8 @@ export function TransactionsPage() {
               }
               setShowAddDialog(true);
             }} 
-            title="Tudo limpo por aqui"
-            description="Nenhuma transação corresponde aos filtros selecionados ou ainda não há registros."
+            title="Sua lista está limpa"
+            description="Nenhuma movimentação foi encontrada para os filtros aplicados ou sua carteira ainda está em branco."
           />
         )}
         {hasMore && (
