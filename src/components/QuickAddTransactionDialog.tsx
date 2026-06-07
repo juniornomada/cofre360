@@ -280,13 +280,13 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
             icon: "🔄", name: newTx.name.trim() || `Transferência → ${toName}`, category: "Transferências > Outros",
             date: newTx.date, amount: newTx.amount, type: "expense",
             card: null, bank_account_id: transferFromId, installment_group_id: groupId,
-            is_visible: true
+            is_visible: true, user_id: (await supabase.auth.getUser()).data.user?.id
           },
           {
             icon: "🔄", name: newTx.name.trim() || `Transferência ← ${fromName}`, category: "Transferências > Outros",
             date: newTx.date, amount: newTx.amount, type: "income",
             card: null, bank_account_id: transferToId, installment_group_id: groupId,
-            is_visible: true
+            is_visible: true, user_id: (await supabase.auth.getUser()).data.user?.id
           },
         ]).select();
 
