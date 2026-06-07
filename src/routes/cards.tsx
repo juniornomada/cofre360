@@ -786,55 +786,135 @@ export function CardsPage() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="list" className="mt-5 space-y-5">
+        <TabsContent value="list" className="mt-5 space-y-6">
           {cards.length > 0 && (
-            <div className="grid grid-cols-2 gap-3 animate-stagger-in">
-              <div className="rounded-2xl bg-card border border-border/50 p-4">
-                <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Fatura total</p>
-                <p className="mt-1 text-lg font-bold text-foreground tabular-nums">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-stagger-in">
+              <div className="rounded-2xl bg-card border border-border/50 p-5 shadow-sm">
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/80">Fatura total</p>
+                <p className="mt-1 text-2xl font-black text-foreground tabular-nums">
                   R$ {totalAllInvoices.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                 </p>
               </div>
-              <div className="rounded-2xl bg-card border border-border/50 p-4">
-                <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Limite disponível</p>
-                <p className="mt-1 text-lg font-bold text-primary tabular-nums">
+              <div className="rounded-2xl bg-card border border-border/50 p-5 shadow-sm">
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/80">Limite disponível</p>
+                <p className="mt-1 text-2xl font-black text-primary tabular-nums">
                   R$ {totalAvailable.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                 </p>
               </div>
             </div>
           )}
 
+          <div className="flex items-center justify-between">
+            <h2 id="cards-heading" className="text-sm font-bold text-foreground/80 flex items-center gap-2">
+              <CreditCard className="h-4 w-4 text-primary" />
+              Seus Cartões
+            </h2>
+            <div className="flex items-center gap-2 bg-accent/30 p-1 rounded-xl border border-border/50">
+              <button 
+                onClick={() => setViewMode("grid")}
+                className={cn(
+                  "p-1.5 rounded-lg transition-all",
+                  viewMode === "grid" ? "bg-background shadow-sm text-primary" : "text-muted-foreground hover:text-foreground"
+                )}
+                aria-label="Ver em grade"
+              >
+                <LayoutGrid className="h-4 w-4" />
+              </button>
+              <button 
+                onClick={() => setViewMode("list")}
+                className={cn(
+                  "p-1.5 rounded-lg transition-all",
+                  viewMode === "list" ? "bg-background shadow-sm text-primary" : "text-muted-foreground hover:text-foreground"
+                )}
+                aria-label="Ver em lista"
+              >
+                <List className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+
           {cards.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-16 text-center rounded-2xl bg-card border border-dashed border-border/50">
-              <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-3">
-                <CreditCard className="h-7 w-7 text-primary" />
+            <div className="flex flex-col items-center justify-center py-20 text-center rounded-2xl bg-card border-2 border-dashed border-border/50 animate-in fade-in zoom-in-95 duration-500">
+              <div className="h-16 w-16 rounded-3xl bg-primary/10 flex items-center justify-center mb-4">
+                <CreditCard className="h-8 w-8 text-primary" />
               </div>
-              <p className="text-sm font-semibold text-foreground">Nenhum cartão ainda</p>
-              <p className="text-xs text-muted-foreground mt-1">Adicione seu primeiro cartão abaixo</p>
+              <h3 className="text-base font-bold text-foreground">Ainda não há cartões</h3>
+              <p className="text-xs text-muted-foreground mt-2 max-w-[200px]">Adicione seus cartões de crédito para gerenciar limites e faturas.</p>
+              <button 
+                onClick={openAddDialog}
+                className="mt-6 interactive-button flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-xs font-bold text-primary-foreground shadow-lg shadow-primary/20"
+              >
+                <Plus className="h-4 w-4" />
+                Adicionar Cartão
+              </button>
             </div>
           )}
 
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
             <SortableContext items={cards.map((c) => c.id)} strategy={verticalListSortingStrategy}>
-              <div className="flex flex-col gap-4">
+              <div className={cn(
+                "cards-grid transition-all duration-500",
+                viewMode === "grid" ? "grid gap-6 sm:grid-cols-2 lg:grid-cols-3" : "flex flex-col gap-4"
+              )}>
                 {cards.map((card, i) => {
-      const cardTransactionsFiltered = cardTransactions.filter(t => t.card === card.name);
-      const invoicePeriodsCard = groupByBillingCycle(cardTransactionsFiltered, card.closing_day, card.due_day);
-      const activeInvoicePeriod = invoicePeriodsCard.find(p => p.key === "current") || invoicePeriodsCard[1] || invoicePeriodsCard[0];
-      const invoiceRemaining = activeInvoicePeriod?.total || 0;
-      const totalUsed = cardTotals[card.name] || 0;
-      const totalPaid = cardPayments[card.id] || 0;
-      const outstandingBalance = Math.max(0, totalUsed - totalPaid);
-      const pct = card.card_limit > 0 ? Math.round((outstandingBalance / card.card_limit) * 100) : 0;
-      const isEditing = editingId === card.id;
-      const today = new Date();
-      const todayDay = today.getDate();
-      const invoiceClosed = todayDay > card.closing_day;
-      const isPaid = totalUsed > 0 && invoiceRemaining === 0;
-      // Compute due date of current invoice (next due_day after today)
-      const currentDue = new Date(today.getFullYear(), today.getMonth(), card.due_day);
-      if (currentDue < today) currentDue.setMonth(currentDue.getMonth() + 1);
-      // Compute closing date of current invoice (next closing_day after today)
+                  const cardTransactionsFiltered = cardTransactions.filter(t => t.card === card.name);
+                  const invoicePeriodsCard = groupByBillingCycle(cardTransactionsFiltered, card.closing_day, card.due_day);
+                  const activeInvoicePeriod = invoicePeriodsCard.find(p => p.key === "current") || invoicePeriodsCard[1] || invoicePeriodsCard[0];
+                  const invoiceRemaining = activeInvoicePeriod?.total || 0;
+                  const totalUsed = cardTotals[card.name] || 0;
+                  const totalPaid = cardPayments[card.id] || 0;
+                  const outstandingBalance = Math.max(0, totalUsed - totalPaid);
+                  const pct = card.card_limit > 0 ? Math.round((outstandingBalance / card.card_limit) * 100) : 0;
+                  const isEditing = editingId === card.id;
+                  const today = new Date();
+                  const formatDueDate = (d: Date) => `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`;
+                  
+                  const currentDue = new Date(today.getFullYear(), today.getMonth(), card.due_day || 1);
+                  if (currentDue < today) currentDue.setMonth(currentDue.getMonth() + 1);
+                  const currentClose = new Date(today.getFullYear(), today.getMonth(), card.closing_day || 1);
+                  if (currentClose < today) currentClose.setMonth(currentClose.getMonth() + 1);
+
+                  return (
+                    <SortableCardWrapper key={card.id} id={card.id} animationDelay={60 + i * 80}>
+                      <CreditCardComponent
+                        card={card}
+                        isEditing={isEditing}
+                        editName={editName}
+                        editBrand={editBrand}
+                        editLimit={editLimit}
+                        editClosing={editClosing}
+                        editDue={editDue}
+                        deleteConfirm={deleteConfirm}
+                        outstandingBalance={outstandingBalance}
+                        invoiceRemaining={invoiceRemaining}
+                        totalPaid={totalPaid}
+                        pct={pct}
+                        activeInvoiceLabel={activeInvoicePeriod?.label || ""}
+                        formattedClosingDate={formatDueDate(currentClose)}
+                        formattedDueDate={formatDueDate(currentDue)}
+                        onStartEdit={startEdit}
+                        onSaveEdit={saveEdit}
+                        onCancelEdit={cancelEdit}
+                        onDelete={handleDelete}
+                        onSetDeleteConfirm={setDeleteConfirm}
+                        onToggleVisibility={handleToggleVisibility}
+                        onSetEditName={setEditName}
+                        onSetEditBrand={setEditBrand}
+                        onSetEditLimit={setEditLimit}
+                        onSetEditClosing={setEditClosing}
+                        onSetEditDue={setEditDue}
+                        onOpenPayDialog={openPayDialog}
+                        onOpenInvoiceDialog={openInvoiceDialog}
+                        onOpenPdfImport={(c) => { setPdfImportCard(c); setPdfImportOpen(true); }}
+                      />
+                    </SortableCardWrapper>
+                  );
+                })}
+              </div>
+            </SortableContext>
+          </DndContext>
+        </TabsContent>
+
       const currentClose = new Date(today.getFullYear(), today.getMonth(), card.closing_day);
       if (currentClose < today) currentClose.setMonth(currentClose.getMonth() + 1);
       // Next invoice due date (one month after current)
