@@ -871,7 +871,7 @@ export function Dashboard() {
   }, [accountBalances]);
 
   return (
-    <div className="animate-page-enter flex flex-col gap-5 px-4 pt-5 pb-24">
+    <div className="grid-standard">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex flex-col items-center">
