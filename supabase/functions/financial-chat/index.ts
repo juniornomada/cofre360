@@ -43,12 +43,28 @@ const MONTH_NAMES_PT = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","J
 
 function parseTxDate(dateStr: string): Date | null {
   if (!dateStr) return null;
-  const parts = dateStr.trim().toLowerCase().split(/\s+/);
-  if (parts.length < 2) return null;
-  const day = parseInt(parts[0], 10);
-  const monthIdx = SHORT_MONTHS.indexOf(parts[1]);
-  if (isNaN(day) || monthIdx < 0) return null;
-  return new Date(new Date().getFullYear(), monthIdx, day);
+  const t = dateStr.trim().toLowerCase();
+  
+  // dd/mm/yyyy ou dd/mm/yy
+  const numericMatch = t.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?$/);
+  if (numericMatch) {
+    const day = parseInt(numericMatch[1], 10);
+    const month = parseInt(numericMatch[2], 10) - 1;
+    const year = numericMatch[3] ? (numericMatch[3].length === 2 ? 2000 + parseInt(numericMatch[3], 10) : parseInt(numericMatch[3], 10)) : new Date().getFullYear();
+    return new Date(year, month, day);
+  }
+
+  // dd mmm (ex: 29 mai)
+  const parts = t.split(/\s+/);
+  if (parts.length >= 2) {
+    const day = parseInt(parts[0], 10);
+    const monthIdx = SHORT_MONTHS.indexOf(parts[1]);
+    if (!isNaN(day) && monthIdx >= 0) {
+      return new Date(new Date().getFullYear(), monthIdx, day);
+    }
+  }
+
+  return null;
 }
 
 const normTxt = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
@@ -430,7 +446,7 @@ ${recent}`;
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "google/gemini-2.0-flash",
         messages: [{ role: "user", content: prompt }],
         response_format: { type: "json_object" },
       }),
@@ -513,7 +529,7 @@ ${context}`;
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "google/gemini-2.0-flash",
         messages: [{ role: "system", content: fullSystem }, ...messages],
         stream: true,
       }),
