@@ -110,7 +110,7 @@ export function TransactionItem({
           </Tooltip>
         ) : (
           <div className="flex h-full w-full items-center justify-center rounded-xl bg-accent text-lg transition-transform duration-200 group-active:scale-90 overflow-hidden content-visibility-auto">
-            <span role="img" aria-label={category} loading="lazy">{displayIcon}</span>
+            <span role="img" aria-label={category}>{displayIcon}</span>
           </div>
         )}
         
