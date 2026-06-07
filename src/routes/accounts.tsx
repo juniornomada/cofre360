@@ -670,8 +670,8 @@ function AccountsPage() {
           <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
             <Landmark className="h-7 w-7 text-muted-foreground" />
           </div>
-          <p className="text-base font-medium text-foreground mb-1.5 tracking-tight">Nenhuma conta ainda</p>
-          <p className="text-sm text-muted-foreground max-w-[240px]">Adicione sua primeira conta bancária para acompanhar saldos e movimentações</p>
+          <p className="text-xl font-bold text-foreground mb-3 tracking-tight">Sua carteira está vazia</p>
+          <p className="text-sm text-muted-foreground max-w-[280px]">Conecte suas contas bancárias para gerenciar seus saldos e fluxo de caixa de forma centralizada.</p>
         </div>
       )}
 
