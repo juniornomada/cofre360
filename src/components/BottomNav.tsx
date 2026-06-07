@@ -19,7 +19,7 @@ export function BottomNav() {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-white/[0.05] bg-card/60 backdrop-blur-2xl">
-      <div className="mx-auto flex max-w-md items-center justify-around px-1 py-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))] overflow-x-auto no-scrollbar sm:justify-center sm:gap-4 md:gap-8">
+      <div className="mx-auto flex w-full max-w-md items-center justify-around px-2 py-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))] overflow-x-auto no-scrollbar sm:justify-center sm:gap-2">
         {navItems.map((item) => {
           const isPending = isLoading && pendingLocation?.pathname === item.to;
           const isActive = (location.pathname === item.to && !isLoading) || isPending;
@@ -32,7 +32,7 @@ export function BottomNav() {
               search={{} as any}
               preload="intent"
               className={cn(
-                "nav-item-transition flex flex-col items-center gap-0.5 rounded-xl px-1.5 py-2 text-[9px] shrink-0 min-w-[3rem]",
+                "nav-item-transition flex flex-col items-center gap-0.5 rounded-xl px-1 py-2 text-[9px] shrink-0 min-w-[3.5rem]",
                 shouldHighlight
                   ? "text-primary"
                   : "text-muted-foreground hover:text-foreground"
