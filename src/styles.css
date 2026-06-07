@@ -144,6 +144,17 @@
     -webkit-font-smoothing: antialiased;
     overscroll-behavior-y: none;
     -webkit-tap-highlight-color: transparent;
+    letter-spacing: -0.011em;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-card/60 backdrop-blur-xl border border-border/40 shadow-[0_8px_32px_rgba(0,0,0,0.12)];
+  }
+  
+  .premium-gradient-text {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary via-primary/80 to-primary/60;
   }
 }
 

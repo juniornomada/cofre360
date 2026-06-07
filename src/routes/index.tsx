@@ -136,19 +136,19 @@ function SortableAccountItem({ acc, balanceVisible, fmt }: { acc: any; balanceVi
       {...listeners}
       className={cn(
         "relative select-none",
-        isDragging && "ring-2 ring-primary ring-offset-2 ring-offset-background rounded-xl shadow-2xl scale-[1.01] z-50",
+        isDragging && "ring-2 ring-primary/50 ring-offset-2 ring-offset-background rounded-2xl shadow-2xl scale-[1.01] z-50",
       )}
     >
       <div className="flex flex-1 items-center gap-2 overflow-hidden">
         <Link
           to="/accounts"
           search={{ action: undefined } as any}
-          className="flex-1 flex items-center gap-2.5 rounded-xl bg-background/40 px-2.5 py-1.5 hover:bg-background/60 transition-colors overflow-hidden"
+          className="flex-1 flex items-center gap-3 rounded-2xl bg-card/30 backdrop-blur-md border border-border/10 px-3 py-2 hover:bg-card/50 transition-all overflow-hidden shadow-sm"
         >
         <BankLogo icon={acc.icon} color={acc.color} name={acc.name} size="sm" />
-        <p className="text-xs font-medium text-foreground flex-1 min-w-0 truncate">{acc.name}</p>
+        <p className="text-xs font-semibold text-foreground/90 flex-1 min-w-0 truncate">{acc.name}</p>
         <p className={cn(
-          "text-xs font-bold tabular-nums",
+          "text-xs font-bold tabular-nums tracking-tight",
           acc.balance >= 0 ? "text-foreground" : "text-destructive"
         )}>
           {balanceVisible ? `R$ ${fmt(acc.balance)}` : "R$ ••••"}

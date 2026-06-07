@@ -26,7 +26,7 @@ export function CardItem({
 
   return (
     <div className={cn(
-      "group relative overflow-hidden rounded-2xl bg-gradient-to-br p-4 text-white shadow-lg transition-all active:scale-[0.98]",
+      "group relative overflow-hidden rounded-[2rem] bg-gradient-to-br p-6 text-white shadow-xl transition-all active:scale-[0.98] border border-white/10",
       card.color || "from-gray-700 to-gray-900",
       !card.is_visible && "opacity-60 grayscale-[0.5]"
     )}>
