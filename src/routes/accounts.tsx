@@ -617,10 +617,24 @@ function AccountsPage() {
     }
   };
 
-  if (loading) {
+  if (loading && accounts.length === 0) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+      <div className="animate-page-enter flex flex-col gap-8 px-2 sm:px-4 pt-6 pb-28">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 rounded-full bg-muted animate-pulse" />
+            <div className="space-y-2">
+              <div className="h-3 w-12 bg-muted animate-pulse rounded" />
+              <div className="h-6 w-32 bg-muted animate-pulse rounded" />
+            </div>
+          </div>
+        </div>
+        <div className="space-y-4">
+          <div className="h-4 w-24 bg-muted animate-pulse rounded ml-1" />
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="h-16 w-full rounded-2xl bg-muted/40 animate-pulse" />
+          ))}
+        </div>
       </div>
     );
   }
