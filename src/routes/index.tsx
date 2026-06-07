@@ -144,7 +144,7 @@ function SortableAccountItem({ acc, balanceVisible, fmt }: { acc: any; balanceVi
       <Link
         to="/accounts"
         search={{ action: undefined } as any}
-        className="flex items-center gap-3 rounded-2xl bg-card/20 backdrop-blur-3xl border border-white/[0.03] px-3 py-2 hover:bg-card/40 transition-all duration-500 overflow-hidden shadow-sm hover:shadow-md hover:border-white/[0.08]"
+        className="flex items-center gap-3 rounded-xl bg-card/20 backdrop-blur-3xl border border-white/[0.03] px-3 py-1.5 hover:bg-card/40 transition-all duration-500 overflow-hidden shadow-sm hover:shadow-md hover:border-white/[0.08]"
       >
         <div className="shrink-0">
           <BankLogo icon={acc.icon} color={acc.color} name={acc.name} size="md" />
@@ -987,10 +987,10 @@ export function Dashboard() {
       </div>
 
       {/* Balance Card — premium look */}
-      <div className="glass-card p-8 relative overflow-hidden group border-white/[0.03]">
+      <div className="glass-card p-5 relative overflow-hidden group border-white/[0.03]">
         <div className="absolute top-0 right-0 w-48 h-48 bg-primary/10 blur-[100px] rounded-full -mr-24 -mt-24 transition-all duration-1000 group-hover:bg-primary/20" />
         
-        <div className="flex items-end justify-between gap-4 mb-8">
+        <div className="flex items-end justify-between gap-4 mb-4">
           <div className="flex flex-col">
             <h2 className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-3">
               Saldo
@@ -1038,7 +1038,7 @@ export function Dashboard() {
           </DndContext>
         )}
 
-        <div className="mt-8 pt-6 border-t border-white/[0.05] grid grid-cols-2 gap-4">
+        <div className="mt-5 pt-4 border-t border-white/[0.05] grid grid-cols-2 gap-4">
           <div className="flex flex-col">
             <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-1">Mês Inicial</span>
             <span className="text-xs font-bold tabular-nums text-foreground/70">
