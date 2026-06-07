@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { DateTime } from "luxon";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { parseCategoryValue } from "@/lib/categories";
@@ -293,13 +294,48 @@ function OrcaMetasPage() {
   const totalLimit = computedItems.reduce((s, b) => s + b.budget_limit, 0);
   const percentage = totalLimit > 0 ? Math.round((totalSpent / totalLimit) * 100) : 0;
 
-   if (loadingBudget || loadingGoals) {
-     return (
-       <div className="flex items-center justify-center py-20">
-         <Loader2 className="h-6 w-6 animate-spin text-primary" />
-       </div>
-     );
-   }
+  if (loadingBudget || loadingGoals) {
+    return (
+      <div className="app-container">
+        <div className="flex items-center gap-3">
+          <Skeleton className="h-9 w-9 rounded-xl" />
+          <div className="space-y-2">
+            <Skeleton className="h-6 w-32" />
+            <Skeleton className="h-3 w-48 opacity-50" />
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-2 gap-2 mt-4">
+          <Skeleton className="h-10 rounded-lg" />
+          <Skeleton className="h-10 rounded-lg" />
+        </div>
+
+        <div className="glass-card p-6 mt-6">
+          <div className="flex justify-between items-center mb-4">
+            <Skeleton className="h-4 w-1/3" />
+            <Skeleton className="h-3 w-10" />
+          </div>
+          <Skeleton className="h-8 w-1/2 mb-4" />
+          <Skeleton className="h-2.5 w-full rounded-full" />
+        </div>
+
+        <div className="space-y-3 mt-6">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="glass-card p-4">
+              <div className="flex justify-between items-center mb-3">
+                <div className="flex items-center gap-2">
+                  <Skeleton className="h-8 w-8 rounded-lg" />
+                  <Skeleton className="h-4 w-24" />
+                </div>
+                <Skeleton className="h-4 w-10" />
+              </div>
+              <Skeleton className="h-1.5 w-full rounded-full" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="app-container">
