@@ -8,7 +8,7 @@ import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react"
 import { DateTime } from "luxon";
 
 const CsvImportDialog = lazy(() => import("@/components/CsvImportDialog").then(m => ({ default: m.CsvImportDialog })));
-const CategoryPieCharts = lazy(() => import("@/components/CategoryPieCharts").then(m => ({ default: m.CategoryPieCharts })));
+const CategoryBarCharts = lazy(() => import("@/components/CategoryBarCharts").then(m => ({ default: m.CategoryBarCharts })));
 const CategoryPicker = lazy(() => import("@/components/CategoryPicker").then(m => ({ default: m.CategoryPicker })));
 const QuickAddTransactionDialog = lazy(() => import("@/components/QuickAddTransactionDialog").then(m => ({ default: m.QuickAddTransactionDialog })));
 import { CalculatorAmountInput } from "@/components/CalculatorAmountInput";
