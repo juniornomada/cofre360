@@ -252,7 +252,7 @@ export function CardsPage() {
       
       // Only reset the timestamp for retryable errors (network/timeout or 401/403/5xx)
       // 400, 404, etc. should usually not be retried immediately as they imply a client-side or static resource issue
-      const status = error instanceof Response ? error.status : 500;
+      const status = error?.status || (error instanceof Response ? error.status : 500);
       const isRetryable = !status || status === 401 || status === 403 || status >= 500;
 
       if (isRetryable) {
@@ -261,9 +261,14 @@ export function CardsPage() {
 
       let message = error?.message || "Erro desconhecido";
       if (error instanceof Response) {
-        message = await error.text().catch(() => "Falha de autorização");
+        try {
+          const body = await error.json();
+          message = body.message || body.error || message;
+        } catch {
+          message = await error.text().catch(() => "Falha de autorização");
+        }
       }
-      if (message.includes("Unauthorized") || message.includes("authorization")) {
+      if (message.includes("Unauthorized") || message.includes("authorization") || status === 401) {
         message = "Sessão expirada. Faça login novamente para validar.";
       }
       if (!silent) showAlert("Erro ao validar: " + message, "error");
