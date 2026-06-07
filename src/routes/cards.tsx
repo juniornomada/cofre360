@@ -936,9 +936,8 @@ export function CardsPage() {
           </div>
         </SortableContext>
       </DndContext>
-    </TabsContent>
-
-        <TabsContent value="validation" className="mt-5 space-y-4">
+        </div>
+      </div>
 
       <button
         onClick={openAddDialog}
