@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { SmartLink as Link } from "@/components/SmartLink";
-import { ArrowLeft, Plus, Landmark, Trash2, X, Check, Loader2, Upload, FileText, MoreVertical, GripVertical, Pencil, Eye, EyeOff, CheckSquare, Square, Filter, FilterX } from "lucide-react";
+import { ArrowLeft, Plus, Landmark, Trash2, X, Check, Loader2, Upload, FileText, MoreVertical, GripVertical, Pencil, Eye, EyeOff, CheckSquare, Square, Filter, FilterX, Info } from "lucide-react";
 import { useUserPreferences } from "@/hooks/use-user-preferences";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
@@ -655,6 +655,22 @@ function AccountsPage() {
 
   return (
     <div className="animate-page-enter flex flex-col gap-8 px-2 sm:px-4 pt-6 pb-28 min-h-[80vh]">
+      {error && accounts.length === 0 && (
+        <div className="flex flex-col items-center justify-center py-12 px-4 text-center bg-destructive/5 rounded-3xl border border-destructive/10 animate-in fade-in zoom-in duration-500">
+          <div className="h-16 w-16 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
+            <Info className="h-8 w-8 text-destructive" />
+          </div>
+          <h3 className="text-lg font-bold text-foreground mb-2">Ops! Algo deu errado</h3>
+          <p className="text-sm text-muted-foreground max-w-[260px] mb-6">{error}</p>
+          <Button 
+            onClick={() => fetchAccounts()} 
+            variant="outline" 
+            className="rounded-xl border-destructive/20 hover:bg-destructive/5"
+          >
+            Tentar novamente
+          </Button>
+        </div>
+      )}
       {/* Header and Total Balance */}
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3 min-w-0">

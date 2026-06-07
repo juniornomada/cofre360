@@ -3,7 +3,7 @@ import { SmartLink as Link } from "@/components/SmartLink";
 import { TransactionItem } from "@/components/TransactionItem";
 import { EmptyState } from "@/components/EmptyState";
 import { mainCategories, parseCategoryValue } from "@/lib/categories";
-import { Search, Pencil, Trash2, Plus, CalendarIcon, Loader2, Upload, CheckSquare, Square, X, SlidersHorizontal, ArrowLeftRight, ArrowRight, Eye, EyeOff, FileText } from "lucide-react";
+import { Search, Pencil, Trash2, Plus, CalendarIcon, Loader2, Upload, CheckSquare, Square, X, SlidersHorizontal, ArrowLeftRight, ArrowRight, Eye, EyeOff, FileText, Info } from "lucide-react";
 import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react";
 import { DateTime } from "luxon";
 
@@ -746,6 +746,22 @@ export function TransactionsPage() {
 
   return (
     <div className="animate-page-enter flex flex-col gap-4 px-4 pt-6 pb-24 min-h-[80vh]">
+      {error && transactions.length === 0 && (
+        <div className="flex flex-col items-center justify-center py-12 px-4 text-center bg-destructive/5 rounded-3xl border border-destructive/10 animate-in fade-in zoom-in duration-500 mt-4">
+          <div className="h-16 w-16 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
+            <Info className="h-8 w-8 text-destructive" />
+          </div>
+          <h3 className="text-lg font-bold text-foreground mb-2">Erro ao carregar</h3>
+          <p className="text-sm text-muted-foreground max-w-[260px] mb-6">{error}</p>
+          <Button 
+            onClick={() => fetchTransactions()} 
+            variant="outline" 
+            className="rounded-xl border-destructive/20 hover:bg-destructive/5"
+          >
+            Tentar carregar de novo
+          </Button>
+        </div>
+      )}
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-foreground">Transações</h1>
         <div className="flex items-center gap-2">
