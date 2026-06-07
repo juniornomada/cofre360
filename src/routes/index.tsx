@@ -1253,26 +1253,30 @@ export function Dashboard() {
           </div>
 
           {/* Mini bar comparison */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-3">
-              <span className="text-[10px] text-muted-foreground w-16">Receita</span>
-              <div className="flex-1 h-2 rounded-full bg-accent overflow-hidden">
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                <span className="font-medium uppercase tracking-wider">Receitas</span>
+                <span className="font-bold text-primary tabular-nums">R$ {fmtShort(monthlySummary.income)}</span>
+              </div>
+              <div className="h-2 rounded-full bg-accent/50 overflow-hidden">
                 <div
-                  className="h-full rounded-full bg-primary transition-all duration-500"
+                  className="h-full rounded-full bg-primary transition-all duration-700 ease-out"
                   style={{ width: `${Math.min(100, monthlySummary.income > 0 ? (monthlySummary.income / Math.max(monthlySummary.income, monthlySummary.expense)) * 100 : 0)}%` }}
                 />
               </div>
-              <span className="text-xs font-semibold text-primary tabular-nums w-20 text-right">R$ {fmtShort(monthlySummary.income)}</span>
             </div>
-            <div className="flex items-center gap-3">
-              <span className="text-[10px] text-muted-foreground w-16">Despesa</span>
-              <div className="flex-1 h-2 rounded-full bg-accent overflow-hidden">
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                <span className="font-medium uppercase tracking-wider">Despesas</span>
+                <span className="font-bold text-destructive tabular-nums">R$ {fmtShort(monthlySummary.expense)}</span>
+              </div>
+              <div className="h-2 rounded-full bg-accent/50 overflow-hidden">
                 <div
-                  className="h-full rounded-full bg-destructive transition-all duration-500"
+                  className="h-full rounded-full bg-destructive transition-all duration-700 ease-out"
                   style={{ width: `${Math.min(100, monthlySummary.expense > 0 ? (monthlySummary.expense / Math.max(monthlySummary.income, monthlySummary.expense)) * 100 : 0)}%` }}
                 />
               </div>
-              <span className="text-xs font-semibold text-destructive tabular-nums w-20 text-right">R$ {fmtShort(monthlySummary.expense)}</span>
             </div>
           </div>
 

@@ -368,8 +368,8 @@ function OrcaMetasPage() {
             <p className="text-xs text-muted-foreground mt-1">
               de R$ {totalLimit.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
             </p>
-            <div className="mt-3 h-2.5 rounded-full bg-accent overflow-hidden">
-              <div className="h-full rounded-full bg-primary transition-all duration-500" style={{ width: `${Math.min(percentage, 100)}%` }} />
+            <div className="mt-4 h-3 rounded-full bg-accent/30 overflow-hidden shadow-inner border border-white/5">
+              <div className="h-full rounded-full bg-primary transition-all duration-700 ease-out shadow-[0_0_12px_rgba(var(--primary),0.3)]" style={{ width: `${Math.min(percentage, 100)}%` }} />
             </div>
           </div>
 
@@ -397,8 +397,8 @@ function OrcaMetasPage() {
                       </div>
                     </div>
                   </div>
-                  <div className="h-1.5 rounded-full bg-accent overflow-hidden">
-                    <div className={`h-full rounded-full transition-all duration-500 ${isOver ? "bg-destructive" : item.color}`} style={{ width: `${Math.min(pct, 100)}%` }} />
+                  <div className="h-2 rounded-full bg-accent/30 overflow-hidden shadow-inner border border-white/5">
+                    <div className={`h-full rounded-full transition-all duration-700 ease-out ${isOver ? "bg-destructive shadow-[0_0_10px_rgba(var(--destructive),0.2)]" : item.color + " shadow-[0_0_10px_rgba(var(--primary),0.2)]"}`} style={{ width: `${Math.min(pct, 100)}%` }} />
                   </div>
                   <div className="flex justify-between mt-1.5">
                     <span className="text-[10px] text-muted-foreground tabular-nums">R$ {item.spent?.toFixed(2) || "0.00"}</span>
