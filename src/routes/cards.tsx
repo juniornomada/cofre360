@@ -43,19 +43,6 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 
 
-type CardData = {
-  id: string;
-  name: string;
-  last_four: string | number | null;
-  brand: string;
-  card_limit: number;
-  used: number;
-  color: string | null;
-  emoji: string | null;
-  closing_day: number | null;
-  due_day: number | null;
-  is_visible: boolean | null;
-};
 
 type BankAccount = {
   id: string;
