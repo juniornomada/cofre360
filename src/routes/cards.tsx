@@ -237,6 +237,13 @@ export function CardsPage() {
       }
 
       const result = await validateAgreementFn();
+      // Defensive: server fn may return unexpected payloads on partial outages.
+      // Require the minimal shape before committing to state to avoid render crashes.
+      const isValidShape =
+        result && typeof result === 'object' && 'summary' in result && (result as any).summary;
+      if (!isValidShape) {
+        throw new Error("Resposta inesperada do servidor de validação.");
+      }
       setValidationData(result);
       if (!silent) {
         if (result.status === 'ok') {
@@ -247,6 +254,7 @@ export function CardsPage() {
           showAlert("Validação concluída: Erros críticos detectados!", "error");
         }
       }
+
     } catch (error: any) {
       console.error("Validation error:", error);
       
