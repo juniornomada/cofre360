@@ -868,18 +868,6 @@ export function CardsPage() {
                       </span>
                     </div>
                   </div>
-                  <div className="relative h-4 rounded-full bg-black/30 overflow-hidden ring-1 ring-white/20">
-                    <div
-                      className={cn(
-                        "h-full rounded-full transition-all duration-500 opacity-70",
-                        pct >= 80 ? "bg-red-400" : pct >= 50 ? "bg-amber-300" : "bg-emerald-300"
-                      )}
-                      style={{ width: `${Math.min(pct, 100)}%` }}
-                    />
-                    <span className="absolute inset-0 flex items-center justify-center text-[10px] font-semibold text-white/90 tabular-nums drop-shadow-[0_1px_1px_rgba(0,0,0,0.6)]">
-                      {pct}% usado
-                    </span>
-                  </div>
                   {totalPaid > 0 ? (
                     <div className="flex items-center justify-between gap-2 mt-1">
                       <p className="text-[10px] text-emerald-300 font-bold tabular-nums drop-shadow-sm truncate">
