@@ -1165,9 +1165,6 @@ export function Dashboard() {
             <h2 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Atividade Recente</h2>
             <div className="h-0.5 w-6 bg-primary mt-1 rounded-full" />
           </div>
-          <Link to="/transactions" preload="intent" search={{ action: undefined, type: undefined } as any} className="text-[10px] font-bold text-primary hover:opacity-80 transition-opacity uppercase tracking-wider">
-            Ver Extrato Completo
-          </Link>
         </div>
          {loading ? (
            <div className="flex flex-col gap-3">
