@@ -12,8 +12,14 @@ export const validateAgreement = createServerFn({ method: "POST" })
       supabase.from("transactions").select("*").eq("user_id", userId).not("card", "is", null),
     ]);
 
-    if (cardsRes.error) throw new Error(cardsRes.error.message || "Erro ao carregar cartões para validação.");
-    if (txRes.error) throw new Error(txRes.error.message || "Erro ao carregar transações para validação.");
+    if (cardsRes.error) {
+      console.error("Supabase cards error:", cardsRes.error);
+      throw new Error(cardsRes.error.message || "Erro ao carregar cartões para validação.");
+    }
+    if (txRes.error) {
+      console.error("Supabase transactions error:", txRes.error);
+      throw new Error(txRes.error.message || "Erro ao carregar transações para validação.");
+    }
 
     const cards = cardsRes.data || [];
     const transactions = txRes.data || [];
