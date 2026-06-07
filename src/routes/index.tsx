@@ -14,6 +14,7 @@ const DialogHeader = lazy(() => import("@/components/ui/dialog").then(m => ({ de
 const DialogTitle = lazy(() => import("@/components/ui/dialog").then(m => ({ default: m.DialogTitle })));
 const DialogFooter = lazy(() => import("@/components/ui/dialog").then(m => ({ default: m.DialogFooter })));
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 const Calendar = lazy(() => import("@/components/ui/calendar").then(m => ({ default: m.Calendar })));
 const Popover = lazy(() => import("@/components/ui/popover").then(m => ({ default: m.Popover })));
 const PopoverContent = lazy(() => import("@/components/ui/popover").then(m => ({ default: m.PopoverContent })));
