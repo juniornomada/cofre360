@@ -667,8 +667,13 @@ function AccountsPage() {
       {/* Empty state */}
       {accounts.length === 0 && (
         <div className="flex flex-col items-center justify-center py-20 text-center">
-          <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
-            <Landmark className="h-7 w-7 text-muted-foreground" />
+          <div className="relative mb-6">
+            <div className="h-24 w-24 rounded-full bg-primary/5 flex items-center justify-center ring-1 ring-primary/10">
+              <Landmark className="h-10 w-10 text-primary/40" />
+            </div>
+            <div className="absolute -right-1 -bottom-1 h-8 w-8 rounded-full bg-background flex items-center justify-center shadow-sm border border-border">
+              <Plus className="h-4 w-4 text-primary" />
+            </div>
           </div>
           <p className="text-xl font-bold text-foreground mb-3 tracking-tight">Sua carteira está vazia</p>
           <p className="text-sm text-muted-foreground max-w-[280px]">Conecte suas contas bancárias para gerenciar seus saldos e fluxo de caixa de forma centralizada.</p>
