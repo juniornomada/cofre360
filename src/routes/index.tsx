@@ -1034,7 +1034,11 @@ export function Dashboard() {
               </div>
             )}
             <div className="flex items-center gap-1">
-              <button onClick={() => updateBalanceVisible(!balanceVisible)} className="interactive-button p-1.5 rounded-lg hover:bg-accent/50 text-muted-foreground">
+              <button 
+                onClick={() => updateBalanceVisible(!balanceVisible)} 
+                className="interactive-button p-1.5 rounded-lg hover:bg-accent/50 text-muted-foreground focus-visible:ring-2 focus-visible:ring-primary"
+                aria-label={balanceVisible ? "Ocultar saldos" : "Mostrar saldos"}
+              >
                 {balanceVisible ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
               </button>
             </div>
@@ -1108,7 +1112,11 @@ export function Dashboard() {
             CARTÕES
           </h2>
 
-          <Link to="/cards" className="text-[10px] font-medium text-primary flex items-center gap-0.5">
+          <Link 
+            to="/cards" 
+            className="text-[10px] font-medium text-primary flex items-center gap-0.5 focus-visible:ring-2 focus-visible:ring-primary rounded-md px-1"
+            aria-label="Ir para gerenciamento de cartões"
+          >
             Gerenciar <ChevronRight className="h-3 w-3" />
           </Link>
         </div>

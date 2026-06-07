@@ -390,11 +390,12 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
         <DialogHeader className="space-y-0 pr-6">
           <div className="flex items-center gap-1.5">
             <DialogTitle className="text-sm whitespace-nowrap shrink-0">Nova</DialogTitle>
-            <div className="flex flex-1 gap-1 min-w-0">
+            <div className="flex flex-1 gap-1 min-w-0" role="group" aria-label="Tipo de transação">
               <button
                 type="button"
                 onClick={() => { setIsTransfer(false); setNewTx({ ...newTx, type: "expense", category: "Alimentação > Outros", icon: "🍔" }); }}
                 className={`flex-1 min-w-0 rounded-lg py-1 text-[10px] font-medium transition-colors ${!isTransfer && newTx.type === "expense" ? "bg-destructive text-destructive-foreground" : "bg-card text-muted-foreground"}`}
+                aria-pressed={!isTransfer && newTx.type === "expense"}
               >
                 Despesa
               </button>
@@ -402,6 +403,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                 type="button"
                 onClick={() => { setIsTransfer(false); setNewTx({ ...newTx, type: "income", category: "Receita > Salário", icon: "💰" }); }}
                 className={`flex-1 min-w-0 rounded-lg py-1 text-[10px] font-medium transition-colors ${!isTransfer && newTx.type === "income" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground"}`}
+                aria-pressed={!isTransfer && newTx.type === "income"}
               >
                 Receita
               </button>
@@ -409,6 +411,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                 type="button"
                 onClick={() => { setIsTransfer(true); }}
                 className={`flex-1 min-w-0 rounded-lg py-1 text-[10px] font-medium transition-colors flex items-center justify-center gap-0.5 ${isTransfer ? "bg-blue-500 text-white" : "bg-card text-muted-foreground"}`}
+                aria-pressed={isTransfer}
               >
                 <ArrowLeftRight className="h-2.5 w-2.5 shrink-0" />
                 <span className="truncate">Transferir</span>
