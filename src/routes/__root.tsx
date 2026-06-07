@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Toaster } from "@/components/ui/sonner";
 import SealVerifier from "@/components/SealVerifier";
 import { CookieConsent } from "@/components/CookieConsent";
+import { runA11yAudit } from "@/lib/a11y-audit";
 import appCss from "../styles.css?url";
 
 type AlertType = 'success' | 'error' | 'warning' | 'info';
@@ -174,6 +175,14 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      // Pequeno delay para garantir que o DOM inicial foi montado
+      const timer = setTimeout(runA11yAudit, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [router.state.location.pathname]);
 
   useEffect(() => {
     if (!authLoading) {
