@@ -6,7 +6,7 @@ enable_email_signup = true
 enable_email_confirmations = false
 
 [functions.financial-chat]
-verify_jwt = false
+verify_jwt = true
 
 [functions.run-ai-tests]
 verify_jwt = false
