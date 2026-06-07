@@ -657,9 +657,7 @@ export function CardsPage() {
         </div>
       </div>
 
-      <div className="w-full">
-
-        <div className="mt-5 space-y-5">
+      <div className="mt-5 space-y-5">
           {cards.length > 0 && (
             <div className="grid grid-cols-2 gap-3 animate-stagger-in">
               <div className="rounded-2xl bg-card border border-border/50 p-4">
@@ -936,7 +934,6 @@ export function CardsPage() {
           </div>
         </SortableContext>
       </DndContext>
-        </div>
       </div>
 
       <button
