@@ -19,7 +19,7 @@ interface AlertContextType {
   showAlert: (message: string, type?: AlertType) => void;
 }
 
-const AlertContext = createContext<AlertContextType | undefined>(undefined);
+export const AlertContext = createContext<AlertContextType | undefined>(undefined);
 
 export const useAlert = () => {
   const context = useContext(AlertContext);
