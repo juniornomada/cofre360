@@ -1,17 +1,6 @@
-import { type Transaction } from '@/features/transactions/types'; // Assuming this exists or using any for now
-
-/**
- * Utilitário para checagem rápida de contraste em cores OKLCH/HEX
- * (Implementação simplificada para fins de auditoria interna)
- */
-export function checkContrast(foreground: string, background: string): number {
-  // Nota: Em um ambiente real, converteríamos OKLCH para RGB e calcularíamos a luminância relativa.
-  // Como estamos no sandbox, focaremos na lógica de auditoria de elementos DOM.
-  return 4.5; // Valor de referência para aprovação AA
-}
-
 /**
  * Auditoria de Acessibilidade em Tempo de Execução (Modo Dev)
+ * Esta rotina verifica problemas comuns de acessibilidade no DOM.
  */
 export function runA11yAudit() {
   if (process.env.NODE_ENV !== 'development') return;
@@ -21,7 +10,7 @@ export function runA11yAudit() {
   // 1. Checar botões sem label ou texto
   const buttons = document.querySelectorAll('button');
   buttons.forEach((btn, i) => {
-    if (!btn.innerText.trim() && !btn.getAttribute('aria-label')) {
+    if (!btn.innerText.trim() && !btn.getAttribute('aria-label') && !btn.getAttribute('title')) {
       console.warn(`⚠️ Botão [${i}] sem descrição acessível:`, btn);
     }
   });
@@ -31,7 +20,7 @@ export function runA11yAudit() {
   inputs.forEach((input, i) => {
     const id = input.getAttribute('id');
     const label = id ? document.querySelector(`label[for="${id}"]`) : null;
-    if (!label && !input.getAttribute('aria-label')) {
+    if (!label && !input.getAttribute('aria-label') && input.getAttribute('type') !== 'hidden') {
       console.warn(`⚠️ Campo [${i}] sem label associada:`, input);
     }
   });
