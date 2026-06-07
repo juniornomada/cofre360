@@ -916,261 +916,111 @@ export function CardsPage() {
         </TabsContent>
 
 
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <button className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors border border-white/10 shadow-sm">
-                                    <MoreVertical className="h-3.5 w-3.5" />
-                                  </button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="rounded-xl">
-                                  <DropdownMenuItem onClick={() => startEdit(card)} className="cursor-pointer">
-                                    <Pencil className="h-4 w-4 mr-2" />
-                                    Editar cartão
-                                  </DropdownMenuItem>
-                                  <DropdownMenuSeparator />
-                                  <DropdownMenuItem onClick={() => setDeleteConfirm(card.id)} className="cursor-pointer text-destructive focus:text-destructive">
-                                    <Trash2 className="h-4 w-4 mr-2" />
-                                    Excluir cartão
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  {isEditing ? (
-                    <div className="flex flex-col gap-2 mb-2 relative z-10">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] opacity-70 w-14">Bandeira</span>
-                        <div className="flex gap-1 flex-wrap">
-                          {brandPresets.map((bp) => (
-                            <button
-                              key={bp.id}
-                              onClick={() => setEditBrand(bp.id)}
-                              className={`px-2 py-0.5 rounded-md text-[10px] font-medium transition-colors ${editBrand.toLowerCase() === bp.id ? "bg-white text-black" : "bg-white/20 text-white hover:bg-white/30"}`}
-                            >
-                              {bp.label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] opacity-70 w-14">Limite R$</span>
-                        <div className="w-24 sm:w-28 shrink-0">
-                          <CalculatorAmountInput
-                            value={parseFloat(editLimit) || 0}
-                            onChange={(v) => setEditLimit(v.toString())}
-                            className="h-7 bg-white/20 border-white/30 text-white text-[11px] sm:text-xs"
-                          />
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] opacity-70 w-14">Fecha dia</span>
-                        <Input
-                          type="number"
-                          value={editClosing}
-                          onChange={(e) => setEditClosing(e.target.value.replace(/\D/g, "").slice(0, 2))}
-                          className="h-7 w-16 rounded-lg bg-white/20 border-white/30 text-white text-xs"
-                          min={1} max={31}
-                          onKeyDown={(e) => { if (e.key === "Enter") saveEdit(card.id); if (e.key === "Escape") cancelEdit(); }}
-                        />
-                        <span className="text-[10px] opacity-70 w-14">Vence dia</span>
-                        <Input
-                          type="number"
-                          value={editDue}
-                          onChange={(e) => setEditDue(e.target.value.replace(/\D/g, "").slice(0, 2))}
-                          className="h-7 w-16 rounded-lg bg-white/20 border-white/30 text-white text-xs"
-                          min={1} max={31}
-                          onKeyDown={(e) => { if (e.key === "Enter") saveEdit(card.id); if (e.key === "Escape") cancelEdit(); }}
-                        />
-                      </div>
-                    </div>
-                  ) : null}
+        <TabsContent value="validation" className="mt-5 space-y-4">
+          <div className="rounded-2xl bg-card border border-border/50 p-4 space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-bold text-foreground">Status da Validação</h3>
+                <p className="text-[10px] text-muted-foreground mt-0.5">Sincronização entre Cartões e Faturas</p>
+              </div>
+              <button
+                onClick={() => runValidation(false)}
+                disabled={isValidating}
+                className="interactive-button flex items-center gap-2 rounded-xl bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-50"
+                id="revalidate-btn"
+              >
+                {isValidating ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+                Revalide Agora
+              </button>
+            </div>
+
+            {validationData ? (
+              <div className="grid grid-cols-3 gap-2">
+                <div className="rounded-xl bg-accent/30 p-2.5 text-center">
+                  <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Cartões</p>
+                  <p className="text-sm font-bold mt-0.5">{validationData.summary.totalCardsChecked}</p>
                 </div>
-
-              <div className={`bg-gradient-to-br ${card.color} px-3.5 pb-3 pt-1 text-white relative`}>
-                <div className="absolute inset-0 bg-black/55 pointer-events-none" />
-                <div className="relative">
-                  <div className="flex justify-between items-start gap-2 mb-1.5">
-                    <div className="min-w-0">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-white/90">Fatura {activeInvoicePeriod?.label.split(" (")[0] || "atual"}</p>
-                      <p className="text-base font-extrabold text-white tabular-nums drop-shadow-md truncate" data-testid="fatura-atual-valor">
-                        R$ {invoiceRemaining.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                      </p>
-
-                    </div>
-                    <div className="flex items-center gap-1 text-[10px] font-semibold text-white shrink-0 mt-0.5">
-                      <span className="rounded-full bg-black/45 px-1.5 py-0.5 ring-1 ring-white/20 tabular-nums">
-                        F {formatDueDate(currentClose)}
-                      </span>
-                      <span className="rounded-full bg-black/45 px-1.5 py-0.5 ring-1 ring-white/20 tabular-nums">
-                        V {formatDueDate(currentDue)}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="relative h-4 rounded-full bg-black/30 overflow-hidden ring-1 ring-white/20">
-                    <div
-                      className={cn(
-                        "h-full rounded-full transition-all duration-500 opacity-70",
-                        pct >= 80 ? "bg-red-400" : pct >= 50 ? "bg-amber-300" : "bg-emerald-300"
-                      )}
-                      style={{ width: `${Math.min(pct, 100)}%` }}
-                    />
-                    <span className="absolute inset-0 flex items-center justify-center text-[10px] font-semibold text-white/90 tabular-nums drop-shadow-[0_1px_1px_rgba(0,0,0,0.6)]">
-                      {pct}% usado
-                    </span>
-                  </div>
-                  {totalPaid > 0 ? (
-                    <div className="flex items-center justify-between gap-2 mt-1">
-                      <p className="text-[10px] text-emerald-300 font-bold tabular-nums drop-shadow-sm truncate">
-                        ✓ R$ {totalPaid.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} pago
-                      </p>
-                      <p className="text-[10px] text-white/80 tabular-nums" title={`Limite total: R$ ${(card.card_limit || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`}>
-                        Disponível <span className="font-bold text-white">R$ {Math.max(0, card.card_limit - outstandingBalance).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-between gap-2 mt-1">
-                      <p className="text-[10px] text-white/70 tabular-nums">
-                        de R$ {(card.card_limit || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                      </p>
-                      <p className="text-[10px] text-white/80 tabular-nums">
-                        Disponível <span className="font-bold text-white">R$ {Math.max(0, card.card_limit - outstandingBalance).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
-                      </p>
-                    </div>
-                  )}
-                  <div className="flex gap-1.5 mt-2">
-                    {(totalUsed > 0 || card.used > 0) && (
-                      <button
-                        onClick={() => openPayDialog(card)}
-                        className="interactive-button flex flex-1 items-center justify-center gap-1 rounded-lg bg-white py-2 text-xs font-bold text-gray-900 hover:bg-white/90 transition-colors shadow-md ring-2 ring-white/60"
-                      >
-                        <Wallet className="h-3 w-3" strokeWidth={2.5} />
-                        Pagar
-                      </button>
-                    )}
-                    <button
-                      onClick={() => openInvoiceDialog(card)}
-                      className="interactive-button flex flex-1 items-center justify-center gap-1 rounded-lg bg-black/60 py-2 text-xs font-bold text-white hover:bg-black/70 transition-colors ring-2 ring-white/50"
-                    >
-                      <Receipt className="h-3 w-3" strokeWidth={2.5} />
-                      Faturas
-                    </button>
-                    <button
-                      onClick={() => { setPdfImportCard(card); setPdfImportOpen(true); }}
-                      className="interactive-button flex items-center justify-center rounded-lg bg-black/60 w-9 text-white hover:bg-black/70 transition-colors ring-2 ring-white/50"
-                      title="Importar PDF"
-                    >
-                      <FileUp className="h-3 w-3" strokeWidth={2.5} />
-                    </button>
-                  </div>
+                <div className="rounded-xl bg-accent/30 p-2.5 text-center">
+                  <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Faturas</p>
+                  <p className="text-sm font-bold mt-0.5">{validationData.summary.totalInvoicesChecked}</p>
+                </div>
+                <div className={cn(
+                  "rounded-xl p-2.5 text-center",
+                  validationData.summary.discrepanciesFound > 0 ? "bg-destructive/10 text-destructive" : "bg-emerald-500/10 text-emerald-600"
+                )}>
+                  <p className="text-[9px] uppercase tracking-wider font-medium opacity-80">Erros</p>
+                  <p className="text-sm font-bold mt-0.5">{validationData.summary.discrepanciesFound}</p>
                 </div>
               </div>
-                 </div>
-
-            </SortableCardWrapper>
-          );
-        })}
+            ) : null}
           </div>
-        </SortableContext>
-      </DndContext>
-    </TabsContent>
 
-
-          {validationData && (
-            <div className="space-y-4" id="validation-tab">
-              {validationData.summary.discrepancyDetails.length > 0 && (
-                <div className="space-y-2">
-                  <h4 className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground ml-1">Discrepâncias Detalhadas</h4>
-                  {validationData.summary.discrepancyDetails.map((d: any, idx: number) => (
-                    <div key={idx} className="rounded-2xl border border-destructive/20 bg-destructive/5 p-3 animate-in slide-in-from-top-2 duration-300">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                          {d.status === 'error' ? <AlertCircle className="h-3.5 w-3.5 text-destructive" /> : <Info className="h-3.5 w-3.5 text-amber-500" />}
-                          {d.cardName}
-                        </span>
-                        <Badge variant={d.status === 'error' ? 'destructive' : 'outline'} className="text-[9px] h-4">
-                          {d.status.toUpperCase()}
+          <div className="space-y-3">
+            <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground pl-1">Detalhes das Divergências</h4>
+            {validationData?.summary?.discrepancyDetails?.length > 0 ? (
+              validationData.summary.discrepancyDetails.map((disc: any, idx: number) => (
+                <div key={idx} className="rounded-2xl bg-card border border-destructive/20 p-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  <div className="flex items-start gap-3">
+                    <div className="mt-0.5 h-8 w-8 shrink-0 rounded-xl bg-destructive/10 flex items-center justify-center">
+                      <AlertCircle className="h-4 w-4 text-destructive" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-xs font-bold text-foreground truncate">{disc.cardName}</p>
+                        <Badge variant="outline" className="text-[9px] h-4 border-destructive/30 text-destructive bg-destructive/5">
+                          {disc.type}
                         </Badge>
                       </div>
-                      {d.type === 'amount' ? (
-                        <div className="space-y-2">
-                          <div className="flex justify-between items-center text-[10px] text-muted-foreground">
-                            <span>Valor no Cartão: <strong>R$ {(d.cardValue || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong></span>
-                            <span>Soma da Fatura: <strong>R$ {(d.faturaValue || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong></span>
+                      <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
+                        {disc.message}
+                      </p>
+                      {disc.expected !== undefined && disc.actual !== undefined && (
+                        <div className="mt-3 flex items-center gap-4 text-[10px] font-mono bg-accent/30 p-2 rounded-lg border border-border/50">
+                          <div>
+                            <span className="text-muted-foreground mr-1">Esperado:</span>
+                            <span className="text-foreground font-bold">R$ {disc.expected.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
                           </div>
-                          <div className="grid grid-cols-2 gap-2">
-                            <button
-                              onClick={() => handleRecalculateUsedLimit(d.cardId, d.faturaValue)}
-                              className="flex items-center justify-center gap-1.5 rounded-lg bg-primary/10 py-1.5 text-[10px] font-bold text-primary hover:bg-primary/20 transition-colors border border-primary/20"
-                            >
-                              <RefreshCw className="h-3 w-3" />
-                              Sincronizar Limite
-                            </button>
-                            <button
-                              onClick={() => {
-                                const card = cards.find(c => c.id === d.cardId);
-                                if (card) {
-                                  setPdfImportCard(card);
-                                  setPdfImportOpen(true);
-                                }
-                              }}
-                              className="flex items-center justify-center gap-1.5 rounded-lg bg-accent py-1.5 text-[10px] font-bold text-muted-foreground hover:bg-accent/80 transition-colors border border-border"
-                            >
-                              <FileUp className="h-3 w-3" />
-                              Comparar com PDF
-                            </button>
+                          <div className="h-3 w-px bg-border" />
+                          <div>
+                            <span className="text-muted-foreground mr-1">Atual:</span>
+                            <span className="text-destructive font-bold">R$ {disc.actual.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
                           </div>
-
                         </div>
-                      ) : (
-                        <p className="text-[10px] text-muted-foreground">Nenhuma fatura encontrada para este cartão nos últimos meses.</p>
+                      )}
+                      
+                      {disc.cardId && disc.actual !== undefined && (
+                        <button
+                          onClick={() => handleRecalculateUsedLimit(disc.cardId, disc.expected)}
+                          className="mt-3 w-full flex items-center justify-center gap-2 rounded-lg bg-foreground py-1.5 text-[10px] font-bold text-background transition-colors hover:bg-foreground/90"
+                        >
+                          <RefreshCw className="h-3 w-3" />
+                          Corrigir Automaticamente
+                        </button>
                       )}
                     </div>
-                  ))}
-                </div>
-              )}
-
-              <div className="space-y-2">
-                <h4 className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground ml-1">Logs de Auditoria</h4>
-                <div className="rounded-2xl bg-card border border-border/50 overflow-hidden">
-                  <div className="max-h-[300px] overflow-y-auto no-scrollbar" id="validation-logs">
-                    <table className="w-full text-left text-[10px] border-collapse">
-                      <thead className="sticky top-0 bg-accent/50 backdrop-blur-sm border-b border-border/50">
-                        <tr>
-                          <th className="px-3 py-2 font-bold text-muted-foreground">Data/Hora (Local)</th>
-                          <th className="px-3 py-2 font-bold text-muted-foreground">Mensagem</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {validationData.logs.map((log: string, idx: number) => {
-                          const [time, ...msgParts] = log.split(" - ");
-                          const msg = msgParts.join(" - ");
-                          return (
-                            <tr key={idx} className="border-b border-border/30 last:border-0 hover:bg-accent/20 transition-colors">
-                              <td className="px-3 py-2 text-muted-foreground tabular-nums whitespace-nowrap">{time}</td>
-                              <td className="px-3 py-2 font-medium text-foreground">{msg}</td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
                   </div>
                 </div>
+              ))
+            ) : (
+              <div className="flex flex-col items-center justify-center py-12 text-center rounded-2xl bg-card border border-border/50">
+                <div className="h-12 w-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center mb-3">
+                  <CheckCircle2 className="h-6 w-6 text-emerald-500" />
+                </div>
+                <p className="text-xs font-bold text-foreground">Nenhuma divergência</p>
+                <p className="text-[10px] text-muted-foreground mt-1">Sua fatura de cartões está em dia!</p>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </TabsContent>
       </Tabs>
 
-      <button
+      {/* Floating Add Button */}
+      <button 
         onClick={openAddDialog}
-        className="interactive-button flex items-center justify-center gap-2 rounded-2xl bg-primary py-3 text-sm font-medium text-primary-foreground"
+        className="fixed bottom-24 right-6 h-14 w-14 rounded-2xl bg-primary text-primary-foreground shadow-xl shadow-primary/30 flex items-center justify-center interactive-button z-40 transition-transform hover:scale-105 active:scale-95"
+        aria-label="Adicionar novo cartão"
       >
-        <Plus className="h-4 w-4" />
-        Adicionar cartão
+        <Plus className="h-6 w-6 stroke-[3]" />
       </button>
 
       {/* Invoice Dialog */}
@@ -1301,6 +1151,136 @@ export function CardsPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Add card dialog (new cards only) */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="rounded-3xl max-w-[92vw] sm:max-w-[400px] p-0 overflow-hidden border-none shadow-2xl">
+          <div className="bg-primary p-6 text-primary-foreground">
+            <DialogHeader className="p-0">
+              <DialogTitle className="text-xl font-black flex items-center gap-3">
+                <div className="h-10 w-10 rounded-2xl bg-white/20 flex items-center justify-center">
+                  <CreditCard className="h-5 w-5" />
+                </div>
+                Novo Cartão
+              </DialogTitle>
+            </DialogHeader>
+          </div>
+          
+          <div className="p-6 space-y-5 bg-card">
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="name" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Nome do Cartão</Label>
+                <Input
+                  id="name"
+                  value={formName}
+                  onChange={(e) => setFormName(e.target.value)}
+                  placeholder="Ex: Nubank, Inter..."
+                  className="rounded-xl border-border/50 h-11 focus:ring-primary/20"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="number" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Últimos 4 Dígitos</Label>
+                  <Input
+                    id="number"
+                    value={formNumber}
+                    onChange={(e) => setFormNumber(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                    placeholder="0000"
+                    className="rounded-xl border-border/50 h-11 tabular-nums"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Bandeira</Label>
+                  <Select value={formBrand} onValueChange={setFormBrand}>
+                    <SelectTrigger className="rounded-xl border-border/50 h-11">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl">
+                      {brandPresets.map((bp) => (
+                        <SelectItem key={bp.id} value={bp.id}>
+                          <div className="flex items-center gap-2">
+                            <CardBrand brand={bp.id} size="sm" />
+                            {bp.label}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="limit" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Limite (R$)</Label>
+                  <CalculatorAmountInput
+                    id="limit"
+                    value={parseFloat(formLimit) || 0}
+                    onChange={(v) => setFormLimit(v.toString())}
+                    className="rounded-xl border-border/50 h-11"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="color" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Cor / Estilo</Label>
+                  <Select value={formColor} onValueChange={setFormColor}>
+                    <SelectTrigger className="rounded-xl border-border/50 h-11">
+                      <div className="flex items-center gap-2">
+                        <div className={cn("h-4 w-4 rounded-full bg-gradient-to-br", formColor)} />
+                        <SelectValue />
+                      </div>
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl">
+                      {colorOptions.map((co) => (
+                        <SelectItem key={co.value} value={co.value}>
+                          <div className="flex items-center gap-2">
+                            <div className={cn("h-4 w-4 rounded-full bg-gradient-to-br", co.value)} />
+                            {co.label}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="closing" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Dia de Fechamento</Label>
+                  <Input
+                    id="closing"
+                    type="number"
+                    value={formClosingDay}
+                    onChange={(e) => setFormClosingDay(e.target.value.replace(/\D/g, "").slice(0, 2))}
+                    placeholder="1"
+                    min={1} max={31}
+                    className="rounded-xl border-border/50 h-11"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="due" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Dia de Vencimento</Label>
+                  <Input
+                    id="due"
+                    type="number"
+                    value={formDueDay}
+                    onChange={(e) => setFormDueDay(e.target.value.replace(/\D/g, "").slice(0, 2))}
+                    placeholder="10"
+                    min={1} max={31}
+                    className="rounded-xl border-border/50 h-11"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={handleAdd}
+              className="w-full interactive-button flex items-center justify-center gap-2 rounded-2xl bg-primary py-3.5 text-sm font-black text-primary-foreground shadow-xl shadow-primary/20"
+            >
+              Criar Cartão
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
 
       {/* Add card dialog (new cards only) */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
