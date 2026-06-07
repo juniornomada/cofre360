@@ -158,7 +158,10 @@ function AIInsightsDashboard() {
         }
       }
 
-      const duration = Date.now() - startTime;
+      if (!fullText) {
+        throw new Error("Resposta vazia da IA");
+      }
+
       
       // Avaliação de Acurácia Simples (Palavras-chave)
       const findings: string[] = [];
