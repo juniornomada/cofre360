@@ -151,7 +151,6 @@ function SortableAccountItem({ acc, balanceVisible, fmt }: { acc: any; balanceVi
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-xs font-bold text-foreground/90 truncate tracking-tight">{acc.name}</p>
-          <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-widest mt-0.5">Saldo Disponível</p>
         </div>
         <div className="text-right">
           <p className={cn(
