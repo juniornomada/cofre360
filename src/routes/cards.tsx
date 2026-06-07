@@ -129,7 +129,7 @@ export function CardsPage() {
   const totalLimit = cards.reduce((sum, c) => sum + (c.card_limit || 0), 0);
 
   return (
-    <div className="animate-page-enter p-4 pb-24">
+    <div className="app-container">
       <header className="mb-6 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Link to="/" className="interactive-button flex h-11 w-11 items-center justify-center rounded-2xl bg-card/40 backdrop-blur-md border border-white/[0.05] text-muted-foreground shadow-sm">

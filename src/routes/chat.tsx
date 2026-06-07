@@ -13,7 +13,7 @@ export const Route = createFileRoute("/chat")({
 
 function ChatPage() {
   return (
-    <div className="animate-page-enter flex h-[calc(100vh-5rem)] flex-col px-4 pt-6 pb-4">
+    <div className="app-container h-[calc(100vh-5rem)]">
       <FinancialChat />
     </div>
   );
