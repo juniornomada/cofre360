@@ -150,7 +150,7 @@ function SortableAccountItem({ acc, balanceVisible, fmt }: { acc: any; balanceVi
           <BankLogo icon={acc.icon} color={acc.color} name={acc.name} size="sm" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-[11px] font-bold text-foreground/90 truncate tracking-tight">{acc.name}</p>
+          <p className="text-[10.5px] font-bold text-foreground/90 truncate tracking-tight">{acc.name}</p>
         </div>
         <div className="text-right shrink-0">
           <p className={cn(
@@ -992,19 +992,19 @@ export function Dashboard() {
         
         <div className="flex items-end justify-between gap-4 mb-4">
           <div className="flex flex-col">
-            <h2 className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-3">
+            <h2 className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-2 opacity-80">
               Saldo
             </h2>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <p className={cn(
-                "text-2xl font-black tabular-nums tracking-tighter transition-all duration-500",
+                "text-xl font-black tabular-nums tracking-tight transition-all duration-500",
                 balance >= 0 ? "text-foreground" : "text-destructive"
               )}>
                 {balanceVisible ? `R$ ${fmt(balance)}` : "R$ ••••••"}
               </p>
               <button 
                 onClick={() => updateBalanceVisible(!balanceVisible)} 
-                className="interactive-button p-2 rounded-2xl bg-white/5 hover:bg-white/10 text-muted-foreground transition-all"
+                className="interactive-button p-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-muted-foreground transition-all"
                 aria-label={balanceVisible ? "Ocultar saldos" : "Mostrar saldos"}
               >
                 {balanceVisible ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
