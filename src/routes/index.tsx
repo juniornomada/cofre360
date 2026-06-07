@@ -1038,10 +1038,10 @@ export function Dashboard() {
           </DndContext>
         )}
 
-        <div className="mt-5 pt-4 border-t border-white/[0.05] grid grid-cols-2 gap-4">
+        <div className="mt-3 pt-3 border-t border-white/[0.05] grid grid-cols-2 gap-3">
           <div className="flex flex-col">
-            <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-1">Mês Inicial</span>
-            <span className="text-xs font-bold tabular-nums text-foreground/70">
+            <span className="text-[8px] font-black text-muted-foreground uppercase tracking-widest mb-0.5 opacity-70">Mês Inicial</span>
+            <span className="text-[10px] font-bold tabular-nums text-foreground/60">
               {balanceVisible ? `R$ ${fmt(monthInitialBalance)}` : "R$ ••••"}
             </span>
           </div>
@@ -1052,12 +1052,12 @@ export function Dashboard() {
             } as any}
             className="flex flex-col items-end group/link"
           >
-            <span className="text-[9px] font-black text-primary uppercase tracking-widest mb-1 flex items-center gap-1.5">
-              Previsão Fim do Mês <Sparkles className="h-2.5 w-2.5" />
+            <span className="text-[8px] font-black text-primary uppercase tracking-widest mb-0.5 flex items-center gap-1 opacity-90">
+              Previsão <Sparkles className="h-2 w-2" />
             </span>
             <span className={cn(
-              "text-xs font-bold tabular-nums transition-colors group-hover/link:text-primary",
-              forecastBalance >= 0 ? "text-foreground/70" : "text-destructive"
+              "text-[10px] font-bold tabular-nums transition-colors group-hover/link:text-primary",
+              forecastBalance >= 0 ? "text-foreground/60" : "text-destructive"
             )}>
               {balanceVisible ? `R$ ${fmt(forecastBalance)}` : "R$ ••••"}
             </span>
