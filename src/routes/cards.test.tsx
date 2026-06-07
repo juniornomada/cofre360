@@ -3,6 +3,7 @@ import { render, waitFor, act } from '@testing-library/react';
 import { supabase } from '@/integrations/supabase/client';
 import { CardsPage } from './cards';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { AlertContext } from './__root';
 
 const mockResult = { 
   status: 'ok', 
@@ -77,6 +78,7 @@ vi.mock('@/components/InvoiceInconsistencyAlert', () => ({ InvoiceInconsistencyA
 describe('CardsPage Validation Integration', () => {
   let queryClient: QueryClient;
   let authChangeHandler: any;
+  const mockShowAlert = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -100,7 +102,9 @@ describe('CardsPage Validation Integration', () => {
     
     render(
       <QueryClientProvider client={queryClient}>
-        <CardsPage />
+        <AlertContext.Provider value={{ showAlert: mockShowAlert }}>
+          <CardsPage />
+        </AlertContext.Provider>
       </QueryClientProvider>
     );
 
@@ -147,7 +151,9 @@ describe('CardsPage Validation Integration', () => {
     vi.useFakeTimers();
     render(
       <QueryClientProvider client={queryClient}>
-        <CardsPage />
+        <AlertContext.Provider value={{ showAlert: mockShowAlert }}>
+          <CardsPage />
+        </AlertContext.Provider>
       </QueryClientProvider>
     );
 
@@ -187,7 +193,9 @@ describe('CardsPage Validation Integration', () => {
     vi.useFakeTimers();
     render(
       <QueryClientProvider client={queryClient}>
-        <CardsPage />
+        <AlertContext.Provider value={{ showAlert: mockShowAlert }}>
+          <CardsPage />
+        </AlertContext.Provider>
       </QueryClientProvider>
     );
 
@@ -242,7 +250,9 @@ describe('CardsPage Validation Integration', () => {
     vi.useFakeTimers();
     render(
       <QueryClientProvider client={queryClient}>
-        <CardsPage />
+        <AlertContext.Provider value={{ showAlert: mockShowAlert }}>
+          <CardsPage />
+        </AlertContext.Provider>
       </QueryClientProvider>
     );
 
@@ -277,7 +287,9 @@ describe('CardsPage Validation Integration', () => {
     vi.useFakeTimers();
     render(
       <QueryClientProvider client={queryClient}>
-        <CardsPage />
+        <AlertContext.Provider value={{ showAlert: mockShowAlert }}>
+          <CardsPage />
+        </AlertContext.Provider>
       </QueryClientProvider>
     );
 
@@ -335,7 +347,9 @@ describe('CardsPage Validation Integration', () => {
     vi.useFakeTimers();
     render(
       <QueryClientProvider client={queryClient}>
-        <CardsPage />
+        <AlertContext.Provider value={{ showAlert: mockShowAlert }}>
+          <CardsPage />
+        </AlertContext.Provider>
       </QueryClientProvider>
     );
 
@@ -382,7 +396,9 @@ describe('CardsPage Validation Integration', () => {
     vi.useFakeTimers();
     render(
       <QueryClientProvider client={queryClient}>
-        <CardsPage />
+        <AlertContext.Provider value={{ showAlert: mockShowAlert }}>
+          <CardsPage />
+        </AlertContext.Provider>
       </QueryClientProvider>
     );
 
@@ -416,7 +432,9 @@ describe('CardsPage Validation Integration', () => {
     vi.useFakeTimers();
     render(
       <QueryClientProvider client={queryClient}>
-        <CardsPage />
+        <AlertContext.Provider value={{ showAlert: mockShowAlert }}>
+          <CardsPage />
+        </AlertContext.Provider>
       </QueryClientProvider>
     );
 
@@ -450,7 +468,9 @@ describe('CardsPage Validation Integration', () => {
     vi.useFakeTimers();
     render(
       <QueryClientProvider client={queryClient}>
-        <CardsPage />
+        <AlertContext.Provider value={{ showAlert: mockShowAlert }}>
+          <CardsPage />
+        </AlertContext.Provider>
       </QueryClientProvider>
     );
 
@@ -485,7 +505,9 @@ describe('CardsPage Validation Integration', () => {
     vi.useFakeTimers();
     render(
       <QueryClientProvider client={queryClient}>
-        <CardsPage />
+        <AlertContext.Provider value={{ showAlert: mockShowAlert }}>
+          <CardsPage />
+        </AlertContext.Provider>
       </QueryClientProvider>
     );
 
@@ -543,7 +565,9 @@ describe('CardsPage Validation Integration', () => {
 
     render(
       <QueryClientProvider client={queryClient}>
-        <CardsPage />
+        <AlertContext.Provider value={{ showAlert: mockShowAlert }}>
+          <CardsPage />
+        </AlertContext.Provider>
       </QueryClientProvider>
     );
 
