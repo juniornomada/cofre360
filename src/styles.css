@@ -132,40 +132,41 @@
     -webkit-font-smoothing: antialiased;
     overscroll-behavior-y: none;
     -webkit-tap-highlight-color: transparent;
-    letter-spacing: -0.011em;
-    font-size: 16px; /* Base size for mobile accessibility */
+    letter-spacing: -0.015em;
+    font-size: 16px;
+    line-height: 1.6;
   }
 
   :focus-visible {
     outline: 2px solid var(--color-primary) !important;
     outline-offset: 2px !important;
-    box-shadow: 0 0 0 4px oklch(from var(--color-primary) l c h / 0.2) !important;
+    box-shadow: 0 0 0 4px oklch(from var(--color-primary) l c h / 0.15) !important;
   }
 }
 
 @layer components {
   .app-container {
-    @apply mx-auto w-full max-w-md px-4 sm:px-6 md:px-8 py-6 space-y-6 animate-page-enter;
+    @apply mx-auto w-full max-w-lg px-6 sm:px-8 py-8 space-y-8 animate-page-enter;
   }
 
   .grid-standard {
-    @apply grid grid-cols-1 gap-4 sm:gap-6;
+    @apply grid grid-cols-1 gap-6 sm:gap-8;
   }
 
   .glass-card {
-    @apply bg-card/40 backdrop-blur-2xl border border-white/[0.08] shadow-[0_8px_40px_-12px_rgba(0,0,0,0.3)] rounded-2xl transition-all duration-300 hover:bg-card/50;
+    @apply bg-card/30 backdrop-blur-3xl border border-white/[0.05] shadow-[0_12px_48px_-12px_rgba(0,0,0,0.4)] rounded-3xl transition-all duration-500 hover:bg-card/40 hover:border-white/[0.1] hover:-translate-y-1;
   }
   
   .premium-gradient-text {
-    @apply bg-clip-text text-transparent bg-gradient-to-br from-primary via-primary/90 to-primary/40 font-bold tracking-tight;
+    @apply bg-clip-text text-transparent bg-gradient-to-br from-primary via-primary/80 to-primary/30 font-extrabold tracking-tight;
   }
 
   .nav-item-glow {
-    @apply relative after:absolute after:-bottom-1 after:left-1/2 after:-translate-x-1/2 after:h-1.5 after:w-1.5 after:rounded-full after:bg-primary after:shadow-[0_0_12px_rgba(var(--primary),1)];
+    @apply relative after:absolute after:-bottom-2 after:left-1/2 after:-translate-x-1/2 after:h-1 after:w-4 after:rounded-full after:bg-primary after:shadow-[0_0_15px_oklch(from var(--color-primary) l c h)];
   }
 
   .premium-input-container {
-    @apply relative flex flex-col gap-1.5;
+    @apply relative flex flex-col gap-2;
   }
 }
 
