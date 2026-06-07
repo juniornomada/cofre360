@@ -1193,10 +1193,11 @@ export function Dashboard() {
          ) : (
            <div ref={transactionsListRef} tabIndex={-1} className="flex flex-col gap-3 focus:outline-none">
             {groupedTransactions.map((group) => (
-              <div key={group.label}>
-                <div className="flex flex-col gap-1.5">
+              <div key={group.label} className="space-y-3">
+                <p className="text-[10px] font-black text-muted-foreground/50 uppercase tracking-[0.2em] px-2">{group.label}</p>
+                <div className="flex flex-col gap-3">
                   {group.items.map((tx, i) => (
-                    <div key={tx.id} className="group/tx-row relative" style={{ animationDelay: `${i * 40}ms` }}>
+                    <div key={tx.id} className="group/tx-row relative animate-stagger-in" style={{ animationDelay: `${i * 50}ms` }}>
                       <TransactionItem 
                         {...tx} 
                         card={tx.card ?? undefined} 
