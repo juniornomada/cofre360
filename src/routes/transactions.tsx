@@ -243,28 +243,30 @@ export function TransactionsPage() {
   const [loadingMore, setLoadingMore] = useState(false);
   const offsetRef = useRef(0);
 
+  const [error, setError] = useState<string | null>(null);
+
   const fetchTransactionsPage = useCallback(async (reset = false) => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
 
     try {
-
       if (reset) {
         offsetRef.current = 0;
         setHasMore(true);
+        setError(null);
       }
       const from = reset ? 0 : offsetRef.current;
       const to = from + PAGE_SIZE - 1;
       if (reset) setLoading(true); else setLoadingMore(true);
 
-      const { data, error } = await supabase
+      const { data, error: fetchError } = await supabase
         .from("transactions")
         .select("*")
-        .eq("user_id", session.user.id) // Ensure we filter by the logged-in user
+        .eq("user_id", session.user.id)
         .order("created_at", { ascending: false })
         .range(from, to);
 
-      if (error) throw error;
+      if (fetchError) throw fetchError;
 
       if (data) {
         const brandMap = cardNameToBrandRef.current;
@@ -276,9 +278,10 @@ export function TransactionsPage() {
         offsetRef.current = from + data.length;
         if (data.length < PAGE_SIZE) setHasMore(false);
       }
-    } catch (error: any) {
-      console.error("Error fetching transactions:", error);
-      toast.error("Erro ao carregar transações: " + (error.message || "Erro desconhecido"));
+    } catch (err: any) {
+      console.error("Error fetching transactions:", err);
+      setError(err.message || "Ocorreu um problema ao carregar as transações.");
+      toast.error("Erro ao carregar transações");
     } finally {
       setLoading(false);
       setLoadingMore(false);
