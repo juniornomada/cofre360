@@ -354,7 +354,7 @@ function AccountsPage() {
     if (!session) return;
 
     try {
-
+      setLoading(true);
       const { data, error } = await supabase.from("bank_accounts").select("*").eq("user_id", session.user.id).order("sort_order", { ascending: true }).order("created_at", { ascending: true });
       if (error) throw error;
       if (data) setAccounts(data);
