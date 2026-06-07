@@ -204,56 +204,54 @@
   100% { background-position: 200% 0; }
 }
 
-@layer utilities {
-  .animate-page-enter {
-    animation: page-enter 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
-  }
+@utility animate-page-enter {
+  animation: page-enter 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
 
-  .animate-stagger-in {
-    animation: stagger-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
-  }
+@utility animate-stagger-in {
+  animation: stagger-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
 
-  .animate-press {
-    animation: press 0.15s ease-in-out;
-  }
+@utility animate-press {
+  animation: press 0.15s ease-in-out;
+}
 
-  .interactive-card {
-    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
-  }
-  .interactive-card:active {
+@utility interactive-card {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
+  &:active {
     transform: scale(0.97);
   }
+}
 
-  .interactive-button {
-    transition: transform 0.15s ease, opacity 0.15s ease;
-  }
-  .interactive-button:active {
+@utility interactive-button {
+  transition: transform 0.15s ease, opacity 0.15s ease;
+  &:active {
     transform: scale(0.93);
   }
+}
 
-  .nav-item-transition {
-    transition: color 0.2s ease, transform 0.2s ease;
+@utility nav-item-transition {
+  transition: color 0.2s ease, transform 0.2s ease;
+  &:active {
+    transform: scale(0.9);
   }
-   .nav-item-transition:active {
-     transform: scale(0.9);
-   }
- 
-   @media (prefers-reduced-motion: reduce) {
-     *, ::before, ::after {
-       animation-delay: -1ms !important;
-       animation-duration: 1ms !important;
-       animation-iteration-count: 1 !important;
-       background-attachment: initial !important;
-       scroll-behavior: auto !important;
-       transition-duration: 0s !important;
-       transition-delay: 0s !important;
-     }
- 
-     .interactive-card:active,
-     .interactive-button:active,
-     .nav-item-transition:active {
-       transform: none !important;
-     }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-delay: -1ms !important;
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    background-attachment: initial !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0s !important;
+    transition-delay: 0s !important;
+  }
+
+  .interactive-card:active,
+  .interactive-button:active,
+  .nav-item-transition:active {
+    transform: none !important;
   }
 }
 
