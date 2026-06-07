@@ -18,12 +18,12 @@ export function BottomNav() {
   const pendingLocation = useRouterState({ select: (s) => s.location });
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-white/[0.05] bg-card/60 backdrop-blur-2xl">
-      <div className="mx-auto flex w-full max-w-md items-center justify-around px-2 py-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))] overflow-x-auto no-scrollbar sm:justify-center sm:gap-2">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-white/[0.05] bg-card/40 backdrop-blur-3xl">
+      <div className="mx-auto flex w-full max-w-lg items-center justify-around px-4 py-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] overflow-x-auto no-scrollbar sm:justify-center sm:gap-6">
         {navItems.map((item) => {
           const isPending = isLoading && pendingLocation?.pathname === item.to;
           const isActive = (location.pathname === item.to && !isLoading) || isPending;
-          const shouldHighlight = isActive && item.to !== "/orcametas";
+          const shouldHighlight = isActive;
           
           return (
             <Link
@@ -32,27 +32,24 @@ export function BottomNav() {
               search={{} as any}
               preload="intent"
               className={cn(
-                "nav-item-transition flex flex-col items-center gap-0.5 rounded-xl px-1 py-2 text-[9px] shrink-0 min-w-[3.5rem]",
+                "nav-item-transition flex flex-col items-center gap-1.5 rounded-2xl px-2 py-2 text-[10px] shrink-0 min-w-[4rem] transition-all duration-300",
                 shouldHighlight
-                  ? "text-primary"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "text-primary bg-primary/5"
+                  : "text-muted-foreground hover:text-foreground hover:bg-white/5"
               )}
             >
               <item.icon
                 className={cn(
-                  "h-5 w-5 transition-transform duration-200",
-                  shouldHighlight && "stroke-[2.5] scale-110"
+                  "h-5 w-5 transition-all duration-300",
+                  shouldHighlight && "stroke-[2.5] scale-110 drop-shadow-[0_0_8px_oklch(from_var(--color-primary)_l_c_h_/_0.3)]"
                 )}
               />
               <span className={cn(
-                "font-medium transition-all duration-200 whitespace-nowrap",
-                shouldHighlight && "font-semibold"
+                "font-medium transition-all duration-300 tracking-tight",
+                shouldHighlight && "font-bold text-primary"
               )}>
                 {item.label}
               </span>
-              {shouldHighlight && (
-                <span className="mt-1 h-1 w-1 rounded-full bg-primary shadow-[0_0_8px_rgba(var(--primary),0.8)] animate-scale-in" />
-              )}
             </Link>
           );
         })}

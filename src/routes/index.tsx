@@ -114,6 +114,7 @@ function parseTxDateToDate(dateStr: string): Date | null {
 
 function getGreeting(): string {
   const h = new Date().getHours();
+  if (h < 5) return "Boa madrugada";
   if (h < 12) return "Bom dia";
   if (h < 18) return "Boa tarde";
   return "Boa noite";
@@ -140,27 +141,32 @@ function SortableAccountItem({ acc, balanceVisible, fmt }: { acc: any; balanceVi
         isDragging && "ring-2 ring-primary/50 ring-offset-2 ring-offset-background rounded-2xl shadow-2xl scale-[1.01] z-50",
       )}
     >
-      <div className="flex flex-1 items-center gap-2 overflow-hidden">
-        <Link
-          to="/accounts"
-          search={{ action: undefined } as any}
-          className="flex-1 flex items-center gap-3 rounded-2xl bg-card/30 backdrop-blur-md border border-border/10 px-3 py-2 hover:bg-card/50 transition-all overflow-hidden shadow-sm"
-        >
-        <BankLogo icon={acc.icon} color={acc.color} name={acc.name} size="sm" />
-        <p className="text-xs font-semibold text-foreground/90 flex-1 min-w-0 truncate">{acc.name}</p>
-        <p className={cn(
-          "text-xs font-bold tabular-nums tracking-tight",
-          acc.balance >= 0 ? "text-foreground" : "text-destructive"
-        )}>
-          {balanceVisible ? `R$ ${fmt(acc.balance)}` : "R$ ••••"}
-        </p>
-        </Link>
-      </div>
+      <Link
+        to="/accounts"
+        search={{ action: undefined } as any}
+        className="flex items-center gap-4 rounded-3xl bg-card/20 backdrop-blur-3xl border border-white/[0.03] px-4 py-3 hover:bg-card/40 transition-all duration-500 overflow-hidden shadow-sm hover:shadow-md hover:border-white/[0.08]"
+      >
+        <div className="shrink-0">
+          <BankLogo icon={acc.icon} color={acc.color} name={acc.name} size="md" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-xs font-bold text-foreground/90 truncate tracking-tight">{acc.name}</p>
+          <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-widest mt-0.5">Saldo Disponível</p>
+        </div>
+        <div className="text-right">
+          <p className={cn(
+            "text-sm font-extrabold tabular-nums tracking-tighter transition-all duration-500",
+            acc.balance >= 0 ? "text-foreground" : "text-destructive"
+          )}>
+            {balanceVisible ? `R$ ${fmt(acc.balance)}` : "R$ ••••"}
+          </p>
+        </div>
+      </Link>
       {isDragging && (
-        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-black/5 backdrop-blur-[0.5px] rounded-xl animate-fade-in">
-          <div className="flex items-center gap-1.5 rounded-full bg-white/95 px-2 py-1 text-[10px] font-bold text-gray-900 shadow-lg ring-1 ring-primary">
-            <GripVertical className="h-3 w-3" />
-            Mover
+        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-black/5 backdrop-blur-[1px] rounded-3xl animate-fade-in">
+          <div className="flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1.5 text-[10px] font-bold text-gray-900 shadow-xl ring-1 ring-primary/30">
+            <GripVertical className="h-3.5 w-3.5" />
+            Reposicionar
           </div>
         </div>
       )}
@@ -874,184 +880,157 @@ export function Dashboard() {
   return (
     <div className="grid-standard">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex flex-col items-center">
-          <div
-            className="flex flex-col leading-none select-none rounded-xl border px-3 py-1.5 mb-1"
-            style={{
-              borderColor: "hsl(142 95% 55%)",
-              boxShadow:
-                "0 0 10px hsl(142 95% 55% / 0.9), 0 0 20px hsl(142 95% 55% / 0.6), inset 0 0 6px hsl(142 95% 55% / 0.35)",
-            }}
-          >
-            <span className="text-xl font-extrabold tracking-tight text-primary dark:text-[hsl(142_95%_62%)] dark:[text-shadow:0_0_10px_hsl(142_95%_55%/0.85),0_0_20px_hsl(142_95%_55%/0.55)]">
-              cofre <span className="text-primary/80 dark:text-[hsl(142_95%_70%)]">360</span>
-            </span>
-            <span className="mt-0.5 text-[10px] font-medium tracking-wide text-primary/70 dark:text-[hsl(142_90%_68%)] dark:[text-shadow:0_0_6px_hsl(142_95%_55%/0.65)]">
-              Seu dinheiro. Seu controle.
-            </span>
-          </div>
-          {userEmail && (
-            <span className="text-[10px] text-muted-foreground px-1 truncate max-w-[150px] text-center w-full">
-              {userEmail}
-            </span>
-          )}
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex flex-col">
+          <h1 className="text-2xl font-black tracking-tighter premium-gradient-text uppercase leading-none">
+            Cofre 360
+          </h1>
+          <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mt-1">
+            {greeting}, {userEmail?.split('@')[0]}
+          </p>
         </div>
 
         <div className="flex items-center gap-2">
-          <button
-            onClick={handleLogout}
-            className="interactive-button flex h-10 w-10 items-center justify-center rounded-full bg-card border"
-            style={{
-              borderColor: "hsl(142 95% 55%)",
-              boxShadow:
-                "0 0 10px hsl(142 95% 55% / 0.9), 0 0 20px hsl(142 95% 55% / 0.6), inset 0 0 6px hsl(142 95% 55% / 0.35)",
-            }}
-            title="Sair"
-          >
-            <LogOut className="h-5 w-5 text-muted-foreground" />
-          </button>
-          <Link
-
-            to="/reminders"
-            className="interactive-button relative flex h-10 w-10 items-center justify-center rounded-full bg-card border"
-            style={{
-              borderColor: "hsl(142 95% 55%)",
-              boxShadow:
-                "0 0 10px hsl(142 95% 55% / 0.9), 0 0 20px hsl(142 95% 55% / 0.6), inset 0 0 6px hsl(142 95% 55% / 0.35)",
-            }}
-          >
-            <Bell className="h-5 w-5 text-muted-foreground" />
-            {pendingReminders.length > 0 && (
-              <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[9px] font-bold text-destructive-foreground">
-                {pendingReminders.length}
-              </span>
-            )}
-          </Link>
-          <div
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-card border"
-            style={{
-              borderColor: "hsl(142 95% 55%)",
-              boxShadow:
-                "0 0 10px hsl(142 95% 55% / 0.9), 0 0 20px hsl(142 95% 55% / 0.6), inset 0 0 6px hsl(142 95% 55% / 0.35)",
-            }}
-          >
-            <ThemeToggle />
+          <div className="flex -space-x-1">
+            <Link
+              to="/reminders"
+              className="interactive-button relative flex h-9 w-9 items-center justify-center rounded-2xl bg-card/40 border border-white/[0.05] shadow-sm hover:bg-card/60 transition-all"
+            >
+              <Bell className="h-4 w-4 text-muted-foreground" />
+              {pendingReminders.length > 0 && (
+                <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[8px] font-black text-primary-foreground animate-pulse shadow-[0_0_8px_oklch(from_var(--color-primary)_l_c_h)]">
+                  {pendingReminders.length}
+                </span>
+              )}
+            </Link>
           </div>
-          <div
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-card border"
-            style={{
-              borderColor: "hsl(142 95% 55%)",
-              boxShadow:
-                "0 0 10px hsl(142 95% 55% / 0.9), 0 0 20px hsl(142 95% 55% / 0.6), inset 0 0 6px hsl(142 95% 55% / 0.35)",
-            }}
-          >
-            <AISettingsDialog />
-          </div>
+          
           <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
             <PopoverTrigger asChild>
               <button
                 aria-label="Adicionar transação"
-                className="interactive-button flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground border"
-                style={{
-                  borderColor: "hsl(142 95% 55%)",
-                  boxShadow:
-                    "0 0 10px hsl(142 95% 55% / 0.9), 0 0 20px hsl(142 95% 55% / 0.6), inset 0 0 6px hsl(142 95% 55% / 0.35)",
-                }}
+                className="interactive-button flex h-10 w-10 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-[0_0_20px_oklch(from_var(--color-primary)_l_c_h_/_0.3)] transition-all"
               >
-                <Plus className="h-5 w-5" />
+                <Plus className="h-5 w-5 stroke-[2.5]" />
               </button>
             </PopoverTrigger>
-            <PopoverContent align="end" className="w-44 p-2">
-              <div className="flex flex-col gap-1">
+            <PopoverContent align="end" className="w-48 p-2 rounded-3xl bg-card/80 backdrop-blur-2xl border-white/[0.05]">
+              <div className="flex flex-col gap-1.5">
                 <button
                   type="button"
                   onClick={() => openQuickAdd("expense")}
-                  className="flex items-center gap-2 rounded-md px-2 py-2 text-sm hover:bg-accent text-left"
+                  className="flex items-center gap-3 rounded-2xl px-3 py-2.5 text-xs font-bold hover:bg-destructive/10 text-foreground transition-all group"
                 >
-                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-destructive/15 text-destructive">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-destructive/15 text-destructive group-hover:scale-110 transition-transform">
                     <Minus className="h-4 w-4" />
                   </span>
-                  Despesa
+                  Lançar Despesa
                 </button>
                 <button
                   type="button"
                   onClick={() => openQuickAdd("income")}
-                  className="flex items-center gap-2 rounded-md px-2 py-2 text-sm hover:bg-accent text-left"
+                  className="flex items-center gap-3 rounded-2xl px-3 py-2.5 text-xs font-bold hover:bg-primary/10 text-foreground transition-all group"
                 >
-                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/15 text-primary">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/15 text-primary group-hover:scale-110 transition-transform">
                     <Plus className="h-4 w-4" />
                   </span>
-                  Receita
+                  Lançar Receita
                 </button>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      type="button"
-                      onClick={() => openQuickAdd("transfer")}
-                      className="flex items-center gap-2 rounded-md px-2 py-2 text-sm hover:bg-accent text-left w-full group"
-                    >
-                      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-500/15 text-blue-500 group-hover:bg-blue-500/25 transition-colors">
-                        <ArrowLeftRight className="h-4 w-4" />
-                      </span>
-                      Transf
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="top" align="center" sideOffset={10}>
-                    Transferência
-                  </TooltipContent>
-                </Tooltip>
+                <button
+                  type="button"
+                  onClick={() => openQuickAdd("transfer")}
+                  className="flex items-center gap-3 rounded-2xl px-3 py-2.5 text-xs font-bold hover:bg-blue-500/10 text-foreground transition-all group"
+                >
+                  <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-500/15 text-blue-500 group-hover:scale-110 transition-transform">
+                    <ArrowLeftRight className="h-4 w-4" />
+                  </span>
+                  Transferência
+                </button>
               </div>
+            </PopoverContent>
+          </Popover>
+          
+          <Popover>
+            <PopoverTrigger asChild>
+              <button className="interactive-button flex h-9 w-9 items-center justify-center rounded-2xl bg-card/40 border border-white/[0.05] shadow-sm hover:bg-card/60 transition-all">
+                <div className="h-6 w-6 rounded-full bg-gradient-to-br from-primary/20 to-primary/40 flex items-center justify-center text-[10px] font-black text-primary">
+                  {userEmail?.[0].toUpperCase()}
+                </div>
+              </button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-56 p-2 rounded-3xl bg-card/80 backdrop-blur-2xl border-white/[0.05]">
+               <div className="px-3 py-2 mb-2 border-b border-white/[0.05]">
+                 <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Sua Conta</p>
+                 <p className="text-xs font-semibold truncate mt-1">{userEmail}</p>
+               </div>
+               <div className="flex flex-col gap-1">
+                 <div className="flex items-center justify-between px-3 py-2 text-xs font-bold">
+                   <span>Tema do App</span>
+                   <ThemeToggle />
+                 </div>
+                 <button 
+                   onClick={() => {/* open settings */}}
+                   className="flex items-center gap-3 rounded-2xl px-3 py-2 text-xs font-bold hover:bg-white/5 text-foreground transition-all"
+                 >
+                   <AISettingsDialog />
+                 </button>
+                 <button
+                   onClick={handleLogout}
+                   className="flex items-center gap-3 rounded-2xl px-3 py-2 text-xs font-bold hover:bg-destructive/10 text-destructive transition-all mt-2"
+                 >
+                   <LogOut className="h-4 w-4" />
+                   Sair do Sistema
+                 </button>
+               </div>
             </PopoverContent>
           </Popover>
         </div>
       </div>
 
-      {/* Balance Card — refined with health score + daily available */}
-      <div className="rounded-3xl bg-gradient-to-br from-primary/10 via-card to-card p-6 border border-white/[0.05] shadow-2xl relative overflow-hidden group">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 blur-3xl rounded-full -mr-16 -mt-16 transition-all group-hover:bg-primary/10" />
-        <div className="flex items-center justify-between gap-4 mb-2">
-          <div className="flex flex-col min-w-0">
-            <h2 className="text-sm font-semibold text-foreground flex items-center gap-1.5 uppercase">
-              <Landmark className="h-4 w-4 text-primary" />
-              CONTAS
+      {/* Balance Card — premium look */}
+      <div className="glass-card p-8 relative overflow-hidden group border-white/[0.03]">
+        <div className="absolute top-0 right-0 w-48 h-48 bg-primary/10 blur-[100px] rounded-full -mr-24 -mt-24 transition-all duration-1000 group-hover:bg-primary/20" />
+        
+        <div className="flex items-end justify-between gap-4 mb-8">
+          <div className="flex flex-col">
+            <h2 className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-3">
+              Patrimônio Líquido
             </h2>
-            <p className={cn(
-              "text-2xl font-bold tabular-nums transition-all duration-300 truncate",
-              balance >= 0 ? "text-foreground" : "text-destructive"
-            )}>
-              {balanceVisible ? `R$ ${fmt(balance)}` : "R$ ••••••"}
-            </p>
-          </div>
-          
-          <div className="flex items-center gap-2 shrink-0 self-end mb-0.5">
-            {healthScore !== null && balanceVisible && healthScore >= 40 && (
-              <div className={cn(
-                "hidden sm:flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold",
-                healthScore >= 80 ? "bg-primary/15 text-primary" :
-                healthScore >= 60 ? "bg-blue-500/15 text-blue-400" :
-                "bg-amber-500/15 text-amber-400"
+            <div className="flex items-center gap-3">
+              <p className={cn(
+                "text-4xl font-black tabular-nums tracking-tighter transition-all duration-500",
+                balance >= 0 ? "text-foreground" : "text-destructive"
               )}>
-                {healthScore >= 80 ? "Saudável" : healthScore >= 60 ? "Estável" : "Atenção"}
-              </div>
-            )}
-            <div className="flex items-center gap-1">
+                {balanceVisible ? `R$ ${fmt(balance)}` : "R$ ••••••"}
+              </p>
               <button 
                 onClick={() => updateBalanceVisible(!balanceVisible)} 
-                className="interactive-button p-1.5 rounded-lg hover:bg-accent/50 text-muted-foreground focus-visible:ring-2 focus-visible:ring-primary"
+                className="interactive-button p-2 rounded-2xl bg-white/5 hover:bg-white/10 text-muted-foreground transition-all"
                 aria-label={balanceVisible ? "Ocultar saldos" : "Mostrar saldos"}
               >
                 {balanceVisible ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
               </button>
             </div>
           </div>
+          
+          {healthScore !== null && balanceVisible && (
+            <div className={cn(
+              "flex items-center gap-2 rounded-2xl px-3 py-1.5 text-[10px] font-black uppercase tracking-wider shadow-lg",
+              healthScore >= 80 ? "bg-primary/10 text-primary border border-primary/20" :
+              healthScore >= 60 ? "bg-blue-500/10 text-blue-400 border border-blue-500/20" :
+              "bg-amber-500/10 text-amber-400 border border-amber-500/20"
+            )}>
+              <Flame className="h-3 w-3" />
+              Score {healthScore}
+            </div>
+          )}
         </div>
 
-        {/* Per-account balances */}
+        {/* Per-account balances with refined spacing */}
         {displayAccounts.length > 0 && (
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
             <SortableContext items={displayAccounts.map((a) => a.id)} strategy={verticalListSortingStrategy}>
-              <div className="mt-3 flex flex-col gap-1">
+              <div className="flex flex-col gap-3">
                 {displayAccounts.map((acc) => (
                   <SortableAccountItem key={acc.id} acc={acc} balanceVisible={balanceVisible} fmt={fmt} />
                 ))}
@@ -1060,48 +1039,31 @@ export function Dashboard() {
           </DndContext>
         )}
 
-        {/* Saldo inicial do mês + previsão fim do mês — moved to bottom */}
-        <div className="mt-3 grid grid-cols-2 gap-2">
-          <div className="rounded-xl bg-background/40 px-3 py-2 flex flex-col justify-between min-h-[58px]">
-            <p className="text-[10px] text-muted-foreground leading-none mb-1 flex items-center gap-1.5 min-h-[18px]">
-              Saldo inicial do mês
-            </p>
-            <p className={cn(
-              "text-sm font-semibold tabular-nums",
-              monthInitialBalance >= 0 ? "text-muted-foreground" : "text-destructive"
-            )}>
+        <div className="mt-8 pt-6 border-t border-white/[0.05] grid grid-cols-2 gap-4">
+          <div className="flex flex-col">
+            <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-1">Mês Inicial</span>
+            <span className="text-xs font-bold tabular-nums text-foreground/70">
               {balanceVisible ? `R$ ${fmt(monthInitialBalance)}` : "R$ ••••"}
-            </p>
+            </span>
           </div>
           <Link
             to="/insights"
             search={{
-              ask: `Olha meu saldo previsto para o fim do mês: R$ ${fmt(forecastBalance)} (saldo atual R$ ${fmt(balance)}). Considerando minhas receitas e despesas previstas, parcelas futuras e lembretes pendentes, esse saldo está saudável? Aponte os 3 maiores riscos do mês, sugira ajustes específicos por categoria (ex.: reduzir alimentação, evitar gastos aleatórios) com valores em R$, e diga se algum orçamento já está estourado ou prestes a estourar. Foque em ações práticas para manter ou melhorar esse saldo previsto.`,
+              ask: `Análise de saldo previsto: R$ ${fmt(forecastBalance)}.`,
             } as any}
-            className="interactive-card rounded-xl bg-background/40 px-3 py-2 hover:bg-background/60 transition-colors text-left flex flex-col justify-between min-h-[58px]"
+            className="flex flex-col items-end group/link"
           >
-            <p className="text-[10px] text-muted-foreground leading-none mb-1 flex items-center gap-1.5 min-h-[18px]">
-              Previsto fim do mês
-              <span
-                className="inline-flex items-center justify-center rounded-full p-1 bg-background"
-                style={{
-                  border: "1px solid hsl(142 95% 55%)",
-                  boxShadow:
-                    "0 0 6px hsl(142 95% 55% / 0.7), 0 0 12px hsl(142 95% 55% / 0.4), inset 0 0 4px hsl(142 95% 55% / 0.3)",
-                }}
-              >
-                <Sparkles className="h-2.5 w-2.5" style={{ color: "hsl(142 95% 55%)" }} />
-              </span>
-            </p>
-            <p className={cn(
-              "text-sm font-semibold tabular-nums",
-              forecastBalance >= 0 ? "text-muted-foreground" : "text-destructive"
+            <span className="text-[9px] font-black text-primary uppercase tracking-widest mb-1 flex items-center gap-1.5">
+              Previsão Fim do Mês <Sparkles className="h-2.5 w-2.5" />
+            </span>
+            <span className={cn(
+              "text-xs font-bold tabular-nums transition-colors group-hover/link:text-primary",
+              forecastBalance >= 0 ? "text-foreground/70" : "text-destructive"
             )}>
               {balanceVisible ? `R$ ${fmt(forecastBalance)}` : "R$ ••••"}
-            </p>
+            </span>
           </Link>
         </div>
-
       </div>
 
 
@@ -1197,12 +1159,15 @@ export function Dashboard() {
         )}
       </div>
 
-      {/* Recent Transactions — moved to right below balance */}
-      <div>
-        <div className="mb-2 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-foreground">Recentes</h2>
-          <Link to="/transactions" preload="intent" search={{ action: undefined, type: undefined } as any} className="text-[10px] font-medium text-primary flex items-center gap-0.5">
-            Ver tudo <ChevronRight className="h-3 w-3" />
+      {/* Recent Transactions — premium list */}
+      <div className="space-y-4">
+        <div className="flex items-end justify-between px-2">
+          <div className="flex flex-col">
+            <h2 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Atividade Recente</h2>
+            <div className="h-0.5 w-6 bg-primary mt-1 rounded-full" />
+          </div>
+          <Link to="/transactions" preload="intent" search={{ action: undefined, type: undefined } as any} className="text-[10px] font-bold text-primary hover:opacity-80 transition-opacity uppercase tracking-wider">
+            Ver Extrato Completo
           </Link>
         </div>
          {loading ? (
@@ -1228,10 +1193,11 @@ export function Dashboard() {
          ) : (
            <div ref={transactionsListRef} tabIndex={-1} className="flex flex-col gap-3 focus:outline-none">
             {groupedTransactions.map((group) => (
-              <div key={group.label}>
-                <div className="flex flex-col gap-1.5">
+              <div key={group.label} className="space-y-3">
+                <p className="text-[10px] font-black text-muted-foreground/50 uppercase tracking-[0.2em] px-2">{group.label}</p>
+                <div className="flex flex-col gap-3">
                   {group.items.map((tx, i) => (
-                    <div key={tx.id} className="group/tx-row relative" style={{ animationDelay: `${i * 40}ms` }}>
+                    <div key={tx.id} className="group/tx-row relative animate-stagger-in" style={{ animationDelay: `${i * 50}ms` }}>
                       <TransactionItem 
                         {...tx} 
                         card={tx.card ?? undefined} 
