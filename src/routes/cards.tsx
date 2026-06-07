@@ -1078,48 +1078,6 @@ export function CardsPage() {
       </DndContext>
     </TabsContent>
 
-        <TabsContent value="validation" className="mt-5 space-y-4">
-          <div className="rounded-2xl bg-card border border-border/50 p-4 space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-bold text-foreground">Status da Validação</h3>
-                <p className="text-[10px] text-muted-foreground mt-0.5">Sincronização entre Cartões e Faturas</p>
-              </div>
-              <button
-                onClick={() => runValidation(false)}
-                disabled={isValidating}
-                className="interactive-button flex items-center gap-2 rounded-xl bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-50"
-                id="revalidate-btn"
-              >
-                {isValidating ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
-                Revalide Agora
-              </button>
-            </div>
-
-            {validationData ? (
-              <div className="grid grid-cols-3 gap-2">
-                <div className="rounded-xl bg-accent/30 p-2.5 text-center">
-                  <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Cartões</p>
-                  <p className="text-sm font-bold mt-0.5">{validationData.summary.totalCardsChecked}</p>
-                </div>
-                <div className="rounded-xl bg-accent/30 p-2.5 text-center">
-                  <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Faturas</p>
-                  <p className="text-sm font-bold mt-0.5">{validationData.summary.totalInvoicesChecked}</p>
-                </div>
-                <div className="rounded-xl bg-accent/30 p-2.5 text-center">
-                  <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Divergências</p>
-                  <p className={cn("text-sm font-bold mt-0.5", validationData.summary.discrepanciesFound > 0 ? "text-destructive" : "text-emerald-500")}>
-                    {validationData.summary.discrepanciesFound}
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <div className="py-8 text-center border border-dashed border-border/50 rounded-xl bg-accent/10">
-                <Info className="h-8 w-8 text-muted-foreground/30 mx-auto mb-2" />
-                <p className="text-xs text-muted-foreground">Nenhuma validação executada recentemente.</p>
-              </div>
-            )}
-          </div>
 
           {validationData && (
             <div className="space-y-4" id="validation-tab">
