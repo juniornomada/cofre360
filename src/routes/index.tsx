@@ -144,7 +144,7 @@ function SortableAccountItem({ acc, balanceVisible, fmt }: { acc: any; balanceVi
       <Link
         to="/accounts"
         search={{ action: undefined } as any}
-        className="flex items-center gap-3 rounded-2xl bg-card/20 backdrop-blur-3xl border border-white/[0.03] px-3 py-2 hover:bg-card/40 transition-all duration-500 overflow-hidden shadow-sm hover:shadow-md hover:border-white/[0.08]"
+        className="flex items-center gap-3 rounded-xl bg-card/20 backdrop-blur-3xl border border-white/[0.03] px-3 py-1.5 hover:bg-card/40 transition-all duration-500 overflow-hidden shadow-sm hover:shadow-md hover:border-white/[0.08]"
       >
         <div className="shrink-0">
           <BankLogo icon={acc.icon} color={acc.color} name={acc.name} size="md" />
