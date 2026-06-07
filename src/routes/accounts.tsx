@@ -349,14 +349,17 @@ function AccountsPage() {
     });
   };
 
+  const [error, setError] = useState<string | null>(null);
+
   const fetchAccounts = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
 
     try {
       setLoading(true);
-      const { data, error } = await supabase.from("bank_accounts").select("*").eq("user_id", session.user.id).order("sort_order", { ascending: true }).order("created_at", { ascending: true });
-      if (error) throw error;
+      setError(null);
+      const { data, error: fetchError } = await supabase.from("bank_accounts").select("*").eq("user_id", session.user.id).order("sort_order", { ascending: true }).order("created_at", { ascending: true });
+      if (fetchError) throw fetchError;
       if (data) setAccounts(data);
 
       const { data: txData, error: txError } = await supabase.from("transactions").select("bank_account_id, amount, type").eq("user_id", session.user.id).not("bank_account_id", "is", null);
@@ -376,9 +379,10 @@ function AccountsPage() {
         setIncomeByAccount(incMap);
         setExpenseByAccount(expMap);
       }
-    } catch (error: any) {
-      console.error("Error fetching accounts:", error);
-      toast.error("Erro ao carregar contas: " + (error.message || "Erro desconhecido"));
+    } catch (err: any) {
+      console.error("Error fetching accounts:", err);
+      setError(err.message || "Não foi possível carregar suas contas.");
+      toast.error("Erro ao carregar contas");
     } finally {
       setLoading(false);
     }
