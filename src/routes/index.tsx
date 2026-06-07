@@ -1542,7 +1542,7 @@ export function Dashboard() {
                           type="button"
                           onClick={() => setEditTx({ ...editTx, total_installments: n })}
                           className={cn(
-                            "px-2 py-1 rounded text-[10px] font-medium transition-colors border",
+                            "px-2.5 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium transition-colors border active:scale-95",
                             Number(editTx.total_installments) === n 
                               ? "bg-primary text-primary-foreground border-primary" 
                               : "bg-background text-muted-foreground border-border hover:border-primary/50"
@@ -1628,7 +1628,7 @@ export function Dashboard() {
 
       {/* Delete Confirmation */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <DialogContent className="max-w-[90vw] rounded-2xl bg-background">
+        <DialogContent className="max-w-[95vw] sm:max-w-md rounded-2xl bg-background p-4 sm:p-6">
           <DialogHeader><DialogTitle>Excluir Transação</DialogTitle></DialogHeader>
           {isInstallmentTx(deleteTarget) ? (
             <div className="flex flex-col gap-3">
