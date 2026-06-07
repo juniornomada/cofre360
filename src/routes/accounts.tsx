@@ -624,27 +624,27 @@ function AccountsPage() {
 
   if (loading && accounts.length === 0) {
     return (
-      <div className="animate-page-enter flex flex-col gap-8 px-2 sm:px-4 pt-6 pb-28">
+      <div className="app-container">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-full bg-muted/40 animate-pulse" />
-            <div className="space-y-2.5">
-              <div className="h-2.5 w-12 bg-muted/40 animate-pulse rounded-full" />
-              <div className="h-7 w-36 bg-muted/50 animate-pulse rounded-xl" />
+            <Skeleton className="h-10 w-10 rounded-full" />
+            <div className="space-y-2">
+              <Skeleton className="h-3 w-12" />
+              <Skeleton className="h-6 w-32" />
             </div>
           </div>
-          <div className="h-8 w-8 rounded-lg bg-muted/30 animate-pulse self-end" />
+          <Skeleton className="h-8 w-8 rounded-lg self-end" />
         </div>
-        <div className="space-y-5">
-          <div className="h-3 w-20 bg-muted/30 animate-pulse rounded-full ml-1" />
+        <div className="space-y-4 pt-6">
+          <Skeleton className="h-3 w-20 ml-1" />
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-16 w-full rounded-2xl bg-card border border-border/10 flex items-center px-4 gap-4">
-               <div className="h-10 w-10 rounded-xl bg-muted/40 animate-pulse shrink-0" />
+            <div key={i} className="glass-card flex items-center p-4 gap-4">
+               <Skeleton className="h-10 w-10 rounded-xl shrink-0" />
                <div className="flex-1 space-y-2">
-                 <div className="h-3.5 w-1/2 bg-muted/40 animate-pulse rounded-lg" />
-                 <div className="h-2.5 w-1/4 bg-muted/30 animate-pulse rounded-lg" />
+                 <Skeleton className="h-4 w-1/2" />
+                 <Skeleton className="h-3 w-1/4 opacity-50" />
                </div>
-               <div className="h-4 w-20 bg-muted/50 animate-pulse rounded-lg shrink-0" />
+               <Skeleton className="h-4 w-20 shrink-0" />
             </div>
           ))}
         </div>
