@@ -706,10 +706,26 @@ export function TransactionsPage() {
     fetchTransactions();
   };
 
-  if (loading) {
+  if (loading && transactions.length === 0) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+      <div className="animate-page-enter p-4 flex flex-col gap-6">
+        <div className="flex items-center justify-between">
+          <div className="space-y-2">
+            <div className="h-6 w-32 bg-muted animate-pulse rounded-lg" />
+            <div className="h-3 w-48 bg-muted animate-pulse rounded" />
+          </div>
+          <div className="h-10 w-10 rounded-xl bg-muted animate-pulse" />
+        </div>
+        <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} className="h-8 w-20 rounded-full bg-muted animate-pulse shrink-0" />
+          ))}
+        </div>
+        <div className="space-y-3">
+          {[1, 2, 3, 4, 5, 6].map(i => (
+            <div key={i} className="h-20 w-full rounded-2xl bg-muted/40 animate-pulse" />
+          ))}
+        </div>
       </div>
     );
   }
