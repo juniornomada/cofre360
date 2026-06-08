@@ -905,6 +905,24 @@ function Dashboard() {
               </span>
             )}
           </Link>
+          <button 
+            onClick={() => {
+              const promise = fetchAll();
+              toast.promise(promise, {
+                loading: "Atualizando dados...",
+                success: "Saldos e transações atualizados!",
+                error: "Erro ao atualizar dados"
+              });
+            }}
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-card border hover:bg-accent transition-all active:scale-95"
+            style={{
+              borderColor: "hsl(142 95% 55%)",
+              boxShadow: "0 0 10px hsl(142 95% 55% / 0.9), 0 0 20px hsl(142 95% 55% / 0.6), inset 0 0 6px hsl(142 95% 55% / 0.35)",
+            }}
+            title="Recalcular saldos"
+          >
+            <RefreshCw className={cn("h-5 w-5 text-muted-foreground", loading && "animate-spin")} />
+          </button>
           <div
             className="flex h-10 w-10 items-center justify-center rounded-full bg-card border"
             style={{

@@ -825,8 +825,21 @@ export function TransactionsPage() {
                 <FileText className="h-4 w-4" />
               </button>
               <button onClick={() => setShowCsvImport(true)} className="flex h-8 w-8 items-center justify-center rounded-full bg-card text-muted-foreground border border-border" title="Importar CSV">
-
                 <Upload className="h-4 w-4" />
+              </button>
+              <button 
+                onClick={() => {
+                  const promise = Promise.all([fetchTransactions(), fetchBankAccounts(), fetchCards()]);
+                  toast.promise(promise, {
+                    loading: "Atualizando dados...",
+                    success: "Recalculado com sucesso!",
+                    error: "Erro ao atualizar"
+                  });
+                }}
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-card text-muted-foreground border border-border hover:bg-accent transition-all active:scale-95" 
+                title="Recalcular saldos"
+              >
+                <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
               </button>
               <button onClick={() => setShowAddDialog(true)} className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
                 <Plus className="h-4 w-4" />
