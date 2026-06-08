@@ -461,6 +461,104 @@ function CardsPage() {
 
     setInstallmentSaving(true);
     try {
+...
+      onOpenChange(false);
+    }
+  };
+
+  const [txHistory, setTxHistory] = useState<Map<string, { icon: string; category: string }>>(new Map());
+  const fetchHistory = useCallback(async () => {
+    const { data } = await supabase
+      .from("transactions")
+      .select("name, icon, category")
+      .order("created_at", { ascending: false })
+      .limit(100);
+
+    if (data) {
+      const map = new Map<string, { icon: string; category: string }>();
+      data.forEach(tx => {
+        const cleanName = tx.name.replace(/\s*\(\d+\/\d+\)\s*$/, "").trim().toLowerCase();
+        if (!map.has(cleanName)) {
+          map.set(cleanName, { icon: tx.icon || "🍔", category: tx.category });
+        }
+      });
+      setTxHistory(map);
+    }
+  }, []);
+
+  const getAutocompleteSuggestions = (input: string) => {
+    if (!input || input.length < 2) return [];
+    const q = normalizeText(input);
+    const results: { icon: string; category: string; name: string }[] = [];
+    for (const [key, val] of txHistory) {
+      if (normalizeText(key).includes(q)) results.push({ ...val, name: key });
+      if (results.length >= 8) break;
+    }
+    return results;
+  };
+
+  useEffect(() => {
+    if (invoiceDialogOpen) fetchHistory();
+  }, [invoiceDialogOpen, fetchHistory]);
+
+  const handleEditTx = (tx: CardTransaction) => {
+    setEditTx({ ...tx });
+    setShowEditDialog(true);
+  };
+
+  const saveEditTx = async () => {
+    if (!editTx) return;
+    setIsSavingEdit(true);
+    try {
+      const { error } = await supabase
+        .from("transactions")
+        .update({
+          name: editTx.name,
+          category: editTx.category,
+          icon: editTx.icon,
+          date: editTx.date,
+          amount: editTx.amount,
+        })
+        .eq("id", editTx.id);
+      
+      if (error) throw error;
+      
+      toast.success("Transação atualizada com sucesso");
+      setShowEditDialog(false);
+      // Refresh transactions for the card
+      if (invoiceCard) openInvoiceDialog(invoiceCard);
+      fetchAll();
+    } catch (error: any) {
+      console.error("Error updating transaction:", error);
+      toast.error("Erro ao atualizar transação");
+    } finally {
+      setIsSavingEdit(false);
+    }
+  };
+
+  const handleDeleteTx = (tx: CardTransaction) => {
+    setDeleteTarget(tx);
+    setDeleteScope("single");
+    setShowDeleteDialog(true);
+  };
+
+  const confirmDeleteTx = async () => {
+    if (!deleteTarget) return;
+    setIsDeleting(true);
+    try {
+      await deleteTransactionScope(deleteTarget, deleteScope);
+      toast.success("Transação excluída com sucesso");
+      setShowDeleteDialog(false);
+      // Refresh transactions for the card
+      if (invoiceCard) openInvoiceDialog(invoiceCard);
+      fetchAll();
+    } catch (error: any) {
+      console.error("Error deleting transaction:", error);
+      toast.error("Erro ao excluir transação");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
       const baseName = stripInstallmentSuffix(installmentTx.name);
       // If single (total=1), strip group and reset numbers
       if (total === 1) {
