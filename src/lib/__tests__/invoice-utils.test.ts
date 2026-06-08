@@ -116,4 +116,33 @@ describe('groupByBillingCycle calculation logic', () => {
     expect(janTx?.total).toBe(100);
     expect(febTx?.total).toBe(200);
   });
+
+  it('should correctly handle divergent totals if state is not updated', () => {
+    // This unit test simulates the logic used in handlePay for the security lock
+    const transactionsV1: CardTransaction[] = [
+      { id: '1', name: 'Tx 1', amount: 100, type: 'expense', date: '2024-01-15', created_at: '', category: '', icon: '', installment_group_id: null, installment_number: null, total_installments: null }
+    ];
+    
+    const transactionsV2: CardTransaction[] = [
+      { id: '1', name: 'Tx 1', amount: 100, type: 'expense', date: '2024-01-15', created_at: '', category: '', icon: '', installment_group_id: null, installment_number: null, total_installments: null },
+      { id: '2', name: 'Tx 2', amount: 50, type: 'expense', date: '2024-01-16', created_at: '', category: '', icon: '', installment_group_id: null, installment_number: null, total_installments: null }
+    ];
+
+    const refDate = new Date('2024-01-25');
+    const closingDay = 10;
+    const dueDay = 20;
+
+    const periodsV1 = groupByBillingCycle(transactionsV1, closingDay, dueDay, refDate);
+    const periodsV2 = groupByBillingCycle(transactionsV2, closingDay, dueDay, refDate);
+
+    const totalV1 = periodsV1.find(p => p.transactions.length > 0)?.total || 0;
+    const totalV2 = periodsV2.find(p => p.transactions.length > 0)?.total || 0;
+
+    // Simulation of the check in handlePay (src/routes/cards.tsx:759)
+    const isInconsistent = Math.abs(totalV2 - totalV1) > 0.01;
+    
+    expect(totalV1).toBe(100);
+    expect(totalV2).toBe(150);
+    expect(isInconsistent).toBe(true);
+  });
 });
