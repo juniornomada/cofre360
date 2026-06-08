@@ -29,12 +29,17 @@ vi.mock('sonner', () => ({
 }));
 
 // Mock @tanstack/react-router
-vi.mock('@tanstack/react-router', () => ({
-  createFileRoute: () => ({
-    useSearch: () => ({}),
-  }),
-  Link: ({ children, to }: any) => <a href={to}>{children}</a>,
-}));
+vi.mock('@tanstack/react-router', async (importOriginal) => {
+  const actual = await importOriginal() as any;
+  return {
+    ...actual,
+    createFileRoute: () => ({
+      options: { component: () => null },
+      useSearch: () => ({}),
+    }),
+    Link: ({ children, to }: any) => <a href={to}>{children}</a>,
+  };
+});
 
 describe('Payment Security Lock', () => {
   const mockCard = {
