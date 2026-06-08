@@ -16,31 +16,31 @@ type DocumentKind = "card_invoice" | "bank_statement";
 
 async function extractPdfText(base64: string): Promise<string> {
   // Decode base64 → Uint8Array
-  const binary = atob(base64);
+  let binary: string;
+  try {
+    binary = atob(base64);
+  } catch (e) {
+    // Fallback for environments where atob might not be global
+    binary = Buffer.from(base64, 'base64').toString('binary');
+  }
+  
   const bytes = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
 
-  // Dynamic imports for PDF.js and its worker
+  // Dynamic imports for PDF.js
   const pdfjs: any = await import("pdfjs-dist/legacy/build/pdf.mjs");
   
-  try {
-    // Import worker as a module to avoid external URL resolution issues
-    const pdfjsWorker: any = await import("pdfjs-dist/legacy/build/pdf.worker.mjs");
-    if (pdfjs.GlobalWorkerOptions) {
-      pdfjs.GlobalWorkerOptions.workerSrc = pdfjsWorker;
-    }
-  } catch (err) {
-    console.error("Failed to load PDF worker module, falling back to CDN", err);
-    if (pdfjs.GlobalWorkerOptions) {
-      const version = pdfjs.version || "4.3.136";
-      pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${version}/pdf.worker.min.mjs`;
-    }
+  // Set workerSrc to a CDN URL as a reliable fallback for both browser and server
+  // This satisfies the "No GlobalWorkerOptions.workerSrc specified" check
+  if (pdfjs.GlobalWorkerOptions) {
+    const version = pdfjs.version || "4.3.136";
+    pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${version}/pdf.worker.min.mjs`;
   }
 
   const loadingTask = pdfjs.getDocument({
     data: bytes,
-    // We try to disable worker to keep everything in the same process/thread
-    // but we still need workerSrc set for the fake worker to initialize properly.
+    // disableWorker: true ensures we use the "fake worker" (runs in main thread)
+    // which is necessary in serverless/SSR environments where spawning real workers is restricted.
     disableWorker: true,
     isEvalSupported: false,
     useSystemFonts: false,
