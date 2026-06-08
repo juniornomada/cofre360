@@ -214,7 +214,6 @@ function CardsPage() {
     }
   };
 
-  // Drag-and-drop sensors — pressionar 1s (mouse e toque) inicia a ordenação
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { delay: 1000, tolerance: 10 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 1000, tolerance: 10 } }),
@@ -286,7 +285,7 @@ function CardsPage() {
 
   useEffect(() => {
     fetchAll();
-    runValidation(); // Run validation on mount to check for inconsistencies
+    runValidation(); // Manter validação local para a aba de auditoria
     
     // Re-fetch when the window regains focus to avoid stale data
     const onFocus = () => {
