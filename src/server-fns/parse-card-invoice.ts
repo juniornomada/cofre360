@@ -50,6 +50,7 @@ async function extractPdfText(base64: string): Promise<string> {
     useSystemFonts: false,
     disableFontFace: true,
     verbosity: 0,
+    stopAtErrors: false, // Continue parsing even if some objects are missing
   });
 
   const doc = await loadingTask.promise;
