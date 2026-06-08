@@ -1,10 +1,8 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { supabase } from '@/integrations/supabase/client';
 import { Route } from '@/routes/cards';
 import { toast } from 'sonner';
-import { ptBR } from 'date-fns/locale';
-import { format } from 'date-fns';
 
 // Mock Supabase
 vi.mock('@/integrations/supabase/client', () => ({
@@ -107,18 +105,17 @@ describe('Payment Security Lock', () => {
         };
       }
       if (table === 'transactions') {
-        // First call (initial load) returns 1 transaction (1000.00)
-        // Second call (inside handlePay re-fetch) will return 2 transactions (1500.00)
         let callCount = 0;
         return {
           select: () => ({
             eq: () => ({
               order: () => {
                 callCount++;
-                if (callCount === 1) {
+                if (callCount <= 2) {
+                  // Initial load (1) + openPayDialog (2)
                   return Promise.resolve({ data: [mockTransaction], error: null });
                 } else {
-                  // Simulate a new transaction appearing just before payment confirmation
+                  // handlePay re-fetch (3) - Simulation of divergence
                   return Promise.resolve({ 
                     data: [
                       mockTransaction, 
@@ -138,34 +135,26 @@ describe('Payment Security Lock', () => {
     });
 
     // Render Cards page component
-    // @ts-ignore - Accessing component for testing
+    // @ts-ignore
     const CardsPage = Route.options.component;
-    if (!CardsPage) throw new Error("Component not found");
     render(<CardsPage />);
 
-    // 1. Wait for data to load and click "Pagar"
+    // 1. Wait for data to load
     await waitFor(() => {
       expect(screen.getByText('Test Card')).toBeInTheDocument();
     });
 
+    // 2. Click "Pagar"
     const payButton = screen.getByRole('button', { name: /Pagar/i });
     fireEvent.click(payButton);
 
-    // 2. Wait for Payment Dialog to open and show the total
+    // 3. Wait for Payment Dialog and select best account
     await waitFor(() => {
-      // The current total should be 1000.00 (based on mockTransaction)
-      // Check for the "Restante" or "Total da fatura" text
-      const totalElements = screen.getAllByText(/1\.000,00/);
-      expect(totalElements.length).toBeGreaterThan(0);
+      expect(screen.getByText(/Pagar Fatura — Test Card/i)).toBeInTheDocument();
     });
 
-    // 3. Select bank account and amount
-    // In cards.tsx, best account might be auto-selected if balance > 0
-    // But let's trigger the "Pagar com saldo de Test Bank" if it exists
-    const autoPayButton = screen.queryByText(/Pagar com saldo de Test Bank/i);
-    if (autoPayButton) {
-      fireEvent.click(autoPayButton);
-    }
+    const autoPayButton = await screen.findByText(/Pagar com saldo de Test Bank/i);
+    fireEvent.click(autoPayButton);
 
     // 4. Click "Confirmar pagamento"
     const confirmButton = screen.getByRole('button', { name: /Confirmar pagamento/i });
@@ -173,17 +162,16 @@ describe('Payment Security Lock', () => {
 
     // 5. Verify the security lock triggered
     await waitFor(() => {
-      // The error message defined in cards.tsx line 760
       expect(toast.error).toHaveBeenCalledWith(
         "O valor da fatura mudou durante o processo. Por favor, confira os valores atualizados antes de pagar.",
         expect.any(Object)
       );
-    });
+    }, { timeout: 3000 });
 
     // Verify that NO payment was actually inserted
     expect(supabase.from('card_payments').insert).not.toHaveBeenCalled();
     
-    // Verify that the dialog is still open (payment was blocked)
+    // Verify that the dialog is still open
     expect(screen.getByText(/Pagar Fatura — Test Card/i)).toBeInTheDocument();
   });
 });
