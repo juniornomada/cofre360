@@ -152,6 +152,7 @@ function CardsPage() {
   const [editLimit, setEditLimit] = useState("");
   const [editClosing, setEditClosing] = useState("");
   const [editDue, setEditDue] = useState("");
+  const [editColor, setEditColor] = useState("");
 
   // Invoice dialog state
   const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
