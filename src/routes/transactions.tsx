@@ -111,7 +111,7 @@ export function TransactionsPage() {
   const [showCsvImport, setShowCsvImport] = useState(false);
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [showDeleteAllDialog, setShowDeleteAllDialog] = useState(false);
+  
   const [showBatchDeleteDialog, setShowBatchDeleteDialog] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [showGlobalSearch, setShowGlobalSearch] = useState(false);
