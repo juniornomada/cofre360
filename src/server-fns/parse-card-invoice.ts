@@ -16,29 +16,32 @@ type DocumentKind = "card_invoice" | "bank_statement";
 
 async function extractPdfText(base64: string): Promise<string> {
   // Decode base64 → Uint8Array
-  const binary = atob(base64);
+  let binary: string;
+  try {
+    binary = atob(base64);
+  } catch (e) {
+    // Fallback for environments where atob might not be global
+    binary = Buffer.from(base64, 'base64').toString('binary');
+  }
+  
   const bytes = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
 
-  // Dynamic import — pdfjs-dist legacy build is Worker-compatible (pure JS, no DOM)
+  // Dynamic imports for PDF.js
   const pdfjs: any = await import("pdfjs-dist/legacy/build/pdf.mjs");
   
-  // Configure worker for the environment
-  if (typeof window === "undefined") {
-    // Server-side (Edge Function / Node)
-    if (pdfjs.GlobalWorkerOptions) pdfjs.GlobalWorkerOptions.workerSrc = "";
-  } else {
-    // Client-side (Browser)
-    if (pdfjs.GlobalWorkerOptions) {
-      // Use a consistent version for the worker from CDN
-      const version = pdfjs.version || "4.3.136";
-      pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${version}/pdf.worker.min.mjs`;
-    }
+  // Set workerSrc to a CDN URL as a reliable fallback for both browser and server
+  // This satisfies the "No GlobalWorkerOptions.workerSrc specified" check
+  if (pdfjs.GlobalWorkerOptions) {
+    const version = pdfjs.version || "4.3.136";
+    pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${version}/pdf.worker.min.mjs`;
   }
 
   const loadingTask = pdfjs.getDocument({
     data: bytes,
-    disableWorker: true, // Always disable worker to avoid cross-origin/path issues in this setup
+    // disableWorker: true ensures we use the "fake worker" (runs in main thread)
+    // which is necessary in serverless/SSR environments where spawning real workers is restricted.
+    disableWorker: true,
     isEvalSupported: false,
     useSystemFonts: false,
     disableFontFace: true,
