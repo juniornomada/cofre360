@@ -28,10 +28,20 @@ async function extractPdfText(base64: string): Promise<string> {
   // Dynamic import for PDF.js (LEGACY build for better compatibility in server environments)
   const pdfjs: any = await import("pdfjs-dist/legacy/build/pdf.mjs");
   
-  // To avoid worker errors in server functions, we disable the worker entirely.
-  // We explicitly DO NOT set workerSrc or workerPort here, as setting them to 
-  // empty strings or null can trigger "Invalid type" errors in some PDF.js versions.
-  // The 'disableWorker: true' option below handles the in-process execution.
+  // Normalize GlobalWorkerOptions to prevent invalid types (null, objects, etc.)
+  // that cause "Invalid workerSrc type" or "Invalid workerPort type" errors.
+  if (pdfjs.GlobalWorkerOptions) {
+    const options = pdfjs.GlobalWorkerOptions;
+    // We only allow strings for workerSrc. If it's anything else, we unset it safely.
+    if (typeof options.workerSrc !== "string") {
+      delete (options as any).workerSrc;
+    }
+    // workerPort must be a MessagePort or undefined. We ensure it's not a lingering object.
+    if (options.workerPort !== undefined && (typeof options.workerPort !== "object" || options.workerPort === null)) {
+      delete (options as any).workerPort;
+    }
+  }
+
 
 
   const loadingTask = pdfjs.getDocument({
