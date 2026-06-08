@@ -271,7 +271,7 @@ function CardsPage() {
 
         setBankAccounts(accountsRes.data.map(a => ({
           ...a,
-          balance: (a.balance || 0) + (incomeByAccount[a.id] || 0) - (expenseByAccount[a.id] || 0)
+          balance: Math.round(((a.balance || 0) + (incomeByAccount[a.id] || 0) - (expenseByAccount[a.id] || 0)) * 100) / 100
         })));
       }
       if (txRes.data) {

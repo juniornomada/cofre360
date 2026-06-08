@@ -124,7 +124,7 @@ function SortableAccountItem({
     touchAction: "manipulation",
   };
 
-  const currentBalance = account.balance + income - expense;
+  const currentBalance = Math.round((account.balance + income - expense) * 100) / 100;
 
   return (
     <div
