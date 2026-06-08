@@ -191,6 +191,7 @@ function CardsPage() {
   const [payingCard, setPayingCard] = useState<CardData | null>(null);
   const [paymentLines, setPaymentLines] = useState<PaymentLine[]>([{ accountId: "", amount: "" }]);
   const [payingSaving, setPayingSaving] = useState(false);
+  const [paymentDate, setPaymentDate] = useState<string>(format(new Date(), "dd MMM", { locale: ptBR }));
 
   // PDF invoice import dialog
   const [pdfImportOpen, setPdfImportOpen] = useState(false);
