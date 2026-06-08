@@ -15,24 +15,24 @@ type ParsedInvoiceTx = {
 type DocumentKind = "card_invoice" | "bank_statement";
 
 async function extractPdfText(base64: string): Promise<string> {
-  // Decode base64 → Uint8Array reliably across environments
+  // Decode base64 → Uint8Array reliably across environments (preferring Buffer on server for speed)
   let bytes: Uint8Array;
-  try {
+  if (typeof Buffer !== "undefined") {
+    bytes = new Uint8Array(Buffer.from(base64, "base64"));
+  } else {
     const binary = atob(base64);
     bytes = new Uint8Array(binary.length);
     for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-  } catch (e) {
-    bytes = new Uint8Array(Buffer.from(base64, "base64"));
   }
 
-  // Dynamic import for PDF.js (standard build)
-  const pdfjs: any = await import("pdfjs-dist/build/pdf.mjs");
+  // Dynamic import for PDF.js (LEGACY build for better compatibility in server environments)
+  const pdfjs: any = await import("pdfjs-dist/legacy/build/pdf.mjs");
   
-  // Set workerSrc to a non-empty string to satisfy the library's check.
-  // Since we use disableWorker: true, the "fake worker" (main thread) will be used,
-  // and no external script will actually be fetched.
+  // Disable worker to run processing in the main thread (fake worker).
+  // In version 4+, setting workerSrc to a valid Data URI avoids module resolution 
+  // errors while satisfying the library's requirement for a worker path.
   if (pdfjs.GlobalWorkerOptions) {
-    pdfjs.GlobalWorkerOptions.workerSrc = "nop";
+    pdfjs.GlobalWorkerOptions.workerSrc = "data:text/javascript;base64,Ly8gbm9wCg==";
   }
 
   const loadingTask = pdfjs.getDocument({
