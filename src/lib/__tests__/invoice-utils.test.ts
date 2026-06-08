@@ -198,4 +198,36 @@ describe('groupByBillingCycle calculation logic', () => {
     expect(relevantPeriod).toBeDefined();
     expect(relevantPeriod?.total).toBe(0);
   });
+
+  it('should maintain performance with a large number of transactions (Real-time recalculation)', () => {
+    // Generate 10,000 transactions to simulate a heavy user or long history
+    const largeTransactionList: CardTransaction[] = Array.from({ length: 10000 }, (_, i) => ({
+      id: `tx-${i}`,
+      name: `Transaction ${i}`,
+      amount: Math.random() * 100,
+      type: i % 10 === 0 ? 'income' : 'expense', // 10% are refunds/income
+      date: '2024-01-15',
+      created_at: '2024-01-15T10:00:00Z',
+      category: 'Test',
+      icon: '⚙️',
+      installment_group_id: null,
+      installment_number: null,
+      total_installments: null,
+    }));
+
+    const refDate = new Date('2024-01-25');
+    
+    const startTime = performance.now();
+    const periods = groupByBillingCycle(largeTransactionList, 10, 20, refDate);
+    const endTime = performance.now();
+    
+    const duration = endTime - startTime;
+    
+    // Check if the calculation was fast enough (e.g., under 100ms for 10k transactions)
+    // Most modern environments handle 10k array iterations and basic math in < 10ms
+    expect(duration).toBeLessThan(100);
+    expect(periods.length).toBeGreaterThan(0);
+    
+    // console.log(`Performance test: Recalculated 10,000 transactions in ${duration.toFixed(2)}ms`);
+  });
 });
