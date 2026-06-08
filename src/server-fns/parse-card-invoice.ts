@@ -28,17 +28,17 @@ async function extractPdfText(base64: string): Promise<string> {
   // Dynamic import for PDF.js (LEGACY build for better compatibility in server environments)
   const pdfjs: any = await import("pdfjs-dist/legacy/build/pdf.mjs");
   
-  // To avoid worker errors in server functions, we disable the worker entirely.
-  // This is the most robust approach for Cloud Functions / SSR environments.
-  // We MUST NOT set workerPort or workerSrc when disableWorker is true.
+  // Ensure we don't have any previous worker settings lingering
   if (pdfjs.GlobalWorkerOptions) {
-    delete (pdfjs.GlobalWorkerOptions as any).workerSrc;
-    delete (pdfjs.GlobalWorkerOptions as any).workerPort;
+    (pdfjs.GlobalWorkerOptions as any).workerSrc = "";
+    (pdfjs.GlobalWorkerOptions as any).workerPort = null;
   }
 
   const loadingTask = pdfjs.getDocument({
     data: bytes,
-    disableWorker: true, // Use the "fake worker" (runs in the same thread)
+    // When using disableWorker: true, PDF.js runs in-process. 
+    // We should NOT provide workerSrc or workerPort at all.
+    disableWorker: true,
     isEvalSupported: false,
     useSystemFonts: false,
     disableFontFace: true,
