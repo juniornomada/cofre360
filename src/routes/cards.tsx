@@ -1354,9 +1354,16 @@ function CardsPage() {
       <Dialog open={payDialogOpen} onOpenChange={setPayDialogOpen}>
         <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-sm mx-auto rounded-2xl p-4 sm:p-6">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
+            <DialogTitle className="flex items-center gap-2 text-base sm:text-lg w-full">
               <Wallet className="h-5 w-5 text-primary shrink-0" />
-              <span className="truncate">Pagar fatura — {payingCard?.name}</span>
+              <div className="flex flex-col min-w-0">
+                <span className="truncate">Pagar Fatura — {payingCard?.name}</span>
+                {invoicePeriods[activeInvoiceIdx] && (
+                  <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+                    Competência: {invoicePeriods[activeInvoiceIdx].label.split(" (")[0]}
+                  </span>
+                )}
+              </div>
             </DialogTitle>
           </DialogHeader>
           {payingCard && (
