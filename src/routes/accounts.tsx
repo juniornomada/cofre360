@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { SmartLink as Link } from "@/components/SmartLink";
-import { ArrowLeft, Plus, Landmark, Trash2, X, Check, Loader2, Upload, FileText, MoreVertical, GripVertical, Pencil, Eye, EyeOff, CheckSquare, Square, Filter, FilterX } from "lucide-react";
+import { ArrowLeft, Plus, Landmark, Trash2, X, Check, Loader2, Upload, FileText, MoreVertical, GripVertical, Pencil, Eye, EyeOff, CheckSquare, Square, Filter, FilterX, RefreshCw } from "lucide-react";
 import { useUserPreferences } from "@/hooks/use-user-preferences";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
@@ -680,6 +680,21 @@ function AccountsPage() {
                 {isSelectionMode ? "Cancelar Seleção" : "Seleção Múltipla"}
               </button>
             </div>
+            <button 
+              onClick={() => {
+                const promise = fetchAccounts();
+                toast.promise(promise, {
+                  loading: "Recalculando...",
+                  success: "Saldos atualizados!",
+                  error: "Erro ao atualizar"
+                });
+              }}
+              className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-accent text-muted-foreground hover:bg-accent/80 transition-colors flex items-center gap-1"
+              title="Recalcular saldos"
+            >
+              <RefreshCw className={cn("h-2.5 w-2.5", loading && "animate-spin")} />
+              Atualizar
+            </button>
           </div>
           {isSelectionMode && selectedIds.size > 0 && (
             <div className="flex items-center gap-2 px-1 animate-in slide-in-from-top-1 duration-200">

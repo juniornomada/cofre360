@@ -3,7 +3,7 @@ import { SmartLink as Link } from "@/components/SmartLink";
 import { TransactionItem } from "@/components/TransactionItem";
 import { EmptyState } from "@/components/EmptyState";
 import { mainCategories, parseCategoryValue } from "@/lib/categories";
-import { Search, Pencil, Trash2, Plus, CalendarIcon, Loader2, Upload, CheckSquare, Square, X, SlidersHorizontal, ArrowLeftRight, ArrowRight, Eye, EyeOff, FileText } from "lucide-react";
+import { Search, Pencil, Trash2, Plus, CalendarIcon, Loader2, Upload, CheckSquare, Square, X, SlidersHorizontal, ArrowLeftRight, ArrowRight, Eye, EyeOff, FileText, RefreshCw } from "lucide-react";
 import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react";
 
 const CsvImportDialog = lazy(() => import("@/components/CsvImportDialog").then(m => ({ default: m.CsvImportDialog })));
@@ -825,8 +825,21 @@ export function TransactionsPage() {
                 <FileText className="h-4 w-4" />
               </button>
               <button onClick={() => setShowCsvImport(true)} className="flex h-8 w-8 items-center justify-center rounded-full bg-card text-muted-foreground border border-border" title="Importar CSV">
-
                 <Upload className="h-4 w-4" />
+              </button>
+              <button 
+                onClick={() => {
+                  const promise = Promise.all([fetchTransactions(), fetchBankAccounts(), fetchCards()]);
+                  toast.promise(promise, {
+                    loading: "Atualizando dados...",
+                    success: "Recalculado com sucesso!",
+                    error: "Erro ao atualizar"
+                  });
+                }}
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-card text-muted-foreground border border-border hover:bg-accent transition-all active:scale-95" 
+                title="Recalcular saldos"
+              >
+                <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
               </button>
               <button onClick={() => setShowAddDialog(true)} className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
                 <Plus className="h-4 w-4" />
