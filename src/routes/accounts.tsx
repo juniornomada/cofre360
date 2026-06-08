@@ -638,8 +638,8 @@ function AccountsPage() {
       {/* Header and Total Balance */}
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3 min-w-0">
-          <Link to="/" className="interactive-button flex h-9 w-9 items-center justify-center rounded-full hover:bg-accent transition-colors shrink-0">
-            <ArrowLeft className="h-4 w-4 text-foreground" />
+          <Link to="/" className="interactive-button flex h-10 w-10 items-center justify-center rounded-full bg-card border border-border shadow-sm hover:bg-accent transition-all shrink-0">
+            <ArrowLeft className="h-5 w-5 text-foreground" />
           </Link>
           <div className="flex flex-col min-w-0">
             <h1 className="text-[10px] font-medium text-muted-foreground uppercase tracking-[0.08em] truncate">Contas</h1>
@@ -649,6 +649,22 @@ function AccountsPage() {
           </div>
         </div>
         
+        <div className="flex items-center gap-2 shrink-0 self-end mb-0.5">
+          <button 
+            onClick={() => updateBalanceVisible(!balanceVisible)} 
+            className="interactive-button flex h-10 w-10 items-center justify-center rounded-full bg-card border border-border shadow-sm hover:bg-accent transition-all"
+            title={balanceVisible ? "Ocultar saldos" : "Mostrar saldos"}
+          >
+            {balanceVisible ? <Eye className="h-5 w-5 text-muted-foreground" /> : <EyeOff className="h-5 w-5 text-muted-foreground" />}
+          </button>
+          <button 
+            onClick={() => setDialogOpen(true)} 
+            className="interactive-button flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground border border-primary/20 shadow-lg hover:brightness-110 transition-all"
+            title="Adicionar conta"
+          >
+            <Plus className="h-5 w-5" />
+          </button>
+        </div>
       </div>
 
       {/* Empty state */}

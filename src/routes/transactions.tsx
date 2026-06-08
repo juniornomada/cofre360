@@ -684,8 +684,14 @@ export function TransactionsPage() {
   return (
     <div className="animate-page-enter flex flex-col gap-4 px-4 pt-6 pb-24">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-foreground">Transações</h1>
+        <div className="flex items-center gap-3">
+          <Link to="/" className="interactive-button flex h-10 w-10 items-center justify-center rounded-full bg-card border border-border shadow-sm hover:bg-accent transition-all">
+            <ArrowLeft className="h-5 w-5 text-foreground" />
+          </Link>
+          <h1 className="text-xl font-bold text-foreground">Transações</h1>
+        </div>
         <div className="flex items-center gap-2">
+
 
           <div className="flex gap-2">
           {selectionMode ? (
@@ -710,18 +716,18 @@ export function TransactionsPage() {
             <>
               {transactions.length > 0 && (
                 <>
-                  <button onClick={() => setSelectionMode(true)} className="flex h-8 w-8 items-center justify-center rounded-full bg-card text-muted-foreground border border-border" title="Selecionar">
-                    <CheckSquare className="h-4 w-4" />
+                  <button onClick={() => setSelectionMode(true)} className="flex h-10 w-10 items-center justify-center rounded-full bg-card text-muted-foreground border border-border shadow-sm hover:bg-accent transition-all" title="Selecionar">
+                    <CheckSquare className="h-5 w-5" />
                   </button>
                 </>
               )}
-              <button onClick={() => { setGlobalSearch(""); setShowGlobalSearch(true); }} className="flex h-8 w-8 items-center justify-center rounded-full bg-card text-muted-foreground border border-border" title="Buscar transação">
-                <Search className="h-4 w-4" />
+              <button onClick={() => { setGlobalSearch(""); setShowGlobalSearch(true); }} className="flex h-10 w-10 items-center justify-center rounded-full bg-card text-muted-foreground border border-border shadow-sm hover:bg-accent transition-all" title="Buscar transação">
+                <Search className="h-5 w-5" />
               </button>
               <Popover open={showAdvancedFilters} onOpenChange={setShowAdvancedFilters}>
                 <PopoverTrigger asChild>
-                  <button className="relative flex h-8 w-8 items-center justify-center rounded-full bg-card text-muted-foreground border border-border" title="Filtros avançados">
-                    <SlidersHorizontal className="h-4 w-4" />
+                  <button className="relative flex h-10 w-10 items-center justify-center rounded-full bg-card text-muted-foreground border border-border shadow-sm hover:bg-accent transition-all" title="Filtros avançados">
+                    <SlidersHorizontal className="h-5 w-5" />
                     {activeFilterCount > 0 && (
                       <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground">
                         {activeFilterCount}
@@ -838,8 +844,8 @@ export function TransactionsPage() {
               </Popover>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="flex h-8 w-8 items-center justify-center rounded-full bg-card text-muted-foreground border border-border" title="Mais ações">
-                    <MoreVertical className="h-4 w-4" />
+                  <button className="flex h-10 w-10 items-center justify-center rounded-full bg-card text-muted-foreground border border-border shadow-sm hover:bg-accent transition-all" title="Mais ações">
+                    <MoreVertical className="h-5 w-5" />
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="rounded-xl">
@@ -853,8 +859,8 @@ export function TransactionsPage() {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-              <button onClick={() => setShowAddDialog(true)} className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                <Plus className="h-4 w-4" />
+              <button onClick={() => setShowAddDialog(true)} className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground border border-primary/20 shadow-lg hover:brightness-110 transition-all">
+                <Plus className="h-5 w-5" />
               </button>
             </>
           )}

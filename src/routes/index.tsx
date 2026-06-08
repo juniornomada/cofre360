@@ -878,25 +878,14 @@ function Dashboard() {
         <div className="flex items-center gap-2">
           <button
             onClick={handleLogout}
-            className="interactive-button flex h-10 w-10 items-center justify-center rounded-full bg-card border"
-            style={{
-              borderColor: "hsl(142 95% 55%)",
-              boxShadow:
-                "0 0 10px hsl(142 95% 55% / 0.9), 0 0 20px hsl(142 95% 55% / 0.6), inset 0 0 6px hsl(142 95% 55% / 0.35)",
-            }}
+            className="interactive-button flex h-10 w-10 items-center justify-center rounded-full bg-card border border-border shadow-sm hover:bg-accent transition-all"
             title="Sair"
           >
             <LogOut className="h-5 w-5 text-muted-foreground" />
           </button>
           <Link
-
             to="/reminders"
-            className="interactive-button relative flex h-10 w-10 items-center justify-center rounded-full bg-card border"
-            style={{
-              borderColor: "hsl(142 95% 55%)",
-              boxShadow:
-                "0 0 10px hsl(142 95% 55% / 0.9), 0 0 20px hsl(142 95% 55% / 0.6), inset 0 0 6px hsl(142 95% 55% / 0.35)",
-            }}
+            className="interactive-button relative flex h-10 w-10 items-center justify-center rounded-full bg-card border border-border shadow-sm hover:bg-accent transition-all"
           >
             <Bell className="h-5 w-5 text-muted-foreground" />
             {pendingReminders.length > 0 && (
@@ -905,26 +894,23 @@ function Dashboard() {
               </span>
             )}
           </Link>
-          <div
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-card border"
-            style={{
-              borderColor: "hsl(142 95% 55%)",
-              boxShadow:
-                "0 0 10px hsl(142 95% 55% / 0.9), 0 0 20px hsl(142 95% 55% / 0.6), inset 0 0 6px hsl(142 95% 55% / 0.35)",
-            }}
-          >
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-card border border-border shadow-sm hover:bg-accent transition-all">
             <ThemeToggle />
           </div>
+          
+          <button 
+            onClick={() => updateBalanceVisible(!balanceVisible)} 
+            className="interactive-button flex h-10 w-10 items-center justify-center rounded-full bg-card border border-border shadow-sm hover:bg-accent transition-all"
+            title={balanceVisible ? "Ocultar saldos" : "Mostrar saldos"}
+          >
+            {balanceVisible ? <Eye className="h-5 w-5 text-muted-foreground" /> : <EyeOff className="h-5 w-5 text-muted-foreground" />}
+          </button>
+
           <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
             <PopoverTrigger asChild>
               <button
                 aria-label="Adicionar transação"
-                className="interactive-button flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground border"
-                style={{
-                  borderColor: "hsl(142 95% 55%)",
-                  boxShadow:
-                    "0 0 10px hsl(142 95% 55% / 0.9), 0 0 20px hsl(142 95% 55% / 0.6), inset 0 0 6px hsl(142 95% 55% / 0.35)",
-                }}
+                className="interactive-button flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground border border-primary/20 shadow-lg hover:brightness-110 transition-all"
               >
                 <Plus className="h-5 w-5" />
               </button>
