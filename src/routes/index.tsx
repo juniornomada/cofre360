@@ -340,12 +340,14 @@ export function Dashboard() {
       supabase.from("card_payments").select("card_id, amount, paid_at").eq("user_id", session.user.id),
     ]);
 
-    if (rawRecentRes.error) throw rawRecentRes.error;
-    if (allTxRes.error) throw allTxRes.error;
-    if (acctsRes.error) throw acctsRes.error;
-    if (cardsRes.error) throw cardsRes.error;
-    if (remsRes.error) throw remsRes.error;
-    if (glsRes.error) throw glsRes.error;
+    if (rawRecentRes.error) throw new Error(`rawRecentRes: ${rawRecentRes.error.message}`);
+    if (allTxRes.error) throw new Error(`allTxRes: ${allTxRes.error.message}`);
+    if (acctsRes.error) throw new Error(`acctsRes: ${acctsRes.error.message}`);
+    if (cardsRes.error) throw new Error(`cardsRes: ${cardsRes.error.message}`);
+    if (remsRes.error) throw new Error(`remsRes: ${remsRes.error.message}`);
+    if (glsRes.error) throw new Error(`glsRes: ${glsRes.error.message}`);
+    if (allCardsTxRes.error) throw new Error(`allCardsTxRes: ${allCardsTxRes.error.message}`);
+    if (paymentsRes.error) throw new Error(`paymentsRes: ${paymentsRes.error.message}`);
 
     const rawRecent = rawRecentRes.data;
     const allTx = allTxRes.data;
