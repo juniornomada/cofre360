@@ -1267,8 +1267,8 @@ export function TransactionsPage() {
           )}
           </div>
           <DialogFooter className="p-4 pt-2 border-t mt-0 flex-row gap-2 sm:gap-2">
-            <Button variant="outline" size="sm" className="flex-1 h-8 text-xs" onClick={() => { (document.activeElement as HTMLElement)?.blur(); setShowEditDialog(false); }}>Cancelar</Button>
-            <Button size="sm" className="flex-1 h-8 text-xs" onClick={handleSaveEdit}>Salvar</Button>
+            <Button variant="outline" size="sm" className="flex-1 h-10 text-xs rounded-xl" onClick={() => { (document.activeElement as HTMLElement)?.blur(); setShowEditDialog(false); }}>Cancelar</Button>
+            <Button size="sm" className="flex-1 h-10 text-xs rounded-xl font-bold" onClick={handleSaveEdit}>Salvar alterações</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
