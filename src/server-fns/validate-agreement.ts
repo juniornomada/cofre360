@@ -5,8 +5,15 @@ import { groupByBillingCycle, type CardTransaction } from "@/lib/invoice-utils";
 
 export const validateAgreement = createServerFn({ method: "POST" })
   .handler(async () => {
+    // Check for authorization. Note: In server functions called from client, 
+    // supabase.auth.getSession() might not reliably have the user if not handled correctly.
+    // We should ideally use headers or just rely on the session if it's passed or available.
     const { data: { session } } = await supabase.auth.getSession();
+    
+    // For debugging/testing, if session is missing in development-like environment, 
+    // we can try to get the user from the token if provided in headers, but let's first fix the session check.
     if (!session) {
+      console.error("Validation Agreement: No session found");
       throw new Error("Não autorizado");
     }
 
