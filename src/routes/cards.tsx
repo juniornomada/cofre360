@@ -279,7 +279,10 @@ function CardsPage() {
       if (txRes.data) {
         const totals: Record<string, number> = {};
         for (const tx of txRes.data) {
-          if (tx.card) totals[tx.card] = (totals[tx.card] || 0) + Number(tx.amount);
+          if (tx.card) {
+            const amount = Number(tx.amount);
+            totals[tx.card] = (totals[tx.card] || 0) + (tx.type === "income" ? -amount : amount);
+          }
         }
         setCardTotals(totals);
         setCardTransactions(txRes.data as CardTransaction[]);
@@ -1466,6 +1469,10 @@ function CardsPage() {
                             <div className="flex justify-between text-[9px]">
                               <span className="text-muted-foreground">Estornos/Créditos:</span>
                               <span className="text-primary font-medium">+R$ {creditos.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
+                            </div>
+                            <div className="flex justify-between text-[10px] font-bold pt-1 border-t border-border/20 mt-1">
+                              <span className="text-foreground">Total Calculado:</span>
+                              <span className="text-foreground tabular-nums">R$ {(compras - creditos).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
                             </div>
                           </>
                         );
