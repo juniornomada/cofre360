@@ -28,36 +28,27 @@ async function extractPdfText(base64: string): Promise<string> {
   // Dynamic import for PDF.js (LEGACY build for better compatibility in server environments)
   const pdfjs: any = await import("pdfjs-dist/legacy/build/pdf.mjs");
   
-  // Normalize GlobalWorkerOptions to prevent invalid types and module resolution errors.
-  if (pdfjs.GlobalWorkerOptions) {
-    try {
-      // By using a dynamically constructed string, we prevent the bundler (Vite/Nitro)
-      // from statically analyzing and "helping" by resolving this path as a module.
-      // We point to a non-existent file to force PDF.js to use its internal fake worker.
-      const parts = ["pdf", "worker", "mjs"];
-      pdfjs.GlobalWorkerOptions.workerSrc = parts.join(".");
-      pdfjs.GlobalWorkerOptions.workerPort = undefined;
-    } catch (e) {
-      console.warn("Could not set PDF.js dummy workerSrc:", e);
-    }
-  }
-
-
-
-
-
-
-
+  // In server environments (Nitro/Vite), setting GlobalWorkerOptions.workerSrc
+  // can trigger module resolution errors or "fake worker failed" errors.
+  // The most robust way is to explicitly provide a PDFWorker instance 
+  // to the getDocument call, which prevents the library from trying to 
+  // load a worker script from disk or via dynamic import.
+  const worker = new pdfjs.PDFWorker({
+    name: "PDFWorker-Server",
+    port: null, // Forces use of the internal FakeWorker
+    verbosity: 0,
+  });
 
   const loadingTask = pdfjs.getDocument({
     data: bytes,
-    // Using disableWorker: true is the most reliable for server functions
+    worker: worker,
     disableWorker: true,
     isEvalSupported: false,
     useSystemFonts: false,
     disableFontFace: true,
     verbosity: 0,
   });
+
   const doc = await loadingTask.promise;
 
   let full = "";
