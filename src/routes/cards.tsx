@@ -1733,6 +1733,7 @@ function CardsPage() {
               <div className="relative">
                 <Label className="text-xs text-muted-foreground mb-1 block">Nome</Label>
                 <Input
+                  autoFocus
                   value={editTx.name}
                   onChange={e => {
                     let name = e.target.value;
@@ -1740,9 +1741,18 @@ function CardsPage() {
                     setEditTx({ ...editTx, name });
                     setShowEditSuggestions(name.length >= 2);
                   }}
+                  onKeyDown={e => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      const categoryButton = document.querySelector('button[aria-label="Selecionar categoria"]') as HTMLButtonElement;
+                      if (categoryButton) {
+                        categoryButton.focus();
+                      }
+                    }
+                  }}
                   onFocus={() => setShowEditSuggestions(editTx.name.length >= 2)}
                   onBlur={() => setTimeout(() => setShowEditSuggestions(false), 200)}
-                  className="rounded-xl h-10"
+                  className="rounded-xl h-10 focus-visible:ring-primary/30"
                 />
                 {showEditSuggestions && getAutocompleteSuggestions(editTx.name).length > 0 && (
                   <div className="absolute z-50 left-0 right-0 top-full mt-1 rounded-xl bg-popover border border-border shadow-lg max-h-48 overflow-y-auto">
