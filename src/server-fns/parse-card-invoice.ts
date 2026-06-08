@@ -27,10 +27,11 @@ async function extractPdfText(base64: string): Promise<string> {
 
   // Dynamic import for PDF.js (LEGACY build for better compatibility in server environments)
   const pdfjs: any = await import("pdfjs-dist/legacy/build/pdf.mjs");
-  const pdfjsWorker: any = await import("pdfjs-dist/legacy/build/pdf.worker.mjs");
   
+  // To avoid worker errors in server functions, we disable the worker entirely.
+  // This is the most robust approach for Cloud Functions / SSR environments.
   if (pdfjs.GlobalWorkerOptions) {
-    pdfjs.GlobalWorkerOptions.workerPort = pdfjsWorker;
+    pdfjs.GlobalWorkerOptions.workerSrc = "";
   }
 
   const loadingTask = pdfjs.getDocument({
