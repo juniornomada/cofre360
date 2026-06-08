@@ -72,10 +72,10 @@ export function getCycleDates(referenceDate: Date, closingDay: number, dueDay: n
   return { currentClose, currentDue, prevClose, makeDue };
 }
 
-export function groupByBillingCycle(txs: CardTransaction[], closingDay: number | null, dueDay: number | null): InvoicePeriod[] {
+export function groupByBillingCycle(txs: CardTransaction[], closingDay: number | null, dueDay: number | null, referenceDate: Date = new Date()): InvoicePeriod[] {
   const cDay = closingDay || 1;
   const dDay = dueDay || 10;
-  const { currentClose: closingDate, prevClose: prevClosing, makeDue } = getCycleDates(new Date(), closingDay || 1, dueDay || 10);
+  const { currentClose: closingDate, prevClose: prevClosing, makeDue } = getCycleDates(referenceDate, closingDay || 1, dueDay || 10);
   const pastClosing = new Date(prevClosing.getFullYear(), prevClosing.getMonth() - 1, cDay);
 
   // Find the max future date from all transactions based on their actual date field
