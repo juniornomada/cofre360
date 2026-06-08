@@ -30,13 +30,15 @@ async function extractPdfText(base64: string): Promise<string> {
   } else {
     // Client-side (Browser)
     if (pdfjs.GlobalWorkerOptions) {
-      pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.mjs`;
+      // Use a consistent version for the worker from CDN
+      const version = pdfjs.version || "4.3.136";
+      pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${version}/pdf.worker.min.mjs`;
     }
   }
 
   const loadingTask = pdfjs.getDocument({
     data: bytes,
-    disableWorker: typeof window === "undefined",
+    disableWorker: true, // Always disable worker to avoid cross-origin/path issues in this setup
     isEvalSupported: false,
     useSystemFonts: false,
     disableFontFace: true,
