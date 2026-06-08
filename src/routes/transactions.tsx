@@ -134,7 +134,7 @@ export function TransactionsPage() {
       editInstallmentMode,
       editInstallmentMode === "fixed" ? editTx.amount : 0
     ) : null;
-   const hasEditDiff = !!editTx && (editTx.total_installments ?? 1) > 1 && editInstallmentMode === "divide" && editInstallmentDetails?.diff !== 0;
+   const hasEditDiff = !!editTx && (editTx.total_installments ?? 1) > 1 && editInstallmentDetails?.diff !== 0;
 
   // Autocomplete state
   const [showAddSuggestions, setShowAddSuggestions] = useState(false);
