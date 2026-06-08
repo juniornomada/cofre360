@@ -697,22 +697,6 @@ function CardsPage() {
       </div>
 
       <div className="space-y-5">
-          {cards.length > 0 && (
-            <div className="grid grid-cols-2 gap-3 animate-stagger-in">
-              <div className="rounded-2xl bg-card border border-border/50 p-4">
-                <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Fatura total</p>
-                <p className="mt-1 text-lg font-bold text-foreground tabular-nums">
-                  R$ {totalAllInvoices.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                </p>
-              </div>
-              <div className="rounded-2xl bg-card border border-border/50 p-4">
-                <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Limite disponível</p>
-                <p className="mt-1 text-lg font-bold text-primary tabular-nums">
-                  R$ {totalAvailable.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                </p>
-              </div>
-            </div>
-          )}
 
           {cards.length === 0 && (
             <div className="flex flex-col items-center justify-center py-16 text-center rounded-2xl bg-card border border-dashed border-border/50">
