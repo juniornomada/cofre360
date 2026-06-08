@@ -31,16 +31,24 @@ async function extractPdfText(base64: string): Promise<string> {
   // Normalize GlobalWorkerOptions to prevent invalid types (null, objects, etc.)
   // that cause "Invalid workerSrc type" or "Invalid workerPort type" errors.
   if (pdfjs.GlobalWorkerOptions) {
-    const options = pdfjs.GlobalWorkerOptions;
-    // We only allow strings for workerSrc. If it's anything else, we unset it safely.
-    if (typeof options.workerSrc !== "string") {
-      delete (options as any).workerSrc;
-    }
-    // workerPort must be a MessagePort or undefined. We ensure it's not a lingering object.
-    if (options.workerPort !== undefined && (typeof options.workerPort !== "object" || options.workerPort === null)) {
-      delete (options as any).workerPort;
+  // Prevent invalid GlobalWorkerOptions that trigger "Invalid type" errors.
+  // We use a try-catch because some PDF.js versions throw immediately on assignment.
+  if (pdfjs.GlobalWorkerOptions) {
+    try {
+      const options = pdfjs.GlobalWorkerOptions;
+      if (typeof options.workerSrc !== "string") {
+        (options as any).workerSrc = undefined;
+      }
+      if (options.workerPort !== undefined && (typeof options.workerPort !== "object" || options.workerPort === null)) {
+        (options as any).workerPort = undefined;
+      }
+    } catch (e) {
+      // If assignment throws, the options are already in a state we can't easily fix
+      // but we'll proceed with disableWorker: true below.
+      console.warn("Could not normalize PDF.js GlobalWorkerOptions:", e);
     }
   }
+
 
 
 
