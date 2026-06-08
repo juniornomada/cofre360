@@ -79,7 +79,7 @@ export function groupByBillingCycle(txs: CardTransaction[], closingDay: number |
   const pastClosing = new Date(prevClosing.getFullYear(), prevClosing.getMonth() - 1, cDay);
 
   // Find the max future date from all transactions based on their actual date field
-  let maxFutureDate = now;
+  let maxFutureDate = new Date();
   for (const tx of txs) {
     const txDate = parseTxDate(tx.date, tx.created_at);
     if (txDate > maxFutureDate) maxFutureDate = txDate;
