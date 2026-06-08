@@ -151,6 +151,7 @@ ${trimmed}
     },
     body: JSON.stringify({
       model: "google/gemini-2.5-flash",
+      temperature: 0.1,
       messages: [
         { role: "system", content: systemMsg },
         { role: "user", content: prompt },
