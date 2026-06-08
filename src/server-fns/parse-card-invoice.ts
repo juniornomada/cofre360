@@ -15,14 +15,14 @@ type ParsedInvoiceTx = {
 type DocumentKind = "card_invoice" | "bank_statement";
 
 async function extractPdfText(base64: string): Promise<string> {
-  // Decode base64 → Uint8Array reliably across environments
+  // Decode base64 → Uint8Array reliably across environments (preferring Buffer on server for speed)
   let bytes: Uint8Array;
-  try {
+  if (typeof Buffer !== "undefined") {
+    bytes = new Uint8Array(Buffer.from(base64, "base64"));
+  } else {
     const binary = atob(base64);
     bytes = new Uint8Array(binary.length);
     for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-  } catch (e) {
-    bytes = new Uint8Array(Buffer.from(base64, "base64"));
   }
 
   // Dynamic import for PDF.js (LEGACY build for better compatibility in server environments)
