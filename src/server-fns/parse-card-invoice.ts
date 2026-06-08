@@ -114,6 +114,8 @@ Regras:
 - "type": "expense" para compras/débitos. "income" para estornos, créditos, pagamentos recebidos.
 - Inclua parcelas individuais (se a linha indica "02/12" use isso no nome: "Loja X (2/12)").
 - Ignore: total da fatura, juros consolidados, saldo anterior, limites, pagamentos do cliente à fatura.
+- Se o PDF trouxer transações que pareçam duplicadas (mesmo valor, mesma data, nomes similares), inclua-as separadamente se estiverem em linhas distintas.
+- Extraia TODAS as transações individuais, sem exceção. Se a fatura tiver muitas páginas, processe todas.
 - Se não houver transações claras, retorne lista vazia.`;
 
   const bankPrompt = `Você recebe o texto bruto extraído de um EXTRATO BANCÁRIO brasileiro (conta corrente / poupança / digital). Extraia TODAS as movimentações (débitos e créditos) presentes no extrato.
