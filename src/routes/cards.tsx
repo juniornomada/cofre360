@@ -194,6 +194,18 @@ function CardsPage() {
   const [pdfImportOpen, setPdfImportOpen] = useState(false);
   const [pdfImportCard, setPdfImportCard] = useState<CardData | null>(null);
 
+  // Transaction Edit/Delete state
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [editTx, setEditTx] = useState<CardTransaction | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<CardTransaction | null>(null);
+  const [deleteScope, setDeleteScope] = useState<"single" | "future" | "all">("single");
+  const [editNameMode, setEditNameMode] = useState<"none" | "text">("none");
+  const [showEditSuggestions, setShowEditSuggestions] = useState(false);
+  const [editInstallmentMode, setEditInstallmentMode] = useState<"divide" | "fixed">("divide");
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const [activeTab, setActiveTab] = useState("list");
 
 
