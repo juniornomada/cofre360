@@ -1116,7 +1116,11 @@ export function TransactionsPage() {
               {editTx.card !== null && (
                 <div>
                   <label className="text-xs text-muted-foreground mb-1 block">Cartão de Crédito</label>
-                  <select value={editTx.card || ""} onChange={e => setEditTx({ ...editTx, card: e.target.value || null, bank_account_id: null })} className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground outline-none">
+                  <select 
+                    value={editTx.card || ""} 
+                    onChange={e => setEditTx({ ...editTx, card: e.target.value || null, bank_account_id: null })} 
+                    className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground outline-none focus:ring-1 focus:ring-primary/30"
+                  >
                     {cardOptions.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
                   </select>
                 </div>
@@ -1172,7 +1176,7 @@ export function TransactionsPage() {
                         const val = e.target.value;
                         setEditTx({ ...editTx, installment_number: val === "" ? null : Math.max(1, parseInt(val) || 1) });
                       }}
-                      className="w-full rounded-lg bg-background px-2 py-1.5 text-sm text-foreground outline-none"
+                      className="w-full rounded-lg bg-background px-2 py-1.5 text-sm text-foreground outline-none border border-border focus:border-primary/50"
                     />
                   </div>
                   <div className="col-span-2 space-y-2">
