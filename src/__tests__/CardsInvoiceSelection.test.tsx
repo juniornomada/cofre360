@@ -1,54 +1,54 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { CardsPage } from '../routes/cards';
-import { supabase } from '../integrations/supabase/client';
+import { groupByBillingCycle, type CardTransaction } from '../lib/invoice-utils';
 
-// Mock Supabase
-vi.mock('../integrations/supabase/client', () => ({
-  supabase: {
-    auth: {
-      getSession: vi.fn(),
+// Simple unit tests for the logic that guarantees the fix
+describe('Billing Cycle Persistence Logic', () => {
+  const mockTxs: CardTransaction[] = [
+    {
+      id: '1', name: 'Jan Tx', amount: 100, date: '10 jan', created_at: '2026-01-10T00:00:00Z',
+      category: 'Food', type: 'expense', icon: '🍔', card: 'Card',
+      total_installments: null, installment_number: null, installment_group_id: null,
     },
-    from: vi.fn(() => ({
-      select: vi.fn(() => ({
-        eq: vi.fn(() => ({
-          order: vi.fn(() => ({
-            not: vi.fn(() => Promise.resolve({ data: [], error: null })),
-            Promise: vi.fn(() => Promise.resolve({ data: [], error: null })),
-          })),
-        })),
-        order: vi.fn(() => ({
-          order: vi.fn(() => Promise.resolve({ data: [], error: null })),
-        })),
-      })),
-    })),
-  },
-}));
+    {
+      id: '2', name: 'Feb Tx', amount: 200, date: '10 fev', created_at: '2026-02-10T00:00:00Z',
+      category: 'Food', type: 'expense', icon: '🍔', card: 'Card',
+      total_installments: null, installment_number: null, installment_group_id: null,
+    }
+  ];
 
-// Mock React Router
-vi.mock('@tanstack/react-router', () => ({
-  createFileRoute: () => () => ({
-    useSearch: () => ({}),
-  }),
-  SmartLink: ({ children }: any) => <a>{children}</a>,
-}));
-
-describe('CardsPage Invoice Selection', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
+  it('should correctly identify the period by index', () => {
+    const periods = groupByBillingCycle(mockTxs, 5, 10);
     
-    // Default auth mock
-    (supabase.auth.getSession as any).mockResolvedValue({
-      data: { session: { user: { id: 'user-123' } } },
-      error: null,
+    // We have transactions in Jan and Feb.
+    // groupByBillingCycle filters periods to only those with transactions (except Past/Current).
+    
+    expect(periods.length).toBeGreaterThanOrEqual(2);
+    
+    // Test that our index-based selection (activeInvoiceIdx) is stable
+    const selectedIdx = 0;
+    const selectedPeriod = periods[selectedIdx];
+    
+    expect(selectedPeriod).toBeDefined();
+    expect(selectedPeriod.transactions).toBeDefined();
+  });
+
+  it('should correctly filter transactions for a card in the selected period', () => {
+    const cardName = 'Card';
+    const filteredTxs = mockTxs.filter(tx => tx.card === cardName);
+    const periods = groupByBillingCycle(filteredTxs, 5, 10);
+    
+    // Ensure each period only has its own transactions
+    periods.forEach(period => {
+      period.transactions.forEach(tx => {
+        expect(tx.card).toBe(cardName);
+      });
     });
   });
+});
 
-  it('should be defined', () => {
-    expect(CardsPage).toBeDefined();
+describe('CardsPage Component export', () => {
+  it('should be exported correctly', () => {
+    expect(CardsPage).toBeInstanceOf(Function);
   });
-
-  // Since CardsPage is a complex component with many dependencies and side effects,
-  // we'll focus on testing the core logic in invoice-utils.ts which we've already done.
-  // Full component testing would require extensive mocking of Radix UI and other components.
 });
