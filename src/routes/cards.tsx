@@ -188,32 +188,8 @@ function CardsPage() {
   const [pdfImportOpen, setPdfImportOpen] = useState(false);
   const [pdfImportCard, setPdfImportCard] = useState<CardData | null>(null);
 
-  // Validation state
-  const [validationData, setValidationData] = useState<any>(null);
-  const [isValidating, setIsValidating] = useState(false);
   const [activeTab, setActiveTab] = useState("list");
 
-  const runValidation = async (silent = true) => {
-    setIsValidating(true);
-    try {
-      const result = await validateAgreement();
-      setValidationData(result);
-      if (!silent) {
-        if (result.status === 'ok') {
-          toast.success("Validação concluída: Tudo certo!");
-        } else if (result.status === 'partial') {
-          toast.warning("Validação concluída: Algumas divergências encontradas.");
-        } else {
-          toast.error("Validação concluída: Erros críticos detectados!");
-        }
-      }
-    } catch (error: any) {
-      console.error("Validation error:", error);
-      if (!silent) toast.error("Erro ao validar: " + error.message);
-    } finally {
-      setIsValidating(false);
-    }
-  };
 
   // Drag-and-drop sensors — pressionar 1s (mouse e toque) inicia a ordenação
   const sensors = useSensors(
