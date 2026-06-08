@@ -835,12 +835,23 @@ export function TransactionsPage() {
                   </Button>
                 </PopoverContent>
               </Popover>
-              <button onClick={generatePDF} className="flex h-8 w-8 items-center justify-center rounded-full bg-card text-muted-foreground border border-border" title="Gerar relatório PDF">
-                <FileText className="h-4 w-4" />
-              </button>
-              <button onClick={() => setShowCsvImport(true)} className="flex h-8 w-8 items-center justify-center rounded-full bg-card text-muted-foreground border border-border" title="Importar CSV">
-                <Upload className="h-4 w-4" />
-              </button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="flex h-8 w-8 items-center justify-center rounded-full bg-card text-muted-foreground border border-border" title="Mais ações">
+                    <MoreVertical className="h-4 w-4" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="rounded-xl">
+                  <DropdownMenuItem onClick={generatePDF} className="cursor-pointer">
+                    <FileText className="h-4 w-4 mr-2" />
+                    Gerar relatório PDF
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setShowCsvImport(true)} className="cursor-pointer">
+                    <Upload className="h-4 w-4 mr-2" />
+                    Importar CSV
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
               <button onClick={() => setShowAddDialog(true)} className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
                 <Plus className="h-4 w-4" />
               </button>
