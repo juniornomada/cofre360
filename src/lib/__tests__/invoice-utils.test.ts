@@ -53,10 +53,10 @@ describe('groupByBillingCycle calculation logic', () => {
       }
     ];
 
-    const periods = groupByBillingCycle(transactions, closingDay, dueDay);
+    const refDate = new Date('2024-01-25');
+    const periods = groupByBillingCycle(transactions, closingDay, dueDay, refDate);
     
     // Find the period containing these transactions
-    // Since dates are fixed, we check the transactions array of each period
     const periodWithTxs = periods.find(p => p.transactions.length === 3);
     
     expect(periodWithTxs).toBeDefined();
@@ -102,12 +102,18 @@ describe('groupByBillingCycle calculation logic', () => {
       }
     ];
 
-    const periods = groupByBillingCycle(transactions, closingDay, dueDay);
+    const refDate = new Date('2024-03-01');
+    const periods = groupByBillingCycle(transactions, closingDay, dueDay, refDate);
     
-    // Check that we have at least two periods with transactions or the base ones
+    // Check that we have at least two periods with transactions
     const txPeriods = periods.filter(p => p.transactions.length > 0);
     expect(txPeriods.length).toBe(2);
-    expect(txPeriods[0].total).toBe(100);
-    expect(txPeriods[1].total).toBe(200);
+    // Values might appear in "Anterior" or other past periods depending on refDate
+    // But they should be calculated correctly
+    const janTx = periods.find(p => p.transactions.some(t => t.name === 'Jan Tx'));
+    const febTx = periods.find(p => p.transactions.some(t => t.name === 'Feb Tx'));
+    
+    expect(janTx?.total).toBe(100);
+    expect(febTx?.total).toBe(200);
   });
 });
