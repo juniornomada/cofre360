@@ -917,13 +917,8 @@ export function TransactionsPage() {
         {filtered.length === 0 && !loading && (
           <EmptyState 
             onAction={(type) => {
-              if (type === "transfer") {
-                setIsTransfer(true);
-                setNewTx(prev => ({ ...prev, type: "expense" }));
-              } else {
-                setIsTransfer(false);
-                setNewTx(prev => ({ ...prev, type: type }));
-              }
+              setQuickAddType(type);
+              setCopyTxData(null);
               setShowAddDialog(true);
             }} 
             title="Tudo limpo por aqui"
