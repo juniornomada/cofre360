@@ -753,6 +753,18 @@ function CardsPage() {
       const activePeriod = updatedPeriods[activeInvoiceIdx];
       
       const totalInvoice = activePeriod?.total || 0;
+
+      // Anti-inconsistency check
+      const currentDisplayedTotal = invoicePeriods[activeInvoiceIdx]?.total || 0;
+      if (Math.abs(totalInvoice - currentDisplayedTotal) > 0.01) {
+        toast.error("O valor da fatura mudou durante o processo. Por favor, confira os valores atualizados antes de pagar.", {
+          duration: 5000,
+          icon: <AlertCircle className="h-5 w-5 text-destructive" />
+        });
+        setPayingSaving(false);
+        return;
+      }
+
       const currentPeriodKey = activePeriod?.key;
       const paidInThisPeriod = currentPeriodKey ? cardPaymentsByPeriod[payingCard.id]?.[currentPeriodKey] || 0 : 0;
       const remainingBeforeThis = Math.max(0, totalInvoice - paidInThisPeriod);
