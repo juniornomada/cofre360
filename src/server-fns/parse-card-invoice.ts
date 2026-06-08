@@ -109,24 +109,27 @@ async function aiExtractTransactions(rawText: string, kind: DocumentKind): Promi
 
 Regras:
 - "date" no formato YYYY-MM-DD. Se faltar o ano no PDF, infira pelo período da fatura ou use o ano atual.
-- "name" é a descrição do estabelecimento/lançamento (limpo, sem códigos longos).
-- "amount" é número positivo em reais (sem R$, sem ponto de milhar; use ponto decimal).
-- "type": "expense" para compras/débitos. "income" para estornos, créditos, pagamentos recebidos.
-- Inclua parcelas individuais (se a linha indica "02/12" use isso no nome: "Loja X (2/12)").
-- Ignore: total da fatura, juros consolidados, saldo anterior, limites, pagamentos do cliente à fatura.
-- Se o PDF trouxer transações que pareçam duplicadas (mesmo valor, mesma data, nomes similares), inclua-as separadamente se estiverem em linhas distintas.
-- Extraia TODAS as transações individuais, sem exceção. Se a fatura tiver muitas páginas, processe todas.
+- "name" é a descrição do estabelecimento/lançamento (limpo, sem códigos longos). EXTREMAMENTE IMPORTANTE: Se o texto do PDF mostrar datas próximas à descrição, use a data correta da transação, não apenas a data da fatura.
+- "amount" é número positivo em reais (sem R$, sem ponto de milhar; use ponto decimal). Se houver um símbolo de menos (-) ou sinal de CRÉDITO ao lado do valor, o tipo será "income".
+- "type": "expense" para compras/débitos/tarifas. "income" para estornos, créditos, pagamentos de fatura recebidos, cashback.
+- MUITO IMPORTANTE: Procure por transações em TODAS as seções (Lançamentos Nacionais, Lançamentos Internacionais, Créditos, etc). Não pule nenhuma linha que pareça uma transação.
+- Se o valor estiver entre parênteses ou tiver um sinal de menos (-), verifique se é um crédito (income).
+- "date": Use o formato YYYY-MM-DD. Se o PDF mostrar apenas "DD/MM", use o ano correspondente ao período da fatura. Se for uma transação de meses anteriores aparecendo na fatura (como uma parcela), use a data original se disponível.
+- Ignore: cabeçalhos de colunas, resumos de limites, gráficos, propagandas.
+- Se o PDF trouxer transações que pareçam duplicadas (mesmo valor, mesma data, nomes similares), inclua-as separadamente se estiverem em linhas distintas, pois podem ser compras recorrentes.
+- Extraia TODAS as transações individuais, sem exceção. Se a fatura tiver muitas páginas, processe todas. Certifique-se de capturar o valor TOTAL de cada transação.
 - Se não houver transações claras, retorne lista vazia.`;
 
   const bankPrompt = `Você recebe o texto bruto extraído de um EXTRATO BANCÁRIO brasileiro (conta corrente / poupança / digital). Extraia TODAS as movimentações (débitos e créditos) presentes no extrato.
 
 Regras:
-- "date" no formato YYYY-MM-DD. Se faltar o ano no PDF, infira pelo período do extrato ou use o ano atual.
+- "date" no formato YYYY-MM-DD.
 - "name" é a descrição da movimentação limpa (ex.: "PIX recebido - João", "Compra débito - Padaria X", "Tarifa mensal", "Salário").
 - "amount" é número positivo em reais (sem R$, sem ponto de milhar; use ponto decimal — sempre positivo).
-- "type": "expense" para débitos/saídas/pagamentos/PIX enviado/compras. "income" para créditos/entradas/PIX recebido/depósitos/salário/rendimentos.
-- Ignore: saldo do dia, saldo anterior, saldo final, totais, cabeçalhos, limite de cheque especial.
-- Não duplique a mesma linha. Se houver "Detalhe" abaixo de uma linha, junte na descrição.
+- "type": "expense" para débitos/saídas/pagamentos/PIX enviado/compras/tarifas/juros. "income" para créditos/entradas/PIX recebido/depósitos/salário/rendimentos/estornos.
+- MUITO IMPORTANTE: Procure por transações em todas as colunas de "Entradas" e "Saídas". Não pule transferências entre contas.
+- Ignore: saldo do dia, saldo anterior, saldo final, totais, cabeçalhos, limite de cheque especial, mensagens informativas.
+- Não duplique a mesma linha. Se houver "Detalhe" abaixo de uma linha que complemente o nome, junte na descrição.
 - Se não houver movimentações claras, retorne lista vazia.`;
 
   const prompt = `${kind === "bank_statement" ? bankPrompt : cardPrompt}
@@ -148,6 +151,7 @@ ${trimmed}
     },
     body: JSON.stringify({
       model: "google/gemini-2.5-flash",
+      temperature: 0.1,
       messages: [
         { role: "system", content: systemMsg },
         { role: "user", content: prompt },
