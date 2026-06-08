@@ -19,13 +19,13 @@
    fixedValue: number = 0
  ): InstallmentDetails {
    const safeCount = Math.max(1, Math.floor(count || 1));
-   const valorParcela = mode === "divide"
-     ? Math.round(((amount || 0) / safeCount) * 100) / 100
-     : Math.round((fixedValue || 0) * 100) / 100;
-   
-   const totalCalculado = Math.round(valorParcela * safeCount * 100) / 100;
-   const original = mode === "divide" ? (amount || 0) : 0;
-   const diff = Math.round((totalCalculado - original) * 100) / 100;
+    const valorParcela = mode === "divide"
+      ? Math.round(((amount || 0) / safeCount) * 100) / 100
+      : Math.round((fixedValue || 0) * 100) / 100;
+    
+    const totalCalculado = Math.round(valorParcela * safeCount * 100) / 100;
+    const referenceTotal = mode === "divide" ? (amount || 0) : (amount || 0); // Both modes use amount as reference total if provided
+    const diff = Math.round((totalCalculado - referenceTotal) * 100) / 100;
    
    const aviso = mode === "divide" && diff !== 0
      ? ` (ajuste de R$ ${diff.toLocaleString("pt-BR", { minimumFractionDigits: 2, signDisplay: "always" })})`
