@@ -1,20 +1,27 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { SmartLink as Link } from "@/components/SmartLink";
-import { ArrowLeft, Plus, CreditCard, Trash2, X, Check, Loader2, Wallet, Landmark, ChevronLeft, ChevronRight, Receipt, FileUp, GripVertical, Layers, Pencil, MoreVertical, Eye, EyeOff, Copy, AlertCircle, CheckCircle2, Info, RefreshCw } from "lucide-react";
+import { ArrowLeft, Plus, CreditCard, Trash2, X, Check, Loader2, Wallet, Landmark, ChevronLeft, ChevronRight, Receipt, FileUp, GripVertical, Layers, Pencil, MoreVertical, Eye, EyeOff, Copy, AlertCircle, CheckCircle2, Info, RefreshCw, CalendarIcon, Trash } from "lucide-react";
 import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 
 const PdfInvoiceImportDialog = lazy(() => import("@/components/PdfInvoiceImportDialog").then(m => ({ default: m.PdfInvoiceImportDialog })));
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { format, parse } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { deleteTransactionScope, isInstallmentTx } from "@/lib/installment-delete";
+import { CategoryPicker } from "@/components/CategoryPicker";
 import { CalculatorAmountInput } from "@/components/CalculatorAmountInput";
 import { CardBrand, brandPresets } from "@/components/CardBrand";
 import { BankLogo, bankPresets } from "@/components/BankLogo";
-import { cn } from "@/lib/utils";
+import { cn, normalizeText } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 
@@ -187,6 +194,18 @@ function CardsPage() {
   // PDF invoice import dialog
   const [pdfImportOpen, setPdfImportOpen] = useState(false);
   const [pdfImportCard, setPdfImportCard] = useState<CardData | null>(null);
+
+  // Transaction Edit/Delete state
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [editTx, setEditTx] = useState<CardTransaction | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<CardTransaction | null>(null);
+  const [deleteScope, setDeleteScope] = useState<"single" | "future" | "all">("single");
+  const [editNameMode, setEditNameMode] = useState<"none" | "text">("none");
+  const [showEditSuggestions, setShowEditSuggestions] = useState(false);
+  const [editInstallmentMode, setEditInstallmentMode] = useState<"divide" | "fixed">("divide");
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const [activeTab, setActiveTab] = useState("list");
 
@@ -481,7 +500,7 @@ function CardsPage() {
           .from("transactions")
           .select("installment_number")
           .eq("installment_group_id", groupId);
-        const present = new Set<number>((siblings || []).map((s) => s.installment_number));
+        const present = new Set<number>((siblings || []).map((s: any) => s.installment_number));
         present.add(current);
 
         // Insert future installments
@@ -502,7 +521,7 @@ function CardsPage() {
           const months = n - current;
           toInsert.push({
             name: `${baseName} (${n}/${total})`,
-            icon: installmentTx.icon,
+            icon: installmentTx.icon || "🍔",
             category: installmentTx.category,
             date: addMonthsIso(installmentTx.date, months),
             amount: installmentTx.amount,
@@ -534,6 +553,100 @@ function CardsPage() {
       toast.error("Erro ao salvar parcelamento");
     } finally {
       setInstallmentSaving(false);
+    }
+  };
+
+  const [txHistory, setTxHistory] = useState<Map<string, { icon: string; category: string }>>(new Map());
+  const fetchHistory = useCallback(async () => {
+    const { data } = await supabase
+      .from("transactions")
+      .select("name, icon, category")
+      .order("created_at", { ascending: false })
+      .limit(100);
+
+    if (data) {
+      const map = new Map<string, { icon: string; category: string }>();
+      data.forEach(tx => {
+        const cleanName = tx.name.replace(/\s*\(\d+\/\d+\)\s*$/, "").trim().toLowerCase();
+        if (!map.has(cleanName)) {
+          map.set(cleanName, { icon: tx.icon || "🍔", category: tx.category });
+        }
+      });
+      setTxHistory(map);
+    }
+  }, []);
+
+  const getAutocompleteSuggestions = (input: string) => {
+    if (!input || input.length < 2) return [];
+    const q = normalizeText(input);
+    const results: { icon: string; category: string; name: string }[] = [];
+    for (const [key, val] of txHistory) {
+      if (normalizeText(key).includes(q)) results.push({ ...val, name: key });
+      if (results.length >= 8) break;
+    }
+    return results;
+  };
+
+  useEffect(() => {
+    if (invoiceDialogOpen) fetchHistory();
+  }, [invoiceDialogOpen, fetchHistory]);
+
+  const handleEditTx = (tx: CardTransaction) => {
+    setEditTx({ ...tx });
+    setShowEditDialog(true);
+  };
+
+  const saveEditTx = async () => {
+    if (!editTx) return;
+    setIsSavingEdit(true);
+    try {
+      const { error } = await supabase
+        .from("transactions")
+        .update({
+          name: editTx.name,
+          category: editTx.category,
+          icon: editTx.icon,
+          date: editTx.date,
+          amount: editTx.amount,
+        })
+        .eq("id", editTx.id);
+      
+      if (error) throw error;
+      
+      toast.success("Transação atualizada com sucesso");
+      setShowEditDialog(false);
+      // Refresh transactions for the card
+      if (invoiceCard) openInvoiceDialog(invoiceCard);
+      fetchAll();
+    } catch (error: any) {
+      console.error("Error updating transaction:", error);
+      toast.error("Erro ao atualizar transação");
+    } finally {
+      setIsSavingEdit(false);
+    }
+  };
+
+  const handleDeleteTx = (tx: CardTransaction) => {
+    setDeleteTarget(tx);
+    setDeleteScope("single");
+    setShowDeleteDialog(true);
+  };
+
+  const confirmDeleteTx = async () => {
+    if (!deleteTarget) return;
+    setIsDeleting(true);
+    try {
+      await deleteTransactionScope(deleteTarget, deleteScope);
+      toast.success("Transação excluída com sucesso");
+      setShowDeleteDialog(false);
+      // Refresh transactions for the card
+      if (invoiceCard) openInvoiceDialog(invoiceCard);
+      fetchAll();
+    } catch (error: any) {
+      console.error("Error deleting transaction:", error);
+      toast.error("Erro ao excluir transação");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -1049,6 +1162,20 @@ function CardsPage() {
                           </span>
                           <div className="flex items-center gap-1 opacity-0 group-hover/card-tx-row:opacity-100 transition-all duration-200 translate-x-2 group-hover/card-tx-row:translate-x-0">
                             <button
+                              onClick={() => handleEditTx(tx)}
+                              className="p-1.5 rounded-full bg-accent/50 hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
+                              title="Editar"
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteTx(tx)}
+                              className="p-1.5 rounded-full bg-accent/50 hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                              title="Excluir"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                            <button
                               onClick={() => openInstallmentDialog(tx)}
                               className="p-1.5 rounded-full bg-accent/50 hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
                               title="Editar parcelamento"
@@ -1340,6 +1467,158 @@ function CardsPage() {
               </button>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-sm mx-auto rounded-2xl p-4 sm:p-6 flex flex-col gap-4">
+          <DialogHeader className="pr-6">
+            <DialogTitle className="text-sm">Editar Transação</DialogTitle>
+          </DialogHeader>
+          {editTx && (
+            <div className="flex flex-col gap-4">
+              <div className="relative">
+                <Label className="text-xs text-muted-foreground mb-1 block">Nome</Label>
+                <Input
+                  value={editTx.name}
+                  onChange={e => {
+                    let name = e.target.value;
+                    if (name.length > 0) name = name.charAt(0).toUpperCase() + name.slice(1);
+                    setEditTx({ ...editTx, name });
+                    setShowEditSuggestions(name.length >= 2);
+                  }}
+                  onFocus={() => setShowEditSuggestions(editTx.name.length >= 2)}
+                  onBlur={() => setTimeout(() => setShowEditSuggestions(false), 200)}
+                  className="rounded-xl h-10"
+                />
+                {showEditSuggestions && getAutocompleteSuggestions(editTx.name).length > 0 && (
+                  <div className="absolute z-50 left-0 right-0 top-full mt-1 rounded-xl bg-popover border border-border shadow-lg max-h-48 overflow-y-auto">
+                    {getAutocompleteSuggestions(editTx.name).map((s, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => {
+                          setEditTx({ ...editTx, name: s.name, icon: s.icon, category: s.category });
+                          setShowEditSuggestions(false);
+                        }}
+                        className="flex w-full items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-accent transition-colors first:rounded-t-xl last:rounded-b-xl"
+                      >
+                        <span className="text-base">{s.icon}</span>
+                        <span className="flex-1 text-left truncate">{s.name}</span>
+                        <span className="text-[10px] text-muted-foreground">{s.category}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              
+              <div className="min-h-[60px]">
+                <Suspense fallback={<div className="h-10 flex items-center justify-center"><Loader2 className="h-4 w-4 animate-spin text-primary" /></div>}>
+                  <CategoryPicker
+                    value={editTx.category}
+                    onChange={(val, icon) => setEditTx({ ...editTx, category: val, icon: icon || editTx.icon })}
+                    type={editTx.type as any}
+                  />
+                </Suspense>
+              </div>
+
+              <div>
+                <Label className="text-xs text-muted-foreground mb-1 block">Data</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className={cn("w-full justify-start text-left font-normal rounded-xl bg-accent/30 border-none h-10", !editTx.date && "text-muted-foreground")}>
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {editTx.date}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={(() => {
+                        try {
+                          return parse(editTx.date, "dd MMM", new Date(), { locale: ptBR });
+                        } catch { return undefined; }
+                      })()}
+                      onSelect={(date) => {
+                        if (date) setEditTx({ ...editTx, date: format(date, "dd MMM", { locale: ptBR }) });
+                      }}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              <div>
+                <Label className="text-xs text-muted-foreground mb-1 block">Valor (R$)</Label>
+                <CalculatorAmountInput
+                  value={editTx.amount}
+                  onChange={(v) => setEditTx({ ...editTx, amount: v })}
+                />
+              </div>
+
+              <Button
+                onClick={saveEditTx}
+                disabled={isSavingEdit}
+                className="w-full rounded-2xl py-6 font-semibold mt-2"
+              >
+                {isSavingEdit ? <Loader2 className="h-4 w-4 animate-spin" /> : "Salvar alterações"}
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-sm mx-auto rounded-2xl p-4 sm:p-6">
+          <DialogHeader>
+            <DialogTitle>Excluir Transação</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-4 mt-2">
+            <p className="text-sm text-muted-foreground">
+              Tem certeza que deseja excluir esta transação?
+              {deleteTarget && isInstallmentTx(deleteTarget) && " Esta transação faz parte de um parcelamento."}
+            </p>
+
+            {deleteTarget && isInstallmentTx(deleteTarget) && (
+              <div className="flex flex-col gap-2 p-3 bg-accent/50 rounded-xl border border-border">
+                <button
+                  onClick={() => setDeleteScope("single")}
+                  className={cn("flex items-center justify-between p-2 rounded-lg text-xs transition-colors", deleteScope === "single" ? "bg-primary/20 text-primary font-bold" : "hover:bg-accent")}
+                >
+                  Apenas esta parcela
+                  {deleteScope === "single" && <Check className="h-3.5 w-3.5" />}
+                </button>
+                <button
+                  onClick={() => setDeleteScope("future")}
+                  className={cn("flex items-center justify-between p-2 rounded-lg text-xs transition-colors", deleteScope === "future" ? "bg-primary/20 text-primary font-bold" : "hover:bg-accent")}
+                >
+                  Esta e as futuras
+                  {deleteScope === "future" && <Check className="h-3.5 w-3.5" />}
+                </button>
+                <button
+                  onClick={() => setDeleteScope("all")}
+                  className={cn("flex items-center justify-between p-2 rounded-lg text-xs transition-colors", deleteScope === "all" ? "bg-primary/20 text-primary font-bold" : "hover:bg-accent")}
+                >
+                  Todo o parcelamento
+                  {deleteScope === "all" && <Check className="h-3.5 w-3.5" />}
+                </button>
+              </div>
+            )}
+
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1 rounded-xl" onClick={() => setShowDeleteDialog(false)}>Cancelar</Button>
+              <Button
+                variant="destructive"
+                className="flex-1 rounded-xl"
+                onClick={confirmDeleteTx}
+                disabled={isDeleting}
+              >
+                {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Excluir"}
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 
