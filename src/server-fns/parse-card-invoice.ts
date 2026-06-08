@@ -28,16 +28,17 @@ async function extractPdfText(base64: string): Promise<string> {
   // Dynamic import for PDF.js (LEGACY build for better compatibility in server environments)
   const pdfjs: any = await import("pdfjs-dist/legacy/build/pdf.mjs");
   
-  // Ensure we don't have any previous worker settings lingering
+  // To avoid "Invalid workerPort type" errors: null is an object, so we use undefined.
+  // We also ensure workerSrc is undefined to avoid it trying to load an external script.
   if (pdfjs.GlobalWorkerOptions) {
-    (pdfjs.GlobalWorkerOptions as any).workerSrc = "";
-    (pdfjs.GlobalWorkerOptions as any).workerPort = null;
+    (pdfjs.GlobalWorkerOptions as any).workerPort = undefined;
+    (pdfjs.GlobalWorkerOptions as any).workerSrc = undefined;
   }
 
   const loadingTask = pdfjs.getDocument({
     data: bytes,
-    // When using disableWorker: true, PDF.js runs in-process. 
-    // We should NOT provide workerSrc or workerPort at all.
+    // By setting disableWorker: true, PDF.js runs in the same thread.
+    // This is the most compatible way for server functions.
     disableWorker: true,
     isEvalSupported: false,
     useSystemFonts: false,
