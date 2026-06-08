@@ -1331,17 +1331,27 @@ function CardsPage() {
           </DialogHeader>
           {payingCard && (
             <div className="flex flex-col gap-4 mt-2">
-              {(!invoicePeriods[activeInvoiceIdx] || invoicePeriods[activeInvoiceIdx].total === 0) && (
-                <div className="rounded-xl bg-amber-50 border border-amber-200 p-3 flex gap-2.5 items-start">
-                  <AlertCircle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+              {!invoicePeriods[activeInvoiceIdx] ? (
+                <div className="rounded-xl bg-slate-50 border border-slate-200 p-3 flex gap-2.5 items-start">
+                  <Info className="h-4 w-4 text-slate-600 shrink-0 mt-0.5" />
                   <div className="space-y-0.5">
-                    <p className="text-xs font-bold text-amber-900">Sem faturas lançadas</p>
-                    <p className="text-[10px] text-amber-800 leading-relaxed">
-                      Não encontramos despesas para este período. Você pode realizar um pagamento avulso ou escolher outro ciclo.
+                    <p className="text-xs font-bold text-slate-900">Fatura não gerada</p>
+                    <p className="text-[10px] text-slate-800 leading-relaxed">
+                      Este ciclo de cobrança ainda não possui transações registradas ou não foi iniciado.
                     </p>
                   </div>
                 </div>
-              )}
+              ) : invoicePeriods[activeInvoiceIdx].total === 0 ? (
+                <div className="rounded-xl bg-amber-50 border border-amber-200 p-3 flex gap-2.5 items-start">
+                  <AlertCircle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                  <div className="space-y-0.5">
+                    <p className="text-xs font-bold text-amber-900">Fatura sem despesas</p>
+                    <p className="text-[10px] text-amber-800 leading-relaxed">
+                      Não encontramos gastos para este ciclo. Você pode realizar um pagamento avulso ou escolher outro período.
+                    </p>
+                  </div>
+                </div>
+              ) : null}
               <div className="rounded-xl bg-accent/50 p-3">
                 <div className="flex justify-between items-start mb-1">
                   <div>
