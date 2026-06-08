@@ -1348,7 +1348,7 @@ function CardsPage() {
               <Label className="text-xs text-muted-foreground">Pagar com:</Label>
 
               {bankAccounts.length > 0 && (() => {
-                const currentInvoiceTotal = invoicePeriods.find(p => p.key === "current")?.total || 0;
+                const currentInvoiceTotal = invoicePeriods[activeInvoiceIdx]?.total || 0;
                 const remaining = Math.max(0, currentInvoiceTotal - (cardPayments[payingCard.id] || 0));
                 const eligible = bankAccounts.filter((a) => a.balance > 0).sort((a, b) => b.balance - a.balance);
                 const best = eligible[0];
