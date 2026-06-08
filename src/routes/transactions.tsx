@@ -13,6 +13,7 @@ const QuickAddTransactionDialog = lazy(() => import("@/components/QuickAddTransa
 import { CalculatorAmountInput } from "@/components/CalculatorAmountInput";
 import { BankLogo } from "@/components/BankLogo";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
  import { format, parse } from "date-fns";
  import { calculateInstallmentDetails } from "@/lib/installment-utils";
