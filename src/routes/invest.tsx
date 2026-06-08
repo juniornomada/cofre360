@@ -268,9 +268,17 @@ function InvestPage() {
               <div>
                 <label className="text-xs text-muted-foreground mb-1 block">Nome</label>
                 <input
+                  autoFocus
                   value={editItem.name}
                   onChange={e => setEditItem({ ...editItem, name: e.target.value })}
-                  className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground outline-none"
+                  onKeyDown={e => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      const valInput = document.querySelector('input[type="number"]') as HTMLInputElement;
+                      if (valInput) valInput.focus();
+                    }
+                  }}
+                  className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground outline-none focus:ring-1 focus:ring-primary/30"
                 />
               </div>
               <div>

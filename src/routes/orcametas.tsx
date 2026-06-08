@@ -479,7 +479,7 @@ function OrcaMetasPage() {
               </div>
               <div>
                 <label className="text-xs text-muted-foreground mb-1 block">Nome</label>
-                <input value={editItem.category} onChange={e => setEditItem({ ...editItem, category: e.target.value })} className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground outline-none" />
+                <input autoFocus value={editItem.category} onChange={e => setEditItem({ ...editItem, category: e.target.value })} className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground outline-none focus:ring-1 focus:ring-primary/30" />
               </div>
               <div>
                 <label className="text-xs text-muted-foreground mb-1 block">Limite (R$)</label>
@@ -522,7 +522,7 @@ function OrcaMetasPage() {
               </div>
               <div>
                 <label className="text-xs text-muted-foreground mb-1 block">Nome</label>
-                <input value={editGoal.name} onChange={e => setEditGoal({ ...editGoal, name: e.target.value })} className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground outline-none" />
+                <input autoFocus value={editGoal.name} onChange={e => setEditGoal({ ...editGoal, name: e.target.value })} className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground outline-none focus:ring-1 focus:ring-primary/30" />
               </div>
               <div>
                 <label className="text-xs text-muted-foreground mb-1 block">Valor atual (R$)</label>

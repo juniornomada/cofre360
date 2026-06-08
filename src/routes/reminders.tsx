@@ -549,18 +549,19 @@ function RemindersPage() {
       <div>
         <label className="text-xs text-muted-foreground mb-1 block">Título</label>
         <input 
+          autoFocus
           value={data.title || ""} 
           onChange={e => setData(prev => ({ ...prev, title: e.target.value }))} 
           onKeyDown={e => {
             if (e.key === "Enter") {
               e.preventDefault();
-              const amountInput = (e.target as HTMLElement).closest('.flex-col')?.querySelector('input[inputmode="numeric"]');
-              if (amountInput instanceof HTMLInputElement) {
-                amountInput.focus();
+              const categoryButton = document.querySelector('button[aria-label="Selecionar categoria"]') as HTMLButtonElement;
+              if (categoryButton) {
+                categoryButton.focus();
               }
             }
           }}
-          className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground outline-none" 
+          className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground outline-none focus:ring-1 focus:ring-primary/30" 
           placeholder="Ex: Conta de luz" 
         />
       </div>
