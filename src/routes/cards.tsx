@@ -1294,9 +1294,9 @@ function CardsPage() {
             <div className="flex flex-col gap-4 mt-2">
               <div className="rounded-xl bg-accent/50 p-3">
                 <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                  <span>Fatura total</span>
+                  <span>Fatura atual</span>
                   <span className="tabular-nums">
-                    R$ {(cardTotals[payingCard.name] || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                    R$ {(invoicePeriods.find(p => p.key === "current")?.total || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                   </span>
                 </div>
                 <div className="flex justify-between text-xs text-muted-foreground mb-1">
@@ -1308,7 +1308,7 @@ function CardsPage() {
                 <div className="flex justify-between text-sm font-semibold text-foreground border-t border-border pt-1 mt-1">
                   <span>Restante</span>
                   <span className="tabular-nums">
-                    R$ {Math.max(0, (cardTotals[payingCard.name] || 0) - (cardPayments[payingCard.id] || 0)).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                    R$ {Math.max(0, (invoicePeriods.find(p => p.key === "current")?.total || 0) - (cardPayments[payingCard.id] || 0)).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                   </span>
                 </div>
               </div>
