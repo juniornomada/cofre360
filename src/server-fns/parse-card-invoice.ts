@@ -30,10 +30,12 @@ async function extractPdfText(base64: string): Promise<string> {
   
   // In server environments (Nitro/Vite), setting GlobalWorkerOptions.workerSrc
   // can trigger module resolution errors or "fake worker failed" errors.
-  // The most robust way is to ensure workerSrc is NOT a generic error-prone path
+  // To avoid this, we MUST set workerSrc to a known placeholder or empty string
   // and then explicitly use PDFWorker with port: null to force internal FakeWorker.
-  if (typeof pdfjs.GlobalWorkerOptions !== "undefined") {
-    pdfjs.GlobalWorkerOptions.workerSrc = "";
+  if (typeof (pdfjs as any).GlobalWorkerOptions !== "undefined") {
+    // If workerSrc is completely missing, PDF.js throws even if we pass a worker instance.
+    // We set it to a special value that won't trigger a real fetch but satisfies the library check.
+    (pdfjs as any).GlobalWorkerOptions.workerSrc = "fake-worker-src";
   }
 
   const worker = new pdfjs.PDFWorker({
