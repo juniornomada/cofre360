@@ -668,14 +668,6 @@ export function TransactionsPage() {
     });
   };
 
-  const handleDeleteAll = async () => {
-    setDeleting(true);
-    await supabase.from("transactions").delete().neq("id", "00000000-0000-0000-0000-000000000000");
-    setDeleting(false);
-    setShowDeleteAllDialog(false);
-    exitSelectionMode();
-    fetchTransactions();
-  };
 
   if (loading) {
     return (
