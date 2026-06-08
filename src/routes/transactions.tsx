@@ -1355,20 +1355,6 @@ export function TransactionsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete All */}
-      <Dialog open={showDeleteAllDialog} onOpenChange={setShowDeleteAllDialog}>
-        <DialogContent className="max-w-[90vw] rounded-2xl bg-background">
-          <DialogHeader><DialogTitle>Apagar Todas as Transações</DialogTitle></DialogHeader>
-          <p className="text-sm text-muted-foreground">Tem certeza que deseja apagar <strong>todas</strong> as transações? Essa ação não pode ser desfeita.</p>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowDeleteAllDialog(false)} disabled={deleting}>Cancelar</Button>
-            <Button variant="destructive" onClick={handleDeleteAll} disabled={deleting}>
-              {deleting && <Loader2 className="h-4 w-4 animate-spin mr-1" />}
-              Apagar tudo
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Batch Delete */}
       <Dialog open={showBatchDeleteDialog} onOpenChange={setShowBatchDeleteDialog}>
