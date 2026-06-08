@@ -1001,7 +1001,7 @@ export function TransactionsPage() {
               <div className="relative">
                 <label className="text-xs text-muted-foreground mb-1 block">Nome</label>
                 <input
-                  autoFocus={false}
+                  autoFocus
                   inputMode={editNameMode}
                   value={editTx.name}
                   onChange={e => {
@@ -1012,7 +1012,15 @@ export function TransactionsPage() {
                     setEditTx({ ...editTx, name });
                     setShowEditSuggestions(name.length >= 2);
                   }}
-
+                  onKeyDown={e => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      const categoryButton = document.querySelector('button[aria-label="Selecionar categoria"]') as HTMLButtonElement;
+                      if (categoryButton) {
+                        categoryButton.focus();
+                      }
+                    }
+                  }}
                   onBlur={() => {
                     setEditNameMode("none");
                     setTimeout(() => setShowEditSuggestions(false), 200);
@@ -1023,7 +1031,7 @@ export function TransactionsPage() {
                     setTimeout(() => target.focus(), 0);
                   }}
                   onFocus={() => setShowEditSuggestions(editTx.name.length >= 2)}
-                  className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground outline-none"
+                  className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground outline-none focus:ring-1 focus:ring-primary/30"
                 />
                 {showEditSuggestions && getAutocompleteSuggestions(editTx.name).length > 0 && (
                   <div className="absolute z-50 left-0 right-0 top-full mt-1 rounded-xl bg-popover border border-border shadow-lg max-h-48 overflow-y-auto">

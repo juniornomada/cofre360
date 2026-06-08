@@ -505,20 +505,24 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                       setNameInputMode("text");
                       setTimeout(() => target.focus(), 0);
                     }}
-                   onKeyDown={e => {
-                     if (e.key === "Enter") {
-                       e.preventDefault();
-                        // Avançar para o campo de valor (que agora é um botão)
-                        const amountButton = document.querySelector('button[aria-label^="Valor:"]') as HTMLButtonElement;
-                        if (amountButton) {
-                          amountButton.focus();
+                    onKeyDown={e => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        // Avançar para o seletor de categoria
+                        const categoryButton = document.querySelector('button[aria-label="Selecionar categoria"]') as HTMLButtonElement;
+                        if (categoryButton) {
+                          categoryButton.focus();
+                        } else {
+                          // Fallback para o valor se a categoria não for focável facilmente
+                          const amountButton = document.querySelector('button[aria-label^="Valor:"]') as HTMLButtonElement;
+                          if (amountButton) amountButton.focus();
                         }
-                     }
-                   }}
-                   placeholder="Ex: Supermercado"
-                   className="w-full rounded-lg bg-card px-2.5 py-1.5 text-xs text-foreground placeholder:text-muted-foreground outline-none"
-                 />
-               </div>
+                      }
+                    }}
+                    placeholder="Ex: Supermercado"
+                    className="w-full rounded-lg bg-card px-2.5 py-1.5 text-xs text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary/30"
+                  />
+                </div>
               <CategoryPicker
                 value={newTx.category}
                 onChange={(val, icon) => setNewTx({ ...newTx, category: val, icon })}
