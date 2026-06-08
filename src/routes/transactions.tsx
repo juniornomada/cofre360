@@ -92,6 +92,7 @@ export function TransactionsPage() {
     if (searchParams.accountId) {
       setFilterAccountId(searchParams.accountId);
       setActiveSource("account");
+      setShowAdvancedFilters(true); // Exibir filtros avançados para mostrar que está filtrado
     }
   }, [searchParams.accountId]);
   
@@ -399,6 +400,7 @@ export function TransactionsPage() {
     setFilterType("all");
     setSortBy("date-desc");
     setFilterAccountId(null);
+    setActiveSource("all");
   };
 
   const totalIncome = filtered.filter(t => t.type === "income" && t.is_visible !== false).reduce((s, t) => s + t.amount, 0);
