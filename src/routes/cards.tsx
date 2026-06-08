@@ -667,12 +667,36 @@ function CardsPage() {
     }
   };
 
-  // Payment logic
-  const openPayDialog = (card: CardData) => {
-    setPayingCard(card);
-    setPaymentLines([{ accountId: "", amount: "" }]);
-    setPayDialogOpen(true);
-  };
+   // Payment logic
+   const openPayDialog = async (card: CardData, periodIdx?: number) => {
+     setPayingCard(card);
+     setInvoiceCard(card); // Ensure invoicePeriods is for this card
+     setPaymentLines([{ accountId: "", amount: "" }]);
+     setPayDialogOpen(true);
+     
+     if (periodIdx !== undefined) {
+       setActiveInvoiceIdx(periodIdx);
+     } else {
+       // Default to current invoice
+       setActiveInvoiceIdx(0); 
+     }
+
+     // Fetch transactions to ensure invoicePeriods is populated and accurate
+     setLoadingTx(true);
+     try {
+       const { data, error } = await supabase
+         .from("transactions")
+         .select("id, name, icon, category, date, amount, type, created_at, total_installments, installment_number, installment_group_id")
+         .eq("card", card.name)
+         .order("created_at", { ascending: false });
+       if (error) throw error;
+       setCardTransactions((data as CardTransaction[]) || []);
+     } catch (error: any) {
+       console.error("Error fetching card transactions for payment:", error);
+     } finally {
+       setLoadingTx(false);
+     }
+   };
 
   const updatePaymentLine = (index: number, field: keyof PaymentLine, value: string) => {
     setPaymentLines((prev) => prev.map((line, i) => i === index ? { ...line, [field]: value } : line));
@@ -1146,12 +1170,26 @@ function CardsPage() {
               </div>
 
               {activePeriod && (
-                <div className="mx-5 mb-3 rounded-xl bg-accent/50 p-3 flex justify-between items-center">
-                  <span className="text-xs font-medium text-muted-foreground">Total da fatura</span>
-                  <span className="text-sm font-bold text-destructive tabular-nums" data-testid="total-da-fatura-valor">
-                    R$ {activePeriod.total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                  </span>
-
+                <div className="mx-5 mb-3 rounded-xl bg-accent/50 p-3 flex justify-between items-center gap-3">
+                  <div className="flex-1">
+                    <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider block">Total da fatura</span>
+                    <span className="text-sm font-bold text-destructive tabular-nums" data-testid="total-da-fatura-valor">
+                      R$ {activePeriod.total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                  {activePeriod.total > 0 && (
+                    <Button 
+                      size="sm" 
+                      className="h-8 rounded-lg text-[11px] font-bold gap-1.5"
+                      onClick={() => {
+                        setInvoiceDialogOpen(false);
+                        openPayDialog(invoiceCard!, activeInvoiceIdx);
+                      }}
+                    >
+                      <Wallet className="h-3.5 w-3.5" />
+                      Pagar
+                    </Button>
+                  )}
                 </div>
               )}
 
@@ -1294,10 +1332,17 @@ function CardsPage() {
           {payingCard && (
             <div className="flex flex-col gap-4 mt-2">
               <div className="rounded-xl bg-accent/50 p-3">
-                <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                  <span>Fatura atual</span>
-                  <span className="tabular-nums">
-                    R$ {(invoicePeriods.find(p => p.key === "current")?.total || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                <div className="flex justify-between items-start mb-1">
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                      Fatura {invoicePeriods[activeInvoiceIdx]?.label.split(" (")[0] || "selecionada"}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {invoicePeriods[activeInvoiceIdx]?.label.includes("(") ? "(" + invoicePeriods[activeInvoiceIdx].label.split(" (")[1] : ""}
+                    </p>
+                  </div>
+                  <span className="text-sm font-bold text-foreground tabular-nums">
+                    R$ {(invoicePeriods[activeInvoiceIdx]?.total || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                   </span>
                 </div>
                 <div className="flex justify-between text-xs text-muted-foreground mb-1">
@@ -1309,7 +1354,7 @@ function CardsPage() {
                 <div className="flex justify-between text-sm font-semibold text-foreground border-t border-border pt-1 mt-1">
                   <span>Restante</span>
                   <span className="tabular-nums">
-                    R$ {Math.max(0, (invoicePeriods.find(p => p.key === "current")?.total || 0) - (cardPayments[payingCard.id] || 0)).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                    R$ {Math.max(0, (invoicePeriods[activeInvoiceIdx]?.total || 0) - (cardPayments[payingCard.id] || 0)).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                   </span>
                 </div>
               </div>
@@ -1317,7 +1362,7 @@ function CardsPage() {
               <Label className="text-xs text-muted-foreground">Pagar com:</Label>
 
               {bankAccounts.length > 0 && (() => {
-                const currentInvoiceTotal = invoicePeriods.find(p => p.key === "current")?.total || 0;
+                const currentInvoiceTotal = invoicePeriods[activeInvoiceIdx]?.total || 0;
                 const remaining = Math.max(0, currentInvoiceTotal - (cardPayments[payingCard.id] || 0));
                 const eligible = bankAccounts.filter((a) => a.balance > 0).sort((a, b) => b.balance - a.balance);
                 const best = eligible[0];
