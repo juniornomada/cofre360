@@ -72,6 +72,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
   const [installmentEnabled, setInstallmentEnabled] = useState(false);
   const [installmentCount, setInstallmentCount] = useState<number | "">(2);
   const [installmentMode, setInstallmentMode] = useState<"divide" | "fixed">("divide");
+  const [installmentFixedValue, setInstallmentFixedValue] = useState(0);
   const [nameInputMode, setNameInputMode] = useState<"none" | "text">("none");
 
   const fetchData = useCallback(async () => {
@@ -195,7 +196,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
     newTx.amount,
     Number(installmentCount) || 1,
     installmentMode,
-    installmentMode === "fixed" ? newTx.amount : 0
+    installmentFixedValue
   );
   const hasDiff = installmentEnabled && !isTransfer && installmentMode === "divide" && installmentDetails.diff !== 0;
 
@@ -318,7 +319,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
            newTx.amount,
            count,
            installmentMode,
-           installmentMode === "fixed" ? newTx.amount : 0
+           installmentFixedValue
          );
         rows.push({
           icon: newTx.icon, name: newTx.name, category: newTx.category,
@@ -693,7 +694,8 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                           type="button" 
                           onClick={() => {
                             setInstallmentMode("fixed");
-                          }}  
+                            setInstallmentFixedValue(newTx.amount / (Number(installmentCount) || 1));
+                          }} 
                           className={`flex-1 rounded-lg py-1 text-[10px] font-medium transition-colors ${installmentMode === "fixed" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground"}`}
                         >
                           Valor fixo
@@ -745,6 +747,15 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                             </div>
                           </div>
                         </div>
+                        {installmentMode === "fixed" && (
+                          <div className="space-y-1">
+                            <label className="text-[11px] font-semibold text-foreground block">Valor de cada parcela</label>
+                            <CalculatorAmountInput
+                              value={installmentFixedValue}
+                              onChange={v => setInstallmentFixedValue(v)}
+                            />
+                          </div>
+                        )}
                       </div>
                         <div className="space-y-1.5">
                           <p className="text-[10px] text-muted-foreground">
