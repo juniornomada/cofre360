@@ -327,7 +327,7 @@ export function Dashboard() {
       cardsRes,
       remsRes,
       glsRes,
-      txRes,
+      allCardsTxRes,
       paymentsRes,
     ] = await Promise.all([
       supabase.from("transactions").select(TX_FIELDS).eq("user_id", session.user.id).order("created_at", { ascending: false }).limit(20),
@@ -353,7 +353,7 @@ export function Dashboard() {
     const cards = cardsRes.data;
     const rems = remsRes.data;
     const gls = glsRes.data;
-    const txTotals = txRes.data;
+    const txTotals = allCardsTxRes.data;
     const payments = paymentsRes.data;
 
     setCardOptions(["Nenhum", ...((cards || []).map((c: any) => c.name))]);
