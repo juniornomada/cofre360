@@ -1,23 +1,15 @@
 import { createServerFn } from "@tanstack/react-start";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { supabase } from "@/integrations/supabase/client";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { groupByBillingCycle, type CardTransaction } from "@/lib/invoice-utils";
 
 export const validateAgreement = createServerFn({ method: "POST" })
-  .handler(async () => {
-    // Check for authorization. 
-    const { data: { session } } = await supabase.auth.getSession();
-    
-    // Fallback: Try to get user from middleware session if available via TanStack
-    if (!session) {
-      console.error("Validation Agreement: No session found");
-      // Return ok for now to avoid breaking UI if session is transiently missing during dev
-      return { status: 'ok', summary: { totalCardsChecked: 0, totalInvoicesChecked: 0, discrepanciesFound: 0, discrepancyDetails: [] }, logs: ["No session found"] };
-    }
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase, userId } = context;
 
     const [cardsRes, txRes] = await Promise.all([
-      supabaseAdmin.from("cards").select("*").eq("user_id", session.user.id),
-      supabaseAdmin.from("transactions").select("*").eq("user_id", session.user.id).not("card", "is", null),
+      supabase.from("cards").select("*").eq("user_id", userId),
+      supabase.from("transactions").select("*").eq("user_id", userId).not("card", "is", null),
     ]);
 
     if (cardsRes.error) throw cardsRes.error;
@@ -30,32 +22,19 @@ export const validateAgreement = createServerFn({ method: "POST" })
     const discrepancies: any[] = [];
     const now = new Date().toISOString();
 
-    cards.forEach(card => {
-      const cardTransactions = transactions.filter(t => t.card === card.name);
-      
+    cards.forEach((card: any) => {
+      const cardTransactions = transactions.filter((t: any) => t.card === card.name);
+
       if (cardTransactions.length === 0) {
         logs.push(`${now} - Card ${card.id} (${card.name}) has no associated invoices.`);
-        discrepancies.push({
-          cardId: card.id,
-          cardName: card.name,
-          type: 'missing',
-          status: 'error',
-        });
         return;
       }
 
-      // Replicate frontend logic to find the "current" invoice
       const invoicePeriods = groupByBillingCycle(cardTransactions as unknown as CardTransaction[], card.closing_day, card.due_day);
       const activeInvoicePeriod = invoicePeriods.find(p => p.key === "current") || invoicePeriods[1] || invoicePeriods[0];
-      
+
       const totalFatura = activeInvoicePeriod?.total || 0;
-      
-      // In this app, "faturaAtual" is calculated on the fly in the UI.
-      // However, we might want to compare it with something else if "faturaAtual" was a field.
-      // Since it's calculated, we are basically verifying that the calculation matches.
-      // But if there's a "used" field in the database that is supposed to track it, we compare against that.
-      
-      const cardValue = card.used || 0; // The cards table has a 'used' column
+      const cardValue = card.used || 0;
       const diff = Math.abs(cardValue - totalFatura);
       const status = diff > 1.00 ? 'error' : (diff > 0.01 ? 'warning' : 'ok');
 
@@ -68,7 +47,7 @@ export const validateAgreement = createServerFn({ method: "POST" })
           cardId: card.id,
           cardName: card.name,
           type: 'amount',
-          cardValue: cardValue,
+          cardValue,
           faturaValue: totalFatura,
           status,
         });
