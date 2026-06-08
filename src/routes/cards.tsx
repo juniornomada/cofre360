@@ -1467,6 +1467,10 @@ function CardsPage() {
                               <span className="text-muted-foreground">Estornos/Créditos:</span>
                               <span className="text-primary font-medium">+R$ {creditos.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
                             </div>
+                            <div className="flex justify-between text-[10px] font-bold pt-1 border-t border-border/20 mt-1">
+                              <span className="text-foreground">Total Calculado:</span>
+                              <span className="text-foreground tabular-nums">R$ {(compras - creditos).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
+                            </div>
                           </>
                         );
                       })()}

@@ -127,7 +127,11 @@ export function groupByBillingCycle(txs: CardTransaction[], closingDay: number |
     if (periodIdx === -1) continue;
 
     periods[periodIdx].transactions.push(tx);
-    periods[periodIdx].total += Number(tx.amount);
+    if (tx.type === "income") {
+      periods[periodIdx].total -= Number(tx.amount);
+    } else {
+      periods[periodIdx].total += Number(tx.amount);
+    }
   }
 
   return periods.filter((p, i) => i < 2 || p.transactions.length > 0);
