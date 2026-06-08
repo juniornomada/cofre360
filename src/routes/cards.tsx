@@ -722,16 +722,24 @@ function CardsPage() {
         ? `Pagamento Total fatura cartão ${payingCard.name}` 
         : `Pagamento Parcial fatura cartão ${payingCard.name}`;
 
-      const today = new Date();
-      const monthsAbbr = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
-      const dateFormatted = `${today.getDate()} ${monthsAbbr[today.getMonth()]}`;
+       const today = new Date();
+       const monthsAbbr = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
+       const dateFormatted = paymentDate;
 
-      // 1. Create card_payments records
-      const inserts = validLines.map((l) => ({
-        card_id: payingCard.id,
-        bank_account_id: l.accountId,
-        amount: parseFloat(l.amount),
-      }));
+       // 1. Create card_payments records
+       const inserts = validLines.map((l) => ({
+         card_id: payingCard.id,
+         bank_account_id: l.accountId,
+         amount: parseFloat(l.amount),
+         paid_at: (() => {
+           try {
+             const parsed = parse(paymentDate, "dd MMM", new Date(), { locale: ptBR });
+             return parsed.toISOString();
+           } catch {
+             return new Date().toISOString();
+           }
+         })()
+       }));
       await supabase.from("card_payments").insert(inserts);
 
       // 2. Update bank balances and create expense transactions
