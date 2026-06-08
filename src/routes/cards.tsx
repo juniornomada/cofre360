@@ -949,9 +949,10 @@ function CardsPage() {
                   </div>
                 </div>
               </div>
-            </SortableCardWrapper>
-          );
-        })}
+            </div>
+          </SortableCardWrapper>
+        );
+      })}
       </div>
     </SortableContext>
   </DndContext>
