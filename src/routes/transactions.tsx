@@ -400,6 +400,7 @@ export function TransactionsPage() {
     setFilterType("all");
     setSortBy("date-desc");
     setFilterAccountId(null);
+    setActiveSource("all");
   };
 
   const totalIncome = filtered.filter(t => t.type === "income" && t.is_visible !== false).reduce((s, t) => s + t.amount, 0);
