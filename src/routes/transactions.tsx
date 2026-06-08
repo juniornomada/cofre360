@@ -93,7 +93,7 @@ export function TransactionsPage() {
     if (searchParams.accountId) {
       setFilterAccountId(searchParams.accountId);
       setActiveSource("account");
-      setShowAdvancedFilters(true); // Exibir filtros avançados para mostrar que está filtrado
+      setShowAdvancedFilters(false); // Não mostrar filtros automaticamente, apenas aplicar
     }
   }, [searchParams.accountId]);
   

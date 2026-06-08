@@ -174,7 +174,7 @@ function SortableAccountItem({
           ) : (
           <Link
             to="/transactions"
-            search={{ accountId: account.id, action: "filter" } as any}
+            search={{ accountId: account.id } as any}
             className="text-left w-full block"
           >
             <div className="flex items-center justify-between gap-2">
