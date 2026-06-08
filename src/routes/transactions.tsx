@@ -93,7 +93,9 @@ export function TransactionsPage() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Transaction | null>(null);
   const [deleteScope, setDeleteScope] = useState<"single" | "future" | "all">("single");
-   const [showAddDialog, setShowAddDialog] = useState(false); const emptyStateRef = useRef<HTMLDivElement>(null); const listRef = useRef<HTMLDivElement>(null);
+   const [showAddDialog, setShowAddDialog] = useState(false);
+   const [copyTxData, setCopyTxData] = useState<{ name: string; amount: number; category: string; icon: string; card: string | null; bank_account_id: string | null } | null>(null);
+   const emptyStateRef = useRef<HTMLDivElement>(null); const listRef = useRef<HTMLDivElement>(null);
    
    
   const [showCsvImport, setShowCsvImport] = useState(false);
@@ -457,18 +459,15 @@ export function TransactionsPage() {
   const handleCopy = (tx: Transaction) => {
     // Strip installment suffix for the copy
     const cleanName = stripInstallmentSuffix(tx.name);
-    setNewTx({
+    setCopyTxData({
       icon: tx.icon,
       name: cleanName,
       category: tx.category,
-      date: todayFormatted,
       amount: tx.amount,
-      type: tx.type,
       card: tx.card || null,
       bank_account_id: tx.bank_account_id || null,
     });
     setIsTransfer(tx.category === "Transferência" || tx.category === "Transferências");
-    setInstallmentEnabled(false);
     setShowAddDialog(true);
     toast.success("Dados copiados para nova transação!");
   };
@@ -1373,7 +1372,8 @@ export function TransactionsPage() {
           <QuickAddTransactionDialog 
             open={showAddDialog} 
             onOpenChange={setShowAddDialog}
-            initialType={isTransfer ? "transfer" : (newTx.type as "expense" | "income")}
+            initialType={isTransfer ? "transfer" : (searchParams.type as "expense" | "income" || "expense")}
+            copyData={copyTxData}
             onSuccess={fetchTransactions}
           />
         )}
