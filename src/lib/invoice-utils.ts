@@ -54,19 +54,23 @@ export function groupByBillingCycle(txs: CardTransaction[], closingDay: number |
   const currentMonth = now.getMonth();
   const currentYear = now.getFullYear();
 
-  let closingDate = new Date(currentYear, currentMonth, cDay);
-  if (now > closingDate) {
-    closingDate = new Date(currentYear, currentMonth + 1, cDay);
-  }
-
-  const prevClosing = new Date(closingDate.getFullYear(), closingDate.getMonth() - 1, cDay);
-  const pastClosing = new Date(prevClosing.getFullYear(), prevClosing.getMonth() - 1, cDay);
-
   const makeDue = (closing: Date) => {
     const d = new Date(closing.getFullYear(), closing.getMonth(), dDay);
     if (d <= closing) d.setMonth(d.getMonth() + 1);
     return d;
   };
+
+  let closingDate = new Date(currentYear, currentMonth, cDay);
+  
+  // Transition to next invoice only after the due date of the current one has passed.
+  // This ensures that the invoice currently pending payment remains as "Atual".
+  const currentInvoiceDue = makeDue(closingDate);
+  if (now > currentInvoiceDue) {
+    closingDate = new Date(currentYear, currentMonth + 1, cDay);
+  }
+
+  const prevClosing = new Date(closingDate.getFullYear(), closingDate.getMonth() - 1, cDay);
+  const pastClosing = new Date(prevClosing.getFullYear(), prevClosing.getMonth() - 1, cDay);
 
   // Find the max future date from all transactions based on their actual date field
   let maxFutureDate = now;
