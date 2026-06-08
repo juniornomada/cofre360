@@ -151,6 +151,7 @@ function RootShell({ children }: { children: React.ReactNode }) {
   const runValidation = useCallback(async () => {
     try {
       const result = await validateAgreement();
+      console.log("Validation Result:", result);
       if (result.status !== 'ok') {
         setHasInconsistency(true);
       } else {
