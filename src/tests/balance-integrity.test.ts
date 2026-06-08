@@ -1,5 +1,4 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { supabase } from '@/integrations/supabase/client';
 
 // Mock do Supabase
 vi.mock('@/integrations/supabase/client', () => ({
@@ -15,20 +14,16 @@ vi.mock('@/integrations/supabase/client', () => ({
 const round = (val: number) => Math.round(val * 100) / 100;
 
 describe('Integridade de Saldos', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it('deve garantir que o saldo calculado de uma conta bata com saldo_inicial + entradas - saídas', async () => {
+  it('deve garantir que o saldo calculado de uma conta bata com saldo_inicial + entradas - saídas', () => {
     const mockInitialBalance = 1000.50;
     const mockTransactions = [
       { type: 'income', amount: 500, bank_account_id: 'acc1', is_visible: true },
       { type: 'expense', amount: 200.25, bank_account_id: 'acc1', is_visible: true },
-      { type: 'expense', amount: 50.10, bank_account_id: 'acc1', is_visible: false }, // Não deve contar se invisível (conforme lógica em transactions.tsx)
+      { type: 'expense', amount: 50.10, bank_account_id: 'acc1', is_visible: false }, // Não deve contar se invisível
       { type: 'income', amount: 100, bank_account_id: 'acc1', is_visible: true },
     ];
 
-    // Simular lógica de cálculo das páginas
+    // Simular lógica de cálculo das páginas (index.tsx, accounts.tsx, transactions.tsx)
     const income = mockTransactions
       .filter(tx => tx.bank_account_id === 'acc1' && tx.type === 'income' && tx.is_visible !== false)
       .reduce((sum, tx) => sum + tx.amount, 0);
