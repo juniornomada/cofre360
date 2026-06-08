@@ -711,9 +711,6 @@ export function TransactionsPage() {
             <>
               {transactions.length > 0 && (
                 <>
-                  <button onClick={() => setShowDeleteAllDialog(true)} className="flex h-8 w-8 items-center justify-center rounded-full bg-destructive/10 text-destructive" title="Apagar todas">
-                    <Trash2 className="h-4 w-4" />
-                  </button>
                   <button onClick={() => setSelectionMode(true)} className="flex h-8 w-8 items-center justify-center rounded-full bg-card text-muted-foreground border border-border" title="Selecionar">
                     <CheckSquare className="h-4 w-4" />
                   </button>
