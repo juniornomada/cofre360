@@ -109,9 +109,12 @@ async function aiExtractTransactions(rawText: string, kind: DocumentKind): Promi
 
 Regras:
 - "date" no formato YYYY-MM-DD. Se faltar o ano no PDF, infira pelo período da fatura ou use o ano atual.
-- "name" é a descrição do estabelecimento/lançamento (limpo, sem códigos longos).
-- "amount" é número positivo em reais (sem R$, sem ponto de milhar; use ponto decimal).
-- "type": "expense" para compras/débitos. "income" para estornos, créditos, pagamentos recebidos.
+- "name" é a descrição do estabelecimento/lançamento (limpo, sem códigos longos). EXTREMAMENTE IMPORTANTE: Se o texto do PDF mostrar datas próximas à descrição, use a data correta da transação, não apenas a data da fatura.
+- "amount" é número positivo em reais (sem R$, sem ponto de milhar; use ponto decimal). Se houver um símbolo de menos (-) ou sinal de CRÉDITO ao lado do valor, o tipo será "income".
+- "type": "expense" para compras/débitos/tarifas. "income" para estornos, créditos, pagamentos de fatura recebidos, cashback.
+- MUITO IMPORTANTE: Procure por transações em TODAS as seções (Lançamentos Nacionais, Lançamentos Internacionais, Créditos, etc). Não pule nenhuma linha que pareça uma transação.
+- Se o valor estiver entre parênteses ou tiver um sinal de menos (-), verifique se é um crédito (income).
+- "date": Use o formato YYYY-MM-DD. Se o PDF mostrar apenas "DD/MM", use o ano correspondente ao período da fatura. Se for uma transação de meses anteriores aparecendo na fatura (como uma parcela), use a data original se disponível.
 - Inclua parcelas individuais (se a linha indica "02/12" use isso no nome: "Loja X (2/12)").
 - Ignore: total da fatura, juros consolidados, saldo anterior, limites, pagamentos do cliente à fatura.
 - Se o PDF trouxer transações que pareçam duplicadas (mesmo valor, mesma data, nomes similares), inclua-as separadamente se estiverem em linhas distintas.
