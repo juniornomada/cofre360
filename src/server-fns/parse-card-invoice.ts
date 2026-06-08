@@ -28,16 +28,18 @@ async function extractPdfText(base64: string): Promise<string> {
   // Dynamic import for PDF.js (LEGACY build for better compatibility in server environments)
   const pdfjs: any = await import("pdfjs-dist/legacy/build/pdf.mjs");
   
-  // In server environments (Nitro/Vite), setting GlobalWorkerOptions.workerSrc
-  // can trigger module resolution errors or "fake worker failed" errors.
-  // We use a robust fallback by setting workerSrc to the legacy worker path
-  // but explicitly disabling it via PDFWorker with port: null to avoid actual loading.
+  // To avoid "No such module" errors in Nitro/Vite environments, we attempt to 
+  // initialize the worker using workerPort. This prevents the library from 
+  // trying to dynamically resolve or load a worker script via workerSrc.
   if (typeof (pdfjs as any).GlobalWorkerOptions !== "undefined") {
-    // To prevent the bundler (Nitro/Vite) from trying to resolve the worker module
-    // and throwing "No such module", we use a value that satisfies PDF.js's check
-    // but avoids the module resolution error in production.
-    // By providing port: null to PDFWorker, we force the use of FakeWorker synchronously.
-    (pdfjs as any).GlobalWorkerOptions.workerSrc = "pdfjs-dist/legacy/build/pdf.worker.mjs";
+    try {
+      const pdfjsWorker = await import("pdfjs-dist/legacy/build/pdf.worker.mjs");
+      (pdfjs as any).GlobalWorkerOptions.workerPort = pdfjsWorker;
+    } catch (e) {
+      // If direct import fails, we MUST set a dummy workerSrc to satisfy 
+      // the library's internal check, even if we use port: null.
+      (pdfjs as any).GlobalWorkerOptions.workerSrc = "pdf.worker.js";
+    }
   }
 
   const worker = new pdfjs.PDFWorker({
