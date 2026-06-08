@@ -38,7 +38,7 @@ async function extractPdfText(base64: string): Promise<string> {
 
   const loadingTask = pdfjs.getDocument({
     data: bytes,
-    disableWorker: true,
+    disableWorker: false, // Explicitly false since we provided the workerPort above
     isEvalSupported: false,
     useSystemFonts: false,
     disableFontFace: true,
