@@ -28,25 +28,19 @@ async function extractPdfText(base64: string): Promise<string> {
   // Dynamic import for PDF.js (LEGACY build for better compatibility in server environments)
   const pdfjs: any = await import("pdfjs-dist/legacy/build/pdf.mjs");
   
-  // Normalize GlobalWorkerOptions to prevent invalid types (null, objects, etc.)
+  // Normalize GlobalWorkerOptions to prevent invalid types and module resolution errors.
   if (pdfjs.GlobalWorkerOptions) {
     try {
-      const options = pdfjs.GlobalWorkerOptions;
-      
-      // We explicitly UNSET workerSrc and workerPort because they can cause 
-      // module resolution errors in server environments (like Nitro/Vite) 
-      // when the library tries to load them as external files.
-      // delete is used to ensure the properties are truly gone.
-      delete (options as any).workerSrc;
-      delete (options as any).workerPort;
-      
-      // Some environments might still report them as undefined instead of deleted.
-      if (options.workerSrc !== undefined) (options as any).workerSrc = undefined;
-      if (options.workerPort !== undefined) (options as any).workerPort = undefined;
+      // By setting a dummy URL that doesn't look like a local module, 
+      // we prevent the bundler (Vite/Nitro) from trying to resolve it.
+      // Since disableWorker: true is used below, this URL is never actually fetched.
+      pdfjs.GlobalWorkerOptions.workerSrc = "http://localhost/pdf.worker.js";
+      pdfjs.GlobalWorkerOptions.workerPort = undefined;
     } catch (e) {
-      console.warn("Could not normalize PDF.js GlobalWorkerOptions:", e);
+      console.warn("Could not set PDF.js dummy workerSrc:", e);
     }
   }
+
 
 
 
