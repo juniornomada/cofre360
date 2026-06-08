@@ -581,7 +581,7 @@ function Dashboard() {
     } finally {
       setShowEditDialog(false);
       setEditTx(null);
-      fetchTransactions();
+      fetchAll();
     }
   };
 

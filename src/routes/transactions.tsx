@@ -591,6 +591,7 @@ export function TransactionsPage() {
       setUpdateScope("single");
       setEditTx(null);
       fetchTransactions();
+      fetchBankAccounts(); // Refresh balances
     }
   };
 
@@ -613,6 +614,7 @@ export function TransactionsPage() {
       setDeleteTarget(null);
       setDeleteScope("single");
       fetchTransactions();
+      fetchBankAccounts(); // Refresh balances
     }
   };
 
@@ -664,6 +666,7 @@ export function TransactionsPage() {
         setShowBatchDeleteDialog(false);
         exitSelectionMode();
         fetchTransactions();
+        fetchBankAccounts(); // Refresh balances
       }
     });
   };
