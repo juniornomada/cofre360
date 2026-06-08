@@ -9,6 +9,9 @@ import { mergeConfig, defineConfig } from "vite";
 import { defaultExclude } from 'vitest/config';
 
 export default defineTanstackConfig({
+  tanstackStart: {
+    server: { entry: "server" },
+  },
   vite: {
     build: {
       target: 'esnext',
