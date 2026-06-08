@@ -737,9 +737,26 @@ function CardsPage() {
     if (validLines.length === 0) return;
     setPayingSaving(true);
     try {
-      const totalInvoice = cardTotals[payingCard.name] || 0;
-      const totalPaidAlready = cardPayments[payingCard.id] || 0;
-      const remainingBeforeThis = Math.max(0, totalInvoice - totalPaidAlready);
+      // Re-fetch transactions for this specific card to ensure invoice is up to date
+      const { data: latestTxs, error: txError } = await supabase
+        .from("transactions")
+        .select("id, name, icon, category, date, amount, type, created_at, total_installments, installment_number, installment_group_id")
+        .eq("card", payingCard.name)
+        .order("created_at", { ascending: false });
+
+      if (txError) throw txError;
+      
+      // Update local state and trigger re-calculation of invoicePeriods
+      const txs = (latestTxs as CardTransaction[]) || [];
+      setCardTransactions(txs);
+      const updatedPeriods = groupByBillingCycle(txs, payingCard.closing_day, payingCard.due_day);
+      const activePeriod = updatedPeriods[activeInvoiceIdx];
+      
+      const totalInvoice = activePeriod?.total || 0;
+      const currentPeriodKey = activePeriod?.key;
+      const paidInThisPeriod = currentPeriodKey ? cardPaymentsByPeriod[payingCard.id]?.[currentPeriodKey] || 0 : 0;
+      const remainingBeforeThis = Math.max(0, totalInvoice - paidInThisPeriod);
+
       const isTotalPayment = Math.abs(paymentTotal - remainingBeforeThis) < 0.01;
       
       const paymentName = isTotalPayment 
