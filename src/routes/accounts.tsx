@@ -192,7 +192,7 @@ function SortableAccountItem({
                   {balanceVisible ? `R$ ${currentBalance.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "R$ ••••"}
                 </p>
               </div>
-            </button>
+          </Link>
           )}
         </div>
         <div className="flex items-center shrink-0">
