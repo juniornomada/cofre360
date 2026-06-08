@@ -1379,13 +1379,13 @@ function CardsPage() {
                 <div className="flex justify-between text-xs text-muted-foreground mb-1">
                   <span>Já pago</span>
                   <span className="tabular-nums text-primary">
-                    R$ {(cardPayments[payingCard.id] || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                    R$ {(invoicePeriods[activeInvoiceIdx]?.key ? cardPaymentsByPeriod[payingCard.id]?.[invoicePeriods[activeInvoiceIdx].key] || 0 : 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm font-semibold text-foreground border-t border-border pt-1 mt-1">
                   <span>Restante</span>
                   <span className="tabular-nums">
-                    R$ {Math.max(0, (invoicePeriods[activeInvoiceIdx]?.total || 0) - (cardPayments[payingCard.id] || 0)).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                    R$ {Math.max(0, (invoicePeriods[activeInvoiceIdx]?.total || 0) - (invoicePeriods[activeInvoiceIdx]?.key ? cardPaymentsByPeriod[payingCard.id]?.[invoicePeriods[activeInvoiceIdx].key] || 0 : 0)).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                   </span>
                 </div>
               </div>
@@ -1394,7 +1394,9 @@ function CardsPage() {
 
               {bankAccounts.length > 0 && (() => {
                 const currentInvoiceTotal = invoicePeriods[activeInvoiceIdx]?.total || 0;
-                const remaining = Math.max(0, currentInvoiceTotal - (cardPayments[payingCard.id] || 0));
+                const currentPeriodKey = invoicePeriods[activeInvoiceIdx]?.key;
+                const paidInThisPeriod = currentPeriodKey ? cardPaymentsByPeriod[payingCard.id]?.[currentPeriodKey] || 0 : 0;
+                const remaining = Math.max(0, currentInvoiceTotal - paidInThisPeriod);
                 const eligible = bankAccounts.filter((a) => a.balance > 0).sort((a, b) => b.balance - a.balance);
                 const best = eligible[0];
                 if (!best || remaining <= 0) return null;
