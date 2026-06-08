@@ -8,7 +8,7 @@ interface InvoiceInconsistencyAlertProps {
 }
 
 export function InvoiceInconsistencyAlert({ hasInconsistency, onClose }: InvoiceInconsistencyAlertProps) {
-  const [show, setShow] = useState(true); // Temporarily force show for testing across all pages
+  const [show, setShow] = useState(false);
 
   useEffect(() => {
     if (hasInconsistency) {
