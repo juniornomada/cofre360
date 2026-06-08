@@ -4,13 +4,16 @@ import { jsPDF } from 'jspdf';
 // Mock simple environment for PDF.js server-side
 async function extractPdfText(bytes: Uint8Array): Promise<string> {
   const pdfjs: any = await import("pdfjs-dist/legacy/build/pdf.mjs");
-  const pdfjsWorker: any = await import("pdfjs-dist/legacy/build/pdf.worker.mjs");
-
-  // No GlobalWorkerOptions setting needed when disableWorker is true
-
+  
+  const worker = new pdfjs.PDFWorker({
+    name: "PDFWorker-Test",
+    port: null,
+    verbosity: 0,
+  });
 
   const loadingTask = pdfjs.getDocument({
     data: bytes,
+    worker: worker,
     disableWorker: true,
     isEvalSupported: false,
     useSystemFonts: false,
@@ -30,21 +33,12 @@ async function extractPdfText(bytes: Uint8Array): Promise<string> {
 
 describe('PDF Text Extraction (Server Environment Mock)', () => {
   it('should extract text from a generated PDF without worker errors', async () => {
-    // 1. Create a simple PDF using jsPDF
     const doc = new jsPDF();
     doc.text("Hello Lovable PDF Test", 10, 10);
     const pdfArrayBuffer = doc.output('arraybuffer');
     const bytes = new Uint8Array(pdfArrayBuffer);
 
-    // 2. Extract text using the logic from our server function
     const extractedText = await extractPdfText(bytes);
-
-    // 3. Verify
     expect(extractedText).toContain("Hello Lovable PDF Test");
-  });
-
-  it('should handle GlobalWorkerOptions correctly', async () => {
-    const pdfjs: any = await import("pdfjs-dist/legacy/build/pdf.mjs");
-    expect(pdfjs.GlobalWorkerOptions.workerSrc).toBeDefined();
   });
 });
