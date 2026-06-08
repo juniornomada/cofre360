@@ -1469,6 +1469,158 @@ function CardsPage() {
         </DialogContent>
       </Dialog>
 
+      {/* Edit Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-sm mx-auto rounded-2xl p-4 sm:p-6 flex flex-col gap-4">
+          <DialogHeader className="pr-6">
+            <DialogTitle className="text-sm">Editar Transação</DialogTitle>
+          </DialogHeader>
+          {editTx && (
+            <div className="flex flex-col gap-4">
+              <div className="relative">
+                <Label className="text-xs text-muted-foreground mb-1 block">Nome</Label>
+                <Input
+                  value={editTx.name}
+                  onChange={e => {
+                    let name = e.target.value;
+                    if (name.length > 0) name = name.charAt(0).toUpperCase() + name.slice(1);
+                    setEditTx({ ...editTx, name });
+                    setShowEditSuggestions(name.length >= 2);
+                  }}
+                  onFocus={() => setShowEditSuggestions(editTx.name.length >= 2)}
+                  onBlur={() => setTimeout(() => setShowEditSuggestions(false), 200)}
+                  className="rounded-xl h-10"
+                />
+                {showEditSuggestions && getAutocompleteSuggestions(editTx.name).length > 0 && (
+                  <div className="absolute z-50 left-0 right-0 top-full mt-1 rounded-xl bg-popover border border-border shadow-lg max-h-48 overflow-y-auto">
+                    {getAutocompleteSuggestions(editTx.name).map((s, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => {
+                          setEditTx({ ...editTx, name: s.name, icon: s.icon, category: s.category });
+                          setShowEditSuggestions(false);
+                        }}
+                        className="flex w-full items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-accent transition-colors first:rounded-t-xl last:rounded-b-xl"
+                      >
+                        <span className="text-base">{s.icon}</span>
+                        <span className="flex-1 text-left truncate">{s.name}</span>
+                        <span className="text-[10px] text-muted-foreground">{s.category}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              
+              <div className="min-h-[60px]">
+                <Suspense fallback={<div className="h-10 flex items-center justify-center"><Loader2 className="h-4 w-4 animate-spin text-primary" /></div>}>
+                  <CategoryPicker
+                    value={editTx.category}
+                    onChange={(val, icon) => setEditTx({ ...editTx, category: val, icon: icon || editTx.icon })}
+                    type={editTx.type as any}
+                  />
+                </Suspense>
+              </div>
+
+              <div>
+                <Label className="text-xs text-muted-foreground mb-1 block">Data</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className={cn("w-full justify-start text-left font-normal rounded-xl bg-accent/30 border-none h-10", !editTx.date && "text-muted-foreground")}>
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {editTx.date}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={(() => {
+                        try {
+                          return parse(editTx.date, "dd MMM", new Date(), { locale: ptBR });
+                        } catch { return undefined; }
+                      })()}
+                      onSelect={(date) => {
+                        if (date) setEditTx({ ...editTx, date: format(date, "dd MMM", { locale: ptBR }) });
+                      }}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              <div>
+                <Label className="text-xs text-muted-foreground mb-1 block">Valor (R$)</Label>
+                <CalculatorAmountInput
+                  value={editTx.amount}
+                  onChange={(v) => setEditTx({ ...editTx, amount: v })}
+                />
+              </div>
+
+              <Button
+                onClick={saveEditTx}
+                disabled={isSavingEdit}
+                className="w-full rounded-2xl py-6 font-semibold mt-2"
+              >
+                {isSavingEdit ? <Loader2 className="h-4 w-4 animate-spin" /> : "Salvar alterações"}
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-sm mx-auto rounded-2xl p-4 sm:p-6">
+          <DialogHeader>
+            <DialogTitle>Excluir Transação</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-4 mt-2">
+            <p className="text-sm text-muted-foreground">
+              Tem certeza que deseja excluir esta transação?
+              {deleteTarget && isInstallmentTx(deleteTarget) && " Esta transação faz parte de um parcelamento."}
+            </p>
+
+            {deleteTarget && isInstallmentTx(deleteTarget) && (
+              <div className="flex flex-col gap-2 p-3 bg-accent/50 rounded-xl border border-border">
+                <button
+                  onClick={() => setDeleteScope("single")}
+                  className={cn("flex items-center justify-between p-2 rounded-lg text-xs transition-colors", deleteScope === "single" ? "bg-primary/20 text-primary font-bold" : "hover:bg-accent")}
+                >
+                  Apenas esta parcela
+                  {deleteScope === "single" && <Check className="h-3.5 w-3.5" />}
+                </button>
+                <button
+                  onClick={() => setDeleteScope("future")}
+                  className={cn("flex items-center justify-between p-2 rounded-lg text-xs transition-colors", deleteScope === "future" ? "bg-primary/20 text-primary font-bold" : "hover:bg-accent")}
+                >
+                  Esta e as futuras
+                  {deleteScope === "future" && <Check className="h-3.5 w-3.5" />}
+                </button>
+                <button
+                  onClick={() => setDeleteScope("all")}
+                  className={cn("flex items-center justify-between p-2 rounded-lg text-xs transition-colors", deleteScope === "all" ? "bg-primary/20 text-primary font-bold" : "hover:bg-accent")}
+                >
+                  Todo o parcelamento
+                  {deleteScope === "all" && <Check className="h-3.5 w-3.5" />}
+                </button>
+              </div>
+            )}
+
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1 rounded-xl" onClick={() => setShowDeleteDialog(false)}>Cancelar</Button>
+              <Button
+                variant="destructive"
+                className="flex-1 rounded-xl"
+                onClick={confirmDeleteTx}
+                disabled={isDeleting}
+              >
+                {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Excluir"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* PDF invoice import dialog */}
       <Suspense fallback={null}>
         {pdfImportCard && (
