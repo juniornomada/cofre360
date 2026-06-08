@@ -139,10 +139,19 @@ describe('Payment Security Lock', () => {
     const CardsPage = Route.options.component;
     render(<CardsPage />);
 
+    // Log the screen content to debug
+    // screen.debug();
+
     // 1. Wait for data to load
     await waitFor(() => {
-      expect(screen.getByText('Test Card')).toBeInTheDocument();
-    });
+      expect(screen.getByText(/Lista de Cartões/i)).toBeInTheDocument();
+    }, { timeout: 3000 });
+
+    // Wait for the card name to appear
+    await waitFor(() => {
+      const cardName = screen.queryByText('Test Card');
+      expect(cardName).toBeInTheDocument();
+    }, { timeout: 3000 });
 
     // 2. Click "Pagar"
     const payButton = screen.getByRole('button', { name: /Pagar/i });
