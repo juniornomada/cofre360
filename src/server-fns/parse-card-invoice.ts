@@ -115,10 +115,9 @@ Regras:
 - MUITO IMPORTANTE: Procure por transações em TODAS as seções (Lançamentos Nacionais, Lançamentos Internacionais, Créditos, etc). Não pule nenhuma linha que pareça uma transação.
 - Se o valor estiver entre parênteses ou tiver um sinal de menos (-), verifique se é um crédito (income).
 - "date": Use o formato YYYY-MM-DD. Se o PDF mostrar apenas "DD/MM", use o ano correspondente ao período da fatura. Se for uma transação de meses anteriores aparecendo na fatura (como uma parcela), use a data original se disponível.
-- Inclua parcelas individuais (se a linha indica "02/12" use isso no nome: "Loja X (2/12)").
-- Ignore: total da fatura, juros consolidados, saldo anterior, limites, pagamentos do cliente à fatura.
-- Se o PDF trouxer transações que pareçam duplicadas (mesmo valor, mesma data, nomes similares), inclua-as separadamente se estiverem em linhas distintas.
-- Extraia TODAS as transações individuais, sem exceção. Se a fatura tiver muitas páginas, processe todas.
+- Ignore: cabeçalhos de colunas, resumos de limites, gráficos, propagandas.
+- Se o PDF trouxer transações que pareçam duplicadas (mesmo valor, mesma data, nomes similares), inclua-as separadamente se estiverem em linhas distintas, pois podem ser compras recorrentes.
+- Extraia TODAS as transações individuais, sem exceção. Se a fatura tiver muitas páginas, processe todas. Certifique-se de capturar o valor TOTAL de cada transação.
 - Se não houver transações claras, retorne lista vazia.`;
 
   const bankPrompt = `Você recebe o texto bruto extraído de um EXTRATO BANCÁRIO brasileiro (conta corrente / poupança / digital). Extraia TODAS as movimentações (débitos e créditos) presentes no extrato.
