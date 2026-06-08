@@ -29,11 +29,10 @@ async function extractPdfText(base64: string): Promise<string> {
   const pdfjs: any = await import("pdfjs-dist/legacy/build/pdf.mjs");
   
   // Disable worker to run processing in the main thread (fake worker).
-  // In version 4+, setting workerSrc to empty string with disableWorker: true
-  // avoids the "No GlobalWorkerOptions.workerSrc specified" error without
-  // actually attempting to load an external script.
+  // In version 4+, setting workerSrc to a valid Data URI avoids module resolution 
+  // errors while satisfying the library's requirement for a worker path.
   if (pdfjs.GlobalWorkerOptions) {
-    pdfjs.GlobalWorkerOptions.workerSrc = "";
+    pdfjs.GlobalWorkerOptions.workerSrc = "data:text/javascript;base64,Ly8gbm9wCg==";
   }
 
   const loadingTask = pdfjs.getDocument({
