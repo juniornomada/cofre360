@@ -350,6 +350,7 @@ function CardsPage() {
     setEditLimit(card.card_limit.toString());
     setEditClosing(card.closing_day?.toString() || "");
     setEditDue(card.due_day?.toString() || "");
+    setEditColor(card.color || colorOptions[0].value);
   };
 
   const saveEdit = async (id: string) => {
