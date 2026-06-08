@@ -7,9 +7,7 @@ describe('PDF Import Production Environment Simulation', () => {
     const bytes = new Uint8Array(Buffer.from(base64, "base64"));
 
     if (typeof (pdfjs as any).GlobalWorkerOptions !== "undefined") {
-      const p1 = "pdfjs-dist";
-      const p2 = "legacy/build/pdf.worker.mjs";
-      (pdfjs as any).GlobalWorkerOptions.workerSrc = `${p1}/${p2}`;
+      (pdfjs as any).GlobalWorkerOptions.workerSrc = undefined;
     }
 
     const worker = new (pdfjs as any).PDFWorker({
