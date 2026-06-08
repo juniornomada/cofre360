@@ -6,11 +6,8 @@ async function extractPdfText(bytes: Uint8Array): Promise<string> {
   const pdfjs: any = await import("pdfjs-dist/legacy/build/pdf.mjs");
   const pdfjsWorker: any = await import("pdfjs-dist/legacy/build/pdf.worker.mjs");
 
-  if (pdfjs.GlobalWorkerOptions) {
-    // Setting to empty string is the cleanest way to signal "use internal worker"
-    // without triggering type validation errors or "missing workerSrc" errors in most envs.
-    (pdfjs.GlobalWorkerOptions as any).workerSrc = "";
-  }
+  // No GlobalWorkerOptions setting needed when disableWorker is true
+
 
   const loadingTask = pdfjs.getDocument({
     data: bytes,
