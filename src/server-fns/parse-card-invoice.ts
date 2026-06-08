@@ -31,15 +31,17 @@ async function extractPdfText(base64: string): Promise<string> {
   // Normalize GlobalWorkerOptions to prevent invalid types and module resolution errors.
   if (pdfjs.GlobalWorkerOptions) {
     try {
-      // By setting a dummy URL that doesn't look like a local module, 
-      // we prevent the bundler (Vite/Nitro) from trying to resolve it.
-      // Since disableWorker: true is used below, this URL is never actually fetched.
-      pdfjs.GlobalWorkerOptions.workerSrc = "http://localhost/pdf.worker.js";
+      // By using a dynamically constructed string, we prevent the bundler (Vite/Nitro)
+      // from statically analyzing and "helping" by resolving this path as a module.
+      // We point to a non-existent file to force PDF.js to use its internal fake worker.
+      const parts = ["pdf", "worker", "mjs"];
+      pdfjs.GlobalWorkerOptions.workerSrc = parts.join(".");
       pdfjs.GlobalWorkerOptions.workerPort = undefined;
     } catch (e) {
       console.warn("Could not set PDF.js dummy workerSrc:", e);
     }
   }
+
 
 
 
