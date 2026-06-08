@@ -418,7 +418,7 @@ function CardsPage() {
       // Filter transactions by card.name to ensure they belong to the specific card
       const { data, error } = await supabase
         .from("transactions")
-        .select("id, name, icon, category, date, amount, type, created_at, total_installments, installment_number, installment_group_id")
+        .select("id, name, icon, category, date, amount, type, card, created_at, total_installments, installment_number, installment_group_id")
         .eq("card", card.name)
         .order("created_at", { ascending: false });
       if (error) throw error;
