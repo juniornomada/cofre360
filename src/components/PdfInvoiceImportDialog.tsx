@@ -211,7 +211,7 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
     if (!dedupResult) return;
     setSaving(true);
     setError("");
-    const BATCH = 500;
+    const BATCH = 50; // Smaller batch for reliability
     let imported = 0;
     for (let i = 0; i < dedupResult.toImport.length; i += BATCH) {
       const batch = dedupResult.toImport.slice(i, i + BATCH);
