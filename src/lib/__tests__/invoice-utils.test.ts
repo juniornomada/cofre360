@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { groupByBillingCycle, parseTxDate, type CardTransaction } from '../invoice-utils';
 
 describe('Invoice Utils', () => {
@@ -109,5 +109,25 @@ describe('Invoice Utils', () => {
 
     expect(p1?.label).toBe(p2?.label);
     expect(p1?.key).toBe(p2?.key);
+  });
+
+  describe('Billing Cycle Logic for Payments', () => {
+    it('should correctly select the active period based on index', () => {
+      const closingDay = 15;
+      const dueDay = 20;
+      const periods = groupByBillingCycle(mockTransactions, closingDay, dueDay);
+      
+      // Simulating selecting "Anterior" (index 0)
+      const selectedIdx = 0;
+      const selectedPeriod = periods[selectedIdx];
+      expect(selectedPeriod.key).toBe('past');
+      expect(selectedPeriod.total).toBe(100);
+
+      // Simulating selecting "Atual" (index 1)
+      const currentIdx = 1;
+      const currentPeriod = periods[currentIdx];
+      expect(currentPeriod.key).toBe('current');
+      expect(currentPeriod.total).toBe(50);
+    });
   });
 });

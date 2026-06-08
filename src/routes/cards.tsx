@@ -141,7 +141,7 @@ function SortableCardWrapper({ id, children, animationDelay }: { id: string; chi
    }),
    component: CardsPage,
  });
-export function CardsPage() {
+function CardsPage() {
   const [cards, setCards] = useState<CardData[]>([]);
   const [cardTotals, setCardTotals] = useState<Record<string, number>>({});
   const [cardPayments, setCardPayments] = useState<Record<string, number>>({});
