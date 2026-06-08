@@ -814,8 +814,9 @@ function CardsPage() {
       const activeInvoicePeriod = invoicePeriodsCard.find(p => p.key === "current") || invoicePeriodsCard[1] || invoicePeriodsCard[0];
       const invoiceRemaining = activeInvoicePeriod?.total || 0;
       const totalUsed = cardTotals[card.name] || 0;
+      const initialUsed = card.used || 0;
       const totalPaid = cardPayments[card.id] || 0;
-      const outstandingBalance = Math.max(0, totalUsed - totalPaid);
+      const outstandingBalance = Math.max(0, (totalUsed + initialUsed) - totalPaid);
       const pct = card.card_limit > 0 ? Math.round((outstandingBalance / card.card_limit) * 100) : 0;
       const isEditing = editingId === card.id;
       const today = new Date();
