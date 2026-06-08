@@ -83,8 +83,8 @@ describe('Payment Security Lock', () => {
     vi.clearAllMocks();
     
     // Set a fixed date for the test: Jan 25th (current invoice is Dec 10 - Jan 10)
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date('2024-01-25T12:00:00Z'));
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it('should block payment and show toast if invoice total changes during confirmation', async () => {
