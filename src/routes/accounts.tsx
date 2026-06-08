@@ -172,18 +172,20 @@ function SortableAccountItem({
               </div>
             </div>
           ) : (
-            <button
-              type="button"
-              onClick={() => startEdit(account)}
-              className="text-left w-full"
-            >
-              <div className="flex items-center justify-between gap-2">
+          <Link
+            to="/transactions"
+            search={{ accountId: account.id } as any}
+            className="text-left w-full"
+          >
+            <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-1.5 min-w-0">
                     <p className="text-[15px] font-semibold text-foreground truncate tracking-tight leading-tight">{account.name}</p>
                     {account.is_visible === false && (
                       <EyeOff className="h-3 w-3 text-muted-foreground/60 shrink-0" />
                     )}
-                    <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground shrink-0" />
+                    <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); startEdit(account); }} className="interactive-button">
+                      <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground shrink-0" />
+                    </button>
                   </div>
                 <p className={cn(
                   "text-[15px] font-bold tabular-nums tracking-tight leading-tight whitespace-nowrap shrink-0",
@@ -192,7 +194,7 @@ function SortableAccountItem({
                   {balanceVisible ? `R$ ${currentBalance.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "R$ ••••"}
                 </p>
               </div>
-            </button>
+          </Link>
           )}
         </div>
         <div className="flex items-center shrink-0">
@@ -244,7 +246,7 @@ function SortableAccountItem({
                     Importar extrato PDF
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => startEdit(account)} className="cursor-pointer">
+                  <DropdownMenuItem onClick={() => { startEdit(account); }} className="cursor-pointer">
                     <Pencil className="h-4 w-4 mr-2" />
                     Editar conta
                   </DropdownMenuItem>

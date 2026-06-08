@@ -133,8 +133,8 @@ function SortableAccountItem({ acc, balanceVisible, fmt }: { acc: any; balanceVi
     >
       <div className="flex flex-1 items-center gap-2 overflow-hidden">
         <Link
-          to="/accounts"
-          search={{ action: undefined } as any}
+          to="/transactions"
+          search={{ accountId: acc.id } as any}
           className="flex-1 flex items-center gap-2.5 rounded-xl bg-background/40 px-2.5 py-1.5 hover:bg-background/60 transition-colors overflow-hidden"
         >
         <BankLogo icon={acc.icon} color={acc.color} name={acc.name} size="sm" />

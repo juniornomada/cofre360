@@ -86,6 +86,14 @@ export function TransactionsPage() {
     if (searchParams.category) setActiveCategory(searchParams.category);
   }, [searchParams.category]);
   const [activeSource, setActiveSource] = useState<"all" | "account" | "card">("all");
+  const [filterAccountId, setFilterAccountId] = useState<string | null>(searchParams.accountId || null);
+
+  useEffect(() => {
+    if (searchParams.accountId) {
+      setFilterAccountId(searchParams.accountId);
+      setActiveSource("account");
+    }
+  }, [searchParams.accountId]);
   
   
   const [editTx, setEditTx] = useState<Transaction | null>(null);
@@ -324,6 +332,7 @@ export function TransactionsPage() {
       : activeSource === "card"
         ? !!tx.card
         : !!tx.bank_account_id && !tx.card;
+    const matchesAccount = !filterAccountId || tx.bank_account_id === filterAccountId;
     const matchesType = filterType === "all" ? true : tx.type === filterType;
     const matchesMin = minAmt === null || Number(tx.amount) >= minAmt;
     const matchesMax = maxAmt === null || Number(tx.amount) <= maxAmt;
@@ -336,10 +345,10 @@ export function TransactionsPage() {
         if (filterEndDate && d.getTime() > toUtcDay(filterEndDate, true).getTime()) matchesDate = false;
       }
     }
-    return matchesCategory && matchesSource && matchesType && matchesMin && matchesMax && matchesDate;
+    return matchesCategory && matchesSource && matchesAccount && matchesType && matchesMin && matchesMax && matchesDate;
   });
 
-  const activeFilterCount = (filterStartDate || filterEndDate ? 1 : 0) + (minAmt !== null || maxAmt !== null ? 1 : 0) + (filterType !== "all" ? 1 : 0) + (sortBy !== "date-desc" ? 1 : 0);
+  const activeFilterCount = (filterStartDate || filterEndDate ? 1 : 0) + (minAmt !== null || maxAmt !== null ? 1 : 0) + (filterType !== "all" ? 1 : 0) + (sortBy !== "date-desc" ? 1 : 0) + (filterAccountId ? 1 : 0);
 
   const sortedTransactions = [...filtered].sort((a, b) => {
     if (sortBy === "date-desc") {
@@ -389,6 +398,7 @@ export function TransactionsPage() {
     setFilterMaxAmount("");
     setFilterType("all");
     setSortBy("date-desc");
+    setFilterAccountId(null);
   };
 
   const totalIncome = filtered.filter(t => t.type === "income" && t.is_visible !== false).reduce((s, t) => s + t.amount, 0);
@@ -814,6 +824,21 @@ export function TransactionsPage() {
                          className="flex-1"
                        />
                     </div>
+                  </div>
+
+                  <div>
+                    <label className="text-xs text-muted-foreground mb-1 block">Conta Bancária</label>
+                    <Select value={filterAccountId || "all"} onValueChange={(v) => setFilterAccountId(v === "all" ? null : v)}>
+                      <SelectTrigger className="w-full rounded-lg bg-card border border-border h-9 text-xs">
+                        <SelectValue placeholder="Todas as contas" />
+                      </SelectTrigger>
+                      <SelectContent className="z-[70]">
+                        <SelectItem value="all" className="text-xs">Todas as contas</SelectItem>
+                        {bankAccounts.map(acc => (
+                          <SelectItem key={acc.id} value={acc.id} className="text-xs">{acc.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
 
                   <Button size="sm" className="w-full rounded-lg" onClick={() => setShowAdvancedFilters(false)}>
@@ -1470,8 +1495,9 @@ export function TransactionsPage() {
    }),
    validateSearch: (search: Record<string, unknown>) => ({
      action: (search.action as string) || undefined,
-     type: (search.type as string) || undefined,
-     category: (search.category as string) || undefined,
-   }),
+      type: (search.type as string) || undefined,
+      category: (search.category as string) || undefined,
+      accountId: (search.accountId as string) || undefined,
+    }),
    component: TransactionsPage,
  });
