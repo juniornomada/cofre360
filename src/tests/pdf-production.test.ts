@@ -6,9 +6,8 @@ describe('PDF Import Production Environment Simulation', () => {
     const base64 = 'JVBERi0xLjcKMSAwIG9iagogIDw8IC9UeXBlIC9DYXRhbG9nIC9QYWdlcyAyIDAgUiA+PgplbmRvYmoKMiAwIG9iagogIDw8IC9UeXBlIC9QYWdlcyAvS2lkcyBbMyAwIFJdIC9Db3VudCAxID4+CmVuZG9iagozIDAgb2JqCiAgPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA2MTIgNzkyXSAvUmVzb3VyY2VzIDw8ID4+ID4+CmVuZG9iagp0cmFpbGVyCiAgPDwgL1NpemUgNCAvUm9vdCAxIDAgUiA+PgpzdGFydHhyZWYKMTA0CiUlRU9G';
     const bytes = new Uint8Array(Buffer.from(base64, "base64"));
 
-    // Forcefully reset any previously set workerSrc to an empty string to avoid "No such module" errors
     if (typeof (pdfjs as any).GlobalWorkerOptions !== "undefined") {
-      (pdfjs as any).GlobalWorkerOptions.workerSrc = "";
+      (pdfjs as any).GlobalWorkerOptions.workerSrc = "fake-worker-src";
     }
 
     const worker = new (pdfjs as any).PDFWorker({
