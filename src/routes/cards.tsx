@@ -361,6 +361,8 @@ function CardsPage() {
         card_limit: parseFloat(editLimit) || 0,
         closing_day: parseInt(editClosing) || 1,
         due_day: parseInt(editDue) || 10,
+        color: editColor,
+        emoji: colorOptions.find((c) => c.value === editColor)?.emoji || "💳",
       }).eq("id", id);
       if (error) throw error;
       setEditingId(null);
