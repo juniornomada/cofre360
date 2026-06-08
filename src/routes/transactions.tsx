@@ -3,7 +3,7 @@ import { SmartLink as Link } from "@/components/SmartLink";
 import { TransactionItem } from "@/components/TransactionItem";
 import { EmptyState } from "@/components/EmptyState";
 import { mainCategories, parseCategoryValue } from "@/lib/categories";
-import { Search, Pencil, Trash2, Plus, CalendarIcon, Loader2, Upload, CheckSquare, Square, X, SlidersHorizontal, ArrowLeftRight, ArrowRight, Eye, EyeOff, FileText, RefreshCw } from "lucide-react";
+import { Search, Pencil, Trash2, Plus, CalendarIcon, Loader2, Upload, CheckSquare, Square, X, SlidersHorizontal, ArrowLeftRight, ArrowRight, Eye, EyeOff, FileText, MoreVertical, GripVertical } from "lucide-react";
 import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react";
 
 const CsvImportDialog = lazy(() => import("@/components/CsvImportDialog").then(m => ({ default: m.CsvImportDialog })));
@@ -591,6 +591,7 @@ export function TransactionsPage() {
       setUpdateScope("single");
       setEditTx(null);
       fetchTransactions();
+      fetchBankAccounts(); // Refresh balances
     }
   };
 
@@ -613,6 +614,7 @@ export function TransactionsPage() {
       setDeleteTarget(null);
       setDeleteScope("single");
       fetchTransactions();
+      fetchBankAccounts(); // Refresh balances
     }
   };
 
@@ -664,6 +666,7 @@ export function TransactionsPage() {
         setShowBatchDeleteDialog(false);
         exitSelectionMode();
         fetchTransactions();
+        fetchBankAccounts(); // Refresh balances
       }
     });
   };
