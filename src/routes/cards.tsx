@@ -732,8 +732,11 @@ function CardsPage() {
       void nextDue; void isPaid; void invoiceClosed;
           return (
             <SortableCardWrapper key={card.id} id={card.id} animationDelay={60 + i * 80}>
-              <div className="rounded-2xl shadow-md shadow-black/5 overflow-hidden border border-border/40">
-                <div className={`interactive-card bg-gradient-to-br ${card.color} px-3.5 py-2.5 text-white relative overflow-hidden`}>
+              <div className={cn(
+                "rounded-2xl shadow-md shadow-black/5 overflow-hidden border border-border/40 transition-all duration-300 bg-gradient-to-br",
+                isEditing ? editColor : card.color
+              )}>
+                <div className="interactive-card px-3.5 py-2.5 text-white relative overflow-hidden">
                   <div className="absolute -top-10 -right-10 h-28 w-28 rounded-full bg-white/10 blur-2xl pointer-events-none" />
                   <div className="flex items-center justify-between gap-2 mb-2 relative z-10">
                     {isEditing ? (
