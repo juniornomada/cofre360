@@ -20,17 +20,18 @@ async function extractPdfText(base64: string): Promise<string> {
   const bytes = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
 
-  // Dynamic import — pdfjs-dist legacy build is Worker-compatible (pure JS, no DOM)
+  // Dynamic imports for PDF.js and its worker
   const pdfjs: any = await import("pdfjs-dist/legacy/build/pdf.mjs");
   
-  // Configure worker for the environment
-  if (typeof window === "undefined") {
-    // Server-side (Edge Function / Node)
-    if (pdfjs.GlobalWorkerOptions) pdfjs.GlobalWorkerOptions.workerSrc = "";
-  } else {
-    // Client-side (Browser)
+  try {
+    // Import worker as a module to avoid external URL resolution issues
+    const pdfjsWorker: any = await import("pdfjs-dist/legacy/build/pdf.worker.mjs");
     if (pdfjs.GlobalWorkerOptions) {
-      // Use a consistent version for the worker from CDN
+      pdfjs.GlobalWorkerOptions.workerSrc = pdfjsWorker;
+    }
+  } catch (err) {
+    console.error("Failed to load PDF worker module, falling back to CDN", err);
+    if (pdfjs.GlobalWorkerOptions) {
       const version = pdfjs.version || "4.3.136";
       pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${version}/pdf.worker.min.mjs`;
     }
@@ -38,7 +39,9 @@ async function extractPdfText(base64: string): Promise<string> {
 
   const loadingTask = pdfjs.getDocument({
     data: bytes,
-    disableWorker: true, // Always disable worker to avoid cross-origin/path issues in this setup
+    // We try to disable worker to keep everything in the same process/thread
+    // but we still need workerSrc set for the fake worker to initialize properly.
+    disableWorker: true,
     isEvalSupported: false,
     useSystemFonts: false,
     disableFontFace: true,
