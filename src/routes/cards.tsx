@@ -258,7 +258,21 @@ function CardsPage() {
       if (paymentsRes.error) throw paymentsRes.error;
 
       if (cardsRes.data) setCards(cardsRes.data);
-      if (accountsRes.data) setBankAccounts(accountsRes.data);
+      if (accountsRes.data) {
+        const incomeByAccount: Record<string, number> = {};
+        const expenseByAccount: Record<string, number> = {};
+        (allTxRes.data || []).forEach(tx => {
+          if (tx.is_visible === false) return;
+          const id = tx.bank_account_id!;
+          if (tx.type === "income") incomeByAccount[id] = (incomeByAccount[id] || 0) + (tx.amount || 0);
+          else expenseByAccount[id] = (expenseByAccount[id] || 0) + (tx.amount || 0);
+        });
+
+        setBankAccounts(accountsRes.data.map(a => ({
+          ...a,
+          balance: (a.balance || 0) + (incomeByAccount[a.id] || 0) - (expenseByAccount[a.id] || 0)
+        })));
+      }
       if (txRes.data) {
         const totals: Record<string, number> = {};
         for (const tx of txRes.data) {
