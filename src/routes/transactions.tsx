@@ -93,7 +93,10 @@ export function TransactionsPage() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Transaction | null>(null);
   const [deleteScope, setDeleteScope] = useState<"single" | "future" | "all">("single");
-   const [showAddDialog, setShowAddDialog] = useState(false); const emptyStateRef = useRef<HTMLDivElement>(null); const listRef = useRef<HTMLDivElement>(null);
+   const [showAddDialog, setShowAddDialog] = useState(false);
+   const [quickAddType, setQuickAddType] = useState<"expense" | "income" | "transfer">("expense");
+   const [copyTxData, setCopyTxData] = useState<{ name: string; amount: number; category: string; icon: string; card: string | null; bank_account_id: string | null } | null>(null);
+   const emptyStateRef = useRef<HTMLDivElement>(null); const listRef = useRef<HTMLDivElement>(null);
    
    
   const [showCsvImport, setShowCsvImport] = useState(false);
@@ -113,16 +116,10 @@ export function TransactionsPage() {
   const [filterType, setFilterType] = useState<"all" | "income" | "expense">("all");
   const [sortBy, setSortBy] = useState<"date-desc" | "date-asc" | "amount-desc" | "amount-asc" | "installments">("date-desc");
   const todayFormatted = format(new Date(), "dd MMM", { locale: ptBR });
-  const [newTx, setNewTx] = useState<Omit<Transaction, "id">>({
-    icon: "🍔", name: "", category: "Alimentação > Outros", date: todayFormatted, amount: 0, type: "expense", card: null, bank_account_id: null,
-  });
-  const [installmentEnabled, setInstallmentEnabled] = useState(false);
-  const [installmentCount, setInstallmentCount] = useState(2);
-  const [installmentMode, setInstallmentMode] = useState<"divide" | "fixed">("divide");
   // Edit-installment UI state
   const [editInstallmentMode, setEditInstallmentMode] = useState<"divide" | "fixed">("divide");
   // Transfer state
-  const [isTransfer, setIsTransfer] = useState(false);
+  
   const [transferFromId, setTransferFromId] = useState<string>("");
    const [transferToId, setTransferToId] = useState<string>("");
     const [confirmInstallmentDiff, setConfirmInstallmentDiff] = useState(false);
@@ -294,12 +291,9 @@ export function TransactionsPage() {
   useEffect(() => {
     if (searchParams.action === "add") {
       if (searchParams.type === "transfer") {
-        setIsTransfer(true);
-        setNewTx(prev => ({ ...prev, type: "expense" }));
+        setQuickAddType("transfer");
       } else {
-        setIsTransfer(false);
-        const txType = searchParams.type === "income" ? "income" : "expense";
-        setNewTx(prev => ({ ...prev, type: txType }));
+        setQuickAddType(searchParams.type === "income" ? "income" : "expense");
       }
       setShowAddDialog(true);
     }
@@ -457,18 +451,15 @@ export function TransactionsPage() {
   const handleCopy = (tx: Transaction) => {
     // Strip installment suffix for the copy
     const cleanName = stripInstallmentSuffix(tx.name);
-    setNewTx({
+    setCopyTxData({
       icon: tx.icon,
       name: cleanName,
       category: tx.category,
-      date: todayFormatted,
       amount: tx.amount,
-      type: tx.type,
       card: tx.card || null,
       bank_account_id: tx.bank_account_id || null,
     });
-    setIsTransfer(tx.category === "Transferência" || tx.category === "Transferências");
-    setInstallmentEnabled(false);
+    setQuickAddType(tx.category === "Transferência" || tx.category === "Transferências" ? "transfer" : (tx.type === "income" ? "income" : "expense"));
     setShowAddDialog(true);
     toast.success("Dados copiados para nova transação!");
   };
@@ -920,13 +911,8 @@ export function TransactionsPage() {
         {filtered.length === 0 && !loading && (
           <EmptyState 
             onAction={(type) => {
-              if (type === "transfer") {
-                setIsTransfer(true);
-                setNewTx(prev => ({ ...prev, type: "expense" }));
-              } else {
-                setIsTransfer(false);
-                setNewTx(prev => ({ ...prev, type: type }));
-              }
+              setQuickAddType(type);
+              setCopyTxData(null);
               setShowAddDialog(true);
             }} 
             title="Tudo limpo por aqui"
@@ -1373,7 +1359,8 @@ export function TransactionsPage() {
           <QuickAddTransactionDialog 
             open={showAddDialog} 
             onOpenChange={setShowAddDialog}
-            initialType={isTransfer ? "transfer" : (newTx.type as "expense" | "income")}
+            initialType={quickAddType}
+            copyData={copyTxData}
             onSuccess={fetchTransactions}
           />
         )}
