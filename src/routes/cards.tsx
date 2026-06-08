@@ -152,6 +152,7 @@ function CardsPage() {
   const [editLimit, setEditLimit] = useState("");
   const [editClosing, setEditClosing] = useState("");
   const [editDue, setEditDue] = useState("");
+  const [editColor, setEditColor] = useState("");
 
   // Invoice dialog state
   const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
@@ -349,6 +350,7 @@ function CardsPage() {
     setEditLimit(card.card_limit.toString());
     setEditClosing(card.closing_day?.toString() || "");
     setEditDue(card.due_day?.toString() || "");
+    setEditColor(card.color || colorOptions[0].value);
   };
 
   const saveEdit = async (id: string) => {
@@ -359,6 +361,8 @@ function CardsPage() {
         card_limit: parseFloat(editLimit) || 0,
         closing_day: parseInt(editClosing) || 1,
         due_day: parseInt(editDue) || 10,
+        color: editColor,
+        emoji: colorOptions.find((c) => c.value === editColor)?.emoji || "💳",
       }).eq("id", id);
       if (error) throw error;
       setEditingId(null);
@@ -728,8 +732,11 @@ function CardsPage() {
       void nextDue; void isPaid; void invoiceClosed;
           return (
             <SortableCardWrapper key={card.id} id={card.id} animationDelay={60 + i * 80}>
-              <div className="rounded-2xl shadow-md shadow-black/5 overflow-hidden border border-border/40">
-                <div className={`interactive-card bg-gradient-to-br ${card.color} px-3.5 py-2.5 text-white relative overflow-hidden`}>
+              <div className={cn(
+                "rounded-2xl shadow-md shadow-black/5 overflow-hidden border border-border/40 transition-all duration-300 bg-gradient-to-br",
+                isEditing ? editColor : card.color
+              )}>
+                <div className="interactive-card px-3.5 py-2.5 text-white relative overflow-hidden">
                   <div className="absolute -top-10 -right-10 h-28 w-28 rounded-full bg-white/10 blur-2xl pointer-events-none" />
                   <div className="flex items-center justify-between gap-2 mb-2 relative z-10">
                     {isEditing ? (
@@ -821,9 +828,30 @@ function CardsPage() {
                             <button
                               key={bp.id}
                               onClick={() => setEditBrand(bp.id)}
-                              className={`px-2 py-0.5 rounded-md text-[10px] font-medium transition-colors ${editBrand.toLowerCase() === bp.id ? "bg-white text-black" : "bg-white/20 text-white hover:bg-white/30"}`}
+                              className={cn(
+                                "px-2 py-0.5 rounded-md text-[10px] font-medium transition-colors",
+                                editBrand.toLowerCase() === bp.id.toLowerCase() ? "bg-white text-black" : "bg-white/20 text-white hover:bg-white/30"
+                              )}
                             >
                               {bp.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] opacity-70 w-14">Cor</span>
+                        <div className="flex gap-1.5 flex-wrap overflow-x-auto no-scrollbar pb-1">
+                          {colorOptions.map((co) => (
+                            <button
+                              key={co.value}
+                              onClick={() => setEditColor(co.value)}
+                              className={cn(
+                                "w-6 h-6 rounded-full flex items-center justify-center text-[10px] transition-all shrink-0",
+                                editColor === co.value ? "ring-2 ring-white scale-110 shadow-lg" : "opacity-60 hover:opacity-100"
+                              )}
+                              title={co.label}
+                            >
+                              {co.emoji}
                             </button>
                           ))}
                         </div>
@@ -834,7 +862,7 @@ function CardsPage() {
                           <CalculatorAmountInput
                             value={parseFloat(editLimit) || 0}
                             onChange={(v) => setEditLimit(v.toString())}
-                            className="h-7 bg-white/20 border-white/30 text-white text-[11px] sm:text-xs"
+                            className="h-7 bg-white/20 border-white/30 text-white text-[11px] sm:text-xs placeholder:text-white/50"
                           />
                         </div>
                       </div>
@@ -844,16 +872,16 @@ function CardsPage() {
                           type="number"
                           value={editClosing}
                           onChange={(e) => setEditClosing(e.target.value.replace(/\D/g, "").slice(0, 2))}
-                          className="h-7 w-16 rounded-lg bg-white/20 border-white/30 text-white text-xs"
+                          className="h-7 w-14 rounded-lg bg-white/20 border-white/30 text-white text-xs"
                           min={1} max={31}
                           onKeyDown={(e) => { if (e.key === "Enter") saveEdit(card.id); if (e.key === "Escape") cancelEdit(); }}
                         />
-                        <span className="text-[10px] opacity-70 w-14">Vence dia</span>
+                        <span className="text-[10px] opacity-70 w-14 ml-2">Vence dia</span>
                         <Input
                           type="number"
                           value={editDue}
                           onChange={(e) => setEditDue(e.target.value.replace(/\D/g, "").slice(0, 2))}
-                          className="h-7 w-16 rounded-lg bg-white/20 border-white/30 text-white text-xs"
+                          className="h-7 w-14 rounded-lg bg-white/20 border-white/30 text-white text-xs"
                           min={1} max={31}
                           onKeyDown={(e) => { if (e.key === "Enter") saveEdit(card.id); if (e.key === "Escape") cancelEdit(); }}
                         />
@@ -862,8 +890,8 @@ function CardsPage() {
                   ) : null}
                 </div>
 
-              <div className={`bg-gradient-to-br ${card.color} px-3.5 pb-3 pt-1 text-white relative`}>
-                <div className="absolute inset-0 bg-black/55 pointer-events-none" />
+              <div className="px-3.5 pb-3 pt-1 text-white relative">
+                <div className="absolute inset-0 bg-black/15 pointer-events-none" />
                 <div className="relative">
                   <div className="flex justify-between items-start gap-2 mb-1.5">
                     <div className="min-w-0">
