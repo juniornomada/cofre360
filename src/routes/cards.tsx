@@ -673,6 +673,7 @@ function CardsPage() {
      setPayingCard(card);
      setInvoiceCard(card); // Ensure invoicePeriods is for this card
      setPaymentLines([{ accountId: "", amount: "" }]);
+     setPaymentDate(format(new Date(), "dd MMM", { locale: ptBR }));
      setPayDialogOpen(true);
      
      if (periodIdx !== undefined) {
