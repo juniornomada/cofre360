@@ -1416,6 +1416,27 @@ function CardsPage() {
                 );
               })()}
 
+              <div className="space-y-1.5 mb-2">
+                <Label className="text-[11px] font-semibold text-foreground block">Data do pagamento</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className={cn("w-full justify-start text-left font-normal rounded-xl bg-accent/30 border-none h-9 px-2.5 text-xs", !paymentDate && "text-muted-foreground")}>
+                      <CalendarIcon className="mr-1.5 h-3.5 w-3.5 text-primary" />
+                      {paymentDate || "Selecione a data"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0 z-[60]" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={(() => { try { return parse(paymentDate, "dd MMM", new Date(), { locale: ptBR }); } catch { return undefined; } })()}
+                      onSelect={(date) => { if (date) setPaymentDate(format(date, "dd MMM", { locale: ptBR })); }}
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+
               {bankAccounts.length === 0 ? (
                 <div className="text-center py-4">
                   <Landmark className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2" />
