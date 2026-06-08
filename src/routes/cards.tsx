@@ -949,8 +949,6 @@ function CardsPage() {
                   </div>
                 </div>
               </div>
-                </div>
-              </div>
             </SortableCardWrapper>
           );
         })}
