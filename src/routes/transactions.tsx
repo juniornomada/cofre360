@@ -859,6 +859,15 @@ export function TransactionsPage() {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+              
+              <button 
+                onClick={() => updateBalanceVisible(!balanceVisible)} 
+                className="interactive-button flex h-10 w-10 items-center justify-center rounded-full bg-card border border-border shadow-sm hover:bg-accent transition-all"
+                title={balanceVisible ? "Ocultar saldos" : "Mostrar saldos"}
+              >
+                {balanceVisible ? <Eye className="h-5 w-5 text-muted-foreground" /> : <EyeOff className="h-5 w-5 text-muted-foreground" />}
+              </button>
+
               <button onClick={() => setShowAddDialog(true)} className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground border border-primary/20 shadow-lg hover:brightness-110 transition-all">
                 <Plus className="h-5 w-5" />
               </button>
