@@ -111,7 +111,7 @@ export function TransactionsPage() {
   const [showCsvImport, setShowCsvImport] = useState(false);
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [showDeleteAllDialog, setShowDeleteAllDialog] = useState(false);
+  
   const [showBatchDeleteDialog, setShowBatchDeleteDialog] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [showGlobalSearch, setShowGlobalSearch] = useState(false);
@@ -668,14 +668,6 @@ export function TransactionsPage() {
     });
   };
 
-  const handleDeleteAll = async () => {
-    setDeleting(true);
-    await supabase.from("transactions").delete().neq("id", "00000000-0000-0000-0000-000000000000");
-    setDeleting(false);
-    setShowDeleteAllDialog(false);
-    exitSelectionMode();
-    fetchTransactions();
-  };
 
   if (loading) {
     return (
@@ -719,9 +711,6 @@ export function TransactionsPage() {
             <>
               {transactions.length > 0 && (
                 <>
-                  <button onClick={() => setShowDeleteAllDialog(true)} className="flex h-8 w-8 items-center justify-center rounded-full bg-destructive/10 text-destructive" title="Apagar todas">
-                    <Trash2 className="h-4 w-4" />
-                  </button>
                   <button onClick={() => setSelectionMode(true)} className="flex h-8 w-8 items-center justify-center rounded-full bg-card text-muted-foreground border border-border" title="Selecionar">
                     <CheckSquare className="h-4 w-4" />
                   </button>
@@ -1366,20 +1355,6 @@ export function TransactionsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete All */}
-      <Dialog open={showDeleteAllDialog} onOpenChange={setShowDeleteAllDialog}>
-        <DialogContent className="max-w-[90vw] rounded-2xl bg-background">
-          <DialogHeader><DialogTitle>Apagar Todas as Transações</DialogTitle></DialogHeader>
-          <p className="text-sm text-muted-foreground">Tem certeza que deseja apagar <strong>todas</strong> as transações? Essa ação não pode ser desfeita.</p>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowDeleteAllDialog(false)} disabled={deleting}>Cancelar</Button>
-            <Button variant="destructive" onClick={handleDeleteAll} disabled={deleting}>
-              {deleting && <Loader2 className="h-4 w-4 animate-spin mr-1" />}
-              Apagar tudo
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Batch Delete */}
       <Dialog open={showBatchDeleteDialog} onOpenChange={setShowBatchDeleteDialog}>
