@@ -29,23 +29,25 @@ async function extractPdfText(base64: string): Promise<string> {
   const pdfjs: any = await import("pdfjs-dist/legacy/build/pdf.mjs");
   
   // Normalize GlobalWorkerOptions to prevent invalid types (null, objects, etc.)
-  // that cause "Invalid workerSrc type" or "Invalid workerPort type" errors.
   if (pdfjs.GlobalWorkerOptions) {
     try {
       const options = pdfjs.GlobalWorkerOptions;
-      // workerSrc must be a string. If it's anything else (null, object), we unset it safely.
-      if (typeof options.workerSrc !== "string") {
-        (options as any).workerSrc = undefined;
-      }
-      // workerPort must be a MessagePort or undefined. We ensure it's not a lingering invalid object.
-      if (options.workerPort !== undefined && (typeof options.workerPort !== "object" || options.workerPort === null)) {
-        (options as any).workerPort = undefined;
-      }
+      
+      // We explicitly UNSET workerSrc and workerPort because they can cause 
+      // module resolution errors in server environments (like Nitro/Vite) 
+      // when the library tries to load them as external files.
+      // delete is used to ensure the properties are truly gone.
+      delete (options as any).workerSrc;
+      delete (options as any).workerPort;
+      
+      // Some environments might still report them as undefined instead of deleted.
+      if (options.workerSrc !== undefined) (options as any).workerSrc = undefined;
+      if (options.workerPort !== undefined) (options as any).workerPort = undefined;
     } catch (e) {
-      // If normalization fails, we log a warning but proceed with disableWorker: true below.
       console.warn("Could not normalize PDF.js GlobalWorkerOptions:", e);
     }
   }
+
 
 
 
