@@ -1331,6 +1331,17 @@ function CardsPage() {
           </DialogHeader>
           {payingCard && (
             <div className="flex flex-col gap-4 mt-2">
+              {(!invoicePeriods[activeInvoiceIdx] || invoicePeriods[activeInvoiceIdx].total === 0) && (
+                <div className="rounded-xl bg-amber-50 border border-amber-200 p-3 flex gap-2.5 items-start">
+                  <AlertCircle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                  <div className="space-y-0.5">
+                    <p className="text-xs font-bold text-amber-900">Sem faturas lançadas</p>
+                    <p className="text-[10px] text-amber-800 leading-relaxed">
+                      Não encontramos despesas para este período. Você pode realizar um pagamento avulso ou escolher outro ciclo.
+                    </p>
+                  </div>
+                </div>
+              )}
               <div className="rounded-xl bg-accent/50 p-3">
                 <div className="flex justify-between items-start mb-1">
                   <div>
