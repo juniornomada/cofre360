@@ -129,5 +129,18 @@ describe('Invoice Utils', () => {
       expect(currentPeriod.key).toBe('current');
       expect(currentPeriod.total).toBe(50);
     });
+
+    it('should correctly include the card name in grouped transactions', () => {
+      const closingDay = 15;
+      const dueDay = 20;
+      const periods = groupByBillingCycle(mockTransactions, closingDay, dueDay);
+      
+      periods.forEach(period => {
+        period.transactions.forEach(tx => {
+          expect(tx.card).toBeDefined();
+          expect(tx.card).toBe('card-1');
+        });
+      });
+    });
   });
 });
