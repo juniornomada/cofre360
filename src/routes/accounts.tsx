@@ -172,12 +172,12 @@ function SortableAccountItem({
               </div>
             </div>
           ) : (
-            <button
-              type="button"
-              onClick={() => startEdit(account)}
-              className="text-left w-full"
-            >
-              <div className="flex items-center justify-between gap-2">
+          <Link
+            to="/transactions"
+            search={{ accountId: account.id } as any}
+            className="text-left w-full"
+          >
+            <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-1.5 min-w-0">
                     <p className="text-[15px] font-semibold text-foreground truncate tracking-tight leading-tight">{account.name}</p>
                     {account.is_visible === false && (
@@ -244,7 +244,7 @@ function SortableAccountItem({
                     Importar extrato PDF
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => startEdit(account)} className="cursor-pointer">
+                  <DropdownMenuItem onClick={() => { setEditingAccount(account); setEditName(account.name); setEditBalance(account.balance.toString()); setEditIcon(account.icon || "custom"); setEditColor(account.color || bankPresets.find(b => b.id === "custom")!.color); }} className="cursor-pointer">
                     <Pencil className="h-4 w-4 mr-2" />
                     Editar conta
                   </DropdownMenuItem>
