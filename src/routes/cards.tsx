@@ -665,24 +665,38 @@ function CardsPage() {
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2 rounded-2xl p-1 bg-accent/30 h-11">
-          <TabsTrigger value="list" className="rounded-xl text-xs font-semibold data-[state=active]:bg-background data-[state=active]:shadow-sm">
-            <CreditCard className="h-3.5 w-3.5 mr-2" />
-            Lista de Cartões
-          </TabsTrigger>
-          <TabsTrigger value="validation" className="rounded-xl text-xs font-semibold data-[state=active]:bg-background data-[state=active]:shadow-sm">
-            <AlertCircle className="h-3.5 w-3.5 mr-2" />
-            Validação
+      <div className="w-full">
+        <div className="rounded-2xl bg-card border border-border/50 p-4">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+              <CreditCard className="h-4 w-4 text-primary" />
+              Seus Cartões
+            </h3>
             {validationData?.summary?.discrepanciesFound > 0 && (
-              <Badge variant="destructive" className="ml-2 h-4 min-w-4 px-1 text-[9px] flex items-center justify-center">
-                {validationData.summary.discrepanciesFound}
+              <Badge variant="destructive" className="animate-pulse px-2 py-0.5 text-[9px] h-4">
+                {validationData.summary.discrepanciesFound} {validationData.summary.discrepanciesFound === 1 ? "divergência" : "divergências"}
               </Badge>
             )}
-          </TabsTrigger>
-        </TabsList>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-3 mb-1">
+            <div className="rounded-xl bg-accent/30 p-3">
+              <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Fatura total</p>
+              <p className="mt-1 text-base font-bold text-foreground tabular-nums">
+                R$ {totalAllInvoices.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+              </p>
+            </div>
+            <div className="rounded-xl bg-accent/30 p-3">
+              <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Disponível</p>
+              <p className="mt-1 text-base font-bold text-primary tabular-nums">
+                R$ {totalAvailable.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
 
-        <TabsContent value="list" className="mt-5 space-y-5">
+      <div className="space-y-5">
           {cards.length > 0 && (
             <div className="grid grid-cols-2 gap-3 animate-stagger-in">
               <div className="rounded-2xl bg-card border border-border/50 p-4">
