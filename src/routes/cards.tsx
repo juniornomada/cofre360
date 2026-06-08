@@ -244,11 +244,12 @@ function CardsPage() {
 
     try {
 
-      const [cardsRes, txRes, accountsRes, paymentsRes] = await Promise.all([
+      const [cardsRes, txRes, accountsRes, paymentsRes, allTxRes] = await Promise.all([
         supabase.from("cards").select("*").eq("user_id", session.user.id).order("sort_order", { ascending: true }).order("created_at", { ascending: true }),
         supabase.from("transactions").select("id, name, amount, date, created_at, card, icon, category, type, total_installments, installment_number, installment_group_id").eq("user_id", session.user.id).not("card", "is", null),
         supabase.from("bank_accounts").select("*").eq("user_id", session.user.id).order("created_at", { ascending: true }),
         supabase.from("card_payments").select("card_id, amount").eq("user_id", session.user.id),
+        supabase.from("transactions").select("bank_account_id, amount, type, is_visible").eq("user_id", session.user.id).not("bank_account_id", "is", null),
       ]);
 
       if (cardsRes.error) throw cardsRes.error;
