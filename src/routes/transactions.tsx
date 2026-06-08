@@ -222,7 +222,7 @@ export function TransactionsPage() {
           name: a.name, 
           icon: a.icon,
           color: a.color,
-          balance: Number(a.balance) + (incMap[a.id] || 0) - (expMap[a.id] || 0) 
+          balance: Math.round((Number(a.balance) + (incMap[a.id] || 0) - (expMap[a.id] || 0)) * 100) / 100 
         })));
 
       }
