@@ -5,7 +5,6 @@ import { EmptyState } from "@/components/EmptyState";
 import { mainCategories, parseCategoryValue } from "@/lib/categories";
 import { Search, Pencil, Trash2, Plus, CalendarIcon, Loader2, Upload, CheckSquare, Square, X, SlidersHorizontal, ArrowLeftRight, ArrowRight, Eye, EyeOff, FileText } from "lucide-react";
 import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react";
-import { DateTime } from "luxon";
 
 const CsvImportDialog = lazy(() => import("@/components/CsvImportDialog").then(m => ({ default: m.CsvImportDialog })));
 const CategoryPieCharts = lazy(() => import("@/components/CategoryPieCharts").then(m => ({ default: m.CategoryPieCharts })));
@@ -113,9 +112,7 @@ export function TransactionsPage() {
   const [filterMaxAmount, setFilterMaxAmount] = useState<string>("");
   const [filterType, setFilterType] = useState<"all" | "income" | "expense">("all");
   const [sortBy, setSortBy] = useState<"date-desc" | "date-asc" | "amount-desc" | "amount-asc" | "installments">("date-desc");
-  const userZone = 'America/Sao_Paulo';
-  const nowLocal = DateTime.now().setZone(userZone);
-  const todayFormatted = nowLocal.toFormat("dd LLL", { locale: 'pt-BR' });
+  const todayFormatted = format(new Date(), "dd MMM", { locale: ptBR });
   const [newTx, setNewTx] = useState<Omit<Transaction, "id">>({
     icon: "🍔", name: "", category: "Alimentação > Outros", date: todayFormatted, amount: 0, type: "expense", card: null, bank_account_id: null,
   });
@@ -308,53 +305,20 @@ export function TransactionsPage() {
     }
   }, [searchParams.action, searchParams.type]);
 
-  useEffect(() => {
-    if (!showEditDialog) return;
-
-    const handleGlobalPasteTransactions = (e: ClipboardEvent) => {
-      const activeElement = document.activeElement;
-      const isOtherInput = (activeElement instanceof HTMLInputElement || activeElement instanceof HTMLTextAreaElement) && 
-                           activeElement.id !== "edit-tx-name-input-page";
-
-      if (!isOtherInput) {
-        const pastedText = e.clipboardData?.getData("text");
-        if (pastedText && editTx) {
-          const nameInput = document.getElementById("edit-tx-name-input-page");
-          if (nameInput && activeElement !== nameInput) {
-            e.preventDefault();
-            let formattedText = pastedText.trim();
-            if (formattedText.length > 0) {
-              formattedText = formattedText.charAt(0).toUpperCase() + formattedText.slice(1);
-            }
-            setEditTx(prev => prev ? { ...prev, name: formattedText } : null);
-            (nameInput as HTMLInputElement).focus();
-          }
-        }
-      }
-    };
-
-    window.addEventListener("paste", handleGlobalPasteTransactions);
-    return () => window.removeEventListener("paste", handleGlobalPasteTransactions);
-  }, [showEditDialog, editTx]);
-
-
   // Parse "dd MMM" using created_at as the reference year (UTC) to avoid timezone/year drift.
   const parseTxDate = (s: string, refIso?: string): Date | null => {
     if (!s) return null;
-    const userZone = 'America/Sao_Paulo';
-    const refYear = refIso ? DateTime.fromISO(refIso).setZone(userZone).year : DateTime.now().setZone(userZone).year;
-    
-    // Try to parse "dd LLL" format
-    const dt = DateTime.fromFormat(s, "dd LLL", { locale: 'pt-BR', zone: userZone }).set({ year: refYear });
-    if (dt.isValid) return dt.toJSDate();
-
-    // Fallback to JS Date for ISO strings
-    const fallback = new Date(s);
-    return isNaN(fallback.getTime()) ? null : fallback;
+    const refYear = refIso ? new Date(refIso).getUTCFullYear() : new Date().getUTCFullYear();
+    try {
+      const parsed = parse(s, "dd MMM", new Date(Date.UTC(refYear, 0, 1)), { locale: ptBR });
+      if (isNaN(parsed.getTime())) return null;
+      // Reconstruct in UTC to neutralize local timezone offset.
+      return new Date(Date.UTC(refYear, parsed.getMonth(), parsed.getDate()));
+    } catch { return null; }
   };
 
-  const toLocalDayStart = (d: Date) => DateTime.fromJSDate(d).setZone('America/Sao_Paulo').startOf('day');
-  const toLocalDayEnd = (d: Date) => DateTime.fromJSDate(d).setZone('America/Sao_Paulo').endOf('day');
+  const toUtcDay = (d: Date, endOfDay = false) =>
+    new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate(), endOfDay ? 23 : 0, endOfDay ? 59 : 0, endOfDay ? 59 : 0));
 
   const minAmt = filterMinAmount ? parseFloat(filterMinAmount) : null;
   const maxAmt = filterMaxAmount ? parseFloat(filterMaxAmount) : null;
@@ -374,8 +338,8 @@ export function TransactionsPage() {
       const d = parseTxDate(tx.date, tx.created_at);
       if (!d) matchesDate = false;
       else {
-        if (filterStartDate && d.getTime() < toLocalDayStart(filterStartDate).toMillis()) matchesDate = false;
-        if (filterEndDate && d.getTime() > toLocalDayEnd(filterEndDate).toMillis()) matchesDate = false;
+        if (filterStartDate && d.getTime() < toUtcDay(filterStartDate).getTime()) matchesDate = false;
+        if (filterEndDate && d.getTime() > toUtcDay(filterEndDate, true).getTime()) matchesDate = false;
       }
     }
     return matchesCategory && matchesSource && matchesType && matchesMin && matchesMax && matchesDate;
@@ -1007,10 +971,8 @@ export function TransactionsPage() {
               <div className="relative">
                 <label className="text-xs text-muted-foreground mb-1 block">Nome</label>
                 <input
-                  id="edit-tx-name-input-page"
-                  autoFocus={true}
+                  autoFocus={false}
                   inputMode={editNameMode}
-
                   value={editTx.name}
                   onChange={e => {
                     let name = e.target.value;

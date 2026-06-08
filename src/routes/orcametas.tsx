@@ -2,7 +2,6 @@ import { createFileRoute } from "@tanstack/react-router";
 import { SmartLink as Link } from "@/components/SmartLink";
 import { ArrowLeft, Plus, TrendingDown, Loader2, Pencil, Trash2, Target } from "lucide-react";
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { DateTime } from "luxon";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -135,10 +134,9 @@ function OrcaMetasPage() {
 
   useEffect(() => { fetchBudget(); fetchGoals(); }, [fetchBudget, fetchGoals]);
 
-  const userZone = 'America/Sao_Paulo';
-  const nowLocal = DateTime.now().setZone(userZone);
-  const currentMonth = nowLocal.month - 1;
-  const currentYear = nowLocal.year;
+  const now = new Date();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
   const monthLabel = `${MONTH_NAMES[currentMonth]} ${currentYear}`;
 
   const { spentByFull, spentByGroup, spentBySub } = useMemo(() => {
@@ -148,8 +146,7 @@ function OrcaMetasPage() {
     for (const tx of transactions) {
       const d = parseTxDate(tx.date);
       if (!d) continue;
-      const dTime = DateTime.fromJSDate(d).setZone(userZone);
-      if (dTime.month - 1 !== currentMonth || dTime.year !== currentYear) continue;
+      if (d.getMonth() !== currentMonth || d.getFullYear() !== currentYear) continue;
       const raw = (tx.category || "").trim();
       if (!raw) continue;
       const amount = Number(tx.amount || 0);

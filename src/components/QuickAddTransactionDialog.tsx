@@ -146,6 +146,18 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
      }
 
      if (isFirstRender.current) {
+       // On initial open, handle potential clipboard paste
+       navigator.clipboard.readText().then(text => {
+         if (text && text.trim()) {
+           setNewTx(prev => ({
+             ...prev,
+             name: text.trim().charAt(0).toUpperCase() + text.trim().slice(1)
+           }));
+           toast.success("Texto colado da área de transferência");
+         }
+       }).catch(() => {
+         // Silently fail if clipboard access is denied
+       });
        isFirstRender.current = false;
      }
 
@@ -176,44 +188,6 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
       setNewTx(prev => ({ ...prev, type: isInc ? "income" : "expense" }));
     }
   }, [open, initialType, fetchData, fetchHistory]);
-
-  useEffect(() => {
-    if (!open) return;
-
-    const handleGlobalPaste = (e: ClipboardEvent) => {
-      // Don't intercept if we're already in an input/textarea, 
-      // unless it's the name input itself (where we want standard behavior)
-      const activeElement = document.activeElement;
-      const isOtherInput = (activeElement instanceof HTMLInputElement || activeElement instanceof HTMLTextAreaElement) && 
-                           activeElement.id !== "tx-name-input" && 
-                           activeElement.id !== "tx-transfer-name-input";
-
-      if (!isOtherInput) {
-        const pastedText = e.clipboardData?.getData("text");
-        if (pastedText) {
-          // If we're not already focused on a name input, we focus it and let the paste happen, 
-          // or we manually update the state if needed. 
-          // Actually, if we focus it, the browser will paste into it automatically if we don't preventDefault.
-          const nameInputId = isTransfer ? "tx-transfer-name-input" : "tx-name-input";
-          const nameInput = document.getElementById(nameInputId);
-          
-          if (nameInput && activeElement !== nameInput) {
-            e.preventDefault();
-            let formattedText = pastedText.trim();
-            if (formattedText.length > 0) {
-              formattedText = formattedText.charAt(0).toUpperCase() + formattedText.slice(1);
-            }
-            setNewTx(prev => ({ ...prev, name: formattedText }));
-            (nameInput as HTMLInputElement).focus();
-          }
-        }
-      }
-    };
-
-    window.addEventListener("paste", handleGlobalPaste);
-    return () => window.removeEventListener("paste", handleGlobalPaste);
-  }, [open, isTransfer]);
-
 
   const [confirmInstallmentDiff, setConfirmInstallmentDiff] = useState(false);
 
@@ -277,13 +251,13 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
         
         const { error, data } = await supabase.from("transactions").insert([
           {
-            icon: "🔄", name: newTx.name.trim() || `Transferência → ${toName}`, category: "Transferências > Outros",
+            icon: "🔄", name: `Transferência → ${toName}`, category: "Transferências > Outros",
             date: newTx.date, amount: newTx.amount, type: "expense",
             card: null, bank_account_id: transferFromId, installment_group_id: groupId,
             is_visible: true
           },
           {
-            icon: "🔄", name: newTx.name.trim() || `Transferência ← ${fromName}`, category: "Transferências > Outros",
+            icon: "🔄", name: `Transferência ← ${fromName}`, category: "Transferências > Outros",
             date: newTx.date, amount: newTx.amount, type: "income",
             card: null, bank_account_id: transferToId, installment_group_id: groupId,
             is_visible: true
@@ -419,30 +393,6 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
 
           {isTransfer ? (
             <>
-               <div>
-                 <label className="text-[11px] font-semibold text-foreground mb-0.5 block">Nome (Opcional)</label>
-                   <input
-                     autoFocus
-                     inputMode={nameInputMode}
-                     id="tx-transfer-name-input"
-                    value={newTx.name}
-                    onChange={e => {
-                      let name = e.target.value;
-                      if (name.length > 0) {
-                        name = name.charAt(0).toUpperCase() + name.slice(1);
-                      }
-                      setNewTx({ ...newTx, name });
-                    }}
-                    onBlur={() => setNameInputMode("none")}
-                    onClick={(e) => {
-                      const target = e.currentTarget;
-                      setNameInputMode("text");
-                      setTimeout(() => target.focus(), 0);
-                    }}
-                    placeholder="Ex: Transferência aluguel"
-                    className="w-full rounded-lg bg-card px-2.5 py-1.5 text-xs text-foreground placeholder:text-muted-foreground outline-none"
-                  />
-               </div>
               <div className="rounded-xl bg-card/50 p-2.5 space-y-2">
                 <div>
                   <label className="text-[11px] font-semibold text-foreground mb-1 block">De (origem)</label>

@@ -1,6 +1,6 @@
 import { useLocation, useRouterState } from "@tanstack/react-router";
 import { SmartLink as Link } from "./SmartLink";
-import { Home, ArrowLeftRight, Landmark, CreditCard, Sparkles, Target } from "lucide-react";
+import { Home, ArrowLeftRight, Landmark, CreditCard, Sparkles, PiggyBank, Target } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -8,7 +8,6 @@ const navItems = [
   { to: "/transactions" as const, icon: ArrowLeftRight, label: "Transações" },
   { to: "/accounts" as const, icon: Landmark, label: "Contas" },
   { to: "/cards" as const, icon: CreditCard, label: "Cartões" },
-  { to: "/orcametas" as const, icon: Target, label: "OrçaMetas" },
   { to: "/insights" as const, icon: Sparkles, label: "Insights IA" },
 ];
 
@@ -23,8 +22,6 @@ export function BottomNav() {
         {navItems.map((item) => {
           const isPending = isLoading && pendingLocation?.pathname === item.to;
           const isActive = (location.pathname === item.to && !isLoading) || isPending;
-          const shouldHighlight = isActive && item.to !== "/orcametas";
-          
           return (
             <Link
               key={item.to}
@@ -33,7 +30,7 @@ export function BottomNav() {
               preload="intent"
               className={cn(
                 "nav-item-transition flex flex-col items-center gap-0.5 rounded-xl px-1.5 py-2 text-[9px] shrink-0 min-w-[3rem]",
-                shouldHighlight
+                isActive
                   ? "text-primary"
                   : "text-muted-foreground hover:text-foreground"
               )}
@@ -41,16 +38,16 @@ export function BottomNav() {
               <item.icon
                 className={cn(
                   "h-5 w-5 transition-transform duration-200",
-                  shouldHighlight && "stroke-[2.5] scale-110"
+                  isActive && "stroke-[2.5] scale-110"
                 )}
               />
               <span className={cn(
                 "font-medium transition-all duration-200 whitespace-nowrap",
-                shouldHighlight && "font-semibold"
+                isActive && "font-semibold"
               )}>
                 {item.label}
               </span>
-              {shouldHighlight && (
+              {isActive && (
                 <span className="mt-0.5 h-1 w-1 rounded-full bg-primary animate-scale-in" />
               )}
             </Link>

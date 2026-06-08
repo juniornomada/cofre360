@@ -4,9 +4,8 @@ import { TrendingUp, Eye, EyeOff, Bell, Pencil, Trash2, CalendarIcon, Loader2, C
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { TransactionItem } from "@/components/TransactionItem";
 import { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense } from "react";
-import { format, parse, isYesterday, differenceInDays } from "date-fns";
+import { format, parse, isToday, isYesterday, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { isTodayLocal } from "@/lib/date-utils";
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -161,7 +160,7 @@ function SortableAccountItem({ acc, balanceVisible, fmt }: { acc: any; balanceVi
 }
 
 
-export function Dashboard() {
+function Dashboard() {
   const {
     balanceVisible,
     updateBalanceVisible,
@@ -193,36 +192,6 @@ export function Dashboard() {
   useEffect(() => {
     setGreeting(getGreeting());
   }, []);
-
-  useEffect(() => {
-    if (!showEditDialog) return;
-
-    const handleGlobalPasteEdit = (e: ClipboardEvent) => {
-      const activeElement = document.activeElement;
-      const isOtherInput = (activeElement instanceof HTMLInputElement || activeElement instanceof HTMLTextAreaElement) && 
-                           activeElement.id !== "edit-tx-name-input-home";
-
-      if (!isOtherInput) {
-        const pastedText = e.clipboardData?.getData("text");
-        if (pastedText && editTx) {
-          const nameInput = document.getElementById("edit-tx-name-input-home");
-          if (nameInput && activeElement !== nameInput) {
-            e.preventDefault();
-            let formattedText = pastedText.trim();
-            if (formattedText.length > 0) {
-              formattedText = formattedText.charAt(0).toUpperCase() + formattedText.slice(1);
-            }
-            setEditTx(prev => prev ? { ...prev, name: formattedText } : null);
-            (nameInput as HTMLInputElement).focus();
-          }
-        }
-      }
-    };
-
-    window.addEventListener("paste", handleGlobalPasteEdit);
-    return () => window.removeEventListener("paste", handleGlobalPasteEdit);
-  }, [showEditDialog, editTx]);
-
 
 
 
@@ -831,6 +800,22 @@ export function Dashboard() {
       }
     }
 
+    // 4. No transactions registered today (motivational)
+    const hasTodayTx = allTransactions.some(tx => {
+      const d = parseTxDateToDate(tx.date);
+      return d && isToday(d);
+    });
+    if (!hasTodayTx && allTransactions.length > 0 && alerts.length < 3) {
+      alerts.push({
+        id: "no-today",
+        icon: Flame,
+        iconColor: "text-amber-400",
+        bg: "bg-amber-500/10",
+        title: "Você ainda não registrou nada hoje",
+        subtitle: "Manter o hábito diário melhora seu controle financeiro 🔥",
+        to: "/transactions",
+      });
+    }
 
     return alerts.slice(0, 3);
   }, [pendingReminders, goals, allTransactions]);
@@ -843,7 +828,7 @@ export function Dashboard() {
       const d = parseTxDateToDate(tx.date);
       let key: string;
       let label: string;
-      if (d && isTodayLocal(d)) { key = "1-today"; label = "Hoje"; }
+      if (d && isToday(d)) { key = "1-today"; label = "Hoje"; }
       else if (d && isYesterday(d)) { key = "2-yesterday"; label = "Ontem"; }
       else if (d) {
         const monthsAbbr = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
@@ -1407,6 +1392,26 @@ export function Dashboard() {
       )}
 
 
+      {/* "Você ainda não registrou nada hoje" — moved to end of page */}
+      {smartAlerts.filter(a => a.id === "no-today").map((alert) => {
+        const inner = (
+          <>
+            <div className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-lg", alert.bg)}>
+              <alert.icon className={cn("h-4 w-4", alert.iconColor)} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-foreground truncate">{alert.title}</p>
+              <p className="text-[11px] text-muted-foreground truncate">{alert.subtitle}</p>
+            </div>
+            {alert.to && <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />}
+          </>
+        );
+        const className = "interactive-card flex items-center gap-3 rounded-xl bg-card px-3 py-2.5 border border-border/30";
+        if (alert.to) {
+          return <Link key={alert.id} to={alert.to} className={className}>{inner}</Link>;
+        }
+        return <div key={alert.id} className={className}>{inner}</div>;
+      })}
 
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
         <DialogContent className="max-w-[90vw] rounded-2xl bg-background">
@@ -1415,15 +1420,8 @@ export function Dashboard() {
             <div className="flex flex-col gap-3">
               <div>
                 <label className="text-xs text-muted-foreground mb-1 block">Nome</label>
-                <input 
-                  id="edit-tx-name-input-home"
-                  autoFocus={true} 
-                  value={editTx.name} 
-                  onChange={e => setEditTx({ ...editTx, name: e.target.value })} 
-                  className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground outline-none" 
-                />
+                <input autoFocus={false} value={editTx.name} onChange={e => setEditTx({ ...editTx, name: e.target.value })} className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground outline-none" />
               </div>
-
               <Suspense fallback={<div className="h-20 flex items-center justify-center"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>}>
                 <CategoryPicker
                   value={editTx.category}

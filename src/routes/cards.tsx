@@ -2,7 +2,6 @@ import { createFileRoute } from "@tanstack/react-router";
 import { SmartLink as Link } from "@/components/SmartLink";
 import { ArrowLeft, Plus, CreditCard, Trash2, X, Check, Loader2, Wallet, Landmark, ChevronLeft, ChevronRight, Receipt, FileUp, GripVertical, Layers, Pencil, MoreVertical, Eye, EyeOff, Copy, AlertCircle, CheckCircle2, Info, RefreshCw } from "lucide-react";
 import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react";
-import { DateTime } from "luxon";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 
 const PdfInvoiceImportDialog = lazy(() => import("@/components/PdfInvoiceImportDialog").then(m => ({ default: m.PdfInvoiceImportDialog })));
@@ -11,14 +10,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
-import { useAlert } from "@/routes/__root";
+import { toast } from "sonner";
 import { CalculatorAmountInput } from "@/components/CalculatorAmountInput";
 import { CardBrand, brandPresets } from "@/components/CardBrand";
 import { BankLogo, bankPresets } from "@/components/BankLogo";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { useServerFn } from "@tanstack/react-start";
 import { validateAgreement } from "@/server-fns/validate-agreement";
 import { InvoiceInconsistencyAlert } from "@/components/InvoiceInconsistencyAlert";
 import {
@@ -136,17 +134,14 @@ function SortableCardWrapper({ id, children, animationDelay }: { id: string; chi
    }),
    component: CardsPage,
  });
-export function CardsPage() {
-  const { showAlert } = useAlert();
-  const validateAgreementFn = useServerFn(validateAgreement);
+function CardsPage() {
   const [cards, setCards] = useState<CardData[]>([]);
   const [cardTotals, setCardTotals] = useState<Record<string, number>>({});
   const [cardPayments, setCardPayments] = useState<Record<string, number>>({});
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
-  const listRef = useRef<HTMLDivElement>(null);
+   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null); const listRef = useRef<HTMLDivElement>(null);
    
    
 
@@ -193,80 +188,27 @@ export function CardsPage() {
   const [pdfImportCard, setPdfImportCard] = useState<CardData | null>(null);
 
   // Validation state
-  const [validationData, setValidationData] = useState<any>({
-    status: 'ok',
-    summary: {
-      totalCardsChecked: 0,
-      totalInvoicesChecked: 0,
-      discrepanciesFound: 0,
-      discrepancyDetails: []
-    },
-    logs: []
-  });
+  const [validationData, setValidationData] = useState<any>(null);
   const [isValidating, setIsValidating] = useState(false);
   const [activeTab, setActiveTab] = useState("list");
 
-  const lastValidationRef = useRef<{ timestamp: number; reason: string }>({ timestamp: 0, reason: "initial" });
-  
-  const runValidation = async (silent = true, reason = "manual") => {
-    const now = DateTime.now().setZone('America/Sao_Paulo').toMillis();
-    const timeSinceLast = now - lastValidationRef.current.timestamp;
-    
-    // Dynamic debounce logic:
-    // - Always allow manual triggers (silent = false)
-    // - If it's the same reason (e.g. repeated 'focus' or 'TOKEN_REFRESHED'), wait at least 5 seconds
-    // - If it's a different reason, wait at least 2 seconds
-    const minWait = reason === lastValidationRef.current.reason ? 5000 : 2000;
-
-    if (silent && timeSinceLast < minWait) {
-      console.log(`[cards] Validation skipped. Reason: ${reason}, last was: ${lastValidationRef.current.reason}. Elapsed: ${timeSinceLast}ms, required: ${minWait}ms`);
-      return;
-    }
-
-    lastValidationRef.current = { timestamp: now, reason };
-    console.log(`[cards] Running validation. Reason: ${reason}`);
-
+  const runValidation = async (silent = true) => {
     setIsValidating(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        if (!silent) showAlert("Sessão expirada. Faça login novamente para validar.", "error");
-        // Reset timestamp so it can retry immediately once session is restored
-        lastValidationRef.current = { timestamp: 0, reason: "session_reset" };
-        return;
-      }
-
-      const result = await validateAgreementFn();
+      const result = await validateAgreement();
       setValidationData(result);
       if (!silent) {
         if (result.status === 'ok') {
-          showAlert("Validação concluída: Tudo certo!", "success");
+          toast.success("Validação concluída: Tudo certo!");
         } else if (result.status === 'partial') {
-          showAlert("Validação concluída: Algumas divergências encontradas.", "warning");
+          toast.warning("Validação concluída: Algumas divergências encontradas.");
         } else {
-          showAlert("Validação concluída: Erros críticos detectados!", "error");
+          toast.error("Validação concluída: Erros críticos detectados!");
         }
       }
     } catch (error: any) {
       console.error("Validation error:", error);
-      
-      // Only reset the timestamp for retryable errors (network/timeout or 401/403/5xx)
-      // 400, 404, etc. should usually not be retried immediately as they imply a client-side or static resource issue
-      const status = error instanceof Response ? error.status : 500;
-      const isRetryable = !status || status === 401 || status === 403 || status >= 500;
-
-      if (isRetryable) {
-        lastValidationRef.current = { timestamp: 0, reason: "error_retry" };
-      }
-
-      let message = error?.message || "Erro desconhecido";
-      if (error instanceof Response) {
-        message = await error.text().catch(() => "Falha de autorização");
-      }
-      if (message.includes("Unauthorized") || message.includes("authorization")) {
-        message = "Sessão expirada. Faça login novamente para validar.";
-      }
-      if (!silent) showAlert("Erro ao validar: " + message, "error");
+      if (!silent) toast.error("Erro ao validar: " + error.message);
     } finally {
       setIsValidating(false);
     }
@@ -294,7 +236,7 @@ export function CardsPage() {
     const results = await Promise.all(updates);
     const failed = results.some((r) => r.error);
     if (failed) {
-      showAlert("Erro ao salvar nova ordem", "error");
+      toast.error("Erro ao salvar nova ordem");
       fetchAll();
     }
   }, [cards]);
@@ -336,7 +278,7 @@ export function CardsPage() {
       }
     } catch (error: any) {
       console.error("Error fetching data:", error);
-      showAlert("Erro ao carregar dados: " + (error.message || "Erro desconhecido", "error"));
+      toast.error("Erro ao carregar dados: " + (error.message || "Erro desconhecido"));
     } finally {
       setLoading(false);
     }
@@ -344,25 +286,15 @@ export function CardsPage() {
 
   useEffect(() => {
     fetchAll();
-    runValidation(true, "mount"); // Run validation on mount to check for inconsistencies
+    runValidation(); // Run validation on mount to check for inconsistencies
     
-    // Subscribe to auth changes to retry validation when the user signs in or refreshes session
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-        runValidation(true, event);
-      }
-    });
-
     // Re-fetch when the window regains focus to avoid stale data
     const onFocus = () => {
       fetchAll();
-      runValidation(true, "focus");
+      runValidation();
     };
     window.addEventListener("focus", onFocus);
-    return () => {
-      window.removeEventListener("focus", onFocus);
-      subscription.unsubscribe();
-    };
+    return () => window.removeEventListener("focus", onFocus);
   }, [fetchAll]);
 
   const searchParams = Route.useSearch();
@@ -402,10 +334,10 @@ export function CardsPage() {
       if (error) throw error;
       setDialogOpen(false);
       fetchAll();
-      showAlert("Cartão adicionado com sucesso", "success");
+      toast.success("Cartão adicionado com sucesso");
     } catch (error: any) {
       console.error("Error adding card:", error);
-      showAlert("Erro ao adicionar cartão: " + (error.message || "Erro desconhecido", "error"));
+      toast.error("Erro ao adicionar cartão: " + (error.message || "Erro desconhecido"));
     }
   };
 
@@ -430,11 +362,11 @@ export function CardsPage() {
       }).eq("id", id);
       if (error) throw error;
       setEditingId(null);
-      showAlert("Cartão atualizado", "success");
+      toast.success("Cartão atualizado");
       fetchAll();
     } catch (error: any) {
       console.error("Error updating card:", error);
-      showAlert("Erro ao atualizar cartão: " + (error.message || "Erro desconhecido", "error"));
+      toast.error("Erro ao atualizar cartão: " + (error.message || "Erro desconhecido"));
     }
   };
 
@@ -446,10 +378,10 @@ export function CardsPage() {
       if (error) throw error;
       setDeleteConfirm(null);
       fetchAll();
-      showAlert("Cartão excluído", "success");
+      toast.success("Cartão excluído");
     } catch (error: any) {
       console.error("Error deleting card:", error);
-      showAlert("Erro ao excluir cartão: " + (error.message || "Erro desconhecido", "error"));
+      toast.error("Erro ao excluir cartão: " + (error.message || "Erro desconhecido"));
     }
   };
 
@@ -458,10 +390,10 @@ export function CardsPage() {
       const { error } = await supabase.from("cards").update({ is_visible: !current }).eq("id", id);
       if (error) throw error;
       fetchAll();
-      showAlert(current ? "Cartão ocultado da página inicial" : "Cartão agora visível na página inicial", "error");
+      toast.success(current ? "Cartão ocultado da página inicial" : "Cartão agora visível na página inicial");
     } catch (error: any) {
       console.error("Error toggling visibility:", error);
-      showAlert("Erro ao alterar visibilidade", "error");
+      toast.error("Erro ao alterar visibilidade");
     }
   };
 
@@ -481,7 +413,7 @@ export function CardsPage() {
       setCardTransactions((data as CardTransaction[]) || []);
     } catch (error: any) {
       console.error("Error fetching card transactions:", error);
-      showAlert("Erro ao carregar transações do cartão", "error");
+      toast.error("Erro ao carregar transações do cartão");
     } finally {
       setLoadingTx(false);
     }
@@ -529,7 +461,7 @@ export function CardsPage() {
     const total = parseInt(installmentTotal);
     const current = parseInt(installmentCurrent);
     if (!isFinite(total) || !isFinite(current) || total < 1 || current < 1 || current > total) {
-      showAlert("Parcelas inválidas", "error");
+      toast.error("Parcelas inválidas");
       return;
     }
 
@@ -548,7 +480,7 @@ export function CardsPage() {
           })
           .eq("id", installmentTx.id);
         if (error) throw error;
-        showAlert("Parcelamento removido", "error");
+        toast.success("Parcelamento removido");
       } else {
         const groupId =
           installmentTx.installment_group_id ||
@@ -610,7 +542,7 @@ export function CardsPage() {
           const { error: insErr } = await supabase.from("transactions").insert(toInsert);
           if (insErr) throw insErr;
         }
-        showAlert(
+        toast.success(
           toInsert.length > 0
             ? `Parcelamento criado (${toInsert.length} parcela${toInsert.length > 1 ? "s" : ""} futura${toInsert.length > 1 ? "s" : ""})`
             : "Parcelamento atualizado"
@@ -623,7 +555,7 @@ export function CardsPage() {
       await openInvoiceDialog(invoiceCard);
     } catch (e) {
       console.error(e);
-      showAlert("Erro ao salvar parcelamento", "error");
+      toast.error("Erro ao salvar parcelamento");
     } finally {
       setInstallmentSaving(false);
     }
@@ -692,12 +624,12 @@ export function CardsPage() {
         }
       }
       
-      showAlert(`${paymentName} de R$ ${paymentTotal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} realizado!`);
+      toast.success(`${paymentName} de R$ ${paymentTotal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} realizado!`);
       setPayDialogOpen(false);
       fetchAll();
     } catch (error) {
       console.error("Payment error:", error);
-      showAlert("Erro ao processar pagamento", "error");
+      toast.error("Erro ao processar pagamento");
     } finally {
       setPayingSaving(false);
     }
@@ -979,14 +911,14 @@ export function CardsPage() {
                       <p className="text-[10px] text-emerald-300 font-bold tabular-nums drop-shadow-sm truncate">
                         ✓ R$ {totalPaid.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} pago
                       </p>
-                      <p className="text-[10px] text-white/80 tabular-nums" title={`Limite total: R$ ${(card.card_limit || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`}>
+                      <p className="text-[10px] text-white/80 tabular-nums" title={`Limite total: R$ ${card.card_limit.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`}>
                         Disponível <span className="font-bold text-white">R$ {Math.max(0, card.card_limit - outstandingBalance).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
                       </p>
                     </div>
                   ) : (
                     <div className="flex items-center justify-between gap-2 mt-1">
                       <p className="text-[10px] text-white/70 tabular-nums">
-                        de R$ {(card.card_limit || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                        de R$ {card.card_limit.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                       </p>
                       <p className="text-[10px] text-white/80 tabular-nums">
                         Disponível <span className="font-bold text-white">R$ {Math.max(0, card.card_limit - outstandingBalance).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
@@ -1089,14 +1021,10 @@ export function CardsPage() {
                           {d.status.toUpperCase()}
                         </Badge>
                       </div>
-                      {d.type === 'amount' ? (
-                        <div className="flex justify-between items-center text-[10px] text-muted-foreground">
-                          <span>Valor no Cartão: <strong>R$ {(d.cardValue || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong></span>
-                          <span>Soma da Fatura: <strong>R$ {(d.faturaValue || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong></span>
-                        </div>
-                      ) : (
-                        <p className="text-[10px] text-muted-foreground">Nenhuma fatura encontrada para este cartão nos últimos meses.</p>
-                      )}
+                      <div className="flex justify-between items-center text-[10px] text-muted-foreground">
+                        <span>Valor no Cartão: <strong>R$ {d.cardValue.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong></span>
+                        <span>Soma da Fatura: <strong>R$ {d.faturaValue.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong></span>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -1109,7 +1037,7 @@ export function CardsPage() {
                     <table className="w-full text-left text-[10px] border-collapse">
                       <thead className="sticky top-0 bg-accent/50 backdrop-blur-sm border-b border-border/50">
                         <tr>
-                          <th className="px-3 py-2 font-bold text-muted-foreground">Data/Hora (Local)</th>
+                          <th className="px-3 py-2 font-bold text-muted-foreground">Data/Hora (UTC)</th>
                           <th className="px-3 py-2 font-bold text-muted-foreground">Mensagem</th>
                         </tr>
                       </thead>
@@ -1212,7 +1140,7 @@ export function CardsPage() {
                 <div className="mx-5 mb-3 rounded-xl bg-accent/50 p-3 flex justify-between items-center">
                   <span className="text-xs font-medium text-muted-foreground">Total da fatura</span>
                   <span className="text-sm font-bold text-destructive tabular-nums" data-testid="total-da-fatura-valor">
-                    R$ {(activePeriod.total || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                    R$ {activePeriod.total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                   </span>
 
                 </div>
@@ -1422,7 +1350,7 @@ export function CardsPage() {
                               <SelectItem key={acc.id} value={acc.id} className="text-xs">
                                 <div className="flex items-center gap-2">
                                   <BankLogo icon={acc.icon || "custom"} color={acc.color || "from-gray-500 to-gray-700"} name={acc.name} size="xs" />
-                                  <span>{acc.name} — R$ {(acc.balance || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
+                                  <span>{acc.name} — R$ {acc.balance.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
                                 </div>
                               </SelectItem>
                             ))}
@@ -1546,7 +1474,7 @@ export function CardsPage() {
             cardId={pdfImportCard.id}
             cardName={pdfImportCard.name}
             onSuccess={() => {
-              showAlert("Fatura importada com sucesso!", "error");
+              toast.success("Fatura importada com sucesso!");
               fetchAll();
             }}
           />
