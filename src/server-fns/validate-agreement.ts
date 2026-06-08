@@ -4,7 +4,7 @@ import { groupByBillingCycle, type CardTransaction } from "@/lib/invoice-utils";
 
 export const validateAgreement = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .handler(async ({ context }: { context: any }) => {
     const { supabase, userId } = context;
 
     const [cardsRes, txRes] = await Promise.all([
