@@ -625,7 +625,7 @@ function Dashboard() {
   // não saem da conta no momento da compra (só quando a fatura é paga via card_payments,
   // que gera uma transação separada). Transações sem bank_account_id também não
   // afetam saldo de conta nenhuma.
-  const balance = accountBalances.reduce((s, a) => s + a.balance, 0);
+  const balance = accountBalances.reduce((s, a) => s + (a.is_visible !== false ? a.balance : 0), 0);
 
   // Monthly summary: current month income/expense
   const monthlySummary = useMemo(() => {
