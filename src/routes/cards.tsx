@@ -750,7 +750,7 @@ function CardsPage() {
   }
 
   const totalAllInvoices = cards.reduce((sum, c) => {
-    const used = cardTotals[c.name] || 0;
+    const used = (cardTotals[c.name] || 0) + (c.used || 0);
     const paid = cardPayments[c.id] || 0;
     return sum + Math.max(0, used - paid);
   }, 0);
