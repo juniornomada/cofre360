@@ -30,9 +30,8 @@ async function extractPdfText(base64: string): Promise<string> {
   
   // To avoid worker errors in server functions, we disable the worker entirely.
   // This is the most robust approach for Cloud Functions / SSR environments.
-  if (pdfjs.GlobalWorkerOptions) {
-    pdfjs.GlobalWorkerOptions.workerSrc = "";
-  }
+  // We don't set workerSrc/workerPort when disableWorker is true to avoid "Setting up fake worker failed"
+  // The library will automatically use the fake worker when disableWorker: true is passed to getDocument.
 
   const loadingTask = pdfjs.getDocument({
     data: bytes,
