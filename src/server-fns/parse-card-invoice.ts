@@ -34,10 +34,11 @@ async function extractPdfText(base64: string): Promise<string> {
   // but explicitly disabling it via PDFWorker with port: null to avoid actual loading.
   if (typeof (pdfjs as any).GlobalWorkerOptions !== "undefined") {
     // To completely prevent PDF.js from trying to load an external worker module
-    // through Nitro/Vite's module resolution (which causes "No such module"),
-    // we set it to undefined. Combined with port: null in the PDFWorker constructor,
-    // this forces the synchronous FakeWorker path without triggering any imports.
-    (pdfjs as any).GlobalWorkerOptions.workerSrc = undefined;
+    // through Nitro/Vite's module resolution, we set workerSrc to a non-existent
+    // but string-typed path. Crucially, by passing port: null to PDFWorker,
+    // we force the library to use the internal FakeWorker synchronously,
+    // which ignores this path and never triggers an actual fetch or import.
+    (pdfjs as any).GlobalWorkerOptions.workerSrc = "nop";
   }
 
   const worker = new pdfjs.PDFWorker({
