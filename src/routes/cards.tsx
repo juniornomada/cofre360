@@ -167,7 +167,7 @@ function CardsPage() {
   const [invoiceCard, setInvoiceCard] = useState<CardData | null>(null);
   const [cardTransactions, setCardTransactions] = useState<CardTransaction[]>([]);
   const [loadingTx, setLoadingTx] = useState(false);
-  const [activeInvoiceIdx, setActiveInvoiceIdx] = useState(1);
+  const [activeInvoiceIdx, setActiveInvoiceIdx] = useState(0);
 
   // Installment edit dialog (add parcelamento to an existing card transaction)
   const [installmentTx, setInstallmentTx] = useState<CardTransaction | null>(null);
@@ -397,7 +397,7 @@ function CardsPage() {
   const openInvoiceDialog = async (card: CardData) => {
     setInvoiceCard(card);
     setInvoiceDialogOpen(true);
-    setActiveInvoiceIdx(1);
+    setActiveInvoiceIdx(0);
     setLoadingTx(true);
     try {
       // Filter transactions by card.name to ensure they belong to the specific card
