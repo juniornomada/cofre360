@@ -1,6 +1,6 @@
 import { Outlet, Link, createRootRoute, HeadContent, Scripts, useRouter, redirect } from "@tanstack/react-router";
 import { z } from "zod";
-import { lazy, Suspense, useEffect, useState, useCallback } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -10,8 +10,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { Toaster } from "@/components/ui/sonner";
-import { validateAgreement } from "@/server-fns/validate-agreement";
-import { InvoiceInconsistencyAlert } from "@/components/InvoiceInconsistencyAlert";
 import appCss from "../styles.css?url";
 
 const BottomNav = lazy(() => import("@/components/BottomNav").then(m => ({ default: m.BottomNav })));
@@ -140,42 +138,26 @@ function RootShell({ children }: { children: React.ReactNode }) {
   );
 }
 
-  function RootComponent() {
+ function RootComponent() {
   
   useContrastChecker();
   const router = useRouter();
   const [session, setSession] = useState<any>(null);
   const [authLoading, setAuthLoading] = useState(true);
-  const [hasInconsistency, setHasInconsistency] = useState(false);
-
-  const runValidation = useCallback(async () => {
-    try {
-      const result = await validateAgreement();
-      if (result.status !== 'ok') {
-        setHasInconsistency(true);
-      } else {
-        setHasInconsistency(false);
-      }
-    } catch (error) {
-      console.error("Global validation error:", error);
-    }
-  }, []);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setAuthLoading(false);
-      if (session) runValidation();
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       setAuthLoading(false);
-      if (session) runValidation();
     });
 
     return () => subscription.unsubscribe();
-  }, [runValidation]);
+  }, []);
 
   useEffect(() => {
     if (!authLoading) {
@@ -205,7 +187,6 @@ function RootShell({ children }: { children: React.ReactNode }) {
         "mx-auto min-h-screen bg-background pb-20",
         !isComparisonMode && "max-w-md"
       )}>
-        <InvoiceInconsistencyAlert hasInconsistency={hasInconsistency} onClose={() => setHasInconsistency(false)} />
         <Outlet />
         {!isComparisonMode && (
           <Suspense fallback={
