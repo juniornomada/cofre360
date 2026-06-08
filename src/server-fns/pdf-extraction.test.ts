@@ -7,7 +7,7 @@ async function extractPdfText(bytes: Uint8Array): Promise<string> {
   const pdfjsWorker: any = await import("pdfjs-dist/legacy/build/pdf.worker.mjs");
 
   if (pdfjs.GlobalWorkerOptions) {
-    pdfjs.GlobalWorkerOptions.workerSrc = pdfjsWorker;
+    (pdfjs.GlobalWorkerOptions as any).workerPort = pdfjsWorker;
   }
 
   const loadingTask = pdfjs.getDocument({
