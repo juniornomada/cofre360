@@ -649,11 +649,6 @@ function AccountsPage() {
           </div>
         </div>
         
-        <div className="flex items-center gap-1 shrink-0 self-end mb-0.5">
-          <button onClick={() => updateBalanceVisible(!balanceVisible)} className="interactive-button p-2 rounded-lg hover:bg-accent/50 text-muted-foreground">
-            {balanceVisible ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-          </button>
-        </div>
       </div>
 
       {/* Empty state */}
