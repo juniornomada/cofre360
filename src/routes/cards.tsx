@@ -279,7 +279,10 @@ function CardsPage() {
       if (txRes.data) {
         const totals: Record<string, number> = {};
         for (const tx of txRes.data) {
-          if (tx.card) totals[tx.card] = (totals[tx.card] || 0) + Number(tx.amount);
+          if (tx.card) {
+            const amount = Number(tx.amount);
+            totals[tx.card] = (totals[tx.card] || 0) + (tx.type === "income" ? -amount : amount);
+          }
         }
         setCardTotals(totals);
         setCardTransactions(txRes.data as CardTransaction[]);
