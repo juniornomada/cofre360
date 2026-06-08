@@ -15,36 +15,33 @@ type ParsedInvoiceTx = {
 type DocumentKind = "card_invoice" | "bank_statement";
 
 async function extractPdfText(base64: string): Promise<string> {
-  // Decode base64 → Uint8Array
-  let binary: string;
+  // Decode base64 → Uint8Array reliably across environments
+  let bytes: Uint8Array;
   try {
-    binary = atob(base64);
+    const binary = atob(base64);
+    bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
   } catch (e) {
-    // Fallback for environments where atob might not be global
-    binary = Buffer.from(base64, 'base64').toString('binary');
+    bytes = new Uint8Array(Buffer.from(base64, "base64"));
   }
-  
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
 
-  // Dynamic imports for PDF.js
-  const pdfjs: any = await import("pdfjs-dist/legacy/build/pdf.mjs");
+  // Dynamic import for PDF.js (standard build)
+  const pdfjs: any = await import("pdfjs-dist/build/pdf.mjs");
   
-  // Set workerSrc to a CDN URL as a reliable fallback for both browser and server
-  // This satisfies the "No GlobalWorkerOptions.workerSrc specified" check
+  // Set workerSrc to a non-empty string to satisfy the library's check.
+  // Since we use disableWorker: true, the "fake worker" (main thread) will be used,
+  // and no external script will actually be fetched.
   if (pdfjs.GlobalWorkerOptions) {
-    const version = pdfjs.version || "4.3.136";
-    pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${version}/pdf.worker.min.mjs`;
+    pdfjs.GlobalWorkerOptions.workerSrc = "nop";
   }
 
   const loadingTask = pdfjs.getDocument({
     data: bytes,
-    // disableWorker: true ensures we use the "fake worker" (runs in main thread)
-    // which is necessary in serverless/SSR environments where spawning real workers is restricted.
     disableWorker: true,
     isEvalSupported: false,
     useSystemFonts: false,
     disableFontFace: true,
+    verbosity: 0,
   });
   const doc = await loadingTask.promise;
 
