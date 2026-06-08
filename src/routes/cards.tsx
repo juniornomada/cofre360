@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { SmartLink as Link } from "@/components/SmartLink";
 import { ArrowLeft, Plus, CreditCard, Trash2, X, Check, Loader2, Wallet, Landmark, ChevronLeft, ChevronRight, Receipt, FileUp, GripVertical, Layers, Pencil, MoreVertical, Eye, EyeOff, Copy, AlertCircle, CheckCircle2, Info, Search, SlidersHorizontal, CalendarIcon, Trash, ChevronDown, ChevronUp } from "lucide-react";
+import { useUserPreferences } from "@/hooks/use-user-preferences";
 import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 
@@ -142,6 +143,7 @@ function SortableCardWrapper({ id, children, animationDelay }: { id: string; chi
    component: CardsPage,
  });
 function CardsPage() {
+  const { balanceVisible, updateBalanceVisible } = useUserPreferences();
   const [cards, setCards] = useState<CardData[]>([]);
   const [cardTotals, setCardTotals] = useState<Record<string, number>>({});
   const [cardPayments, setCardPayments] = useState<Record<string, number>>({});
@@ -846,13 +848,31 @@ function CardsPage() {
 
   return (
     <div className="animate-page-enter flex flex-col gap-5 px-4 pt-6 pb-24">
-      <div className="flex items-center gap-3">
-        <Link to="/" className="interactive-button flex h-9 w-9 items-center justify-center rounded-xl bg-card border border-border/50">
-          <ArrowLeft className="h-4 w-4 text-foreground" />
-        </Link>
-        <div className="flex-1">
-          <h1 className="text-xl font-bold text-foreground tracking-tight">Cartões</h1>
-          <p className="text-xs text-muted-foreground">{cards.length} {cards.length === 1 ? "cartão" : "cartões"} · Gerencie suas faturas</p>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Link to="/" className="interactive-button flex h-10 w-10 items-center justify-center rounded-full bg-card border border-border shadow-sm hover:bg-accent transition-all">
+            <ArrowLeft className="h-5 w-5 text-foreground" />
+          </Link>
+          <div className="flex-1">
+            <h1 className="text-xl font-bold text-foreground tracking-tight">Cartões</h1>
+            <p className="text-[10px] text-muted-foreground leading-none">{cards.length} {cards.length === 1 ? "cartão" : "cartões"}</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={() => updateBalanceVisible(!balanceVisible)} 
+            className="interactive-button flex h-10 w-10 items-center justify-center rounded-full bg-card border border-border shadow-sm hover:bg-accent transition-all"
+            title={balanceVisible ? "Ocultar saldos" : "Mostrar saldos"}
+          >
+            {balanceVisible ? <Eye className="h-5 w-5 text-muted-foreground" /> : <EyeOff className="h-5 w-5 text-muted-foreground" />}
+          </button>
+          <button 
+            onClick={openAddDialog} 
+            className="interactive-button flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground border border-primary/20 shadow-lg hover:brightness-110 transition-all"
+            title="Adicionar cartão"
+          >
+            <Plus className="h-5 w-5" />
+          </button>
         </div>
       </div>
 
@@ -1158,13 +1178,6 @@ function CardsPage() {
 
       </Tabs>
 
-      <button
-        onClick={openAddDialog}
-        className="interactive-button flex items-center justify-center gap-2 rounded-2xl bg-primary py-3 text-sm font-medium text-primary-foreground"
-      >
-        <Plus className="h-4 w-4" />
-        Adicionar cartão
-      </button>
 
       {/* Invoice Dialog */}
       <Dialog open={invoiceDialogOpen} onOpenChange={setInvoiceDialogOpen}>
