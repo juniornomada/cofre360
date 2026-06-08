@@ -1,130 +1,75 @@
 import { createServerFn } from "@tanstack/react-start";
-import { supabase } from "@/integrations/supabase/client";
 
-// Parse a credit-card invoice OR bank-account statement PDF using unpdf
-// (text extraction, edge-runtime friendly) and Lovable AI Gateway.
+// Parse a credit-card invoice OR bank-account statement PDF using pdfjs-dist
+// (text extraction) and Lovable AI Gateway (structured transaction extraction).
+//
+// Returns an array of { date: "YYYY-MM-DD", name: string, amount: number, type: "expense"|"income" }.
 
 type ParsedInvoiceTx = {
   date: string;
   name: string;
   amount: number;
-  original_amount_text?: string;
   type: "expense" | "income";
-  confidence_score?: number; // 0-100
 };
 
 type DocumentKind = "card_invoice" | "bank_statement";
 
-const ALLOWED_MODELS = [
-  "google/gemini-2.0-flash",
-  "google/gemini-2.5-flash",
-  "google/gemini-2.5-flash-image",
-  "google/gemini-2.5-flash-lite",
-  "google/gemini-2.5-pro",
-  "anthropic/claude-3-5-sonnet",
-  "openai/gpt-4o",
-  "openai/gpt-4o-mini"
-];
+async function extractPdfText(base64: string): Promise<string> {
+  // Decode base64 → Uint8Array
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
 
-function validateModel(model: string) {
-  if (!ALLOWED_MODELS.includes(model)) {
-    throw new Error(`Modelo de IA não suportado ou expirado: ${model}. Por favor, use um dos seguintes: ${ALLOWED_MODELS.join(", ")}`);
-  }
-}
-async function fetchAiWithFallback(payload: any, requestedModel: string): Promise<Response> {
-  const FALLBACK_MODEL = "google/gemini-2.5-flash";
-  const LOVABLE_API_KEY = process.env.LOVABLE_API_KEY;
+  // Dynamic import — pdfjs-dist legacy build is Worker-compatible (pure JS, no DOM)
+  const pdfjs: any = await import("pdfjs-dist/legacy/build/pdf.mjs");
+  // Disable the worker — we run on a single thread in the Worker runtime.
+  if (pdfjs.GlobalWorkerOptions) pdfjs.GlobalWorkerOptions.workerSrc = "";
 
-  if (!LOVABLE_API_KEY) {
-    throw new Error("LOVABLE_API_KEY ausente — não foi possível processar o PDF.");
-  }
+  const loadingTask = pdfjs.getDocument({
+    data: bytes,
+    disableWorker: true,
+    isEvalSupported: false,
+    useSystemFonts: false,
+    disableFontFace: true,
+  });
+  const doc = await loadingTask.promise;
 
-  const call = async (model: string) => {
-    validateModel(model);
-    return fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ ...payload, model }),
-    });
-  };
+  let full = "";
+  for (let p = 1; p <= doc.numPages; p++) {
+    const page = await doc.getPage(p);
+    const content = await page.getTextContent();
+    // Reassemble lines from text items by Y coordinate
+    const items = (content.items as any[])
+      .map((it) => ({
+        str: it.str as string,
+        x: it.transform[4] as number,
+        y: it.transform[5] as number,
+      }))
+      .filter((it) => it.str && it.str.trim());
 
-  let response;
-  try {
-    response = await call(requestedModel);
-  } catch (err: any) {
-    console.error(`Error calling AI model ${requestedModel}:`, err);
-    if (requestedModel !== FALLBACK_MODEL) {
-      console.warn(`Tentando fallback devido a erro de rede: ${FALLBACK_MODEL}`);
-      return await call(FALLBACK_MODEL);
+    // Group items by Y (rounded) to form lines, then sort by X
+    const linesMap = new Map<number, { x: number; str: string }[]>();
+    for (const it of items) {
+      const key = Math.round(it.y);
+      if (!linesMap.has(key)) linesMap.set(key, []);
+      linesMap.get(key)!.push({ x: it.x, str: it.str });
     }
-    throw err;
+    const sortedY = [...linesMap.keys()].sort((a, b) => b - a); // top → bottom
+    const pageLines = sortedY.map((y) =>
+      linesMap
+        .get(y)!
+        .sort((a, b) => a.x - b.x)
+        .map((i) => i.str)
+        .join(" ")
+        .replace(/\s+/g, " ")
+        .trim()
+    );
+    full += pageLines.join("\n") + "\n\n";
   }
-
-  // Se falhar com erro 400 e a mensagem contiver "model", ou se for 400 e o modelo for diferente do fallback
-  if (!response.ok && response.status === 400 && requestedModel !== FALLBACK_MODEL) {
-    try {
-      const clonedResponse = response.clone();
-      const errorBody = await clonedResponse.text();
-      if (errorBody.toLowerCase().includes("model")) {
-        console.warn(`Modelo ${requestedModel} indisponível. Tentando fallback: ${FALLBACK_MODEL}`);
-        return await call(FALLBACK_MODEL);
-      }
-    } catch (e) {
-      console.error("Error checking for fallback:", e);
-      // Fallback silencioso em caso de erro 400 genérico
-      return await call(FALLBACK_MODEL);
-    }
-  }
-
-  return response;
+  return full;
 }
 
-async function validateAndExtractPdfText(base64: string): Promise<string> {
-  const bytes = new Uint8Array(Buffer.from(base64, "base64"));
-
-  // unpdf works in Node/Bun/Workers without worker setup
-  const { extractText, getDocumentProxy } = await import("unpdf");
-  
-  let pdf;
-  try {
-    pdf = await getDocumentProxy(bytes);
-  } catch (err: any) {
-    if (err?.message?.includes("password") || err?.name === "PasswordException") {
-      throw new Error("Este PDF está protegido por senha. Remova a proteção antes de enviar.");
-    }
-    throw new Error("Não foi possível abrir o PDF. O arquivo pode estar corrompido ou ser inválido.");
-  }
-
-  if (pdf.numPages > 50) {
-    throw new Error(`Este PDF tem muitas páginas (${pdf.numPages}). O limite é de 50 páginas.`);
-  }
-
-  const { text } = await extractText(pdf, { mergePages: true });
-  return Array.isArray(text) ? text.join("\n\n") : text;
-}
-
-
-
-
-async function aiExtractTransactions(rawText: string, kind: DocumentKind, isRetry: boolean = false): Promise<ParsedInvoiceTx[]> {
-  const { data: { user } } = await supabase.auth.getUser();
-  let model = "google/gemini-2.5-flash";
-
-  if (user) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("gemini_model")
-      .eq("user_id", user.id)
-      .single();
-    
-    if (profile?.gemini_model) {
-      model = profile.gemini_model;
-    }
-  }
-
+async function aiExtractTransactions(rawText: string, kind: DocumentKind): Promise<ParsedInvoiceTx[]> {
   const LOVABLE_API_KEY = process.env.LOVABLE_API_KEY;
   if (!LOVABLE_API_KEY) {
     throw new Error("LOVABLE_API_KEY ausente — não foi possível processar o PDF.");
@@ -136,14 +81,10 @@ async function aiExtractTransactions(rawText: string, kind: DocumentKind, isRetr
   const cardPrompt = `Você recebe o texto bruto extraído de uma fatura de cartão de crédito brasileira. Extraia TODAS as transações (compras, parcelas, estornos, taxas) presentes na fatura.
 
 Regras:
-- "date" no formato YYYY-MM-DD.
-- IMPORTANTE: Se o PDF não contém o ANO em cada linha, procure por "Data de Emissão", "Vencimento" ou o período da fatura no cabeçalho para inferir o ano correto. Atualmente estamos em 2026.
-- Se a fatura é de Janeiro de 2026, lembre-se que compras feitas no final de Dezembro terão o ano 2025.
+- "date" no formato YYYY-MM-DD. Se faltar o ano no PDF, infira pelo período da fatura ou use o ano atual.
 - "name" é a descrição do estabelecimento/lançamento (limpo, sem códigos longos).
 - "amount" é número positivo em reais (sem R$, sem ponto de milhar; use ponto decimal).
-- "original_amount_text" é a string exata do valor como aparece no texto (ex: "1.234,56" ou "R$ 50,00").
 - "type": "expense" para compras/débitos. "income" para estornos, créditos, pagamentos recebidos.
-- "confidence_score": número de 0 a 100 indicando sua certeza sobre os dados extraídos desta linha.
 - Inclua parcelas individuais (se a linha indica "02/12" use isso no nome: "Loja X (2/12)").
 - Ignore: total da fatura, juros consolidados, saldo anterior, limites, pagamentos do cliente à fatura.
 - Se não houver transações claras, retorne lista vazia.`;
@@ -151,20 +92,15 @@ Regras:
   const bankPrompt = `Você recebe o texto bruto extraído de um EXTRATO BANCÁRIO brasileiro (conta corrente / poupança / digital). Extraia TODAS as movimentações (débitos e créditos) presentes no extrato.
 
 Regras:
-- "date" no formato YYYY-MM-DD.
-- IMPORTANTE: Se o PDF não contém o ANO em cada linha, procure por "Período", "Data de Emissão" ou datas no cabeçalho para inferir o ano correto. Atualmente estamos em 2026.
+- "date" no formato YYYY-MM-DD. Se faltar o ano no PDF, infira pelo período do extrato ou use o ano atual.
 - "name" é a descrição da movimentação limpa (ex.: "PIX recebido - João", "Compra débito - Padaria X", "Tarifa mensal", "Salário").
 - "amount" é número positivo em reais (sem R$, sem ponto de milhar; use ponto decimal — sempre positivo).
-- "original_amount_text" é a string exata do valor como aparece no texto original.
 - "type": "expense" para débitos/saídas/pagamentos/PIX enviado/compras. "income" para créditos/entradas/PIX recebido/depósitos/salário/rendimentos.
-- "confidence_score": número de 0 a 100 indicando sua certeza sobre os dados desta linha.
 - Ignore: saldo do dia, saldo anterior, saldo final, totais, cabeçalhos, limite de cheque especial.
 - Não duplique a mesma linha. Se houver "Detalhe" abaixo de uma linha, junte na descrição.
 - Se não houver movimentações claras, retorne lista vazia.`;
 
-  const retryPrompt = isRetry ? "\nATENÇÃO: A tentativa anterior falhou em encontrar dados. Por favor, analise o texto com cuidado extra, ignorando ruídos de formatação ou caracteres estranhos resultantes da extração do PDF." : "";
-  const prompt = `${kind === "bank_statement" ? bankPrompt : cardPrompt}${retryPrompt}
-
+  const prompt = `${kind === "bank_statement" ? bankPrompt : cardPrompt}
 
 Texto do PDF:
 """
@@ -175,47 +111,51 @@ ${trimmed}
     ? "Você é um parser preciso de extratos bancários brasileiros. Sempre retorne JSON válido."
     : "Você é um parser preciso de faturas de cartão de crédito brasileiras. Sempre retorne JSON válido.";
 
-  // O modelo já foi determinado no início da função via perfil do usuário
-  const response = await fetchAiWithFallback({
-    messages: [
-      { role: "system", content: systemMsg },
-      { role: "user", content: prompt },
-    ],
-    tools: [
-      {
-        type: "function",
-        function: {
-          name: "submit_transactions",
-          description: "Envia a lista de transações extraídas do PDF.",
-          parameters: {
-            type: "object",
-            properties: {
-              transactions: {
-                type: "array",
-                items: {
-                  type: "object",
-                  properties: {
-                    date: { type: "string", description: "YYYY-MM-DD" },
-                    name: { type: "string" },
-                    amount: { type: "number" },
-                    original_amount_text: { type: "string" },
-                    type: { type: "string", enum: ["expense", "income"] },
-                    confidence_score: { type: "number", minimum: 0, maximum: 100 },
+  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${LOVABLE_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "google/gemini-1.5-flash",
+      messages: [
+        { role: "system", content: systemMsg },
+        { role: "user", content: prompt },
+      ],
+      tools: [
+        {
+          type: "function",
+          function: {
+            name: "submit_transactions",
+            description: "Envia a lista de transações extraídas do PDF.",
+            parameters: {
+              type: "object",
+              properties: {
+                transactions: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      date: { type: "string", description: "YYYY-MM-DD" },
+                      name: { type: "string" },
+                      amount: { type: "number" },
+                      type: { type: "string", enum: ["expense", "income"] },
+                    },
+                    required: ["date", "name", "amount", "type"],
+                    additionalProperties: false,
                   },
-                  required: ["date", "name", "amount", "original_amount_text", "type", "confidence_score"],
-                  additionalProperties: false,
                 },
               },
+              required: ["transactions"],
+              additionalProperties: false,
             },
-            required: ["transactions"],
-            additionalProperties: false,
           },
         },
-      },
-    ],
-    tool_choice: { type: "function", function: { name: "submit_transactions" } },
-  }, model);
-
+      ],
+      tool_choice: { type: "function", function: { name: "submit_transactions" } },
+    }),
+  });
 
   if (!response.ok) {
     const body = await response.text();
@@ -251,94 +191,6 @@ ${trimmed}
   return txs;
 }
 
-export type ParsePdfResult = {
-  transactions: ParsedInvoiceTx[];
-  charsExtracted: number;
-  attempts: number;
-  rawPdfText: string;
-};
-
-export const aiRetrySingleTransaction = createServerFn({ method: "POST" })
-  .inputValidator((input: { rawText: string; transaction: ParsedInvoiceTx; kind: DocumentKind }) => {
-    if (!input || !input.rawText || !input.transaction) {
-      throw new Error("Dados ausentes para reprocessamento.");
-    }
-    return input;
-  })
-  .handler(async ({ data }) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    let model = "google/gemini-2.5-flash";
-
-    if (user) {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("gemini_model")
-        .eq("user_id", user.id)
-        .single();
-      
-      if (profile?.gemini_model) {
-        model = profile.gemini_model;
-      }
-    }
-
-    const LOVABLE_API_KEY = process.env.LOVABLE_API_KEY;
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY ausente.");
-
-    // Narrow down the context to help AI find the specific transaction
-    const prompt = `Você recebeu o texto de um documento financeiro e uma transação que foi extraída com baixa confiança.
-Sua tarefa é analisar o texto novamente e tentar extrair os dados CORRETOS para esta transação específica.
-
-Transação com dúvida:
-- Data original: ${data.transaction.date}
-- Nome original: ${data.transaction.name}
-- Valor original: ${data.transaction.amount} (Texto lido: ${data.transaction.original_amount_text})
-
-Texto do PDF:
-"""
-${data.rawText.slice(0, 15000)}
-"""
-
-Retorne apenas os dados corrigidos no formato JSON.`;
-
-    // O modelo já foi determinado via perfil do usuário
-    const response = await fetchAiWithFallback({
-      messages: [
-        { role: "system", content: "Você é um especialista em extração de dados financeiros. Retorne JSON válido via function call." },
-        { role: "user", content: prompt },
-      ],
-      tools: [
-        {
-          type: "function",
-          function: {
-            name: "submit_corrected_transaction",
-            parameters: {
-              type: "object",
-              properties: {
-                date: { type: "string" },
-                name: { type: "string" },
-                amount: { type: "number" },
-                type: { type: "string", enum: ["expense", "income"] },
-              },
-              required: ["date", "name", "amount", "type"],
-            },
-          },
-        },
-      ],
-      tool_choice: { type: "function", function: { name: "submit_corrected_transaction" } },
-    }, model);
-
-
-    if (!response.ok) throw new Error("Erro na chamada da IA.");
-    const result = await response.json();
-    const args = JSON.parse(result?.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments || "{}");
-    
-    return {
-      ...args,
-      confidence_score: 100,
-      original_amount_text: data.transaction.original_amount_text // Keep for reference
-    } as ParsedInvoiceTx;
-  });
-
 export const parseCardInvoicePdf = createServerFn({ method: "POST" })
   .inputValidator((input: { fileBase64: string; fileName: string; kind?: DocumentKind }) => {
     if (!input || typeof input.fileBase64 !== "string" || !input.fileBase64) {
@@ -349,47 +201,11 @@ export const parseCardInvoicePdf = createServerFn({ method: "POST" })
     }
     return { ...input, kind: input.kind ?? "card_invoice" as DocumentKind };
   })
-  .handler(async ({ data }): Promise<ParsePdfResult> => {
-    let text = "";
-    try {
-      text = await validateAndExtractPdfText(data.fileBase64);
-    } catch (err: any) {
-      console.error("PDF extraction error:", err);
-      throw err;
-    }
-
+  .handler(async ({ data }) => {
+    const text = await extractPdfText(data.fileBase64);
     if (!text || text.trim().length < 30) {
-      throw new Error("Não foi possível extrair texto deste PDF. Se for uma imagem ou escaneado, tente usar um PDF original gerado pelo banco.");
+      throw new Error("Não foi possível extrair texto deste PDF (talvez seja imagem escaneada).");
     }
-
-    let lastError = null;
-    const MAX_RETRIES = 2;
-    
-    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-      try {
-        const transactions = await aiExtractTransactions(text, data.kind, attempt > 0);
-        
-        if (transactions.length === 0) {
-          throw new Error("A IA não encontrou transações claras neste arquivo. Verifique se o layout do PDF é suportado.");
-        }
-        
-        return { transactions, charsExtracted: text.length, attempts: attempt + 1, rawPdfText: text };
-      } catch (err: any) {
-        lastError = err;
-        console.error(`Tentativa ${attempt + 1} de extração falhou:`, err);
-        
-        // Don't retry if it's a credit/auth error
-        if (err.message?.includes("LOVABLE_API_KEY") || err.message?.includes("Créditos")) {
-          throw err;
-        }
-        
-        // Wait a bit before retrying (exponential backoff)
-        if (attempt < MAX_RETRIES) {
-          await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
-        }
-      }
-    }
-
-    throw lastError || new Error("Falha na extração por IA após várias tentativas.");
+    const transactions = await aiExtractTransactions(text, data.kind);
+    return { transactions, charsExtracted: text.length };
   });
-

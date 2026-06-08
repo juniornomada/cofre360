@@ -11,13 +11,6 @@ export function useUserPreferences() {
     return true;
   });
 
-  const [geminiModel, setGeminiModel] = useState<string>(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("geminiModel") || "google/gemini-2.5-flash";
-    }
-    return "google/gemini-2.5-flash";
-  });
-
 
   const [loading, setLoading] = useState(true);
 
@@ -32,7 +25,7 @@ export function useUserPreferences() {
 
         let { data, error } = await supabase
           .from("profiles")
-          .select("balance_visible, gemini_model")
+          .select("balance_visible")
           .eq("user_id", user.id)
           .single();
 
@@ -52,11 +45,9 @@ export function useUserPreferences() {
 
         if (data) {
           setBalanceVisible(data.balance_visible ?? true);
-          setGeminiModel(data.gemini_model || "google/gemini-2.5-flash");
           
           // Sync to localStorage as a cache/fallback
           localStorage.setItem("balanceVisible", String(data.balance_visible));
-          localStorage.setItem("geminiModel", data.gemini_model || "google/gemini-2.5-flash");
         }
       } catch (error) {
         console.error("Error fetching preferences:", error);
@@ -88,33 +79,10 @@ export function useUserPreferences() {
     }
   };
 
-  const updateGeminiModel = async (model: string) => {
-    setGeminiModel(model);
-    localStorage.setItem("geminiModel", model);
-
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    try {
-      const { error } = await supabase
-        .from("profiles")
-        .update({ gemini_model: model })
-        .eq("user_id", user.id);
-
-      if (error) throw error;
-      toast.success("Modelo de IA atualizado");
-    } catch (error) {
-      console.error("Error updating gemini model:", error);
-      toast.error("Erro ao salvar modelo");
-    }
-  };
-
 
   return {
     balanceVisible,
-    geminiModel,
     loading,
     updateBalanceVisible,
-    updateGeminiModel,
   };
 }

@@ -14,18 +14,6 @@ interface ChatMessage {
 
 const SYSTEM_PROMPT = `Você é um assistente pessoal de finanças do app Cofre 360, especializado em ajudar o usuário a controlar suas finanças pessoais em português brasileiro.
 
-### FORMATO DE RESPOSTA OBRIGATÓRIO (NÃO USE JSON):
-Suas respostas devem ser SEMPRE em Markdown legível, seguindo esta estrutura:
-
-1. **Título Curto**: Use ### para um título que resuma a resposta.
-2. **Destaque de Valores**: Sempre use **negrito** para valores em R$ e categorias.
-3. **Listas**: Use listas para detalhar transações ou sugestões.
-4. **Resumo Visual**: Use tabelas Markdown se precisar comparar dados.
-5. **Tom**: Profissional, amigável e focado em insights financeiros.
-
-### ORIENTAÇÕES:
-
-
 Seu papel:
 - Analisar dados financeiros reais do usuário (receitas, despesas, categorias, cartões, contas, metas, orçamentos).
 - Dar dicas práticas, orientações claras e sugestões acionáveis de economia, organização e investimento.
@@ -55,28 +43,12 @@ const MONTH_NAMES_PT = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","J
 
 function parseTxDate(dateStr: string): Date | null {
   if (!dateStr) return null;
-  const t = dateStr.trim().toLowerCase();
-  
-  // dd/mm/yyyy ou dd/mm/yy
-  const numericMatch = t.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?$/);
-  if (numericMatch) {
-    const day = parseInt(numericMatch[1], 10);
-    const month = parseInt(numericMatch[2], 10) - 1;
-    const year = numericMatch[3] ? (numericMatch[3].length === 2 ? 2000 + parseInt(numericMatch[3], 10) : parseInt(numericMatch[3], 10)) : new Date().getFullYear();
-    return new Date(year, month, day);
-  }
-
-  // dd mmm (ex: 29 mai)
-  const parts = t.split(/\s+/);
-  if (parts.length >= 2) {
-    const day = parseInt(parts[0], 10);
-    const monthIdx = SHORT_MONTHS.indexOf(parts[1]);
-    if (!isNaN(day) && monthIdx >= 0) {
-      return new Date(new Date().getFullYear(), monthIdx, day);
-    }
-  }
-
-  return null;
+  const parts = dateStr.trim().toLowerCase().split(/\s+/);
+  if (parts.length < 2) return null;
+  const day = parseInt(parts[0], 10);
+  const monthIdx = SHORT_MONTHS.indexOf(parts[1]);
+  if (isNaN(day) || monthIdx < 0) return null;
+  return new Date(new Date().getFullYear(), monthIdx, day);
 }
 
 const normTxt = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
@@ -313,13 +285,13 @@ ${catLines || "(sem despesas no período)"}
 ${txLines || "(nenhuma transação encontrada)"}`;
 }
 
-async function buildFinancialContext(supabase: any, userId: string, periodHint?: string): Promise<string> {
+async function buildFinancialContext(supabase: any, periodHint?: string): Promise<string> {
   const [txRes, accRes, cardsRes, goalsRes, budgetsRes] = await Promise.all([
-    supabase.from("transactions").select("*").eq("user_id", userId),
-    supabase.from("bank_accounts").select("*").eq("user_id", userId),
-    supabase.from("cards").select("*").eq("user_id", userId),
-    supabase.from("goals").select("*").eq("user_id", userId),
-    supabase.from("budget_categories").select("*").eq("user_id", userId),
+    supabase.from("transactions").select("*"),
+    supabase.from("bank_accounts").select("*"),
+    supabase.from("cards").select("*"),
+    supabase.from("goals").select("*"),
+    supabase.from("budget_categories").select("*"),
   ]);
 
   const transactions = (txRes.data || []) as any[];
@@ -458,7 +430,7 @@ ${recent}`;
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "google/gemini-2.0-flash",
+        model: "google/gemini-2.5-flash",
         messages: [{ role: "user", content: prompt }],
         response_format: { type: "json_object" },
       }),
@@ -481,28 +453,10 @@ serve(async (req) => {
   try {
     const url = new URL(req.url);
     const mode = url.searchParams.get("mode");
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: "No authorization header" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
     const { messages } = (await req.json()) as { messages: ChatMessage[] };
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
-    const SUPABASE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-
-    const supabase = createClient(SUPABASE_URL!, SUPABASE_KEY!);
-    const { data: { user }, error: authError } = await supabase.auth.getUser(authHeader.replace("Bearer ", ""));
-
-    if (authError || !user) {
-      return new Response(JSON.stringify({ error: "Invalid token" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    const SUPABASE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? Deno.env.get("SUPABASE_ANON_KEY");
 
     if (!LOVABLE_API_KEY) {
       return new Response(JSON.stringify({ error: "LOVABLE_API_KEY não configurada" }), {
@@ -518,8 +472,9 @@ serve(async (req) => {
       });
     }
 
+    const supabase = createClient(SUPABASE_URL!, SUPABASE_KEY!);
     const lastUser = [...messages].reverse().find((m) => m.role === "user")?.content ?? "";
-    const context = await buildFinancialContext(supabase, user.id, lastUser);
+    const context = await buildFinancialContext(supabase, lastUser);
 
     const fullSystem = `${SYSTEM_PROMPT}
 
@@ -541,7 +496,7 @@ ${context}`;
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.0-flash",
+        model: "google/gemini-2.5-flash",
         messages: [{ role: "system", content: fullSystem }, ...messages],
         stream: true,
       }),

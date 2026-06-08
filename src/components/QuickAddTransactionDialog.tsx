@@ -280,13 +280,13 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
             icon: "🔄", name: newTx.name.trim() || `Transferência → ${toName}`, category: "Transferências > Outros",
             date: newTx.date, amount: newTx.amount, type: "expense",
             card: null, bank_account_id: transferFromId, installment_group_id: groupId,
-            is_visible: true, user_id: (await supabase.auth.getUser()).data.user?.id
+            is_visible: true
           },
           {
             icon: "🔄", name: newTx.name.trim() || `Transferência ← ${fromName}`, category: "Transferências > Outros",
             date: newTx.date, amount: newTx.amount, type: "income",
             card: null, bank_account_id: transferToId, installment_group_id: groupId,
-            is_visible: true, user_id: (await supabase.auth.getUser()).data.user?.id
+            is_visible: true
           },
         ]).select();
 
@@ -356,8 +356,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
           installment_group_id: groupId,
           installment_mode: installmentMode,
           installment_source_amount: newTx.amount,
-          is_visible: true,
-          user_id: (await supabase.auth.getUser()).data.user?.id
+          is_visible: true
         });
        }
        const { error } = await supabase.from("transactions").insert(rows);
@@ -367,7 +366,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
          icon: newTx.icon, name: newTx.name, category: newTx.category,
          date: newTx.date, amount: newTx.amount, type: newTx.type,
          card: cardValue, bank_account_id: newTx.bank_account_id || null,
-         is_visible: true, user_id: (await supabase.auth.getUser()).data.user?.id
+         is_visible: true
        });
        if (error) throw error;
      }
@@ -390,12 +389,11 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
         <DialogHeader className="space-y-0 pr-6">
           <div className="flex items-center gap-1.5">
             <DialogTitle className="text-sm whitespace-nowrap shrink-0">Nova</DialogTitle>
-            <div className="flex flex-1 gap-1 min-w-0" role="group" aria-label="Tipo de transação">
+            <div className="flex flex-1 gap-1 min-w-0">
               <button
                 type="button"
                 onClick={() => { setIsTransfer(false); setNewTx({ ...newTx, type: "expense", category: "Alimentação > Outros", icon: "🍔" }); }}
                 className={`flex-1 min-w-0 rounded-lg py-1 text-[10px] font-medium transition-colors ${!isTransfer && newTx.type === "expense" ? "bg-destructive text-destructive-foreground" : "bg-card text-muted-foreground"}`}
-                aria-pressed={!isTransfer && newTx.type === "expense"}
               >
                 Despesa
               </button>
@@ -403,7 +401,6 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                 type="button"
                 onClick={() => { setIsTransfer(false); setNewTx({ ...newTx, type: "income", category: "Receita > Salário", icon: "💰" }); }}
                 className={`flex-1 min-w-0 rounded-lg py-1 text-[10px] font-medium transition-colors ${!isTransfer && newTx.type === "income" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground"}`}
-                aria-pressed={!isTransfer && newTx.type === "income"}
               >
                 Receita
               </button>
@@ -411,7 +408,6 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                 type="button"
                 onClick={() => { setIsTransfer(true); }}
                 className={`flex-1 min-w-0 rounded-lg py-1 text-[10px] font-medium transition-colors flex items-center justify-center gap-0.5 ${isTransfer ? "bg-blue-500 text-white" : "bg-card text-muted-foreground"}`}
-                aria-pressed={isTransfer}
               >
                 <ArrowLeftRight className="h-2.5 w-2.5 shrink-0" />
                 <span className="truncate">Transferir</span>

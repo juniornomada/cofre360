@@ -8,24 +8,16 @@ import { format, parse, isYesterday, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { isTodayLocal } from "@/lib/date-utils";
 import { cn } from "@/lib/utils";
-const Dialog = lazy(() => import("@/components/ui/dialog").then(m => ({ default: m.Dialog })));
-const DialogContent = lazy(() => import("@/components/ui/dialog").then(m => ({ default: m.DialogContent })));
-const DialogHeader = lazy(() => import("@/components/ui/dialog").then(m => ({ default: m.DialogHeader })));
-const DialogTitle = lazy(() => import("@/components/ui/dialog").then(m => ({ default: m.DialogTitle })));
-const DialogFooter = lazy(() => import("@/components/ui/dialog").then(m => ({ default: m.DialogFooter })));
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-const Calendar = lazy(() => import("@/components/ui/calendar").then(m => ({ default: m.Calendar })));
-const Popover = lazy(() => import("@/components/ui/popover").then(m => ({ default: m.Popover })));
-const PopoverContent = lazy(() => import("@/components/ui/popover").then(m => ({ default: m.PopoverContent })));
-const PopoverTrigger = lazy(() => import("@/components/ui/popover").then(m => ({ default: m.PopoverTrigger })));
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { supabase } from "@/integrations/supabase/client";
 import { parseCategoryValue, getCategoryIcon } from "@/lib/categories";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { BankLogo } from "@/components/BankLogo";
 import { EmptyState } from "@/components/EmptyState";
 import { SmartLink as Link } from "@/components/SmartLink";
-import { AISettingsDialog } from "@/components/AISettingsDialog";
 import {
   DndContext,
   closestCenter,
@@ -47,7 +39,7 @@ import { CSS } from "@dnd-kit/utilities";
 
 const CategoryPicker = lazy(() => import("@/components/CategoryPicker").then(m => ({ default: m.CategoryPicker })));
 const QuickAddTransactionDialog = lazy(() => import("@/components/QuickAddTransactionDialog").then(m => ({ default: m.QuickAddTransactionDialog })));
-const CalculatorAmountInput = lazy(() => import("@/components/CalculatorAmountInput").then(m => ({ default: m.CalculatorAmountInput })));
+import { CalculatorAmountInput } from "@/components/CalculatorAmountInput";
 
 import type { QuickAddInitialType } from "@/components/QuickAddTransactionDialog";
 import { saveInstallmentPlan, stripInstallmentSuffix } from "@/lib/installment-edit";
@@ -114,7 +106,6 @@ function parseTxDateToDate(dateStr: string): Date | null {
 
 function getGreeting(): string {
   const h = new Date().getHours();
-  if (h < 5) return "Boa madrugada";
   if (h < 12) return "Bom dia";
   if (h < 18) return "Boa tarde";
   return "Boa noite";
@@ -138,34 +129,30 @@ function SortableAccountItem({ acc, balanceVisible, fmt }: { acc: any; balanceVi
       {...listeners}
       className={cn(
         "relative select-none",
-        isDragging && "ring-2 ring-primary/50 ring-offset-2 ring-offset-background rounded-2xl shadow-2xl scale-[1.01] z-50",
+        isDragging && "ring-2 ring-primary ring-offset-2 ring-offset-background rounded-xl shadow-2xl scale-[1.01] z-50",
       )}
     >
-      <Link
-        to="/accounts"
-        search={{ action: undefined } as any}
-        className="flex items-center gap-3 rounded-xl bg-card/20 backdrop-blur-3xl border border-white/[0.03] px-3 py-1.5 hover:bg-card/40 transition-all duration-500 overflow-hidden shadow-sm hover:shadow-md hover:border-white/[0.08]"
-      >
-        <div className="shrink-0">
-          <BankLogo icon={acc.icon} color={acc.color} name={acc.name} size="sm" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-[10.5px] font-bold text-foreground/90 truncate tracking-tight">{acc.name}</p>
-        </div>
-        <div className="text-right shrink-0">
-          <p className={cn(
-            "text-[11px] font-extrabold tabular-nums tracking-tighter transition-all duration-500",
-            acc.balance >= 0 ? "text-foreground" : "text-destructive"
-          )}>
-            {balanceVisible ? `R$ ${fmt(acc.balance)}` : "R$ ••••"}
-          </p>
-        </div>
-      </Link>
+      <div className="flex flex-1 items-center gap-2 overflow-hidden">
+        <Link
+          to="/accounts"
+          search={{ action: undefined } as any}
+          className="flex-1 flex items-center gap-2.5 rounded-xl bg-background/40 px-2.5 py-1.5 hover:bg-background/60 transition-colors overflow-hidden"
+        >
+        <BankLogo icon={acc.icon} color={acc.color} name={acc.name} size="sm" />
+        <p className="text-xs font-medium text-foreground flex-1 min-w-0 truncate">{acc.name}</p>
+        <p className={cn(
+          "text-xs font-bold tabular-nums",
+          acc.balance >= 0 ? "text-foreground" : "text-destructive"
+        )}>
+          {balanceVisible ? `R$ ${fmt(acc.balance)}` : "R$ ••••"}
+        </p>
+        </Link>
+      </div>
       {isDragging && (
-        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-black/5 backdrop-blur-[1px] rounded-3xl animate-fade-in">
-          <div className="flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1.5 text-[10px] font-bold text-gray-900 shadow-xl ring-1 ring-primary/30">
-            <GripVertical className="h-3.5 w-3.5" />
-            Reposicionar
+        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-black/5 backdrop-blur-[0.5px] rounded-xl animate-fade-in">
+          <div className="flex items-center gap-1.5 rounded-full bg-white/95 px-2 py-1 text-[10px] font-bold text-gray-900 shadow-lg ring-1 ring-primary">
+            <GripVertical className="h-3 w-3" />
+            Mover
           </div>
         </div>
       )}
@@ -327,16 +314,16 @@ export function Dashboard() {
       cardsRes,
       remsRes,
       glsRes,
-      allCardsTxRes,
+      txRes,
       paymentsRes,
     ] = await Promise.all([
       supabase.from("transactions").select(TX_FIELDS).eq("user_id", session.user.id).order("created_at", { ascending: false }).limit(20),
-      supabase.from("transactions").select("type, amount, date, card, bank_account_id, category, is_visible").eq("user_id", session.user.id),
+      supabase.from("transactions").select("type, amount, date, card, bank_account_id, category").eq("user_id", session.user.id),
       supabase.from("bank_accounts").select("id, name, icon, color, balance, is_visible, sort_order").eq("user_id", session.user.id).order("sort_order", { ascending: true }).order("created_at", { ascending: true }),
       supabase.from("cards").select("id, name, emoji, color, is_visible, closing_day, due_day").eq("user_id", session.user.id).order("sort_order", { ascending: true }).order("created_at", { ascending: true }),
       supabase.from("reminders").select("id, title, icon, due_date, amount, type, bank_account_id, card_id").eq("user_id", session.user.id).eq("is_completed", false).order("due_date", { ascending: true }).limit(3),
       supabase.from("goals").select("id, name, icon, current_amount, target_amount").eq("user_id", session.user.id),
-      supabase.from("transactions").select("card, amount, date").eq("user_id", session.user.id).not("card", "is", null),
+      supabase.from("transactions").select("card, amount, date, created_at").eq("user_id", session.user.id).not("card", "is", null),
       supabase.from("card_payments").select("card_id, amount, paid_at").eq("user_id", session.user.id),
     ]);
 
@@ -346,8 +333,6 @@ export function Dashboard() {
     if (cardsRes.error) throw cardsRes.error;
     if (remsRes.error) throw remsRes.error;
     if (glsRes.error) throw glsRes.error;
-    if (allCardsTxRes.error) throw allCardsTxRes.error;
-    if (paymentsRes.error) throw paymentsRes.error;
 
     const rawRecent = rawRecentRes.data;
     const allTx = allTxRes.data;
@@ -355,7 +340,7 @@ export function Dashboard() {
     const cards = cardsRes.data;
     const rems = remsRes.data;
     const gls = glsRes.data;
-    const txTotals = allCardsTxRes.data;
+    const txTotals = txRes.data;
     const payments = paymentsRes.data;
 
     setCardOptions(["Nenhum", ...((cards || []).map((c: any) => c.name))]);
@@ -879,159 +864,171 @@ export function Dashboard() {
   }, [accountBalances]);
 
   return (
-    <div className="grid-standard">
+    <div className="animate-page-enter flex flex-col gap-5 px-4 pt-5 pb-24">
       {/* Header */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex flex-col">
-          <h1 className="text-2xl font-black tracking-tighter premium-gradient-text uppercase leading-none">
-            Cofre 360
-          </h1>
-          <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mt-1">
-            {greeting}, {userEmail?.split('@')[0]}
-          </p>
+      <div className="flex items-center justify-between">
+        <div className="flex flex-col items-center">
+          <div
+            className="flex flex-col leading-none select-none rounded-xl border px-3 py-1.5 mb-1"
+            style={{
+              borderColor: "hsl(142 95% 55%)",
+              boxShadow:
+                "0 0 10px hsl(142 95% 55% / 0.9), 0 0 20px hsl(142 95% 55% / 0.6), inset 0 0 6px hsl(142 95% 55% / 0.35)",
+            }}
+          >
+            <span className="text-xl font-extrabold tracking-tight text-primary dark:text-[hsl(142_95%_62%)] dark:[text-shadow:0_0_10px_hsl(142_95%_55%/0.85),0_0_20px_hsl(142_95%_55%/0.55)]">
+              cofre <span className="text-primary/80 dark:text-[hsl(142_95%_70%)]">360</span>
+            </span>
+            <span className="mt-0.5 text-[10px] font-medium tracking-wide text-primary/70 dark:text-[hsl(142_90%_68%)] dark:[text-shadow:0_0_6px_hsl(142_95%_55%/0.65)]">
+              Seu dinheiro. Seu controle.
+            </span>
+          </div>
+          {userEmail && (
+            <span className="text-[10px] text-muted-foreground px-1 truncate max-w-[150px] text-center w-full">
+              {userEmail}
+            </span>
+          )}
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="flex -space-x-1">
-            <Link
-              to="/reminders"
-              className="interactive-button relative flex h-9 w-9 items-center justify-center rounded-2xl bg-card/40 border border-white/[0.05] shadow-sm hover:bg-card/60 transition-all"
-            >
-              <Bell className="h-4 w-4 text-muted-foreground" />
-              {pendingReminders.length > 0 && (
-                <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[8px] font-black text-primary-foreground animate-pulse shadow-[0_0_8px_oklch(from_var(--color-primary)_l_c_h)]">
-                  {pendingReminders.length}
-                </span>
-              )}
-            </Link>
+          <button
+            onClick={handleLogout}
+            className="interactive-button flex h-10 w-10 items-center justify-center rounded-full bg-card border"
+            style={{
+              borderColor: "hsl(142 95% 55%)",
+              boxShadow:
+                "0 0 10px hsl(142 95% 55% / 0.9), 0 0 20px hsl(142 95% 55% / 0.6), inset 0 0 6px hsl(142 95% 55% / 0.35)",
+            }}
+            title="Sair"
+          >
+            <LogOut className="h-5 w-5 text-muted-foreground" />
+          </button>
+          <Link
+
+            to="/reminders"
+            className="interactive-button relative flex h-10 w-10 items-center justify-center rounded-full bg-card border"
+            style={{
+              borderColor: "hsl(142 95% 55%)",
+              boxShadow:
+                "0 0 10px hsl(142 95% 55% / 0.9), 0 0 20px hsl(142 95% 55% / 0.6), inset 0 0 6px hsl(142 95% 55% / 0.35)",
+            }}
+          >
+            <Bell className="h-5 w-5 text-muted-foreground" />
+            {pendingReminders.length > 0 && (
+              <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[9px] font-bold text-destructive-foreground">
+                {pendingReminders.length}
+              </span>
+            )}
+          </Link>
+          <div
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-card border"
+            style={{
+              borderColor: "hsl(142 95% 55%)",
+              boxShadow:
+                "0 0 10px hsl(142 95% 55% / 0.9), 0 0 20px hsl(142 95% 55% / 0.6), inset 0 0 6px hsl(142 95% 55% / 0.35)",
+            }}
+          >
+            <ThemeToggle />
           </div>
-          
           <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
             <PopoverTrigger asChild>
               <button
                 aria-label="Adicionar transação"
-                className="interactive-button flex h-10 w-10 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-[0_0_20px_oklch(from_var(--color-primary)_l_c_h_/_0.3)] transition-all"
+                className="interactive-button flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground border"
+                style={{
+                  borderColor: "hsl(142 95% 55%)",
+                  boxShadow:
+                    "0 0 10px hsl(142 95% 55% / 0.9), 0 0 20px hsl(142 95% 55% / 0.6), inset 0 0 6px hsl(142 95% 55% / 0.35)",
+                }}
               >
-                <Plus className="h-5 w-5 stroke-[2.5]" />
+                <Plus className="h-5 w-5" />
               </button>
             </PopoverTrigger>
-            <PopoverContent align="end" className="w-48 p-2 rounded-3xl bg-card/80 backdrop-blur-2xl border-white/[0.05]">
-              <div className="flex flex-col gap-1.5">
+            <PopoverContent align="end" className="w-44 p-2">
+              <div className="flex flex-col gap-1">
                 <button
                   type="button"
                   onClick={() => openQuickAdd("expense")}
-                  className="flex items-center gap-3 rounded-2xl px-3 py-2.5 text-xs font-bold hover:bg-destructive/10 text-foreground transition-all group"
+                  className="flex items-center gap-2 rounded-md px-2 py-2 text-sm hover:bg-accent text-left"
                 >
-                  <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-destructive/15 text-destructive group-hover:scale-110 transition-transform">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-destructive/15 text-destructive">
                     <Minus className="h-4 w-4" />
                   </span>
-                  Lançar Despesa
+                  Despesa
                 </button>
                 <button
                   type="button"
                   onClick={() => openQuickAdd("income")}
-                  className="flex items-center gap-3 rounded-2xl px-3 py-2.5 text-xs font-bold hover:bg-primary/10 text-foreground transition-all group"
+                  className="flex items-center gap-2 rounded-md px-2 py-2 text-sm hover:bg-accent text-left"
                 >
-                  <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/15 text-primary group-hover:scale-110 transition-transform">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/15 text-primary">
                     <Plus className="h-4 w-4" />
                   </span>
-                  Lançar Receita
+                  Receita
                 </button>
-                <button
-                  type="button"
-                  onClick={() => openQuickAdd("transfer")}
-                  className="flex items-center gap-3 rounded-2xl px-3 py-2.5 text-xs font-bold hover:bg-blue-500/10 text-foreground transition-all group"
-                >
-                  <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-500/15 text-blue-500 group-hover:scale-110 transition-transform">
-                    <ArrowLeftRight className="h-4 w-4" />
-                  </span>
-                  Transferência
-                </button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      onClick={() => openQuickAdd("transfer")}
+                      className="flex items-center gap-2 rounded-md px-2 py-2 text-sm hover:bg-accent text-left w-full group"
+                    >
+                      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-500/15 text-blue-500 group-hover:bg-blue-500/25 transition-colors">
+                        <ArrowLeftRight className="h-4 w-4" />
+                      </span>
+                      Transf
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" align="center" sideOffset={10}>
+                    Transferência
+                  </TooltipContent>
+                </Tooltip>
               </div>
-            </PopoverContent>
-          </Popover>
-          
-          <Popover>
-            <PopoverTrigger asChild>
-              <button className="interactive-button flex h-9 w-9 items-center justify-center rounded-2xl bg-card/40 border border-white/[0.05] shadow-sm hover:bg-card/60 transition-all">
-                <div className="h-6 w-6 rounded-full bg-gradient-to-br from-primary/20 to-primary/40 flex items-center justify-center text-[10px] font-black text-primary">
-                  {userEmail?.[0].toUpperCase()}
-                </div>
-              </button>
-            </PopoverTrigger>
-            <PopoverContent align="end" className="w-56 p-2 rounded-3xl bg-card/80 backdrop-blur-2xl border-white/[0.05]">
-               <div className="px-3 py-2 mb-2 border-b border-white/[0.05]">
-                 <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Sua Conta</p>
-                 <p className="text-xs font-semibold truncate mt-1">{userEmail}</p>
-               </div>
-               <div className="flex flex-col gap-1">
-                 <div className="flex items-center justify-between px-3 py-2 text-xs font-bold">
-                   <span>Tema do App</span>
-                   <ThemeToggle />
-                 </div>
-                 <button 
-                   onClick={() => {/* open settings */}}
-                   className="flex items-center gap-3 rounded-2xl px-3 py-2 text-xs font-bold hover:bg-white/5 text-foreground transition-all"
-                 >
-                   <AISettingsDialog />
-                 </button>
-                 <button
-                   onClick={handleLogout}
-                   className="flex items-center gap-3 rounded-2xl px-3 py-2 text-xs font-bold hover:bg-destructive/10 text-destructive transition-all mt-2"
-                 >
-                   <LogOut className="h-4 w-4" />
-                   Sair do Sistema
-                 </button>
-               </div>
             </PopoverContent>
           </Popover>
         </div>
       </div>
 
-      {/* Balance Card — premium look */}
-      <div className="glass-card p-5 relative overflow-hidden group border-white/[0.03]">
-        <div className="absolute top-0 right-0 w-48 h-48 bg-primary/10 blur-[100px] rounded-full -mr-24 -mt-24 transition-all duration-1000 group-hover:bg-primary/20" />
-        
-        <div className="flex items-end justify-between gap-4 mb-4">
-          <div className="flex flex-col">
-            <h2 className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-2 opacity-80">
+      {/* Balance Card — refined with health score + daily available */}
+      <div className="rounded-2xl bg-gradient-to-br from-primary/15 via-card to-card p-5 border border-border/40">
+        <div className="flex items-center justify-between gap-4 mb-2">
+          <div className="flex flex-col min-w-0">
+            <h2 className="text-sm font-semibold text-foreground flex items-center gap-1.5 uppercase">
+              <Landmark className="h-4 w-4 text-primary" />
               CONTAS
             </h2>
-            <div className="flex items-center gap-2">
-              <p className={cn(
-                "text-xl font-black tabular-nums tracking-tight transition-all duration-500",
-                balance >= 0 ? "text-foreground" : "text-destructive"
+            <p className={cn(
+              "text-2xl font-bold tabular-nums transition-all duration-300 truncate",
+              balance >= 0 ? "text-foreground" : "text-destructive"
+            )}>
+              {balanceVisible ? `R$ ${fmt(balance)}` : "R$ ••••••"}
+            </p>
+          </div>
+          
+          <div className="flex items-center gap-2 shrink-0 self-end mb-0.5">
+            {healthScore !== null && balanceVisible && healthScore >= 40 && (
+              <div className={cn(
+                "hidden sm:flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold",
+                healthScore >= 80 ? "bg-primary/15 text-primary" :
+                healthScore >= 60 ? "bg-blue-500/15 text-blue-400" :
+                "bg-amber-500/15 text-amber-400"
               )}>
-                {balanceVisible ? `R$ ${fmt(balance)}` : "R$ ••••••"}
-              </p>
-              <button 
-                onClick={() => updateBalanceVisible(!balanceVisible)} 
-                className="interactive-button p-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-muted-foreground transition-all"
-                aria-label={balanceVisible ? "Ocultar saldos" : "Mostrar saldos"}
-              >
+                {healthScore >= 80 ? "Saudável" : healthScore >= 60 ? "Estável" : "Atenção"}
+              </div>
+            )}
+            <div className="flex items-center gap-1">
+              <button onClick={() => updateBalanceVisible(!balanceVisible)} className="interactive-button p-1.5 rounded-lg hover:bg-accent/50 text-muted-foreground">
                 {balanceVisible ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
               </button>
             </div>
           </div>
-          
-          {healthScore !== null && balanceVisible && (
-            <div className={cn(
-              "flex items-center gap-2 rounded-2xl px-3 py-1.5 text-[10px] font-black uppercase tracking-wider shadow-lg",
-              healthScore >= 80 ? "bg-primary/10 text-primary border border-primary/20" :
-              healthScore >= 60 ? "bg-blue-500/10 text-blue-400 border border-blue-500/20" :
-              "bg-amber-500/10 text-amber-400 border border-amber-500/20"
-            )}>
-              <Flame className="h-3 w-3" />
-              Score {healthScore}
-            </div>
-          )}
         </div>
 
-        {/* Per-account balances with refined spacing */}
+        {/* Per-account balances */}
         {displayAccounts.length > 0 && (
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
             <SortableContext items={displayAccounts.map((a) => a.id)} strategy={verticalListSortingStrategy}>
-              <div className="flex flex-col gap-1">
+              <div className="mt-3 flex flex-col gap-1">
                 {displayAccounts.map((acc) => (
                   <SortableAccountItem key={acc.id} acc={acc} balanceVisible={balanceVisible} fmt={fmt} />
                 ))}
@@ -1040,49 +1037,61 @@ export function Dashboard() {
           </DndContext>
         )}
 
-        <div className="mt-3 pt-3 border-t border-white/[0.05] grid grid-cols-2 gap-3">
-          <div className="flex flex-col">
-            <span className="text-[8px] font-black text-muted-foreground uppercase tracking-widest mb-0.5 opacity-70">Mês Inicial</span>
-            <span className="text-[10px] font-bold tabular-nums text-foreground/60">
+        {/* Saldo inicial do mês + previsão fim do mês — moved to bottom */}
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <div className="rounded-xl bg-background/40 px-3 py-2 flex flex-col justify-between min-h-[58px]">
+            <p className="text-[10px] text-muted-foreground leading-none mb-1 flex items-center gap-1.5 min-h-[18px]">
+              Saldo inicial do mês
+            </p>
+            <p className={cn(
+              "text-sm font-semibold tabular-nums",
+              monthInitialBalance >= 0 ? "text-muted-foreground" : "text-destructive"
+            )}>
               {balanceVisible ? `R$ ${fmt(monthInitialBalance)}` : "R$ ••••"}
-            </span>
+            </p>
           </div>
           <Link
             to="/insights"
             search={{
-              ask: `Análise de saldo previsto: R$ ${fmt(forecastBalance)}.`,
+              ask: `Olha meu saldo previsto para o fim do mês: R$ ${fmt(forecastBalance)} (saldo atual R$ ${fmt(balance)}). Considerando minhas receitas e despesas previstas, parcelas futuras e lembretes pendentes, esse saldo está saudável? Aponte os 3 maiores riscos do mês, sugira ajustes específicos por categoria (ex.: reduzir alimentação, evitar gastos aleatórios) com valores em R$, e diga se algum orçamento já está estourado ou prestes a estourar. Foque em ações práticas para manter ou melhorar esse saldo previsto.`,
             } as any}
-            className="flex flex-col items-end group/link"
+            className="interactive-card rounded-xl bg-background/40 px-3 py-2 hover:bg-background/60 transition-colors text-left flex flex-col justify-between min-h-[58px]"
           >
-            <span className="text-[8px] font-black text-primary uppercase tracking-widest mb-0.5 flex items-center gap-1 opacity-90">
-              Previsão <Sparkles className="h-2 w-2" />
-            </span>
-            <span className={cn(
-              "text-[10px] font-bold tabular-nums transition-colors group-hover/link:text-primary",
-              forecastBalance >= 0 ? "text-foreground/60" : "text-destructive"
+            <p className="text-[10px] text-muted-foreground leading-none mb-1 flex items-center gap-1.5 min-h-[18px]">
+              Previsto fim do mês
+              <span
+                className="inline-flex items-center justify-center rounded-full p-1 bg-background"
+                style={{
+                  border: "1px solid hsl(142 95% 55%)",
+                  boxShadow:
+                    "0 0 6px hsl(142 95% 55% / 0.7), 0 0 12px hsl(142 95% 55% / 0.4), inset 0 0 4px hsl(142 95% 55% / 0.3)",
+                }}
+              >
+                <Sparkles className="h-2.5 w-2.5" style={{ color: "hsl(142 95% 55%)" }} />
+              </span>
+            </p>
+            <p className={cn(
+              "text-sm font-semibold tabular-nums",
+              forecastBalance >= 0 ? "text-muted-foreground" : "text-destructive"
             )}>
               {balanceVisible ? `R$ ${fmt(forecastBalance)}` : "R$ ••••"}
-            </span>
+            </p>
           </Link>
         </div>
+
       </div>
 
 
 
       {/* Credit Cards Summary */}
-      <div className="rounded-3xl bg-gradient-to-br from-primary/5 via-card to-card p-4 border border-white/[0.05] shadow-xl relative overflow-hidden">
-        <div className="absolute bottom-0 left-0 w-24 h-24 bg-primary/5 blur-3xl rounded-full -ml-12 -mb-12" />
+      <div className="rounded-2xl bg-gradient-to-br from-primary/15 via-card to-card p-5 border border-border/40">
         <div className="flex items-center justify-between gap-4 mb-2">
           <h2 className="text-sm font-semibold text-foreground flex items-center gap-1.5 uppercase">
             <CreditCard className="h-4 w-4 text-primary" />
             CARTÕES
           </h2>
 
-          <Link 
-            to="/cards" 
-            className="text-[10px] font-medium text-primary flex items-center gap-0.5 focus-visible:ring-2 focus-visible:ring-primary rounded-md px-1"
-            aria-label="Ir para gerenciamento de cartões"
-          >
+          <Link to="/cards" className="text-[10px] font-medium text-primary flex items-center gap-0.5">
             Gerenciar <ChevronRight className="h-3 w-3" />
           </Link>
         </div>
@@ -1160,26 +1169,17 @@ export function Dashboard() {
         )}
       </div>
 
-      {/* Recent Transactions — premium list */}
-      <div className="space-y-4">
-        <div className="flex items-end justify-between px-2">
-          <div className="flex flex-col">
-            <h2 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Atividade Recente</h2>
-            <div className="h-0.5 w-6 bg-primary mt-1 rounded-full" />
-          </div>
+      {/* Recent Transactions — moved to right below balance */}
+      <div>
+        <div className="mb-2 flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-foreground">Recentes</h2>
+          <Link to="/transactions" preload="intent" search={{ action: undefined, type: undefined } as any} className="text-[10px] font-medium text-primary flex items-center gap-0.5">
+            Ver tudo <ChevronRight className="h-3 w-3" />
+          </Link>
         </div>
          {loading ? (
-           <div className="flex flex-col gap-3">
-             {[1, 2, 3].map((i) => (
-               <div key={i} className="glass-card flex items-center gap-3 p-4">
-                 <Skeleton className="h-10 w-10 rounded-xl" />
-                 <div className="flex-1 space-y-2">
-                   <Skeleton className="h-4 w-1/3" />
-                   <Skeleton className="h-3 w-1/4 opacity-50" />
-                 </div>
-                 <Skeleton className="h-4 w-16" />
-               </div>
-             ))}
+           <div className="flex items-center justify-center py-8">
+             <Loader2 className="h-5 w-5 animate-spin text-primary" />
            </div>
          ) : transactions.length === 0 ? (
            <EmptyState 
@@ -1189,13 +1189,12 @@ export function Dashboard() {
              description="Parece que você ainda não registrou nada este mês. Que tal começar agora?"
            />
          ) : (
-           <div ref={transactionsListRef} tabIndex={-1} className="flex flex-col gap-2.5 focus:outline-none">
+           <div ref={transactionsListRef} tabIndex={-1} className="flex flex-col gap-3 focus:outline-none">
             {groupedTransactions.map((group) => (
-              <div key={group.label} className="space-y-1">
-                <p className="text-[10px] font-black text-muted-foreground/50 uppercase tracking-[0.2em] px-2 mb-1">{group.label}</p>
-                <div className="flex flex-col gap-1">
+              <div key={group.label}>
+                <div className="flex flex-col gap-1.5">
                   {group.items.map((tx, i) => (
-                    <div key={tx.id} className="group/tx-row relative animate-stagger-in" style={{ animationDelay: `${i * 50}ms` }}>
+                    <div key={tx.id} className="group/tx-row relative" style={{ animationDelay: `${i * 40}ms` }}>
                       <TransactionItem 
                         {...tx} 
                         card={tx.card ?? undefined} 
@@ -1251,30 +1250,26 @@ export function Dashboard() {
           </div>
 
           {/* Mini bar comparison */}
-          <div className="space-y-4">
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-                <span className="font-medium uppercase tracking-wider">Receitas</span>
-                <span className="font-bold text-primary tabular-nums">R$ {fmtShort(monthlySummary.income)}</span>
-              </div>
-              <div className="h-2 rounded-full bg-accent/50 overflow-hidden">
+          <div className="space-y-2">
+            <div className="flex items-center gap-3">
+              <span className="text-[10px] text-muted-foreground w-16">Receita</span>
+              <div className="flex-1 h-2 rounded-full bg-accent overflow-hidden">
                 <div
-                  className="h-full rounded-full bg-primary transition-all duration-700 ease-out"
+                  className="h-full rounded-full bg-primary transition-all duration-500"
                   style={{ width: `${Math.min(100, monthlySummary.income > 0 ? (monthlySummary.income / Math.max(monthlySummary.income, monthlySummary.expense)) * 100 : 0)}%` }}
                 />
               </div>
+              <span className="text-xs font-semibold text-primary tabular-nums w-20 text-right">R$ {fmtShort(monthlySummary.income)}</span>
             </div>
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-                <span className="font-medium uppercase tracking-wider">Despesas</span>
-                <span className="font-bold text-destructive tabular-nums">R$ {fmtShort(monthlySummary.expense)}</span>
-              </div>
-              <div className="h-2 rounded-full bg-accent/50 overflow-hidden">
+            <div className="flex items-center gap-3">
+              <span className="text-[10px] text-muted-foreground w-16">Despesa</span>
+              <div className="flex-1 h-2 rounded-full bg-accent overflow-hidden">
                 <div
-                  className="h-full rounded-full bg-destructive transition-all duration-700 ease-out"
+                  className="h-full rounded-full bg-destructive transition-all duration-500"
                   style={{ width: `${Math.min(100, monthlySummary.expense > 0 ? (monthlySummary.expense / Math.max(monthlySummary.income, monthlySummary.expense)) * 100 : 0)}%` }}
                 />
               </div>
+              <span className="text-xs font-semibold text-destructive tabular-nums w-20 text-right">R$ {fmtShort(monthlySummary.expense)}</span>
             </div>
           </div>
 
@@ -1530,7 +1525,7 @@ export function Dashboard() {
                           type="button"
                           onClick={() => setEditTx({ ...editTx, total_installments: n })}
                           className={cn(
-                            "px-2.5 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium transition-colors border active:scale-95",
+                            "px-2 py-1 rounded text-[10px] font-medium transition-colors border",
                             Number(editTx.total_installments) === n 
                               ? "bg-primary text-primary-foreground border-primary" 
                               : "bg-background text-muted-foreground border-border hover:border-primary/50"
@@ -1616,7 +1611,7 @@ export function Dashboard() {
 
       {/* Delete Confirmation */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <DialogContent className="max-w-[95vw] sm:max-w-md rounded-2xl bg-background p-4 sm:p-6">
+        <DialogContent className="max-w-[90vw] rounded-2xl bg-background">
           <DialogHeader><DialogTitle>Excluir Transação</DialogTitle></DialogHeader>
           {isInstallmentTx(deleteTarget) ? (
             <div className="flex flex-col gap-3">

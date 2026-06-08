@@ -18,12 +18,12 @@ export const EmptyState = forwardRef<HTMLDivElement, EmptyStateProps>(
       <div 
         ref={containerRef}
         tabIndex={-1}
-        className="flex flex-col items-center justify-center py-12 px-4 text-center animate-in fade-in zoom-in slide-in-from-bottom-4 duration-700 focus:outline-none"
+        className="flex flex-col items-center justify-center py-12 px-4 text-center animate-in fade-in zoom-in duration-500 focus:outline-none"
         role="region"
         aria-labelledby="empty-state-title"
       >
          <div className="relative mb-6" role="img" aria-label="Carteira com sinal de mais">
-           <div className="h-24 w-24 rounded-full bg-primary/5 flex items-center justify-center ring-1 ring-primary/10 shadow-[0_0_40px_rgba(var(--primary),0.05)]">
+           <div className="h-20 w-20 rounded-full bg-primary/5 flex items-center justify-center ring-1 ring-primary/10">
              <Wallet className="h-10 w-10 text-primary/40" aria-hidden="true" />
            </div>
            <div className="absolute -right-1 -bottom-1 h-8 w-8 rounded-full bg-background flex items-center justify-center shadow-sm border border-border">
@@ -31,8 +31,8 @@ export const EmptyState = forwardRef<HTMLDivElement, EmptyStateProps>(
            </div>
          </div>
         
-        <h3 id="empty-state-title" className="text-xl font-bold text-foreground mb-3 tracking-tight">
-          {title || "Sua jornada financeira começa aqui"}
+        <h3 id="empty-state-title" className="text-lg font-semibold text-foreground mb-2">
+          {title || "Comece sua jornada financeira"}
         </h3>
         <p className="text-sm text-muted-foreground max-w-[280px] mb-8">
           {description || "Registre suas primeiras movimentações para visualizar seus gastos e ganhos de forma inteligente."}

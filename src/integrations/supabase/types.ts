@@ -282,7 +282,6 @@ export type Database = {
         Row: {
           balance_visible: boolean | null
           created_at: string
-          gemini_model: string | null
           hide_zero_balances: boolean | null
           id: string
           updated_at: string
@@ -291,7 +290,6 @@ export type Database = {
         Insert: {
           balance_visible?: boolean | null
           created_at?: string
-          gemini_model?: string | null
           hide_zero_balances?: boolean | null
           id?: string
           updated_at?: string
@@ -300,7 +298,6 @@ export type Database = {
         Update: {
           balance_visible?: boolean | null
           created_at?: string
-          gemini_model?: string | null
           hide_zero_balances?: boolean | null
           id?: string
           updated_at?: string

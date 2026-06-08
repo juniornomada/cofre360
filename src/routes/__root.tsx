@@ -10,9 +10,6 @@ import { useContrastChecker } from "@/hooks/useContrastChecker";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { Toaster } from "@/components/ui/sonner";
-import SealVerifier from "@/components/SealVerifier";
-import { CookieConsent } from "@/components/CookieConsent";
-import { runA11yAudit } from "@/lib/a11y-audit";
 import appCss from "../styles.css?url";
 
 type AlertType = 'success' | 'error' | 'warning' | 'info';
@@ -21,7 +18,7 @@ interface AlertContextType {
   showAlert: (message: string, type?: AlertType) => void;
 }
 
-export const AlertContext = createContext<AlertContextType | undefined>(undefined);
+const AlertContext = createContext<AlertContextType | undefined>(undefined);
 
 export const useAlert = () => {
   const context = useContext(AlertContext);
@@ -33,62 +30,18 @@ const BottomNav = lazy(() => import("@/components/BottomNav").then(m => ({ defau
 
 
 function ErrorComponent({ error }: { error: any }) {
-  const ticketId = `SBS-${new Date().toISOString().split('T')[0].replace(/-/g, '')}-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`;
-  
-  // Try to parse the error if it's a string that looks like the genéric JSON
-  let errorData = error;
-  if (typeof error === 'string') {
-    try {
-      errorData = JSON.parse(error);
-    } catch (e) {
-      // Not JSON
-    }
-  }
-
-  const errorMessage = errorData?.error?.message || errorData?.message || error?.message || "Ocorreu um erro inesperado no servidor. Por favor, tente novamente mais tarde.";
-  const supportEmail = errorData?.error?.support?.contact || "suporte@cofre360.com";
-
   return (
-    <div role="alert" className="flex min-h-[80vh] flex-col items-center justify-center bg-background px-4 py-12 text-center animate-in fade-in duration-500">
-      <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-destructive/10 text-destructive">
-        <AlertCircle className="h-10 w-10" />
-      </div>
-      
-      <div className="max-w-md">
-        <h1 className="text-2xl font-black tracking-tight text-foreground sm:text-3xl">Oops! Algo deu errado.</h1>
-        <p className="mt-4 text-base leading-relaxed text-muted-foreground">
-          {errorMessage}
-        </p>
-        
-        <div className="mt-8 flex flex-col items-center gap-4 rounded-3xl bg-card/50 p-6 border border-white/[0.05] backdrop-blur-sm">
-          <p className="text-sm font-medium text-foreground/80">
-            Se o problema persistir, nos contate em:
-          </p>
-          <a 
-            href={`mailto:${supportEmail}`} 
-            className="text-primary font-bold hover:underline transition-all"
-          >
-            {supportEmail}
-          </a>
-          <div className="mt-2 flex items-center gap-2 rounded-full bg-background/50 px-4 py-1.5 border border-white/[0.03]">
-            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Ticket ID:</span>
-            <code className="text-[11px] font-mono font-bold text-primary">{ticketId}</code>
-          </div>
-        </div>
-
-        <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+      <div className="max-w-md text-center">
+        <h1 className="text-xl font-bold text-foreground">Ocorreu um erro</h1>
+        <p className="mt-2 text-sm text-muted-foreground">{error?.message || "Algo deu errado."}</p>
+        <div className="mt-6">
           <Button
             onClick={() => window.location.reload()}
-            className="h-12 w-full sm:w-auto rounded-2xl bg-primary px-8 text-sm font-black uppercase tracking-wider text-primary-foreground shadow-lg shadow-primary/20 hover:scale-[1.02] transition-transform active:scale-[0.98]"
+            className="inline-flex items-center justify-center rounded-xl bg-primary px-6 py-3 text-sm font-medium text-primary-foreground"
           >
             Tentar novamente
           </Button>
-          <Link
-            to="/"
-            className="h-12 w-full sm:w-auto flex items-center justify-center rounded-2xl bg-card border border-white/[0.05] px-8 text-sm font-black uppercase tracking-wider text-foreground hover:bg-card/80 transition-all"
-          >
-            Voltar ao Início
-          </Link>
         </div>
       </div>
     </div>
@@ -221,14 +174,6 @@ function RootShell({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (process.env.NODE_ENV === 'development') {
-      // Pequeno delay para garantir que o DOM inicial foi montado
-      const timer = setTimeout(runA11yAudit, 2000);
-      return () => clearTimeout(timer);
-    }
-  }, [router.state.location.pathname]);
-
-  useEffect(() => {
     if (!authLoading) {
       const path = router.state.location.pathname;
       if (!session && path !== '/auth') {
@@ -268,12 +213,10 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
   return (
     <AlertContext.Provider value={{ showAlert }}>
-      <SealVerifier />
-      <CookieConsent />
       <TooltipProvider>
         <div className={cn(
           "mx-auto min-h-screen bg-background pb-20",
-          !isComparisonMode ? "app-container" : ""
+          !isComparisonMode && "max-w-md"
         )}>
           <Outlet />
           {!isComparisonMode && (

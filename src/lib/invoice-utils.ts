@@ -54,65 +54,68 @@ export function groupByBillingCycle(txs: CardTransaction[], closingDay: number |
   const userZone = 'America/Sao_Paulo';
   const now = DateTime.now().setZone(userZone);
 
+  // We want to determine the "next" closing date relative to today.
+  let closingDate = now.set({ day: cDay, hour: 0, minute: 0, second: 0, millisecond: 0 });
+  if (now > closingDate) {
+    closingDate = closingDate.plus({ months: 1 });
+  }
+
+  const prevClosing = closingDate.minus({ months: 1 });
+  const pastClosing = prevClosing.minus({ months: 1 });
+
   const makeDue = (closing: DateTime) => {
     let d = closing.set({ day: dDay });
     if (d <= closing) d = d.plus({ months: 1 });
     return d.toJSDate();
   };
 
-  const formatLabel = (endDate: DateTime) => {
-    const isCurrent = now <= endDate && now > endDate.minus({ months: 1 });
-    const isPast = now > endDate && now <= endDate.plus({ months: 1 });
-    const prefix = isCurrent ? "Atual" : isPast ? "Anterior" : endDate > now ? "Próxima" : "Antiga";
-    return `${prefix} (${monthNames[endDate.month - 1]}/${endDate.year.toString().slice(2)})`;
-  };
-
-  // Find the date range of all transactions
-  let minDate = now.minus({ months: 1 });
-  let maxDate = now;
-
+  // Find the max future date from all transactions
+  let maxFutureDate = now;
   for (const tx of txs) {
     const txDate = DateTime.fromJSDate(parseTxDate(tx.date, tx.created_at)).setZone(userZone);
-    if (txDate < minDate) minDate = txDate;
-    if (txDate > maxDate) maxDate = txDate;
+    if (txDate > maxFutureDate) maxFutureDate = txDate;
   }
 
-  // Generate periods from minDate to maxDate
-  const periods: InvoicePeriod[] = [];
-  
-  // Start from the first closing date before minDate
-  let currentClosing = minDate.set({ day: cDay, hour: 0, minute: 0, second: 0, millisecond: 0 });
-  if (minDate > currentClosing) {
-    currentClosing = currentClosing.plus({ months: 1 });
-  }
+  const formatLabel = (prefix: string, endDate: DateTime) =>
+    `${prefix} (${monthNames[endDate.month - 1]}/${endDate.year.toString().slice(2)})`;
 
-  // To ensure we always have at least "Anterior" and "Atual" even if no transactions
-  const fixedClosing = now.set({ day: cDay, hour: 0, minute: 0, second: 0, millisecond: 0 });
-  const startTarget = now > fixedClosing ? fixedClosing : fixedClosing.minus({ months: 1 });
-  if (currentClosing > startTarget) currentClosing = startTarget;
+  const periods: InvoicePeriod[] = [
+    { 
+      label: formatLabel("Anterior", prevClosing), 
+      key: "past", 
+      startDate: pastClosing.toJSDate(), 
+      endDate: prevClosing.toJSDate(), 
+      dueDate: makeDue(prevClosing), 
+      transactions: [], 
+      total: 0 
+    },
+    { 
+      label: formatLabel("Atual", closingDate), 
+      key: "current", 
+      startDate: prevClosing.toJSDate(), 
+      endDate: closingDate.toJSDate(), 
+      dueDate: makeDue(closingDate), 
+      transactions: [], 
+      total: 0 
+    },
+  ];
 
-  // Iterate and create periods
-  let safety = 0;
-  while (currentClosing <= maxDate.plus({ months: 1 }) || safety < 2) {
-    const startDate = currentClosing.minus({ months: 1 });
-    const endDate = currentClosing;
-    
-    // Key should be unique and stable. Using the end date ISO.
-    const key = endDate.toISODate() || `period-${safety}`;
-    
+  let futureStart = closingDate;
+  let futureIndex = 0;
+  while (futureStart < maxFutureDate || futureIndex === 0) {
+    const futureEnd = futureStart.plus({ months: 1 }).set({ day: cDay });
     periods.push({
-      label: formatLabel(endDate),
-      key: key,
-      startDate: startDate.toJSDate(),
-      endDate: endDate.toJSDate(),
-      dueDate: makeDue(endDate),
+      label: formatLabel("Próxima", futureEnd),
+      key: `future_${futureIndex}`,
+      startDate: futureStart.toJSDate(),
+      endDate: futureEnd.toJSDate(),
+      dueDate: makeDue(futureEnd),
       transactions: [],
       total: 0,
     });
-    
-    currentClosing = currentClosing.plus({ months: 1 });
-    safety++;
-    if (safety > 120) break; // 10 years limit
+    futureStart = futureEnd;
+    futureIndex++;
+    if (futureIndex > 24) break;
   }
 
   // Place each transaction
@@ -127,18 +130,11 @@ export function groupByBillingCycle(txs: CardTransaction[], closingDay: number |
         break;
       }
     }
-    
-    if (periodIdx !== -1) {
-      periods[periodIdx].transactions.push(tx);
-      periods[periodIdx].total += Number(tx.amount);
-    }
+    if (periodIdx === -1) continue;
+
+    periods[periodIdx].transactions.push(tx);
+    periods[periodIdx].total += Number(tx.amount);
   }
 
-  // Filter out empty periods except for the current and previous one
-  return periods.filter(p => {
-    const endDate = DateTime.fromJSDate(p.endDate);
-    const isCurrent = now <= endDate && now > endDate.minus({ months: 1 });
-    const isPast = now > endDate && now <= endDate.plus({ months: 1 });
-    return isCurrent || isPast || p.transactions.length > 0;
-  });
+  return periods.filter((p, i) => i < 2 || p.transactions.length > 0);
 }

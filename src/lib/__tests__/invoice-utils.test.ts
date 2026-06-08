@@ -41,23 +41,24 @@ describe('Invoice Utils', () => {
 
   it('should group transactions into billing cycles correctly', () => {
     // Current date in the test will be what new Date() returns.
-    // Based on the system prompt, today is June 7th, 2026.
+    // Let's assume the test runs in June 2026 (based on system instructions "Tuesday, June 2, 2026").
     
     const closingDay = 15;
     const dueDay = 20;
     
     const periods = groupByBillingCycle(mockTransactions, closingDay, dueDay);
     
-    // In June 7th, with closing day 15:
-    // "Atual" ends on June 15th and starts on May 15th.
-    // "Anterior" ends on May 15th and starts on April 15th.
+    // Period 0 is "Anterior" (Past)
+    // Period 1 is "Atual" (Current)
     
-    // mockTransactions: 
-    // - May 10th -> Should be in "Anterior" (between Apr 15 and May 15)
-    // - May 20th -> Should be in "Atual" (between May 15 and Jun 15)
+    // For June 2nd, the "Atual" period closes on June 15th.
+    // It starts on the previous closing day: May 15th.
+    // Our mock transactions are from May 10th and May 20th.
+    // May 10th should be in "Anterior" (Before May 15th).
+    // May 20th should be in "Atual" (Between May 15th and June 15th).
 
-    const anterior = periods.find(p => p.label.startsWith('Anterior'));
-    const atual = periods.find(p => p.label.startsWith('Atual'));
+    const anterior = periods.find(p => p.key === 'past');
+    const atual = periods.find(p => p.key === 'current');
 
     expect(anterior?.total).toBe(100);
     expect(atual?.total).toBe(50);

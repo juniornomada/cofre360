@@ -66,77 +66,127 @@ export function TransactionItem({
     <div
       onClick={onEdit}
       className={cn(
-        "interactive-card flex items-center gap-4 rounded-[2.5rem] p-4 cursor-pointer bg-card/10 hover:bg-card/30 border border-white/[0.03] transition-all duration-500 group/item relative overflow-hidden active:scale-[0.98] sm:pr-4 pr-12 shadow-sm hover:shadow-xl hover:border-white/[0.08]"
+        "interactive-card flex items-center gap-3 rounded-xl p-3 cursor-pointer bg-card border border-border/30 transition-all group/item relative overflow-hidden active:scale-[0.98] sm:pr-3 pr-[48px]"
       )}
       style={style}
     >
       {onDelete && (
-        <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1.5 sm:opacity-0 group-hover/item:opacity-100 focus-within:opacity-100 transition-all duration-300 sm:translate-x-4 group-hover/item:translate-x-0 z-10">
-          <button
-            onClick={(e) => { e.stopPropagation(); onDelete(); }}
-            className="p-2.5 rounded-2xl bg-destructive/10 text-destructive hover:bg-destructive transition-all hover:text-white shadow-lg"
-            aria-label="Excluir"
+        <div className="absolute right-2 sm:right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5 sm:opacity-0 group-hover/item:opacity-100 focus-within:opacity-100 transition-all duration-200 sm:translate-x-2 group-hover/item:translate-x-0 focus-within:translate-x-0 z-10 pointer-events-auto sm:pointer-events-none sm:group-hover/item:pointer-events-auto sm:focus-within:pointer-events-auto">
+          <div 
+            className="flex items-center gap-1 bg-card/90 sm:bg-card/80 backdrop-blur-sm p-1 rounded-full border border-border/50 shadow-sm sm:shadow-none"
+            role="group"
+            aria-label="Ações da transação"
           >
-            <Trash2 className="h-4 w-4" />
-          </button>
+            {onDelete && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onDelete(); }}
+                className="p-1.5 rounded-full hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-destructive focus-visible:ring-offset-1"
+                aria-label="Excluir"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            )}
+          </div>
         </div>
       )}
-
-      <div className="relative h-12 w-12 shrink-0">
-        <div className="flex h-full w-full items-center justify-center rounded-[1.25rem] bg-card/40 text-xl transition-all duration-500 group-hover/item:scale-110 group-hover/item:rotate-3 shadow-inner border border-white/[0.05]">
-          {isTransferPair ? (
-            <span role="img" aria-hidden="true" className="filter grayscale group-hover/item:grayscale-0 transition-all duration-500">🔄</span>
-          ) : (
+      <div className="relative h-10 w-10 shrink-0">
+        {isTransferPair ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div 
+                className="flex h-full w-full items-center justify-center rounded-xl bg-accent text-lg transition-transform duration-200 group-active:scale-90 overflow-hidden content-visibility-auto cursor-help focus:outline-none focus:ring-2 focus:ring-primary"
+                tabIndex={0}
+                aria-label="Transferência"
+              >
+                <span role="img" aria-hidden="true">🔄</span>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <div className="flex flex-col items-center">
+                <span>Transferência</span>
+                <span className="text-[10px] opacity-70">Transferência de {transferFromName} para {transferToName}</span>
+              </div>
+            </TooltipContent>
+          </Tooltip>
+        ) : (
+          <div className="flex h-full w-full items-center justify-center rounded-xl bg-accent text-lg transition-transform duration-200 group-active:scale-90 overflow-hidden content-visibility-auto">
             <span role="img" aria-label={category}>{displayIcon}</span>
-          )}
-        </div>
+          </div>
+        )}
         
         {isCard && (
-          <div className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground ring-4 ring-background shadow-lg">
-            <CreditCard className="h-2.5 w-2.5" strokeWidth={3} />
+          <div
+            className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-primary-foreground ring-2 ring-card shadow-sm"
+            title="Cartão de crédito"
+          >
+            <CreditCard className="h-2.5 w-2.5" strokeWidth={2.5} />
           </div>
         )}
         {isBank && (
-          <div className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-white text-black ring-4 ring-background shadow-lg">
-            <Landmark className="h-2.5 w-2.5" strokeWidth={3} />
+          <div
+            className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-foreground text-background ring-2 ring-card shadow-sm"
+            title="Conta bancária"
+          >
+            <Landmark className="h-2.5 w-2.5" strokeWidth={2.5} />
+          </div>
+        )}
+        {isTransferPair && (
+          <div
+            className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-foreground text-background ring-2 ring-card shadow-sm"
+            title="Transferência entre contas"
+          >
+            <ArrowLeftRight className="h-2.5 w-2.5" strokeWidth={2.5} />
           </div>
         )}
       </div>
-
       <div className="flex-1 min-w-0">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex flex-col min-w-0">
-            <p className="text-xs font-black text-foreground truncate tracking-tight uppercase group-hover/item:text-primary transition-colors">
-              {isTransferPair && transferFromName && transferToName ? (
-                `${transferFromName} → ${transferToName}`
-              ) : (
-                restoreAccents(displayName)
-              )}
-            </p>
-            <div className="flex items-center gap-2 mt-1">
-              <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">
-                {getCategoryDisplay(category)}
-              </span>
-              <span className="h-1 w-1 rounded-full bg-white/10" />
-              <span className="text-[9px] text-muted-foreground/60 font-bold">
-                {formatTxDate(date)}
-              </span>
-            </div>
-          </div>
-
-          <div className="text-right shrink-0 flex flex-col items-end">
-            <span className={cn(
-              "text-sm font-black tabular-nums tracking-tighter transition-all duration-500",
-              isTransferPair ? "text-muted-foreground" : type === "income" ? "text-primary" : "text-foreground"
-            )}>
-              {isTransferPair ? "" : type === "expense" ? "-" : "+"}
-              {amountVisible ? `R$ ${Math.abs(amount).toFixed(2)}` : "R$ ••••"}
-            </span>
-            {isInstallment && (
-              <span className="text-[8px] font-black text-muted-foreground uppercase tracking-wider mt-1 bg-white/5 px-2 py-0.5 rounded-full border border-white/[0.03]">
-                Parcela {installment_number}/{total_installments}
-              </span>
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-sm font-semibold text-foreground truncate">
+            {isTransferPair && transferFromName && transferToName ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="transition-colors hover:text-primary">
+                    {transferFromName} → {transferToName}
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <div className="flex flex-col items-center">
+                    <span>Transferência</span>
+                    <span className="text-[10px] opacity-70">Transferência de {transferFromName} para {transferToName}</span>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            ) : (
+              <>
+                {restoreAccents(displayName)}
+                {isInstallment && (
+                  <span 
+                    className="ml-1 text-[11px] font-medium text-muted-foreground whitespace-nowrap bg-muted/50 px-1.5 py-0.5 rounded-md border border-border/30"
+                    aria-label={`Parcela ${installment_number} de ${total_installments}`}
+                    tabIndex={0}
+                  >
+                    Parcela {installment_number} de {total_installments} ({installment_number}/{total_installments})
+                  </span>
+                )}
+              </>
             )}
+          </p>
+          <span className={cn(
+            "text-sm font-bold tabular-nums shrink-0",
+            isTransferPair ? "text-muted-foreground" : type === "income" ? "text-primary" : "text-foreground"
+          )}>
+            {isTransferPair ? "" : type === "expense" ? "- " : "+ "}
+            {amountVisible ? `R$ ${Math.abs(amount).toFixed(2)}` : "R$ ••••"}
+          </span>
+        </div>
+        <div className="flex items-center justify-between gap-2 mt-0.5">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-[10px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded truncate max-w-[120px]">
+              {getCategoryDisplay(category)}
+            </span>
+            <span className="text-[10px] text-muted-foreground font-medium shrink-0">
+              {formatTxDate(date)}
+            </span>
           </div>
         </div>
       </div>

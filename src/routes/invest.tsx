@@ -132,7 +132,7 @@ function InvestPage() {
   };
 
   return (
-    <div className="app-container">
+    <div className="animate-page-enter flex flex-col gap-6 px-4 pt-6 pb-24">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Link to="/" className="interactive-button flex h-9 w-9 items-center justify-center rounded-xl bg-card">

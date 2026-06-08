@@ -1,9 +1,7 @@
 import { useState, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { Upload, FileText, Loader2, AlertCircle, CheckCircle2, Sparkles, LayoutPanelLeft, FileSearch } from "lucide-react";
-
+import { Upload, FileText, Loader2, AlertCircle, CheckCircle2, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables, TablesInsert } from "@/integrations/supabase/types";
 import { categorizeTransaction } from "@/lib/categorize-transaction";
@@ -24,9 +22,6 @@ type ParsedRow = {
   name: string;
   amount: number;
   type: "expense" | "income";
-  confidence_score?: number;
-  original_amount_text?: string;
-  approved?: boolean;
 };
 
 type TransactionInsert = TablesInsert<"transactions">;
@@ -78,14 +73,7 @@ export function PdfStatementImportDialog({ open, onOpenChange, bankAccountId, ba
   const [fileName, setFileName] = useState("");
   const [parsing, setParsing] = useState(false);
   const [error, setError] = useState("");
-  const [parsingStep, setParsingStep] = useState<"idle" | "uploading" | "extracting" | "processing">("idle");
-  const [parsingProgress, setParsingProgress] = useState(0);
-  const [fileUrl, setFileUrl] = useState<string | null>(null);
-  const [showPdf, setShowPdf] = useState(false);
-
-
   const [preview, setPreview] = useState<ParsedRow[]>([]);
-  const [rawText, setRawText] = useState<string | null>(null);
   const [dedupResult, setDedupResult] = useState<{ toImport: TransactionInsert[]; duplicateCount: number } | null>(null);
   const [checking, setChecking] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -93,16 +81,8 @@ export function PdfStatementImportDialog({ open, onOpenChange, bankAccountId, ba
   const reset = () => {
     setFileName("");
     setParsing(false);
-    setParsingStep("idle");
-    setParsingProgress(0);
-    if (fileUrl) URL.revokeObjectURL(fileUrl);
-    setFileUrl(null);
-    setShowPdf(false);
-
-
     setError("");
     setPreview([]);
-    setRawText(null);
     setDedupResult(null);
     setChecking(false);
     setSaving(false);
@@ -117,43 +97,21 @@ export function PdfStatementImportDialog({ open, onOpenChange, bankAccountId, ba
       setError("Selecione um arquivo PDF.");
       return;
     }
-    if (file.size > 10 * 1024 * 1024) {
-      setError("O arquivo é muito grande (máximo 10MB).");
-      return;
-    }
-
     setFileName(file.name);
-    const url = URL.createObjectURL(file);
-    setFileUrl(url);
     setParsing(true);
-
-    setParsingStep("uploading");
-    setParsingProgress(20);
     try {
       const fileBase64 = await fileToBase64(file);
-      setParsingStep("extracting");
-      setParsingProgress(50);
       const result = await parseCardInvoicePdf({ data: { fileBase64, fileName: file.name, kind: "bank_statement" } });
-      setRawText(result.rawPdfText);
-      setParsingStep("processing");
-      setParsingProgress(85);
-      console.log("PDF extraction result:", { transactions: result.transactions?.length, chars: result.charsExtracted });
-
-
       const rows: ParsedRow[] = (result.transactions || []).map((t) => ({
         date: t.date,
         name: restoreAccents(t.name),
         amount: Math.abs(Number(t.amount) || 0),
         type: t.type,
-        confidence_score: t.confidence_score,
-        original_amount_text: t.original_amount_text,
       }));
       if (rows.length === 0) {
         setError("Nenhuma movimentação detectada no PDF.");
       }
       setPreview(rows);
-      setParsingProgress(100);
-
     } catch (err: any) {
       setError(err?.message || "Erro ao processar o PDF.");
       setPreview([]);
@@ -183,22 +141,11 @@ export function PdfStatementImportDialog({ open, onOpenChange, bankAccountId, ba
       )
     );
 
-    const { data: { session } } = await supabase.auth.getSession();
-    const userId = session?.user?.id;
-
-    if (!userId) {
-      setChecking(false);
-      setError("Sessão não encontrada. Por favor, faça login novamente.");
-      return;
-    }
-
     const toImport: TransactionInsert[] = [];
     for (const row of preview) {
-      if (row.approved === false) continue;
       const { category, icon } = categorizeTransaction(row.name);
       const transaction: TransactionInsert = {
         id: crypto.randomUUID(),
-        user_id: userId,
         date: row.date,
         name: row.name,
         amount: row.amount,
@@ -258,8 +205,7 @@ export function PdfStatementImportDialog({ open, onOpenChange, bankAccountId, ba
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) reset(); onOpenChange(v); }}>
-      <DialogContent className={`${preview.length > 0 ? "max-w-4xl" : "max-w-md"} mx-auto rounded-2xl transition-all duration-300 max-h-[90vh] overflow-hidden flex flex-col`}>
-
+      <DialogContent className="max-w-md mx-auto rounded-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-primary" />
@@ -281,30 +227,12 @@ export function PdfStatementImportDialog({ open, onOpenChange, bankAccountId, ba
         )}
 
         {parsing && (
-          <div className="flex flex-col items-center justify-center gap-4 py-6">
-            <div className="relative flex items-center justify-center">
-              <Loader2 className="h-8 w-8 animate-spin text-primary/30" />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <Sparkles className="h-4 w-4 text-primary animate-pulse" />
-              </div>
-            </div>
-            <div className="w-full space-y-2">
-              <div className="flex justify-between text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
-                <span>
-                  {parsingStep === "uploading" && "Carregando arquivo..."}
-                  {parsingStep === "extracting" && "Extraindo texto com IA..."}
-                  {parsingStep === "processing" && "Processando transações..."}
-                </span>
-                <span>{parsingProgress}%</span>
-              </div>
-              <Progress value={parsingProgress} className="h-1.5" />
-            </div>
-            <p className="text-[10px] text-muted-foreground text-center">
-              Isso pode levar alguns segundos dependendo do tamanho do PDF.
-            </p>
+          <div className="flex flex-col items-center justify-center gap-2 py-6">
+            <Loader2 className="h-5 w-5 animate-spin text-primary" />
+            <p className="text-xs text-muted-foreground">Extraindo movimentações com IA...</p>
+            <p className="text-[10px] text-muted-foreground">Isso pode levar alguns segundos.</p>
           </div>
         )}
-
 
         {error && (
           <div className="rounded-xl bg-destructive/10 p-3 space-y-2">
@@ -334,90 +262,54 @@ export function PdfStatementImportDialog({ open, onOpenChange, bankAccountId, ba
         )}
 
         {preview.length > 0 && !parsing && (
-          <div className="flex-1 overflow-hidden flex flex-col space-y-3">
+          <>
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <FileText className="h-4 w-4" />
-                  {fileName} — {preview.length} movimentações
-                </div>
-                {fileUrl && (
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className={`h-7 gap-1.5 text-[10px] rounded-lg ${showPdf ? "bg-primary/10 border-primary/20 text-primary" : ""}`}
-                    onClick={() => setShowPdf(!showPdf)}
-                  >
-                    {showPdf ? <LayoutPanelLeft className="h-3.5 w-3.5" /> : <FileSearch className="h-3.5 w-3.5" />}
-                    {showPdf ? "Ocultar PDF" : "Visualizar PDF"}
-                  </Button>
-                )}
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <FileText className="h-4 w-4" />
+                {fileName} — {preview.length} movimentações
               </div>
               <Button variant="ghost" size="sm" className="text-xs h-7" onClick={reset}>Trocar PDF</Button>
             </div>
 
-            <div className={`flex flex-1 gap-4 overflow-hidden ${showPdf ? "min-h-[400px]" : ""}`}>
-              {showPdf && fileUrl && (
-                <div className="flex-1 border rounded-xl overflow-hidden bg-muted/20">
-                  <iframe 
-                    src={fileUrl} 
-                    className="w-full h-full border-0"
-                    title="Visualização do PDF"
-                  />
-                </div>
-              )}
-              
-              <div className={`${showPdf ? "flex-[0.8]" : "w-full"} flex flex-col overflow-hidden`}>
-                <div className="flex-1 overflow-y-auto space-y-2">
-                  <p className="text-[10px] text-muted-foreground text-right italic">
-                    Dica: clique em uma linha para editar.
-                  </p>
-                  <PdfPreviewTable
-                    rows={preview}
-                    onChange={(rows) => { setPreview(rows); setDedupResult(null); }}
-                    itemLabel="movimentações"
-                    rawPdfText={rawText}
-                    documentKind="bank_statement"
-                  />
-                </div>
+            <PdfPreviewTable
+              rows={preview}
+              onChange={(rows) => { setPreview(rows); setDedupResult(null); }}
+              itemLabel="movimentações"
+            />
 
-                {!dedupResult ? (
-                  <div className="flex gap-2 mt-3">
-                    <Button variant="outline" className="flex-1 rounded-xl" onClick={reset}>Cancelar</Button>
-                    <Button className="flex-1 rounded-xl gap-2" onClick={handleCheckDuplicates} disabled={checking}>
-                      {checking && <Loader2 className="h-4 w-4 animate-spin" />}
-                      Verificar {preview.length}
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="space-y-3 mt-3">
-                    <div className="rounded-xl bg-muted/50 p-3 space-y-1.5">
-                      <div className="flex items-center gap-2 text-xs font-medium text-primary">
-                        <CheckCircle2 className="h-4 w-4" />
-                        {dedupResult.toImport.length} movimentações serão importadas
-                      </div>
-                      {dedupResult.duplicateCount > 0 && (
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <AlertCircle className="h-3.5 w-3.5" />
-                          {dedupResult.duplicateCount} duplicada{dedupResult.duplicateCount > 1 ? "s" : ""} ignorada
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex gap-2">
-                      <Button variant="outline" className="flex-1 rounded-xl" onClick={() => setDedupResult(null)}>Voltar</Button>
-                      <Button className="flex-1 rounded-xl gap-2" onClick={handleConfirmImport} disabled={saving}>
-                        {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-                        Confirmar importação
-                      </Button>
-                    </div>
-                  </div>
-                )}
+            {!dedupResult ? (
+              <div className="flex gap-2">
+                <Button variant="outline" className="flex-1 rounded-xl" onClick={reset}>Cancelar</Button>
+                <Button className="flex-1 rounded-xl gap-2" onClick={handleCheckDuplicates} disabled={checking}>
+                  {checking && <Loader2 className="h-4 w-4 animate-spin" />}
+                  Verificar {preview.length}
+                </Button>
               </div>
-            </div>
-          </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="rounded-xl bg-muted/50 p-3 space-y-1.5">
+                  <div className="flex items-center gap-2 text-xs font-medium text-primary">
+                    <CheckCircle2 className="h-4 w-4" />
+                    {dedupResult.toImport.length} movimentações serão importadas
+                  </div>
+                  {dedupResult.duplicateCount > 0 && (
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <AlertCircle className="h-3.5 w-3.5" />
+                      {dedupResult.duplicateCount} duplicada{dedupResult.duplicateCount > 1 ? "s" : ""} ignorada{dedupResult.duplicateCount > 1 ? "s" : ""}
+                    </div>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" className="flex-1 rounded-xl" onClick={() => setDedupResult(null)}>Voltar</Button>
+                  <Button className="flex-1 rounded-xl gap-2" onClick={handleConfirmImport} disabled={saving}>
+                    {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+                    Confirmar importação
+                  </Button>
+                </div>
+              </div>
+            )}
+          </>
         )}
-
-
       </DialogContent>
     </Dialog>
   );

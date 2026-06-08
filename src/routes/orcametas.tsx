@@ -5,7 +5,6 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { DateTime } from "luxon";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { parseCategoryValue } from "@/lib/categories";
@@ -294,51 +293,16 @@ function OrcaMetasPage() {
   const totalLimit = computedItems.reduce((s, b) => s + b.budget_limit, 0);
   const percentage = totalLimit > 0 ? Math.round((totalSpent / totalLimit) * 100) : 0;
 
-  if (loadingBudget || loadingGoals) {
-    return (
-      <div className="app-container">
-        <div className="flex items-center gap-3">
-          <Skeleton className="h-9 w-9 rounded-xl" />
-          <div className="space-y-2">
-            <Skeleton className="h-6 w-32" />
-            <Skeleton className="h-3 w-48 opacity-50" />
-          </div>
-        </div>
-        
-        <div className="grid grid-cols-2 gap-2 mt-4">
-          <Skeleton className="h-10 rounded-lg" />
-          <Skeleton className="h-10 rounded-lg" />
-        </div>
-
-        <div className="glass-card p-6 mt-6">
-          <div className="flex justify-between items-center mb-4">
-            <Skeleton className="h-4 w-1/3" />
-            <Skeleton className="h-3 w-10" />
-          </div>
-          <Skeleton className="h-8 w-1/2 mb-4" />
-          <Skeleton className="h-2.5 w-full rounded-full" />
-        </div>
-
-        <div className="space-y-3 mt-6">
-          {[1, 2, 3].map(i => (
-            <div key={i} className="glass-card p-4">
-              <div className="flex justify-between items-center mb-3">
-                <div className="flex items-center gap-2">
-                  <Skeleton className="h-8 w-8 rounded-lg" />
-                  <Skeleton className="h-4 w-24" />
-                </div>
-                <Skeleton className="h-4 w-10" />
-              </div>
-              <Skeleton className="h-1.5 w-full rounded-full" />
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
+   if (loadingBudget || loadingGoals) {
+     return (
+       <div className="flex items-center justify-center py-20">
+         <Loader2 className="h-6 w-6 animate-spin text-primary" />
+       </div>
+     );
+   }
 
   return (
-    <div className="app-container">
+    <div className="animate-page-enter flex flex-col gap-6 px-4 pt-6 pb-24">
       <div className="flex items-center gap-3">
         <Link to="/" className="interactive-button flex h-9 w-9 items-center justify-center rounded-xl bg-card">
           <ArrowLeft className="h-4 w-4 text-foreground" />
@@ -368,8 +332,8 @@ function OrcaMetasPage() {
             <p className="text-xs text-muted-foreground mt-1">
               de R$ {totalLimit.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
             </p>
-            <div className="mt-4 h-3 rounded-full bg-accent/30 overflow-hidden shadow-inner border border-white/5">
-              <div className="h-full rounded-full bg-primary transition-all duration-700 ease-out shadow-[0_0_12px_rgba(var(--primary),0.3)]" style={{ width: `${Math.min(percentage, 100)}%` }} />
+            <div className="mt-3 h-2.5 rounded-full bg-accent overflow-hidden">
+              <div className="h-full rounded-full bg-primary transition-all duration-500" style={{ width: `${Math.min(percentage, 100)}%` }} />
             </div>
           </div>
 
@@ -397,8 +361,8 @@ function OrcaMetasPage() {
                       </div>
                     </div>
                   </div>
-                  <div className="h-2 rounded-full bg-accent/30 overflow-hidden shadow-inner border border-white/5">
-                    <div className={`h-full rounded-full transition-all duration-700 ease-out ${isOver ? "bg-destructive shadow-[0_0_10px_rgba(var(--destructive),0.2)]" : item.color + " shadow-[0_0_10px_rgba(var(--primary),0.2)]"}`} style={{ width: `${Math.min(pct, 100)}%` }} />
+                  <div className="h-1.5 rounded-full bg-accent overflow-hidden">
+                    <div className={`h-full rounded-full transition-all duration-500 ${isOver ? "bg-destructive" : item.color}`} style={{ width: `${Math.min(pct, 100)}%` }} />
                   </div>
                   <div className="flex justify-between mt-1.5">
                     <span className="text-[10px] text-muted-foreground tabular-nums">R$ {item.spent?.toFixed(2) || "0.00"}</span>

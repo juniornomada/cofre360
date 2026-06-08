@@ -124,15 +124,7 @@ function AIInsightsDashboard() {
         }),
       });
 
-      if (!resp.ok) {
-        const errorText = await resp.text();
-        let errorMessage = `HTTP error! status: ${resp.status}`;
-        try {
-          const errorJson = JSON.parse(errorText);
-          if (errorJson.error) errorMessage = errorJson.error;
-        } catch (e) {}
-        throw new Error(errorMessage);
-      }
+      if (!resp.ok) throw new Error(`HTTP error! status: ${resp.status}`);
       
       const reader = resp.body?.getReader();
       const decoder = new TextDecoder();
@@ -159,11 +151,6 @@ function AIInsightsDashboard() {
       }
 
       const duration = Date.now() - startTime;
-
-      if (!fullText) {
-        throw new Error("Resposta vazia da IA");
-      }
-
       
       // Avaliação de Acurácia Simples (Palavras-chave)
       const findings: string[] = [];
@@ -245,7 +232,7 @@ function AIInsightsDashboard() {
   }, [results]);
 
   return (
-    <div className="app-container max-w-5xl">
+    <div className="animate-page-enter flex flex-col gap-6 px-4 pt-6 pb-24 max-w-5xl mx-auto">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">

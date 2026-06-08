@@ -3,12 +3,12 @@ import { SmartLink as Link } from "@/components/SmartLink";
 import { TransactionItem } from "@/components/TransactionItem";
 import { EmptyState } from "@/components/EmptyState";
 import { mainCategories, parseCategoryValue } from "@/lib/categories";
-import { Search, Pencil, Trash2, Plus, CalendarIcon, Loader2, Upload, CheckSquare, Square, X, SlidersHorizontal, ArrowLeftRight, ArrowRight, Eye, EyeOff, FileText, Info } from "lucide-react";
-import { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense } from "react";
+import { Search, Pencil, Trash2, Plus, CalendarIcon, Loader2, Upload, CheckSquare, Square, X, SlidersHorizontal, ArrowLeftRight, ArrowRight, Eye, EyeOff, FileText } from "lucide-react";
+import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react";
 import { DateTime } from "luxon";
 
 const CsvImportDialog = lazy(() => import("@/components/CsvImportDialog").then(m => ({ default: m.CsvImportDialog })));
-const CategoryBarCharts = lazy(() => import("@/components/CategoryBarCharts").then(m => ({ default: m.CategoryBarCharts })));
+const CategoryPieCharts = lazy(() => import("@/components/CategoryPieCharts").then(m => ({ default: m.CategoryPieCharts })));
 const CategoryPicker = lazy(() => import("@/components/CategoryPicker").then(m => ({ default: m.CategoryPicker })));
 const QuickAddTransactionDialog = lazy(() => import("@/components/QuickAddTransactionDialog").then(m => ({ default: m.QuickAddTransactionDialog })));
 import { CalculatorAmountInput } from "@/components/CalculatorAmountInput";
@@ -21,7 +21,6 @@ import { ptBR } from "date-fns/locale";
 import { cn, normalizeText } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { supabase } from "@/integrations/supabase/client";
@@ -244,30 +243,28 @@ export function TransactionsPage() {
   const [loadingMore, setLoadingMore] = useState(false);
   const offsetRef = useRef(0);
 
-  const [error, setError] = useState<string | null>(null);
-
   const fetchTransactionsPage = useCallback(async (reset = false) => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
 
     try {
+
       if (reset) {
         offsetRef.current = 0;
         setHasMore(true);
-        setError(null);
       }
       const from = reset ? 0 : offsetRef.current;
       const to = from + PAGE_SIZE - 1;
       if (reset) setLoading(true); else setLoadingMore(true);
 
-      const { data, error: fetchError } = await supabase
+      const { data, error } = await supabase
         .from("transactions")
         .select("*")
-        .eq("user_id", session.user.id)
+        .eq("user_id", session.user.id) // Ensure we filter by the logged-in user
         .order("created_at", { ascending: false })
         .range(from, to);
 
-      if (fetchError) throw fetchError;
+      if (error) throw error;
 
       if (data) {
         const brandMap = cardNameToBrandRef.current;
@@ -279,10 +276,9 @@ export function TransactionsPage() {
         offsetRef.current = from + data.length;
         if (data.length < PAGE_SIZE) setHasMore(false);
       }
-    } catch (err: any) {
-      console.error("Error fetching transactions:", err);
-      setError(err.message || "Ocorreu um problema ao carregar as transações.");
-      toast.error("Erro ao carregar transações");
+    } catch (error: any) {
+      console.error("Error fetching transactions:", error);
+      toast.error("Erro ao carregar transações: " + (error.message || "Erro desconhecido"));
     } finally {
       setLoading(false);
       setLoadingMore(false);
@@ -427,20 +423,6 @@ export function TransactionsPage() {
     }
     return 0;
   });
-
-  const groupedTransactions = useMemo(() => {
-    const groups: { label: string; items: Transaction[] }[] = [];
-    sortedTransactions.forEach((tx) => {
-      const label = tx.date;
-      const lastGroup = groups[groups.length - 1];
-      if (lastGroup && lastGroup.label === label) {
-        lastGroup.items.push(tx);
-      } else {
-        groups.push({ label, items: [tx] });
-      }
-    });
-    return groups;
-  }, [sortedTransactions]);
 
   const clearAdvancedFilters = () => {
     setFilterStartDate(undefined);
@@ -724,59 +706,16 @@ export function TransactionsPage() {
     fetchTransactions();
   };
 
-  if (loading && transactions.length === 0) {
+  if (loading) {
     return (
-      <div className="app-container">
-        <div className="flex items-center justify-between">
-          <div className="space-y-2">
-            <Skeleton className="h-6 w-32" />
-            <Skeleton className="h-3 w-56 opacity-50" />
-          </div>
-          <Skeleton className="h-10 w-10 rounded-full" />
-        </div>
-        
-        <div className="flex gap-2.5 overflow-x-auto pb-1 no-scrollbar">
-          {[1, 2, 3, 4].map(i => (
-            <Skeleton key={i} className="h-9 w-24 rounded-full shrink-0" />
-          ))}
-        </div>
-
-        <div className="space-y-4 pt-4">
-          {[1, 2, 3, 4, 5, 6].map(i => (
-            <div key={i} className="glass-card flex items-center p-4 gap-4">
-               <Skeleton className="h-11 w-11 rounded-xl shrink-0" />
-               <div className="flex-1 space-y-2">
-                 <div className="flex justify-between items-center">
-                   <Skeleton className="h-4 w-1/2" />
-                   <Skeleton className="h-4 w-16" />
-                 </div>
-                 <Skeleton className="h-3 w-1/3 opacity-50" />
-               </div>
-            </div>
-          ))}
-        </div>
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="app-container">
-      {error && transactions.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-12 px-4 text-center bg-destructive/5 rounded-3xl border border-destructive/10 animate-in fade-in zoom-in duration-500 mt-4">
-          <div className="h-16 w-16 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
-            <Info className="h-8 w-8 text-destructive" />
-          </div>
-          <h3 className="text-lg font-bold text-foreground mb-2">Erro ao carregar</h3>
-          <p className="text-sm text-muted-foreground max-w-[260px] mb-6">{error}</p>
-          <Button 
-            onClick={() => fetchTransactions()} 
-            variant="outline" 
-            className="rounded-xl border-destructive/20 hover:bg-destructive/5"
-          >
-            Tentar carregar de novo
-          </Button>
-        </div>
-      )}
+    <div className="animate-page-enter flex flex-col gap-4 px-4 pt-6 pb-24">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-foreground">Transações</h1>
         <div className="flex items-center gap-2">
@@ -980,43 +919,37 @@ export function TransactionsPage() {
         </div>
       </div>
 
-       <div ref={listRef} tabIndex={-1} className="flex flex-col gap-2.5 focus:outline-none">
-         {groupedTransactions.map((group) => (
-          <div key={group.label} className="space-y-1">
-            <p className="text-[10px] font-black text-muted-foreground/50 uppercase tracking-[0.2em] px-2 mb-1">{group.label}</p>
-            <div className="flex flex-col gap-1">
-              {group.items.map((tx, i) => (
-                <div
-                  key={tx.id}
-                  className={`group relative ${selectionMode && selectedIds.has(tx.id) ? "ring-1 ring-primary rounded-xl" : ""}`}
-                  style={{ animationDelay: `${i * 40}ms` }}
-                  onClick={selectionMode ? () => toggleSelect(tx.id) : undefined}
-                >
-                  <div className="flex items-center gap-2 group/tx-row">
-                    {selectionMode && (
-                      <button className="shrink-0 ml-1" onClick={(e) => { e.stopPropagation(); toggleSelect(tx.id); }}>
-                        {selectedIds.has(tx.id) ? (
-                          <CheckSquare className="h-5 w-5 text-primary" />
-                        ) : (
-                          <Square className="h-5 w-5 text-muted-foreground" />
-                        )}
-                      </button>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <TransactionItem 
-                        {...tx} 
-                        card={tx.card ?? undefined} 
-                        cardBrand={tx.cardBrand ?? undefined} 
-                        amount={Number(tx.amount)} 
-                        amountVisible={balanceVisible}
-                        style={{ animationDelay: `${i * 40}ms` }} 
-                        onEdit={selectionMode ? undefined : () => handleEdit(tx)}
-                        onDelete={selectionMode ? undefined : () => { setDeleteTarget(tx); setDeleteScope("single"); setShowDeleteDialog(true); }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))}
+       <div ref={listRef} tabIndex={-1} className="flex flex-col gap-2 focus:outline-none">
+         {sortedTransactions.map((tx, i) => (
+          <div
+            key={tx.id}
+            className={`group relative ${selectionMode && selectedIds.has(tx.id) ? "ring-1 ring-primary rounded-xl" : ""}`}
+            style={{ animationDelay: `${i * 40}ms` }}
+            onClick={selectionMode ? () => toggleSelect(tx.id) : undefined}
+          >
+            <div className="flex items-center gap-2 group/tx-row">
+              {selectionMode && (
+                <button className="shrink-0 ml-1" onClick={(e) => { e.stopPropagation(); toggleSelect(tx.id); }}>
+                  {selectedIds.has(tx.id) ? (
+                    <CheckSquare className="h-5 w-5 text-primary" />
+                  ) : (
+                    <Square className="h-5 w-5 text-muted-foreground" />
+                  )}
+                </button>
+              )}
+              <div className="flex-1 min-w-0">
+                <TransactionItem 
+                  {...tx} 
+                  card={tx.card ?? undefined} 
+                  cardBrand={tx.cardBrand ?? undefined} 
+                  amount={Number(tx.amount)} 
+                  amountVisible={balanceVisible}
+                  style={{ animationDelay: `${i * 40}ms` }} 
+                  onEdit={selectionMode ? undefined : () => handleEdit(tx)}
+                  onDelete={selectionMode ? undefined : () => { setDeleteTarget(tx); setDeleteScope("single"); setShowDeleteDialog(true); }}
+                  
+                />
+              </div>
             </div>
           </div>
         ))}
@@ -1032,8 +965,8 @@ export function TransactionsPage() {
               }
               setShowAddDialog(true);
             }} 
-            title="Sua lista está limpa"
-            description="Nenhuma movimentação foi encontrada para os filtros aplicados ou sua carteira ainda está em branco."
+            title="Tudo limpo por aqui"
+            description="Nenhuma transação corresponde aos filtros selecionados ou ainda não há registros."
           />
         )}
         {hasMore && (
@@ -1059,9 +992,9 @@ export function TransactionsPage() {
 
       </div>
 
-      {/* Bar Charts */}
+      {/* Pie Charts */}
       <div className="mt-8 mb-8">
-        <CategoryBarCharts transactions={filtered} formatCurrency={formatCurrency} />
+        <CategoryPieCharts transactions={filtered} formatCurrency={formatCurrency} />
       </div>
 
       {/* Edit Dialog */}

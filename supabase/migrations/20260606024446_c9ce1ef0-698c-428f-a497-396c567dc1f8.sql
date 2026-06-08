@@ -1,2 +1,0 @@
-ALTER TABLE public.profiles ADD COLUMN gemini_model TEXT DEFAULT 'google/gemini-2.5-flash';
-COMMENT ON COLUMN public.profiles.gemini_model IS 'O modelo do Gemini preferido pelo usuário para extração de dados de PDFs.';

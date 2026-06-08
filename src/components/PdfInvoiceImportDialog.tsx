@@ -1,9 +1,7 @@
 import { useState, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { Upload, FileText, Loader2, AlertCircle, CheckCircle2, Sparkles, LayoutPanelLeft, FileSearch, Scale } from "lucide-react";
-
+import { Upload, FileText, Loader2, AlertCircle, CheckCircle2, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables, TablesInsert } from "@/integrations/supabase/types";
 import { categorizeTransaction } from "@/lib/categorize-transaction";
@@ -11,9 +9,6 @@ import { restoreAccents } from "@/lib/restore-accents";
 import { parseCardInvoicePdf } from "../server-fns/parse-card-invoice";
 import { PdfPreviewTable } from "@/components/PdfPreviewTable";
 import { expandInstallments } from "@/lib/expand-installments";
-import { InvoiceComparisonView, type ComparisonItem } from "./InvoiceComparisonView";
-import { groupByBillingCycle } from "@/lib/invoice-utils";
-
 
 type Props = {
   open: boolean;
@@ -32,11 +27,6 @@ type ParsedRow = {
   installment_number?: number;
   total_installments?: number;
   isFuture?: boolean; // generated parcela future row, not present in PDF
-  confidence_score?: number;
-  original_amount_text?: string;
-  approved?: boolean;
-  isDuplicate?: boolean;
-  duplicateReason?: string;
 };
 
 type InstallmentMeta = {
@@ -51,54 +41,6 @@ type ExistingTransaction = Pick<Tables<"transactions">, "date" | "name" | "amoun
 
 function normalize(str: string): string {
   return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
-}
-
-type DedupOptions = {
-  dateToleranceDays: number;
-  amountToleranceCents: number;
-};
-
-function getDuplicateReason(
-  pdf: { date: string; name: string; amount: number; type: string },
-  existing: { date: string; name: string; amount: number; type: string },
-  options: DedupOptions = { dateToleranceDays: 0, amountToleranceCents: 0 }
-): { isDuplicate: boolean; reason?: string } {
-  const normPdfName = normalize(pdf.name).replace(/\s+/g, " ");
-  const normSysName = normalize(existing.name).replace(/\s+/g, " ");
-  
-  const sameName = normPdfName === normSysName || normPdfName.includes(normSysName) || normSysName.includes(normPdfName);
-  if (!sameName) return { isDuplicate: false };
-
-  const sameType = pdf.type === existing.type;
-  if (!sameType) return { isDuplicate: false };
-
-  const pdfDate = new Date(pdf.date);
-  const sysDate = new Date(existing.date);
-  const diffTime = Math.abs(pdfDate.getTime() - sysDate.getTime());
-  const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
-  
-  const withinDateTolerance = diffDays <= options.dateToleranceDays;
-  if (!withinDateTolerance) return { isDuplicate: false };
-
-  const diffAmount = Math.abs(pdf.amount - existing.amount);
-  const withinAmountTolerance = diffAmount <= (options.amountToleranceCents / 100);
-  
-  if (!withinAmountTolerance) return { isDuplicate: false };
-
-  let reason = "";
-  if (diffDays > 0) reason += `${diffDays}d de dif. `;
-  if (diffAmount > 0.001) reason += `R$ ${diffAmount.toFixed(2)} de dif.`;
-  if (!reason) reason = "Exatamente igual";
-
-  return { isDuplicate: true, reason };
-}
-
-function isPossibleDuplicate(
-  pdf: { date: string; name: string; amount: number; type: string },
-  existing: { date: string; name: string; amount: number; type: string },
-  options: DedupOptions = { dateToleranceDays: 0, amountToleranceCents: 0 }
-): boolean {
-  return getDuplicateReason(pdf, existing, options).isDuplicate;
 }
 
 function buildDedupKey(input: { card: string; date: string; name: string; amount: number; type: string }) {
@@ -143,68 +85,19 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
   const [fileName, setFileName] = useState("");
   const [parsing, setParsing] = useState(false);
   const [error, setError] = useState("");
-  const [parsingStep, setParsingStep] = useState<"idle" | "uploading" | "extracting" | "processing">("idle");
-  const [parsingProgress, setParsingProgress] = useState(0);
-  const [fileUrl, setFileUrl] = useState<string | null>(null);
-  const [showPdf, setShowPdf] = useState(false);
-
-
   const [preview, setPreview] = useState<ParsedRow[]>([]);
-  const [rawText, setRawText] = useState<string | null>(null);
   const [dedupResult, setDedupResult] = useState<{ toImport: TransactionInsert[]; duplicateCount: number } | null>(null);
   const [checking, setChecking] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [comparisonItems, setComparisonItems] = useState<ComparisonItem[]>([]);
-  const [isComparisonOpen, setIsComparisonOpen] = useState(false);
-  const [filterDuplicatesOnly, setFilterDuplicatesOnly] = useState(false);
-  const [dateTolerance, setDateTolerance] = useState(0);
-  const [amountTolerance, setAmountTolerance] = useState(0);
-
-  const updatePreviewWithDuplicates = async (rows: ParsedRow[], dateTol: number, amountTol: number) => {
-    const { data: existing } = await fetchExistingForCard(cardName);
-    if (!existing) return rows;
-
-    return rows.map(r => {
-      let foundReason = "";
-      const isDuplicate = existing.some(ext => {
-        const res = getDuplicateReason(
-          { date: r.date, name: r.name, amount: r.amount, type: r.type },
-          { date: ext.date, name: ext.name, amount: Number(ext.amount), type: ext.type },
-          { dateToleranceDays: dateTol, amountToleranceCents: amountTol }
-        );
-        if (res.isDuplicate) foundReason = res.reason || "";
-        return res.isDuplicate;
-      });
-      return {
-        ...r,
-        isDuplicate,
-        duplicateReason: foundReason,
-        approved: isDuplicate ? false : true
-      };
-    });
-  };
-
 
   const reset = () => {
     setFileName("");
     setParsing(false);
-    setParsingStep("idle");
-    setParsingProgress(0);
-    if (fileUrl) URL.revokeObjectURL(fileUrl);
-    setFileUrl(null);
-    setShowPdf(false);
-
-
     setError("");
     setPreview([]);
-    setRawText(null);
     setDedupResult(null);
-    setComparisonItems([]);
-    setIsComparisonOpen(false);
-    setFilterDuplicatesOnly(false);
     setChecking(false);
     setSaving(false);
-
     if (fileRef.current) fileRef.current.value = "";
   };
 
@@ -216,37 +109,19 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
       setError("Selecione um arquivo PDF.");
       return;
     }
-    if (file.size > 10 * 1024 * 1024) {
-      setError("O arquivo é muito grande (máximo 10MB).");
-      return;
-    }
-
     setFileName(file.name);
-    const url = URL.createObjectURL(file);
-    setFileUrl(url);
     setParsing(true);
-
-    setParsingStep("uploading");
-    setParsingProgress(20);
     try {
       const fileBase64 = await fileToBase64(file);
-      setParsingStep("extracting");
-      setParsingProgress(50);
       const result = await parseCardInvoicePdf({ data: { fileBase64, fileName: file.name, kind: "card_invoice" } });
-      setRawText(result.rawPdfText);
-      setParsingStep("processing");
-      setParsingProgress(85);
-      console.log("PDF extraction result:", { transactions: result.transactions?.length, chars: result.charsExtracted });
-
-
       const baseRows = (result.transactions || []).map((t) => ({
         date: t.date,
         name: restoreAccents(t.name),
         amount: Math.abs(Number(t.amount) || 0),
         type: t.type,
-        confidence_score: t.confidence_score,
-        original_amount_text: t.original_amount_text,
       }));
+      // Detect installment markers ("3/12", "3 de 12") and project missing future parcelas.
+      const presentKeys = new Set(baseRows.map((r) => `${r.date}|${r.name}|${r.amount.toFixed(2)}|${r.type}`));
       const expanded = expandInstallments(baseRows);
       const rows: ParsedRow[] = expanded.rows.map((r) => ({
         date: r.date,
@@ -256,26 +131,16 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
         installment_group_id: r.installment_group_id,
         installment_number: r.installment_number,
         total_installments: r.total_installments,
-        confidence_score: r.confidence_score,
-        original_amount_text: r.original_amount_text,
-        isFuture: r.is_future,
+        isFuture:
+          r.installment_group_id !== null &&
+          !presentKeys.has(`${r.date}|${r.name}|${r.amount.toFixed(2)}|${r.type}`),
       }));
       if (rows.length === 0) {
         setError("Nenhuma transação detectada no PDF.");
       }
       setPreview(rows);
-      setParsingProgress(95);
-
-      const rowsWithDup = await updatePreviewWithDuplicates(rows, dateTolerance, amountTolerance);
-      setPreview(rowsWithDup);
-
-      setParsingProgress(100);
-
     } catch (err: any) {
-      console.error("PDF Processing Error:", err);
-      // Extrair mensagem de erro mais amigável se for um erro de Server Function
-      const msg = err?.message || (typeof err === 'string' ? err : "Erro inesperado ao processar o PDF.");
-      setError(msg);
+      setError(err?.message || "Erro ao processar o PDF.");
       setPreview([]);
     } finally {
       setParsing(false);
@@ -291,24 +156,23 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
       setError("Erro ao consultar transações existentes.");
       return;
     }
-
-    const { data: { session } } = await supabase.auth.getSession();
-    const userId = session?.user?.id;
-
-    if (!userId) {
-      setChecking(false);
-      setError("Sessão não encontrada. Por favor, faça login novamente.");
-      return;
-    }
+    const seen = new Set(
+      existing.map((t) =>
+        buildDedupKey({
+          card: cardName,
+          date: t.date,
+          name: t.name,
+          amount: Number(t.amount),
+          type: t.type,
+        })
+      )
+    );
 
     const toImport: TransactionInsert[] = [];
     for (const row of preview) {
-      if (row.approved === false) continue;
-
       const { category, icon } = categorizeTransaction(row.name);
       const transaction: TransactionInsert = {
         id: crypto.randomUUID(),
-        user_id: userId,
         date: row.date,
         name: row.name,
         amount: row.amount,
@@ -321,15 +185,21 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
         installment_number: row.installment_number ?? 1,
         total_installments: row.total_installments ?? 1,
       };
-
+      const key = buildDedupKey({
+        card: cardName,
+        date: transaction.date,
+        name: transaction.name,
+        amount: Number(transaction.amount),
+        type: transaction.type,
+      });
+      if (seen.has(key)) continue;
+      seen.add(key);
       toImport.push(transaction);
     }
 
-    const duplicateCount = preview.filter(r => r.isDuplicate).length;
-    const ignoredCount = preview.filter(r => r.isDuplicate && r.approved === false).length;
-
+    const duplicateCount = preview.length - toImport.length;
     if (toImport.length === 0) {
-      setError("Todas as transações selecionadas já existem no sistema ou foram rejeitadas.");
+      setError("Todas as transações desta fatura já foram importadas.");
       setChecking(false);
       return;
     }
@@ -337,133 +207,7 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
     setChecking(false);
   };
 
-  const handleCompareWithSystem = async () => {
-    setChecking(true);
-    try {
-      const { data: existing, error: existErr } = await fetchExistingForCard(cardName);
-      if (existErr || !existing) {
-        setError("Erro ao consultar transações existentes.");
-        return;
-      }
-
-      if (preview.length === 0) return;
-      
-      const { data: cardData } = await supabase.from("cards").select("closing_day, due_day").eq("name", cardName).maybeSingle();
-      
-      const pdfRows = preview;
-      const comparison: ComparisonItem[] = [];
-      const usedSystemIdx = new Set<number>();
-      
-      const systemRows = existing.map(t => ({
-        ...t,
-        amount: Number(t.amount),
-      }));
-
-      for (const pdf of pdfRows) {
-        let matchIdx = -1;
-        let matchReason = "";
-        for (let i = 0; i < systemRows.length; i++) {
-          if (usedSystemIdx.has(i)) continue;
-          const sys = systemRows[i];
-          
-          const res = getDuplicateReason(
-            { date: pdf.date, name: pdf.name, amount: pdf.amount, type: pdf.type },
-            { date: sys.date, name: sys.name, amount: sys.amount, type: sys.type },
-            { dateToleranceDays: dateTolerance, amountToleranceCents: amountTolerance }
-          );
-          
-          if (res.isDuplicate) {
-            matchIdx = i;
-            matchReason = res.reason || "";
-            break;
-          }
-        }
-
-        if (matchIdx !== -1) {
-          usedSystemIdx.add(matchIdx);
-          comparison.push({
-            date: pdf.date,
-            name: pdf.name,
-            amount: pdf.amount,
-            systemAmount: systemRows[matchIdx].amount,
-            systemDate: systemRows[matchIdx].date,
-            duplicateReason: matchReason,
-            status: "match"
-          });
-        } else {
-          let mismatchIdx = -1;
-          for (let i = 0; i < systemRows.length; i++) {
-            if (usedSystemIdx.has(i)) continue;
-            const sys = systemRows[i];
-            const sameDate = pdf.date === sys.date;
-            const sameName = pdf.name.toLowerCase().trim() === sys.name.toLowerCase().trim();
-            
-            if (sameDate && sameName) {
-              mismatchIdx = i;
-              break;
-            }
-          }
-          
-          if (mismatchIdx !== -1) {
-            usedSystemIdx.add(mismatchIdx);
-            const diffAmount = pdf.amount - systemRows[mismatchIdx].amount;
-            comparison.push({
-              date: pdf.date,
-              name: pdf.name,
-              amount: pdf.amount,
-              systemAmount: systemRows[mismatchIdx].amount,
-              duplicateReason: `Dif. valor: R$ ${diffAmount.toFixed(2)}`,
-              status: "mismatch"
-            });
-          } else {
-            comparison.push({
-              date: pdf.date,
-              name: pdf.name,
-              amount: pdf.amount,
-              status: "pdf_only"
-            });
-          }
-        }
-      }
-
-      const pdfDates = pdfRows.map(p => new Date(p.date).getTime()).sort();
-      const minPdf = pdfDates[0];
-      const maxPdf = pdfDates[pdfDates.length - 1];
-      
-      for (let i = 0; i < systemRows.length; i++) {
-        if (usedSystemIdx.has(i)) continue;
-        const sys = systemRows[i];
-        const sysTime = new Date(sys.date).getTime();
-        
-        if (sysTime >= minPdf - 2 * 86400000 && sysTime <= maxPdf + 2 * 86400000) {
-          comparison.push({
-            date: sys.date,
-            name: sys.name,
-            amount: 0,
-            systemAmount: sys.amount,
-            status: "system_only"
-          });
-        }
-      }
-
-      setComparisonItems(comparison);
-      setIsComparisonOpen(true);
-    } catch (err: any) {
-      setError("Erro ao comparar com o sistema: " + err.message);
-    } finally {
-      setChecking(false);
-    }
-  };
-
-  const handleCompareDuplicates = async () => {
-    setFilterDuplicatesOnly(true);
-    // Mesmo se já houver itens, recalculamos para garantir que está atualizado com o preview atual
-    await handleCompareWithSystem();
-  };
-
-
   const handleConfirmImport = async () => {
-
     if (!dedupResult) return;
     setSaving(true);
     setError("");
@@ -491,8 +235,7 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) reset(); onOpenChange(v); }}>
-      <DialogContent className={`${preview.length > 0 ? "max-w-4xl" : "max-w-md"} mx-auto rounded-2xl transition-all duration-300 max-h-[90vh] overflow-hidden flex flex-col`}>
-
+      <DialogContent className="max-w-md mx-auto rounded-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-primary" />
@@ -514,30 +257,12 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
         )}
 
         {parsing && (
-          <div className="flex flex-col items-center justify-center gap-4 py-6">
-            <div className="relative flex items-center justify-center">
-              <Loader2 className="h-8 w-8 animate-spin text-primary/30" />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <Sparkles className="h-4 w-4 text-primary animate-pulse" />
-              </div>
-            </div>
-            <div className="w-full space-y-2">
-              <div className="flex justify-between text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
-                <span>
-                  {parsingStep === "uploading" && "Carregando arquivo..."}
-                  {parsingStep === "extracting" && "Extraindo texto com IA..."}
-                  {parsingStep === "processing" && "Processando transações..."}
-                </span>
-                <span>{parsingProgress}%</span>
-              </div>
-              <Progress value={parsingProgress} className="h-1.5" />
-            </div>
-            <p className="text-[10px] text-muted-foreground text-center">
-              Isso pode levar alguns segundos dependendo do tamanho do PDF.
-            </p>
+          <div className="flex flex-col items-center justify-center gap-2 py-6">
+            <Loader2 className="h-5 w-5 animate-spin text-primary" />
+            <p className="text-xs text-muted-foreground">Extraindo transações com IA...</p>
+            <p className="text-[10px] text-muted-foreground">Isso pode levar alguns segundos.</p>
           </div>
         )}
-
 
         {error && (
           <div className="rounded-xl bg-destructive/10 p-3 space-y-2">
@@ -567,209 +292,60 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
         )}
 
         {preview.length > 0 && !parsing && (
-          <div className="flex-1 overflow-hidden flex flex-col space-y-3">
+          <>
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <FileText className="h-4 w-4" />
-                  {fileName} — {preview.length} transações
-                </div>
-                {fileUrl && (
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className={`h-7 gap-1.5 text-[10px] rounded-lg ${showPdf ? "bg-primary/10 border-primary/20 text-primary" : ""}`}
-                    onClick={() => setShowPdf(!showPdf)}
-                  >
-                    {showPdf ? <LayoutPanelLeft className="h-3.5 w-3.5" /> : <FileSearch className="h-3.5 w-3.5" />}
-                    {showPdf ? "Ocultar PDF" : "Visualizar PDF"}
-                  </Button>
-                )}
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <FileText className="h-4 w-4" />
+                {fileName} — {preview.length} transações
               </div>
-              <div className="flex items-center gap-2">
-                {!isComparisonOpen ? (
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="h-7 gap-1.5 text-[10px] rounded-lg"
-                    onClick={() => { setFilterDuplicatesOnly(false); handleCompareWithSystem(); }}
-                    disabled={checking}
-                  >
-                    {checking ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Scale className="h-3.5 w-3.5" />}
-                    Comparar com Sistema
-                  </Button>
-                ) : (
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="h-7 gap-1.5 text-[10px] rounded-lg"
-                    onClick={() => setIsComparisonOpen(false)}
-                  >
-                    Voltar para Lista
-                  </Button>
-                )}
-                <Button variant="ghost" size="sm" className="text-xs h-7" onClick={reset}>Trocar PDF</Button>
-              </div>
-
+              <Button variant="ghost" size="sm" className="text-xs h-7" onClick={reset}>Trocar PDF</Button>
             </div>
-            
-            <div className={`flex flex-1 gap-4 overflow-hidden ${showPdf ? "min-h-[400px]" : ""}`}>
-              {showPdf && fileUrl && (
-                <div className="flex-1 border rounded-xl overflow-hidden bg-muted/20">
-                  <iframe 
-                    src={fileUrl} 
-                    className="w-full h-full border-0"
-                    title="Visualização do PDF"
-                  />
-                </div>
-              )}
-              
-              <div className={`${showPdf ? "flex-[0.8]" : "w-full"} flex flex-col overflow-hidden`}>
-                <div className="flex-1 overflow-hidden flex flex-col space-y-3">
-                  <div className="flex flex-col gap-2 p-3 bg-muted/30 rounded-xl border border-border/50">
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="flex-1 space-y-2">
-                        <label className="text-[10px] font-medium text-muted-foreground flex items-center justify-between">
-                          <span>Tolerância de Data (± {dateTolerance} dias)</span>
-                          <span className="text-primary">{dateTolerance}d</span>
-                        </label>
-                        <input 
-                          type="range" 
-                          min="0" 
-                          max="7" 
-                          step="1" 
-                          value={dateTolerance} 
-                          onChange={(e) => {
-                            const val = parseInt(e.target.value);
-                            setDateTolerance(val);
-                            updatePreviewWithDuplicates(preview, val, amountTolerance).then(updated => {
-                              setPreview(updated);
-                              if (isComparisonOpen) handleCompareWithSystem();
-                            });
-                          }}
-                          className="w-full h-1.5 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
-                        />
-                      </div>
-                      <div className="flex-1 space-y-2">
-                        <label className="text-[10px] font-medium text-muted-foreground flex items-center justify-between">
-                          <span>Tolerância de Valor (± {amountTolerance} centavos)</span>
-                          <span className="text-primary">{amountTolerance}¢</span>
-                        </label>
-                        <input 
-                          type="range" 
-                          min="0" 
-                          max="100" 
-                          step="5" 
-                          value={amountTolerance} 
-                          onChange={(e) => {
-                            const val = parseInt(e.target.value);
-                            setAmountTolerance(val);
-                            updatePreviewWithDuplicates(preview, dateTolerance, val).then(updated => {
-                              setPreview(updated);
-                              if (isComparisonOpen) handleCompareWithSystem();
-                            });
-                          }}
-                          className="w-full h-1.5 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
-                        />
-                      </div>
-                    </div>
-                  </div>
+            {preview.some((p) => p.isFuture) && (
+              <p className="text-[11px] text-muted-foreground -mt-1">
+                <span className="inline-block text-[9px] font-semibold px-1 py-0.5 rounded bg-primary/10 text-primary mr-1">futura</span>
+                = parcela detectada e projetada para meses seguintes ({preview.filter((p) => p.isFuture).length} adicionada{preview.filter((p) => p.isFuture).length > 1 ? "s" : ""}).
+              </p>
+            )}
 
-                  <div className="flex flex-col gap-1.5">
-                    <div className="flex items-center justify-between gap-2">
-                      {preview.some((p) => p.isFuture) && (
-                        <p className="text-[11px] text-muted-foreground">
-                          <span className="inline-block text-[9px] font-semibold px-1 py-0.5 rounded bg-primary/10 text-primary mr-1">futura</span>
-                          = parcela projetada ({preview.filter((p) => p.isFuture).length}).
-                        </p>
-                      )}
-                      {preview.some((p) => p.isDuplicate) && (
-                        <div className="flex items-center gap-2">
-                          <p className="text-[11px] text-amber-600 font-medium">
-                            <AlertCircle className="inline-block h-3.5 w-3.5 mr-1 align-text-top" />
-                            {preview.filter(p => p.isDuplicate).length} possíveis duplicatas detectadas.
-                          </p>
-                          <Button 
-                            variant="link" 
-                            size="sm" 
-                            className="h-auto p-0 text-[11px] text-amber-600 underline hover:text-amber-700 font-semibold"
-                            onClick={handleCompareDuplicates}
-                            disabled={checking}
-                          >
-                            {checking ? "Verificando..." : "Ver duplicatas"}
-                          </Button>
-                        </div>
-                      )}
-                      <p className="text-[10px] text-muted-foreground ml-auto italic">
-                        Dica: clique em uma linha para editar.
-                      </p>
-                    </div>
-                  </div>
-      
-                  <div className="flex-1 overflow-y-auto">
-                    {isComparisonOpen ? (
-                      <InvoiceComparisonView 
-                        items={filterDuplicatesOnly ? comparisonItems.filter(i => i.status === 'match' || i.status === 'mismatch' || i.status === 'system_only') : comparisonItems}
-                        pdfTotal={preview.reduce((sum, r) => sum + r.amount, 0)}
-                        systemTotal={comparisonItems.reduce((sum, r) => sum + (r.systemAmount || 0), 0)}
-                        title={filterDuplicatesOnly ? "Comparação: Apenas Duplicatas" : "Comparação Completa"}
-                      />
-                    ) : (
-                      <PdfPreviewTable
-                        rows={preview}
-                        onChange={(rows) => { setPreview(rows); setDedupResult(null); }}
-                        itemLabel="transações"
-                        rawPdfText={rawText}
-                        documentKind="card_invoice"
-                      />
-                    )}
-                  </div>
+            <PdfPreviewTable
+              rows={preview}
+              onChange={(rows) => { setPreview(rows); setDedupResult(null); }}
+              itemLabel="transações"
+            />
 
-
-                  {!dedupResult ? (
-                    <div className="flex gap-2">
-                      <Button variant="outline" className="flex-1 rounded-xl" onClick={reset}>Cancelar</Button>
-                      <Button className="flex-1 rounded-xl gap-2" onClick={handleCheckDuplicates} disabled={checking}>
-                        {checking && <Loader2 className="h-4 w-4 animate-spin" />}
-                        Verificar {preview.length}
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      <div className="rounded-xl bg-muted/50 p-3 space-y-1.5 border border-border/50">
-                        <div className="flex items-center gap-2 text-xs font-medium text-primary">
-                          <CheckCircle2 className="h-4 w-4" />
-                          {dedupResult.toImport.length} transações confirmadas para importação
-                        </div>
-                        {preview.filter(r => r.isDuplicate && r.approved === false).length > 0 && (
-                          <div className="flex items-center gap-2 text-[10px] text-amber-600 font-medium">
-                            <AlertCircle className="h-3.5 w-3.5" />
-                            {preview.filter(r => r.isDuplicate && r.approved === false).length} duplicadas foram automaticamente ignoradas
-                          </div>
-                        )}
-                        {preview.filter(r => r.isDuplicate && r.approved === true).length > 0 && (
-                          <div className="flex items-center gap-2 text-[10px] text-blue-600 font-medium">
-                            <CheckCircle2 className="h-3.5 w-3.5" />
-                            {preview.filter(r => r.isDuplicate && r.approved === true).length} duplicadas mantidas manualmente
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex gap-2">
-                        <Button variant="outline" className="flex-1 rounded-xl" onClick={() => setDedupResult(null)}>Voltar</Button>
-                        <Button className="flex-1 rounded-xl gap-2" onClick={handleConfirmImport} disabled={saving}>
-                          {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-                          Confirmar importação
-                        </Button>
-                      </div>
+            {!dedupResult ? (
+              <div className="flex gap-2">
+                <Button variant="outline" className="flex-1 rounded-xl" onClick={reset}>Cancelar</Button>
+                <Button className="flex-1 rounded-xl gap-2" onClick={handleCheckDuplicates} disabled={checking}>
+                  {checking && <Loader2 className="h-4 w-4 animate-spin" />}
+                  Verificar {preview.length}
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="rounded-xl bg-muted/50 p-3 space-y-1.5">
+                  <div className="flex items-center gap-2 text-xs font-medium text-primary">
+                    <CheckCircle2 className="h-4 w-4" />
+                    {dedupResult.toImport.length} transações serão importadas
+                  </div>
+                  {dedupResult.duplicateCount > 0 && (
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <AlertCircle className="h-3.5 w-3.5" />
+                      {dedupResult.duplicateCount} duplicada{dedupResult.duplicateCount > 1 ? "s" : ""} ignorada{dedupResult.duplicateCount > 1 ? "s" : ""}
                     </div>
                   )}
                 </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" className="flex-1 rounded-xl" onClick={() => setDedupResult(null)}>Voltar</Button>
+                  <Button className="flex-1 rounded-xl gap-2" onClick={handleConfirmImport} disabled={saving}>
+                    {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+                    Confirmar importação
+                  </Button>
+                </div>
               </div>
-            </div>
-          </div>
+            )}
+          </>
         )}
-
-
       </DialogContent>
     </Dialog>
   );

@@ -10,15 +10,12 @@ export type InstallmentInputRow = {
   name: string;
   amount: number;
   type: "expense" | "income";
-  confidence_score?: number;
-  original_amount_text?: string;
 };
 
 export type InstallmentExpandedRow = InstallmentInputRow & {
   installment_group_id: string | null;
   installment_number: number;
   total_installments: number;
-  is_future?: boolean;
 };
 
 // Patterns we accept inside the description.
@@ -117,8 +114,6 @@ export function expandInstallments(input: InstallmentInputRow[]): ExpandResult {
       type: "expense" | "income";
       amount: number;
       presentNumbers: Set<number>;
-      confidence_score: number;
-      original_amount_text?: string;
     }
   >();
 
@@ -131,8 +126,6 @@ export function expandInstallments(input: InstallmentInputRow[]): ExpandResult {
         installment_group_id: null,
         installment_number: 1,
         total_installments: 1,
-        confidence_score: r.confidence_score ?? 100,
-        original_amount_text: r.original_amount_text,
       });
       continue;
     }
@@ -149,8 +142,6 @@ export function expandInstallments(input: InstallmentInputRow[]): ExpandResult {
         type: r.type,
         amount: r.amount,
         presentNumbers: new Set<number>(),
-        confidence_score: r.confidence_score ?? 100,
-        original_amount_text: r.original_amount_text,
       };
       series.set(seriesKey, s);
     } else {
@@ -170,9 +161,6 @@ export function expandInstallments(input: InstallmentInputRow[]): ExpandResult {
       installment_group_id: s.groupId,
       installment_number: det.current,
       total_installments: det.total,
-      confidence_score: s.confidence_score,
-      original_amount_text: s.original_amount_text,
-      is_future: false,
     });
   }
 
@@ -191,9 +179,6 @@ export function expandInstallments(input: InstallmentInputRow[]): ExpandResult {
         installment_group_id: s.groupId,
         installment_number: n,
         total_installments: s.total,
-        confidence_score: s.confidence_score,
-        original_amount_text: s.original_amount_text,
-        is_future: true,
       });
       s.presentNumbers.add(n);
       futureRowsAdded++;

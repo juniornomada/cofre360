@@ -9,26 +9,7 @@ import { mergeConfig, defineConfig } from "vite";
 import { defaultExclude } from 'vitest/config';
 
 export default defineTanstackConfig({
-  tanstackStart: {
-    server: { entry: "server" },
-  },
   vite: {
-    build: {
-      target: 'esnext',
-      minify: 'esbuild',
-      cssMinify: true,
-      rollupOptions: {
-        output: {
-          manualChunks: {
-            'vendor-react': ['react', 'react-dom'],
-            'vendor-router': ['@tanstack/react-router'],
-            'vendor-ui': ['lucide-react', 'date-fns', 'clsx', 'tailwind-merge'],
-            'vendor-supabase': ['@supabase/supabase-js'],
-          },
-        },
-      },
-      chunkSizeWarningLimit: 1000,
-    },
     test: {
       globals: true,
       environment: "jsdom",

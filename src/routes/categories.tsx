@@ -166,24 +166,25 @@ function CategoriesPage() {
   }
 
   return (
-    <div className="app-container">
-      <header className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Link to="/" className="rounded-lg p-1.5 hover:bg-muted transition-colors">
-            <ArrowLeft className="h-5 w-5" />
-          </Link>
-          <h1 className="text-lg font-semibold">Categorias</h1>
+    <div className="min-h-screen bg-background pb-4">
+      <header className="sticky top-0 z-40 border-b border-border bg-card/80 backdrop-blur-xl">
+        <div className="flex items-center justify-between px-4 py-3">
+          <div className="flex items-center gap-2">
+            <Link to="/" className="rounded-lg p-1.5 hover:bg-muted">
+              <ArrowLeft className="h-5 w-5" />
+            </Link>
+            <h1 className="text-lg font-semibold">Categorias</h1>
+          </div>
+          <Button
+            size="sm"
+            onClick={() => setEdit({ kind: "category", label: "", icon: "📄" })}
+          >
+            <Plus className="h-4 w-4" /> Nova
+          </Button>
         </div>
-        <Button
-          size="sm"
-          onClick={() => setEdit({ kind: "category", label: "", icon: "📄" })}
-          className="rounded-xl"
-        >
-          <Plus className="h-4 w-4" /> Nova
-        </Button>
       </header>
 
-      <main className="space-y-4">
+      <main className="px-4 py-4">
         {loading ? (
           <p className="text-center text-sm text-muted-foreground">Carregando...</p>
         ) : categories.length === 0 ? (
