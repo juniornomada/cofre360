@@ -400,6 +400,7 @@ function CardsPage() {
     setActiveInvoiceIdx(1);
     setLoadingTx(true);
     try {
+      // Filter transactions by card.name to ensure they belong to the specific card
       const { data, error } = await supabase
         .from("transactions")
         .select("id, name, icon, category, date, amount, type, created_at, total_installments, installment_number, installment_group_id")
@@ -416,7 +417,7 @@ function CardsPage() {
   };
 
   const invoicePeriods = invoiceCard
-    ? groupByBillingCycle(cardTransactions, invoiceCard.closing_day, invoiceCard.due_day)
+    ? groupByBillingCycle(cardTransactions.filter(tx => tx.card === invoiceCard.name), invoiceCard.closing_day, invoiceCard.due_day)
     : [];
   const activePeriod = invoicePeriods[activeInvoiceIdx] || invoicePeriods[0];
 
