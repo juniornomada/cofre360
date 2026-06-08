@@ -183,7 +183,9 @@ function SortableAccountItem({
                     {account.is_visible === false && (
                       <EyeOff className="h-3 w-3 text-muted-foreground/60 shrink-0" />
                     )}
-                    <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground shrink-0" />
+                    <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); startEdit(account); }} className="interactive-button">
+                      <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground shrink-0" />
+                    </button>
                   </div>
                 <p className={cn(
                   "text-[15px] font-bold tabular-nums tracking-tight leading-tight whitespace-nowrap shrink-0",
