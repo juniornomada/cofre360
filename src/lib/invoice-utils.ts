@@ -79,8 +79,10 @@ export function groupByBillingCycle(txs: CardTransaction[], closingDay: number |
     if (txDate > maxFutureDate) maxFutureDate = txDate;
   }
 
-  const formatLabel = (prefix: string, endDate: Date) =>
-    `${prefix} (${monthNames[endDate.getMonth()]}/${endDate.getFullYear().toString().slice(2)})`;
+  const formatLabel = (prefix: string, endDate: Date) => {
+    const dueDate = makeDue(endDate);
+    return `${prefix} (F ${endDate.getDate().toString().padStart(2, '0')}/${(endDate.getMonth() + 1).toString().padStart(2, '0')} e V ${dueDate.getDate().toString().padStart(2, '0')}/${(dueDate.getMonth() + 1).toString().padStart(2, '0')})`;
+  };
 
   const periods: InvoicePeriod[] = [
     { label: formatLabel("Anterior", prevClosing), key: "past", startDate: pastClosing, endDate: prevClosing, dueDate: makeDue(prevClosing), transactions: [], total: 0 },

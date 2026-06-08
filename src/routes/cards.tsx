@@ -1088,14 +1088,14 @@ function CardsPage() {
                   <ChevronLeft className="h-4 w-4" />
                 </button>
                 <div className="flex-1 text-center">
-                  <p className="text-sm font-semibold text-foreground">{activePeriod?.label || "—"}</p>
+                  <p className="text-sm font-semibold text-foreground">
+                    {activePeriod?.label.includes("(") ? activePeriod.label.split(" (")[0] : activePeriod?.label || "—"}
+                  </p>
                   {activePeriod && (
                     <p className="text-[10px] text-muted-foreground">
-                      {activePeriod.startDate.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}
-                      {" → "}
-                      {activePeriod.endDate.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}
-                      {" · Vence "}
-                      {activePeriod.dueDate.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}
+                      F {activePeriod.endDate.getDate().toString().padStart(2, "0")}/{ (activePeriod.endDate.getMonth() + 1).toString().padStart(2, "0") }
+                      {" · Venc "}
+                      {activePeriod.dueDate.getDate().toString().padStart(2, "0")}/{ (activePeriod.dueDate.getMonth() + 1).toString().padStart(2, "0") }
                     </p>
                   )}
                 </div>
