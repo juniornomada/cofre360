@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { SmartLink as Link } from "@/components/SmartLink";
-import { ArrowLeft, Plus, CreditCard, Trash2, X, Check, Loader2, Wallet, Landmark, ChevronLeft, ChevronRight, Receipt, FileUp, GripVertical, Layers, Pencil, MoreVertical, Eye, EyeOff, Copy, AlertCircle, CheckCircle2, Info, RefreshCw, CalendarIcon, Trash } from "lucide-react";
+import { ArrowLeft, Plus, CreditCard, Trash2, X, Check, Loader2, Wallet, Landmark, ChevronLeft, ChevronRight, Receipt, FileUp, GripVertical, Layers, Pencil, MoreVertical, Eye, EyeOff, Copy, AlertCircle, CheckCircle2, Info, RefreshCw, CalendarIcon, Trash, ChevronDown, ChevronUp } from "lucide-react";
 import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 
@@ -209,6 +209,7 @@ function CardsPage() {
   const [editInstallmentMode, setEditInstallmentMode] = useState<"divide" | "fixed">("divide");
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showInvoiceDetails, setShowInvoiceDetails] = useState(false);
 
   const [activeTab, setActiveTab] = useState("list");
 
@@ -1415,6 +1416,63 @@ function CardsPage() {
                     R$ {Math.max(0, (invoicePeriods[activeInvoiceIdx]?.total || 0) - (invoicePeriods[activeInvoiceIdx]?.key ? cardPaymentsByPeriod[payingCard.id]?.[invoicePeriods[activeInvoiceIdx].key] || 0 : 0)).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                   </span>
                 </div>
+              </div>
+
+               <div className="rounded-xl border border-border/40 bg-accent/20 overflow-hidden">
+                <button 
+                  onClick={() => setShowInvoiceDetails(!showInvoiceDetails)}
+                  className="w-full flex items-center justify-between p-2.5 hover:bg-accent/30 transition-colors"
+                >
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                    <Receipt className="h-3 w-3" />
+                    Composição da Fatura
+                  </span>
+                  {showInvoiceDetails ? <ChevronUp className="h-3 w-3 text-muted-foreground" /> : <ChevronDown className="h-3 w-3 text-muted-foreground" />}
+                </button>
+                
+                {showInvoiceDetails && (
+                  <div className="px-2.5 pb-2.5 space-y-2 animate-in fade-in slide-in-from-top-1 duration-200">
+                    <div className="max-h-[150px] overflow-y-auto space-y-1.5 pr-1 custom-scrollbar">
+                      {invoicePeriods[activeInvoiceIdx]?.transactions.map((tx) => (
+                        <div key={tx.id} className="flex items-center justify-between gap-2 text-[10px]">
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <span>{tx.icon}</span>
+                            <span className="truncate text-foreground font-medium">{tx.name}</span>
+                          </div>
+                          <span className={cn(
+                            "tabular-nums font-bold shrink-0",
+                            tx.type === "income" ? "text-primary" : "text-destructive"
+                          )}>
+                            {tx.type === "income" ? "+" : "-"} R$ {Number(tx.amount).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                          </span>
+                        </div>
+                      ))}
+                      {invoicePeriods[activeInvoiceIdx]?.transactions.length === 0 && (
+                        <p className="text-center py-2 text-[10px] text-muted-foreground">Nenhuma transação neste período</p>
+                      )}
+                    </div>
+                    
+                    <div className="pt-2 border-t border-border/40 space-y-1">
+                      {(() => {
+                        const txs = invoicePeriods[activeInvoiceIdx]?.transactions || [];
+                        const compras = txs.filter(t => t.type === "expense").reduce((s, t) => s + Number(t.amount), 0);
+                        const creditos = txs.filter(t => t.type === "income").reduce((s, t) => s + Number(t.amount), 0);
+                        return (
+                          <>
+                            <div className="flex justify-between text-[9px]">
+                              <span className="text-muted-foreground">Total em compras:</span>
+                              <span className="text-destructive font-medium">-R$ {compras.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
+                            </div>
+                            <div className="flex justify-between text-[9px]">
+                              <span className="text-muted-foreground">Estornos/Créditos:</span>
+                              <span className="text-primary font-medium">+R$ {creditos.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
+                            </div>
+                          </>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <Label className="text-xs text-muted-foreground">Pagar com:</Label>
