@@ -145,4 +145,57 @@ describe('groupByBillingCycle calculation logic', () => {
     expect(totalV2).toBe(150);
     expect(isInconsistent).toBe(true);
   });
+
+  it('should calculate zero total when there are no transactions', () => {
+    const transactions: CardTransaction[] = [];
+    const refDate = new Date('2024-01-25');
+    const closingDay = 10;
+    const dueDay = 20;
+
+    const periods = groupByBillingCycle(transactions, closingDay, dueDay, refDate);
+    
+    // Check all periods
+    periods.forEach(period => {
+      expect(period.transactions.length).toBe(0);
+      expect(period.total).toBe(0);
+    });
+  });
+
+  it('should calculate zero total when transactions sum to zero (e.g. purchase + equal refund)', () => {
+    const transactions: CardTransaction[] = [
+      {
+        id: '1',
+        name: 'Compra',
+        amount: 100.00,
+        type: 'expense',
+        date: '2024-01-15',
+        created_at: '2024-01-15T10:00:00Z',
+        category: 'Shopping',
+        icon: '🛍️',
+        installment_group_id: null,
+        installment_number: null,
+        total_installments: null,
+      },
+      {
+        id: '2',
+        name: 'Estorno Total',
+        amount: 100.00,
+        type: 'income',
+        date: '2024-01-16',
+        created_at: '2024-01-16T10:00:00Z',
+        category: 'Outros',
+        icon: '💰',
+        installment_group_id: null,
+        installment_number: null,
+        total_installments: null,
+      }
+    ];
+
+    const refDate = new Date('2024-01-25');
+    const periods = groupByBillingCycle(transactions, 10, 20, refDate);
+    
+    const relevantPeriod = periods.find(p => p.transactions.length === 2);
+    expect(relevantPeriod).toBeDefined();
+    expect(relevantPeriod?.total).toBe(0);
+  });
 });
