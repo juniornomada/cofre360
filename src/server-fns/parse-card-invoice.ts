@@ -123,12 +123,13 @@ Regras:
   const bankPrompt = `Você recebe o texto bruto extraído de um EXTRATO BANCÁRIO brasileiro (conta corrente / poupança / digital). Extraia TODAS as movimentações (débitos e créditos) presentes no extrato.
 
 Regras:
-- "date" no formato YYYY-MM-DD. Se faltar o ano no PDF, infira pelo período do extrato ou use o ano atual.
+- "date" no formato YYYY-MM-DD.
 - "name" é a descrição da movimentação limpa (ex.: "PIX recebido - João", "Compra débito - Padaria X", "Tarifa mensal", "Salário").
 - "amount" é número positivo em reais (sem R$, sem ponto de milhar; use ponto decimal — sempre positivo).
-- "type": "expense" para débitos/saídas/pagamentos/PIX enviado/compras. "income" para créditos/entradas/PIX recebido/depósitos/salário/rendimentos.
-- Ignore: saldo do dia, saldo anterior, saldo final, totais, cabeçalhos, limite de cheque especial.
-- Não duplique a mesma linha. Se houver "Detalhe" abaixo de uma linha, junte na descrição.
+- "type": "expense" para débitos/saídas/pagamentos/PIX enviado/compras/tarifas/juros. "income" para créditos/entradas/PIX recebido/depósitos/salário/rendimentos/estornos.
+- MUITO IMPORTANTE: Procure por transações em todas as colunas de "Entradas" e "Saídas". Não pule transferências entre contas.
+- Ignore: saldo do dia, saldo anterior, saldo final, totais, cabeçalhos, limite de cheque especial, mensagens informativas.
+- Não duplique a mesma linha. Se houver "Detalhe" abaixo de uma linha que complemente o nome, junte na descrição.
 - Se não houver movimentações claras, retorne lista vazia.`;
 
   const prompt = `${kind === "bank_statement" ? bankPrompt : cardPrompt}
