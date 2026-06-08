@@ -73,7 +73,7 @@ type PaymentLine = {
   amount: string;
 };
 
-import { groupByBillingCycle, parseTxDate, type CardTransaction, type InvoicePeriod } from "@/lib/invoice-utils";
+import { groupByBillingCycle, parseTxDate, getCycleDates, type CardTransaction, type InvoicePeriod } from "@/lib/invoice-utils";
 
 const colorOptions = [
   { label: "Roxo", value: "from-purple-600 to-purple-900", emoji: "🟣" },
@@ -145,6 +145,7 @@ function CardsPage() {
   const [cards, setCards] = useState<CardData[]>([]);
   const [cardTotals, setCardTotals] = useState<Record<string, number>>({});
   const [cardPayments, setCardPayments] = useState<Record<string, number>>({});
+  const [cardPaymentsByPeriod, setCardPaymentsByPeriod] = useState<Record<string, Record<string, number>>>({});
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -249,7 +250,7 @@ function CardsPage() {
         supabase.from("cards").select("*").eq("user_id", session.user.id).order("sort_order", { ascending: true }).order("created_at", { ascending: true }),
         supabase.from("transactions").select("id, name, amount, date, created_at, card, icon, category, type, total_installments, installment_number, installment_group_id").eq("user_id", session.user.id).not("card", "is", null),
         supabase.from("bank_accounts").select("*").eq("user_id", session.user.id).order("created_at", { ascending: true }),
-        supabase.from("card_payments").select("card_id, amount").eq("user_id", session.user.id),
+        supabase.from("card_payments").select("card_id, amount, paid_at").eq("user_id", session.user.id),
         supabase.from("transactions").select("bank_account_id, amount, type, is_visible").eq("user_id", session.user.id).not("bank_account_id", "is", null),
       ]);
 
@@ -284,10 +285,25 @@ function CardsPage() {
       }
       if (paymentsRes.data) {
         const paid: Record<string, number> = {};
+        const paidByPeriod: Record<string, Record<string, number>> = {};
+        
         for (const p of paymentsRes.data) {
           paid[p.card_id] = (paid[p.card_id] || 0) + Number(p.amount);
+          
+          if (p.paid_at) {
+            const card = cardsRes.data?.find(c => c.id === p.card_id);
+            if (card) {
+              const billingDate = new Date(p.paid_at);
+              const { currentClose } = getCycleDates(billingDate, card.closing_day || 1, card.due_day || 10);
+              const periodKey = currentClose.toISOString().split("T")[0];
+              
+              if (!paidByPeriod[p.card_id]) paidByPeriod[p.card_id] = {};
+              paidByPeriod[p.card_id][periodKey] = (paidByPeriod[p.card_id][periodKey] || 0) + Number(p.amount);
+            }
+          }
         }
         setCardPayments(paid);
+        setCardPaymentsByPeriod(paidByPeriod);
       }
     } catch (error: any) {
       console.error("Error fetching data:", error);
@@ -1379,13 +1395,13 @@ function CardsPage() {
                 <div className="flex justify-between text-xs text-muted-foreground mb-1">
                   <span>Já pago</span>
                   <span className="tabular-nums text-primary">
-                    R$ {(cardPayments[payingCard.id] || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                    R$ {(invoicePeriods[activeInvoiceIdx]?.key ? cardPaymentsByPeriod[payingCard.id]?.[invoicePeriods[activeInvoiceIdx].key] || 0 : 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm font-semibold text-foreground border-t border-border pt-1 mt-1">
                   <span>Restante</span>
                   <span className="tabular-nums">
-                    R$ {Math.max(0, (invoicePeriods[activeInvoiceIdx]?.total || 0) - (cardPayments[payingCard.id] || 0)).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                    R$ {Math.max(0, (invoicePeriods[activeInvoiceIdx]?.total || 0) - (invoicePeriods[activeInvoiceIdx]?.key ? cardPaymentsByPeriod[payingCard.id]?.[invoicePeriods[activeInvoiceIdx].key] || 0 : 0)).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                   </span>
                 </div>
               </div>
@@ -1394,7 +1410,9 @@ function CardsPage() {
 
               {bankAccounts.length > 0 && (() => {
                 const currentInvoiceTotal = invoicePeriods[activeInvoiceIdx]?.total || 0;
-                const remaining = Math.max(0, currentInvoiceTotal - (cardPayments[payingCard.id] || 0));
+                const currentPeriodKey = invoicePeriods[activeInvoiceIdx]?.key;
+                const paidInThisPeriod = currentPeriodKey ? cardPaymentsByPeriod[payingCard.id]?.[currentPeriodKey] || 0 : 0;
+                const remaining = Math.max(0, currentInvoiceTotal - paidInThisPeriod);
                 const eligible = bankAccounts.filter((a) => a.balance > 0).sort((a, b) => b.balance - a.balance);
                 const best = eligible[0];
                 if (!best || remaining <= 0) return null;

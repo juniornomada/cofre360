@@ -47,12 +47,11 @@ export function parseTxDate(dateStr: string, fallback: string): Date {
   return isNaN(d.getTime()) ? (!isNaN(fallbackDate.getTime()) ? fallbackDate : new Date()) : d;
 }
 
-export function groupByBillingCycle(txs: CardTransaction[], closingDay: number | null, dueDay: number | null): InvoicePeriod[] {
+export function getCycleDates(referenceDate: Date, closingDay: number, dueDay: number) {
   const cDay = closingDay || 1;
   const dDay = dueDay || 10;
-  const now = new Date();
-  const currentMonth = now.getMonth();
-  const currentYear = now.getFullYear();
+  const year = referenceDate.getFullYear();
+  const month = referenceDate.getMonth();
 
   const makeDue = (closing: Date) => {
     const d = new Date(closing.getFullYear(), closing.getMonth(), dDay);
@@ -60,20 +59,27 @@ export function groupByBillingCycle(txs: CardTransaction[], closingDay: number |
     return d;
   };
 
-  let closingDate = new Date(currentYear, currentMonth, cDay);
-  
-  // Transition to next invoice only after the due date of the current one has passed.
-  // This ensures that the invoice currently pending payment remains as "Atual".
-  const currentInvoiceDue = makeDue(closingDate);
-  if (now > currentInvoiceDue) {
-    closingDate = new Date(currentYear, currentMonth + 1, cDay);
+  let currentClose = new Date(year, month, cDay);
+  let currentDue = makeDue(currentClose);
+
+  // If we've passed the due date, we're in the next cycle's "current" window
+  if (referenceDate > currentDue) {
+    currentClose = new Date(year, month + 1, cDay);
+    currentDue = makeDue(currentClose);
   }
 
-  const prevClosing = new Date(closingDate.getFullYear(), closingDate.getMonth() - 1, cDay);
+  const prevClose = new Date(currentClose.getFullYear(), currentClose.getMonth() - 1, cDay);
+  return { currentClose, currentDue, prevClose, makeDue };
+}
+
+export function groupByBillingCycle(txs: CardTransaction[], closingDay: number | null, dueDay: number | null): InvoicePeriod[] {
+  const cDay = closingDay || 1;
+  const dDay = dueDay || 10;
+  const { currentClose: closingDate, prevClose: prevClosing, makeDue } = getCycleDates(new Date(), closingDay || 1, dueDay || 10);
   const pastClosing = new Date(prevClosing.getFullYear(), prevClosing.getMonth() - 1, cDay);
 
   // Find the max future date from all transactions based on their actual date field
-  let maxFutureDate = now;
+  let maxFutureDate = new Date();
   for (const tx of txs) {
     const txDate = parseTxDate(tx.date, tx.created_at);
     if (txDate > maxFutureDate) maxFutureDate = txDate;
