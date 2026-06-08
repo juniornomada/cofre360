@@ -1161,6 +1161,20 @@ function CardsPage() {
                           </span>
                           <div className="flex items-center gap-1 opacity-0 group-hover/card-tx-row:opacity-100 transition-all duration-200 translate-x-2 group-hover/card-tx-row:translate-x-0">
                             <button
+                              onClick={() => handleEditTx(tx)}
+                              className="p-1.5 rounded-full bg-accent/50 hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
+                              title="Editar"
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteTx(tx)}
+                              className="p-1.5 rounded-full bg-accent/50 hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                              title="Excluir"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                            <button
                               onClick={() => openInstallmentDialog(tx)}
                               className="p-1.5 rounded-full bg-accent/50 hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
                               title="Editar parcelamento"
