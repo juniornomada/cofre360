@@ -286,12 +286,9 @@ function CardsPage() {
 
   useEffect(() => {
     fetchAll();
-    runValidation(); // Run validation on mount to check for inconsistencies
-    
     // Re-fetch when the window regains focus to avoid stale data
     const onFocus = () => {
       fetchAll();
-      runValidation();
     };
     window.addEventListener("focus", onFocus);
     return () => window.removeEventListener("focus", onFocus);
