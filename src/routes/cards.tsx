@@ -1170,12 +1170,26 @@ function CardsPage() {
               </div>
 
               {activePeriod && (
-                <div className="mx-5 mb-3 rounded-xl bg-accent/50 p-3 flex justify-between items-center">
-                  <span className="text-xs font-medium text-muted-foreground">Total da fatura</span>
-                  <span className="text-sm font-bold text-destructive tabular-nums" data-testid="total-da-fatura-valor">
-                    R$ {activePeriod.total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                  </span>
-
+                <div className="mx-5 mb-3 rounded-xl bg-accent/50 p-3 flex justify-between items-center gap-3">
+                  <div className="flex-1">
+                    <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider block">Total da fatura</span>
+                    <span className="text-sm font-bold text-destructive tabular-nums" data-testid="total-da-fatura-valor">
+                      R$ {activePeriod.total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                  {activePeriod.total > 0 && (
+                    <Button 
+                      size="sm" 
+                      className="h-8 rounded-lg text-[11px] font-bold gap-1.5"
+                      onClick={() => {
+                        setInvoiceDialogOpen(false);
+                        openPayDialog(invoiceCard!, activeInvoiceIdx);
+                      }}
+                    >
+                      <Wallet className="h-3.5 w-3.5" />
+                      Pagar
+                    </Button>
+                  )}
                 </div>
               )}
 
