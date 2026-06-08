@@ -244,7 +244,7 @@ function SortableAccountItem({
                     Importar extrato PDF
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => { setEditingAccount(account); setEditName(account.name); setEditBalance(account.balance.toString()); setEditIcon(account.icon || "custom"); setEditColor(account.color || bankPresets.find(b => b.id === "custom")!.color); }} className="cursor-pointer">
+                  <DropdownMenuItem onClick={() => { startEdit(account); }} className="cursor-pointer">
                     <Pencil className="h-4 w-4 mr-2" />
                     Editar conta
                   </DropdownMenuItem>
