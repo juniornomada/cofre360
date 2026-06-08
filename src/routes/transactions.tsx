@@ -94,6 +94,7 @@ export function TransactionsPage() {
   const [deleteTarget, setDeleteTarget] = useState<Transaction | null>(null);
   const [deleteScope, setDeleteScope] = useState<"single" | "future" | "all">("single");
    const [showAddDialog, setShowAddDialog] = useState(false);
+   const [quickAddType, setQuickAddType] = useState<"expense" | "income" | "transfer">("expense");
    const [copyTxData, setCopyTxData] = useState<{ name: string; amount: number; category: string; icon: string; card: string | null; bank_account_id: string | null } | null>(null);
    const emptyStateRef = useRef<HTMLDivElement>(null); const listRef = useRef<HTMLDivElement>(null);
    
@@ -296,12 +297,9 @@ export function TransactionsPage() {
   useEffect(() => {
     if (searchParams.action === "add") {
       if (searchParams.type === "transfer") {
-        setIsTransfer(true);
-        setNewTx(prev => ({ ...prev, type: "expense" }));
+        setQuickAddType("transfer");
       } else {
-        setIsTransfer(false);
-        const txType = searchParams.type === "income" ? "income" : "expense";
-        setNewTx(prev => ({ ...prev, type: txType }));
+        setQuickAddType(searchParams.type === "income" ? "income" : "expense");
       }
       setShowAddDialog(true);
     }
@@ -467,7 +465,7 @@ export function TransactionsPage() {
       card: tx.card || null,
       bank_account_id: tx.bank_account_id || null,
     });
-    setIsTransfer(tx.category === "Transferência" || tx.category === "Transferências");
+    setQuickAddType(tx.category === "Transferência" || tx.category === "Transferências" ? "transfer" : (tx.type === "income" ? "income" : "expense"));
     setShowAddDialog(true);
     toast.success("Dados copiados para nova transação!");
   };
@@ -1372,7 +1370,7 @@ export function TransactionsPage() {
           <QuickAddTransactionDialog 
             open={showAddDialog} 
             onOpenChange={setShowAddDialog}
-            initialType={isTransfer ? "transfer" : (searchParams.type as "expense" | "income" || "expense")}
+            initialType={quickAddType}
             copyData={copyTxData}
             onSuccess={fetchTransactions}
           />
