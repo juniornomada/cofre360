@@ -22,12 +22,21 @@ async function extractPdfText(base64: string): Promise<string> {
 
   // Dynamic import — pdfjs-dist legacy build is Worker-compatible (pure JS, no DOM)
   const pdfjs: any = await import("pdfjs-dist/legacy/build/pdf.mjs");
-  // Disable the worker — we run on a single thread in the Worker runtime.
-  if (pdfjs.GlobalWorkerOptions) pdfjs.GlobalWorkerOptions.workerSrc = "";
+  
+  // Configure worker for the environment
+  if (typeof window === "undefined") {
+    // Server-side (Edge Function / Node)
+    if (pdfjs.GlobalWorkerOptions) pdfjs.GlobalWorkerOptions.workerSrc = "";
+  } else {
+    // Client-side (Browser)
+    if (pdfjs.GlobalWorkerOptions) {
+      pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.mjs`;
+    }
+  }
 
   const loadingTask = pdfjs.getDocument({
     data: bytes,
-    disableWorker: true,
+    disableWorker: typeof window === "undefined",
     isEvalSupported: false,
     useSystemFonts: false,
     disableFontFace: true,
