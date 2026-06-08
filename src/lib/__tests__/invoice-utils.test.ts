@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { groupByBillingCycle, parseTxDate, type CardTransaction } from '../invoice-utils';
 
 describe('Invoice Utils', () => {
@@ -68,5 +68,66 @@ describe('Invoice Utils', () => {
     const a = 100.00000000001;
     const b = 100;
     expect(Math.abs(a - b)).toBeLessThan(0.01);
+  });
+  it('should generate multiple future periods if transactions exist', () => {
+    const futureTxs: CardTransaction[] = [
+      ...mockTransactions,
+      {
+        id: '3',
+        name: 'Future Transaction',
+        amount: 200,
+        date: '10 jul',
+        created_at: '2026-07-10T00:00:00Z',
+        category: 'Future',
+        type: 'expense',
+        icon: '🚀',
+        card: 'card-1',
+        total_installments: null,
+        installment_number: null,
+        installment_group_id: null,
+      }
+    ];
+
+    const periods = groupByBillingCycle(futureTxs, 15, 20);
+    const futurePeriod = periods.find(p => p.key.startsWith('future'));
+    
+    expect(futurePeriod).toBeDefined();
+    expect(futurePeriod?.transactions.length).toBe(1);
+    expect(futurePeriod?.total).toBe(200);
+  });
+
+  it('should consistently return the same period label for a given transaction', () => {
+    const tx: CardTransaction = mockTransactions[1]; // May 20th
+    const closingDay = 15;
+    const dueDay = 20;
+
+    const periods1 = groupByBillingCycle([tx], closingDay, dueDay);
+    const periods2 = groupByBillingCycle([tx], closingDay, dueDay);
+
+    const p1 = periods1.find(p => p.transactions.some(t => t.id === tx.id));
+    const p2 = periods2.find(p => p.transactions.some(t => t.id === tx.id));
+
+    expect(p1?.label).toBe(p2?.label);
+    expect(p1?.key).toBe(p2?.key);
+  });
+
+  describe('Billing Cycle Logic for Payments', () => {
+    it('should correctly select the active period based on index', () => {
+      const closingDay = 15;
+      const dueDay = 20;
+      const periods = groupByBillingCycle(mockTransactions, closingDay, dueDay);
+      
+      // Simulating selecting "Anterior" (index 0)
+      const selectedIdx = 0;
+      const selectedPeriod = periods[selectedIdx];
+      expect(selectedPeriod.key).toBe('past');
+      expect(selectedPeriod.total).toBe(100);
+
+      // Simulating selecting "Atual" (index 1)
+      const currentIdx = 1;
+      const currentPeriod = periods[currentIdx];
+      expect(currentPeriod.key).toBe('current');
+      expect(currentPeriod.total).toBe(50);
+    });
   });
 });
