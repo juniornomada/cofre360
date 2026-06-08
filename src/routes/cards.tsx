@@ -191,6 +191,7 @@ function CardsPage() {
   const [payingCard, setPayingCard] = useState<CardData | null>(null);
   const [paymentLines, setPaymentLines] = useState<PaymentLine[]>([{ accountId: "", amount: "" }]);
   const [payingSaving, setPayingSaving] = useState(false);
+  const [paymentDate, setPaymentDate] = useState<string>(format(new Date(), "dd MMM", { locale: ptBR }));
 
   // PDF invoice import dialog
   const [pdfImportOpen, setPdfImportOpen] = useState(false);
@@ -672,6 +673,7 @@ function CardsPage() {
      setPayingCard(card);
      setInvoiceCard(card); // Ensure invoicePeriods is for this card
      setPaymentLines([{ accountId: "", amount: "" }]);
+     setPaymentDate(format(new Date(), "dd MMM", { locale: ptBR }));
      setPayDialogOpen(true);
      
      if (periodIdx !== undefined) {
@@ -720,16 +722,24 @@ function CardsPage() {
         ? `Pagamento Total fatura cartão ${payingCard.name}` 
         : `Pagamento Parcial fatura cartão ${payingCard.name}`;
 
-      const today = new Date();
-      const monthsAbbr = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
-      const dateFormatted = `${today.getDate()} ${monthsAbbr[today.getMonth()]}`;
+       const today = new Date();
+       const monthsAbbr = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
+       const dateFormatted = paymentDate;
 
-      // 1. Create card_payments records
-      const inserts = validLines.map((l) => ({
-        card_id: payingCard.id,
-        bank_account_id: l.accountId,
-        amount: parseFloat(l.amount),
-      }));
+       // 1. Create card_payments records
+       const inserts = validLines.map((l) => ({
+         card_id: payingCard.id,
+         bank_account_id: l.accountId,
+         amount: parseFloat(l.amount),
+         paid_at: (() => {
+           try {
+             const parsed = parse(paymentDate, "dd MMM", new Date(), { locale: ptBR });
+             return parsed.toISOString();
+           } catch {
+             return new Date().toISOString();
+           }
+         })()
+       }));
       await supabase.from("card_payments").insert(inserts);
 
       // 2. Update bank balances and create expense transactions
@@ -1405,6 +1415,27 @@ function CardsPage() {
                   </button>
                 );
               })()}
+
+              <div className="space-y-1.5 mb-2">
+                <Label className="text-[11px] font-semibold text-foreground block">Data do pagamento</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className={cn("w-full justify-start text-left font-normal rounded-xl bg-accent/30 border-none h-9 px-2.5 text-xs", !paymentDate && "text-muted-foreground")}>
+                      <CalendarIcon className="mr-1.5 h-3.5 w-3.5 text-primary" />
+                      {paymentDate || "Selecione a data"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0 z-[60]" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={(() => { try { return parse(paymentDate, "dd MMM", new Date(), { locale: ptBR }); } catch { return undefined; } })()}
+                      onSelect={(date) => { if (date) setPaymentDate(format(date, "dd MMM", { locale: ptBR })); }}
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
 
               {bankAccounts.length === 0 ? (
                 <div className="text-center py-4">
