@@ -70,6 +70,11 @@ export const Route = createRootRoute({
       { property: "og:description", content: "Gerencie suas finanças com inteligência artificial" },
       { property: "og:type", content: "website" },
       { name: "theme-color", content: "#1a1a2e" },
+      { name: "twitter:title", content: "Cofre 360" },
+      { name: "twitter:description", content: "Gerencie suas finanças com inteligência artificial" },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/70475d2c-7059-40ac-b8b3-d61d91a28719/id-preview-4245c41c--8755cbe4-fc00-44b3-810a-824346dac2f8.lovable.app-1780882420138.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/70475d2c-7059-40ac-b8b3-d61d91a28719/id-preview-4245c41c--8755cbe4-fc00-44b3-810a-824346dac2f8.lovable.app-1780882420138.png" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
