@@ -137,7 +137,9 @@ describe('Payment Security Lock', () => {
     });
 
     // Render Cards page component
-    const CardsPage = Route.component;
+    // @ts-ignore - Accessing component for testing
+    const CardsPage = Route.options.component;
+    if (!CardsPage) throw new Error("Component not found");
     render(<CardsPage />);
 
     // 1. Wait for data to load and click "Pagar"
