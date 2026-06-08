@@ -129,7 +129,7 @@ export function TransactionsPage() {
  
  
      const editInstallmentDetails = editTx ? calculateInstallmentDetails(
-      editTx.amount,
+      editInstallmentMode === "fixed" ? 0 : editTx.amount,
       editTx.total_installments ?? 1,
       editInstallmentMode,
       editInstallmentMode === "fixed" ? editTx.amount : 0
@@ -499,7 +499,7 @@ export function TransactionsPage() {
 
      // Compute per-installment value
       const { valorParcela: perInstallment } = calculateInstallmentDetails(
-        editTx.amount,
+        editInstallmentMode === "fixed" ? 0 : editTx.amount,
         total,
         editInstallmentMode,
         editInstallmentMode === "fixed" ? editTx.amount : 0
