@@ -116,16 +116,10 @@ export function TransactionsPage() {
   const [filterType, setFilterType] = useState<"all" | "income" | "expense">("all");
   const [sortBy, setSortBy] = useState<"date-desc" | "date-asc" | "amount-desc" | "amount-asc" | "installments">("date-desc");
   const todayFormatted = format(new Date(), "dd MMM", { locale: ptBR });
-  const [newTx, setNewTx] = useState<Omit<Transaction, "id">>({
-    icon: "🍔", name: "", category: "Alimentação > Outros", date: todayFormatted, amount: 0, type: "expense", card: null, bank_account_id: null,
-  });
-  const [installmentEnabled, setInstallmentEnabled] = useState(false);
-  const [installmentCount, setInstallmentCount] = useState(2);
-  const [installmentMode, setInstallmentMode] = useState<"divide" | "fixed">("divide");
   // Edit-installment UI state
   const [editInstallmentMode, setEditInstallmentMode] = useState<"divide" | "fixed">("divide");
   // Transfer state
-  const [isTransfer, setIsTransfer] = useState(false);
+  
   const [transferFromId, setTransferFromId] = useState<string>("");
    const [transferToId, setTransferToId] = useState<string>("");
     const [confirmInstallmentDiff, setConfirmInstallmentDiff] = useState(false);
