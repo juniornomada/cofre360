@@ -292,7 +292,7 @@ function Dashboard() {
       supabase.from("cards").select("id, name, emoji, color, is_visible, closing_day, due_day").eq("user_id", session.user.id).order("sort_order", { ascending: true }).order("created_at", { ascending: true }),
       supabase.from("reminders").select("id, title, icon, due_date, amount, type, bank_account_id, card_id").eq("user_id", session.user.id).eq("is_completed", false).order("due_date", { ascending: true }).limit(3),
       supabase.from("goals").select("id, name, icon, current_amount, target_amount").eq("user_id", session.user.id),
-      supabase.from("transactions").select("card, amount, date, created_at").eq("user_id", session.user.id).not("card", "is", null),
+      supabase.from("transactions").select("card, amount, date, created_at, type").eq("user_id", session.user.id).not("card", "is", null),
       supabase.from("card_payments").select("card_id, amount, paid_at").eq("user_id", session.user.id),
     ]);
 
@@ -348,14 +348,14 @@ function Dashboard() {
             name: "", // dummy
             icon: "", // dummy
             category: "", // dummy
-            type: "expense",
+            type: t.type || "expense",
             created_at: t.date || new Date().toISOString()
           }));
           const billingCycles = groupByBillingCycle(formattedTxs as any, card.closing_day || 1, card.due_day || 10);
           const currentCycle = billingCycles.find(p => p.key === "current") || billingCycles[1] || billingCycles[0];
           const currentInvoiceAmount = currentCycle?.total || 0;
           
-          const totalUsedEver = txList.reduce((sum, t) => sum + Number(t.amount), 0);
+          const totalUsedEver = txList.reduce((sum, t) => sum + (t.type === "income" ? -Number(t.amount) : Number(t.amount)), 0);
           const totalPaidEver = cardPaymentsTotalMap[card.id] || 0;
           const outstandingBalance = Math.max(0, totalUsedEver - totalPaidEver);
           
