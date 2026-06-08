@@ -25,14 +25,15 @@ async function extractPdfText(base64: string): Promise<string> {
     bytes = new Uint8Array(Buffer.from(base64, "base64"));
   }
 
-  // Dynamic import for PDF.js (standard build)
-  const pdfjs: any = await import("pdfjs-dist/build/pdf.mjs");
+  // Dynamic import for PDF.js (LEGACY build for better compatibility in server environments)
+  const pdfjs: any = await import("pdfjs-dist/legacy/build/pdf.mjs");
   
-  // Set workerSrc to a non-empty string to satisfy the library's check.
-  // Since we use disableWorker: true, the "fake worker" (main thread) will be used,
-  // and no external script will actually be fetched.
+  // Disable worker to run processing in the main thread (fake worker).
+  // In version 4+, setting workerSrc to empty string with disableWorker: true
+  // avoids the "No GlobalWorkerOptions.workerSrc specified" error without
+  // actually attempting to load an external script.
   if (pdfjs.GlobalWorkerOptions) {
-    pdfjs.GlobalWorkerOptions.workerSrc = "nop";
+    pdfjs.GlobalWorkerOptions.workerSrc = "";
   }
 
   const loadingTask = pdfjs.getDocument({
