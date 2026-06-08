@@ -33,7 +33,7 @@ vi.mock('@tanstack/react-router', async (importOriginal) => {
   const actual = await importOriginal() as any;
   return {
     ...actual,
-    createFileRoute: () => ({
+    createFileRoute: () => () => ({
       options: { component: () => null },
       useSearch: () => ({}),
     }),
