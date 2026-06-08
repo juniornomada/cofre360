@@ -1318,10 +1318,17 @@ function CardsPage() {
           {payingCard && (
             <div className="flex flex-col gap-4 mt-2">
               <div className="rounded-xl bg-accent/50 p-3">
-                <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                  <span>Fatura atual</span>
-                  <span className="tabular-nums">
-                    R$ {(invoicePeriods.find(p => p.key === "current")?.total || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                <div className="flex justify-between items-start mb-1">
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                      Fatura {invoicePeriods[activeInvoiceIdx]?.label.split(" (")[0] || "selecionada"}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {invoicePeriods[activeInvoiceIdx]?.label.includes("(") ? "(" + invoicePeriods[activeInvoiceIdx].label.split(" (")[1] : ""}
+                    </p>
+                  </div>
+                  <span className="text-sm font-bold text-foreground tabular-nums">
+                    R$ {(invoicePeriods[activeInvoiceIdx]?.total || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                   </span>
                 </div>
                 <div className="flex justify-between text-xs text-muted-foreground mb-1">
@@ -1333,7 +1340,7 @@ function CardsPage() {
                 <div className="flex justify-between text-sm font-semibold text-foreground border-t border-border pt-1 mt-1">
                   <span>Restante</span>
                   <span className="tabular-nums">
-                    R$ {Math.max(0, (invoicePeriods.find(p => p.key === "current")?.total || 0) - (cardPayments[payingCard.id] || 0)).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                    R$ {Math.max(0, (invoicePeriods[activeInvoiceIdx]?.total || 0) - (cardPayments[payingCard.id] || 0)).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                   </span>
                 </div>
               </div>
