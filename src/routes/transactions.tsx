@@ -86,16 +86,31 @@ export function TransactionsPage() {
   useEffect(() => {
     if (searchParams.category) setActiveCategory(searchParams.category);
   }, [searchParams.category]);
-  const [activeSource, setActiveSource] = useState<"all" | "account" | "card">("all");
-  const [filterAccountId, setFilterAccountId] = useState<string | null>(searchParams.accountId || null);
+  const [activeSource, setActiveSource] = useState<"all" | "account" | "card">(
+    searchParams.accountId ? "account" : (localStorage.getItem("transactions_filter_source") as any || "all")
+  );
+  const [filterAccountId, setFilterAccountId] = useState<string | null>(
+    searchParams.accountId || localStorage.getItem("transactions_filter_accountId") || null
+  );
 
   useEffect(() => {
     if (searchParams.accountId) {
       setFilterAccountId(searchParams.accountId);
       setActiveSource("account");
-      setShowAdvancedFilters(false); // Não mostrar filtros automaticamente, apenas aplicar
+      localStorage.setItem("transactions_filter_accountId", searchParams.accountId);
+      localStorage.setItem("transactions_filter_source", "account");
+      setShowAdvancedFilters(false);
     }
   }, [searchParams.accountId]);
+
+  useEffect(() => {
+    if (filterAccountId) localStorage.setItem("transactions_filter_accountId", filterAccountId);
+    else localStorage.removeItem("transactions_filter_accountId");
+  }, [filterAccountId]);
+
+  useEffect(() => {
+    localStorage.setItem("transactions_filter_source", activeSource);
+  }, [activeSource]);
   
   
   const [editTx, setEditTx] = useState<Transaction | null>(null);
@@ -402,6 +417,8 @@ export function TransactionsPage() {
     setSortBy("date-desc");
     setFilterAccountId(null);
     setActiveSource("all");
+    localStorage.removeItem("transactions_filter_accountId");
+    localStorage.setItem("transactions_filter_source", "all");
   };
 
   const totalIncome = filtered.filter(t => t.type === "income" && t.is_visible !== false).reduce((s, t) => s + t.amount, 0);
