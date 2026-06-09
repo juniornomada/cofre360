@@ -138,7 +138,7 @@ function SortableAccountItem({
         isDragging && "ring-2 ring-primary ring-offset-2 ring-offset-background shadow-2xl scale-[1.01] z-50",
       )}
     >
-      <div className="flex items-center gap-2.5 px-2 sm:px-4 py-0.5">
+      <div className="flex items-center gap-2.5 px-2 sm:px-4 py-0 min-h-[56px]">
         {isSelectionMode && (
           <button 
             type="button"
