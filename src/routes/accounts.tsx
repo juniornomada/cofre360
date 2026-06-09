@@ -140,13 +140,17 @@ function SortableAccountItem({
     >
       <div className="flex items-center gap-2.5 px-2 sm:px-4 py-0.5">
         {isSelectionMode && (
-          <div className="flex items-center justify-center shrink-0 w-8 h-8 rounded-full hover:bg-accent transition-colors">
+          <button 
+            type="button"
+            onClick={() => onToggleSelect(account.id)}
+            className="flex items-center justify-center shrink-0 w-8 h-8 rounded-full hover:bg-accent transition-colors z-10"
+          >
             {isSelected ? (
               <CheckSquare className="h-5 w-5 text-primary" />
             ) : (
               <Square className="h-5 w-5 text-muted-foreground" />
             )}
-          </div>
+          </button>
         )}
         <BankLogo icon={account.icon || ""} color={account.color || ""} name={account.name} size="sm" />
         <div className="flex-1 min-w-0" style={{ animationDelay: `${60 + index * 80}ms` }}>
