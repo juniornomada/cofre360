@@ -137,20 +137,23 @@ function SortableAccountItem({
         !isSelectionMode && "cursor-grab active:cursor-grabbing",
         isDragging && "ring-2 ring-primary ring-offset-2 ring-offset-background shadow-2xl scale-[1.01] z-50",
       )}
-      onClick={() => isSelectionMode && onToggleSelect(account.id)}
     >
-      <div className="flex items-center gap-2.5 px-2 sm:px-4 py-0.5">
+      <div className="flex items-center gap-2.5 px-2 sm:px-4 py-0 min-h-[56px]">
         {isSelectionMode && (
-          <div className="flex items-center justify-center shrink-0 w-8 h-8 rounded-full hover:bg-accent transition-colors">
+          <button 
+            type="button"
+            onClick={() => onToggleSelect(account.id)}
+            className="flex items-center justify-center shrink-0 w-8 h-8 rounded-full hover:bg-accent transition-colors z-10"
+          >
             {isSelected ? (
               <CheckSquare className="h-5 w-5 text-primary" />
             ) : (
               <Square className="h-5 w-5 text-muted-foreground" />
             )}
-          </div>
+          </button>
         )}
         <BankLogo icon={account.icon || ""} color={account.color || ""} name={account.name} size="sm" />
-        <div className="flex-1 min-w-0" style={{ animationDelay: `${60 + index * 80}ms` }}>
+        <div className="flex-1 min-w-0 h-full" style={{ animationDelay: `${60 + index * 80}ms` }}>
           {isEditing ? (
             <div className="flex flex-col gap-2">
               <Input
@@ -175,9 +178,9 @@ function SortableAccountItem({
           <Link
             to="/transactions"
             search={{ accountId: account.id } as any}
-            className="text-left w-full block"
+            className="text-left w-full block h-full flex flex-col justify-center"
           >
-            <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center justify-between gap-2 py-3">
               <div className="flex items-center gap-1.5 min-w-0">
                 <p className="text-[15px] font-semibold text-foreground truncate tracking-tight leading-tight">{account.name}</p>
                 {account.is_visible === false && (
