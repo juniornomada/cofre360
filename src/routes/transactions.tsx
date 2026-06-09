@@ -714,7 +714,23 @@ export function TransactionsPage() {
                 <Landmark className="h-5 w-5 text-foreground" />
               </Link>
             )}
-            <h1 className="text-xl font-bold text-foreground">Transações</h1>
+            {filterAccountId ? (
+              <div className="flex flex-col">
+                <h1 className="text-xl font-bold text-foreground">Transações</h1>
+                {(() => {
+                  const acc = bankAccounts.find(a => a.id === filterAccountId);
+                  if (!acc) return null;
+                  return (
+                    <div className="flex items-center gap-1.5 animate-fade-in">
+                      <BankLogo icon={acc.icon || "custom"} color={acc.color || ""} name={acc.name} size="xs" />
+                      <span className="text-xs font-medium text-muted-foreground truncate max-w-[150px]">{acc.name}</span>
+                    </div>
+                  );
+                })()}
+              </div>
+            ) : (
+              <h1 className="text-xl font-bold text-foreground">Transações</h1>
+            )}
           </div>
           {filterAccountId && (
             <div className="flex items-center gap-1.5 px-1 animate-fade-in">
