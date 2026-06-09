@@ -77,13 +77,13 @@ export function CategoryPieCharts({ transactions, formatCurrency }: CategoryPieC
       {expenseData.length > 0 && (
         <div className="rounded-xl bg-card p-4">
           <h3 className="mb-2 text-sm font-semibold text-foreground">Despesas por categoria</h3>
-          <div className="h-48">
+          <div className="h-56">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
                   data={expenseData}
                   cx="50%"
-                  cy="50%"
+                  cy="40%"
                   innerRadius={30}
                   outerRadius={55}
                   paddingAngle={3}
@@ -96,14 +96,16 @@ export function CategoryPieCharts({ transactions, formatCurrency }: CategoryPieC
                   ))}
                 </Pie>
                 <Tooltip content={<CustomTooltip formatCurrency={formatCurrency} />} />
+                <legend />
+                {/* Custom Legend to replace the wrap divs if needed, but keeping the current style refined */}
               </PieChart>
             </ResponsiveContainer>
           </div>
-          <div className="mt-2 flex flex-wrap gap-2">
+          <div className="-mt-12 flex flex-wrap justify-center gap-1.5">
             {expenseData.map((item, i) => (
-              <div key={item.name} className="flex items-center gap-1.5 text-[10px] bg-accent/30 px-2 py-0.5 rounded-full">
-                <div className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
-                <span className="text-muted-foreground truncate max-w-[80px]">{item.name}</span>
+              <div key={item.name} className="flex items-center gap-1 text-[9px] bg-accent/20 px-1.5 py-0.5 rounded-full border border-border/10">
+                <div className="h-1 w-1 shrink-0 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
+                <span className="text-muted-foreground truncate max-w-[60px]">{item.name}</span>
                 <span className="font-bold text-foreground shrink-0">{item.percentage.toFixed(0)}%</span>
               </div>
             ))}
@@ -114,13 +116,13 @@ export function CategoryPieCharts({ transactions, formatCurrency }: CategoryPieC
       {incomeData.length > 0 && (
         <div className="rounded-xl bg-card p-4">
           <h3 className="mb-2 text-sm font-semibold text-foreground">Receitas por categoria</h3>
-          <div className="h-48">
+          <div className="h-56">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
                   data={incomeData}
                   cx="50%"
-                  cy="50%"
+                  cy="40%"
                   innerRadius={30}
                   outerRadius={55}
                   paddingAngle={3}
@@ -136,11 +138,11 @@ export function CategoryPieCharts({ transactions, formatCurrency }: CategoryPieC
               </PieChart>
             </ResponsiveContainer>
           </div>
-          <div className="mt-2 flex flex-wrap gap-2">
+          <div className="-mt-12 flex flex-wrap justify-center gap-1.5">
             {incomeData.map((item, i) => (
-              <div key={item.name} className="flex items-center gap-1.5 text-[10px] bg-accent/30 px-2 py-0.5 rounded-full">
-                <div className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
-                <span className="text-muted-foreground truncate max-w-[80px]">{item.name}</span>
+              <div key={item.name} className="flex items-center gap-1 text-[9px] bg-accent/20 px-1.5 py-0.5 rounded-full border border-border/10">
+                <div className="h-1 w-1 shrink-0 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
+                <span className="text-muted-foreground truncate max-w-[60px]">{item.name}</span>
                 <span className="font-bold text-foreground shrink-0">{item.percentage.toFixed(0)}%</span>
               </div>
             ))}
