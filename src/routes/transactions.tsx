@@ -417,6 +417,8 @@ export function TransactionsPage() {
     setSortBy("date-desc");
     setFilterAccountId(null);
     setActiveSource("all");
+    localStorage.removeItem("transactions_filter_accountId");
+    localStorage.setItem("transactions_filter_source", "all");
   };
 
   const totalIncome = filtered.filter(t => t.type === "income" && t.is_visible !== false).reduce((s, t) => s + t.amount, 0);
