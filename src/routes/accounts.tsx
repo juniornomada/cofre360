@@ -138,7 +138,7 @@ function SortableAccountItem({
         isDragging && "ring-2 ring-primary ring-offset-2 ring-offset-background shadow-2xl scale-[1.01] z-50",
       )}
     >
-      <div className="flex items-center gap-2.5 px-2 sm:px-4 py-0 min-h-[56px]">
+      <div className="flex items-center gap-2 px-2 sm:px-4 py-0 min-h-[56px] overflow-hidden">
         {isSelectionMode && (
           <button 
             type="button"
@@ -165,7 +165,7 @@ function SortableAccountItem({
               />
               <div className="flex items-center gap-1">
                 <span className="text-xs text-muted-foreground mr-1">R$</span>
-                <div className="w-24 sm:w-32 shrink-0">
+                <div className="w-20 sm:w-32 shrink-0">
                   <CalculatorAmountInput
                     value={parseFloat(editBalance) || 0}
                     onChange={(v) => setEditBalance(v.toString())}
@@ -182,7 +182,7 @@ function SortableAccountItem({
           >
             <div className="flex items-center justify-between gap-2 py-3">
               <div className="flex items-center gap-1.5 min-w-0">
-                <p className="text-[15px] font-semibold text-foreground truncate tracking-tight leading-tight">{account.name}</p>
+                <p className="text-[14px] font-semibold text-foreground truncate tracking-tight leading-tight">{account.name}</p>
                 {account.is_visible === false && (
                   <EyeOff className="h-3 w-3 text-muted-foreground/60 shrink-0" />
                 )}
@@ -195,7 +195,7 @@ function SortableAccountItem({
                 </button>
               </div>
               <p className={cn(
-                "text-[15px] font-bold tabular-nums tracking-tight leading-tight whitespace-nowrap shrink-0",
+                "text-[14px] font-bold tabular-nums tracking-tight leading-tight whitespace-nowrap shrink-0",
                 currentBalance < 0 ? "text-destructive" : "text-foreground"
               )}>
                 {balanceVisible ? `R$ ${currentBalance.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "R$ ••••"}
