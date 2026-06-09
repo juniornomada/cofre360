@@ -849,7 +849,7 @@ function Dashboard() {
   }, [accountBalances]);
 
   return (
-    <div className="animate-page-enter flex flex-col gap-5 px-4 pt-5 pb-24">
+    <div className="animate-page-enter flex flex-col gap-4 px-3 pt-4 pb-20">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex flex-col items-center">
@@ -1009,7 +1009,7 @@ function Dashboard() {
         )}
 
         {/* Saldo inicial do mês + previsão fim do mês — moved to bottom */}
-        <div className="mt-3 grid grid-cols-2 gap-2">
+        <div className="mt-2 grid grid-cols-2 gap-2">
           <div className="rounded-xl bg-background/40 px-3 py-2 flex flex-col justify-between min-h-[58px]">
             <p className="text-[10px] text-muted-foreground leading-none mb-1 flex items-center gap-1.5 min-h-[18px]">
               Saldo inicial do mês
@@ -1055,7 +1055,7 @@ function Dashboard() {
 
 
       {/* Credit Cards Summary */}
-      <div className="rounded-2xl bg-gradient-to-br from-primary/15 via-card to-card p-5 border border-border/40">
+      <div className="rounded-2xl bg-gradient-to-br from-primary/15 via-card to-card p-4 border border-border/40">
         <div className="flex items-center justify-between gap-4 mb-2">
           <h2 className="text-sm font-semibold text-foreground flex items-center gap-1.5 uppercase">
             <CreditCard className="h-4 w-4 text-primary" />
@@ -1212,7 +1212,7 @@ function Dashboard() {
 
       {/* This Month Summary */}
       {balanceVisible && (monthlySummary.income > 0 || monthlySummary.expense > 0) && (
-        <div className="rounded-2xl bg-card p-4 border border-border/30">
+        <div className="rounded-2xl bg-card p-3 border border-border/30">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-semibold text-foreground capitalize">{currentMonthName}</h2>
             <Link to="/insights" preload="intent" search={{ ask: undefined } as any} className="text-[10px] font-medium text-primary flex items-center gap-0.5">

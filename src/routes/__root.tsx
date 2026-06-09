@@ -189,7 +189,7 @@ function RootShell({ children }: { children: React.ReactNode }) {
   return (
     <TooltipProvider>
       <div className={cn(
-        "mx-auto min-h-screen bg-background pb-20",
+        "mx-auto min-h-screen bg-background pb-16",
         !isComparisonMode && "max-w-md"
       )}>
         <Outlet />
