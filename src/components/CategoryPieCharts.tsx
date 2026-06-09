@@ -84,8 +84,8 @@ export function CategoryPieCharts({ transactions, formatCurrency }: CategoryPieC
                   data={expenseData}
                   cx="50%"
                   cy="50%"
-                  innerRadius={40}
-                  outerRadius={70}
+                  innerRadius={35}
+                  outerRadius={65}
                   paddingAngle={3}
                   dataKey="value"
                   animationBegin={0}
@@ -121,8 +121,8 @@ export function CategoryPieCharts({ transactions, formatCurrency }: CategoryPieC
                   data={incomeData}
                   cx="50%"
                   cy="50%"
-                  innerRadius={40}
-                  outerRadius={70}
+                  innerRadius={35}
+                  outerRadius={65}
                   paddingAngle={3}
                   dataKey="value"
                   animationBegin={0}
