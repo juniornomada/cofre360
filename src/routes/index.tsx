@@ -861,7 +861,7 @@ function Dashboard() {
                 "0 0 10px hsl(142 95% 55% / 0.9), 0 0 20px hsl(142 95% 55% / 0.6), inset 0 0 6px hsl(142 95% 55% / 0.35)",
             }}
           >
-            <span className="text-xl font-extrabold tracking-tight text-primary dark:text-[hsl(142_95%_62%)] dark:[text-shadow:0_0_10px_hsl(142_95%_55%/0.85),0_0_20px_hsl(142_95%_55%/0.55)] flex justify-between w-full">
+            <span className="text-lg font-extrabold tracking-tight text-primary dark:text-[hsl(142_95%_62%)] dark:[text-shadow:0_0_10px_hsl(142_95%_55%/0.85),0_0_20px_hsl(142_95%_55%/0.55)] flex justify-between w-full">
               <span>cofre</span> <span className="text-primary/80 dark:text-[hsl(142_95%_70%)]">360</span>
             </span>
             <span className="mt-0.5 text-[9px] font-medium tracking-wide text-primary/70 dark:text-[hsl(142_90%_68%)] dark:[text-shadow:0_0_6px_hsl(142_95%_55%/0.65)] whitespace-nowrap">
