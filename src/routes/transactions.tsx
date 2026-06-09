@@ -709,7 +709,6 @@ export function TransactionsPage() {
             <Link 
               to="/accounts" 
               className="interactive-button flex h-10 w-10 items-center justify-center rounded-full bg-card border border-border shadow-sm hover:bg-accent transition-all"
-              title="Voltar para Contas"
             >
               <Landmark className="h-5 w-5 text-foreground" />
             </Link>
