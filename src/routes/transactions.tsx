@@ -714,7 +714,7 @@ export function TransactionsPage() {
                 <Landmark className="h-5 w-5 text-foreground" />
               </Link>
             )}
-            <h1 className="text-xl font-bold text-foreground">Transações</h1>
+            <h1 className="text-lg font-bold text-foreground">Transações</h1>
           </div>
           {filterAccountId && (
             <div className="flex items-center gap-1.5 px-1 animate-fade-in">
@@ -743,17 +743,17 @@ export function TransactionsPage() {
             </div>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 shrink-0">
           <div className="flex gap-2">
           {selectionMode ? (
             <>
-              <button onClick={toggleSelectAll} className="flex h-8 items-center gap-1.5 rounded-full bg-card px-3 text-xs font-medium text-muted-foreground border border-border">
+              <button onClick={toggleSelectAll} className="flex h-8 items-center gap-1 rounded-full bg-card px-2 text-[10px] font-medium text-muted-foreground border border-border">
                 {selectedIds.size === filtered.length ? <CheckSquare className="h-3.5 w-3.5" /> : <Square className="h-3.5 w-3.5" />}
                 {selectedIds.size === filtered.length ? "Desmarcar" : "Todos"}
               </button>
               {selectedIds.size > 0 && (
                 <div className="flex gap-1.5">
-                  <button onClick={() => setShowBatchDeleteDialog(true)} className="flex h-8 items-center gap-1.5 rounded-full bg-destructive px-3 text-xs font-medium text-destructive-foreground">
+                  <button onClick={() => setShowBatchDeleteDialog(true)} className="flex h-8 items-center gap-1 rounded-full bg-destructive px-2 text-[10px] font-medium text-destructive-foreground">
                     <Trash2 className="h-3.5 w-3.5" />
                     {selectedIds.size}
                   </button>
@@ -767,17 +767,17 @@ export function TransactionsPage() {
             <>
               {transactions.length > 0 && (
                 <>
-                  <button onClick={() => setSelectionMode(true)} className="flex h-10 w-10 items-center justify-center rounded-full bg-card text-muted-foreground border border-border shadow-sm hover:bg-accent transition-all" title="Selecionar">
+                  <button onClick={() => setSelectionMode(true)} className="flex h-9 w-9 items-center justify-center rounded-full bg-card text-muted-foreground border border-border shadow-sm hover:bg-accent transition-all shrink-0" title="Selecionar">
                     <CheckSquare className="h-5 w-5" />
                   </button>
                 </>
               )}
-              <button onClick={() => { setGlobalSearch(""); setShowGlobalSearch(true); }} className="flex h-10 w-10 items-center justify-center rounded-full bg-card text-muted-foreground border border-border shadow-sm hover:bg-accent transition-all" title="Buscar transação">
+              <button onClick={() => { setGlobalSearch(""); setShowGlobalSearch(true); }} className="flex h-9 w-9 items-center justify-center rounded-full bg-card text-muted-foreground border border-border shadow-sm hover:bg-accent transition-all shrink-0" title="Buscar transação">
                 <Search className="h-5 w-5" />
               </button>
               <Popover open={showAdvancedFilters} onOpenChange={setShowAdvancedFilters}>
                 <PopoverTrigger asChild>
-                  <button className="relative flex h-10 w-10 items-center justify-center rounded-full bg-card text-muted-foreground border border-border shadow-sm hover:bg-accent transition-all" title="Filtros avançados">
+                  <button className="relative flex h-9 w-9 items-center justify-center rounded-full bg-card text-muted-foreground border border-border shadow-sm hover:bg-accent transition-all shrink-0" title="Filtros avançados">
                     <SlidersHorizontal className="h-5 w-5" />
                     {activeFilterCount > 0 && (
                       <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground">
