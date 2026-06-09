@@ -1111,11 +1111,11 @@ function CardsPage() {
                       </p>
 
                     </div>
-                    <div className="flex items-center gap-1 text-[10px] font-semibold text-white shrink-0 mt-0.5">
-                      <span className="rounded-full bg-black/45 px-1.5 py-0.5 ring-1 ring-white/20 tabular-nums">
+                    <div className="flex flex-col items-end gap-0.5 text-[9px] font-semibold text-white shrink-0">
+                      <span className="rounded-full bg-black/45 px-1.5 py-0.5 ring-1 ring-white/20 tabular-nums whitespace-nowrap">
                         F {formatDueDate(currentClose)}
                       </span>
-                      <span className="rounded-full bg-black/45 px-1.5 py-0.5 ring-1 ring-white/20 tabular-nums">
+                      <span className="rounded-full bg-black/45 px-1.5 py-0.5 ring-1 ring-white/20 tabular-nums whitespace-nowrap">
                         V {formatDueDate(currentDue)}
                       </span>
                     </div>
