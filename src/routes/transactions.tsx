@@ -700,21 +700,22 @@ export function TransactionsPage() {
 
   return (
     <div className="animate-page-enter flex flex-col gap-4 px-4 pt-6 pb-24">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Link to="/" className="interactive-button flex h-10 w-10 items-center justify-center rounded-full bg-card border border-border shadow-sm hover:bg-accent transition-all">
-            <ArrowLeft className="h-5 w-5 text-foreground" />
-          </Link>
-          {filterAccountId && (
-            <Link 
-              to="/accounts" 
-              className="interactive-button flex h-10 w-10 items-center justify-center rounded-full bg-card border border-border shadow-sm hover:bg-accent transition-all"
-            >
-              <Landmark className="h-5 w-5 text-foreground" />
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Link to="/" className="interactive-button flex h-10 w-10 items-center justify-center rounded-full bg-card border border-border shadow-sm hover:bg-accent transition-all">
+              <ArrowLeft className="h-5 w-5 text-foreground" />
             </Link>
-          )}
-          <h1 className="text-xl font-bold text-foreground">Transações</h1>
-        </div>
+            {filterAccountId && (
+              <Link 
+                to="/accounts" 
+                className="interactive-button flex h-10 w-10 items-center justify-center rounded-full bg-card border border-border shadow-sm hover:bg-accent transition-all"
+              >
+                <Landmark className="h-5 w-5 text-foreground" />
+              </Link>
+            )}
+            <h1 className="text-xl font-bold text-foreground">Transações</h1>
+          </div>
         <div className="flex items-center gap-2">
 
 
