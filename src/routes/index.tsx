@@ -1674,9 +1674,10 @@ function Dashboard() {
           />
         )}
        </Suspense>
-     </div>
-   );
- }
+      </div>
+    </div>
+  );
+}
  
  export const Route = createFileRoute("/")({
    validateSearch: (search: Record<string, unknown>) => {
