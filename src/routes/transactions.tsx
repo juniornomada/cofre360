@@ -699,7 +699,7 @@ export function TransactionsPage() {
   }
 
   return (
-    <div className="animate-page-enter flex flex-col gap-4 px-4 pt-6 pb-24">
+    <div className="animate-page-enter mx-auto w-full max-w-7xl flex flex-col gap-4 px-4 pt-6 pb-24">
       <div className="flex items-center justify-between">
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-3">
