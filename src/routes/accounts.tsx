@@ -175,9 +175,9 @@ function SortableAccountItem({
           <Link
             to="/transactions"
             search={{ accountId: account.id } as any}
-            className="text-left w-full block"
+            className="text-left w-full block h-full flex flex-col justify-center"
           >
-            <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center justify-between gap-2 py-3">
               <div className="flex items-center gap-1.5 min-w-0">
                 <p className="text-[15px] font-semibold text-foreground truncate tracking-tight leading-tight">{account.name}</p>
                 {account.is_visible === false && (
