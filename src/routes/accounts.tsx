@@ -153,7 +153,7 @@ function SortableAccountItem({
           </button>
         )}
         <BankLogo icon={account.icon || ""} color={account.color || ""} name={account.name} size="sm" />
-        <div className="flex-1 min-w-0" style={{ animationDelay: `${60 + index * 80}ms` }}>
+        <div className="flex-1 min-w-0 h-full" style={{ animationDelay: `${60 + index * 80}ms` }}>
           {isEditing ? (
             <div className="flex flex-col gap-2">
               <Input
