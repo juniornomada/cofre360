@@ -1479,8 +1479,8 @@ function CardsPage() {
                   <div className="px-2.5 pb-2.5 space-y-2 animate-in fade-in slide-in-from-top-1 duration-200">
                     <div className="max-h-[120px] overflow-y-auto space-y-1.5 pr-1 custom-scrollbar">
                       {invoicePeriods[activeInvoiceIdx]?.transactions.map((tx) => (
-                        <div key={tx.id} className="flex items-center justify-between gap-2 py-0.5 border-b border-border/10 last:border-0">
-                          <div className="flex items-center gap-1.5 min-w-0">
+                        <div key={tx.id} className="flex items-center justify-between gap-1 py-1 border-b border-border/10 last:border-0">
+                          <div className="flex items-center gap-1.5 min-w-0 flex-1">
                             <span className="text-[12px] shrink-0 opacity-80">{tx.icon}</span>
                             <div className="flex flex-col min-w-0 leading-tight">
                               <span className="truncate text-[10px] text-foreground font-medium">{tx.name}</span>
@@ -1488,7 +1488,7 @@ function CardsPage() {
                             </div>
                           </div>
                           <span className={cn(
-                            "tabular-nums font-bold shrink-0 text-[10px]",
+                            "tabular-nums font-bold shrink-0 text-[10px] text-right ml-auto",
                             tx.type === "income" ? "text-primary" : "text-destructive"
                           )}>
                             {tx.type === "income" ? "+" : "-"} R$ {Number(tx.amount).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
