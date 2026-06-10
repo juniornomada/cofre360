@@ -1139,17 +1139,17 @@ function CardsPage() {
                       </p>
                     </div>
                   )}
-                  <div className="flex gap-1.5 mt-2">
+                  <div className="flex gap-1.5 mt-2 justify-start">
                     <button
                       onClick={() => openInvoiceDialog(card)}
-                      className="interactive-button flex flex-1 items-center justify-center gap-1 rounded-lg bg-white py-2 text-xs font-bold text-gray-900 hover:bg-white/90 transition-colors shadow-md ring-2 ring-white/60"
+                      className="interactive-button flex items-center justify-center gap-1.5 rounded-lg bg-white px-4 py-2 text-xs font-bold text-gray-900 hover:bg-white/90 transition-colors shadow-md ring-2 ring-white/60"
                     >
                       <Receipt className="h-3 w-3" strokeWidth={2.5} />
                       Faturas
                     </button>
                     <button
                       onClick={() => { setPdfImportCard(card); setPdfImportOpen(true); }}
-                      className="interactive-button flex items-center justify-center rounded-lg bg-black/60 w-9 text-white hover:bg-black/70 transition-colors ring-2 ring-white/50"
+                      className="interactive-button flex items-center justify-center rounded-lg bg-black/60 w-9 h-8 text-white hover:bg-black/70 transition-colors ring-2 ring-white/50"
                       title="Importar PDF"
                     >
                       <FileUp className="h-3 w-3" strokeWidth={2.5} />
