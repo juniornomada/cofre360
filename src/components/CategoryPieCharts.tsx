@@ -101,11 +101,11 @@ export function CategoryPieCharts({ transactions, formatCurrency }: CategoryPieC
               </PieChart>
             </ResponsiveContainer>
           </div>
-          <div className="flex flex-wrap justify-center gap-1.5 px-2 mt-[-10px] relative z-10">
+          <div className="-mt-12 flex flex-wrap justify-center gap-1.5">
             {expenseData.map((item, i) => (
-              <div key={item.name} className="flex items-center gap-1 text-[9px] bg-accent/20 px-1.5 py-0.5 rounded-full border border-border/10 whitespace-nowrap">
+              <div key={item.name} className="flex items-center gap-1 text-[9px] bg-accent/20 px-1.5 py-0.5 rounded-full border border-border/10">
                 <div className="h-1 w-1 shrink-0 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
-                <span className="text-muted-foreground truncate max-w-[50px]">{item.name}</span>
+                <span className="text-muted-foreground truncate max-w-[60px]">{item.name}</span>
                 <span className="font-bold text-foreground shrink-0">{item.percentage.toFixed(0)}%</span>
               </div>
             ))}
@@ -138,11 +138,11 @@ export function CategoryPieCharts({ transactions, formatCurrency }: CategoryPieC
               </PieChart>
             </ResponsiveContainer>
           </div>
-          <div className="flex flex-wrap justify-center gap-1.5 px-2 mt-[-10px] relative z-10">
+          <div className="-mt-12 flex flex-wrap justify-center gap-1.5">
             {incomeData.map((item, i) => (
-              <div key={item.name} className="flex items-center gap-1 text-[9px] bg-accent/20 px-1.5 py-0.5 rounded-full border border-border/10 whitespace-nowrap">
+              <div key={item.name} className="flex items-center gap-1 text-[9px] bg-accent/20 px-1.5 py-0.5 rounded-full border border-border/10">
                 <div className="h-1 w-1 shrink-0 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
-                <span className="text-muted-foreground truncate max-w-[50px]">{item.name}</span>
+                <span className="text-muted-foreground truncate max-w-[60px]">{item.name}</span>
                 <span className="font-bold text-foreground shrink-0">{item.percentage.toFixed(0)}%</span>
               </div>
             ))}

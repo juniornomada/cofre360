@@ -849,9 +849,7 @@ function Dashboard() {
   }, [accountBalances]);
 
   return (
-    <div className="animate-page-enter mx-auto w-full max-w-7xl grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 px-3 pt-4 pb-20">
-      {/* Coluna 1: Cabeçalho e Contas */}
-      <div className="flex flex-col gap-4 lg:col-span-1">
+    <div className="animate-page-enter flex flex-col gap-4 px-3 pt-4 pb-20">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex flex-col items-center">
@@ -1056,10 +1054,7 @@ function Dashboard() {
 
 
 
-      </div>
-
-      {/* Coluna 2: Cartões e Alertas/Resumo */}
-      <div className="flex flex-col gap-4 lg:col-span-1">
+      {/* Credit Cards Summary */}
       <div className="rounded-2xl bg-gradient-to-br from-primary/15 via-card to-card p-4 border border-border/40">
         <div className="flex items-center justify-between gap-4 mb-2">
           <h2 className="text-sm font-semibold text-foreground flex items-center gap-1.5 uppercase">
@@ -1145,10 +1140,7 @@ function Dashboard() {
         )}
       </div>
 
-      </div>
-
-      {/* Coluna 3: Transações Recentes */}
-      <div className="flex flex-col gap-4 lg:col-span-1">
+      {/* Recent Transactions — moved to right below balance */}
       <div>
         <div className="mb-2 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-foreground">Recentes</h2>
@@ -1674,10 +1666,9 @@ function Dashboard() {
           />
         )}
        </Suspense>
-      </div>
-    </div>
-  );
-}
+     </div>
+   );
+ }
  
  export const Route = createFileRoute("/")({
    validateSearch: (search: Record<string, unknown>) => {
