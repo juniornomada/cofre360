@@ -1140,18 +1140,9 @@ function CardsPage() {
                     </div>
                   )}
                   <div className="flex gap-1.5 mt-2">
-                    {(totalUsed > 0 || card.used > 0) && (
-                      <button
-                        onClick={() => openPayDialog(card)}
-                        className="interactive-button flex flex-1 items-center justify-center gap-1 rounded-lg bg-white py-2 text-xs font-bold text-gray-900 hover:bg-white/90 transition-colors shadow-md ring-2 ring-white/60"
-                      >
-                        <Wallet className="h-3 w-3" strokeWidth={2.5} />
-                        Pagar
-                      </button>
-                    )}
                     <button
                       onClick={() => openInvoiceDialog(card)}
-                      className="interactive-button flex flex-1 items-center justify-center gap-1 rounded-lg bg-black/60 py-2 text-xs font-bold text-white hover:bg-black/70 transition-colors ring-2 ring-white/50"
+                      className="interactive-button flex flex-1 items-center justify-center gap-1 rounded-lg bg-white py-2 text-xs font-bold text-gray-900 hover:bg-white/90 transition-colors shadow-md ring-2 ring-white/60"
                     >
                       <Receipt className="h-3 w-3" strokeWidth={2.5} />
                       Faturas
