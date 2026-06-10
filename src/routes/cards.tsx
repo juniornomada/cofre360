@@ -1463,7 +1463,7 @@ function CardsPage() {
                 </div>
               </div>
 
-               <div className="rounded-xl border border-border/40 bg-accent/20 overflow-hidden">
+               <div className="rounded-xl border border-border/40 bg-accent/10 overflow-hidden">
                 <button 
                   onClick={() => setShowInvoiceDetails(!showInvoiceDetails)}
                   className="w-full flex items-center justify-between p-2.5 hover:bg-accent/30 transition-colors"
@@ -1477,22 +1477,25 @@ function CardsPage() {
                 
                 {showInvoiceDetails && (
                   <div className="px-2.5 pb-2.5 space-y-2 animate-in fade-in slide-in-from-top-1 duration-200">
-                    <div className="max-h-[150px] overflow-y-auto space-y-1.5 pr-1 custom-scrollbar">
+                    <div className="max-h-[120px] overflow-y-auto space-y-1.5 pr-1 custom-scrollbar">
                       {invoicePeriods[activeInvoiceIdx]?.transactions.map((tx) => (
-                        <div key={tx.id} className="flex items-center justify-between gap-2 text-[10px]">
+                        <div key={tx.id} className="flex items-center justify-between gap-2 py-0.5 border-b border-border/10 last:border-0">
                           <div className="flex items-center gap-1.5 min-w-0">
-                            <span>{tx.icon}</span>
-                            <span className="truncate text-foreground font-medium">{tx.name}</span>
+                            <span className="text-[12px] shrink-0 opacity-80">{tx.icon}</span>
+                            <div className="flex flex-col min-w-0 leading-tight">
+                              <span className="truncate text-[10px] text-foreground font-medium">{tx.name}</span>
+                              <span className="text-[8px] text-muted-foreground">{tx.date && tx.date.includes(" ") ? tx.date : (tx.date ? format(new Date(tx.date), "dd MMM", { locale: ptBR }) : "")}</span>
+                            </div>
                           </div>
                           <span className={cn(
-                            "tabular-nums font-bold shrink-0",
+                            "tabular-nums font-bold shrink-0 text-[10px]",
                             tx.type === "income" ? "text-primary" : "text-destructive"
                           )}>
                             {tx.type === "income" ? "+" : "-"} R$ {Number(tx.amount).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                           </span>
                         </div>
                       ))}
-                      {invoicePeriods[activeInvoiceIdx]?.transactions.length === 0 && (
+                      {(!invoicePeriods[activeInvoiceIdx]?.transactions || invoicePeriods[activeInvoiceIdx].transactions.length === 0) && (
                         <p className="text-center py-2 text-[10px] text-muted-foreground">Nenhuma transação neste período</p>
                       )}
                     </div>
@@ -1504,16 +1507,16 @@ function CardsPage() {
                         const creditos = txs.filter(t => t.type === "income").reduce((s, t) => s + Number(t.amount), 0);
                         return (
                           <>
-                            <div className="flex justify-between text-[9px]">
-                              <span className="text-muted-foreground">Total em compras:</span>
-                              <span className="text-destructive font-medium">-R$ {compras.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
+                            <div className="flex justify-between text-[9px] leading-tight">
+                              <span className="text-muted-foreground">Compras:</span>
+                              <span className="text-destructive font-medium">- R$ {compras.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
                             </div>
-                            <div className="flex justify-between text-[9px]">
-                              <span className="text-muted-foreground">Estornos/Créditos:</span>
-                              <span className="text-primary font-medium">+R$ {creditos.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
+                            <div className="flex justify-between text-[9px] leading-tight">
+                              <span className="text-muted-foreground">Créditos:</span>
+                              <span className="text-primary font-medium">+ R$ {creditos.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
                             </div>
                             <div className="flex justify-between text-[10px] font-bold pt-1 border-t border-border/20 mt-1">
-                              <span className="text-foreground">Total Calculado:</span>
+                              <span className="text-foreground">Total:</span>
                               <span className="text-foreground tabular-nums">R$ {(compras - creditos).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
                             </div>
                           </>
