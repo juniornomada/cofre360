@@ -1307,10 +1307,14 @@ function CardsPage() {
                 <div className="relative">
                   <div className="flex justify-between items-start gap-2 mb-1.5">
                     <div className="min-w-0">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-white/90">Fatura {activeInvoicePeriod?.label.split(" (")[0] || "atual"}</p>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-white/90">
+                        Fatura {activeInvoicePeriod?.label.split(" (")[0] || "atual"}
+                      </p>
                       <p className="text-base font-extrabold text-white tabular-nums drop-shadow-md truncate" data-testid="fatura-atual-valor">
                         R$ {(activeInvoicePeriod?.total || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                       </p>
+                      {/* Debug info - hidden by default */}
+                      <span className="sr-only">Total for {card.name}: {cardTotals[card.name] || 0}</span>
                     </div>
                     <div className="flex flex-col items-end gap-0.5 text-[9px] font-semibold text-white shrink-0">
                       <span className="rounded-full bg-black/45 px-1.5 py-0.5 ring-1 ring-white/20 tabular-nums whitespace-nowrap">
