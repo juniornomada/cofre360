@@ -934,11 +934,10 @@ function CardsPage() {
         }
       }
       
-      toast.success(`${paymentName} de R$ ${paymentTotal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} realizado!`);
+      toast.success(`${paymentName} realizado!`, { id: syncToastId });
       setPayDialogOpen(false);
-      await fetchAll(); // Ensure fetchAll is awaited to refresh all state (including payments)
+      await fetchAll();
       
-      // Specifically force a cache refresh for transactions to update the local calculation
       if (payingCard) {
         setLoadingTx(true);
         try {
@@ -959,7 +958,7 @@ function CardsPage() {
       }
     } catch (error) {
       console.error("Payment error:", error);
-      toast.error("Erro ao processar pagamento");
+      toast.error("Erro ao processar pagamento e sincronizar valores.", { id: syncToastId });
     } finally {
       setPayingSaving(false);
     }
