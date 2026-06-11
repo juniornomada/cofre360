@@ -195,6 +195,8 @@ function CardsPage() {
   const [transactionsCache, setTransactionsCache] = useState<Record<string, CardTransaction[]>>({});
   const [loadingTx, setLoadingTx] = useState(false);
   const [activeInvoiceIdx, setActiveInvoiceIdx] = useState(0);
+  const [fetchError, setFetchError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
 
   // Installment edit dialog (add parcelamento to an existing card transaction)
   const [installmentTx, setInstallmentTx] = useState<CardTransaction | null>(null);
