@@ -310,9 +310,10 @@ function CardsPage() {
         const totals: Record<string, number> = {};
         console.log("Card totals data from RPC:", cardTotalsRes.data);
         cardTotalsRes.data.forEach((item: any) => {
-          const name = item.card_name || item.name;
-          if (name) {
-            totals[name] = Number(item.total_spent || item.amount || 0);
+          // The RPC returns card_name, try both to be safe
+          const cardName = item.card_name || item.name;
+          if (cardName) {
+            totals[cardName] = Number(item.total_spent || item.amount || 0);
           }
         });
         console.log("Processed totals map:", totals);
@@ -1311,7 +1312,7 @@ function CardsPage() {
                         Fatura {activeInvoicePeriod?.label.split(" (")[0] || "atual"}
                       </p>
                       <p className="text-base font-extrabold text-white tabular-nums drop-shadow-md truncate" data-testid="fatura-atual-valor">
-                        R$ {(activeInvoicePeriod?.total || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                        R$ {(totalUsed || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                       </p>
                       {/* Debug info - hidden by default */}
                       <span className="sr-only">Total for {card.name}: {cardTotals[card.name] || 0}</span>
