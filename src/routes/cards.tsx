@@ -379,19 +379,25 @@ function CardsPage() {
         { event: "*", schema: "public", table: "transactions" },
         async (payload) => {
           console.log("Transactions updated, invalidating cache...");
-          await fetchAll();
-          // If the invoice dialog is open, we need to refresh the current card transactions too
-          if (invoiceCard) {
-            const { data } = await supabase
-              .from("transactions")
-              .select("id, name, icon, category, date, amount, type, card, created_at, total_installments, installment_number, installment_group_id")
-              .eq("card", invoiceCard.name)
-              .order("created_at", { ascending: false });
-            if (data) {
-              const txs = (data as CardTransaction[]) || [];
-              setCardTransactions(txs);
-              setTransactionsCache(prev => ({ ...prev, [invoiceCard.id]: txs }));
+          setSyncStatus("syncing");
+          try {
+            await fetchAll();
+            // If the invoice dialog is open, we need to refresh the current card transactions too
+            if (invoiceCard) {
+              const { data } = await supabase
+                .from("transactions")
+                .select("id, name, icon, category, date, amount, type, card, created_at, total_installments, installment_number, installment_group_id")
+                .eq("card", invoiceCard.name)
+                .order("created_at", { ascending: false });
+              if (data) {
+                const txs = (data as CardTransaction[]) || [];
+                setCardTransactions(txs);
+                setTransactionsCache(prev => ({ ...prev, [invoiceCard.id]: txs }));
+              }
             }
+            setSyncStatus("synced");
+          } catch (error) {
+            setSyncStatus("error");
           }
         }
       )
@@ -400,7 +406,8 @@ function CardsPage() {
         { event: "*", schema: "public", table: "cards" },
         () => {
           console.log("Cards updated, invalidating cache...");
-          fetchAll();
+          setSyncStatus("syncing");
+          fetchAll().then(() => setSyncStatus("synced")).catch(() => setSyncStatus("error"));
         }
       )
       .on(
@@ -408,10 +415,15 @@ function CardsPage() {
         { event: "*", schema: "public", table: "card_payments" },
         () => {
           console.log("Card payments updated, invalidating cache...");
-          fetchAll();
+          setSyncStatus("syncing");
+          fetchAll().then(() => setSyncStatus("synced")).catch(() => setSyncStatus("error"));
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          setSyncStatus("error");
+        }
+      });
 
     const onFocus = () => {
       // fetchAll(); // Removed to prevent blocking and unnecessary re-fetches when just switching tabs
