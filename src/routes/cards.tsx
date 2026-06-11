@@ -1421,8 +1421,21 @@ function CardsPage() {
                 </div>
               )}
 
-              <div className="flex-1 overflow-y-auto px-5 pb-5">
-                {activePeriod && activePeriod.transactions.length === 0 ? (
+              <div className="flex-1 overflow-y-auto px-5 pb-5 relative min-h-[200px]">
+                {switchingPeriod ? (
+                  <div className="absolute inset-0 bg-background/50 backdrop-blur-[1px] z-10 flex flex-col gap-4 py-4 animate-fade-in">
+                    {[1, 2, 3, 4].map(i => (
+                      <div key={i} className="flex items-center gap-3 px-1 animate-pulse">
+                        <div className="h-8 w-8 rounded bg-accent" />
+                        <div className="flex-1">
+                          <div className="h-3 w-2/3 rounded bg-accent mb-2" />
+                          <div className="h-2 w-1/3 rounded bg-accent/60" />
+                        </div>
+                        <div className="h-3 w-16 rounded bg-accent" />
+                      </div>
+                    ))}
+                  </div>
+                ) : activePeriod && activePeriod.transactions.length === 0 ? (
                   <p className="py-8 text-center text-xs text-muted-foreground">Nenhuma transação nesta fatura</p>
                 ) : (
                   <div className="flex flex-col gap-0.5">
