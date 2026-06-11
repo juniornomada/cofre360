@@ -332,7 +332,8 @@ function CardsPage() {
         const paidByPeriod: Record<string, Record<string, number>> = {};
         
         for (const p of paymentsRes.data) {
-          paid[p.card_id] = (paid[p.card_id] || 0) + Number(p.amount);
+          const amount = Number(p.amount);
+          paid[p.card_id] = (paid[p.card_id] || 0) + amount;
           
           if (p.paid_at) {
             const card = cardsRes.data?.find(c => c.id === p.card_id);
@@ -342,10 +343,18 @@ function CardsPage() {
               const periodKey = currentClose.toISOString().split("T")[0];
               
               if (!paidByPeriod[p.card_id]) paidByPeriod[p.card_id] = {};
-              paidByPeriod[p.card_id][periodKey] = (paidByPeriod[p.card_id][periodKey] || 0) + Number(p.amount);
+              paidByPeriod[p.card_id][periodKey] = (paidByPeriod[p.card_id][periodKey] || 0) + amount;
             }
           }
         }
+        
+        // Log potential desyncs if payments don't match card existence or expected logic
+        paymentsRes.data.forEach(p => {
+          if (!cardsRes.data?.find(c => c.id === p.card_id)) {
+             console.warn(`[DESYNC ALERT] Payment ID for non-existent card detected: ${p.card_id}`);
+          }
+        });
+
         setCardPayments(paid);
         setCardPaymentsByPeriod(paidByPeriod);
       }
