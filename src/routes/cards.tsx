@@ -1237,7 +1237,26 @@ function CardsPage() {
             </DialogTitle>
           </DialogHeader>
 
-          {loadingTx ? (
+          {fetchError ? (
+            <div className="flex flex-col items-center justify-center py-12 px-5 text-center gap-4">
+              <div className="h-12 w-12 rounded-full bg-destructive/10 flex items-center justify-center">
+                <AlertCircle className="h-6 w-6 text-destructive" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-foreground">Falha ao carregar dados</p>
+                <p className="text-xs text-muted-foreground mt-1">Verifique sua conexão com a internet ou tente novamente.</p>
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => fetchAll()}
+                className="gap-2"
+              >
+                <RefreshCw className={cn("h-3.5 w-3.5", loadingTx && "animate-spin")} />
+                Tentar novamente
+              </Button>
+            </div>
+          ) : loadingTx ? (
             <div className="flex flex-col flex-1 min-h-0 px-5 py-4 gap-4 overflow-hidden">
               <div className="flex items-center gap-3 animate-pulse">
                 <div className="h-8 w-8 rounded-lg bg-accent" />
