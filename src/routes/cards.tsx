@@ -97,24 +97,16 @@ const colorOptions = [
 
 
 
-function LoadingMessage() {
-  const [index, setIndex] = useState(0);
-  const messages = [
-    "Sincronizando faturas...",
-    "Calculando ciclos de fechamento...",
-    "Consolidando transações...",
-    "Organizando por períodos...",
-    "Quase pronto..."
-  ];
+function LoadingMessage({ step }: { step: "cards" | "accounts" | "totals" | "transactions" | "done" }) {
+  const messages = {
+    cards: "Sincronizando faturas...",
+    accounts: "Calculando saldos das contas...",
+    totals: "Consolidando totais de cartões...",
+    transactions: "Baixando transações detalhadas...",
+    done: "Tudo pronto!"
+  };
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setIndex((prev) => (prev + 1) % messages.length);
-    }, 1500);
-    return () => clearInterval(timer);
-  }, []);
-
-  return <span className="animate-pulse">{messages[index]}</span>;
+  return <span className="animate-pulse">{messages[step] || "Carregando..."}</span>;
 }
 
 function SortableCardWrapper({ id, children, animationDelay }: { id: string; children: React.ReactNode; animationDelay: number }) {
@@ -197,6 +189,7 @@ function CardsPage() {
   const [activeInvoiceIdx, setActiveInvoiceIdx] = useState(0);
   const [fetchError, setFetchError] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
+  const [loadingStep, setLoadingStep] = useState<"cards" | "accounts" | "totals" | "transactions" | "done">("cards");
 
   // Installment edit dialog (add parcelamento to an existing card transaction)
   const [installmentTx, setInstallmentTx] = useState<CardTransaction | null>(null);
@@ -274,6 +267,7 @@ function CardsPage() {
     if (!session) return;
 
     setFetchError(false);
+    setLoadingStep("cards");
     try {
       const [cardsRes, accountsRes, paymentsRes, cardTotalsRes, accountBalancesRes] = await Promise.all([
         supabase.from("cards").select("*").eq("user_id", session.user.id).order("sort_order", { ascending: true }).order("created_at", { ascending: true }),
@@ -294,6 +288,8 @@ function CardsPage() {
         localStorage.setItem("cached_cards", JSON.stringify(cardsRes.data));
       }
 
+      setLoadingStep("accounts");
+
       if (accountsRes.data && accountBalancesRes.data) {
         const balanceMap: Record<string, number> = {};
         accountBalancesRes.data.forEach((item: any) => {
@@ -306,6 +302,8 @@ function CardsPage() {
         })));
       }
 
+      setLoadingStep("totals");
+
       if (cardTotalsRes.data) {
         const totals: Record<string, number> = {};
         cardTotalsRes.data.forEach((item: any) => {
@@ -313,6 +311,8 @@ function CardsPage() {
         });
         setCardTotals(totals);
       }
+
+      setLoadingStep("transactions");
 
       const { data: txData, error: txError } = await supabase.from("transactions")
         .select("id, name, amount, date, created_at, card, icon, category, type, total_installments, installment_number, installment_group_id")
@@ -347,6 +347,7 @@ function CardsPage() {
         setCardPayments(paid);
         setCardPaymentsByPeriod(paidByPeriod);
       }
+      setLoadingStep("done");
       setRetryCount(0);
     } catch (error: any) {
       console.error("Error fetching data:", error);
@@ -1324,10 +1325,10 @@ function CardsPage() {
               <div className="mt-auto py-4 flex flex-col items-center gap-2">
                 <Loader2 className="h-5 w-5 animate-spin text-primary/40" />
                 <p className="text-[10px] text-muted-foreground font-medium tracking-tight uppercase">
-                  <LoadingMessage />
+                  <LoadingMessage step={loadingStep} />
                 </p>
                 <p className="text-[9px] text-muted-foreground/60 italic px-6">
-                  Estamos baixando os últimos lançamentos do banco de dados para garantir que tudo esteja atualizado.
+                  Sincronizando faturas e lançamentos diretamente do Cofre 360.
                 </p>
               </div>
             </div>
