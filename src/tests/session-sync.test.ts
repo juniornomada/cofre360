@@ -14,7 +14,7 @@ describe('Sincronização de Pagamento entre Sessões', () => {
 
   beforeEach(async () => {
     // Setup: Criar cartão e conta para o teste
-    const { data: card } = await supabase.from('cards').insert({
+    const { data: card, error: cardErr } = await supabase.from('cards').insert({
       name: testCardName,
       brand: 'Mastercard',
       card_limit: 1000,
@@ -22,10 +22,20 @@ describe('Sincronização de Pagamento entre Sessões', () => {
       due_day: 10
     }).select().single();
 
-    const { data: account } = await supabase.from('bank_accounts').insert({
+    if (cardErr) {
+      console.error("Erro ao criar cartão de teste:", cardErr);
+      throw cardErr;
+    }
+
+    const { data: account, error: accErr } = await supabase.from('bank_accounts').insert({
       name: "Conta Teste Sync",
       balance: 2000
     }).select().single();
+
+    if (accErr) {
+      console.error("Erro ao criar conta de teste:", accErr);
+      throw accErr;
+    }
 
     testCardId = card.id;
     testAccountId = account.id;
