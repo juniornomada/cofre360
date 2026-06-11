@@ -783,41 +783,48 @@ function CardsPage() {
     }
   };
 
-   // Payment logic
-   const openPayDialog = async (card: CardData, periodIdx?: number) => {
-     setPayingCard(card);
-     setInvoiceCard(card); // Ensure invoicePeriods is for this card
-     setPaymentLines([{ accountId: "", amount: "" }]);
-     setPaymentDate(format(new Date(), "dd MMM", { locale: ptBR }));
-     
-     // Recalculate everything before opening
-     await fetchAll();
-     
-     setPayDialogOpen(true);
-     
-     if (periodIdx !== undefined) {
-       setActiveInvoiceIdx(periodIdx);
-     } else {
-       // Default to current invoice
-       setActiveInvoiceIdx(0); 
-     }
+    // Payment logic
+    const openPayDialog = async (card: CardData, periodIdx?: number) => {
+      setPayingCard(card);
+      setInvoiceCard(card);
+      setPaymentLines([{ accountId: "", amount: "" }]);
+      setPaymentDate(format(new Date(), "dd MMM", { locale: ptBR }));
+      
+      // Open dialog immediately so the user sees the layout
+      setPayDialogOpen(true);
+      
+      if (periodIdx !== undefined) {
+        setActiveInvoiceIdx(periodIdx);
+      } else {
+        setActiveInvoiceIdx(0); 
+      }
 
-     // Fetch transactions to ensure invoicePeriods is populated and accurate
-     setLoadingTx(true);
-     try {
-       const { data, error } = await supabase
-         .from("transactions")
-         .select("id, name, icon, category, date, amount, type, created_at, total_installments, installment_number, installment_group_id")
-         .eq("card", card.name)
-         .order("created_at", { ascending: false });
-       if (error) throw error;
-       setCardTransactions((data as CardTransaction[]) || []);
-     } catch (error: any) {
-       console.error("Error fetching card transactions for payment:", error);
-     } finally {
-       setLoadingTx(false);
-     }
-   };
+      // Fetch ALL critical data (balances, card totals, card payments) in parallel
+      // This is what makes the values available without switching tabs
+      await fetchAll();
+
+      // Also ensure we have the most up-to-date transactions for the specific card
+      // to calculate the invoice periods correctly in the payment dialog
+      setLoadingTx(true);
+      try {
+        const { data, error } = await supabase
+          .from("transactions")
+          .select("id, name, icon, category, date, amount, type, card, created_at, total_installments, installment_number, installment_group_id")
+          .eq("card", card.name)
+          .order("created_at", { ascending: false });
+        
+        if (error) throw error;
+        
+        const txs = (data as CardTransaction[]) || [];
+        setCardTransactions(txs);
+        // Also update the cache
+        setTransactionsCache(prev => ({ ...prev, [card.id]: txs }));
+      } catch (error: any) {
+        console.error("Error fetching card transactions for payment:", error);
+      } finally {
+        setLoadingTx(false);
+      }
+    };
 
   const updatePaymentLine = (index: number, field: keyof PaymentLine, value: string) => {
     setPaymentLines((prev) => prev.map((line, i) => i === index ? { ...line, [field]: value } : line));
