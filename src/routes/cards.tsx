@@ -1205,9 +1205,53 @@ function CardsPage() {
           </DialogHeader>
 
           {loadingTx ? (
-            <div className="flex flex-col items-center justify-center py-12 gap-2">
-              <Loader2 className="h-5 w-5 animate-spin text-primary" />
-              <p className="text-xs text-muted-foreground animate-pulse">Carregando transações...</p>
+            <div className="flex flex-col flex-1 min-h-0 px-5 py-4 gap-4 overflow-hidden">
+              <div className="flex items-center gap-3 animate-pulse">
+                <div className="h-8 w-8 rounded-lg bg-accent" />
+                <div className="flex-1">
+                  <div className="h-4 w-3/4 rounded bg-accent mb-2" />
+                  <div className="h-3 w-1/2 rounded bg-accent/60" />
+                </div>
+                <div className="h-8 w-8 rounded-lg bg-accent" />
+              </div>
+              
+              <div className="flex gap-2 overflow-hidden animate-pulse">
+                {[1, 2, 3, 4].map(i => (
+                  <div key={i} className="h-6 w-20 rounded-full bg-accent shrink-0" />
+                ))}
+              </div>
+
+              <div className="rounded-xl bg-accent/30 p-4 h-16 animate-pulse" />
+
+              <div className="flex flex-col gap-4 mt-2">
+                {[1, 2, 3, 4, 5, 6].map(i => (
+                  <div key={i} className="flex items-center gap-3 animate-pulse">
+                    <div className="h-8 w-8 rounded bg-accent" />
+                    <div className="flex-1">
+                      <div className="h-3 w-2/3 rounded bg-accent mb-2" />
+                      <div className="h-2 w-1/3 rounded bg-accent/60" />
+                    </div>
+                    <div className="h-3 w-16 rounded bg-accent" />
+                  </div>
+                ))}
+              </div>
+              
+              <div className="mt-auto py-4 flex flex-col items-center gap-2">
+                <Loader2 className="h-5 w-5 animate-spin text-primary/40" />
+                <p className="text-[10px] text-muted-foreground font-medium animate-pulse tracking-tight uppercase">
+                  {(() => {
+                    const messages = [
+                      "Sincronizando faturas...",
+                      "Calculando ciclos de fechamento...",
+                      "Consolidando transações...",
+                      "Organizando por períodos...",
+                      "Quase pronto..."
+                    ];
+                    // Using a simple state-less approach or component internal timer
+                    return "Buscando detalhes da fatura...";
+                  })()}
+                </p>
+              </div>
             </div>
           ) : cardTransactions.length === 0 ? (
             <p className="py-12 text-center text-sm text-muted-foreground">Nenhuma transação neste cartão</p>
