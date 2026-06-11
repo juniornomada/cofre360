@@ -267,6 +267,7 @@ function CardsPage() {
     if (!session) return;
 
     setFetchError(false);
+    setLoadingStep("cards");
     try {
       const [cardsRes, accountsRes, paymentsRes, cardTotalsRes, accountBalancesRes] = await Promise.all([
         supabase.from("cards").select("*").eq("user_id", session.user.id).order("sort_order", { ascending: true }).order("created_at", { ascending: true }),
@@ -287,6 +288,8 @@ function CardsPage() {
         localStorage.setItem("cached_cards", JSON.stringify(cardsRes.data));
       }
 
+      setLoadingStep("accounts");
+
       if (accountsRes.data && accountBalancesRes.data) {
         const balanceMap: Record<string, number> = {};
         accountBalancesRes.data.forEach((item: any) => {
@@ -299,6 +302,8 @@ function CardsPage() {
         })));
       }
 
+      setLoadingStep("totals");
+
       if (cardTotalsRes.data) {
         const totals: Record<string, number> = {};
         cardTotalsRes.data.forEach((item: any) => {
@@ -306,6 +311,8 @@ function CardsPage() {
         });
         setCardTotals(totals);
       }
+
+      setLoadingStep("transactions");
 
       const { data: txData, error: txError } = await supabase.from("transactions")
         .select("id, name, amount, date, created_at, card, icon, category, type, total_installments, installment_number, installment_group_id")
@@ -340,6 +347,7 @@ function CardsPage() {
         setCardPayments(paid);
         setCardPaymentsByPeriod(paidByPeriod);
       }
+      setLoadingStep("done");
       setRetryCount(0);
     } catch (error: any) {
       console.error("Error fetching data:", error);
