@@ -895,7 +895,8 @@ function CardsPage() {
            }
          })()
        }));
-      await supabase.from("card_payments").insert(inserts);
+      const { error: paymentError } = await supabase.from("card_payments").insert(inserts);
+      if (paymentError) throw paymentError;
 
       // 2. Update bank balances and create expense transactions
       for (const line of validLines) {
@@ -921,7 +922,27 @@ function CardsPage() {
       
       toast.success(`${paymentName} de R$ ${paymentTotal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} realizado!`);
       setPayDialogOpen(false);
-      fetchAll();
+      await fetchAll(); // Ensure fetchAll is awaited to refresh all state (including payments)
+      
+      // Specifically force a cache refresh for transactions to update the local calculation
+      if (payingCard) {
+        setLoadingTx(true);
+        try {
+          const { data } = await supabase
+            .from("transactions")
+            .select("id, name, icon, category, date, amount, type, card, created_at, total_installments, installment_number, installment_group_id")
+            .eq("card", payingCard.name)
+            .order("created_at", { ascending: false });
+          
+          if (data) {
+            const txs = (data as CardTransaction[]) || [];
+            setCardTransactions(txs);
+            setTransactionsCache(prev => ({ ...prev, [payingCard.id]: txs }));
+          }
+        } finally {
+          setLoadingTx(false);
+        }
+      }
     } catch (error) {
       console.error("Payment error:", error);
       toast.error("Erro ao processar pagamento");
