@@ -851,6 +851,7 @@ function CardsPage() {
     const validLines = paymentLines.filter((l) => l.accountId && parseFloat(l.amount) > 0);
     if (validLines.length === 0) return;
     setPayingSaving(true);
+    const syncToastId = toast.loading("Processando pagamento e sincronizando valores...");
     try {
       // Re-fetch transactions for this specific card to ensure invoice is up to date
       const { data: latestTxs, error: txError } = await supabase
@@ -933,11 +934,10 @@ function CardsPage() {
         }
       }
       
-      toast.success(`${paymentName} de R$ ${paymentTotal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} realizado!`);
+      toast.success(`${paymentName} realizado!`, { id: syncToastId });
       setPayDialogOpen(false);
-      await fetchAll(); // Ensure fetchAll is awaited to refresh all state (including payments)
+      await fetchAll();
       
-      // Specifically force a cache refresh for transactions to update the local calculation
       if (payingCard) {
         setLoadingTx(true);
         try {
@@ -958,7 +958,7 @@ function CardsPage() {
       }
     } catch (error) {
       console.error("Payment error:", error);
-      toast.error("Erro ao processar pagamento");
+      toast.error("Erro ao processar pagamento e sincronizar valores.", { id: syncToastId });
     } finally {
       setPayingSaving(false);
     }
