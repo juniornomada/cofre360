@@ -190,6 +190,7 @@ function CardsPage() {
   const [fetchError, setFetchError] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const [loadingStep, setLoadingStep] = useState<"cards" | "accounts" | "totals" | "transactions" | "done">("cards");
+  const [syncStatus, setSyncStatus] = useState<"synced" | "syncing" | "error">("synced");
   const [switchingPeriod, setSwitchingPeriod] = useState(false);
 
   // Installment edit dialog (add parcelamento to an existing card transaction)
@@ -1005,6 +1006,33 @@ function CardsPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <div 
+            className={cn(
+              "flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-medium transition-all duration-300",
+              syncStatus === "synced" && "bg-green-500/10 text-green-600 border border-green-500/20",
+              syncStatus === "syncing" && "bg-blue-500/10 text-blue-600 border border-blue-500/20 animate-pulse",
+              syncStatus === "error" && "bg-red-500/10 text-red-600 border border-red-500/20"
+            )}
+          >
+            {syncStatus === "synced" && (
+              <>
+                <div className="h-1.5 w-1.5 rounded-full bg-green-500" />
+                Sincronizado
+              </>
+            )}
+            {syncStatus === "syncing" && (
+              <>
+                <Loader2 className="h-2.5 w-2.5 animate-spin" />
+                Sincronizando
+              </>
+            )}
+            {syncStatus === "error" && (
+              <>
+                <AlertCircle className="h-2.5 w-2.5" />
+                Falha na sincronização
+              </>
+            )}
+          </div>
           <button 
             onClick={() => updateBalanceVisible(!balanceVisible)} 
             className="interactive-button flex h-10 w-10 items-center justify-center rounded-full bg-card border border-border shadow-sm hover:bg-accent transition-all"
