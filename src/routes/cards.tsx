@@ -309,7 +309,11 @@ function CardsPage() {
       if (cardTotalsRes.data) {
         const totals: Record<string, number> = {};
         cardTotalsRes.data.forEach((item: any) => {
-          totals[item.card_name] = Number(item.total_spent);
+          // Normalize to handle name or card_name depending on RPC version
+          const name = item.card_name || item.name;
+          if (name) {
+            totals[name] = Number(item.total_spent || item.amount || 0);
+          }
         });
         setCardTotals(totals);
       }
