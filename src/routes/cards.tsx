@@ -1362,7 +1362,11 @@ function CardsPage() {
                   )}
                 </div>
                 <button
-                  onClick={() => setActiveInvoiceIdx(Math.min(invoicePeriods.length - 1, activeInvoiceIdx + 1))}
+                  onClick={() => {
+                    setSwitchingPeriod(true);
+                    setActiveInvoiceIdx(Math.min(invoicePeriods.length - 1, activeInvoiceIdx + 1));
+                    setTimeout(() => setSwitchingPeriod(false), 400);
+                  }}
                   disabled={activeInvoiceIdx >= invoicePeriods.length - 1}
                   className="interactive-button p-1.5 rounded-lg bg-accent hover:bg-accent/80 disabled:opacity-30 transition-colors"
                 >
@@ -1374,7 +1378,11 @@ function CardsPage() {
                 {invoicePeriods.map((period, idx) => (
                     <button
                       key={period.key}
-                      onClick={() => setActiveInvoiceIdx(idx)}
+                      onClick={() => {
+                        setSwitchingPeriod(true);
+                        setActiveInvoiceIdx(idx);
+                        setTimeout(() => setSwitchingPeriod(false), 400);
+                      }}
                       data-testid={`period-tab-${period.key}`}
                       className={cn(
                         "whitespace-nowrap rounded-full px-3 py-1 text-[11px] font-medium transition-colors shrink-0",
