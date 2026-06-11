@@ -13,8 +13,12 @@ describe('Sincronização de Pagamento entre Sessões', () => {
   let testAccountId: string;
 
   beforeEach(async () => {
+    const cardId = crypto.randomUUID();
+    const accountId = crypto.randomUUID();
+
     // Setup: Criar cartão e conta para o teste
     const { data: card, error: cardErr } = await supabase.from('cards').insert({
+      id: cardId,
       name: testCardName,
       brand: 'Mastercard',
       card_limit: 1000,
@@ -28,6 +32,7 @@ describe('Sincronização de Pagamento entre Sessões', () => {
     }
 
     const { data: account, error: accErr } = await supabase.from('bank_accounts').insert({
+      id: accountId,
       name: "Conta Teste Sync",
       balance: 2000
     }).select().single();
