@@ -919,7 +919,7 @@ function CardsPage() {
       const cardTransactionsFiltered = cardTransactions.filter(t => t.card === card.name);
       const invoicePeriodsCard = groupByBillingCycle(cardTransactionsFiltered, card.closing_day, card.due_day);
       const activeInvoicePeriod = invoicePeriodsCard.find(p => p.key === "current") || invoicePeriodsCard[1] || invoicePeriodsCard[0];
-      const invoiceRemaining = activeInvoicePeriod?.total || 0;
+      const invoiceRemaining = Math.max(0, (activeInvoicePeriod?.total || 0) - (activeInvoicePeriod ? cardPaymentsByPeriod[card.id]?.[activeInvoicePeriod.key] || 0 : 0));
       const totalUsed = cardTotals[card.name] || 0;
       const initialUsed = card.used || 0;
       const totalPaid = cardPayments[card.id] || 0;
@@ -1109,7 +1109,6 @@ function CardsPage() {
                       <p className="text-base font-extrabold text-white tabular-nums drop-shadow-md truncate" data-testid="fatura-atual-valor">
                         R$ {invoiceRemaining.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                       </p>
-
                     </div>
                     <div className="flex flex-col items-end gap-0.5 text-[9px] font-semibold text-white shrink-0">
                       <span className="rounded-full bg-black/45 px-1.5 py-0.5 ring-1 ring-white/20 tabular-nums whitespace-nowrap">
