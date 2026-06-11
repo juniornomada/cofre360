@@ -400,7 +400,7 @@ function CardsPage() {
       .subscribe();
 
     const onFocus = () => {
-      fetchAll();
+      // fetchAll(); // Removed to prevent blocking and unnecessary re-fetches when just switching tabs
     };
     window.addEventListener("focus", onFocus);
     
