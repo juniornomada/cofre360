@@ -273,8 +273,8 @@ function CardsPage() {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
 
+    setFetchError(false);
     try {
-
       const [cardsRes, accountsRes, paymentsRes, cardTotalsRes, accountBalancesRes] = await Promise.all([
         supabase.from("cards").select("*").eq("user_id", session.user.id).order("sort_order", { ascending: true }).order("created_at", { ascending: true }),
         supabase.from("bank_accounts").select("*").eq("user_id", session.user.id).order("created_at", { ascending: true }),
@@ -309,17 +309,17 @@ function CardsPage() {
       if (cardTotalsRes.data) {
         const totals: Record<string, number> = {};
         cardTotalsRes.data.forEach((item: any) => {
-          // Note: total_spent from the function is already (spent - income_on_card)
           totals[item.card_name] = Number(item.total_spent);
         });
         setCardTotals(totals);
       }
 
-      // We still need individual transactions for the list/details
-      const { data: txData } = await supabase.from("transactions")
+      const { data: txData, error: txError } = await supabase.from("transactions")
         .select("id, name, amount, date, created_at, card, icon, category, type, total_installments, installment_number, installment_group_id")
         .eq("user_id", session.user.id)
         .not("card", "is", null);
+      
+      if (txError) throw txError;
       
       if (txData) {
         setCardTransactions(txData as CardTransaction[]);
@@ -347,13 +347,24 @@ function CardsPage() {
         setCardPayments(paid);
         setCardPaymentsByPeriod(paidByPeriod);
       }
+      setRetryCount(0);
     } catch (error: any) {
       console.error("Error fetching data:", error);
-      toast.error("Erro ao carregar dados: " + (error.message || "Erro desconhecido"));
+      setFetchError(true);
+      
+      if (retryCount < 2) {
+        const nextRetry = retryCount + 1;
+        setRetryCount(nextRetry);
+        setTimeout(() => fetchAll(), 2000 * nextRetry);
+        toast.error(`Falha na conexão. Tentando novamente (${nextRetry}/2)...`);
+      } else {
+        toast.error("Não foi possível carregar os dados. Verifique sua conexão.");
+      }
     } finally {
       setLoading(false);
+      setLoadingTx(false);
     }
-  }, []);
+  }, [retryCount]);
 
   useEffect(() => {
     fetchAll();
