@@ -1180,8 +1180,9 @@ function CardsPage() {
           </DialogHeader>
 
           {loadingTx ? (
-            <div className="flex items-center justify-center py-12">
+            <div className="flex flex-col items-center justify-center py-12 gap-2">
               <Loader2 className="h-5 w-5 animate-spin text-primary" />
+              <p className="text-xs text-muted-foreground animate-pulse">Carregando transações...</p>
             </div>
           ) : cardTransactions.length === 0 ? (
             <p className="py-12 text-center text-sm text-muted-foreground">Nenhuma transação neste cartão</p>
@@ -1404,7 +1405,12 @@ function CardsPage() {
           </DialogHeader>
           {payingCard && (
             <div className="flex flex-col gap-4 mt-2">
-              {!invoicePeriods[activeInvoiceIdx] ? (
+              {loadingTx ? (
+                <div className="flex flex-col items-center justify-center py-12 gap-2">
+                  <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                  <p className="text-xs text-muted-foreground animate-pulse">Carregando dados da fatura...</p>
+                </div>
+              ) : !invoicePeriods[activeInvoiceIdx] ? (
                 <div className="rounded-xl bg-slate-50 border border-slate-200 p-3 flex gap-2.5 items-start">
                   <Info className="h-4 w-4 text-slate-600 shrink-0 mt-0.5" />
                   <div className="space-y-0.5">
