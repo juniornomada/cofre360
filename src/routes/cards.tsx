@@ -368,11 +368,44 @@ function CardsPage() {
 
   useEffect(() => {
     fetchAll();
+
+    const transactionsSubscription = supabase
+      .channel("cards-page-updates")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "transactions" },
+        () => {
+          console.log("Transactions updated, invalidating cache...");
+          fetchAll();
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "cards" },
+        () => {
+          console.log("Cards updated, invalidating cache...");
+          fetchAll();
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "card_payments" },
+        () => {
+          console.log("Card payments updated, invalidating cache...");
+          fetchAll();
+        }
+      )
+      .subscribe();
+
     const onFocus = () => {
       fetchAll();
     };
     window.addEventListener("focus", onFocus);
-    return () => window.removeEventListener("focus", onFocus);
+    
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      supabase.removeChannel(transactionsSubscription);
+    };
   }, [fetchAll]);
 
   const searchParams = Route.useSearch();
