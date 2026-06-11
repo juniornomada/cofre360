@@ -1336,10 +1336,14 @@ function CardsPage() {
           ) : cardTransactions.length === 0 ? (
             <p className="py-12 text-center text-sm text-muted-foreground">Nenhuma transação neste cartão</p>
           ) : (
-            <div className="flex flex-col flex-1 min-h-0">
+            <div className="flex flex-col flex-1 min-h-0 relative">
               <div className="flex items-center gap-2 px-5 pb-3">
                 <button
-                  onClick={() => setActiveInvoiceIdx(Math.max(0, activeInvoiceIdx - 1))}
+                  onClick={() => {
+                    setSwitchingPeriod(true);
+                    setActiveInvoiceIdx(Math.max(0, activeInvoiceIdx - 1));
+                    setTimeout(() => setSwitchingPeriod(false), 400);
+                  }}
                   disabled={activeInvoiceIdx <= 0}
                   className="interactive-button p-1.5 rounded-lg bg-accent hover:bg-accent/80 disabled:opacity-30 transition-colors"
                 >
