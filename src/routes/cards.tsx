@@ -144,12 +144,15 @@ function SortableCardWrapper({ id, children, animationDelay }: { id: string; chi
  });
 function CardsPage() {
   const { balanceVisible, updateBalanceVisible } = useUserPreferences();
-  const [cards, setCards] = useState<CardData[]>([]);
+  const [cards, setCards] = useState<CardData[]>(() => {
+    const cached = localStorage.getItem("cached_cards");
+    return cached ? JSON.parse(cached) : [];
+  });
   const [cardTotals, setCardTotals] = useState<Record<string, number>>({});
   const [cardPayments, setCardPayments] = useState<Record<string, number>>({});
   const [cardPaymentsByPeriod, setCardPaymentsByPeriod] = useState<Record<string, Record<string, number>>>({});
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!localStorage.getItem("cached_cards"));
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
@@ -169,6 +172,7 @@ function CardsPage() {
   const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
   const [invoiceCard, setInvoiceCard] = useState<CardData | null>(null);
   const [cardTransactions, setCardTransactions] = useState<CardTransaction[]>([]);
+  const [transactionsCache, setTransactionsCache] = useState<Record<string, CardTransaction[]>>({});
   const [loadingTx, setLoadingTx] = useState(false);
   const [activeInvoiceIdx, setActiveInvoiceIdx] = useState(0);
 
@@ -262,7 +266,10 @@ function CardsPage() {
       if (txRes.error) throw txRes.error;
       if (paymentsRes.error) throw paymentsRes.error;
 
-      if (cardsRes.data) setCards(cardsRes.data);
+      if (cardsRes.data) {
+        setCards(cardsRes.data);
+        localStorage.setItem("cached_cards", JSON.stringify(cardsRes.data));
+      }
       if (accountsRes.data) {
         const incomeByAccount: Record<string, number> = {};
         const expenseByAccount: Record<string, number> = {};
@@ -436,19 +443,30 @@ function CardsPage() {
     setInvoiceCard(card);
     setInvoiceDialogOpen(true);
     setActiveInvoiceIdx(0);
-    setLoadingTx(true);
+    
+    if (transactionsCache[card.id]) {
+      setCardTransactions(transactionsCache[card.id]);
+    } else {
+      setLoadingTx(true);
+    }
+
     try {
-      // Filter transactions by card.name to ensure they belong to the specific card
       const { data, error } = await supabase
         .from("transactions")
         .select("id, name, icon, category, date, amount, type, card, created_at, total_installments, installment_number, installment_group_id")
         .eq("card", card.name)
         .order("created_at", { ascending: false });
+      
       if (error) throw error;
-      setCardTransactions((data as CardTransaction[]) || []);
+      
+      const txs = (data as CardTransaction[]) || [];
+      setCardTransactions(txs);
+      setTransactionsCache(prev => ({ ...prev, [card.id]: txs }));
     } catch (error: any) {
       console.error("Error fetching card transactions:", error);
-      toast.error("Erro ao carregar transações do cartão");
+      if (!transactionsCache[card.id]) {
+        toast.error("Erro ao carregar transações do cartão");
+      }
     } finally {
       setLoadingTx(false);
     }
@@ -1171,7 +1189,7 @@ function CardsPage() {
 
       {/* Invoice Dialog */}
       <Dialog open={invoiceDialogOpen} onOpenChange={setInvoiceDialogOpen}>
-        <DialogContent className="max-w-md mx-auto rounded-2xl max-h-[85vh] flex flex-col p-0 gap-0">
+        <DialogContent className="max-w-md mx-auto rounded-2xl max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden">
           <DialogHeader className="px-5 pt-5 pb-3">
             <DialogTitle className="flex items-center gap-2 text-base">
               <Receipt className="h-4 w-4 text-primary" />
