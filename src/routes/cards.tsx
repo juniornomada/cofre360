@@ -190,6 +190,7 @@ function CardsPage() {
   const [fetchError, setFetchError] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const [loadingStep, setLoadingStep] = useState<"cards" | "accounts" | "totals" | "transactions" | "done">("cards");
+  const [switchingPeriod, setSwitchingPeriod] = useState(false);
 
   // Installment edit dialog (add parcelamento to an existing card transaction)
   const [installmentTx, setInstallmentTx] = useState<CardTransaction | null>(null);
