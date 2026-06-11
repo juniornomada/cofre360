@@ -971,6 +971,8 @@ function CardsPage() {
       toast.error("Erro ao processar pagamento e sincronizar valores.", { id: syncToastId });
     } finally {
       setPayingSaving(false);
+      // We keep the polling running for a bit even after success/error 
+      // to catch any backend eventual consistency updates
     }
   };
 
