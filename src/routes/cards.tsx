@@ -1107,7 +1107,7 @@ function CardsPage() {
                     <div className="min-w-0">
                       <p className="text-[10px] font-bold uppercase tracking-wider text-white/90">Fatura {activeInvoicePeriod?.label.split(" (")[0] || "atual"}</p>
                       <p className="text-base font-extrabold text-white tabular-nums drop-shadow-md truncate" data-testid="fatura-atual-valor">
-                        R$ {invoiceRemaining.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                        R$ {(activeInvoicePeriod?.total || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                       </p>
                     </div>
                     <div className="flex flex-col items-end gap-0.5 text-[9px] font-semibold text-white shrink-0">
