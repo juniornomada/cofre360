@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { SmartLink as Link } from "@/components/SmartLink";
-import { ArrowLeft, Plus, CreditCard, Trash2, X, Check, Loader2, Wallet, Landmark, ChevronLeft, ChevronRight, Receipt, FileUp, GripVertical, Layers, Pencil, MoreVertical, Eye, EyeOff, Copy, AlertCircle, CheckCircle2, Info, Search, SlidersHorizontal, CalendarIcon, Trash, ChevronDown, ChevronUp } from "lucide-react";
+import { ArrowLeft, Plus, CreditCard, Trash2, X, Check, Loader2, Wallet, Landmark, ChevronLeft, ChevronRight, Receipt, FileUp, GripVertical, Layers, Pencil, MoreVertical, Eye, EyeOff, Copy, AlertCircle, CheckCircle2, Info, Search, SlidersHorizontal, CalendarIcon, Trash, ChevronDown, ChevronUp, RefreshCw } from "lucide-react";
 import { useUserPreferences } from "@/hooks/use-user-preferences";
 import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
@@ -195,6 +195,8 @@ function CardsPage() {
   const [transactionsCache, setTransactionsCache] = useState<Record<string, CardTransaction[]>>({});
   const [loadingTx, setLoadingTx] = useState(false);
   const [activeInvoiceIdx, setActiveInvoiceIdx] = useState(0);
+  const [fetchError, setFetchError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
 
   // Installment edit dialog (add parcelamento to an existing card transaction)
   const [installmentTx, setInstallmentTx] = useState<CardTransaction | null>(null);
@@ -271,8 +273,8 @@ function CardsPage() {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
 
+    setFetchError(false);
     try {
-
       const [cardsRes, accountsRes, paymentsRes, cardTotalsRes, accountBalancesRes] = await Promise.all([
         supabase.from("cards").select("*").eq("user_id", session.user.id).order("sort_order", { ascending: true }).order("created_at", { ascending: true }),
         supabase.from("bank_accounts").select("*").eq("user_id", session.user.id).order("created_at", { ascending: true }),
@@ -307,17 +309,17 @@ function CardsPage() {
       if (cardTotalsRes.data) {
         const totals: Record<string, number> = {};
         cardTotalsRes.data.forEach((item: any) => {
-          // Note: total_spent from the function is already (spent - income_on_card)
           totals[item.card_name] = Number(item.total_spent);
         });
         setCardTotals(totals);
       }
 
-      // We still need individual transactions for the list/details
-      const { data: txData } = await supabase.from("transactions")
+      const { data: txData, error: txError } = await supabase.from("transactions")
         .select("id, name, amount, date, created_at, card, icon, category, type, total_installments, installment_number, installment_group_id")
         .eq("user_id", session.user.id)
         .not("card", "is", null);
+      
+      if (txError) throw txError;
       
       if (txData) {
         setCardTransactions(txData as CardTransaction[]);
@@ -345,13 +347,24 @@ function CardsPage() {
         setCardPayments(paid);
         setCardPaymentsByPeriod(paidByPeriod);
       }
+      setRetryCount(0);
     } catch (error: any) {
       console.error("Error fetching data:", error);
-      toast.error("Erro ao carregar dados: " + (error.message || "Erro desconhecido"));
+      setFetchError(true);
+      
+      if (retryCount < 2) {
+        const nextRetry = retryCount + 1;
+        setRetryCount(nextRetry);
+        setTimeout(() => fetchAll(), 2000 * nextRetry);
+        toast.error(`Falha na conexão. Tentando novamente (${nextRetry}/2)...`);
+      } else {
+        toast.error("Não foi possível carregar os dados. Verifique sua conexão.");
+      }
     } finally {
       setLoading(false);
+      setLoadingTx(false);
     }
-  }, []);
+  }, [retryCount]);
 
   useEffect(() => {
     fetchAll();
@@ -1224,7 +1237,26 @@ function CardsPage() {
             </DialogTitle>
           </DialogHeader>
 
-          {loadingTx ? (
+          {fetchError ? (
+            <div className="flex flex-col items-center justify-center py-12 px-5 text-center gap-4">
+              <div className="h-12 w-12 rounded-full bg-destructive/10 flex items-center justify-center">
+                <AlertCircle className="h-6 w-6 text-destructive" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-foreground">Falha ao carregar dados</p>
+                <p className="text-xs text-muted-foreground mt-1">Verifique sua conexão com a internet ou tente novamente.</p>
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => fetchAll()}
+                className="gap-2"
+              >
+                <RefreshCw className={cn("h-3.5 w-3.5", loadingTx && "animate-spin")} />
+                Tentar novamente
+              </Button>
+            </div>
+          ) : loadingTx ? (
             <div className="flex flex-col flex-1 min-h-0 px-5 py-4 gap-4 overflow-hidden">
               <div className="flex items-center gap-3 animate-pulse">
                 <div className="h-8 w-8 rounded-lg bg-accent" />
