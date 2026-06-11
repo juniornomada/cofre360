@@ -253,49 +253,56 @@ function CardsPage() {
 
     try {
 
-      const [cardsRes, txRes, accountsRes, paymentsRes, allTxRes] = await Promise.all([
+      const [cardsRes, accountsRes, paymentsRes, cardTotalsRes, accountBalancesRes] = await Promise.all([
         supabase.from("cards").select("*").eq("user_id", session.user.id).order("sort_order", { ascending: true }).order("created_at", { ascending: true }),
-        supabase.from("transactions").select("id, name, amount, date, created_at, card, icon, category, type, total_installments, installment_number, installment_group_id").eq("user_id", session.user.id).not("card", "is", null),
         supabase.from("bank_accounts").select("*").eq("user_id", session.user.id).order("created_at", { ascending: true }),
         supabase.from("card_payments").select("card_id, amount, paid_at").eq("user_id", session.user.id),
-        supabase.from("transactions").select("bank_account_id, amount, type, is_visible").eq("user_id", session.user.id).not("bank_account_id", "is", null),
+        supabase.rpc("get_card_invoice_totals", { user_id_param: session.user.id }),
+        supabase.rpc("get_bank_account_balances", { user_id_param: session.user.id })
       ]);
 
       if (cardsRes.error) throw cardsRes.error;
       if (accountsRes.error) throw accountsRes.error;
-      if (txRes.error) throw txRes.error;
       if (paymentsRes.error) throw paymentsRes.error;
+      if (cardTotalsRes.error) throw cardTotalsRes.error;
+      if (accountBalancesRes.error) throw accountBalancesRes.error;
 
       if (cardsRes.data) {
         setCards(cardsRes.data);
         localStorage.setItem("cached_cards", JSON.stringify(cardsRes.data));
       }
-      if (accountsRes.data) {
-        const incomeByAccount: Record<string, number> = {};
-        const expenseByAccount: Record<string, number> = {};
-        (allTxRes.data || []).forEach(tx => {
-          if (tx.is_visible === false) return;
-          const id = tx.bank_account_id!;
-          if (tx.type === "income") incomeByAccount[id] = (incomeByAccount[id] || 0) + (tx.amount || 0);
-          else expenseByAccount[id] = (expenseByAccount[id] || 0) + (tx.amount || 0);
+
+      if (accountsRes.data && accountBalancesRes.data) {
+        const balanceMap: Record<string, number> = {};
+        accountBalancesRes.data.forEach((item: any) => {
+          balanceMap[item.account_id] = Number(item.current_balance);
         });
 
         setBankAccounts(accountsRes.data.map(a => ({
           ...a,
-          balance: Math.round(((a.balance || 0) + (incomeByAccount[a.id] || 0) - (expenseByAccount[a.id] || 0)) * 100) / 100
+          balance: balanceMap[a.id] || Number(a.balance) || 0
         })));
       }
-      if (txRes.data) {
+
+      if (cardTotalsRes.data) {
         const totals: Record<string, number> = {};
-        for (const tx of txRes.data) {
-          if (tx.card) {
-            const amount = Number(tx.amount);
-            totals[tx.card] = (totals[tx.card] || 0) + (tx.type === "income" ? -amount : amount);
-          }
-        }
+        cardTotalsRes.data.forEach((item: any) => {
+          // Note: total_spent from the function is already (spent - income_on_card)
+          totals[item.card_name] = Number(item.total_spent);
+        });
         setCardTotals(totals);
-        setCardTransactions(txRes.data as CardTransaction[]);
       }
+
+      // We still need individual transactions for the list/details
+      const { data: txData } = await supabase.from("transactions")
+        .select("id, name, amount, date, created_at, card, icon, category, type, total_installments, installment_number, installment_group_id")
+        .eq("user_id", session.user.id)
+        .not("card", "is", null);
+      
+      if (txData) {
+        setCardTransactions(txData as CardTransaction[]);
+      }
+
       if (paymentsRes.data) {
         const paid: Record<string, number> = {};
         const paidByPeriod: Record<string, Record<string, number>> = {};
