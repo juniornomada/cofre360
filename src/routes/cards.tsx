@@ -368,11 +368,44 @@ function CardsPage() {
 
   useEffect(() => {
     fetchAll();
+
+    const transactionsSubscription = supabase
+      .channel("cards-page-updates")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "transactions" },
+        () => {
+          console.log("Transactions updated, invalidating cache...");
+          fetchAll();
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "cards" },
+        () => {
+          console.log("Cards updated, invalidating cache...");
+          fetchAll();
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "card_payments" },
+        () => {
+          console.log("Card payments updated, invalidating cache...");
+          fetchAll();
+        }
+      )
+      .subscribe();
+
     const onFocus = () => {
       fetchAll();
     };
     window.addEventListener("focus", onFocus);
-    return () => window.removeEventListener("focus", onFocus);
+    
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      supabase.removeChannel(transactionsSubscription);
+    };
   }, [fetchAll]);
 
   const searchParams = Route.useSearch();
@@ -1292,6 +1325,9 @@ function CardsPage() {
                 <Loader2 className="h-5 w-5 animate-spin text-primary/40" />
                 <p className="text-[10px] text-muted-foreground font-medium tracking-tight uppercase">
                   <LoadingMessage />
+                </p>
+                <p className="text-[9px] text-muted-foreground/60 italic px-6">
+                  Estamos baixando os últimos lançamentos do banco de dados para garantir que tudo esteja atualizado.
                 </p>
               </div>
             </div>
