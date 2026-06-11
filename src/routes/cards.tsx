@@ -1326,6 +1326,9 @@ function CardsPage() {
                 <p className="text-[10px] text-muted-foreground font-medium tracking-tight uppercase">
                   <LoadingMessage />
                 </p>
+                <p className="text-[9px] text-muted-foreground/60 italic px-6">
+                  Estamos baixando os últimos lançamentos do banco de dados para garantir que tudo esteja atualizado.
+                </p>
               </div>
             </div>
           ) : cardTransactions.length === 0 ? (
