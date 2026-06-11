@@ -308,9 +308,14 @@ function CardsPage() {
 
       if (cardTotalsRes.data) {
         const totals: Record<string, number> = {};
+        console.log("Card totals data from RPC:", cardTotalsRes.data);
         cardTotalsRes.data.forEach((item: any) => {
-          totals[item.card_name] = Number(item.total_spent);
+          const name = item.card_name || item.name;
+          if (name) {
+            totals[name] = Number(item.total_spent || item.amount || 0);
+          }
         });
+        console.log("Processed totals map:", totals);
         setCardTotals(totals);
       }
 
@@ -1115,6 +1120,8 @@ function CardsPage() {
       const invoicePeriodsCard = groupByBillingCycle(cardTransactionsFiltered, card.closing_day, card.due_day);
       const activeInvoicePeriod = invoicePeriodsCard.find(p => p.key === "current") || invoicePeriodsCard[1] || invoicePeriodsCard[0];
       const invoiceRemaining = Math.max(0, (activeInvoicePeriod?.total || 0) - (activeInvoicePeriod ? cardPaymentsByPeriod[card.id]?.[activeInvoicePeriod.key] || 0 : 0));
+      
+      // Use card.name to look up totals from the RPC result
       const totalUsed = cardTotals[card.name] || 0;
       const initialUsed = card.used || 0;
       const totalPaid = cardPayments[card.id] || 0;
@@ -1300,10 +1307,14 @@ function CardsPage() {
                 <div className="relative">
                   <div className="flex justify-between items-start gap-2 mb-1.5">
                     <div className="min-w-0">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-white/90">Fatura {activeInvoicePeriod?.label.split(" (")[0] || "atual"}</p>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-white/90">
+                        Fatura {activeInvoicePeriod?.label.split(" (")[0] || "atual"}
+                      </p>
                       <p className="text-base font-extrabold text-white tabular-nums drop-shadow-md truncate" data-testid="fatura-atual-valor">
                         R$ {(activeInvoicePeriod?.total || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                       </p>
+                      {/* Debug info - hidden by default */}
+                      <span className="sr-only">Total for {card.name}: {cardTotals[card.name] || 0}</span>
                     </div>
                     <div className="flex flex-col items-end gap-0.5 text-[9px] font-semibold text-white shrink-0">
                       <span className="rounded-full bg-black/45 px-1.5 py-0.5 ring-1 ring-white/20 tabular-nums whitespace-nowrap">
