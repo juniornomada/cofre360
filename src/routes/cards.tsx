@@ -190,6 +190,7 @@ function CardsPage() {
   const [fetchError, setFetchError] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const [loadingStep, setLoadingStep] = useState<"cards" | "accounts" | "totals" | "transactions" | "done">("cards");
+  const [switchingPeriod, setSwitchingPeriod] = useState(false);
 
   // Installment edit dialog (add parcelamento to an existing card transaction)
   const [installmentTx, setInstallmentTx] = useState<CardTransaction | null>(null);
@@ -1335,10 +1336,14 @@ function CardsPage() {
           ) : cardTransactions.length === 0 ? (
             <p className="py-12 text-center text-sm text-muted-foreground">Nenhuma transação neste cartão</p>
           ) : (
-            <div className="flex flex-col flex-1 min-h-0">
+            <div className="flex flex-col flex-1 min-h-0 relative">
               <div className="flex items-center gap-2 px-5 pb-3">
                 <button
-                  onClick={() => setActiveInvoiceIdx(Math.max(0, activeInvoiceIdx - 1))}
+                  onClick={() => {
+                    setSwitchingPeriod(true);
+                    setActiveInvoiceIdx(Math.max(0, activeInvoiceIdx - 1));
+                    setTimeout(() => setSwitchingPeriod(false), 400);
+                  }}
                   disabled={activeInvoiceIdx <= 0}
                   className="interactive-button p-1.5 rounded-lg bg-accent hover:bg-accent/80 disabled:opacity-30 transition-colors"
                 >
@@ -1357,7 +1362,11 @@ function CardsPage() {
                   )}
                 </div>
                 <button
-                  onClick={() => setActiveInvoiceIdx(Math.min(invoicePeriods.length - 1, activeInvoiceIdx + 1))}
+                  onClick={() => {
+                    setSwitchingPeriod(true);
+                    setActiveInvoiceIdx(Math.min(invoicePeriods.length - 1, activeInvoiceIdx + 1));
+                    setTimeout(() => setSwitchingPeriod(false), 400);
+                  }}
                   disabled={activeInvoiceIdx >= invoicePeriods.length - 1}
                   className="interactive-button p-1.5 rounded-lg bg-accent hover:bg-accent/80 disabled:opacity-30 transition-colors"
                 >
@@ -1369,7 +1378,11 @@ function CardsPage() {
                 {invoicePeriods.map((period, idx) => (
                     <button
                       key={period.key}
-                      onClick={() => setActiveInvoiceIdx(idx)}
+                      onClick={() => {
+                        setSwitchingPeriod(true);
+                        setActiveInvoiceIdx(idx);
+                        setTimeout(() => setSwitchingPeriod(false), 400);
+                      }}
                       data-testid={`period-tab-${period.key}`}
                       className={cn(
                         "whitespace-nowrap rounded-full px-3 py-1 text-[11px] font-medium transition-colors shrink-0",
@@ -1408,8 +1421,21 @@ function CardsPage() {
                 </div>
               )}
 
-              <div className="flex-1 overflow-y-auto px-5 pb-5">
-                {activePeriod && activePeriod.transactions.length === 0 ? (
+              <div className="flex-1 overflow-y-auto px-5 pb-5 relative min-h-[200px]">
+                {switchingPeriod ? (
+                  <div className="absolute inset-0 bg-background/50 backdrop-blur-[1px] z-10 flex flex-col gap-4 py-4 animate-fade-in">
+                    {[1, 2, 3, 4].map(i => (
+                      <div key={i} className="flex items-center gap-3 px-1 animate-pulse">
+                        <div className="h-8 w-8 rounded bg-accent" />
+                        <div className="flex-1">
+                          <div className="h-3 w-2/3 rounded bg-accent mb-2" />
+                          <div className="h-2 w-1/3 rounded bg-accent/60" />
+                        </div>
+                        <div className="h-3 w-16 rounded bg-accent" />
+                      </div>
+                    ))}
+                  </div>
+                ) : activePeriod && activePeriod.transactions.length === 0 ? (
                   <p className="py-8 text-center text-xs text-muted-foreground">Nenhuma transação nesta fatura</p>
                 ) : (
                   <div className="flex flex-col gap-0.5">
