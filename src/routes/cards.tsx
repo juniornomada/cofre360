@@ -1238,18 +1238,8 @@ function CardsPage() {
               
               <div className="mt-auto py-4 flex flex-col items-center gap-2">
                 <Loader2 className="h-5 w-5 animate-spin text-primary/40" />
-                <p className="text-[10px] text-muted-foreground font-medium animate-pulse tracking-tight uppercase">
-                  {(() => {
-                    const messages = [
-                      "Sincronizando faturas...",
-                      "Calculando ciclos de fechamento...",
-                      "Consolidando transações...",
-                      "Organizando por períodos...",
-                      "Quase pronto..."
-                    ];
-                    // Using a simple state-less approach or component internal timer
-                    return "Buscando detalhes da fatura...";
-                  })()}
+                <p className="text-[10px] text-muted-foreground font-medium tracking-tight uppercase">
+                  <LoadingMessage />
                 </p>
               </div>
             </div>
