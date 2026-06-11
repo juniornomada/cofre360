@@ -97,6 +97,26 @@ const colorOptions = [
 
 
 
+function LoadingMessage() {
+  const [index, setIndex] = useState(0);
+  const messages = [
+    "Sincronizando faturas...",
+    "Calculando ciclos de fechamento...",
+    "Consolidando transações...",
+    "Organizando por períodos...",
+    "Quase pronto..."
+  ];
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setIndex((prev) => (prev + 1) % messages.length);
+    }, 1500);
+    return () => clearInterval(timer);
+  }, []);
+
+  return <span className="animate-pulse">{messages[index]}</span>;
+}
+
 function SortableCardWrapper({ id, children, animationDelay }: { id: string; children: React.ReactNode; animationDelay: number }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
   const style = {
