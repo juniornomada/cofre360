@@ -852,6 +852,16 @@ function CardsPage() {
     if (validLines.length === 0) return;
     setPayingSaving(true);
     const syncToastId = toast.loading("Processando pagamento e sincronizando valores...");
+    
+    // Fallback polling strategy to ensure UI sync even if Realtime events are delayed
+    const pollInterval = setInterval(() => {
+      console.log("Polling for updates after payment...");
+      fetchAll();
+    }, 2000);
+
+    // Stop polling after 10 seconds (5 attempts)
+    const stopPolling = setTimeout(() => clearInterval(pollInterval), 10000);
+
     try {
       // Re-fetch transactions for this specific card to ensure invoice is up to date
       const { data: latestTxs, error: txError } = await supabase
