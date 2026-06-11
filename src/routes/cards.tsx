@@ -851,6 +851,7 @@ function CardsPage() {
     const validLines = paymentLines.filter((l) => l.accountId && parseFloat(l.amount) > 0);
     if (validLines.length === 0) return;
     setPayingSaving(true);
+    const syncToastId = toast.loading("Processando pagamento e sincronizando valores...");
     try {
       // Re-fetch transactions for this specific card to ensure invoice is up to date
       const { data: latestTxs, error: txError } = await supabase
