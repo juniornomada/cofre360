@@ -476,6 +476,9 @@ function CardsPage() {
     setInvoiceDialogOpen(true);
     setActiveInvoiceIdx(0);
     setLoadingTx(true);
+    // Refresh payments / totals so "PAGO" and "COMPOSIÇÃO DA FATURA"
+    // always reflect the latest card_payments and transactions.
+    fetchAll();
     try {
       // Filter transactions by card.name to ensure they belong to the specific card
       const { data, error } = await supabase
