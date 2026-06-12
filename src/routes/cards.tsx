@@ -498,6 +498,9 @@ function CardsPage() {
     ...(invoicePeriods[activeInvoiceIdx] || invoicePeriods[0]),
     label: (invoicePeriods[activeInvoiceIdx] || invoicePeriods[0])?.label.split("|")[0]
   } : null;
+  const activePeriodKey = activePeriod?.endDate?.toISOString().split("T")[0];
+  const activePeriodPayments = (invoiceCard && activePeriodKey) ? cardDetailedPaymentsByPeriod[invoiceCard.id]?.[activePeriodKey] || [] : [];
+
 
   // Open installment edit dialog for a specific transaction
   const openInstallmentDialog = (tx: CardTransaction) => {
@@ -1218,15 +1221,6 @@ function CardsPage() {
                               <p className="text-[10px] text-white/70 font-medium truncate">
                                 Pago <span className="text-emerald-400 font-bold ml-1">{balanceVisible ? `R$ ${paidThisPeriod.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "••••••"}</span>
                               </p>
-                              {detailedPayments.length > 1 && (
-                                <p className="text-[8px] text-emerald-300 font-bold tabular-nums drop-shadow-sm truncate">
-                                  {(() => {
-                                    if (!balanceVisible) return "••••••";
-                                    const sorted = [...detailedPayments].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-                                    return sorted.map(p => `R$ ${p.amount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`).join(" + ");
-                                  })()}
-                                </p>
-                              )}
                             </div>
                             <div className="opacity-70">
                               <p className="text-[9px] text-white/80 tabular-nums">
@@ -1365,7 +1359,7 @@ function CardsPage() {
               )}
 
               <div className="flex-1 overflow-y-auto px-5 pb-5">
-                {activePeriod && activePeriod.transactions.length === 0 ? (
+                {activePeriod && activePeriod.transactions.length === 0 && activePeriodPayments.length === 0 ? (
                   <p className="py-8 text-center text-xs text-muted-foreground">Nenhuma transação nesta fatura</p>
                 ) : (
                   <div className="flex flex-col gap-0.5">
@@ -1413,6 +1407,28 @@ function CardsPage() {
                         </div>
                       </div>
                     ))}
+
+                    {activePeriodPayments.length > 0 && (
+                      <>
+                        <div className="mt-4 mb-2 flex items-center gap-2">
+                          <div className="h-px flex-1 bg-emerald-100" />
+                          <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest px-2">Pagamentos</span>
+                          <div className="h-px flex-1 bg-emerald-100" />
+                        </div>
+                        {activePeriodPayments.map((p, pIdx) => (
+                          <div key={`payment-${pIdx}`} className="flex items-center gap-2 py-2.5 border-b border-border/50 last:border-0">
+                            <span className="text-lg">💰</span>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-bold text-emerald-600 truncate">Pagamento de Fatura</p>
+                              <p className="text-[10px] text-muted-foreground">{p.date}</p>
+                            </div>
+                            <span className="text-xs font-bold text-emerald-600 tabular-nums shrink-0">
+                              +R$ {p.amount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                            </span>
+                          </div>
+                        ))}
+                      </>
+                    )}
                   </div>
                 )}
               </div>
