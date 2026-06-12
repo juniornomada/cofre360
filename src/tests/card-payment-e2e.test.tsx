@@ -139,7 +139,13 @@ describe('Testes E2E de Pagamento de Cartão (Simulados)', () => {
       expect(screen.getByText('Visa Infinite')).toBeInTheDocument();
     });
 
-    const payButton = screen.getByText(/Pagar fatura/i);
+    const invoicesButton = screen.getByText(/Faturas/i);
+    fireEvent.click(invoicesButton);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('total-da-fatura-valor')).toBeInTheDocument();
+    });
+    const payButton = screen.getByText(/Pagar/i);
     fireEvent.click(payButton);
 
     await waitFor(() => {
