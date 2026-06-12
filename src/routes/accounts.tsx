@@ -875,10 +875,11 @@ function AccountsPage() {
                         </div>
                       );
                     })()}
+                  </div>
                   <div className="flex gap-2">
                     <button
                       onClick={() => editingAccount && saveEdit(editingAccount.id)}
-                      disabled={confirmText !== "CONFIRMAR" || isSubmitting}
+                      disabled={isSubmitting}
                       className="flex-1 interactive-button flex items-center justify-center gap-2 rounded-2xl bg-destructive py-3 text-sm font-medium text-white disabled:opacity-30 transition-opacity"
                     >
                       {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Confirmar Alteração"}
