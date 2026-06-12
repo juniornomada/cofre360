@@ -1211,7 +1211,7 @@ function CardsPage() {
                         </div>
 
                         <div className="flex flex-col gap-1.5 mt-1 border-t border-white/10 pt-1">
-                          <div className="flex flex-col gap-0.5 min-w-0 items-end">
+                          <div className="flex flex-col gap-0.5 min-w-0 items-start">
                             <p className="text-[10px] text-white/70 font-medium truncate">
                               Pago <span className="text-emerald-400 font-bold ml-1">{balanceVisible ? `R$ ${paidThisPeriod.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "••••••"}</span>
                             </p>
@@ -1225,7 +1225,7 @@ function CardsPage() {
                               </p>
                             )}
                           </div>
-                          <div className="flex justify-end">
+                          <div className="flex justify-start">
                             <p className="text-[10px] text-white/70 font-medium">
                               Faltam <span className="text-destructive font-bold ml-1">{balanceVisible ? `R$ ${remainingThisPeriod.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "••••••"}</span>
                             </p>
