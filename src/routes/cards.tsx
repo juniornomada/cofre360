@@ -1210,6 +1210,15 @@ function CardsPage() {
                           </div>
                         </div>
 
+                        <div className="flex justify-between items-center mt-1 border-t border-white/10 pt-1">
+                          <p className="text-[10px] text-white/70 font-medium truncate">
+                            Pago <span className="text-emerald-400 font-bold ml-1">{balanceVisible ? `R$ ${paidThisPeriod.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "••••••"}</span>
+                          </p>
+                          <p className="text-[10px] text-white/70 font-medium">
+                            Faltam <span className="text-destructive font-bold ml-1">{balanceVisible ? `R$ ${remainingThisPeriod.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "••••••"}</span>
+                          </p>
+                        </div>
+
                         {paidThisPeriod > 0 ? (
                           <div className="flex items-center justify-between gap-2 mt-1">
                             <p className="text-[10px] text-emerald-300 font-bold tabular-nums drop-shadow-sm truncate">
