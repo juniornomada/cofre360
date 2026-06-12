@@ -1449,13 +1449,13 @@ function CardsPage() {
                 <div className="flex justify-between text-xs text-muted-foreground mb-1">
                   <span>Já pago</span>
                   <span className="tabular-nums text-primary">
-                    R$ {(activePeriod?.key ? cardPaymentsByPeriod[payingCard.id]?.[activePeriod.key] || 0 : 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                    R$ {(activePeriod?.key ? cardPaymentsByPeriod[payingCard.id]?.[activePeriod.key.split("|")[1] || activePeriod.key] || 0 : 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm font-semibold text-foreground border-t border-border pt-1 mt-1">
                   <span>Restante</span>
                   <span className="tabular-nums">
-                    R$ {Math.max(0, (activePeriod?.total || 0) - (activePeriod?.key ? cardPaymentsByPeriod[payingCard.id]?.[activePeriod.key] || 0 : 0)).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                    R$ {Math.max(0, (activePeriod?.total || 0) - (activePeriod?.key ? cardPaymentsByPeriod[payingCard.id]?.[activePeriod.key.split("|")[1] || activePeriod.key] || 0 : 0)).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                   </span>
                 </div>
               </div>
@@ -1529,7 +1529,7 @@ function CardsPage() {
               {bankAccounts.length > 0 && (() => {
                 const currentInvoiceTotal = invoicePeriods[activeInvoiceIdx]?.total || 0;
                 const currentPeriodKey = invoicePeriods[activeInvoiceIdx]?.key;
-                const paidInThisPeriod = currentPeriodKey ? cardPaymentsByPeriod[payingCard.id]?.[currentPeriodKey] || 0 : 0;
+                const paidInThisPeriod = currentPeriodKey ? cardPaymentsByPeriod[payingCard.id]?.[currentPeriodKey.split("|")[1] || currentPeriodKey] || 0 : 0;
                 const remaining = Math.max(0, currentInvoiceTotal - paidInThisPeriod);
                 const eligible = bankAccounts.filter((a) => a.balance > 0).sort((a, b) => b.balance - a.balance);
                 const best = eligible[0];
