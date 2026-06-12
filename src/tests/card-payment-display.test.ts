@@ -46,7 +46,7 @@ describe('Exibição de pagamentos totais e parciais com datas', () => {
 
     expect(getPaymentBadge(payments, invoiceTotal)).toBe('Total');
     expect(formatPaymentBreakdown(payments)).toBe('R$ 251,62');
-    expect(formatPaymentDate(payments[0].paid_at)).toBe('10 de jun. de 2026');
+    expect(formatPaymentDate(payments[0].paid_at)).toBe('10 de jun de 2026');
   });
 
   it('exibe badge "Parcial" e a fórmula somada quando há múltiplos pagamentos parciais', () => {
@@ -60,8 +60,8 @@ describe('Exibição de pagamentos totais e parciais com datas', () => {
     expect(formatPaymentBreakdown(payments)).toBe(
       'R$ 100,00 + R$ 51,62 = R$ 151,62'
     );
-    expect(formatPaymentDate(payments[0].paid_at)).toBe('01 de jun. de 2026');
-    expect(formatPaymentDate(payments[1].paid_at)).toBe('05 de jun. de 2026');
+    expect(formatPaymentDate(payments[0].paid_at)).toBe('01 de jun de 2026');
+    expect(formatPaymentDate(payments[1].paid_at)).toBe('05 de jun de 2026');
   });
 
   it('transiciona de "Parcial" para "Total" quando o pagamento final é registrado', () => {
@@ -94,9 +94,9 @@ describe('Exibição de pagamentos totais e parciais com datas', () => {
 
     const dates = payments.map((p) => formatPaymentDate(p.paid_at));
     expect(dates).toEqual([
-      '20 de mai. de 2026',
-      '02 de jun. de 2026',
-      '10 de jun. de 2026',
+      '20 de mai de 2026',
+      '02 de jun de 2026',
+      '10 de jun de 2026',
     ]);
     expect(formatPaymentBreakdown(payments)).toBe(
       'R$ 50,00 + R$ 75,00 + R$ 25,00 = R$ 150,00'
