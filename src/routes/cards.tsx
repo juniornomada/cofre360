@@ -1205,6 +1205,7 @@ function CardsPage() {
                       <p className="text-[10px] text-emerald-300 font-bold tabular-nums drop-shadow-sm truncate">
                         ✓ {(() => {
                           const detailedPayments = activeInvoicePeriod?.key ? cardDetailedPaymentsByPeriod[card.id]?.[activeInvoicePeriod.key.split("|")[1] || activeInvoicePeriod.key] || [] : [];
+                          if (!balanceVisible) return "•••••• pago";
                           if (detailedPayments.length > 1) {
                             const paymentsStr = detailedPayments.map(p => `R$ ${p.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`).join(" + ");
                             return `${paymentsStr} = R$ ${paidThisPeriod.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} pago`;
