@@ -301,13 +301,18 @@ function CardsPage() {
           if (p.paid_at) {
             const card = cardsRes.data?.find(c => c.id === p.card_id);
             if (card) {
-              const billingDate = new Date(p.paid_at);
-              const { currentClose } = getCycleDates(billingDate, card.closing_day || 1, card.due_day || 10);
-              const periodKey = currentClose.toISOString().split("T")[0];
-              
+              const paidAt = new Date(p.paid_at);
+              const cDay = card.closing_day || 1;
+              // Payment pays the most recently closed invoice: the closing date <= paid_at.
+              const closingThisMonth = new Date(paidAt.getFullYear(), paidAt.getMonth(), cDay);
+              const targetClose = paidAt >= closingThisMonth
+                ? closingThisMonth
+                : new Date(paidAt.getFullYear(), paidAt.getMonth() - 1, cDay);
+              const periodKey = targetClose.toISOString().split("T")[0];
+
               if (!paidByPeriod[p.card_id]) paidByPeriod[p.card_id] = {};
               if (!detailedPaidByPeriod[p.card_id]) detailedPaidByPeriod[p.card_id] = {};
-              
+
               paidByPeriod[p.card_id][periodKey] = (paidByPeriod[p.card_id][periodKey] || 0) + Number(p.amount);
               if (!detailedPaidByPeriod[p.card_id][periodKey]) detailedPaidByPeriod[p.card_id][periodKey] = [];
               detailedPaidByPeriod[p.card_id][periodKey].push({ amount: Number(p.amount), date: p.paid_at });
@@ -498,7 +503,7 @@ function CardsPage() {
     ...(invoicePeriods[activeInvoiceIdx] || invoicePeriods[0]),
     label: (invoicePeriods[activeInvoiceIdx] || invoicePeriods[0])?.label.split("|")[0]
   } : null;
-  const activePeriodKey = activePeriod?.key?.split("|")[1] || activePeriod?.key;
+  const activePeriodKey = activePeriod?.endDate?.toISOString().split("T")[0];
   const activePeriodPayments = (invoiceCard && activePeriodKey) ? cardDetailedPaymentsByPeriod[invoiceCard.id]?.[activePeriodKey] || [] : [];
 
 
@@ -810,7 +815,7 @@ function CardsPage() {
         return;
       }
 
-      const currentPeriodKey = activePeriod?.key;
+      const currentPeriodKey = activePeriod?.endDate?.toISOString().split("T")[0];
       const paidInThisPeriod = currentPeriodKey ? cardPaymentsByPeriod[payingCard.id]?.[currentPeriodKey] || 0 : 0;
       const remainingBeforeThis = Math.max(0, totalInvoice - paidInThisPeriod);
 
@@ -1575,7 +1580,7 @@ function CardsPage() {
                     <span className="flex items-center gap-1.5">
                       Já pago
                       {(() => {
-                        const periodKey = activePeriod?.key?.split("|")[1] || activePeriod?.key;
+                        const periodKey = activePeriod?.endDate?.toISOString().split("T")[0];
                         const payments = periodKey ? cardDetailedPaymentsByPeriod[payingCard.id]?.[periodKey] || [] : [];
                         const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
                         const totalInvoice = activePeriod?.total || 0;
@@ -1598,7 +1603,7 @@ function CardsPage() {
                     </span>
                     <span className="tabular-nums text-primary font-medium text-right">
                       {(() => {
-                        const periodKey = activePeriod?.key?.split("|")[1] || activePeriod?.key;
+                        const periodKey = activePeriod?.endDate?.toISOString().split("T")[0];
                         const payments = periodKey ? cardDetailedPaymentsByPeriod[payingCard.id]?.[periodKey] || [] : [];
                         // Sort payments by date to ensure chronological order in the formula
                         const sortedPayments = [...payments].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
@@ -1624,7 +1629,7 @@ function CardsPage() {
                 <div className="flex justify-between text-sm font-semibold text-foreground border-t border-border pt-1 mt-1">
                   <span>Restante</span>
                   <span className="tabular-nums">
-                    R$ {Math.max(0, (activePeriod?.total || 0) - (activePeriod?.key ? cardPaymentsByPeriod[payingCard.id]?.[activePeriod.key.split("|")[1] || activePeriod.key] || 0 : 0)).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                    R$ {Math.max(0, (activePeriod?.total || 0) - (activePeriod?.endDate ? cardPaymentsByPeriod[payingCard.id]?.[activePeriod.endDate.toISOString().split("T")[0]] || 0 : 0)).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                   </span>
                 </div>
               </div>
