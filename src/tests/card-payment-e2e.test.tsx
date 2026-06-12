@@ -183,7 +183,13 @@ describe('Testes E2E de Pagamento de Cartão (Simulados)', () => {
     // @ts-ignore
     render(React.createElement(Cards));
 
-    const payButton = screen.getByText(/Pagar fatura/i);
+    const invoicesButton = screen.getByText(/Faturas/i);
+    fireEvent.click(invoicesButton);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('total-da-fatura-valor')).toBeInTheDocument();
+    });
+    const payButton = screen.getByText(/Pagar/i);
     fireEvent.click(payButton);
 
     await waitFor(() => {
