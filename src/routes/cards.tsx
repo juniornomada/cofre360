@@ -842,7 +842,10 @@ function CardsPage() {
         const account = bankAccounts.find((a) => a.id === line.accountId);
         const amount = parseFloat(line.amount);
         if (account) {
-          // Update balance
+          // The account balance in DB already starts with the initial value.
+          // The fetchAll/setBankAccounts logic calculates the "virtual" balance based on transactions.
+          // So we only update the DB balance to match the current virtual balance minus the payment,
+          // ensuring consistency after the new expense transaction is added.
           await supabase.from("bank_accounts").update({ balance: account.balance - amount }).eq("id", line.accountId);
           
           // Create transaction for history/debiting from reports
