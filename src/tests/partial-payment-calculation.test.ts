@@ -116,6 +116,19 @@ describe("Pagamento parcial — Já pago e Faltam", () => {
     expect(badge).toBeNull();
   });
 
+  it("venda R$ 10.000,00 com pagamento parcial de R$ 1.300,00 → JÁ PAGO 1300,00 e FALTAM 8700,00", () => {
+    const vendaTotal = 10000.0;
+    const payments: Payment[] = [
+      { card_id: portoBank.id, amount: 1300, paid_at: new Date(2026, 5, 12, 10).toISOString() },
+    ];
+    const { totalByPeriod } = buildPaymentsByPeriod(portoBank, payments);
+    const { jaPago, faltam, badge } = computeInvoiceStatus(vendaTotal, totalByPeriod[keyAtual]);
+    expect(jaPago).toBeCloseTo(1300, 2);
+    expect(faltam).toBeCloseTo(8700, 2);
+    expect(badge).toBe("Parcial");
+  });
+
+
   it("pagamento entre fechamento e vencimento (05/06) credita à fatura que acabou de fechar (key 03/06)", () => {
     // 05/06/2026: fechou em 03/06 e vence em 10/06. Pela lógica de getCycleDates,
     // currentClose permanece 03/06, portanto o pagamento é atribuído ao período
