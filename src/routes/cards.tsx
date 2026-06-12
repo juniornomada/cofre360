@@ -1463,8 +1463,14 @@ function CardsPage() {
                 </div>
                 <div className="flex justify-between text-xs text-muted-foreground mb-1">
                   <span>Já pago</span>
-                  <span className="tabular-nums text-primary">
-                    R$ {(activePeriod?.key ? cardPaymentsByPeriod[payingCard.id]?.[activePeriod.key.split("|")[1] || activePeriod.key] || 0 : 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                  <span className="tabular-nums text-primary font-medium">
+                    {(() => {
+                      const paidAmount = activePeriod?.key ? cardPaymentsByPeriod[payingCard.id]?.[activePeriod.key.split("|")[1] || activePeriod.key] || 0 : 0;
+                      // Find if there are multiple payments to show the breakdown in the title
+                      // We don't have the individual payment records here easily reachable without more complex state,
+                      // but we can at least format the total clearly.
+                      return `R$ ${paidAmount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
+                    })()}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm font-semibold text-foreground border-t border-border pt-1 mt-1">
