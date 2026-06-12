@@ -936,6 +936,8 @@ function CardsPage() {
       const totalUsed = cardTotals[card.name] || 0;
       const initialUsed = card.used || 0;
       const totalPaid = cardPayments[card.id] || 0;
+      
+      const paidThisPeriod = activeInvoicePeriod?.key ? (cardPaymentsByPeriod[card.id]?.[activeInvoicePeriod.key.split("|")[1] || activeInvoicePeriod.key] || 0) : 0;
       const outstandingBalance = Math.max(0, (totalUsed + initialUsed) - totalPaid);
       const pct = card.card_limit > 0 ? Math.round((outstandingBalance / card.card_limit) * 100) : 0;
       const isEditing = editingId === card.id;
