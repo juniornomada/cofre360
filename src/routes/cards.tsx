@@ -815,7 +815,7 @@ function CardsPage() {
         return;
       }
 
-      const currentPeriodKey = activePeriod?.key;
+      const currentPeriodKey = activePeriod?.endDate?.toISOString().split("T")[0];
       const paidInThisPeriod = currentPeriodKey ? cardPaymentsByPeriod[payingCard.id]?.[currentPeriodKey] || 0 : 0;
       const remainingBeforeThis = Math.max(0, totalInvoice - paidInThisPeriod);
 
