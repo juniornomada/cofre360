@@ -1603,7 +1603,7 @@ function CardsPage() {
                     </span>
                     <span className="tabular-nums text-primary font-medium text-right">
                       {(() => {
-                        const periodKey = activePeriod?.key?.split("|")[1] || activePeriod?.key;
+                        const periodKey = activePeriod?.endDate?.toISOString().split("T")[0];
                         const payments = periodKey ? cardDetailedPaymentsByPeriod[payingCard.id]?.[periodKey] || [] : [];
                         // Sort payments by date to ensure chronological order in the formula
                         const sortedPayments = [...payments].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
