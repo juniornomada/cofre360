@@ -697,17 +697,17 @@ function CardsPage() {
      setPaymentLines([{ accountId: "", amount: "" }]);
      setPaymentDate(format(new Date(), "dd MMM", { locale: ptBR }));
      
-     // Recalculate everything before opening
-     await fetchAll();
-     
-     setPayDialogOpen(true);
-     
      if (periodIdx !== undefined) {
        setActiveInvoiceIdx(periodIdx);
      } else {
        // Default to current invoice
        setActiveInvoiceIdx(0); 
      }
+
+     setPayDialogOpen(true);
+     
+     // Recalculate everything to ensure fresh data
+     await fetchAll();
 
      // Fetch transactions to ensure invoicePeriods is populated and accurate
      setLoadingTx(true);
