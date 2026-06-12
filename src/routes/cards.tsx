@@ -946,11 +946,7 @@ function CardsPage() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="flex w-full rounded-2xl p-1 bg-accent/30 h-11">
-          <TabsTrigger value="list" className="flex-1 rounded-xl text-xs font-semibold data-[state=active]:bg-background data-[state=active]:shadow-sm">
-            <CreditCard className="h-3.5 w-3.5" />
-          </TabsTrigger>
-        </TabsList>
+
 
         <TabsContent value="list" className="mt-5 space-y-5">
           {cards.length > 0 && (
