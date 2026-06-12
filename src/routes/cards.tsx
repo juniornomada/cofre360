@@ -474,7 +474,7 @@ function CardsPage() {
   const openInvoiceDialog = async (card: CardData) => {
     setInvoiceCard(card);
     setInvoiceDialogOpen(true);
-    setActiveInvoiceIdx(0);
+    setActiveInvoiceIdx(1);
     setLoadingTx(true);
     try {
       // Refresh payments / totals so "PAGO" e "COMPOSIÇÃO DA FATURA"
@@ -506,8 +506,15 @@ function CardsPage() {
     ...(invoicePeriods[activeInvoiceIdx] || invoicePeriods[0]),
     label: (invoicePeriods[activeInvoiceIdx] || invoicePeriods[0])?.label.split("|")[0]
   } : null;
-  const activePeriodKey = activePeriod?.endDate?.toISOString().split("T")[0];
-  const activePeriodPayments = (invoiceCard && activePeriodKey) ? cardDetailedPaymentsByPeriod[invoiceCard.id]?.[activePeriodKey] || [] : [];
+  const getInvoicePeriodKey = (period?: InvoicePeriod | null) => period?.endDate?.toISOString().split("T")[0] || "";
+  const getPaymentsForPeriod = (cardId: string | undefined, period?: InvoicePeriod | null) => {
+    const periodKey = getInvoicePeriodKey(period);
+    return cardId && periodKey ? cardDetailedPaymentsByPeriod[cardId]?.[periodKey] || [] : [];
+  };
+  const getPaidTotalForPeriod = (cardId: string | undefined, period?: InvoicePeriod | null) =>
+    getPaymentsForPeriod(cardId, period).reduce((sum, p) => sum + p.amount, 0);
+  const activePeriodKey = getInvoicePeriodKey(activePeriod);
+  const activePeriodPayments = getPaymentsForPeriod(invoiceCard?.id, activePeriod);
 
 
   // Open installment edit dialog for a specific transaction
@@ -752,7 +759,7 @@ function CardsPage() {
        setActiveInvoiceIdx(periodIdx);
      } else {
        // Default to current invoice
-       setActiveInvoiceIdx(0); 
+       setActiveInvoiceIdx(1); 
      }
 
      setPayDialogOpen(true);
@@ -846,7 +853,8 @@ function CardsPage() {
            }
          })()
        }));
-      await supabase.from("card_payments").insert(inserts);
+       const { error: paymentInsertError } = await supabase.from("card_payments").insert(inserts);
+       if (paymentInsertError) throw paymentInsertError;
 
       // 2. Update bank balances and create expense transactions
       for (const line of validLines) {
@@ -1639,8 +1647,7 @@ function CardsPage() {
                     <span className="flex items-center gap-1.5">
                       Já pago
                       {(() => {
-                        const periodKey = activePeriod?.endDate?.toISOString().split("T")[0];
-                        const payments = periodKey ? cardDetailedPaymentsByPeriod[payingCard.id]?.[periodKey] || [] : [];
+                        const payments = getPaymentsForPeriod(payingCard.id, activePeriod);
                         const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
                         const totalInvoice = activePeriod?.total || 0;
                         
@@ -1662,8 +1669,7 @@ function CardsPage() {
                     </span>
                     <span className="tabular-nums text-primary font-medium text-right">
                       {(() => {
-                        const periodKey = activePeriod?.endDate?.toISOString().split("T")[0];
-                        const payments = periodKey ? cardDetailedPaymentsByPeriod[payingCard.id]?.[periodKey] || [] : [];
+                        const payments = getPaymentsForPeriod(payingCard.id, activePeriod);
                         // Sort payments by date to ensure chronological order in the formula
                         const sortedPayments = [...payments].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
                         const totalPaid = sortedPayments.reduce((sum, p) => sum + p.amount, 0);
@@ -1688,7 +1694,7 @@ function CardsPage() {
                 <div className="flex justify-between text-sm font-semibold text-foreground border-t border-border pt-1 mt-1">
                   <span>Restante</span>
                   <span className="tabular-nums">
-                    R$ {Math.max(0, (activePeriod?.total || 0) - (activePeriod?.endDate ? cardPaymentsByPeriod[payingCard.id]?.[activePeriod.endDate.toISOString().split("T")[0]] || 0 : 0)).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                    R$ {Math.max(0, (activePeriod?.total || 0) - getPaidTotalForPeriod(payingCard.id, activePeriod)).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                   </span>
                 </div>
               </div>
@@ -1734,7 +1740,8 @@ function CardsPage() {
                       {(() => {
                         const txs = activePeriod?.transactions || [];
                         const compras = txs.filter(t => t.type === "expense").reduce((s, t) => s + Number(t.amount), 0);
-                        const creditos = txs.filter(t => t.type === "income").reduce((s, t) => s + Number(t.amount), 0);
+                        const creditosLancados = txs.filter(t => t.type === "income").reduce((s, t) => s + Number(t.amount), 0);
+                        const creditos = creditosLancados + getPaidTotalForPeriod(payingCard.id, activePeriod);
                         return (
                           <>
                             <div className="flex justify-between text-[9px] leading-tight">
@@ -1761,8 +1768,8 @@ function CardsPage() {
 
               {bankAccounts.length > 0 && (() => {
                 const currentInvoiceTotal = (invoicePeriods[activeInvoiceIdx] || invoicePeriods[0])?.total || 0;
-                const currentPeriodKey = (invoicePeriods[activeInvoiceIdx] || invoicePeriods[0])?.key;
-                const paidInThisPeriod = currentPeriodKey ? cardPaymentsByPeriod[payingCard.id]?.[currentPeriodKey.split("|")[1] || currentPeriodKey] || 0 : 0;
+                const currentPeriod = invoicePeriods[activeInvoiceIdx] || invoicePeriods[0];
+                const paidInThisPeriod = getPaidTotalForPeriod(payingCard.id, currentPeriod);
                 const remaining = Math.max(0, currentInvoiceTotal - paidInThisPeriod);
                 const eligible = bankAccounts.filter((a) => a.balance > 0).sort((a, b) => b.balance - a.balance);
                 const best = eligible[0];
