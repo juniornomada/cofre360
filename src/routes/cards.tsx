@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { SmartLink as Link } from "@/components/SmartLink";
-import { ArrowLeft, Plus, CreditCard, Trash2, X, Check, Loader2, Wallet, Landmark, ChevronLeft, ChevronRight, Receipt, FileUp, GripVertical, Layers, Pencil, MoreVertical, Eye, EyeOff, Copy, AlertCircle, CheckCircle2, Info, Search, SlidersHorizontal, CalendarIcon, Trash, ChevronDown, ChevronUp, RefreshCw } from "lucide-react";
+import { ArrowLeft, Plus, CreditCard, Trash2, X, Check, Loader2, Wallet, Landmark, ChevronLeft, ChevronRight, Receipt, FileUp, GripVertical, Layers, Pencil, MoreVertical, Eye, EyeOff, Copy, AlertCircle, CheckCircle2, Info, Search, SlidersHorizontal, CalendarIcon, Trash, ChevronDown, ChevronUp } from "lucide-react";
 import { useUserPreferences } from "@/hooks/use-user-preferences";
 import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
@@ -97,18 +97,6 @@ const colorOptions = [
 
 
 
-function LoadingMessage({ step }: { step: "cards" | "accounts" | "totals" | "transactions" | "done" }) {
-  const messages = {
-    cards: "Sincronizando faturas...",
-    accounts: "Calculando saldos das contas...",
-    totals: "Consolidando totais de cartões...",
-    transactions: "Baixando transações detalhadas...",
-    done: "Tudo pronto!"
-  };
-
-  return <span className="animate-pulse">{messages[step] || "Carregando..."}</span>;
-}
-
 function SortableCardWrapper({ id, children, animationDelay }: { id: string; children: React.ReactNode; animationDelay: number }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
   const style = {
@@ -156,15 +144,12 @@ function SortableCardWrapper({ id, children, animationDelay }: { id: string; chi
  });
 function CardsPage() {
   const { balanceVisible, updateBalanceVisible } = useUserPreferences();
-  const [cards, setCards] = useState<CardData[]>(() => {
-    const cached = localStorage.getItem("cached_cards");
-    return cached ? JSON.parse(cached) : [];
-  });
+  const [cards, setCards] = useState<CardData[]>([]);
   const [cardTotals, setCardTotals] = useState<Record<string, number>>({});
   const [cardPayments, setCardPayments] = useState<Record<string, number>>({});
   const [cardPaymentsByPeriod, setCardPaymentsByPeriod] = useState<Record<string, Record<string, number>>>({});
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
-  const [loading, setLoading] = useState(!localStorage.getItem("cached_cards"));
+  const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
@@ -184,14 +169,8 @@ function CardsPage() {
   const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
   const [invoiceCard, setInvoiceCard] = useState<CardData | null>(null);
   const [cardTransactions, setCardTransactions] = useState<CardTransaction[]>([]);
-  const [transactionsCache, setTransactionsCache] = useState<Record<string, CardTransaction[]>>({});
   const [loadingTx, setLoadingTx] = useState(false);
   const [activeInvoiceIdx, setActiveInvoiceIdx] = useState(0);
-  const [fetchError, setFetchError] = useState(false);
-  const [retryCount, setRetryCount] = useState(0);
-  const [loadingStep, setLoadingStep] = useState<"cards" | "accounts" | "totals" | "transactions" | "done">("cards");
-  const [syncStatus, setSyncStatus] = useState<"synced" | "syncing" | "error">("synced");
-  const [switchingPeriod, setSwitchingPeriod] = useState(false);
 
   // Installment edit dialog (add parcelamento to an existing card transaction)
   const [installmentTx, setInstallmentTx] = useState<CardTransaction | null>(null);
@@ -268,78 +247,54 @@ function CardsPage() {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
 
-    setFetchError(false);
-    setLoadingStep("cards");
     try {
-      const [cardsRes, accountsRes, paymentsRes, cardTotalsRes, accountBalancesRes] = await Promise.all([
+
+      const [cardsRes, txRes, accountsRes, paymentsRes, allTxRes] = await Promise.all([
         supabase.from("cards").select("*").eq("user_id", session.user.id).order("sort_order", { ascending: true }).order("created_at", { ascending: true }),
+        supabase.from("transactions").select("id, name, amount, date, created_at, card, icon, category, type, total_installments, installment_number, installment_group_id").eq("user_id", session.user.id).not("card", "is", null),
         supabase.from("bank_accounts").select("*").eq("user_id", session.user.id).order("created_at", { ascending: true }),
         supabase.from("card_payments").select("card_id, amount, paid_at").eq("user_id", session.user.id),
-        supabase.rpc("get_card_invoice_totals", { user_id_param: session.user.id }),
-        supabase.rpc("get_bank_account_balances", { user_id_param: session.user.id })
+        supabase.from("transactions").select("bank_account_id, amount, type, is_visible").eq("user_id", session.user.id).not("bank_account_id", "is", null),
       ]);
 
       if (cardsRes.error) throw cardsRes.error;
       if (accountsRes.error) throw accountsRes.error;
+      if (txRes.error) throw txRes.error;
       if (paymentsRes.error) throw paymentsRes.error;
-      if (cardTotalsRes.error) throw cardTotalsRes.error;
-      if (accountBalancesRes.error) throw accountBalancesRes.error;
 
-      if (cardsRes.data) {
-        setCards(cardsRes.data);
-        localStorage.setItem("cached_cards", JSON.stringify(cardsRes.data));
-      }
-
-      setLoadingStep("accounts");
-
-      if (accountsRes.data && accountBalancesRes.data) {
-        const balanceMap: Record<string, number> = {};
-        accountBalancesRes.data.forEach((item: any) => {
-          balanceMap[item.account_id] = Number(item.current_balance);
+      if (cardsRes.data) setCards(cardsRes.data);
+      if (accountsRes.data) {
+        const incomeByAccount: Record<string, number> = {};
+        const expenseByAccount: Record<string, number> = {};
+        (allTxRes.data || []).forEach(tx => {
+          if (tx.is_visible === false) return;
+          const id = tx.bank_account_id!;
+          if (tx.type === "income") incomeByAccount[id] = (incomeByAccount[id] || 0) + (tx.amount || 0);
+          else expenseByAccount[id] = (expenseByAccount[id] || 0) + (tx.amount || 0);
         });
 
         setBankAccounts(accountsRes.data.map(a => ({
           ...a,
-          balance: balanceMap[a.id] || Number(a.balance) || 0
+          balance: Math.round(((a.balance || 0) + (incomeByAccount[a.id] || 0) - (expenseByAccount[a.id] || 0)) * 100) / 100
         })));
       }
-
-      setLoadingStep("totals");
-
-      if (cardTotalsRes.data) {
+      if (txRes.data) {
         const totals: Record<string, number> = {};
-        console.log("Card totals data from RPC:", cardTotalsRes.data);
-        cardTotalsRes.data.forEach((item: any) => {
-          // The RPC returns card_name, try both to be safe
-          const cardName = item.card_name || item.name;
-          if (cardName) {
-            totals[cardName] = Number(item.total_spent || item.amount || 0);
+        for (const tx of txRes.data) {
+          if (tx.card) {
+            const amount = Number(tx.amount);
+            totals[tx.card] = (totals[tx.card] || 0) + (tx.type === "income" ? -amount : amount);
           }
-        });
-        console.log("Processed totals map:", totals);
+        }
         setCardTotals(totals);
+        setCardTransactions(txRes.data as CardTransaction[]);
       }
-
-      setLoadingStep("transactions");
-
-      const { data: txData, error: txError } = await supabase.from("transactions")
-        .select("id, name, amount, date, created_at, card, icon, category, type, total_installments, installment_number, installment_group_id")
-        .eq("user_id", session.user.id)
-        .not("card", "is", null);
-      
-      if (txError) throw txError;
-      
-      if (txData) {
-        setCardTransactions(txData as CardTransaction[]);
-      }
-
       if (paymentsRes.data) {
         const paid: Record<string, number> = {};
         const paidByPeriod: Record<string, Record<string, number>> = {};
         
         for (const p of paymentsRes.data) {
-          const amount = Number(p.amount);
-          paid[p.card_id] = (paid[p.card_id] || 0) + amount;
+          paid[p.card_id] = (paid[p.card_id] || 0) + Number(p.amount);
           
           if (p.paid_at) {
             const card = cardsRes.data?.find(c => c.id === p.card_id);
@@ -349,106 +304,28 @@ function CardsPage() {
               const periodKey = currentClose.toISOString().split("T")[0];
               
               if (!paidByPeriod[p.card_id]) paidByPeriod[p.card_id] = {};
-              paidByPeriod[p.card_id][periodKey] = (paidByPeriod[p.card_id][periodKey] || 0) + amount;
+              paidByPeriod[p.card_id][periodKey] = (paidByPeriod[p.card_id][periodKey] || 0) + Number(p.amount);
             }
           }
         }
-        
-        // Log potential desyncs if payments don't match card existence or expected logic
-        paymentsRes.data.forEach(p => {
-          if (!cardsRes.data?.find(c => c.id === p.card_id)) {
-             console.warn(`[DESYNC ALERT] Payment ID for non-existent card detected: ${p.card_id}`);
-          }
-        });
-
         setCardPayments(paid);
         setCardPaymentsByPeriod(paidByPeriod);
       }
-      setLoadingStep("done");
-      setRetryCount(0);
     } catch (error: any) {
       console.error("Error fetching data:", error);
-      setFetchError(true);
-      
-      if (retryCount < 2) {
-        const nextRetry = retryCount + 1;
-        setRetryCount(nextRetry);
-        setTimeout(() => fetchAll(), 2000 * nextRetry);
-        toast.error(`Falha na conexão. Tentando novamente (${nextRetry}/2)...`);
-      } else {
-        toast.error("Não foi possível carregar os dados. Verifique sua conexão.");
-      }
+      toast.error("Erro ao carregar dados: " + (error.message || "Erro desconhecido"));
     } finally {
       setLoading(false);
-      setLoadingTx(false);
     }
-  }, [retryCount]);
+  }, []);
 
   useEffect(() => {
     fetchAll();
-
-    const transactionsSubscription = supabase
-      .channel("cards-page-updates")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "transactions" },
-        async (payload) => {
-          console.log("Transactions updated, invalidating cache...");
-          setSyncStatus("syncing");
-          try {
-            await fetchAll();
-            // If the invoice dialog is open, we need to refresh the current card transactions too
-            if (invoiceCard) {
-              const { data } = await supabase
-                .from("transactions")
-                .select("id, name, icon, category, date, amount, type, card, created_at, total_installments, installment_number, installment_group_id")
-                .eq("card", invoiceCard.name)
-                .order("created_at", { ascending: false });
-              if (data) {
-                const txs = (data as CardTransaction[]) || [];
-                setCardTransactions(txs);
-                setTransactionsCache(prev => ({ ...prev, [invoiceCard.id]: txs }));
-              }
-            }
-            setSyncStatus("synced");
-          } catch (error) {
-            setSyncStatus("error");
-          }
-        }
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "cards" },
-        () => {
-          console.log("Cards updated, invalidating cache...");
-          setSyncStatus("syncing");
-          fetchAll().then(() => setSyncStatus("synced")).catch(() => setSyncStatus("error"));
-        }
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "card_payments" },
-        () => {
-          console.log("Card payments updated, invalidating cache...");
-          setSyncStatus("syncing");
-          fetchAll().then(() => setSyncStatus("synced")).catch(() => setSyncStatus("error"));
-        }
-      )
-      .subscribe((status) => {
-        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-          setSyncStatus("error");
-        }
-      });
-
     const onFocus = () => {
-      // fetchAll(); // Removed to prevent blocking and unnecessary re-fetches when just switching tabs
+      fetchAll();
     };
     window.addEventListener("focus", onFocus);
-    
-    return () => {
-      window.removeEventListener("focus", onFocus);
-      supabase.removeChannel(transactionsSubscription);
-    };
+    return () => window.removeEventListener("focus", onFocus);
   }, [fetchAll]);
 
   const searchParams = Route.useSearch();
@@ -559,30 +436,19 @@ function CardsPage() {
     setInvoiceCard(card);
     setInvoiceDialogOpen(true);
     setActiveInvoiceIdx(0);
-    
-    if (transactionsCache[card.id]) {
-      setCardTransactions(transactionsCache[card.id]);
-    } else {
-      setLoadingTx(true);
-    }
-
+    setLoadingTx(true);
     try {
+      // Filter transactions by card.name to ensure they belong to the specific card
       const { data, error } = await supabase
         .from("transactions")
         .select("id, name, icon, category, date, amount, type, card, created_at, total_installments, installment_number, installment_group_id")
         .eq("card", card.name)
         .order("created_at", { ascending: false });
-      
       if (error) throw error;
-      
-      const txs = (data as CardTransaction[]) || [];
-      setCardTransactions(txs);
-      setTransactionsCache(prev => ({ ...prev, [card.id]: txs }));
+      setCardTransactions((data as CardTransaction[]) || []);
     } catch (error: any) {
       console.error("Error fetching card transactions:", error);
-      if (!transactionsCache[card.id]) {
-        toast.error("Erro ao carregar transações do cartão");
-      }
+      toast.error("Erro ao carregar transações do cartão");
     } finally {
       setLoadingTx(false);
     }
@@ -824,48 +690,41 @@ function CardsPage() {
     }
   };
 
-    // Payment logic
-    const openPayDialog = async (card: CardData, periodIdx?: number) => {
-      setPayingCard(card);
-      setInvoiceCard(card);
-      setPaymentLines([{ accountId: "", amount: "" }]);
-      setPaymentDate(format(new Date(), "dd MMM", { locale: ptBR }));
-      
-      // Open dialog immediately so the user sees the layout
-      setPayDialogOpen(true);
-      
-      if (periodIdx !== undefined) {
-        setActiveInvoiceIdx(periodIdx);
-      } else {
-        setActiveInvoiceIdx(0); 
-      }
+   // Payment logic
+   const openPayDialog = async (card: CardData, periodIdx?: number) => {
+     setPayingCard(card);
+     setInvoiceCard(card); // Ensure invoicePeriods is for this card
+     setPaymentLines([{ accountId: "", amount: "" }]);
+     setPaymentDate(format(new Date(), "dd MMM", { locale: ptBR }));
+     
+     // Recalculate everything before opening
+     await fetchAll();
+     
+     setPayDialogOpen(true);
+     
+     if (periodIdx !== undefined) {
+       setActiveInvoiceIdx(periodIdx);
+     } else {
+       // Default to current invoice
+       setActiveInvoiceIdx(0); 
+     }
 
-      // Fetch ALL critical data (balances, card totals, card payments) in parallel
-      // This is what makes the values available without switching tabs
-      await fetchAll();
-
-      // Also ensure we have the most up-to-date transactions for the specific card
-      // to calculate the invoice periods correctly in the payment dialog
-      setLoadingTx(true);
-      try {
-        const { data, error } = await supabase
-          .from("transactions")
-          .select("id, name, icon, category, date, amount, type, card, created_at, total_installments, installment_number, installment_group_id")
-          .eq("card", card.name)
-          .order("created_at", { ascending: false });
-        
-        if (error) throw error;
-        
-        const txs = (data as CardTransaction[]) || [];
-        setCardTransactions(txs);
-        // Also update the cache
-        setTransactionsCache(prev => ({ ...prev, [card.id]: txs }));
-      } catch (error: any) {
-        console.error("Error fetching card transactions for payment:", error);
-      } finally {
-        setLoadingTx(false);
-      }
-    };
+     // Fetch transactions to ensure invoicePeriods is populated and accurate
+     setLoadingTx(true);
+     try {
+       const { data, error } = await supabase
+         .from("transactions")
+         .select("id, name, icon, category, date, amount, type, created_at, total_installments, installment_number, installment_group_id")
+         .eq("card", card.name)
+         .order("created_at", { ascending: false });
+       if (error) throw error;
+       setCardTransactions((data as CardTransaction[]) || []);
+     } catch (error: any) {
+       console.error("Error fetching card transactions for payment:", error);
+     } finally {
+       setLoadingTx(false);
+     }
+   };
 
   const updatePaymentLine = (index: number, field: keyof PaymentLine, value: string) => {
     setPaymentLines((prev) => prev.map((line, i) => i === index ? { ...line, [field]: value } : line));
@@ -879,17 +738,6 @@ function CardsPage() {
     const validLines = paymentLines.filter((l) => l.accountId && parseFloat(l.amount) > 0);
     if (validLines.length === 0) return;
     setPayingSaving(true);
-    const syncToastId = toast.loading("Processando pagamento e sincronizando valores...");
-    
-    // Fallback polling strategy to ensure UI sync even if Realtime events are delayed
-    const pollInterval = setInterval(() => {
-      console.log("Polling for updates after payment...");
-      fetchAll();
-    }, 2000);
-
-    // Stop polling after 10 seconds (5 attempts)
-    const stopPolling = setTimeout(() => clearInterval(pollInterval), 10000);
-
     try {
       // Re-fetch transactions for this specific card to ensure invoice is up to date
       const { data: latestTxs, error: txError } = await supabase
@@ -947,8 +795,7 @@ function CardsPage() {
            }
          })()
        }));
-      const { error: paymentError } = await supabase.from("card_payments").insert(inserts);
-      if (paymentError) throw paymentError;
+      await supabase.from("card_payments").insert(inserts);
 
       // 2. Update bank balances and create expense transactions
       for (const line of validLines) {
@@ -972,35 +819,14 @@ function CardsPage() {
         }
       }
       
-      toast.success(`${paymentName} realizado!`, { id: syncToastId });
+      toast.success(`${paymentName} de R$ ${paymentTotal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} realizado!`);
       setPayDialogOpen(false);
-      await fetchAll();
-      
-      if (payingCard) {
-        setLoadingTx(true);
-        try {
-          const { data } = await supabase
-            .from("transactions")
-            .select("id, name, icon, category, date, amount, type, card, created_at, total_installments, installment_number, installment_group_id")
-            .eq("card", payingCard.name)
-            .order("created_at", { ascending: false });
-          
-          if (data) {
-            const txs = (data as CardTransaction[]) || [];
-            setCardTransactions(txs);
-            setTransactionsCache(prev => ({ ...prev, [payingCard.id]: txs }));
-          }
-        } finally {
-          setLoadingTx(false);
-        }
-      }
+      fetchAll();
     } catch (error) {
       console.error("Payment error:", error);
-      toast.error("Erro ao processar pagamento e sincronizar valores.", { id: syncToastId });
+      toast.error("Erro ao processar pagamento");
     } finally {
       setPayingSaving(false);
-      // We keep the polling running for a bit even after success/error 
-      // to catch any backend eventual consistency updates
     }
   };
 
@@ -1033,33 +859,6 @@ function CardsPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <div 
-            className={cn(
-              "flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-medium transition-all duration-300",
-              syncStatus === "synced" && "bg-green-500/10 text-green-600 border border-green-500/20",
-              syncStatus === "syncing" && "bg-blue-500/10 text-blue-600 border border-blue-500/20 animate-pulse",
-              syncStatus === "error" && "bg-red-500/10 text-red-600 border border-red-500/20"
-            )}
-          >
-            {syncStatus === "synced" && (
-              <>
-                <div className="h-1.5 w-1.5 rounded-full bg-green-500" />
-                Sincronizado
-              </>
-            )}
-            {syncStatus === "syncing" && (
-              <>
-                <Loader2 className="h-2.5 w-2.5 animate-spin" />
-                Sincronizando
-              </>
-            )}
-            {syncStatus === "error" && (
-              <>
-                <AlertCircle className="h-2.5 w-2.5" />
-                Falha na sincronização
-              </>
-            )}
-          </div>
           <button 
             onClick={() => updateBalanceVisible(!balanceVisible)} 
             className="interactive-button flex h-10 w-10 items-center justify-center rounded-full bg-card border border-border shadow-sm hover:bg-accent transition-all"
@@ -1120,9 +919,7 @@ function CardsPage() {
       const cardTransactionsFiltered = cardTransactions.filter(t => t.card === card.name);
       const invoicePeriodsCard = groupByBillingCycle(cardTransactionsFiltered, card.closing_day, card.due_day);
       const activeInvoicePeriod = invoicePeriodsCard.find(p => p.key === "current") || invoicePeriodsCard[1] || invoicePeriodsCard[0];
-      const invoiceRemaining = Math.max(0, (activeInvoicePeriod?.total || 0) - (activeInvoicePeriod ? cardPaymentsByPeriod[card.id]?.[activeInvoicePeriod.key] || 0 : 0));
-      
-      // Use card.name to look up totals from the RPC result
+      const invoiceRemaining = activeInvoicePeriod?.total || 0;
       const totalUsed = cardTotals[card.name] || 0;
       const initialUsed = card.used || 0;
       const totalPaid = cardPayments[card.id] || 0;
@@ -1308,14 +1105,11 @@ function CardsPage() {
                 <div className="relative">
                   <div className="flex justify-between items-start gap-2 mb-1.5">
                     <div className="min-w-0">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-white/90">
-                        Fatura {activeInvoicePeriod?.label.split(" (")[0] || "atual"}
-                      </p>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-white/90">Fatura {activeInvoicePeriod?.label.split(" (")[0] || "atual"}</p>
                       <p className="text-base font-extrabold text-white tabular-nums drop-shadow-md truncate" data-testid="fatura-atual-valor">
-                        R$ {(totalUsed || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                        R$ {invoiceRemaining.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                       </p>
-                      {/* Debug info - hidden by default */}
-                      <span className="sr-only">Total for {card.name}: {cardTotals[card.name] || 0}</span>
+
                     </div>
                     <div className="flex flex-col items-end gap-0.5 text-[9px] font-semibold text-white shrink-0">
                       <span className="rounded-full bg-black/45 px-1.5 py-0.5 ring-1 ring-white/20 tabular-nums whitespace-nowrap">
@@ -1378,7 +1172,7 @@ function CardsPage() {
 
       {/* Invoice Dialog */}
       <Dialog open={invoiceDialogOpen} onOpenChange={setInvoiceDialogOpen}>
-        <DialogContent className="max-w-md mx-auto rounded-2xl max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden">
+        <DialogContent className="max-w-md mx-auto rounded-2xl max-h-[85vh] flex flex-col p-0 gap-0">
           <DialogHeader className="px-5 pt-5 pb-3">
             <DialogTitle className="flex items-center gap-2 text-base">
               <Receipt className="h-4 w-4 text-primary" />
@@ -1386,78 +1180,17 @@ function CardsPage() {
             </DialogTitle>
           </DialogHeader>
 
-          {fetchError ? (
-            <div className="flex flex-col items-center justify-center py-12 px-5 text-center gap-4">
-              <div className="h-12 w-12 rounded-full bg-destructive/10 flex items-center justify-center">
-                <AlertCircle className="h-6 w-6 text-destructive" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-foreground">Falha ao carregar dados</p>
-                <p className="text-xs text-muted-foreground mt-1">Verifique sua conexão com a internet ou tente novamente.</p>
-              </div>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => fetchAll()}
-                className="gap-2"
-              >
-                <RefreshCw className={cn("h-3.5 w-3.5", loadingTx && "animate-spin")} />
-                Tentar novamente
-              </Button>
-            </div>
-          ) : loadingTx ? (
-            <div className="flex flex-col flex-1 min-h-0 px-5 py-4 gap-4 overflow-hidden">
-              <div className="flex items-center gap-3 animate-pulse">
-                <div className="h-8 w-8 rounded-lg bg-accent" />
-                <div className="flex-1">
-                  <div className="h-4 w-3/4 rounded bg-accent mb-2" />
-                  <div className="h-3 w-1/2 rounded bg-accent/60" />
-                </div>
-                <div className="h-8 w-8 rounded-lg bg-accent" />
-              </div>
-              
-              <div className="flex gap-2 overflow-hidden animate-pulse">
-                {[1, 2, 3, 4].map(i => (
-                  <div key={i} className="h-6 w-20 rounded-full bg-accent shrink-0" />
-                ))}
-              </div>
-
-              <div className="rounded-xl bg-accent/30 p-4 h-16 animate-pulse" />
-
-              <div className="flex flex-col gap-4 mt-2">
-                {[1, 2, 3, 4, 5, 6].map(i => (
-                  <div key={i} className="flex items-center gap-3 animate-pulse">
-                    <div className="h-8 w-8 rounded bg-accent" />
-                    <div className="flex-1">
-                      <div className="h-3 w-2/3 rounded bg-accent mb-2" />
-                      <div className="h-2 w-1/3 rounded bg-accent/60" />
-                    </div>
-                    <div className="h-3 w-16 rounded bg-accent" />
-                  </div>
-                ))}
-              </div>
-              
-              <div className="mt-auto py-4 flex flex-col items-center gap-2">
-                <Loader2 className="h-5 w-5 animate-spin text-primary/40" />
-                <p className="text-[10px] text-muted-foreground font-medium tracking-tight uppercase">
-                  <LoadingMessage step={loadingStep} />
-                </p>
-                <p className="text-[9px] text-muted-foreground/60 italic px-6">
-                  Sincronizando faturas e lançamentos diretamente do Cofre 360.
-                </p>
-              </div>
+          {loadingTx ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-5 w-5 animate-spin text-primary" />
             </div>
           ) : cardTransactions.length === 0 ? (
             <p className="py-12 text-center text-sm text-muted-foreground">Nenhuma transação neste cartão</p>
           ) : (
-            <div className="flex flex-col flex-1 min-h-0 relative">
+            <div className="flex flex-col flex-1 min-h-0">
               <div className="flex items-center gap-2 px-5 pb-3">
                 <button
-                  onClick={() => {
-                    setSwitchingPeriod(true);
-                    setActiveInvoiceIdx(Math.max(0, activeInvoiceIdx - 1));
-                    setTimeout(() => setSwitchingPeriod(false), 400);
-                  }}
+                  onClick={() => setActiveInvoiceIdx(Math.max(0, activeInvoiceIdx - 1))}
                   disabled={activeInvoiceIdx <= 0}
                   className="interactive-button p-1.5 rounded-lg bg-accent hover:bg-accent/80 disabled:opacity-30 transition-colors"
                 >
@@ -1476,11 +1209,7 @@ function CardsPage() {
                   )}
                 </div>
                 <button
-                  onClick={() => {
-                    setSwitchingPeriod(true);
-                    setActiveInvoiceIdx(Math.min(invoicePeriods.length - 1, activeInvoiceIdx + 1));
-                    setTimeout(() => setSwitchingPeriod(false), 400);
-                  }}
+                  onClick={() => setActiveInvoiceIdx(Math.min(invoicePeriods.length - 1, activeInvoiceIdx + 1))}
                   disabled={activeInvoiceIdx >= invoicePeriods.length - 1}
                   className="interactive-button p-1.5 rounded-lg bg-accent hover:bg-accent/80 disabled:opacity-30 transition-colors"
                 >
@@ -1492,11 +1221,7 @@ function CardsPage() {
                 {invoicePeriods.map((period, idx) => (
                     <button
                       key={period.key}
-                      onClick={() => {
-                        setSwitchingPeriod(true);
-                        setActiveInvoiceIdx(idx);
-                        setTimeout(() => setSwitchingPeriod(false), 400);
-                      }}
+                      onClick={() => setActiveInvoiceIdx(idx)}
                       data-testid={`period-tab-${period.key}`}
                       className={cn(
                         "whitespace-nowrap rounded-full px-3 py-1 text-[11px] font-medium transition-colors shrink-0",
@@ -1535,21 +1260,8 @@ function CardsPage() {
                 </div>
               )}
 
-              <div className="flex-1 overflow-y-auto px-5 pb-5 relative min-h-[200px]">
-                {switchingPeriod ? (
-                  <div className="absolute inset-0 bg-background/50 backdrop-blur-[1px] z-10 flex flex-col gap-4 py-4 animate-fade-in">
-                    {[1, 2, 3, 4].map(i => (
-                      <div key={i} className="flex items-center gap-3 px-1 animate-pulse">
-                        <div className="h-8 w-8 rounded bg-accent" />
-                        <div className="flex-1">
-                          <div className="h-3 w-2/3 rounded bg-accent mb-2" />
-                          <div className="h-2 w-1/3 rounded bg-accent/60" />
-                        </div>
-                        <div className="h-3 w-16 rounded bg-accent" />
-                      </div>
-                    ))}
-                  </div>
-                ) : activePeriod && activePeriod.transactions.length === 0 ? (
+              <div className="flex-1 overflow-y-auto px-5 pb-5">
+                {activePeriod && activePeriod.transactions.length === 0 ? (
                   <p className="py-8 text-center text-xs text-muted-foreground">Nenhuma transação nesta fatura</p>
                 ) : (
                   <div className="flex flex-col gap-0.5">
@@ -1693,12 +1405,7 @@ function CardsPage() {
           </DialogHeader>
           {payingCard && (
             <div className="flex flex-col gap-4 mt-2">
-              {loadingTx ? (
-                <div className="flex flex-col items-center justify-center py-12 gap-2">
-                  <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                  <p className="text-xs text-muted-foreground animate-pulse">Carregando dados da fatura...</p>
-                </div>
-              ) : !invoicePeriods[activeInvoiceIdx] ? (
+              {!invoicePeriods[activeInvoiceIdx] ? (
                 <div className="rounded-xl bg-slate-50 border border-slate-200 p-3 flex gap-2.5 items-start">
                   <Info className="h-4 w-4 text-slate-600 shrink-0 mt-0.5" />
                   <div className="space-y-0.5">

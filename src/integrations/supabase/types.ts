@@ -466,22 +466,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      get_bank_account_balances: {
-        Args: { user_id_param: string }
-        Returns: {
-          account_id: string
-          current_balance: number
-        }[]
-      }
-      get_card_invoice_totals: {
-        Args: { user_id_param: string }
-        Returns: {
-          card_id: string
-          card_name: string
-          total_paid: number
-          total_spent: number
-        }[]
-      }
       safe_transfer_user_email: {
         Args: { new_email: string; old_email: string }
         Returns: string
