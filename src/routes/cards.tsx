@@ -1438,7 +1438,7 @@ function CardsPage() {
                                 key={`paid-detail-${pIdx}`}
                                 className="flex justify-between items-center text-[10px]"
                               >
-                                <span className="text-muted-foreground font-medium">{p.date}</span>
+                                <span className="text-muted-foreground font-medium">{format(new Date(p.date), "dd/MM/yyyy")}</span>
                                 <span className="text-emerald-600 font-bold tabular-nums">
                                   R$ {p.amount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                                 </span>
