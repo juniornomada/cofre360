@@ -1360,27 +1360,77 @@ function CardsPage() {
                     )}
                   </div>
 
-                  {activePeriodPayments.length > 0 && (
-                    <div className="rounded-xl bg-emerald-500/5 border border-emerald-500/10 p-3">
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Já Pago</span>
-                        <span className="text-sm font-bold text-emerald-600 tabular-nums">
-                          R$ {activePeriodPayments.reduce((sum, p) => sum + p.amount, 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                        </span>
-                      </div>
-                      <div className="space-y-1.5">
-                        <span className="text-[9px] font-bold text-emerald-600/60 uppercase tracking-wider block border-b border-emerald-500/10 pb-1 mb-1">Composição da Fatura</span>
-                        {activePeriodPayments.map((p, pIdx) => (
-                          <div key={`paid-detail-${pIdx}`} className="flex justify-between items-center text-[10px]">
-                            <span className="text-muted-foreground font-medium">{p.date}</span>
-                            <span className="text-emerald-600 font-bold tabular-nums">
-                              R$ {p.amount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                            </span>
+                  {(() => {
+                    const paidTotal = activePeriodPayments.reduce((sum, p) => sum + p.amount, 0);
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    const isOverdue =
+                      !!activePeriod &&
+                      activePeriod.dueDate < today &&
+                      Math.max(0, (activePeriod.total || 0) - paidTotal) > 0.009;
+                    const fmtFull = (d: Date) =>
+                      `${d.getDate().toString().padStart(2, "0")}/${(d.getMonth() + 1)
+                        .toString()
+                        .padStart(2, "0")}/${d.getFullYear()}`;
+                    return (
+                      <section
+                        aria-labelledby="billing-composition-title"
+                        className="rounded-xl bg-emerald-500/5 border border-emerald-500/10 p-3"
+                      >
+                        <header className="mb-2 flex flex-wrap items-baseline justify-between gap-2 border-b border-emerald-500/10 pb-2">
+                          <div className="min-w-0">
+                            <h3
+                              id="billing-composition-title"
+                              className="text-sm font-semibold text-foreground"
+                            >
+                              Composição da Fatura
+                            </h3>
+                            {activePeriod && (
+                              <p className="text-[10px] text-muted-foreground mt-0.5">
+                                Fecha em {fmtFull(activePeriod.endDate)} · Vence em {fmtFull(activePeriod.dueDate)}
+                              </p>
+                            )}
                           </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                          {isOverdue && (
+                            <span className="rounded-full bg-destructive/15 text-destructive text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 ring-1 ring-destructive/30">
+                              Vencida
+                            </span>
+                          )}
+                        </header>
+
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Já Pago</span>
+                          <span
+                            className="text-sm font-bold text-emerald-600 tabular-nums"
+                            aria-live="polite"
+                          >
+                            R$ {paidTotal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                          </span>
+                        </div>
+
+                        {activePeriodPayments.length === 0 ? (
+                          <p className="py-2 text-center text-[11px] text-muted-foreground">
+                            Nenhum pagamento vinculado ao período.
+                          </p>
+                        ) : (
+                          <ul className="space-y-1.5 list-none m-0 p-0">
+                            {activePeriodPayments.map((p, pIdx) => (
+                              <li
+                                key={`paid-detail-${pIdx}`}
+                                className="flex justify-between items-center text-[10px]"
+                              >
+                                <span className="text-muted-foreground font-medium">{p.date}</span>
+                                <span className="text-emerald-600 font-bold tabular-nums">
+                                  R$ {p.amount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </section>
+                    );
+                  })()}
+
                 </div>
               )}
 
