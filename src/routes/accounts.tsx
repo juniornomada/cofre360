@@ -524,10 +524,6 @@ function AccountsPage() {
       return;
     }
 
-    if (showConfirmUpdate && confirmText !== "CONFIRMAR") {
-      toast.error("Digite CONFIRMAR para autorizar a alteração do saldo inicial.");
-      return;
-    }
 
     setIsSubmitting(true);
     try {
