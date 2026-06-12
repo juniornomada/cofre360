@@ -1111,9 +1111,9 @@ function CardsPage() {
                 <div className="relative">
                   <div className="flex justify-between items-start gap-2 mb-1.5">
                     <div className="min-w-0">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-white/90">Fatura {activeInvoicePeriod?.label?.split(" (")[0] || "atual"}</p>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-white/90">Fatura {activeInvoicePeriod?.label?.split("|")[0]?.split(" (")[0] || "atual"}</p>
                       <p className="text-base font-extrabold text-white tabular-nums drop-shadow-md truncate" data-testid="fatura-atual-valor">
-                        R$ {invoiceRemaining.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                        R$ {Math.max(0, invoiceRemaining - (activeInvoicePeriod?.key ? cardPaymentsByPeriod[card.id]?.[activeInvoicePeriod.key.split("|")[1] || activeInvoicePeriod.key] || 0 : 0)).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                       </p>
 
                     </div>
@@ -1436,10 +1436,10 @@ function CardsPage() {
                 <div className="flex justify-between items-start mb-1">
                   <div>
                     <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                      Fatura {activePeriod?.label?.split(" (")[0] || "selecionada"}
+                      Fatura {activePeriod?.label?.split("|")[0]?.split(" (")[0] || "selecionada"}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {activePeriod?.label?.includes("(") ? "(" + activePeriod.label.split(" (")[1] : ""}
+                      {activePeriod?.label?.split("|")[0]?.includes("(") ? "(" + activePeriod.label.split("|")[0].split(" (")[1] : ""}
                     </p>
                   </div>
                   <span className="text-sm font-bold text-foreground tabular-nums">
@@ -1529,7 +1529,7 @@ function CardsPage() {
               {bankAccounts.length > 0 && (() => {
                 const currentInvoiceTotal = (invoicePeriods[activeInvoiceIdx] || invoicePeriods[0])?.total || 0;
                 const currentPeriodKey = (invoicePeriods[activeInvoiceIdx] || invoicePeriods[0])?.key;
-                const paidInThisPeriod = currentPeriodKey ? cardPaymentsByPeriod[payingCard.id]?.[currentPeriodKey.split("|")[1] || currentPeriodKey] || 0 : 0; // updated
+                const paidInThisPeriod = currentPeriodKey ? cardPaymentsByPeriod[payingCard.id]?.[currentPeriodKey.split("|")[1] || currentPeriodKey] || 0 : 0;
                 const remaining = Math.max(0, currentInvoiceTotal - paidInThisPeriod);
                 const eligible = bankAccounts.filter((a) => a.balance > 0).sort((a, b) => b.balance - a.balance);
                 const best = eligible[0];
