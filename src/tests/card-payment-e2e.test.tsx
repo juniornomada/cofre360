@@ -31,7 +31,8 @@ vi.mock('../integrations/supabase/client', () => ({
 
 // Mock do TanStack Router
 vi.mock('@tanstack/react-router', () => ({
-  createFileRoute: () => () => {},
+  createFileRoute: () => () => ({}),
+  lazyRouteComponent: () => ({}),
   useSearch: () => ({}),
   Link: ({ children, to }: any) => React.createElement('a', { href: to }, children),
 }));
