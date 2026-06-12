@@ -1117,7 +1117,7 @@ function CardsPage() {
                 <div className="absolute inset-0 bg-black/15 pointer-events-none" />
                 <div className="relative">
                   {(() => {
-                    const paidThisPeriod = activeInvoicePeriod?.key ? cardPaymentsByPeriod[card.id]?.[activeInvoicePeriod.key.split("|")[1] || activeInvoicePeriod.key] || 0 : 0;
+                    const paidThisPeriod = activeInvoicePeriod?.key ? (cardPaymentsByPeriod[card.id]?.[activeInvoicePeriod.key.split("|")[1] || activeInvoicePeriod.key] || 0) : 0;
                     const remainingThisPeriod = Math.max(0, invoiceRemaining - paidThisPeriod);
                     const isFullyPaid = invoiceRemaining > 0 && remainingThisPeriod === 0;
                     return (
