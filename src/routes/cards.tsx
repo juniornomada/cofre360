@@ -148,6 +148,7 @@ function CardsPage() {
   const [cardTotals, setCardTotals] = useState<Record<string, number>>({});
   const [cardPayments, setCardPayments] = useState<Record<string, number>>({});
   const [cardPaymentsByPeriod, setCardPaymentsByPeriod] = useState<Record<string, Record<string, number>>>({});
+  const [cardDetailedPaymentsByPeriod, setCardDetailedPaymentsByPeriod] = useState<Record<string, Record<string, number[]>>>({});
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -292,6 +293,7 @@ function CardsPage() {
       if (paymentsRes.data) {
         const paid: Record<string, number> = {};
         const paidByPeriod: Record<string, Record<string, number>> = {};
+        const detailedPaidByPeriod: Record<string, Record<string, number[]>> = {};
         
         for (const p of paymentsRes.data) {
           paid[p.card_id] = (paid[p.card_id] || 0) + Number(p.amount);
@@ -304,12 +306,17 @@ function CardsPage() {
               const periodKey = currentClose.toISOString().split("T")[0];
               
               if (!paidByPeriod[p.card_id]) paidByPeriod[p.card_id] = {};
+              if (!detailedPaidByPeriod[p.card_id]) detailedPaidByPeriod[p.card_id] = {};
+              
               paidByPeriod[p.card_id][periodKey] = (paidByPeriod[p.card_id][periodKey] || 0) + Number(p.amount);
+              if (!detailedPaidByPeriod[p.card_id][periodKey]) detailedPaidByPeriod[p.card_id][periodKey] = [];
+              detailedPaidByPeriod[p.card_id][periodKey].push(Number(p.amount));
             }
           }
         }
         setCardPayments(paid);
         setCardPaymentsByPeriod(paidByPeriod);
+        setCardDetailedPaymentsByPeriod(detailedPaidByPeriod);
       }
     } catch (error: any) {
       console.error("Error fetching data:", error);
@@ -1463,8 +1470,26 @@ function CardsPage() {
                 </div>
                 <div className="flex justify-between text-xs text-muted-foreground mb-1">
                   <span>Já pago</span>
-                  <span className="tabular-nums text-primary">
-                    R$ {(activePeriod?.key ? cardPaymentsByPeriod[payingCard.id]?.[activePeriod.key.split("|")[1] || activePeriod.key] || 0 : 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                  <span className="tabular-nums text-primary font-medium">
+                    {(() => {
+                      const periodKey = activePeriod?.key?.split("|")[1] || activePeriod?.key;
+                      const payments = periodKey ? cardDetailedPaymentsByPeriod[payingCard.id]?.[periodKey] || [] : [];
+                      const totalPaid = payments.reduce((sum, val) => sum + val, 0);
+                      
+                      if (payments.length > 1) {
+                        const formula = payments
+                          .map(p => `R$ ${p.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`)
+                          .join(" + ");
+                        return (
+                          <div className="flex flex-col items-end">
+                            <span className="text-[9px] text-muted-foreground leading-tight mb-0.5">{formula} =</span>
+                            <span>R$ {totalPaid.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
+                          </div>
+                        );
+                      }
+                      
+                      return `R$ ${totalPaid.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
+                    })()}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm font-semibold text-foreground border-t border-border pt-1 mt-1">
