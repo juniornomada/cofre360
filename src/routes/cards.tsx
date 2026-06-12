@@ -1402,7 +1402,12 @@ function CardsPage() {
                         </header>
 
                         <div className="flex justify-between items-center mb-2">
-                          <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Já Pago</span>
+                          <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest inline-flex items-center gap-1">
+                            Já Pago
+                            {loadingTx && (
+                              <Loader2 className="h-3 w-3 animate-spin" aria-label="Atualizando valor pago" />
+                            )}
+                          </span>
                           <span
                             className="text-sm font-bold text-emerald-600 tabular-nums"
                             aria-live="polite"
@@ -1416,7 +1421,10 @@ function CardsPage() {
                             Nenhum pagamento vinculado ao período.
                           </p>
                         ) : (
-                          <ul className="space-y-1.5 list-none m-0 p-0">
+                          <ul
+                            key={`composicao-${activePeriodKey}-${activePeriodPayments.length}`}
+                            className="space-y-1.5 list-none m-0 p-0 animate-in fade-in duration-300"
+                          >
                             {activePeriodPayments.map((p, pIdx) => (
                               <li
                                 key={`paid-detail-${pIdx}`}
@@ -1430,6 +1438,7 @@ function CardsPage() {
                             ))}
                           </ul>
                         )}
+
                       </section>
                     );
                   })()}
