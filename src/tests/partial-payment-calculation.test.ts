@@ -146,4 +146,57 @@ describe("Pagamento parcial — Já pago e Faltam", () => {
     expect(jaPago).toBe(0);
     expect(faltam).toBeCloseTo(invoiceTotal, 2);
   });
+
+  describe("PORTO BANK — campo 'PAGO R$' não pode aparecer como R$ 0,00 quando há pagamentos", () => {
+    const formatBRL = (v: number) =>
+      `R$ ${v.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
+
+    it("fatura 08/2024 com pagamento de R$ 150,75 → 'PAGO R$' = 'R$ 150,75' (≠ 'R$ 0,00')", () => {
+      const card: Card = { id: "porto-1", closing_day: 3, due_day: 10 };
+      // Hoje fixo após o vencimento (10/08) → currentClose = 03/09/2024.
+      const today = new Date(2024, 7, 15);
+      const keyAtual = activePeriodKey(card, today);
+      expect(keyAtual).toBe("2024-09-03");
+
+      // Pagamento em 12/08 (após vencimento) cai no próximo ciclo (03/09).
+      const payments: Payment[] = [
+        { card_id: card.id, amount: 150.75, paid_at: new Date(2024, 7, 12, 10).toISOString() },
+      ];
+      const { totalByPeriod } = buildPaymentsByPeriod(card, payments);
+      const { jaPago } = computeInvoiceStatus(500, totalByPeriod[keyAtual] || 0);
+
+      expect(jaPago).toBeGreaterThan(0);
+      expect(jaPago).toBeCloseTo(150.75, 2);
+      expect(formatBRL(jaPago)).toBe("R$ 150,75");
+      expect(formatBRL(jaPago)).not.toBe("R$ 0,00");
+    });
+
+    it("fatura 09/2024 sem pagamentos → 'PAGO R$' = 'R$ 0,00' (caso de fatura em atraso)", () => {
+      const card: Card = { id: "porto-1", closing_day: 3, due_day: 10 };
+      const today = new Date(2024, 8, 15);
+      const keyAtual = activePeriodKey(card, today);
+      const { totalByPeriod } = buildPaymentsByPeriod(card, []);
+      const { jaPago } = computeInvoiceStatus(500, totalByPeriod[keyAtual] || 0);
+
+      expect(jaPago).toBe(0);
+      expect(formatBRL(jaPago)).toBe("R$ 0,00");
+    });
+
+    it("soma pagamentos múltiplos da PORTO BANK no mesmo período (R$ 100,25 + R$ 50,50 = R$ 150,75)", () => {
+      const card: Card = { id: "porto-1", closing_day: 3, due_day: 10 };
+      const today = new Date(2024, 7, 15);
+      const keyAtual = activePeriodKey(card, today);
+      // Ambos os pagamentos após vencimento (10/08) → mesmo ciclo (03/09).
+      const payments: Payment[] = [
+        { card_id: card.id, amount: 100.25, paid_at: new Date(2024, 7, 12, 10).toISOString() },
+        { card_id: card.id, amount: 50.5, paid_at: new Date(2024, 7, 20, 10).toISOString() },
+      ];
+      const { totalByPeriod } = buildPaymentsByPeriod(card, payments);
+      const { jaPago } = computeInvoiceStatus(500, totalByPeriod[keyAtual]);
+      expect(jaPago).toBeCloseTo(150.75, 2);
+      expect(formatBRL(jaPago)).toBe("R$ 150,75");
+    });
+
+  });
 });
+
