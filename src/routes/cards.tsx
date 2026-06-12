@@ -300,8 +300,8 @@ function CardsPage() {
             const card = cardsRes.data?.find(c => c.id === p.card_id);
             if (card) {
               const billingDate = new Date(p.paid_at);
-              const { closingDate } = getCycleDates(billingDate, card.closing_day || 1, card.due_day || 10);
-              const periodKey = closingDate.toISOString().split("T")[0];
+              const { currentClose } = getCycleDates(billingDate, card.closing_day || 1, card.due_day || 10);
+              const periodKey = currentClose.toISOString().split("T")[0];
               
               if (!paidByPeriod[p.card_id]) paidByPeriod[p.card_id] = {};
               paidByPeriod[p.card_id][periodKey] = (paidByPeriod[p.card_id][periodKey] || 0) + Number(p.amount);
