@@ -116,15 +116,21 @@ describe("Pagamento parcial — Já pago e Faltam", () => {
     expect(badge).toBeNull();
   });
 
-  it("pagamento dentro da janela aberta (após fechamento, antes do vencimento) também credita à Atual", () => {
-    // 05/06/2026: já fechou em 03/06 mas ainda não venceu em 10/06.
-    // Pela lógica do app, esse pagamento conta para a Atual (key 03/07).
+  it("pagamento entre fechamento e vencimento (05/06) credita à fatura que acabou de fechar (key 03/06)", () => {
+    // 05/06/2026: fechou em 03/06 e vence em 10/06. Pela lógica de getCycleDates,
+    // currentClose permanece 03/06, portanto o pagamento é atribuído ao período
+    // cuja endDate = 03/06 (a fatura recém-fechada). NÃO entra na "Atual" (03/07).
+    const keyRecemFechada = "2026-06-03";
     const payments: Payment[] = [
       { card_id: portoBank.id, amount: 1300, paid_at: new Date(2026, 5, 5, 10).toISOString() },
     ];
     const { totalByPeriod } = buildPaymentsByPeriod(portoBank, payments);
+
+    expect(totalByPeriod[keyRecemFechada]).toBeCloseTo(1300, 2);
+    expect(totalByPeriod[keyAtual]).toBeUndefined();
+
     const { jaPago, faltam } = computeInvoiceStatus(invoiceTotal, totalByPeriod[keyAtual] || 0);
-    expect(jaPago).toBeCloseTo(1300, 2);
-    expect(faltam).toBeCloseTo(653.5, 2);
+    expect(jaPago).toBe(0);
+    expect(faltam).toBeCloseTo(invoiceTotal, 2);
   });
 });
