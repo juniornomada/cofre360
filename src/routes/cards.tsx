@@ -1150,10 +1150,17 @@ function CardsPage() {
                   </div>
                     );
                   })()}
-                  {totalPaid > 0 ? (
+                  {paidThisPeriod > 0 ? (
                     <div className="flex items-center justify-between gap-2 mt-1">
                       <p className="text-[10px] text-emerald-300 font-bold tabular-nums drop-shadow-sm truncate">
-                        ✓ R$ {totalPaid.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} pago
+                        ✓ {(() => {
+                          const detailedPayments = activeInvoicePeriod?.key ? cardDetailedPaymentsByPeriod[card.id]?.[activeInvoicePeriod.key.split("|")[1] || activeInvoicePeriod.key] || [] : [];
+                          if (detailedPayments.length > 1) {
+                            const paymentsStr = detailedPayments.map(p => `R$ ${p.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`).join(" + ");
+                            return `${paymentsStr} = R$ ${paidThisPeriod.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} pago`;
+                          }
+                          return `R$ ${paidThisPeriod.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} pago`;
+                        })()}
                       </p>
                       <p className="text-[10px] text-white/80 tabular-nums" title={`Limite total: R$ ${card.card_limit.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`}>
                         Disponível <span className="font-bold text-white">R$ {Math.max(0, card.card_limit - outstandingBalance).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
