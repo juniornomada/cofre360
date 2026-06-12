@@ -21,14 +21,19 @@ function getPaymentBadge(payments: Payment[], invoiceTotal: number): 'Total' | '
   return null;
 }
 
-// Replica a formatação de valores (linhas ~1561-1576)
+// Replica a formatação de valores com datas (linhas ~1561-1576 atualizadas)
 function formatPaymentBreakdown(payments: Payment[]): string {
-  const totalPaid = payments.reduce((s, p) => s + p.amount, 0);
+  // Ordena para garantir consistência no teste, assim como no componente
+  const sorted = [...payments].sort((a, b) => new Date(a.paid_at).getTime() - new Date(b.paid_at).getTime());
+  const totalPaid = sorted.reduce((s, p) => s + p.amount, 0);
   const fmt = (v: number) =>
     `R$ ${v.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
 
-  if (payments.length > 1) {
-    const formula = payments.map((p) => fmt(p.amount)).join(' + ');
+  if (sorted.length > 1) {
+    const formula = sorted.map((p) => {
+      const dateStr = format(new Date(p.paid_at), "dd/MM");
+      return `${fmt(p.amount)} (${dateStr})`;
+    }).join(' + ');
     return `${formula} = ${fmt(totalPaid)}`;
   }
   return fmt(totalPaid);
@@ -58,7 +63,7 @@ describe('Exibição de pagamentos totais e parciais com datas', () => {
 
     expect(getPaymentBadge(payments, invoiceTotal)).toBe('Parcial');
     expect(formatPaymentBreakdown(payments)).toBe(
-      'R$ 100,00 + R$ 51,62 = R$ 151,62'
+      'R$ 100,00 (01/06) + R$ 51,62 (05/06) = R$ 151,62'
     );
     expect(formatPaymentDate(payments[0].paid_at)).toBe('01 de jun de 2026');
     expect(formatPaymentDate(payments[1].paid_at)).toBe('05 de jun de 2026');
@@ -72,7 +77,7 @@ describe('Exibição de pagamentos totais e parciais com datas', () => {
     payments.push({ amount: 300, paid_at: '2026-06-12' });
     expect(getPaymentBadge(payments, invoiceTotal)).toBe('Total');
     expect(formatPaymentBreakdown(payments)).toBe(
-      'R$ 200,00 + R$ 300,00 = R$ 500,00'
+      'R$ 200,00 (01/06) + R$ 300,00 (12/06) = R$ 500,00'
     );
   });
 
@@ -99,12 +104,24 @@ describe('Exibição de pagamentos totais e parciais com datas', () => {
       '10 de jun de 2026',
     ]);
     expect(formatPaymentBreakdown(payments)).toBe(
-      'R$ 50,00 + R$ 75,00 + R$ 25,00 = R$ 150,00'
+      'R$ 50,00 (20/05) + R$ 75,00 (02/06) + R$ 25,00 (10/06) = R$ 150,00'
     );
   });
 
   it('formata valores com separador decimal pt-BR (vírgula)', () => {
     const payments: Payment[] = [{ amount: 1234.5, paid_at: '2026-06-12' }];
     expect(formatPaymentBreakdown(payments)).toBe('R$ 1.234,50');
+  });
+
+  it('ordena automaticamente múltiplos pagamentos independente da ordem de entrada para garantir cronologia', () => {
+    const payments: Payment[] = [
+      { amount: 25, paid_at: '2026-06-10' },
+      { amount: 50, paid_at: '2026-05-20' },
+      { amount: 75, paid_at: '2026-06-02' },
+    ];
+
+    expect(formatPaymentBreakdown(payments)).toBe(
+      'R$ 50,00 (20/05) + R$ 75,00 (02/06) + R$ 25,00 (10/06) = R$ 150,00'
+    );
   });
 });

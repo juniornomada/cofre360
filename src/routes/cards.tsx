@@ -148,7 +148,7 @@ function CardsPage() {
   const [cardTotals, setCardTotals] = useState<Record<string, number>>({});
   const [cardPayments, setCardPayments] = useState<Record<string, number>>({});
   const [cardPaymentsByPeriod, setCardPaymentsByPeriod] = useState<Record<string, Record<string, number>>>({});
-  const [cardDetailedPaymentsByPeriod, setCardDetailedPaymentsByPeriod] = useState<Record<string, Record<string, number[]>>>({});
+  const [cardDetailedPaymentsByPeriod, setCardDetailedPaymentsByPeriod] = useState<Record<string, Record<string, { amount: number, date: string }[]>>>({});
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -293,7 +293,7 @@ function CardsPage() {
       if (paymentsRes.data) {
         const paid: Record<string, number> = {};
         const paidByPeriod: Record<string, Record<string, number>> = {};
-        const detailedPaidByPeriod: Record<string, Record<string, number[]>> = {};
+        const detailedPaidByPeriod: Record<string, Record<string, { amount: number, date: string }[]>> = {};
         
         for (const p of paymentsRes.data) {
           paid[p.card_id] = (paid[p.card_id] || 0) + Number(p.amount);
@@ -310,7 +310,7 @@ function CardsPage() {
               
               paidByPeriod[p.card_id][periodKey] = (paidByPeriod[p.card_id][periodKey] || 0) + Number(p.amount);
               if (!detailedPaidByPeriod[p.card_id][periodKey]) detailedPaidByPeriod[p.card_id][periodKey] = [];
-              detailedPaidByPeriod[p.card_id][periodKey].push(Number(p.amount));
+              detailedPaidByPeriod[p.card_id][periodKey].push({ amount: Number(p.amount), date: p.paid_at });
             }
           }
         }
@@ -1207,7 +1207,8 @@ function CardsPage() {
                           const detailedPayments = activeInvoicePeriod?.key ? cardDetailedPaymentsByPeriod[card.id]?.[activeInvoicePeriod.key.split("|")[1] || activeInvoicePeriod.key] || [] : [];
                           if (!balanceVisible) return "•••••• pago";
                           if (detailedPayments.length > 1) {
-                            const paymentsStr = detailedPayments.map(p => `R$ ${p.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`).join(" + ");
+                            const sorted = [...detailedPayments].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+                            const paymentsStr = sorted.map(p => `R$ ${p.amount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`).join(" + ");
                             return `${paymentsStr} = R$ ${paidThisPeriod.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} pago`;
                           }
                           return `R$ ${paidThisPeriod.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} pago`;
@@ -1535,7 +1536,7 @@ function CardsPage() {
                       {(() => {
                         const periodKey = activePeriod?.key?.split("|")[1] || activePeriod?.key;
                         const payments = periodKey ? cardDetailedPaymentsByPeriod[payingCard.id]?.[periodKey] || [] : [];
-                        const totalPaid = payments.reduce((sum, val) => sum + val, 0);
+                        const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
                         const totalInvoice = activePeriod?.total || 0;
                         
                         if (totalPaid > 0 && totalPaid < totalInvoice) {
@@ -1558,11 +1559,13 @@ function CardsPage() {
                       {(() => {
                         const periodKey = activePeriod?.key?.split("|")[1] || activePeriod?.key;
                         const payments = periodKey ? cardDetailedPaymentsByPeriod[payingCard.id]?.[periodKey] || [] : [];
-                        const totalPaid = payments.reduce((sum, val) => sum + val, 0);
+                        // Sort payments by date to ensure chronological order in the formula
+                        const sortedPayments = [...payments].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+                        const totalPaid = sortedPayments.reduce((sum, p) => sum + p.amount, 0);
                         
-                        if (payments.length > 1) {
-                          const formula = payments
-                            .map(p => `R$ ${p.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`)
+                        if (sortedPayments.length > 1) {
+                          const formula = sortedPayments
+                            .map(p => `R$ ${p.amount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} (${format(new Date(p.date), "dd/MM")})`)
                             .join(" + ");
                           return (
                             <div className="flex flex-col items-end">
