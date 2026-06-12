@@ -476,25 +476,28 @@ function CardsPage() {
     setInvoiceDialogOpen(true);
     setActiveInvoiceIdx(0);
     setLoadingTx(true);
-    // Refresh payments / totals so "PAGO" and "COMPOSIÇÃO DA FATURA"
-    // always reflect the latest card_payments and transactions.
-    fetchAll();
     try {
-      // Filter transactions by card.name to ensure they belong to the specific card
-      const { data, error } = await supabase
-        .from("transactions")
-        .select("id, name, icon, category, date, amount, type, card, created_at, total_installments, installment_number, installment_group_id")
-        .eq("card", card.name)
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      setCardTransactions((data as CardTransaction[]) || []);
+      // Refresh payments / totals so "PAGO" e "COMPOSIÇÃO DA FATURA"
+      // sempre reflitam os lançamentos mais recentes, em paralelo com
+      // as transações específicas do cartão.
+      const [, txResult] = await Promise.all([
+        fetchAll(),
+        supabase
+          .from("transactions")
+          .select("id, name, icon, category, date, amount, type, card, created_at, total_installments, installment_number, installment_group_id")
+          .eq("card", card.name)
+          .order("created_at", { ascending: false }),
+      ]);
+      if (txResult.error) throw txResult.error;
+      setCardTransactions((txResult.data as CardTransaction[]) || []);
     } catch (error: any) {
       console.error("Error fetching card transactions:", error);
-      toast.error("Erro ao carregar transações do cartão");
+      toast.error("Não foi possível atualizar a fatura no momento. Tente novamente mais tarde.");
     } finally {
       setLoadingTx(false);
     }
   };
+
 
   const invoicePeriods = invoiceCard
     ? groupByBillingCycle(cardTransactions.filter(tx => tx.card === invoiceCard.name), invoiceCard.closing_day, invoiceCard.due_day)
@@ -1399,7 +1402,12 @@ function CardsPage() {
                         </header>
 
                         <div className="flex justify-between items-center mb-2">
-                          <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Já Pago</span>
+                          <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest inline-flex items-center gap-1">
+                            Já Pago
+                            {loadingTx && (
+                              <Loader2 className="h-3 w-3 animate-spin" aria-label="Atualizando valor pago" />
+                            )}
+                          </span>
                           <span
                             className="text-sm font-bold text-emerald-600 tabular-nums"
                             aria-live="polite"
@@ -1413,7 +1421,10 @@ function CardsPage() {
                             Nenhum pagamento vinculado ao período.
                           </p>
                         ) : (
-                          <ul className="space-y-1.5 list-none m-0 p-0">
+                          <ul
+                            key={`composicao-${activePeriodKey}-${activePeriodPayments.length}`}
+                            className="space-y-1.5 list-none m-0 p-0 animate-in fade-in duration-300"
+                          >
                             {activePeriodPayments.map((p, pIdx) => (
                               <li
                                 key={`paid-detail-${pIdx}`}
@@ -1427,6 +1438,7 @@ function CardsPage() {
                             ))}
                           </ul>
                         )}
+
                       </section>
                     );
                   })()}
