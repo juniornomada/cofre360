@@ -457,7 +457,10 @@ function CardsPage() {
   const invoicePeriods = invoiceCard
     ? groupByBillingCycle(cardTransactions.filter(tx => tx.card === invoiceCard.name), invoiceCard.closing_day, invoiceCard.due_day)
     : [];
-  const activePeriod = invoicePeriods[activeInvoiceIdx] || invoicePeriods[0];
+  const activePeriod = (invoicePeriods[activeInvoiceIdx] || invoicePeriods[0]) ? {
+    ...(invoicePeriods[activeInvoiceIdx] || invoicePeriods[0]),
+    label: (invoicePeriods[activeInvoiceIdx] || invoicePeriods[0])?.label.split("|")[0]
+  } : null;
 
   // Open installment edit dialog for a specific transaction
   const openInstallmentDialog = (tx: CardTransaction) => {
@@ -918,7 +921,10 @@ function CardsPage() {
                 {cards.map((card, i) => {
       const cardTransactionsFiltered = cardTransactions.filter(t => t.card === card.name);
       const invoicePeriodsCard = groupByBillingCycle(cardTransactionsFiltered, card.closing_day, card.due_day);
-      const activeInvoicePeriod = invoicePeriodsCard.find(p => p.key === "current") || invoicePeriodsCard[1] || invoicePeriodsCard[0];
+      const activeInvoicePeriod = (invoicePeriodsCard.find(p => p.key === "current") || invoicePeriodsCard[1] || invoicePeriodsCard[0]) ? {
+        ...(invoicePeriodsCard.find(p => p.key === "current") || invoicePeriodsCard[1] || invoicePeriodsCard[0]),
+        label: (invoicePeriodsCard.find(p => p.key === "current") || invoicePeriodsCard[1] || invoicePeriodsCard[0])?.label.split("|")[0]
+      } : null;
       const invoiceRemaining = activeInvoicePeriod?.total || 0;
       const totalUsed = cardTotals[card.name] || 0;
       const initialUsed = card.used || 0;
@@ -1230,7 +1236,7 @@ function CardsPage() {
                           : "bg-accent/50 text-muted-foreground hover:bg-accent"
                       )}
                     >
-                      {period.label}
+                      {period.label.split("|")[0]}
                     </button>
 
                 ))}
@@ -1397,7 +1403,7 @@ function CardsPage() {
                 <span className="truncate">Pagar Fatura — {payingCard?.name}</span>
                 {invoicePeriods[activeInvoiceIdx] && (
                   <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
-                    Competência: {invoicePeriods[activeInvoiceIdx].label.split(" (")[0]}
+                    Competência: {activePeriod?.label.split(" (")[0]}
                   </span>
                 )}
               </div>
