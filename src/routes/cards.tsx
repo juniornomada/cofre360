@@ -476,25 +476,28 @@ function CardsPage() {
     setInvoiceDialogOpen(true);
     setActiveInvoiceIdx(0);
     setLoadingTx(true);
-    // Refresh payments / totals so "PAGO" and "COMPOSIÇÃO DA FATURA"
-    // always reflect the latest card_payments and transactions.
-    fetchAll();
     try {
-      // Filter transactions by card.name to ensure they belong to the specific card
-      const { data, error } = await supabase
-        .from("transactions")
-        .select("id, name, icon, category, date, amount, type, card, created_at, total_installments, installment_number, installment_group_id")
-        .eq("card", card.name)
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      setCardTransactions((data as CardTransaction[]) || []);
+      // Refresh payments / totals so "PAGO" e "COMPOSIÇÃO DA FATURA"
+      // sempre reflitam os lançamentos mais recentes, em paralelo com
+      // as transações específicas do cartão.
+      const [, txResult] = await Promise.all([
+        fetchAll(),
+        supabase
+          .from("transactions")
+          .select("id, name, icon, category, date, amount, type, card, created_at, total_installments, installment_number, installment_group_id")
+          .eq("card", card.name)
+          .order("created_at", { ascending: false }),
+      ]);
+      if (txResult.error) throw txResult.error;
+      setCardTransactions((txResult.data as CardTransaction[]) || []);
     } catch (error: any) {
       console.error("Error fetching card transactions:", error);
-      toast.error("Erro ao carregar transações do cartão");
+      toast.error("Não foi possível atualizar a fatura no momento. Tente novamente mais tarde.");
     } finally {
       setLoadingTx(false);
     }
   };
+
 
   const invoicePeriods = invoiceCard
     ? groupByBillingCycle(cardTransactions.filter(tx => tx.card === invoiceCard.name), invoiceCard.closing_day, invoiceCard.due_day)
