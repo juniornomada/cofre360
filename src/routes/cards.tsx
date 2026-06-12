@@ -936,6 +936,8 @@ function CardsPage() {
       const totalUsed = cardTotals[card.name] || 0;
       const initialUsed = card.used || 0;
       const totalPaid = cardPayments[card.id] || 0;
+      
+      const paidThisPeriod = activeInvoicePeriod?.key ? (cardPaymentsByPeriod[card.id]?.[activeInvoicePeriod.key.split("|")[1] || activeInvoicePeriod.key] || 0) : 0;
       const outstandingBalance = Math.max(0, (totalUsed + initialUsed) - totalPaid);
       const pct = card.card_limit > 0 ? Math.round((outstandingBalance / card.card_limit) * 100) : 0;
       const isEditing = editingId === card.id;
@@ -1117,7 +1119,7 @@ function CardsPage() {
                 <div className="absolute inset-0 bg-black/15 pointer-events-none" />
                 <div className="relative">
                   {(() => {
-                    const paidThisPeriod = activeInvoicePeriod?.key ? cardPaymentsByPeriod[card.id]?.[activeInvoicePeriod.key.split("|")[1] || activeInvoicePeriod.key] || 0 : 0;
+                    const paidThisPeriod = activeInvoicePeriod?.key ? (cardPaymentsByPeriod[card.id]?.[activeInvoicePeriod.key.split("|")[1] || activeInvoicePeriod.key] || 0) : 0;
                     const remainingThisPeriod = Math.max(0, invoiceRemaining - paidThisPeriod);
                     const isFullyPaid = invoiceRemaining > 0 && remainingThisPeriod === 0;
                     return (
@@ -1148,10 +1150,17 @@ function CardsPage() {
                   </div>
                     );
                   })()}
-                  {totalPaid > 0 ? (
+                  {paidThisPeriod > 0 ? (
                     <div className="flex items-center justify-between gap-2 mt-1">
                       <p className="text-[10px] text-emerald-300 font-bold tabular-nums drop-shadow-sm truncate">
-                        ✓ R$ {totalPaid.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} pago
+                        ✓ {(() => {
+                          const detailedPayments = activeInvoicePeriod?.key ? cardDetailedPaymentsByPeriod[card.id]?.[activeInvoicePeriod.key.split("|")[1] || activeInvoicePeriod.key] || [] : [];
+                          if (detailedPayments.length > 1) {
+                            const paymentsStr = detailedPayments.map(p => `R$ ${p.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`).join(" + ");
+                            return `${paymentsStr} = R$ ${paidThisPeriod.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} pago`;
+                          }
+                          return `R$ ${paidThisPeriod.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} pago`;
+                        })()}
                       </p>
                       <p className="text-[10px] text-white/80 tabular-nums" title={`Limite total: R$ ${card.card_limit.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`}>
                         Disponível <span className="font-bold text-white">R$ {Math.max(0, card.card_limit - outstandingBalance).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
