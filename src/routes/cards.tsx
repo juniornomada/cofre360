@@ -1197,7 +1197,7 @@ function CardsPage() {
                               )}
                             </p>
                             <p className="text-base font-extrabold text-white tabular-nums drop-shadow-md truncate" data-testid="fatura-atual-valor">
-                              {balanceVisible ? `R$ ${remainingThisPeriod.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "••••••"}
+                              {balanceVisible ? `R$ ${invoiceRemaining.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "••••••"}
                             </p>
                           </div>
                           <div className="flex flex-col items-end gap-0.5 text-[9px] font-semibold text-white shrink-0">
@@ -1210,33 +1210,35 @@ function CardsPage() {
                           </div>
                         </div>
 
-                        {paidThisPeriod > 0 ? (
-                          <div className="flex items-center justify-between gap-2 mt-1">
-                            <p className="text-[10px] text-emerald-300 font-bold tabular-nums drop-shadow-sm truncate">
+                        <div className="flex justify-between items-center mt-1 border-t border-white/10 pt-1">
+                          <p className="text-[10px] text-white/70 font-medium truncate">
+                            Pago <span className="text-emerald-400 font-bold ml-1">{balanceVisible ? `R$ ${paidThisPeriod.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "••••••"}</span>
+                          </p>
+                          <p className="text-[10px] text-white/70 font-medium">
+                            Faltam <span className="text-destructive font-bold ml-1">{balanceVisible ? `R$ ${remainingThisPeriod.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "••••••"}</span>
+                          </p>
+                        </div>
+
+                        {detailedPayments.length > 1 && (
+                          <div className="mt-1">
+                            <p className="text-[9px] text-emerald-300 font-bold tabular-nums drop-shadow-sm truncate">
                               ✓ {(() => {
-                                if (!balanceVisible) return "•••••• pago";
-                                if (detailedPayments.length > 1) {
-                                  const sorted = [...detailedPayments].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-                                  const paymentsStr = sorted.map(p => `R$ ${p.amount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`).join(" + ");
-                                  return `${paymentsStr} = R$ ${paidThisPeriod.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} pago`;
-                                }
-                                return `R$ ${paidThisPeriod.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} pago`;
+                                if (!balanceVisible) return "••••••";
+                                const sorted = [...detailedPayments].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+                                return sorted.map(p => `R$ ${p.amount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`).join(" + ");
                               })()}
-                            </p>
-                            <p className="text-[10px] text-white/80 tabular-nums" title={`Limite total: R$ ${card.card_limit.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`}>
-                              Disponível <span className="font-bold text-white">{balanceVisible ? `R$ ${Math.max(0, card.card_limit - outstandingBalance).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "••••••"}</span>
-                            </p>
-                          </div>
-                        ) : (
-                          <div className="flex items-center justify-between gap-2 mt-1">
-                            <p className="text-[10px] text-white/70 tabular-nums">
-                              de R$ {card.card_limit.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                            </p>
-                            <p className="text-[10px] text-white/80 tabular-nums">
-                              Disponível <span className="font-bold text-white">{balanceVisible ? `R$ ${Math.max(0, card.card_limit - outstandingBalance).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "••••••"}</span>
                             </p>
                           </div>
                         )}
+
+                        <div className="flex items-center justify-between gap-2 mt-1 opacity-70">
+                          <p className="text-[9px] text-white/70 tabular-nums">
+                            de R$ {card.card_limit.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                          </p>
+                          <p className="text-[9px] text-white/80 tabular-nums">
+                            Disponível <span className="font-bold text-white">{balanceVisible ? `R$ ${Math.max(0, card.card_limit - outstandingBalance).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "••••••"}</span>
+                          </p>
+                        </div>
                       </>
                     );
                   })()}
