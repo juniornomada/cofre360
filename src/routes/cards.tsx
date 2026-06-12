@@ -1580,7 +1580,7 @@ function CardsPage() {
                     <span className="flex items-center gap-1.5">
                       Já pago
                       {(() => {
-                        const periodKey = activePeriod?.key?.split("|")[1] || activePeriod?.key;
+                        const periodKey = activePeriod?.endDate?.toISOString().split("T")[0];
                         const payments = periodKey ? cardDetailedPaymentsByPeriod[payingCard.id]?.[periodKey] || [] : [];
                         const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
                         const totalInvoice = activePeriod?.total || 0;
