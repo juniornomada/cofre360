@@ -842,20 +842,28 @@ function CardsPage() {
         const account = bankAccounts.find((a) => a.id === line.accountId);
         const amount = parseFloat(line.amount);
         if (account) {
-          // Update balance
-          await supabase.from("bank_accounts").update({ balance: account.balance - amount }).eq("id", line.accountId);
+          // The application uses a virtual balance system: virtual_balance = account.balance + total_income - total_expenses
+          // The current `account.balance` in the component already reflects this virtual balance.
+          // Since we are about to create a new expense transaction of `amount`, it will automatically be subtracted 
+          // from the virtual balance during the next `fetchAll()`. 
+          // Therefore, we MUST NOT subtract the amount from the `bank_accounts.balance` column in the DB, 
+          // as that would result in a double deduction (once in the base balance and once in the transactions).
+          // We only update the updated_at timestamp or keep the balance as is.
+          // await supabase.from("bank_accounts").update({ balance: account.balance - amount }).eq("id", line.accountId);
           
           // Create transaction for history/debiting from reports
-          await supabase.from("transactions").insert({
+          const { error: txInsError } = await supabase.from("transactions").insert({
             name: paymentName,
             amount: amount,
             type: "expense",
-            category: "Impostos/Taxas > Outros", // Or a dedicated payment category
+            category: "Pagamento de Cartão",
             icon: "💳",
             date: dateFormatted,
             bank_account_id: line.accountId,
             created_at: new Date().toISOString()
           });
+          
+          if (txInsError) throw txInsError;
         }
       }
       
