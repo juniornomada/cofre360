@@ -1212,20 +1212,6 @@ function CardsPage() {
                             </span>
                           </div>
                         </div>
-                            </p>
-                            <p className="text-base font-extrabold text-white tabular-nums drop-shadow-md truncate" data-testid="fatura-atual-valor">
-                              {balanceVisible ? `R$ ${invoiceRemaining.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "••••••"}
-                            </p>
-                          </div>
-                          <div className="flex flex-col items-end gap-0.5 text-[9px] font-semibold text-white shrink-0">
-                            <span className="tabular-nums whitespace-nowrap">
-                              Fecha {formatDueDate(currentClose)}
-                            </span>
-                            <span className="tabular-nums whitespace-nowrap">
-                              Vence {formatDueDate(currentDue)}
-                            </span>
-                          </div>
-                        </div>
 
                         <div className="mt-1 border-t border-white/10 pt-1">
                           <div className="flex justify-between items-start">
