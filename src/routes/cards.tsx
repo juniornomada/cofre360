@@ -1529,7 +1529,7 @@ function CardsPage() {
               {bankAccounts.length > 0 && (() => {
                 const currentInvoiceTotal = (invoicePeriods[activeInvoiceIdx] || invoicePeriods[0])?.total || 0;
                 const currentPeriodKey = (invoicePeriods[activeInvoiceIdx] || invoicePeriods[0])?.key;
-                const paidInThisPeriod = currentPeriodKey ? cardPaymentsByPeriod[payingCard.id]?.[currentPeriodKey.split("|")[1] || currentPeriodKey] || 0 : 0;
+                const paidInThisPeriod = currentPeriodKey ? cardPaymentsByPeriod[payingCard.id]?.[currentPeriodKey.split("|")[1] || currentPeriodKey] || 0 : 0; // updated
                 const remaining = Math.max(0, currentInvoiceTotal - paidInThisPeriod);
                 const eligible = bankAccounts.filter((a) => a.balance > 0).sort((a, b) => b.balance - a.balance);
                 const best = eligible[0];
