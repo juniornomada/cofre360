@@ -875,16 +875,6 @@ function AccountsPage() {
                         </div>
                       );
                     })()}
-                    <p className="text-[10px] text-muted-foreground text-center">
-                      Para salvar, digite <span className="font-bold text-destructive">CONFIRMAR</span> abaixo:
-                    </p>
-                    <Input
-                      value={confirmText}
-                      onChange={(e) => setConfirmText(e.target.value.toUpperCase())}
-                      placeholder="Digite CONFIRMAR"
-                      className="h-9 text-center uppercase font-bold border-destructive/20 focus-visible:ring-destructive"
-                    />
-                  </div>
                   <div className="flex gap-2">
                     <button
                       onClick={() => editingAccount && saveEdit(editingAccount.id)}
