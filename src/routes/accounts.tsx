@@ -524,10 +524,6 @@ function AccountsPage() {
       return;
     }
 
-    if (showConfirmUpdate && confirmText !== "CONFIRMAR") {
-      toast.error("Digite CONFIRMAR para autorizar a alteração do saldo inicial.");
-      return;
-    }
 
     setIsSubmitting(true);
     try {
@@ -879,20 +875,11 @@ function AccountsPage() {
                         </div>
                       );
                     })()}
-                    <p className="text-[10px] text-muted-foreground text-center">
-                      Para salvar, digite <span className="font-bold text-destructive">CONFIRMAR</span> abaixo:
-                    </p>
-                    <Input
-                      value={confirmText}
-                      onChange={(e) => setConfirmText(e.target.value.toUpperCase())}
-                      placeholder="Digite CONFIRMAR"
-                      className="h-9 text-center uppercase font-bold border-destructive/20 focus-visible:ring-destructive"
-                    />
                   </div>
                   <div className="flex gap-2">
                     <button
                       onClick={() => editingAccount && saveEdit(editingAccount.id)}
-                      disabled={confirmText !== "CONFIRMAR" || isSubmitting}
+                      disabled={isSubmitting}
                       className="flex-1 interactive-button flex items-center justify-center gap-2 rounded-2xl bg-destructive py-3 text-sm font-medium text-white disabled:opacity-30 transition-opacity"
                     >
                       {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Confirmar Alteração"}
