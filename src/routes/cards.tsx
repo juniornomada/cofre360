@@ -1629,7 +1629,7 @@ function CardsPage() {
                 <div className="flex justify-between text-sm font-semibold text-foreground border-t border-border pt-1 mt-1">
                   <span>Restante</span>
                   <span className="tabular-nums">
-                    R$ {Math.max(0, (activePeriod?.total || 0) - (activePeriod?.key ? cardPaymentsByPeriod[payingCard.id]?.[activePeriod.key.split("|")[1] || activePeriod.key] || 0 : 0)).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                    R$ {Math.max(0, (activePeriod?.total || 0) - (activePeriod?.endDate ? cardPaymentsByPeriod[payingCard.id]?.[activePeriod.endDate.toISOString().split("T")[0]] || 0 : 0)).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                   </span>
                 </div>
               </div>
