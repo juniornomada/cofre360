@@ -1202,10 +1202,10 @@ function CardsPage() {
                           </div>
                           <div className="flex flex-col items-end gap-0.5 text-[9px] font-semibold text-white shrink-0">
                             <span className="rounded-full bg-black/45 px-1.5 py-0.5 ring-1 ring-white/20 tabular-nums whitespace-nowrap">
-                              F {formatDueDate(currentClose)}
+                              Fecha {formatDueDate(currentClose)}
                             </span>
                             <span className="rounded-full bg-black/45 px-1.5 py-0.5 ring-1 ring-white/20 tabular-nums whitespace-nowrap">
-                              V {formatDueDate(currentDue)}
+                              Vence {formatDueDate(currentDue)}
                             </span>
                           </div>
                         </div>
