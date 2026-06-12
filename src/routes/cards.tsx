@@ -943,13 +943,13 @@ function CardsPage() {
               <div className="rounded-2xl bg-card border border-border/50 p-4">
                 <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Fatura total</p>
                 <p className="mt-1 text-lg font-bold text-foreground tabular-nums">
-                  R$ {totalAllInvoices.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                  {balanceVisible ? `R$ ${totalAllInvoices.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "••••••"}
                 </p>
               </div>
               <div className="rounded-2xl bg-card border border-border/50 p-4">
                 <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Limite disponível</p>
                 <p className="mt-1 text-lg font-bold text-primary tabular-nums">
-                  R$ {totalAvailable.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                  {balanceVisible ? `R$ ${totalAvailable.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "••••••"}
                 </p>
               </div>
             </div>
@@ -1185,7 +1185,7 @@ function CardsPage() {
                         )}
                       </p>
                       <p className="text-base font-extrabold text-white tabular-nums drop-shadow-md truncate" data-testid="fatura-atual-valor">
-                        R$ {remainingThisPeriod.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                        {balanceVisible ? `R$ ${remainingThisPeriod.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "••••••"}
                       </p>
 
                     </div>
@@ -1205,6 +1205,7 @@ function CardsPage() {
                       <p className="text-[10px] text-emerald-300 font-bold tabular-nums drop-shadow-sm truncate">
                         ✓ {(() => {
                           const detailedPayments = activeInvoicePeriod?.key ? cardDetailedPaymentsByPeriod[card.id]?.[activeInvoicePeriod.key.split("|")[1] || activeInvoicePeriod.key] || [] : [];
+                          if (!balanceVisible) return "•••••• pago";
                           if (detailedPayments.length > 1) {
                             const paymentsStr = detailedPayments.map(p => `R$ ${p.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`).join(" + ");
                             return `${paymentsStr} = R$ ${paidThisPeriod.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} pago`;
@@ -1213,7 +1214,7 @@ function CardsPage() {
                         })()}
                       </p>
                       <p className="text-[10px] text-white/80 tabular-nums" title={`Limite total: R$ ${card.card_limit.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`}>
-                        Disponível <span className="font-bold text-white">R$ {Math.max(0, card.card_limit - outstandingBalance).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
+                        Disponível <span className="font-bold text-white">{balanceVisible ? `R$ ${Math.max(0, card.card_limit - outstandingBalance).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "••••••"}</span>
                       </p>
                     </div>
                   ) : (
