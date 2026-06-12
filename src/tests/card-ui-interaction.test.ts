@@ -23,41 +23,36 @@ vi.mock('../integrations/supabase/client', () => ({
 
 // Mock components that might be complex or cause issues in a unit test environment
 vi.mock('@/components/ui/dropdown-menu', () => ({
-  DropdownMenu: ({ children }: any) => <div data-testid="dropdown-menu">{children}</div>,
-  DropdownMenuTrigger: ({ children, asChild, ...props }: any) => <div data-testid="dropdown-trigger" {...props}>{children}</div>,
-  DropdownMenuContent: ({ children }: any) => <div data-testid="dropdown-content">{children}</div>,
-  DropdownMenuItem: ({ children, onClick }: any) => <div data-testid="dropdown-item" onClick={onClick}>{children}</div>,
-  DropdownMenuSeparator: () => <hr />,
+  DropdownMenu: ({ children }: any) => React.createElement('div', { 'data-testid': 'dropdown-menu' }, children),
+  DropdownMenuTrigger: ({ children, asChild, ...props }: any) => React.createElement('div', { 'data-testid': 'dropdown-trigger', ...props }, children),
+  DropdownMenuContent: ({ children }: any) => React.createElement('div', { 'data-testid': 'dropdown-content' }, children),
+  DropdownMenuItem: ({ children, onClick }: any) => React.createElement('div', { 'data-testid': 'dropdown-item', onClick }, children),
+  DropdownMenuSeparator: () => React.createElement('hr'),
 }));
 
 describe('Integração de Interface do Cartão', () => {
   it('deve garantir que o clique no DropdownTrigger não propague para o card', () => {
     const onCardClick = vi.fn();
     const onTriggerClick = vi.fn((e) => {
-      // O componente real deve ter e.stopPropagation()
       if (e.stopPropagation) e.stopPropagation();
-      onTriggerClick.called = true;
     });
-    (onTriggerClick as any).called = false;
 
     // Simulação simplificada da estrutura do componente cards.tsx
     render(
-      <div onClick={onCardClick} data-testid="card-container">
-        <div className="flex items-center gap-1 shrink-0 relative z-30">
-          <div onClick={(e) => e.stopPropagation()}>
-            <div data-testid="dropdown-trigger" onClick={onTriggerClick}>
-              Menu
-            </div>
-          </div>
-        </div>
-      </div>
+      React.createElement('div', { onClick: onCardClick, 'data-testid': 'card-container' },
+        React.createElement('div', { className: "flex items-center gap-1 shrink-0 relative z-30" },
+          React.createElement('div', { onClick: (e: any) => e.stopPropagation() },
+            React.createElement('div', { 'data-testid': 'dropdown-trigger', onClick: onTriggerClick }, 'Menu')
+          )
+        )
+      )
     );
 
     const trigger = screen.getByTestId('dropdown-trigger');
     fireEvent.click(trigger);
 
     expect(onCardClick).not.toHaveBeenCalled();
-    expect((onTriggerClick as any).called).toBe(true);
+    expect(onTriggerClick).toHaveBeenCalled();
   });
 
   it('deve verificar que os valores são ocultados pela camada de privacidade', () => {
@@ -70,48 +65,48 @@ describe('Integração de Interface do Cartão', () => {
       : "••••••";
 
     render(
-      <div className="relative">
-        <p data-testid="card-value">{displayValue}</p>
-        {!balanceVisible && (
-          <div 
-            data-testid="privacy-overlay"
-            style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.1)', pointerEvents: 'none' }}
-          />
-        )}
-      </div>
+      React.createElement('div', { className: "relative" },
+        React.createElement('p', { 'data-testid': 'card-value' }, displayValue),
+        !balanceVisible && React.createElement('div', { 
+          'data-testid': 'privacy-overlay',
+          style: { position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.1)', pointerEvents: 'none' }
+        })
+      )
     );
 
     const valueElement = screen.getByTestId('card-value');
     expect(valueElement.textContent).toBe("••••••");
     
-    // Verifica se a camada visual de "overlay" (bg-black/15) está presente quando oculto
-    // No código real: <div className="absolute inset-0 bg-black/15 pointer-events-none -z-10" />
+    // Verifica se a camada visual de "overlay" está presente quando oculto
     const overlay = screen.getByTestId('privacy-overlay');
-    expect(overlay).toBeDefined();
+    expect(overlay).toBeTruthy();
   });
 
   it('deve garantir que elementos interativos tenham z-index superior para evitar sobreposição de cliques', () => {
     render(
-      <div className="relative">
-        {/* Conteúdo do card com z-index menor */}
-        <div className="relative z-10" data-testid="card-content">
-          Conteúdo Base
-        </div>
-        
-        {/* Botões de ação com z-index maior */}
-        <div className="relative z-30" data-testid="action-buttons">
-          <button data-testid="btn-action">Ação</button>
-        </div>
-      </div>
+      React.createElement('div', { className: "relative" },
+        React.createElement('div', { 
+          className: "relative z-10", 
+          'data-testid': 'card-content',
+          style: { zIndex: 10 }
+        }, 'Conteúdo Base'),
+        React.createElement('div', { 
+          className: "relative z-30", 
+          'data-testid': 'action-buttons',
+          style: { zIndex: 30 }
+        }, 
+          React.createElement('button', { 'data-testid': 'btn-action' }, 'Ação')
+        )
+      )
     );
 
     const content = screen.getByTestId('card-content');
     const actions = screen.getByTestId('action-buttons');
 
-    const contentStyle = window.getComputedStyle(content);
-    const actionsStyle = window.getComputedStyle(actions);
-
-    expect(parseInt(contentStyle.zIndex)).toBe(10);
-    expect(parseInt(actionsStyle.zIndex)).toBe(30);
+    // Em JSDOM o getComputedStyle funciona bem com estilos inline ou definidos em classes se houver CSS carregado.
+    // Como estamos definindo via inline style no teste, ele deve capturar corretamente.
+    expect(content.style.zIndex).toBe('10');
+    expect(actions.style.zIndex).toBe('30');
+    expect(parseInt(actions.style.zIndex)).toBeGreaterThan(parseInt(content.style.zIndex));
   });
 });
