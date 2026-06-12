@@ -979,16 +979,18 @@ function CardsPage() {
                 {cards.map((card, i) => {
       const cardTransactionsFiltered = cardTransactions.filter(t => t.card === card.name);
       const invoicePeriodsCard = groupByBillingCycle(cardTransactionsFiltered, card.closing_day, card.due_day);
-      const activeInvoicePeriod = (invoicePeriodsCard.find(p => p.key === "current") || invoicePeriodsCard[1] || invoicePeriodsCard[0]) ? {
-        ...(invoicePeriodsCard.find(p => p.key === "current") || invoicePeriodsCard[1] || invoicePeriodsCard[0]),
-        label: (invoicePeriodsCard.find(p => p.key === "current") || invoicePeriodsCard[1] || invoicePeriodsCard[0])?.label.split("|")[0]
+      const currentPeriod = invoicePeriodsCard.find(p => p.key === "current") || invoicePeriodsCard[1] || invoicePeriodsCard[0];
+      const activeInvoicePeriod = currentPeriod ? {
+        ...currentPeriod,
+        label: currentPeriod.label.split("|")[0]
       } : null;
       const invoiceRemaining = activeInvoicePeriod?.total || 0;
       const totalUsed = cardTotals[card.name] || 0;
       const initialUsed = card.used || 0;
       const totalPaid = cardPayments[card.id] || 0;
       
-      const paidThisPeriod = activeInvoicePeriod?.key ? (cardPaymentsByPeriod[card.id]?.[activeInvoicePeriod.key.split("|")[1] || activeInvoicePeriod.key] || 0) : 0;
+      const periodKeyForPayment = currentPeriod?.endDate?.toISOString().split("T")[0];
+      const paidThisPeriod = periodKeyForPayment ? (cardPaymentsByPeriod[card.id]?.[periodKeyForPayment] || 0) : 0;
       const outstandingBalance = Math.max(0, (totalUsed + initialUsed) - totalPaid);
       const pct = card.card_limit > 0 ? Math.round((outstandingBalance / card.card_limit) * 100) : 0;
       const isEditing = editingId === card.id;
@@ -1170,7 +1172,7 @@ function CardsPage() {
                 <div className="absolute inset-0 bg-black/15 pointer-events-none -z-10" />
                 <div className="relative">
                   {(() => {
-                    const periodKey = activeInvoicePeriod?.key?.split("|")[1] || activeInvoicePeriod?.key;
+                    const periodKey = currentPeriod?.endDate?.toISOString().split("T")[0];
                     const paidThisPeriod = periodKey ? (cardPaymentsByPeriod[card.id]?.[periodKey] || 0) : 0;
                     const remainingThisPeriod = Math.max(0, invoiceRemaining - paidThisPeriod);
                     const isFullyPaid = invoiceRemaining > 0 && remainingThisPeriod === 0;
