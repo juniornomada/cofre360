@@ -1028,9 +1028,9 @@ function CardsPage() {
                         <Pencil className="h-3 w-3 opacity-0 group-hover/name:opacity-100 transition-opacity ml-1" />
                       </button>
                     )}
-                    <div className="flex items-center gap-1 shrink-0 relative z-20">
+                    <div className="flex items-center gap-1 shrink-0 relative z-30">
                       {isEditing ? (
-                        <div className="flex items-center gap-1 bg-white/20 backdrop-blur-md p-1 rounded-full border border-white/10 shadow-sm">
+                        <div className="flex items-center gap-1 bg-white/20 backdrop-blur-md p-1 rounded-full border border-white/10 shadow-sm" onClick={(e) => e.stopPropagation()}>
                           <button onClick={() => saveEdit(card.id)} className="p-1.5 rounded-full hover:bg-white/20 text-white transition-colors" title="Salvar">
                             <Check className="h-3.5 w-3.5" />
                           </button>
@@ -1039,7 +1039,7 @@ function CardsPage() {
                           </button>
                         </div>
                       ) : (
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                           {deleteConfirm === card.id ? (
                             <div className="flex items-center gap-1 bg-destructive/80 backdrop-blur-md p-1 rounded-full border border-white/10 shadow-sm animate-in zoom-in-95 duration-200">
                               <button onClick={() => handleDelete(card.id)} className="p-1.5 rounded-full hover:bg-white/20 text-white transition-colors">
@@ -1063,13 +1063,13 @@ function CardsPage() {
                                 {card.is_visible ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5 text-white/60" />}
                               </button>
 
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
+                              <DropdownMenu modal={false}>
+                                <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
                                   <button className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors border border-white/10 shadow-sm">
                                     <MoreVertical className="h-3.5 w-3.5" />
                                   </button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="rounded-xl">
+                                <DropdownMenuContent align="end" className="rounded-xl z-[100]" onClick={(e) => e.stopPropagation()}>
                                   <DropdownMenuItem onClick={() => startEdit(card)} className="cursor-pointer">
                                     <Pencil className="h-4 w-4 mr-2" />
                                     Editar cartão
