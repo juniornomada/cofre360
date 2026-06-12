@@ -852,16 +852,18 @@ function CardsPage() {
           // await supabase.from("bank_accounts").update({ balance: account.balance - amount }).eq("id", line.accountId);
           
           // Create transaction for history/debiting from reports
-          await supabase.from("transactions").insert({
+          const { error: txInsError } = await supabase.from("transactions").insert({
             name: paymentName,
             amount: amount,
             type: "expense",
-            category: "Impostos/Taxas > Outros", // Or a dedicated payment category
+            category: "Pagamento de Cartão",
             icon: "💳",
             date: dateFormatted,
             bank_account_id: line.accountId,
             created_at: new Date().toISOString()
           });
+          
+          if (txInsError) throw txInsError;
         }
       }
       
