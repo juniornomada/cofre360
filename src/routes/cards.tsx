@@ -1207,7 +1207,8 @@ function CardsPage() {
                           const detailedPayments = activeInvoicePeriod?.key ? cardDetailedPaymentsByPeriod[card.id]?.[activeInvoicePeriod.key.split("|")[1] || activeInvoicePeriod.key] || [] : [];
                           if (!balanceVisible) return "•••••• pago";
                           if (detailedPayments.length > 1) {
-                            const paymentsStr = detailedPayments.map(p => `R$ ${p.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`).join(" + ");
+                            const sorted = [...detailedPayments].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+                            const paymentsStr = sorted.map(p => `R$ ${p.amount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`).join(" + ");
                             return `${paymentsStr} = R$ ${paidThisPeriod.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} pago`;
                           }
                           return `R$ ${paidThisPeriod.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} pago`;
