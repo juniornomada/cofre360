@@ -831,7 +831,22 @@ function CardsPage() {
       
       toast.success(`${paymentName} de R$ ${paymentTotal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} realizado!`);
       setPayDialogOpen(false);
-      fetchAll();
+      
+      // Refresh local data first for immediate UI update
+      await fetchAll();
+      
+      // If we're paying for a specific card, make sure its transaction list and period breakdown is refreshed
+      if (payingCard) {
+        const { data: updatedTxs } = await supabase
+          .from("transactions")
+          .select("id, name, icon, category, date, amount, type, card, created_at, total_installments, installment_number, installment_group_id")
+          .eq("card", payingCard.name)
+          .order("created_at", { ascending: false });
+        
+        if (updatedTxs) {
+          setCardTransactions((updatedTxs as CardTransaction[]) || []);
+        }
+      }
     } catch (error) {
       console.error("Payment error:", error);
       toast.error("Erro ao processar pagamento");
