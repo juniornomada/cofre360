@@ -87,7 +87,7 @@ export function groupByBillingCycle(txs: CardTransaction[], closingDay: number |
 
   const formatLabel = (prefix: string, endDate: Date) => {
     const dueDate = makeDue(endDate);
-    return `${prefix} (F ${endDate.getDate().toString().padStart(2, '0')}/${(endDate.getMonth() + 1).toString().padStart(2, '0')} e V ${dueDate.getDate().toString().padStart(2, '0')}/${(dueDate.getMonth() + 1).toString().padStart(2, '0')})`;
+    return `${prefix} (F ${endDate.getDate().toString().padStart(2, '0')}/${(endDate.getMonth() + 1).toString().padStart(2, '0')} e V ${dueDate.getDate().toString().padStart(2, '0')}/${(dueDate.getMonth() + 1).toString().padStart(2, '0')})|${endDate.toISOString().split("T")[0]}`;
   };
 
   const periods: InvoicePeriod[] = [

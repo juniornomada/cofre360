@@ -457,7 +457,10 @@ function CardsPage() {
   const invoicePeriods = invoiceCard
     ? groupByBillingCycle(cardTransactions.filter(tx => tx.card === invoiceCard.name), invoiceCard.closing_day, invoiceCard.due_day)
     : [];
-  const activePeriod = invoicePeriods[activeInvoiceIdx] || invoicePeriods[0];
+  const activePeriod = (invoicePeriods[activeInvoiceIdx] || invoicePeriods[0]) ? {
+    ...(invoicePeriods[activeInvoiceIdx] || invoicePeriods[0]),
+    label: (invoicePeriods[activeInvoiceIdx] || invoicePeriods[0])?.label.split("|")[0]
+  } : null;
 
   // Open installment edit dialog for a specific transaction
   const openInstallmentDialog = (tx: CardTransaction) => {
@@ -918,7 +921,10 @@ function CardsPage() {
                 {cards.map((card, i) => {
       const cardTransactionsFiltered = cardTransactions.filter(t => t.card === card.name);
       const invoicePeriodsCard = groupByBillingCycle(cardTransactionsFiltered, card.closing_day, card.due_day);
-      const activeInvoicePeriod = invoicePeriodsCard.find(p => p.key === "current") || invoicePeriodsCard[1] || invoicePeriodsCard[0];
+      const activeInvoicePeriod = (invoicePeriodsCard.find(p => p.key === "current") || invoicePeriodsCard[1] || invoicePeriodsCard[0]) ? {
+        ...(invoicePeriodsCard.find(p => p.key === "current") || invoicePeriodsCard[1] || invoicePeriodsCard[0]),
+        label: (invoicePeriodsCard.find(p => p.key === "current") || invoicePeriodsCard[1] || invoicePeriodsCard[0])?.label.split("|")[0]
+      } : null;
       const invoiceRemaining = activeInvoicePeriod?.total || 0;
       const totalUsed = cardTotals[card.name] || 0;
       const initialUsed = card.used || 0;
@@ -1105,9 +1111,9 @@ function CardsPage() {
                 <div className="relative">
                   <div className="flex justify-between items-start gap-2 mb-1.5">
                     <div className="min-w-0">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-white/90">Fatura {activeInvoicePeriod?.label.split(" (")[0] || "atual"}</p>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-white/90">Fatura {activeInvoicePeriod?.label?.split("|")[0]?.split(" (")[0] || "atual"}</p>
                       <p className="text-base font-extrabold text-white tabular-nums drop-shadow-md truncate" data-testid="fatura-atual-valor">
-                        R$ {invoiceRemaining.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                        R$ {Math.max(0, invoiceRemaining - (activeInvoicePeriod?.key ? cardPaymentsByPeriod[card.id]?.[activeInvoicePeriod.key.split("|")[1] || activeInvoicePeriod.key] || 0 : 0)).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                       </p>
 
                     </div>
@@ -1230,7 +1236,7 @@ function CardsPage() {
                           : "bg-accent/50 text-muted-foreground hover:bg-accent"
                       )}
                     >
-                      {period.label}
+                      {period.label.split("|")[0]}
                     </button>
 
                 ))}
@@ -1397,7 +1403,7 @@ function CardsPage() {
                 <span className="truncate">Pagar Fatura — {payingCard?.name}</span>
                 {invoicePeriods[activeInvoiceIdx] && (
                   <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
-                    Competência: {invoicePeriods[activeInvoiceIdx].label.split(" (")[0]}
+                    Competência: {activePeriod?.label.split(" (")[0]}
                   </span>
                 )}
               </div>
@@ -1430,10 +1436,10 @@ function CardsPage() {
                 <div className="flex justify-between items-start mb-1">
                   <div>
                     <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                      Fatura {activePeriod?.label.split(" (")[0] || "selecionada"}
+                      Fatura {activePeriod?.label?.split("|")[0]?.split(" (")[0] || "selecionada"}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {activePeriod?.label.includes("(") ? "(" + activePeriod.label.split(" (")[1] : ""}
+                      {activePeriod?.label?.split("|")[0]?.includes("(") ? "(" + activePeriod.label.split("|")[0].split(" (")[1] : ""}
                     </p>
                   </div>
                   <span className="text-sm font-bold text-foreground tabular-nums">
@@ -1443,13 +1449,13 @@ function CardsPage() {
                 <div className="flex justify-between text-xs text-muted-foreground mb-1">
                   <span>Já pago</span>
                   <span className="tabular-nums text-primary">
-                    R$ {(activePeriod?.key ? cardPaymentsByPeriod[payingCard.id]?.[activePeriod.key] || 0 : 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                    R$ {(activePeriod?.key ? cardPaymentsByPeriod[payingCard.id]?.[activePeriod.key.split("|")[1] || activePeriod.key] || 0 : 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm font-semibold text-foreground border-t border-border pt-1 mt-1">
                   <span>Restante</span>
                   <span className="tabular-nums">
-                    R$ {Math.max(0, (activePeriod?.total || 0) - (activePeriod?.key ? cardPaymentsByPeriod[payingCard.id]?.[activePeriod.key] || 0 : 0)).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                    R$ {Math.max(0, (activePeriod?.total || 0) - (activePeriod?.key ? cardPaymentsByPeriod[payingCard.id]?.[activePeriod.key.split("|")[1] || activePeriod.key] || 0 : 0)).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                   </span>
                 </div>
               </div>
@@ -1521,9 +1527,9 @@ function CardsPage() {
               <Label className="text-xs text-muted-foreground">Pagar com:</Label>
 
               {bankAccounts.length > 0 && (() => {
-                const currentInvoiceTotal = invoicePeriods[activeInvoiceIdx]?.total || 0;
-                const currentPeriodKey = invoicePeriods[activeInvoiceIdx]?.key;
-                const paidInThisPeriod = currentPeriodKey ? cardPaymentsByPeriod[payingCard.id]?.[currentPeriodKey] || 0 : 0;
+                const currentInvoiceTotal = (invoicePeriods[activeInvoiceIdx] || invoicePeriods[0])?.total || 0;
+                const currentPeriodKey = (invoicePeriods[activeInvoiceIdx] || invoicePeriods[0])?.key;
+                const paidInThisPeriod = currentPeriodKey ? cardPaymentsByPeriod[payingCard.id]?.[currentPeriodKey.split("|")[1] || currentPeriodKey] || 0 : 0;
                 const remaining = Math.max(0, currentInvoiceTotal - paidInThisPeriod);
                 const eligible = bankAccounts.filter((a) => a.balance > 0).sort((a, b) => b.balance - a.balance);
                 const best = eligible[0];
