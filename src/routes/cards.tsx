@@ -328,11 +328,41 @@ function CardsPage() {
 
   useEffect(() => {
     fetchAll();
+    
+    // Subscribe to real-time updates for relevant tables
+    const channel = supabase
+      .channel("cards-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "cards" },
+        () => fetchAll()
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "transactions" },
+        () => fetchAll()
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "card_payments" },
+        () => fetchAll()
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "bank_accounts" },
+        () => fetchAll()
+      )
+      .subscribe();
+
     const onFocus = () => {
       fetchAll();
     };
     window.addEventListener("focus", onFocus);
-    return () => window.removeEventListener("focus", onFocus);
+    
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      supabase.removeChannel(channel);
+    };
   }, [fetchAll]);
 
   const searchParams = Route.useSearch();
