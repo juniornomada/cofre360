@@ -1139,6 +1139,8 @@ function CardsPage() {
                       </span>
                     </div>
                   </div>
+                    );
+                  })()}
                   {totalPaid > 0 ? (
                     <div className="flex items-center justify-between gap-2 mt-1">
                       <p className="text-[10px] text-emerald-300 font-bold tabular-nums drop-shadow-sm truncate">
