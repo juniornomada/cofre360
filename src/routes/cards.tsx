@@ -1158,8 +1158,8 @@ function CardsPage() {
                   ) : null}
                 </div>
 
-              <div className="px-3.5 pb-3 pt-1 text-white relative">
-                <div className="absolute inset-0 bg-black/15 pointer-events-none" />
+              <div className="px-3.5 pb-3 pt-1 text-white relative z-20">
+                <div className="absolute inset-0 bg-black/15 pointer-events-none -z-10" />
                 <div className="relative">
                   {(() => {
                     const paidThisPeriod = activeInvoicePeriod?.key ? (cardPaymentsByPeriod[card.id]?.[activeInvoicePeriod.key.split("|")[1] || activeInvoicePeriod.key] || 0) : 0;
