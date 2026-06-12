@@ -1111,7 +1111,7 @@ function CardsPage() {
                 <div className="relative">
                   <div className="flex justify-between items-start gap-2 mb-1.5">
                     <div className="min-w-0">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-white/90">Fatura {activeInvoicePeriod?.label.split(" (")[0] || "atual"}</p>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-white/90">Fatura {activeInvoicePeriod?.label?.split(" (")[0] || "atual"}</p>
                       <p className="text-base font-extrabold text-white tabular-nums drop-shadow-md truncate" data-testid="fatura-atual-valor">
                         R$ {invoiceRemaining.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                       </p>
@@ -1436,10 +1436,10 @@ function CardsPage() {
                 <div className="flex justify-between items-start mb-1">
                   <div>
                     <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                      Fatura {activePeriod?.label.split(" (")[0] || "selecionada"}
+                      Fatura {activePeriod?.label?.split(" (")[0] || "selecionada"}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {activePeriod?.label.includes("(") ? "(" + activePeriod.label.split(" (")[1] : ""}
+                      {activePeriod?.label?.includes("(") ? "(" + activePeriod.label.split(" (")[1] : ""}
                     </p>
                   </div>
                   <span className="text-sm font-bold text-foreground tabular-nums">
