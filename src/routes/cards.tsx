@@ -1197,7 +1197,7 @@ function CardsPage() {
                               )}
                             </p>
                             <p className="text-base font-extrabold text-white tabular-nums drop-shadow-md truncate" data-testid="fatura-atual-valor">
-                              {balanceVisible ? `R$ ${remainingThisPeriod.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "••••••"}
+                              {balanceVisible ? `R$ ${invoiceRemaining.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "••••••"}
                             </p>
                           </div>
                           <div className="flex flex-col items-end gap-0.5 text-[9px] font-semibold text-white shrink-0">
