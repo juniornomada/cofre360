@@ -1170,72 +1170,76 @@ function CardsPage() {
                 <div className="absolute inset-0 bg-black/15 pointer-events-none -z-10" />
                 <div className="relative">
                   {(() => {
-                    const paidThisPeriod = activeInvoicePeriod?.key ? (cardPaymentsByPeriod[card.id]?.[activeInvoicePeriod.key.split("|")[1] || activeInvoicePeriod.key] || 0) : 0;
+                    const periodKey = activeInvoicePeriod?.key?.split("|")[1] || activeInvoicePeriod?.key;
+                    const paidThisPeriod = periodKey ? (cardPaymentsByPeriod[card.id]?.[periodKey] || 0) : 0;
                     const remainingThisPeriod = Math.max(0, invoiceRemaining - paidThisPeriod);
                     const isFullyPaid = invoiceRemaining > 0 && remainingThisPeriod === 0;
                     const isPartiallyPaid = paidThisPeriod > 0 && remainingThisPeriod > 0;
+                    const detailedPayments = periodKey ? cardDetailedPaymentsByPeriod[card.id]?.[periodKey] || [] : [];
+                    
                     return (
-                  <div className="flex justify-between items-start gap-2 mb-1.5">
-                    <div className="min-w-0">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-white/90 flex items-center gap-1.5 flex-wrap">
-                        Fatura {activeInvoicePeriod?.label?.split("|")[0]?.split(" (")[0] || "atual"}
-                        {isFullyPaid && (
-                          <span className="rounded-full bg-emerald-500/90 text-white text-[8px] font-extrabold uppercase px-1.5 py-0.5 ring-1 ring-white/30 inline-flex items-center gap-0.5 shrink-0">
-                            <CheckCircle2 className="h-2.5 w-2.5" />
-                            Paga total
-                          </span>
-                        )}
-                        {isPartiallyPaid && (
-                          <span className="rounded-full bg-blue-500/90 text-white text-[8px] font-extrabold uppercase px-1.5 py-0.5 ring-1 ring-white/30 inline-flex items-center gap-0.5 shrink-0">
-                            <Receipt className="h-2.5 w-2.5" />
-                            Parcialmente paga
-                          </span>
-                        )}
-                      </p>
-                      <p className="text-base font-extrabold text-white tabular-nums drop-shadow-md truncate" data-testid="fatura-atual-valor">
-                        {balanceVisible ? `R$ ${remainingThisPeriod.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "••••••"}
-                      </p>
+                      <>
+                        <div className="flex justify-between items-start gap-2 mb-1.5">
+                          <div className="min-w-0">
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-white/90 flex items-center gap-1.5 flex-wrap">
+                              Fatura {activeInvoicePeriod?.label?.split("|")[0]?.split(" (")[0] || "atual"}
+                              {isFullyPaid && (
+                                <span className="rounded-full bg-emerald-500/90 text-white text-[8px] font-extrabold uppercase px-1.5 py-0.5 ring-1 ring-white/30 inline-flex items-center gap-0.5 shrink-0">
+                                  <CheckCircle2 className="h-2.5 w-2.5" />
+                                  Paga total
+                                </span>
+                              )}
+                              {isPartiallyPaid && (
+                                <span className="rounded-full bg-blue-500/90 text-white text-[8px] font-extrabold uppercase px-1.5 py-0.5 ring-1 ring-white/30 inline-flex items-center gap-0.5 shrink-0">
+                                  <Receipt className="h-2.5 w-2.5" />
+                                  Parcialmente paga
+                                </span>
+                              )}
+                            </p>
+                            <p className="text-base font-extrabold text-white tabular-nums drop-shadow-md truncate" data-testid="fatura-atual-valor">
+                              {balanceVisible ? `R$ ${remainingThisPeriod.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "••••••"}
+                            </p>
+                          </div>
+                          <div className="flex flex-col items-end gap-0.5 text-[9px] font-semibold text-white shrink-0">
+                            <span className="rounded-full bg-black/45 px-1.5 py-0.5 ring-1 ring-white/20 tabular-nums whitespace-nowrap">
+                              F {formatDueDate(currentClose)}
+                            </span>
+                            <span className="rounded-full bg-black/45 px-1.5 py-0.5 ring-1 ring-white/20 tabular-nums whitespace-nowrap">
+                              V {formatDueDate(currentDue)}
+                            </span>
+                          </div>
+                        </div>
 
-                    </div>
-                    <div className="flex flex-col items-end gap-0.5 text-[9px] font-semibold text-white shrink-0">
-                      <span className="rounded-full bg-black/45 px-1.5 py-0.5 ring-1 ring-white/20 tabular-nums whitespace-nowrap">
-                        F {formatDueDate(currentClose)}
-                      </span>
-                      <span className="rounded-full bg-black/45 px-1.5 py-0.5 ring-1 ring-white/20 tabular-nums whitespace-nowrap">
-                        V {formatDueDate(currentDue)}
-                      </span>
-                    </div>
-                  </div>
+                        {paidThisPeriod > 0 ? (
+                          <div className="flex items-center justify-between gap-2 mt-1">
+                            <p className="text-[10px] text-emerald-300 font-bold tabular-nums drop-shadow-sm truncate">
+                              ✓ {(() => {
+                                if (!balanceVisible) return "•••••• pago";
+                                if (detailedPayments.length > 1) {
+                                  const sorted = [...detailedPayments].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+                                  const paymentsStr = sorted.map(p => `R$ ${p.amount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`).join(" + ");
+                                  return `${paymentsStr} = R$ ${paidThisPeriod.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} pago`;
+                                }
+                                return `R$ ${paidThisPeriod.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} pago`;
+                              })()}
+                            </p>
+                            <p className="text-[10px] text-white/80 tabular-nums" title={`Limite total: R$ ${card.card_limit.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`}>
+                              Disponível <span className="font-bold text-white">{balanceVisible ? `R$ ${Math.max(0, card.card_limit - outstandingBalance).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "••••••"}</span>
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-between gap-2 mt-1">
+                            <p className="text-[10px] text-white/70 tabular-nums">
+                              de R$ {card.card_limit.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                            </p>
+                            <p className="text-[10px] text-white/80 tabular-nums">
+                              Disponível <span className="font-bold text-white">{balanceVisible ? `R$ ${Math.max(0, card.card_limit - outstandingBalance).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "••••••"}</span>
+                            </p>
+                          </div>
+                        )}
+                      </>
                     );
                   })()}
-                  {paidThisPeriod > 0 ? (
-                    <div className="flex items-center justify-between gap-2 mt-1">
-                      <p className="text-[10px] text-emerald-300 font-bold tabular-nums drop-shadow-sm truncate">
-                        ✓ {(() => {
-                          const detailedPayments = activeInvoicePeriod?.key ? cardDetailedPaymentsByPeriod[card.id]?.[activeInvoicePeriod.key.split("|")[1] || activeInvoicePeriod.key] || [] : [];
-                          if (!balanceVisible) return "•••••• pago";
-                          if (detailedPayments.length > 1) {
-                            const sorted = [...detailedPayments].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-                            const paymentsStr = sorted.map(p => `R$ ${p.amount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`).join(" + ");
-                            return `${paymentsStr} = R$ ${paidThisPeriod.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} pago`;
-                          }
-                          return `R$ ${paidThisPeriod.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} pago`;
-                        })()}
-                      </p>
-                      <p className="text-[10px] text-white/80 tabular-nums" title={`Limite total: R$ ${card.card_limit.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`}>
-                        Disponível <span className="font-bold text-white">{balanceVisible ? `R$ ${Math.max(0, card.card_limit - outstandingBalance).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "••••••"}</span>
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-between gap-2 mt-1">
-                      <p className="text-[10px] text-white/70 tabular-nums">
-                        de R$ {card.card_limit.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                      </p>
-                      <p className="text-[10px] text-white/80 tabular-nums">
-                        Disponível <span className="font-bold text-white">R$ {Math.max(0, card.card_limit - outstandingBalance).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
-                      </p>
-                    </div>
-                  )}
                   <div className="flex gap-1.5 mt-2 justify-end">
                     <button
                       onClick={() => openInvoiceDialog(card)}
