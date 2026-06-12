@@ -842,11 +842,14 @@ function CardsPage() {
         const account = bankAccounts.find((a) => a.id === line.accountId);
         const amount = parseFloat(line.amount);
         if (account) {
-          // The account balance in DB already starts with the initial value.
-          // The fetchAll/setBankAccounts logic calculates the "virtual" balance based on transactions.
-          // So we only update the DB balance to match the current virtual balance minus the payment,
-          // ensuring consistency after the new expense transaction is added.
-          await supabase.from("bank_accounts").update({ balance: account.balance - amount }).eq("id", line.accountId);
+          // The application uses a virtual balance system: virtual_balance = account.balance + total_income - total_expenses
+          // The current `account.balance` in the component already reflects this virtual balance.
+          // Since we are about to create a new expense transaction of `amount`, it will automatically be subtracted 
+          // from the virtual balance during the next `fetchAll()`. 
+          // Therefore, we MUST NOT subtract the amount from the `bank_accounts.balance` column in the DB, 
+          // as that would result in a double deduction (once in the base balance and once in the transactions).
+          // We only update the updated_at timestamp or keep the balance as is.
+          // await supabase.from("bank_accounts").update({ balance: account.balance - amount }).eq("id", line.accountId);
           
           // Create transaction for history/debiting from reports
           await supabase.from("transactions").insert({
