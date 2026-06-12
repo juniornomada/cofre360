@@ -1109,11 +1109,24 @@ function CardsPage() {
               <div className="px-3.5 pb-3 pt-1 text-white relative">
                 <div className="absolute inset-0 bg-black/15 pointer-events-none" />
                 <div className="relative">
+                  {(() => {
+                    const paidThisPeriod = activeInvoicePeriod?.key ? cardPaymentsByPeriod[card.id]?.[activeInvoicePeriod.key.split("|")[1] || activeInvoicePeriod.key] || 0 : 0;
+                    const remainingThisPeriod = Math.max(0, invoiceRemaining - paidThisPeriod);
+                    const isFullyPaid = invoiceRemaining > 0 && remainingThisPeriod === 0;
+                    return (
                   <div className="flex justify-between items-start gap-2 mb-1.5">
                     <div className="min-w-0">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-white/90">Fatura {activeInvoicePeriod?.label?.split("|")[0]?.split(" (")[0] || "atual"}</p>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-white/90 flex items-center gap-1.5">
+                        Fatura {activeInvoicePeriod?.label?.split("|")[0]?.split(" (")[0] || "atual"}
+                        {isFullyPaid && (
+                          <span className="rounded-full bg-emerald-500/90 text-white text-[8px] font-extrabold uppercase px-1.5 py-0.5 ring-1 ring-white/30 inline-flex items-center gap-0.5">
+                            <CheckCircle2 className="h-2.5 w-2.5" />
+                            Paga total
+                          </span>
+                        )}
+                      </p>
                       <p className="text-base font-extrabold text-white tabular-nums drop-shadow-md truncate" data-testid="fatura-atual-valor">
-                        R$ {Math.max(0, invoiceRemaining - (activeInvoicePeriod?.key ? cardPaymentsByPeriod[card.id]?.[activeInvoicePeriod.key.split("|")[1] || activeInvoicePeriod.key] || 0 : 0)).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                        R$ {remainingThisPeriod.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                       </p>
 
                     </div>
