@@ -949,7 +949,7 @@ function CardsPage() {
               <div className="rounded-2xl bg-card border border-border/50 p-4">
                 <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Limite disponível</p>
                 <p className="mt-1 text-lg font-bold text-primary tabular-nums">
-                  R$ {totalAvailable.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                  {balanceVisible ? `R$ ${totalAvailable.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "••••••"}
                 </p>
               </div>
             </div>
