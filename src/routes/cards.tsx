@@ -474,7 +474,7 @@ function CardsPage() {
   const openInvoiceDialog = async (card: CardData) => {
     setInvoiceCard(card);
     setInvoiceDialogOpen(true);
-    setActiveInvoiceIdx(0);
+    setActiveInvoiceIdx(1);
     setLoadingTx(true);
     try {
       // Refresh payments / totals so "PAGO" e "COMPOSIÇÃO DA FATURA"
@@ -506,8 +506,15 @@ function CardsPage() {
     ...(invoicePeriods[activeInvoiceIdx] || invoicePeriods[0]),
     label: (invoicePeriods[activeInvoiceIdx] || invoicePeriods[0])?.label.split("|")[0]
   } : null;
-  const activePeriodKey = activePeriod?.endDate?.toISOString().split("T")[0];
-  const activePeriodPayments = (invoiceCard && activePeriodKey) ? cardDetailedPaymentsByPeriod[invoiceCard.id]?.[activePeriodKey] || [] : [];
+  const getInvoicePeriodKey = (period?: InvoicePeriod | null) => period?.endDate?.toISOString().split("T")[0] || "";
+  const getPaymentsForPeriod = (cardId: string | undefined, period?: InvoicePeriod | null) => {
+    const periodKey = getInvoicePeriodKey(period);
+    return cardId && periodKey ? cardDetailedPaymentsByPeriod[cardId]?.[periodKey] || [] : [];
+  };
+  const getPaidTotalForPeriod = (cardId: string | undefined, period?: InvoicePeriod | null) =>
+    getPaymentsForPeriod(cardId, period).reduce((sum, p) => sum + p.amount, 0);
+  const activePeriodKey = getInvoicePeriodKey(activePeriod);
+  const activePeriodPayments = getPaymentsForPeriod(invoiceCard?.id, activePeriod);
 
 
   // Open installment edit dialog for a specific transaction
@@ -752,7 +759,7 @@ function CardsPage() {
        setActiveInvoiceIdx(periodIdx);
      } else {
        // Default to current invoice
-       setActiveInvoiceIdx(0); 
+       setActiveInvoiceIdx(1); 
      }
 
      setPayDialogOpen(true);
@@ -846,7 +853,8 @@ function CardsPage() {
            }
          })()
        }));
-      await supabase.from("card_payments").insert(inserts);
+       const { error: paymentInsertError } = await supabase.from("card_payments").insert(inserts);
+       if (paymentInsertError) throw paymentInsertError;
 
       // 2. Update bank balances and create expense transactions
       for (const line of validLines) {
