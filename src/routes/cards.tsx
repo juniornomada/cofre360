@@ -1528,29 +1528,31 @@ function CardsPage() {
                     R$ {(activePeriod?.total || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                   </span>
                 </div>
-                <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                  <span>Já pago</span>
-                  <span className="tabular-nums text-primary font-medium">
-                    {(() => {
-                      const periodKey = activePeriod?.key?.split("|")[1] || activePeriod?.key;
-                      const payments = periodKey ? cardDetailedPaymentsByPeriod[payingCard.id]?.[periodKey] || [] : [];
-                      const totalPaid = payments.reduce((sum, val) => sum + val, 0);
-                      
-                      if (payments.length > 1) {
-                        const formula = payments
-                          .map(p => `R$ ${p.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`)
-                          .join(" + ");
-                        return (
-                          <div className="flex flex-col items-end">
-                            <span className="text-[9px] text-muted-foreground leading-tight mb-0.5">{formula} =</span>
-                            <span>R$ {totalPaid.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
-                          </div>
-                        );
-                      }
-                      
-                      return `R$ ${totalPaid.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
-                    })()}
-                  </span>
+                <div className="flex flex-col text-xs text-muted-foreground mb-1">
+                  <div className="flex justify-between items-start">
+                    <span>Já pago</span>
+                    <span className="tabular-nums text-primary font-medium">
+                      {(() => {
+                        const periodKey = activePeriod?.key?.split("|")[1] || activePeriod?.key;
+                        const payments = periodKey ? cardDetailedPaymentsByPeriod[payingCard.id]?.[periodKey] || [] : [];
+                        const totalPaid = payments.reduce((sum, val) => sum + val, 0);
+                        
+                        if (payments.length > 1) {
+                          const formula = payments
+                            .map(p => `R$ ${p.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`)
+                            .join(" + ");
+                          return (
+                            <div className="flex flex-col items-end">
+                              <span className="text-[9px] text-muted-foreground leading-tight mb-0.5">{formula} =</span>
+                              <span>R$ {totalPaid.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
+                            </div>
+                          );
+                        }
+                        
+                        return `R$ ${totalPaid.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
+                      })()}
+                    </span>
+                  </div>
                 </div>
                 <div className="flex justify-between text-sm font-semibold text-foreground border-t border-border pt-1 mt-1">
                   <span>Restante</span>
