@@ -1430,26 +1430,26 @@ function CardsPage() {
                 <div className="flex justify-between items-start mb-1">
                   <div>
                     <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                      Fatura {invoicePeriods[activeInvoiceIdx]?.label.split(" (")[0] || "selecionada"}
+                      Fatura {activePeriod?.label.split(" (")[0] || "selecionada"}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {invoicePeriods[activeInvoiceIdx]?.label.includes("(") ? "(" + invoicePeriods[activeInvoiceIdx].label.split(" (")[1] : ""}
+                      {activePeriod?.label.includes("(") ? "(" + activePeriod.label.split(" (")[1] : ""}
                     </p>
                   </div>
                   <span className="text-sm font-bold text-foreground tabular-nums">
-                    R$ {(invoicePeriods[activeInvoiceIdx]?.total || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                    R$ {(activePeriod?.total || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                   </span>
                 </div>
                 <div className="flex justify-between text-xs text-muted-foreground mb-1">
                   <span>Já pago</span>
                   <span className="tabular-nums text-primary">
-                    R$ {(invoicePeriods[activeInvoiceIdx]?.key ? cardPaymentsByPeriod[payingCard.id]?.[invoicePeriods[activeInvoiceIdx].key] || 0 : 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                    R$ {(activePeriod?.key ? cardPaymentsByPeriod[payingCard.id]?.[activePeriod.key] || 0 : 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm font-semibold text-foreground border-t border-border pt-1 mt-1">
                   <span>Restante</span>
                   <span className="tabular-nums">
-                    R$ {Math.max(0, (invoicePeriods[activeInvoiceIdx]?.total || 0) - (invoicePeriods[activeInvoiceIdx]?.key ? cardPaymentsByPeriod[payingCard.id]?.[invoicePeriods[activeInvoiceIdx].key] || 0 : 0)).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                    R$ {Math.max(0, (activePeriod?.total || 0) - (activePeriod?.key ? cardPaymentsByPeriod[payingCard.id]?.[activePeriod.key] || 0 : 0)).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                   </span>
                 </div>
               </div>
@@ -1469,7 +1469,7 @@ function CardsPage() {
                 {showInvoiceDetails && (
                   <div className="px-2.5 pb-2.5 space-y-2 animate-in fade-in slide-in-from-top-1 duration-200">
                     <div className="max-h-[120px] overflow-y-auto space-y-1.5 pr-1 custom-scrollbar">
-                      {invoicePeriods[activeInvoiceIdx]?.transactions.map((tx) => (
+                      {activePeriod?.transactions.map((tx) => (
                         <div key={tx.id} className="flex items-center justify-between gap-1 py-1 border-b border-border/10 last:border-0">
                           <div className="flex items-center gap-1.5 min-w-0 flex-1">
                             <span className="text-[12px] shrink-0 opacity-80">{tx.icon}</span>
@@ -1486,14 +1486,14 @@ function CardsPage() {
                           </span>
                         </div>
                       ))}
-                      {(!invoicePeriods[activeInvoiceIdx]?.transactions || invoicePeriods[activeInvoiceIdx].transactions.length === 0) && (
+                      {(!activePeriod?.transactions || activePeriod.transactions.length === 0) && (
                         <p className="text-center py-2 text-[10px] text-muted-foreground">Nenhuma transação neste período</p>
                       )}
                     </div>
                     
                     <div className="pt-2 border-t border-border/40 space-y-1">
                       {(() => {
-                        const txs = invoicePeriods[activeInvoiceIdx]?.transactions || [];
+                        const txs = activePeriod?.transactions || [];
                         const compras = txs.filter(t => t.type === "expense").reduce((s, t) => s + Number(t.amount), 0);
                         const creditos = txs.filter(t => t.type === "income").reduce((s, t) => s + Number(t.amount), 0);
                         return (
