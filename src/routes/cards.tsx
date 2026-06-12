@@ -1335,25 +1335,49 @@ function CardsPage() {
               </div>
 
               {activePeriod && (
-                <div className="mx-5 mb-3 rounded-xl bg-accent/50 p-3 flex justify-between items-center gap-3">
-                  <div className="flex-1">
-                    <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider block">Total da fatura</span>
-                    <span className="text-sm font-bold text-destructive tabular-nums" data-testid="total-da-fatura-valor">
-                      R$ {activePeriod.total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                    </span>
+                <div className="mx-5 mb-4 flex flex-col gap-3">
+                  <div className="rounded-xl bg-accent/50 p-3 flex justify-between items-center gap-3">
+                    <div className="flex-1">
+                      <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider block">Total da fatura</span>
+                      <span className="text-sm font-bold text-destructive tabular-nums" data-testid="total-da-fatura-valor">
+                        R$ {activePeriod.total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                    {activePeriod.total > 0 && (
+                      <Button 
+                        size="sm" 
+                        className="h-8 rounded-lg text-[11px] font-bold gap-1.5"
+                        onClick={() => {
+                          setInvoiceDialogOpen(false);
+                          openPayDialog(invoiceCard!, activeInvoiceIdx);
+                        }}
+                      >
+                        <Wallet className="h-3.5 w-3.5" />
+                        Pagar
+                      </Button>
+                    )}
                   </div>
-                  {activePeriod.total > 0 && (
-                    <Button 
-                      size="sm" 
-                      className="h-8 rounded-lg text-[11px] font-bold gap-1.5"
-                      onClick={() => {
-                        setInvoiceDialogOpen(false);
-                        openPayDialog(invoiceCard!, activeInvoiceIdx);
-                      }}
-                    >
-                      <Wallet className="h-3.5 w-3.5" />
-                      Pagar
-                    </Button>
+
+                  {activePeriodPayments.length > 0 && (
+                    <div className="rounded-xl bg-emerald-500/5 border border-emerald-500/10 p-3">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Já Pago</span>
+                        <span className="text-sm font-bold text-emerald-600 tabular-nums">
+                          R$ {activePeriodPayments.reduce((sum, p) => sum + p.amount, 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                      <div className="space-y-1.5">
+                        <span className="text-[9px] font-bold text-emerald-600/60 uppercase tracking-wider block border-b border-emerald-500/10 pb-1 mb-1">Composição da Fatura</span>
+                        {activePeriodPayments.map((p, pIdx) => (
+                          <div key={`paid-detail-${pIdx}`} className="flex justify-between items-center text-[10px]">
+                            <span className="text-muted-foreground font-medium">{p.date}</span>
+                            <span className="text-emerald-600 font-bold tabular-nums">
+                              R$ {p.amount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   )}
                 </div>
               )}
@@ -1409,25 +1433,11 @@ function CardsPage() {
                     ))}
 
                     {activePeriodPayments.length > 0 && (
-                      <>
-                        <div className="mt-4 mb-2 flex items-center gap-2">
-                          <div className="h-px flex-1 bg-emerald-100" />
-                          <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest px-2">Pagamentos</span>
-                          <div className="h-px flex-1 bg-emerald-100" />
-                        </div>
-                        {activePeriodPayments.map((p, pIdx) => (
-                          <div key={`payment-${pIdx}`} className="flex items-center gap-2 py-2.5 border-b border-border/50 last:border-0">
-                            <span className="text-lg">💰</span>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-xs font-bold text-emerald-600 truncate">Pagamento de Fatura</p>
-                              <p className="text-[10px] text-muted-foreground">{p.date}</p>
-                            </div>
-                            <span className="text-xs font-bold text-emerald-600 tabular-nums shrink-0">
-                              +R$ {p.amount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                            </span>
-                          </div>
-                        ))}
-                      </>
+                      <div className="mt-4 mb-2 flex items-center gap-2">
+                        <div className="h-px flex-1 bg-border" />
+                        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-2">Lançamentos</span>
+                        <div className="h-px flex-1 bg-border" />
+                      </div>
                     )}
                   </div>
                 )}
