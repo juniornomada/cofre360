@@ -1220,9 +1220,9 @@ function CardsPage() {
                         </div>
 
                         {detailedPayments.length > 1 && (
-                          <div className="mt-1">
-                            <p className="text-[9px] text-emerald-300 font-bold tabular-nums drop-shadow-sm truncate">
-                              ✓ {(() => {
+                          <div className="-mt-0.5 mb-1">
+                            <p className="text-[8px] text-emerald-300 font-bold tabular-nums drop-shadow-sm truncate pl-1">
+                              {(() => {
                                 if (!balanceVisible) return "••••••";
                                 const sorted = [...detailedPayments].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
                                 return sorted.map(p => `R$ ${p.amount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`).join(" + ");
