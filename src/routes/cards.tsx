@@ -712,13 +712,13 @@ function CardsPage() {
      // Fetch transactions to ensure invoicePeriods is populated and accurate
      setLoadingTx(true);
      try {
-       const { data, error } = await supabase
-         .from("transactions")
-         .select("id, name, icon, category, date, amount, type, created_at, total_installments, installment_number, installment_group_id")
-         .eq("card", card.name)
-         .order("created_at", { ascending: false });
-       if (error) throw error;
-       setCardTransactions((data as CardTransaction[]) || []);
+      const { data, error } = await supabase
+        .from("transactions")
+        .select("id, name, icon, category, date, amount, type, card, created_at, total_installments, installment_number, installment_group_id")
+        .eq("card", card.name)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      setCardTransactions((data as CardTransaction[]) || []);
      } catch (error: any) {
        console.error("Error fetching card transactions for payment:", error);
      } finally {
@@ -742,7 +742,7 @@ function CardsPage() {
       // Re-fetch transactions for this specific card to ensure invoice is up to date
       const { data: latestTxs, error: txError } = await supabase
         .from("transactions")
-        .select("id, name, icon, category, date, amount, type, created_at, total_installments, installment_number, installment_group_id")
+        .select("id, name, icon, category, date, amount, type, card, created_at, total_installments, installment_number, installment_group_id")
         .eq("card", payingCard.name)
         .order("created_at", { ascending: false });
 
