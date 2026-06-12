@@ -498,7 +498,7 @@ function CardsPage() {
     ...(invoicePeriods[activeInvoiceIdx] || invoicePeriods[0]),
     label: (invoicePeriods[activeInvoiceIdx] || invoicePeriods[0])?.label.split("|")[0]
   } : null;
-  const activePeriodKey = activePeriod?.endDate?.toISOString().split("T")[0];
+  const activePeriodKey = activePeriod?.key?.split("|")[1] || activePeriod?.key;
   const activePeriodPayments = (invoiceCard && activePeriodKey) ? cardDetailedPaymentsByPeriod[invoiceCard.id]?.[activePeriodKey] || [] : [];
 
 
