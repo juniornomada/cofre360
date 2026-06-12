@@ -88,8 +88,15 @@ describe('Testes E2E de Pagamento de Cartão (Simulados)', () => {
       expect(screen.getByText('Visa Infinite')).toBeInTheDocument();
     });
 
-    // 4. Clicar no botão de pagar (abrir dialog)
-    const payButton = screen.getByText(/Pagar fatura/i);
+    // 4. Clicar no botão de faturas (abrir dialog de faturas)
+    const invoicesButton = screen.getByText(/Faturas/i);
+    fireEvent.click(invoicesButton);
+
+    // 4.1 Clicar no botão de pagar dentro do dialog de faturas
+    await waitFor(() => {
+      expect(screen.getByTestId('total-da-fatura-valor')).toBeInTheDocument();
+    });
+    const payButton = screen.getByText(/Pagar/i);
     fireEvent.click(payButton);
 
     // 5. Verificar badge "Parcial" e o valor pago acumulado
