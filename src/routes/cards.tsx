@@ -1210,32 +1210,33 @@ function CardsPage() {
                           </div>
                         </div>
 
-                        <div className="flex flex-col gap-1.5 mt-1 border-t border-white/10 pt-1">
-                          <div className="flex flex-col gap-0.5 min-w-0 items-start">
-                            <p className="text-[10px] text-white/70 font-medium truncate">
-                              Pago <span className="text-emerald-400 font-bold ml-1">{balanceVisible ? `R$ ${paidThisPeriod.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "••••••"}</span>
-                            </p>
-                            {detailedPayments.length > 1 && (
-                              <p className="text-[8px] text-emerald-300 font-bold tabular-nums drop-shadow-sm truncate">
-                                {(() => {
-                                  if (!balanceVisible) return "••••••";
-                                  const sorted = [...detailedPayments].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-                                  return sorted.map(p => `R$ ${p.amount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`).join(" + ");
-                                })()}
+                        <div className="mt-1 border-t border-white/10 pt-1">
+                          <div className="flex justify-between items-start">
+                            <div className="flex flex-col gap-0.5 min-w-0 items-start">
+                              <p className="text-[10px] text-white/70 font-medium truncate">
+                                Pago <span className="text-emerald-400 font-bold ml-1">{balanceVisible ? `R$ ${paidThisPeriod.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "••••••"}</span>
                               </p>
-                            )}
+                              {detailedPayments.length > 1 && (
+                                <p className="text-[8px] text-emerald-300 font-bold tabular-nums drop-shadow-sm truncate">
+                                  {(() => {
+                                    if (!balanceVisible) return "••••••";
+                                    const sorted = [...detailedPayments].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+                                    return sorted.map(p => `R$ ${p.amount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`).join(" + ");
+                                  })()}
+                                </p>
+                              )}
+                            </div>
+                            <div className="opacity-70">
+                              <p className="text-[9px] text-white/80 tabular-nums">
+                                Disponível <span className="font-bold text-white">{balanceVisible ? `R$ ${Math.max(0, card.card_limit - outstandingBalance).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "••••••"}</span>
+                              </p>
+                            </div>
                           </div>
-                          <div className="flex justify-start">
+                          <div className="flex justify-start mt-0.5">
                             <p className="text-[10px] text-white/70 font-medium">
                               Faltam <span className="text-destructive font-bold ml-1">{balanceVisible ? `R$ ${remainingThisPeriod.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "••••••"}</span>
                             </p>
                           </div>
-                        </div>
-
-                        <div className="flex items-center justify-end mt-1 opacity-70">
-                          <p className="text-[9px] text-white/80 tabular-nums">
-                            Disponível <span className="font-bold text-white">{balanceVisible ? `R$ ${Math.max(0, card.card_limit - outstandingBalance).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "••••••"}</span>
-                          </p>
                         </div>
                       </>
                     );
