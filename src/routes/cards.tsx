@@ -1185,7 +1185,7 @@ function CardsPage() {
                         )}
                       </p>
                       <p className="text-base font-extrabold text-white tabular-nums drop-shadow-md truncate" data-testid="fatura-atual-valor">
-                        R$ {remainingThisPeriod.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                        {balanceVisible ? `R$ ${remainingThisPeriod.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "••••••"}
                       </p>
 
                     </div>
