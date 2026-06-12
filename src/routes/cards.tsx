@@ -1472,11 +1472,23 @@ function CardsPage() {
                   <span>Já pago</span>
                   <span className="tabular-nums text-primary font-medium">
                     {(() => {
-                      const paidAmount = activePeriod?.key ? cardPaymentsByPeriod[payingCard.id]?.[activePeriod.key.split("|")[1] || activePeriod.key] || 0 : 0;
-                      // Find if there are multiple payments to show the breakdown in the title
-                      // We don't have the individual payment records here easily reachable without more complex state,
-                      // but we can at least format the total clearly.
-                      return `R$ ${paidAmount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
+                      const periodKey = activePeriod?.key?.split("|")[1] || activePeriod?.key;
+                      const payments = periodKey ? cardDetailedPaymentsByPeriod[payingCard.id]?.[periodKey] || [] : [];
+                      const totalPaid = payments.reduce((sum, val) => sum + val, 0);
+                      
+                      if (payments.length > 1) {
+                        const formula = payments
+                          .map(p => `R$ ${p.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`)
+                          .join(" + ");
+                        return (
+                          <div className="flex flex-col items-end">
+                            <span className="text-[9px] text-muted-foreground leading-tight mb-0.5">{formula} =</span>
+                            <span>R$ {totalPaid.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
+                          </div>
+                        );
+                      }
+                      
+                      return `R$ ${totalPaid.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
                     })()}
                   </span>
                 </div>
