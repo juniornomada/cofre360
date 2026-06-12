@@ -293,6 +293,7 @@ function CardsPage() {
       if (paymentsRes.data) {
         const paid: Record<string, number> = {};
         const paidByPeriod: Record<string, Record<string, number>> = {};
+        const detailedPaidByPeriod: Record<string, Record<string, number[]>> = {};
         
         for (const p of paymentsRes.data) {
           paid[p.card_id] = (paid[p.card_id] || 0) + Number(p.amount);
@@ -305,12 +306,17 @@ function CardsPage() {
               const periodKey = currentClose.toISOString().split("T")[0];
               
               if (!paidByPeriod[p.card_id]) paidByPeriod[p.card_id] = {};
+              if (!detailedPaidByPeriod[p.card_id]) detailedPaidByPeriod[p.card_id] = {};
+              
               paidByPeriod[p.card_id][periodKey] = (paidByPeriod[p.card_id][periodKey] || 0) + Number(p.amount);
+              if (!detailedPaidByPeriod[p.card_id][periodKey]) detailedPaidByPeriod[p.card_id][periodKey] = [];
+              detailedPaidByPeriod[p.card_id][periodKey].push(Number(p.amount));
             }
           }
         }
         setCardPayments(paid);
         setCardPaymentsByPeriod(paidByPeriod);
+        setCardDetailedPaymentsByPeriod(detailedPaidByPeriod);
       }
     } catch (error: any) {
       console.error("Error fetching data:", error);
