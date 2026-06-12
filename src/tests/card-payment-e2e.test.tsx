@@ -2,7 +2,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import React from 'react';
 import { supabase } from '../integrations/supabase/client';
-import Cards from '../routes/cards';
+import { Route } from '../routes/cards';
+const Cards = Route.options.component!;
+
 
 // Mock do Supabase
 vi.mock('../integrations/supabase/client', () => ({
