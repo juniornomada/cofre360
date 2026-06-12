@@ -943,7 +943,7 @@ function CardsPage() {
               <div className="rounded-2xl bg-card border border-border/50 p-4">
                 <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Fatura total</p>
                 <p className="mt-1 text-lg font-bold text-foreground tabular-nums">
-                  R$ {totalAllInvoices.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                  {balanceVisible ? `R$ ${totalAllInvoices.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "••••••"}
                 </p>
               </div>
               <div className="rounded-2xl bg-card border border-border/50 p-4">
