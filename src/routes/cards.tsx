@@ -341,42 +341,40 @@ function CardsPage() {
 
   useEffect(() => {
     fetchAll();
-    
+
+    // Coalesce rajadas de eventos Realtime (ex.: pagar fatura insere 1 card_payment + N transactions
+    // em sequência, gerando vários eventos quase simultâneos). Sem debounce, cada evento dispara um
+    // fetchAll concorrente e respostas fora de ordem fazem outros cartões piscarem em R$ 0,00.
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+    const scheduleFetch = () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        debounceTimer = null;
+        fetchAll();
+      }, 250);
+    };
+
     // Subscribe to real-time updates for relevant tables
     const channel = supabase
       .channel("cards-realtime")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "cards" },
-        () => fetchAll()
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "transactions" },
-        () => fetchAll()
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "card_payments" },
-        () => fetchAll()
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "bank_accounts" },
-        () => fetchAll()
-      )
+      .on("postgres_changes", { event: "*", schema: "public", table: "cards" }, scheduleFetch)
+      .on("postgres_changes", { event: "*", schema: "public", table: "transactions" }, scheduleFetch)
+      .on("postgres_changes", { event: "*", schema: "public", table: "card_payments" }, scheduleFetch)
+      .on("postgres_changes", { event: "*", schema: "public", table: "bank_accounts" }, scheduleFetch)
       .subscribe();
 
     const onFocus = () => {
-      fetchAll();
+      scheduleFetch();
     };
     window.addEventListener("focus", onFocus);
-    
+
     return () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
       window.removeEventListener("focus", onFocus);
       supabase.removeChannel(channel);
     };
   }, [fetchAll]);
+
 
   const searchParams = Route.useSearch();
   useEffect(() => {
