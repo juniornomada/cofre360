@@ -78,8 +78,8 @@ async function fetchTesouroPrices(codes: string[]): Promise<Record<string, numbe
  */
 export const refreshInvestmentQuotes = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    const { supabase, userId } = context;
+  .handler(async (ctx: any) => {
+    const { supabase, userId } = ctx.context;
 
     const { data: investments, error } = await supabase
       .from("investments")
