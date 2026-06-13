@@ -180,7 +180,8 @@ function AIInsightsDashboard() {
       
       // Simulação de Consistência (Baseado em estrutura e tom)
       let consistency = 100;
-      if (!fullText.includes("R$")) {
+      const hasMonetary = /R\$|BRL|reais|\d+[.,]\d{2}/i.test(fullText);
+      if (!hasMonetary) {
         consistency -= 20;
         findings.push("⚠️ Falta de formatação monetária (R$)");
       }
