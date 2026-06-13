@@ -526,6 +526,57 @@ function CardsPage() {
   const activePeriodKey = getInvoicePeriodKey(activePeriod);
   const activePeriodPayments = getPaymentsForPeriod(invoiceCard?.id, activePeriod);
 
+  // Exclui um pagamento (card_payments) e remove a transação correspondente
+  // criada no banco (categoria "Pagamento de Cartão" com mesmo valor/conta/data),
+  // estornando o débito na conta bancária.
+  const handleDeletePayment = async (payment: { id: string; amount: number; date: string; bank_account_id: string | null }, cardName: string) => {
+    if (!payment?.id) {
+      toast.error("Pagamento sem identificador — não é possível excluir.");
+      return;
+    }
+    const confirmed = window.confirm(
+      `Excluir este pagamento de R$ ${payment.amount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}? A transação correspondente também será removida da conta bancária.`
+    );
+    if (!confirmed) return;
+    setDeletingPaymentId(payment.id);
+    try {
+      const { error: delErr } = await supabase.from("card_payments").delete().eq("id", payment.id);
+      if (delErr) throw delErr;
+
+      // Tenta localizar e remover a transação espelho criada no pagamento.
+      // Formata a data como em handlePaySubmit: "dd MMM" (pt-BR) quando o paid_at é ISO.
+      try {
+        const dt = new Date(payment.date);
+        const monthsAbbr = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
+        const dateFormatted = `${String(dt.getDate()).padStart(2, "0")} ${monthsAbbr[dt.getMonth()]}`;
+        const baseQuery = supabase
+          .from("transactions")
+          .select("id, name")
+          .eq("category", "Pagamento de Cartão")
+          .eq("amount", payment.amount)
+          .eq("date", dateFormatted)
+          .ilike("name", `%${cardName}%`)
+          .limit(1);
+        const { data: matches } = payment.bank_account_id
+          ? await baseQuery.eq("bank_account_id", payment.bank_account_id)
+          : await baseQuery;
+        if (matches && matches[0]) {
+          await supabase.from("transactions").delete().eq("id", matches[0].id);
+        }
+      } catch (e) {
+        console.warn("Não foi possível remover a transação espelho do pagamento:", e);
+      }
+
+      toast.success("Pagamento excluído");
+      await fetchAll();
+    } catch (e: any) {
+      console.error("Erro ao excluir pagamento:", e);
+      toast.error("Erro ao excluir pagamento: " + (e?.message || "desconhecido"));
+    } finally {
+      setDeletingPaymentId(null);
+    }
+  };
+
 
   // Open installment edit dialog for a specific transaction
   const openInstallmentDialog = (tx: CardTransaction) => {
