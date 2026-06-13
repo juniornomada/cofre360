@@ -15,7 +15,7 @@ const SUGGESTIONS = [
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/financial-chat`;
 
-export function FinancialChat({ initialPrompt }: { initialPrompt?: string } = {}) {
+export function FinancialChat({ initialPrompt, suggestions }: { initialPrompt?: string; suggestions?: string[] } = {}) {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -24,6 +24,7 @@ export function FinancialChat({ initialPrompt }: { initialPrompt?: string } = {}
   const scrollRef = useRef<HTMLDivElement>(null);
   const autoSentRef = useRef<string | null>(null);
   const [mounted, setMounted] = useState(false);
+  const activeSuggestions = suggestions ?? SUGGESTIONS;
 
   useEffect(() => {
     setMounted(true);
@@ -206,7 +207,7 @@ export function FinancialChat({ initialPrompt }: { initialPrompt?: string } = {}
                 Sugestões rápidas
               </div>
               <div className="flex flex-wrap gap-2">
-                {SUGGESTIONS.map((s) => (
+                {activeSuggestions.map((s) => (
                   <button
                     key={s}
                     onClick={() => send(s)}
