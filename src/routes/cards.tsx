@@ -1285,7 +1285,7 @@ function CardsPage() {
                               {isPartiallyPaid && (
                                 <span className="rounded-full bg-blue-500/90 text-white text-[8px] font-extrabold uppercase px-1.5 py-0.5 ring-1 ring-white/30 inline-flex items-center justify-center gap-0.5 shrink-0 text-center leading-none">
                                   <CheckCircle2 className="h-2.5 w-2.5" />
-                                  Parcialmente paga
+                                  Paga parcial
                                 </span>
                               )}
                             </p>
