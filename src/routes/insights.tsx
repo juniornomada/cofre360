@@ -396,11 +396,11 @@ function AIInsightsDashboard() {
                             <AlertCircle className="h-4 w-4" />
                             Observações do Validador
                           </h4>
-                          <div className="space-y-1.5">
+                          <div className="flex flex-wrap gap-1.5">
                             {result.findings.map((f, i) => (
-                              <div key={i} className="text-xs p-2 rounded bg-background border border-border">
+                              <span key={i} className="text-xs px-2 py-1 rounded bg-background border border-border whitespace-nowrap">
                                 {f}
-                              </div>
+                              </span>
                             ))}
                           </div>
                         </div>
