@@ -146,21 +146,9 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
        return;
      }
 
-     if (isFirstRender.current) {
-        // On initial open, handle potential clipboard paste (guarded for jsdom/insecure contexts)
-        if (typeof navigator !== "undefined" && navigator.clipboard?.readText) {
-          navigator.clipboard.readText().then(text => {
-            if (text && text.trim()) {
-              setNewTx(prev => ({
-                ...prev,
-                name: text.trim().charAt(0).toUpperCase() + text.trim().slice(1)
-              }));
-              toast.success("Texto colado da área de transferência");
-            }
-          }).catch(() => {
-            // Silently fail if clipboard access is denied
-          });
-        }
+      if (isFirstRender.current) {
+        // Não ler clipboard automaticamente — evita prompt de permissão do navegador.
+        // O usuário pode colar manualmente (Ctrl/Cmd+V) no campo de nome.
         isFirstRender.current = false;
       }
 
