@@ -13,7 +13,10 @@ import {
   ShieldCheck,
   Zap,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Copy,
+  Check
+
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -102,7 +105,76 @@ interface TestResult {
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/financial-chat`;
 
+
+function AIResponseBlock({ content, status }: { content: string; status: TestResult["status"] }) {
+  const [copied, setCopied] = useState(false);
+  const display = content || (status === "running" ? "Processando resposta em tempo real..." : "Nenhuma resposta recebida");
+
+  const handleCopy = async () => {
+    if (!content) return;
+    try {
+      await navigator.clipboard.writeText(content);
+      setCopied(true);
+      toast.success("Resposta copiada");
+      setTimeout(() => setCopied(false), 1800);
+    } catch {
+      toast.error("Não foi possível copiar");
+    }
+  };
+
+  return (
+    <section className="space-y-3">
+      <div className="flex items-center justify-between gap-2">
+        <h4 className="text-sm font-bold flex items-center gap-2">
+          <MessageSquare className="h-4 w-4" />
+          Resposta da IA
+        </h4>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={handleCopy}
+          disabled={!content}
+          className="h-9 gap-2"
+          aria-label="Copiar resposta"
+        >
+          {copied ? <Check className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
+          <span className="hidden sm:inline">{copied ? "Copiado" : "Copiar"}</span>
+        </Button>
+      </div>
+      <article
+        className="rounded-2xl border border-border bg-background shadow-sm transition-colors hover:bg-accent/10"
+      >
+        <div className="max-h-[65vh] overflow-y-auto px-5 py-6 sm:px-8 sm:py-7 md:px-10 md:py-8">
+          <div
+            className={cn(
+              "mx-auto max-w-[70ch]",
+              "prose dark:prose-invert max-w-none sm:max-w-[70ch]",
+              "text-[15px] sm:text-[16px] md:text-[17px]",
+              "leading-[1.7] sm:leading-[1.75]",
+              "tracking-[0.005em] text-foreground/90",
+              "prose-headings:font-semibold prose-headings:text-foreground prose-headings:tracking-tight",
+              "prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg",
+              "prose-p:my-4 prose-p:text-foreground/90",
+              "prose-strong:text-foreground prose-strong:font-semibold",
+              "prose-ul:my-4 prose-ol:my-4 prose-li:my-1.5 prose-li:marker:text-primary",
+              "prose-a:text-primary prose-a:no-underline hover:prose-a:underline",
+              "prose-code:bg-muted prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-[0.9em] prose-code:font-normal prose-code:before:content-none prose-code:after:content-none",
+              "prose-pre:bg-muted prose-pre:border prose-pre:border-border prose-pre:rounded-xl",
+              "prose-blockquote:border-l-primary prose-blockquote:text-foreground/80 prose-blockquote:not-italic",
+              "prose-hr:border-border",
+              "prose-img:rounded-xl prose-img:mx-auto"
+            )}
+          >
+            <ReactMarkdown>{display}</ReactMarkdown>
+          </div>
+        </div>
+      </article>
+    </section>
+  );
+}
+
 function AIInsightsDashboard() {
+
   const [results, setResults] = useState<Record<string, TestResult>>({});
   const [isBatchRunning, setIsBatchRunning] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -390,37 +462,24 @@ function AIInsightsDashboard() {
                 <CardContent className="border-t bg-accent/20 p-6 space-y-6">
                   {result ? (
                     <>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-3">
-                          <h4 className="text-sm font-bold flex items-center gap-2">
-                            <AlertCircle className="h-4 w-4" />
-                            Observações do Validador
-                          </h4>
-                          <div className="space-y-1.5">
-                            {result.findings.map((f, i) => (
-                              <div key={i} className="text-xs p-2 rounded bg-background border border-border">
-                                {f}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div className="space-y-3">
-                          <h4 className="text-sm font-bold flex items-center gap-2">
-                            <MessageSquare className="h-4 w-4" />
-                            Resposta da IA
-                          </h4>
-                          <div className="rounded-xl bg-background border border-border shadow-sm">
-                            <div className="max-h-[60vh] overflow-y-auto p-5 sm:p-6 md:p-7">
-                              <div className="prose prose-sm sm:prose-base dark:prose-invert max-w-[68ch] mx-auto text-[15px] sm:text-base leading-[1.75] tracking-[0.005em] text-foreground/90 prose-headings:font-semibold prose-headings:text-foreground prose-p:my-3 prose-strong:text-foreground prose-strong:font-semibold prose-ul:my-3 prose-ol:my-3 prose-li:my-1 prose-code:bg-muted prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-[0.9em] prose-code:before:content-none prose-code:after:content-none">
-                                <ReactMarkdown>
-                                  {result.response || (result.status === "running" ? "Processando resposta em tempo real..." : "Nenhuma resposta recebida")}
-                                </ReactMarkdown>
-                              </div>
+                      <div className="space-y-3">
+                        <h4 className="text-sm font-bold flex items-center gap-2">
+                          <AlertCircle className="h-4 w-4" />
+                          Observações do Validador
+                        </h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                          {result.findings.map((f, i) => (
+                            <div key={i} className="text-xs p-2 rounded bg-background border border-border">
+                              {f}
                             </div>
-                          </div>
+                          ))}
                         </div>
                       </div>
+
+                      <AIResponseBlock
+                        content={result.response}
+                        status={result.status}
+                      />
                       {result.error && (
                         <div className="p-3 rounded bg-red-500/10 border border-red-500/20 text-red-500 text-xs">
                           Error: {result.error}
