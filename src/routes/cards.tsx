@@ -1240,7 +1240,7 @@ function CardsPage() {
                             </div>
                             <div className="opacity-70">
                               <p className="text-[9px] text-white/80 tabular-nums">
-                                Disponível <span className="font-bold text-white">{balanceVisible ? `R$ ${Math.max(0, card.card_limit - outstandingBalance).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "••••••"}</span>
+                                Disponível <span className="font-bold text-white">{balanceVisible ? `R$ ${availableLimit.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "••••••"}</span>
                               </p>
                             </div>
                           </div>
