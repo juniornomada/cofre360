@@ -23,6 +23,7 @@ import { Route as BudgetRouteImport } from './routes/budget'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AccountsRouteImport } from './routes/accounts'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiPublicHooksRefreshInvestmentsRouteImport } from './routes/api/public/hooks/refresh-investments'
 
 const TransactionsRoute = TransactionsRouteImport.update({
   id: '/transactions',
@@ -94,6 +95,12 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicHooksRefreshInvestmentsRoute =
+  ApiPublicHooksRefreshInvestmentsRouteImport.update({
+    id: '/api/public/hooks/refresh-investments',
+    path: '/api/public/hooks/refresh-investments',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -110,6 +117,7 @@ export interface FileRoutesByFullPath {
   '/reminders': typeof RemindersRoute
   '/shop': typeof ShopRoute
   '/transactions': typeof TransactionsRoute
+  '/api/public/hooks/refresh-investments': typeof ApiPublicHooksRefreshInvestmentsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -126,6 +134,7 @@ export interface FileRoutesByTo {
   '/reminders': typeof RemindersRoute
   '/shop': typeof ShopRoute
   '/transactions': typeof TransactionsRoute
+  '/api/public/hooks/refresh-investments': typeof ApiPublicHooksRefreshInvestmentsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -143,6 +152,7 @@ export interface FileRoutesById {
   '/reminders': typeof RemindersRoute
   '/shop': typeof ShopRoute
   '/transactions': typeof TransactionsRoute
+  '/api/public/hooks/refresh-investments': typeof ApiPublicHooksRefreshInvestmentsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -161,6 +171,7 @@ export interface FileRouteTypes {
     | '/reminders'
     | '/shop'
     | '/transactions'
+    | '/api/public/hooks/refresh-investments'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -177,6 +188,7 @@ export interface FileRouteTypes {
     | '/reminders'
     | '/shop'
     | '/transactions'
+    | '/api/public/hooks/refresh-investments'
   id:
     | '__root__'
     | '/'
@@ -193,6 +205,7 @@ export interface FileRouteTypes {
     | '/reminders'
     | '/shop'
     | '/transactions'
+    | '/api/public/hooks/refresh-investments'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -210,6 +223,7 @@ export interface RootRouteChildren {
   RemindersRoute: typeof RemindersRoute
   ShopRoute: typeof ShopRoute
   TransactionsRoute: typeof TransactionsRoute
+  ApiPublicHooksRefreshInvestmentsRoute: typeof ApiPublicHooksRefreshInvestmentsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -312,6 +326,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/refresh-investments': {
+      id: '/api/public/hooks/refresh-investments'
+      path: '/api/public/hooks/refresh-investments'
+      fullPath: '/api/public/hooks/refresh-investments'
+      preLoaderRoute: typeof ApiPublicHooksRefreshInvestmentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -330,6 +351,7 @@ const rootRouteChildren: RootRouteChildren = {
   RemindersRoute: RemindersRoute,
   ShopRoute: ShopRoute,
   TransactionsRoute: TransactionsRoute,
+  ApiPublicHooksRefreshInvestmentsRoute: ApiPublicHooksRefreshInvestmentsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
