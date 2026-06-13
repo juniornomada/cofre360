@@ -147,20 +147,22 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
      }
 
      if (isFirstRender.current) {
-       // On initial open, handle potential clipboard paste
-       navigator.clipboard.readText().then(text => {
-         if (text && text.trim()) {
-           setNewTx(prev => ({
-             ...prev,
-             name: text.trim().charAt(0).toUpperCase() + text.trim().slice(1)
-           }));
-           toast.success("Texto colado da área de transferência");
-         }
-       }).catch(() => {
-         // Silently fail if clipboard access is denied
-       });
-       isFirstRender.current = false;
-     }
+        // On initial open, handle potential clipboard paste (guarded for jsdom/insecure contexts)
+        if (typeof navigator !== "undefined" && navigator.clipboard?.readText) {
+          navigator.clipboard.readText().then(text => {
+            if (text && text.trim()) {
+              setNewTx(prev => ({
+                ...prev,
+                name: text.trim().charAt(0).toUpperCase() + text.trim().slice(1)
+              }));
+              toast.success("Texto colado da área de transferência");
+            }
+          }).catch(() => {
+            // Silently fail if clipboard access is denied
+          });
+        }
+        isFirstRender.current = false;
+      }
 
     setNameInputMode("none");
     fetchData();
