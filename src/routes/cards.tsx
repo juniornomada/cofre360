@@ -1522,7 +1522,7 @@ function CardsPage() {
                                   </span>
                                   <button
                                     type="button"
-                                    onClick={() => invoiceCard && handleDeletePayment(p, invoiceCard.name)}
+                                    onClick={() => invoiceCard && requestDeletePayment(p, invoiceCard.name)}
                                     disabled={deletingPaymentId === p.id}
                                     className="p-1 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50"
                                     title="Excluir pagamento"
