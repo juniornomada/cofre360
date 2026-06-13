@@ -927,10 +927,10 @@ function CardsPage() {
       .reduce((s, p) => s + (p.total || 0), 0);
   };
   const totalAllInvoices = cards.reduce((sum, c) => {
-    return sum + Math.max(0, sumCurrentAndFuture(c.name, c.closing_day, c.due_day));
+    return sum + sumCurrentAndFuture(c.name, c.closing_day, c.due_day) + (c.used || 0);
   }, 0);
   const totalLimit = cards.reduce((sum, c) => sum + (c.card_limit || 0), 0);
-  const totalAvailable = Math.max(0, totalLimit - totalAllInvoices);
+  const totalAvailable = totalLimit - totalAllInvoices;
 
   return (
     <div className="animate-page-enter flex flex-col gap-5 px-4 pt-6 pb-24">
