@@ -1012,6 +1012,11 @@ function CardsPage() {
       const periodKeyForPayment = currentPeriod?.endDate?.toISOString().split("T")[0];
       const paidThisPeriod = periodKeyForPayment ? (cardPaymentsByPeriod[card.id]?.[periodKeyForPayment] || 0) : 0;
       const outstandingBalance = Math.max(0, (totalUsed + initialUsed) - totalPaid);
+      // Disponível considera apenas lançamentos da fatura ATUAL + FUTURAS (sem deduzir pagamentos)
+      const currentAndFutureTotal = invoicePeriodsCard
+        .filter(p => p.key === "current" || p.key.startsWith("future_"))
+        .reduce((s, p) => s + (p.total || 0), 0);
+      const availableLimit = Math.max(0, card.card_limit - Math.max(0, currentAndFutureTotal + initialUsed));
       const pct = card.card_limit > 0 ? Math.round((outstandingBalance / card.card_limit) * 100) : 0;
       const isEditing = editingId === card.id;
       const today = new Date();
