@@ -1510,13 +1510,29 @@ function CardsPage() {
                           >
                             {activePeriodPayments.map((p, pIdx) => (
                               <li
-                                key={`paid-detail-${pIdx}`}
-                                className="flex justify-between items-center text-[10px]"
+                                key={`paid-detail-${p.id || pIdx}`}
+                                className="group/payrow flex justify-between items-center text-[10px] gap-2"
                               >
                                 <span className="text-muted-foreground font-medium">{format(new Date(p.date), "dd/MM/yyyy")}</span>
-                                <span className="text-emerald-600 font-bold tabular-nums">
-                                  R$ {p.amount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                                </span>
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-emerald-600 font-bold tabular-nums">
+                                    R$ {p.amount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => invoiceCard && handleDeletePayment(p, invoiceCard.name)}
+                                    disabled={deletingPaymentId === p.id}
+                                    className="p-1 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50"
+                                    title="Excluir pagamento"
+                                    aria-label="Excluir pagamento"
+                                  >
+                                    {deletingPaymentId === p.id ? (
+                                      <Loader2 className="h-3 w-3 animate-spin" />
+                                    ) : (
+                                      <Trash2 className="h-3 w-3" />
+                                    )}
+                                  </button>
+                                </div>
                               </li>
                             ))}
                           </ul>
