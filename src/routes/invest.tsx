@@ -28,6 +28,70 @@ interface Investment {
 const typeOptions = ["Renda Fixa", "ETF", "Ações", "FII", "Crypto"];
 const iconOptions = ["🏦", "📊", "🇺🇸", "⛽", "🏢", "₿", "💎", "🪙", "📈", "🏠", "💰", "🔒"];
 
+const INVEST_CATALOG: Array<{
+  title: string;
+  subtitle: string;
+  icon: string;
+  type: string;
+  items: Array<{ name: string; desc: string }>;
+}> = [
+  {
+    title: "Renda Fixa",
+    subtitle: "Baixo risco, rendimento previsível",
+    icon: "🏦",
+    type: "Renda Fixa",
+    items: [
+      { name: "Poupança", desc: "TR + 0,5% a.m. (ou 70% Selic)" },
+      { name: "CDB", desc: "Certificado de Depósito Bancário" },
+      { name: "LCI / LCA", desc: "Isentos de IR para pessoa física" },
+      { name: "Tesouro Selic", desc: "Pós-fixado, liquidez diária" },
+      { name: "Tesouro IPCA+", desc: "Proteção contra inflação" },
+      { name: "Tesouro Prefixado", desc: "Taxa definida na compra" },
+    ],
+  },
+  {
+    title: "Ações - B3",
+    subtitle: "Principais papéis da bolsa brasileira",
+    icon: "📈",
+    type: "Ações",
+    items: [
+      { name: "PETR4", desc: "Petrobras PN" },
+      { name: "VALE3", desc: "Vale ON" },
+      { name: "ITUB4", desc: "Itaú Unibanco PN" },
+      { name: "BBDC4", desc: "Bradesco PN" },
+      { name: "BBAS3", desc: "Banco do Brasil ON" },
+      { name: "ABEV3", desc: "Ambev ON" },
+      { name: "WEGE3", desc: "WEG ON" },
+      { name: "MGLU3", desc: "Magazine Luiza ON" },
+    ],
+  },
+  {
+    title: "Fundos Imobiliários",
+    subtitle: "Renda mensal via aluguéis",
+    icon: "🏢",
+    type: "FII",
+    items: [
+      { name: "HGLG11", desc: "CSHG Logística" },
+      { name: "MXRF11", desc: "Maxi Renda" },
+      { name: "KNRI11", desc: "Kinea Renda Imobiliária" },
+      { name: "XPML11", desc: "XP Malls" },
+    ],
+  },
+  {
+    title: "Criptomoedas",
+    subtitle: "Alta volatilidade, alto potencial",
+    icon: "₿",
+    type: "Crypto",
+    items: [
+      { name: "Bitcoin (BTC)", desc: "A maior criptomoeda do mundo" },
+      { name: "Ethereum (ETH)", desc: "Contratos inteligentes" },
+      { name: "Solana (SOL)", desc: "Alta performance" },
+      { name: "USDT", desc: "Stablecoin atrelada ao dólar" },
+    ],
+  },
+];
+
+
 function InvestPage() {
   const [portfolio, setPortfolio] = useState<Investment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -150,6 +214,44 @@ function InvestPage() {
           <Plus className="h-4 w-4" />
         </button>
       </div>
+
+      {/* Catálogo de investimentos populares no Brasil */}
+      <div className="flex flex-col gap-3 animate-stagger-in" style={{ animationDelay: "40ms" }}>
+        <div>
+          <h2 className="text-sm font-semibold text-foreground">Catálogo de investimentos</h2>
+          <p className="text-[11px] text-muted-foreground">Principais opções do mercado brasileiro</p>
+        </div>
+        {INVEST_CATALOG.map((group) => (
+          <div key={group.title} className="rounded-2xl bg-card p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-lg">{group.icon}</span>
+              <div>
+                <p className="text-sm font-semibold text-foreground">{group.title}</p>
+                <p className="text-[10px] text-muted-foreground">{group.subtitle}</p>
+              </div>
+            </div>
+            <div className="flex flex-col gap-2">
+              {group.items.map((item) => (
+                <button
+                  key={item.name}
+                  onClick={() => {
+                    setNewItem({ name: item.name, icon: group.icon, value: 0, change: 0, type: group.type });
+                    setShowAddDialog(true);
+                  }}
+                  className="interactive-card flex items-center justify-between gap-3 rounded-xl bg-accent/40 px-3 py-2 text-left hover:bg-accent transition-colors"
+                >
+                  <div className="min-w-0">
+                    <p className="text-xs font-medium text-foreground truncate">{item.name}</p>
+                    <p className="text-[10px] text-muted-foreground truncate">{item.desc}</p>
+                  </div>
+                  <Plus className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+
 
       {/* Portfolio summary */}
       <div className="interactive-card rounded-2xl bg-gradient-to-br from-primary/20 to-card p-5 animate-stagger-in" style={{ animationDelay: "60ms" }}>
