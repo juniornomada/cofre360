@@ -16,9 +16,17 @@ async function fetchCryptoPrices(codes: string[]): Promise<Record<string, number
   if (ids.length === 0) return {};
   const url = `https://api.coingecko.com/api/v3/simple/price?ids=${ids.join(",")}&vs_currencies=brl`;
   try {
-    const res = await fetch(url, { headers: { accept: "application/json" } });
-    if (!res.ok) return {};
+    const res = await fetch(url, {
+      headers: { accept: "application/json", "user-agent": "Cofre360/1.0" },
+    });
+    console.log("[crypto] fetch", url, "status=", res.status);
+    if (!res.ok) {
+      const txt = await res.text().catch(() => "");
+      console.error("[crypto] non-ok", res.status, txt.slice(0, 200));
+      return {};
+    }
     const data = (await res.json()) as Record<string, { brl?: number }>;
+    console.log("[crypto] response data=", JSON.stringify(data));
     const map: Record<string, number> = {};
     for (const code of codes) {
       const id = CRYPTO_COINGECKO_IDS[code.toUpperCase()];
