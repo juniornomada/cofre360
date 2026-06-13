@@ -16,9 +16,17 @@ async function fetchCryptoPrices(codes: string[]): Promise<Record<string, number
   if (ids.length === 0) return {};
   const url = `https://api.coingecko.com/api/v3/simple/price?ids=${ids.join(",")}&vs_currencies=brl`;
   try {
-    const res = await fetch(url, { headers: { accept: "application/json" } });
-    if (!res.ok) return {};
+    const res = await fetch(url, {
+      headers: { accept: "application/json", "user-agent": "Cofre360/1.0" },
+    });
+    console.log("[crypto] fetch", url, "status=", res.status);
+    if (!res.ok) {
+      const txt = await res.text().catch(() => "");
+      console.error("[crypto] non-ok", res.status, txt.slice(0, 200));
+      return {};
+    }
     const data = (await res.json()) as Record<string, { brl?: number }>;
+    console.log("[crypto] response data=", JSON.stringify(data));
     const map: Record<string, number> = {};
     for (const code of codes) {
       const id = CRYPTO_COINGECKO_IDS[code.toUpperCase()];
@@ -95,13 +103,18 @@ export const refreshInvestmentQuotes = createServerFn({ method: "POST" })
       .filter((i) => (i.asset_class || "").toLowerCase() === "tesouro" && i.asset_code)
       .map((i) => i.asset_code as string);
 
+    console.log("[refreshQuotes] items=", items.length, "cripto=", cryptoCodes, "tesouro=", tesouroCodes);
+
     const [cryptoPrices, tesouroPrices] = await Promise.all([
       fetchCryptoPrices(cryptoCodes),
       fetchTesouroPrices(tesouroCodes),
     ]);
 
+    console.log("[refreshQuotes] cryptoPrices=", cryptoPrices, "tesouroPrices=", tesouroPrices);
+
     const now = new Date().toISOString();
     let updated = 0;
+    const errors: string[] = [];
     for (const inv of items) {
       const cls = (inv.asset_class || "").toLowerCase();
       const code = inv.asset_code;
@@ -113,8 +126,13 @@ export const refreshInvestmentQuotes = createServerFn({ method: "POST" })
         .from("investments")
         .update({ current_price: price, last_quote_at: now })
         .eq("id", inv.id);
-      if (!upErr) updated++;
+      if (upErr) {
+        console.error("[refreshQuotes] update failed", inv.id, upErr);
+        errors.push(`${code}: ${upErr.message}`);
+      } else {
+        updated++;
+      }
     }
 
-    return { updated, total: items.length };
+    return { updated, total: items.length, cripto: cryptoCodes.length, tesouro: tesouroCodes.length, fetched: { cripto: Object.keys(cryptoPrices).length, tesouro: Object.keys(tesouroPrices).length }, errors };
   });
