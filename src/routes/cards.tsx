@@ -1238,13 +1238,13 @@ function CardsPage() {
                                 Pago <span className="text-emerald-400 font-bold ml-1">{balanceVisible ? `R$ ${paidThisPeriod.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "••••••"}</span>
                               </p>
                             </div>
-                            <div className="opacity-70">
-                              <p className="text-[9px] text-white/80 tabular-nums">
+                            <div className="opacity-70 text-right min-w-0">
+                              <p className="text-[9px] text-white/80 tabular-nums whitespace-nowrap">
                                 Disponível <span className={`font-bold ${availableLimit < 0 ? "text-red-300" : "text-white"}`}>{balanceVisible ? `R$ ${availableLimit.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "••••••"}</span>
                               </p>
                             </div>
                           </div>
-                          <div className="flex justify-start mt-0.5">
+                          <div className="flex justify-start mt-1.5">
                             <p className="text-[10px] text-white/70 font-medium">
                               Faltam <span className="text-destructive font-bold ml-1">{balanceVisible ? `R$ ${remainingThisPeriod.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "••••••"}</span>
                             </p>
