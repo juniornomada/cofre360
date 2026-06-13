@@ -396,12 +396,36 @@ function AIInsightsDashboard() {
                             <AlertCircle className="h-4 w-4" />
                             Observações do Validador
                           </h4>
-                          <div className="flex flex-wrap gap-1.5">
-                            {result.findings.map((f, i) => (
-                              <span key={i} className="text-xs px-2 py-1 rounded bg-background border border-border whitespace-nowrap">
-                                {f}
-                              </span>
-                            ))}
+                          <div className="text-xs p-3 rounded bg-background border border-border space-y-2">
+                            {(() => {
+                              const foundKeywords = result.findings
+                                .map((f) => f.match(/^✅ Encontrou palavra-chave: "(.+)"$/)?.[1])
+                                .filter(Boolean);
+                              const missingKeywords = result.findings
+                                .map((f) => f.match(/^❌ Faltou palavra-chave: "(.+)"$/)?.[1])
+                                .filter(Boolean);
+                              const otherFindings = result.findings.filter(
+                                (f) => !f.includes('palavra-chave:')
+                              );
+
+                              return (
+                                <>
+                                  {foundKeywords.length > 0 && (
+                                    <p className="leading-relaxed">
+                                      ✅ Foram encontradas: {foundKeywords.join(', ')}
+                                    </p>
+                                  )}
+                                  {missingKeywords.length > 0 && (
+                                    <p className="leading-relaxed">
+                                      ❌ Faltaram: {missingKeywords.join(', ')}
+                                    </p>
+                                  )}
+                                  {otherFindings.map((f, i) => (
+                                    <p key={i} className="leading-relaxed">{f}</p>
+                                  ))}
+                                </>
+                              );
+                            })()}
                           </div>
                         </div>
 
