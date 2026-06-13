@@ -28,6 +28,70 @@ interface Investment {
 const typeOptions = ["Renda Fixa", "ETF", "Ações", "FII", "Crypto"];
 const iconOptions = ["🏦", "📊", "🇺🇸", "⛽", "🏢", "₿", "💎", "🪙", "📈", "🏠", "💰", "🔒"];
 
+const INVEST_CATALOG: Array<{
+  title: string;
+  subtitle: string;
+  icon: string;
+  type: string;
+  items: Array<{ name: string; desc: string }>;
+}> = [
+  {
+    title: "Renda Fixa",
+    subtitle: "Baixo risco, rendimento previsível",
+    icon: "🏦",
+    type: "Renda Fixa",
+    items: [
+      { name: "Poupança", desc: "TR + 0,5% a.m. (ou 70% Selic)" },
+      { name: "CDB", desc: "Certificado de Depósito Bancário" },
+      { name: "LCI / LCA", desc: "Isentos de IR para pessoa física" },
+      { name: "Tesouro Selic", desc: "Pós-fixado, liquidez diária" },
+      { name: "Tesouro IPCA+", desc: "Proteção contra inflação" },
+      { name: "Tesouro Prefixado", desc: "Taxa definida na compra" },
+    ],
+  },
+  {
+    title: "Ações - B3",
+    subtitle: "Principais papéis da bolsa brasileira",
+    icon: "📈",
+    type: "Ações",
+    items: [
+      { name: "PETR4", desc: "Petrobras PN" },
+      { name: "VALE3", desc: "Vale ON" },
+      { name: "ITUB4", desc: "Itaú Unibanco PN" },
+      { name: "BBDC4", desc: "Bradesco PN" },
+      { name: "BBAS3", desc: "Banco do Brasil ON" },
+      { name: "ABEV3", desc: "Ambev ON" },
+      { name: "WEGE3", desc: "WEG ON" },
+      { name: "MGLU3", desc: "Magazine Luiza ON" },
+    ],
+  },
+  {
+    title: "Fundos Imobiliários",
+    subtitle: "Renda mensal via aluguéis",
+    icon: "🏢",
+    type: "FII",
+    items: [
+      { name: "HGLG11", desc: "CSHG Logística" },
+      { name: "MXRF11", desc: "Maxi Renda" },
+      { name: "KNRI11", desc: "Kinea Renda Imobiliária" },
+      { name: "XPML11", desc: "XP Malls" },
+    ],
+  },
+  {
+    title: "Criptomoedas",
+    subtitle: "Alta volatilidade, alto potencial",
+    icon: "₿",
+    type: "Crypto",
+    items: [
+      { name: "Bitcoin (BTC)", desc: "A maior criptomoeda do mundo" },
+      { name: "Ethereum (ETH)", desc: "Contratos inteligentes" },
+      { name: "Solana (SOL)", desc: "Alta performance" },
+      { name: "USDT", desc: "Stablecoin atrelada ao dólar" },
+    ],
+  },
+];
+
+
 function InvestPage() {
   const [portfolio, setPortfolio] = useState<Investment[]>([]);
   const [loading, setLoading] = useState(true);
