@@ -244,19 +244,28 @@ function CardsPage() {
     }
   }, [cards]);
 
+  // Concurrency guard: ignora respostas obsoletas e evita estados intermediários
+  // (ex.: um cartão piscando em R$ 0,00 enquanto várias chamadas Realtime correm em paralelo).
+  const fetchSeqRef = useRef(0);
+
   const fetchAll = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
+
+    const seq = ++fetchSeqRef.current;
 
     try {
 
       const [cardsRes, txRes, accountsRes, paymentsRes, allTxRes] = await Promise.all([
         supabase.from("cards").select("*").eq("user_id", session.user.id).order("sort_order", { ascending: true }).order("created_at", { ascending: true }),
-        supabase.from("transactions").select("id, name, amount, date, created_at, card, icon, category, type, total_installments, installment_number, installment_group_id").eq("user_id", session.user.id).not("card", "is", null),
+        supabase.from("transactions").select("id, name, amount, date, created_at, card, icon, category, type, total_installments, installment_number, installment_group_id").eq("user_id", session.user.id).not("card", "is", null).limit(10000),
         supabase.from("bank_accounts").select("*").eq("user_id", session.user.id).order("created_at", { ascending: true }),
-        supabase.from("card_payments").select("card_id, amount, paid_at").eq("user_id", session.user.id),
-        supabase.from("transactions").select("bank_account_id, amount, type, is_visible").eq("user_id", session.user.id).not("bank_account_id", "is", null),
+        supabase.from("card_payments").select("card_id, amount, paid_at").eq("user_id", session.user.id).limit(10000),
+        supabase.from("transactions").select("bank_account_id, amount, type, is_visible").eq("user_id", session.user.id).not("bank_account_id", "is", null).limit(10000),
       ]);
+
+      // Descarta resultado se outra chamada mais recente já foi disparada.
+      if (seq !== fetchSeqRef.current) return;
 
       if (cardsRes.error) throw cardsRes.error;
       if (accountsRes.error) throw accountsRes.error;
@@ -321,12 +330,14 @@ function CardsPage() {
         setCardDetailedPaymentsByPeriod(detailedPaidByPeriod);
       }
     } catch (error: any) {
+      if (seq !== fetchSeqRef.current) return; // resposta obsoleta — não notifica
       console.error("Error fetching data:", error);
       toast.error("Erro ao carregar dados: " + (error.message || "Erro desconhecido"));
     } finally {
       setLoading(false);
     }
   }, []);
+
 
   useEffect(() => {
     fetchAll();
