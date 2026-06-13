@@ -408,10 +408,14 @@ function InvestPage() {
               <div>
                 <label className="text-xs text-muted-foreground mb-1 block">Variação (%)</label>
                 <input
-                  type="number"
-                  step="0.01"
-                  value={editItem.change}
-                  onChange={e => setEditItem({ ...editItem, change: parseFloat(e.target.value) || 0 })}
+                  type="text"
+                  inputMode="decimal"
+                  value={String(editItem.change).replace(".", ",")}
+                  onChange={e => {
+                    const raw = e.target.value.replace(/[^\d,.-]/g, "").replace(",", ".");
+                    setEditItem({ ...editItem, change: raw === "" || raw === "-" ? 0 : (parseFloat(raw) || 0) });
+                  }}
+                  placeholder="0,00"
                   className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground outline-none"
                 />
               </div>
@@ -492,11 +496,14 @@ function InvestPage() {
             <div>
               <label className="text-xs text-muted-foreground mb-1 block">Variação (%)</label>
               <input
-                type="number"
-                step="0.01"
-                value={newItem.change || ""}
-                onChange={e => setNewItem({ ...newItem, change: parseFloat(e.target.value) || 0 })}
-                placeholder="0.00"
+                type="text"
+                inputMode="decimal"
+                value={newItem.change ? String(newItem.change).replace(".", ",") : ""}
+                onChange={e => {
+                  const raw = e.target.value.replace(/[^\d,.-]/g, "").replace(",", ".");
+                  setNewItem({ ...newItem, change: raw === "" || raw === "-" ? 0 : (parseFloat(raw) || 0) });
+                }}
+                placeholder="0,00"
                 className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none"
               />
             </div>
