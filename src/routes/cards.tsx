@@ -148,7 +148,8 @@ function CardsPage() {
   const [cardTotals, setCardTotals] = useState<Record<string, number>>({});
   const [cardPayments, setCardPayments] = useState<Record<string, number>>({});
   const [cardPaymentsByPeriod, setCardPaymentsByPeriod] = useState<Record<string, Record<string, number>>>({});
-  const [cardDetailedPaymentsByPeriod, setCardDetailedPaymentsByPeriod] = useState<Record<string, Record<string, { amount: number, date: string }[]>>>({});
+  const [cardDetailedPaymentsByPeriod, setCardDetailedPaymentsByPeriod] = useState<Record<string, Record<string, { id: string, amount: number, date: string, bank_account_id: string | null }[]>>>({});
+  const [deletingPaymentId, setDeletingPaymentId] = useState<string | null>(null);
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -260,7 +261,7 @@ function CardsPage() {
         supabase.from("cards").select("*").eq("user_id", session.user.id).order("sort_order", { ascending: true }).order("created_at", { ascending: true }),
         supabase.from("transactions").select("id, name, amount, date, created_at, card, icon, category, type, total_installments, installment_number, installment_group_id").eq("user_id", session.user.id).not("card", "is", null).limit(10000),
         supabase.from("bank_accounts").select("*").eq("user_id", session.user.id).order("created_at", { ascending: true }),
-        supabase.from("card_payments").select("card_id, amount, paid_at").eq("user_id", session.user.id).limit(10000),
+        supabase.from("card_payments").select("id, card_id, bank_account_id, amount, paid_at").eq("user_id", session.user.id).limit(10000),
         supabase.from("transactions").select("bank_account_id, amount, type, is_visible").eq("user_id", session.user.id).not("bank_account_id", "is", null).limit(10000),
       ]);
 
@@ -302,7 +303,7 @@ function CardsPage() {
       if (paymentsRes.data) {
         const paid: Record<string, number> = {};
         const paidByPeriod: Record<string, Record<string, number>> = {};
-        const detailedPaidByPeriod: Record<string, Record<string, { amount: number, date: string }[]>> = {};
+        const detailedPaidByPeriod: Record<string, Record<string, { id: string, amount: number, date: string, bank_account_id: string | null }[]>> = {};
         
         for (const p of paymentsRes.data) {
           paid[p.card_id] = (paid[p.card_id] || 0) + Number(p.amount);
@@ -321,7 +322,7 @@ function CardsPage() {
 
               paidByPeriod[p.card_id][periodKey] = (paidByPeriod[p.card_id][periodKey] || 0) + Number(p.amount);
               if (!detailedPaidByPeriod[p.card_id][periodKey]) detailedPaidByPeriod[p.card_id][periodKey] = [];
-              detailedPaidByPeriod[p.card_id][periodKey].push({ amount: Number(p.amount), date: p.paid_at });
+              detailedPaidByPeriod[p.card_id][periodKey].push({ id: (p as any).id, amount: Number(p.amount), date: p.paid_at, bank_account_id: (p as any).bank_account_id ?? null });
             }
           }
         }
@@ -524,6 +525,57 @@ function CardsPage() {
     getPaymentsForPeriod(cardId, period).reduce((sum, p) => sum + p.amount, 0);
   const activePeriodKey = getInvoicePeriodKey(activePeriod);
   const activePeriodPayments = getPaymentsForPeriod(invoiceCard?.id, activePeriod);
+
+  // Exclui um pagamento (card_payments) e remove a transação correspondente
+  // criada no banco (categoria "Pagamento de Cartão" com mesmo valor/conta/data),
+  // estornando o débito na conta bancária.
+  const handleDeletePayment = async (payment: { id: string; amount: number; date: string; bank_account_id: string | null }, cardName: string) => {
+    if (!payment?.id) {
+      toast.error("Pagamento sem identificador — não é possível excluir.");
+      return;
+    }
+    const confirmed = window.confirm(
+      `Excluir este pagamento de R$ ${payment.amount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}? A transação correspondente também será removida da conta bancária.`
+    );
+    if (!confirmed) return;
+    setDeletingPaymentId(payment.id);
+    try {
+      const { error: delErr } = await supabase.from("card_payments").delete().eq("id", payment.id);
+      if (delErr) throw delErr;
+
+      // Tenta localizar e remover a transação espelho criada no pagamento.
+      // Formata a data como em handlePaySubmit: "dd MMM" (pt-BR) quando o paid_at é ISO.
+      try {
+        const dt = new Date(payment.date);
+        const monthsAbbr = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
+        const dateFormatted = `${String(dt.getDate()).padStart(2, "0")} ${monthsAbbr[dt.getMonth()]}`;
+        const baseQuery = supabase
+          .from("transactions")
+          .select("id, name")
+          .eq("category", "Pagamento de Cartão")
+          .eq("amount", payment.amount)
+          .eq("date", dateFormatted)
+          .ilike("name", `%${cardName}%`)
+          .limit(1);
+        const { data: matches } = payment.bank_account_id
+          ? await baseQuery.eq("bank_account_id", payment.bank_account_id)
+          : await baseQuery;
+        if (matches && matches[0]) {
+          await supabase.from("transactions").delete().eq("id", matches[0].id);
+        }
+      } catch (e) {
+        console.warn("Não foi possível remover a transação espelho do pagamento:", e);
+      }
+
+      toast.success("Pagamento excluído");
+      await fetchAll();
+    } catch (e: any) {
+      console.error("Erro ao excluir pagamento:", e);
+      toast.error("Erro ao excluir pagamento: " + (e?.message || "desconhecido"));
+    } finally {
+      setDeletingPaymentId(null);
+    }
+  };
 
 
   // Open installment edit dialog for a specific transaction
@@ -1458,13 +1510,29 @@ function CardsPage() {
                           >
                             {activePeriodPayments.map((p, pIdx) => (
                               <li
-                                key={`paid-detail-${pIdx}`}
-                                className="flex justify-between items-center text-[10px]"
+                                key={`paid-detail-${p.id || pIdx}`}
+                                className="group/payrow flex justify-between items-center text-[10px] gap-2"
                               >
                                 <span className="text-muted-foreground font-medium">{format(new Date(p.date), "dd/MM/yyyy")}</span>
-                                <span className="text-emerald-600 font-bold tabular-nums">
-                                  R$ {p.amount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                                </span>
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-emerald-600 font-bold tabular-nums">
+                                    R$ {p.amount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => invoiceCard && handleDeletePayment(p, invoiceCard.name)}
+                                    disabled={deletingPaymentId === p.id}
+                                    className="p-1 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50"
+                                    title="Excluir pagamento"
+                                    aria-label="Excluir pagamento"
+                                  >
+                                    {deletingPaymentId === p.id ? (
+                                      <Loader2 className="h-3 w-3 animate-spin" />
+                                    ) : (
+                                      <Trash2 className="h-3 w-3" />
+                                    )}
+                                  </button>
+                                </div>
                               </li>
                             ))}
                           </ul>
