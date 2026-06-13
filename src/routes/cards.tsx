@@ -25,6 +25,7 @@ import { BankLogo, bankPresets } from "@/components/BankLogo";
 import { cn, normalizeText } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 
 import {
@@ -150,6 +151,7 @@ function CardsPage() {
   const [cardPaymentsByPeriod, setCardPaymentsByPeriod] = useState<Record<string, Record<string, number>>>({});
   const [cardDetailedPaymentsByPeriod, setCardDetailedPaymentsByPeriod] = useState<Record<string, Record<string, { id: string, amount: number, date: string, bank_account_id: string | null }[]>>>({});
   const [deletingPaymentId, setDeletingPaymentId] = useState<string | null>(null);
+  const [paymentToDelete, setPaymentToDelete] = useState<{ payment: { id: string; amount: number; date: string; bank_account_id: string | null }; cardName: string } | null>(null);
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -529,15 +531,15 @@ function CardsPage() {
   // Exclui um pagamento (card_payments) e remove a transação correspondente
   // criada no banco (categoria "Pagamento de Cartão" com mesmo valor/conta/data),
   // estornando o débito na conta bancária.
-  const handleDeletePayment = async (payment: { id: string; amount: number; date: string; bank_account_id: string | null }, cardName: string) => {
+  const requestDeletePayment = (payment: { id: string; amount: number; date: string; bank_account_id: string | null }, cardName: string) => {
     if (!payment?.id) {
       toast.error("Pagamento sem identificador — não é possível excluir.");
       return;
     }
-    const confirmed = window.confirm(
-      `Excluir este pagamento de R$ ${payment.amount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}? A transação correspondente também será removida da conta bancária.`
-    );
-    if (!confirmed) return;
+    setPaymentToDelete({ payment, cardName });
+  };
+
+  const handleDeletePayment = async (payment: { id: string; amount: number; date: string; bank_account_id: string | null }, cardName: string) => {
     setDeletingPaymentId(payment.id);
     try {
       const { error: delErr } = await supabase.from("card_payments").delete().eq("id", payment.id);
@@ -1520,7 +1522,7 @@ function CardsPage() {
                                   </span>
                                   <button
                                     type="button"
-                                    onClick={() => invoiceCard && handleDeletePayment(p, invoiceCard.name)}
+                                    onClick={() => invoiceCard && requestDeletePayment(p, invoiceCard.name)}
                                     disabled={deletingPaymentId === p.id}
                                     className="p-1 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50"
                                     title="Excluir pagamento"
@@ -2230,6 +2232,43 @@ function CardsPage() {
           />
         )}
       </Suspense>
+
+      <AlertDialog open={!!paymentToDelete} onOpenChange={(open) => { if (!open) setPaymentToDelete(null); }}>
+        <AlertDialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-md mx-auto rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir pagamento?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {paymentToDelete && (
+                <>
+                  Esta ação removerá o pagamento de{" "}
+                  <span className="font-semibold text-foreground">
+                    R$ {paymentToDelete.payment.amount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                  </span>{" "}
+                  em {format(new Date(paymentToDelete.payment.date), "dd/MM/yyyy")} e estornará a transação correspondente na conta bancária. Não é possível desfazer.
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={!!deletingPaymentId}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={!!deletingPaymentId}
+              onClick={async (e) => {
+                e.preventDefault();
+                if (!paymentToDelete) return;
+                const { payment, cardName } = paymentToDelete;
+                await handleDeletePayment(payment, cardName);
+                setPaymentToDelete(null);
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deletingPaymentId ? (
+                <span className="inline-flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Excluindo…</span>
+              ) : "Excluir"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
