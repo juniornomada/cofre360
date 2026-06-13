@@ -927,10 +927,10 @@ function CardsPage() {
       .reduce((s, p) => s + (p.total || 0), 0);
   };
   const totalAllInvoices = cards.reduce((sum, c) => {
-    return sum + Math.max(0, sumCurrentAndFuture(c.name, c.closing_day, c.due_day));
+    return sum + sumCurrentAndFuture(c.name, c.closing_day, c.due_day) + (c.used || 0);
   }, 0);
   const totalLimit = cards.reduce((sum, c) => sum + (c.card_limit || 0), 0);
-  const totalAvailable = Math.max(0, totalLimit - totalAllInvoices);
+  const totalAvailable = totalLimit - totalAllInvoices;
 
   return (
     <div className="animate-page-enter flex flex-col gap-5 px-4 pt-6 pb-24">
@@ -976,7 +976,7 @@ function CardsPage() {
               </div>
               <div className="rounded-2xl bg-card border border-border/50 p-4">
                 <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Limite disponível</p>
-                <p className="mt-1 text-lg font-bold text-primary tabular-nums">
+                <p className={`mt-1 text-lg font-bold tabular-nums ${totalAvailable < 0 ? "text-red-500" : "text-primary"}`}>
                   {balanceVisible ? `R$ ${totalAvailable.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "••••••"}
                 </p>
               </div>
