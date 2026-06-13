@@ -410,10 +410,14 @@ function AIInsightsDashboard() {
                             <MessageSquare className="h-4 w-4" />
                             Resposta da IA
                           </h4>
-                          <div className="text-xs p-4 rounded-xl bg-background border border-border prose prose-sm prose-invert max-w-none">
-                            <ReactMarkdown>
-                              {result.response || (result.status === "running" ? "Processando resposta em tempo real..." : "Nenhuma resposta recebida")}
-                            </ReactMarkdown>
+                          <div className="rounded-xl bg-background border border-border shadow-sm">
+                            <div className="max-h-[60vh] overflow-y-auto p-5 sm:p-6 md:p-7">
+                              <div className="prose prose-sm sm:prose-base dark:prose-invert max-w-[68ch] mx-auto text-[15px] sm:text-base leading-[1.75] tracking-[0.005em] text-foreground/90 prose-headings:font-semibold prose-headings:text-foreground prose-p:my-3 prose-strong:text-foreground prose-strong:font-semibold prose-ul:my-3 prose-ol:my-3 prose-li:my-1 prose-code:bg-muted prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-[0.9em] prose-code:before:content-none prose-code:after:content-none">
+                                <ReactMarkdown>
+                                  {result.response || (result.status === "running" ? "Processando resposta em tempo real..." : "Nenhuma resposta recebida")}
+                                </ReactMarkdown>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </div>
