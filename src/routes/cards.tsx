@@ -1025,7 +1025,8 @@ function CardsPage() {
       const currentAndFutureTotal = invoicePeriodsCard
         .filter(p => p.key === "current" || p.key.startsWith("future_"))
         .reduce((s, p) => s + (p.total || 0), 0);
-      const availableLimit = card.card_limit - (currentAndFutureTotal + initialUsed);
+      // Pagamentos (parciais ou totais) restauram o limite disponível
+      const availableLimit = card.card_limit - (currentAndFutureTotal + initialUsed) + totalPaid;
       const pct = card.card_limit > 0 ? Math.round((outstandingBalance / card.card_limit) * 100) : 0;
       const isEditing = editingId === card.id;
       const today = new Date();
