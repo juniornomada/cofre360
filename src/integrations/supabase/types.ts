@@ -137,7 +137,7 @@ export type Database = {
           bank_account_id: string | null
           card_id: string | null
           created_at: string | null
-          id: string | null
+          id: string
           paid_at: string | null
           user_id: string | null
         }
@@ -146,7 +146,7 @@ export type Database = {
           bank_account_id?: string | null
           card_id?: string | null
           created_at?: string | null
-          id?: string | null
+          id?: string
           paid_at?: string | null
           user_id?: string | null
         }
@@ -155,7 +155,7 @@ export type Database = {
           bank_account_id?: string | null
           card_id?: string | null
           created_at?: string | null
-          id?: string | null
+          id?: string
           paid_at?: string | null
           user_id?: string | null
         }
