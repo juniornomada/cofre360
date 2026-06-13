@@ -531,15 +531,15 @@ function CardsPage() {
   // Exclui um pagamento (card_payments) e remove a transação correspondente
   // criada no banco (categoria "Pagamento de Cartão" com mesmo valor/conta/data),
   // estornando o débito na conta bancária.
-  const handleDeletePayment = async (payment: { id: string; amount: number; date: string; bank_account_id: string | null }, cardName: string) => {
+  const requestDeletePayment = (payment: { id: string; amount: number; date: string; bank_account_id: string | null }, cardName: string) => {
     if (!payment?.id) {
       toast.error("Pagamento sem identificador — não é possível excluir.");
       return;
     }
-    const confirmed = window.confirm(
-      `Excluir este pagamento de R$ ${payment.amount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}? A transação correspondente também será removida da conta bancária.`
-    );
-    if (!confirmed) return;
+    setPaymentToDelete({ payment, cardName });
+  };
+
+  const handleDeletePayment = async (payment: { id: string; amount: number; date: string; bank_account_id: string | null }, cardName: string) => {
     setDeletingPaymentId(payment.id);
     try {
       const { error: delErr } = await supabase.from("card_payments").delete().eq("id", payment.id);
