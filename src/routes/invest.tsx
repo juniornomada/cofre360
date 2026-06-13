@@ -263,6 +263,7 @@ function InvestPage() {
                   key={item.name}
                   onClick={() => {
                     setNewItem({ name: item.name, icon: group.icon, value: 0, change: 0, type: group.type });
+                    setNewItemChangeInput("");
                     setShowAddDialog(true);
                   }}
                   className="interactive-card flex items-center justify-between gap-3 rounded-xl bg-accent/40 px-3 py-2 text-left hover:bg-accent transition-colors"
@@ -353,7 +354,7 @@ function InvestPage() {
               </div>
               <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button
-                  onClick={() => { setEditItem({ ...asset }); setShowEditDialog(true); }}
+                  onClick={() => { setEditItem({ ...asset }); setEditItemChangeInput(formatPercentInput(asset.change)); setShowEditDialog(true); }}
                   className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent text-muted-foreground hover:text-foreground transition-colors"
                 >
                   <Pencil className="h-3.5 w-3.5" />
@@ -437,10 +438,11 @@ function InvestPage() {
                 <input
                   type="text"
                   inputMode="decimal"
-                  value={String(editItem.change).replace(".", ",")}
+                  value={editItemChangeInput}
                   onChange={e => {
-                    const raw = e.target.value.replace(/[^\d,.-]/g, "").replace(",", ".");
-                    setEditItem({ ...editItem, change: raw === "" || raw === "-" ? 0 : (parseFloat(raw) || 0) });
+                    const raw = normalizePercentInput(e.target.value);
+                    setEditItemChangeInput(raw);
+                    setEditItem({ ...editItem, change: parsePercentInput(raw) });
                   }}
                   placeholder="0,00"
                   className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground outline-none"
