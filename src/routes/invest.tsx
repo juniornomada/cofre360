@@ -28,6 +28,22 @@ interface Investment {
 const typeOptions = ["Renda Fixa", "ETF", "Ações", "FII", "Crypto"];
 const iconOptions = ["🏦", "📊", "🇺🇸", "⛽", "🏢", "₿", "💎", "🪙", "📈", "🏠", "💰", "🔒"];
 
+const normalizePercentInput = (value: string) => {
+  const cleaned = value.replace(/[^\d,.-]/g, "");
+  const isNegative = cleaned.trim().startsWith("-");
+  const withoutSigns = cleaned.replace(/-/g, "");
+  const separator = withoutSigns.match(/[,.]/)?.[0] ?? "";
+  const [integerPart = "", ...decimalParts] = withoutSigns.split(/[,.]/);
+  return `${isNegative ? "-" : ""}${integerPart}${separator}${decimalParts.join("")}`;
+};
+
+const parsePercentInput = (value: string) => {
+  const parsed = Number.parseFloat(value.replace(",", "."));
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const formatPercentInput = (value: number) => String(value).replace(".", ",");
+
 const INVEST_CATALOG: Array<{
   title: string;
   subtitle: string;
@@ -100,6 +116,8 @@ function InvestPage() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [editItemChangeInput, setEditItemChangeInput] = useState("");
+  const [newItemChangeInput, setNewItemChangeInput] = useState("");
   const [newItem, setNewItem] = useState<Omit<Investment, "id">>({
     name: "", icon: "📈", value: 0, change: 0, type: "Renda Fixa",
   });
@@ -132,6 +150,7 @@ function InvestPage() {
 
   const handleSaveEdit = async () => {
     if (!editItem) return;
+    const parsedChange = parsePercentInput(editItemChangeInput);
     try {
       const { error } = await supabase
         .from("investments")
@@ -139,7 +158,7 @@ function InvestPage() {
           name: editItem.name,
           icon: editItem.icon,
           value: editItem.value,
-          change: editItem.change,
+          change: parsedChange,
           type: editItem.type,
         })
         .eq("id", editItem.id);
@@ -174,11 +193,13 @@ function InvestPage() {
         toast.error("Faça login para adicionar investimentos");
         return;
       }
-      const { error } = await supabase.from("investments").insert([{ ...newItem, user_id: user.id }]);
+      const investmentToInsert = { ...newItem, change: parsePercentInput(newItemChangeInput), user_id: user.id };
+      const { error } = await supabase.from("investments").insert([investmentToInsert]);
       if (error) throw error;
       toast.success("Investimento adicionado");
       setShowAddDialog(false);
       setNewItem({ name: "", icon: "📈", value: 0, change: 0, type: "Renda Fixa" });
+      setNewItemChangeInput("");
       fetchInvestments();
     } catch (error: any) {
       console.error("Error adding investment:", error);
