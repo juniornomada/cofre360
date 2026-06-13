@@ -1016,7 +1016,7 @@ function CardsPage() {
       const currentAndFutureTotal = invoicePeriodsCard
         .filter(p => p.key === "current" || p.key.startsWith("future_"))
         .reduce((s, p) => s + (p.total || 0), 0);
-      const availableLimit = Math.max(0, card.card_limit - Math.max(0, currentAndFutureTotal + initialUsed));
+      const availableLimit = card.card_limit - (currentAndFutureTotal + initialUsed);
       const pct = card.card_limit > 0 ? Math.round((outstandingBalance / card.card_limit) * 100) : 0;
       const isEditing = editingId === card.id;
       const today = new Date();
@@ -1240,7 +1240,7 @@ function CardsPage() {
                             </div>
                             <div className="opacity-70">
                               <p className="text-[9px] text-white/80 tabular-nums">
-                                Disponível <span className="font-bold text-white">{balanceVisible ? `R$ ${availableLimit.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "••••••"}</span>
+                                Disponível <span className={`font-bold ${availableLimit < 0 ? "text-red-300" : "text-white"}`}>{balanceVisible ? `R$ ${availableLimit.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "••••••"}</span>
                               </p>
                             </div>
                           </div>
