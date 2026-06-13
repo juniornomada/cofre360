@@ -918,10 +918,16 @@ function CardsPage() {
     );
   }
 
+  // Soma dos lançamentos da fatura ATUAL + FUTURAS (não inclui período "past")
+  const sumCurrentAndFuture = (cardName: string, closingDay: number | null, dueDay: number | null) => {
+    const txs = cardTransactions.filter(t => t.card === cardName);
+    const periods = groupByBillingCycle(txs, closingDay, dueDay);
+    return periods
+      .filter(p => p.key === "current" || p.key.startsWith("future_"))
+      .reduce((s, p) => s + (p.total || 0), 0);
+  };
   const totalAllInvoices = cards.reduce((sum, c) => {
-    const used = (cardTotals[c.name] || 0) + (c.used || 0);
-    const paid = cardPayments[c.id] || 0;
-    return sum + Math.max(0, used - paid);
+    return sum + Math.max(0, sumCurrentAndFuture(c.name, c.closing_day, c.due_day));
   }, 0);
   const totalLimit = cards.reduce((sum, c) => sum + (c.card_limit || 0), 0);
   const totalAvailable = Math.max(0, totalLimit - totalAllInvoices);
@@ -1006,6 +1012,11 @@ function CardsPage() {
       const periodKeyForPayment = currentPeriod?.endDate?.toISOString().split("T")[0];
       const paidThisPeriod = periodKeyForPayment ? (cardPaymentsByPeriod[card.id]?.[periodKeyForPayment] || 0) : 0;
       const outstandingBalance = Math.max(0, (totalUsed + initialUsed) - totalPaid);
+      // Disponível considera apenas lançamentos da fatura ATUAL + FUTURAS (sem deduzir pagamentos)
+      const currentAndFutureTotal = invoicePeriodsCard
+        .filter(p => p.key === "current" || p.key.startsWith("future_"))
+        .reduce((s, p) => s + (p.total || 0), 0);
+      const availableLimit = Math.max(0, card.card_limit - Math.max(0, currentAndFutureTotal + initialUsed));
       const pct = card.card_limit > 0 ? Math.round((outstandingBalance / card.card_limit) * 100) : 0;
       const isEditing = editingId === card.id;
       const today = new Date();
@@ -1229,7 +1240,7 @@ function CardsPage() {
                             </div>
                             <div className="opacity-70">
                               <p className="text-[9px] text-white/80 tabular-nums">
-                                Disponível <span className="font-bold text-white">{balanceVisible ? `R$ ${Math.max(0, card.card_limit - outstandingBalance).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "••••••"}</span>
+                                Disponível <span className="font-bold text-white">{balanceVisible ? `R$ ${availableLimit.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "••••••"}</span>
                               </p>
                             </div>
                           </div>
