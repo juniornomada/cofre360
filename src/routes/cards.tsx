@@ -151,6 +151,7 @@ function CardsPage() {
   const [cardPaymentsByPeriod, setCardPaymentsByPeriod] = useState<Record<string, Record<string, number>>>({});
   const [cardDetailedPaymentsByPeriod, setCardDetailedPaymentsByPeriod] = useState<Record<string, Record<string, { id: string, amount: number, date: string, bank_account_id: string | null }[]>>>({});
   const [deletingPaymentId, setDeletingPaymentId] = useState<string | null>(null);
+  const [paymentToDelete, setPaymentToDelete] = useState<{ payment: { id: string; amount: number; date: string; bank_account_id: string | null }; cardName: string } | null>(null);
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
