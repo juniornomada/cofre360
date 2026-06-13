@@ -396,7 +396,7 @@ function AIInsightsDashboard() {
                             <AlertCircle className="h-4 w-4" />
                             Observações do Validador
                           </h4>
-                          <div className="text-xs p-3 rounded bg-background border border-border space-y-2">
+                          <div className="text-xs p-3 rounded bg-background border border-border space-y-2 text-justify">
                             {(() => {
                               const foundKeywords = result.findings
                                 .map((f) => f.match(/^✅ Encontrou palavra-chave: "(.+)"$/)?.[1])
