@@ -151,6 +151,44 @@ function InvestPage() {
         </button>
       </div>
 
+      {/* Catálogo de investimentos populares no Brasil */}
+      <div className="flex flex-col gap-3 animate-stagger-in" style={{ animationDelay: "40ms" }}>
+        <div>
+          <h2 className="text-sm font-semibold text-foreground">Catálogo de investimentos</h2>
+          <p className="text-[11px] text-muted-foreground">Principais opções do mercado brasileiro</p>
+        </div>
+        {INVEST_CATALOG.map((group) => (
+          <div key={group.title} className="rounded-2xl bg-card p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-lg">{group.icon}</span>
+              <div>
+                <p className="text-sm font-semibold text-foreground">{group.title}</p>
+                <p className="text-[10px] text-muted-foreground">{group.subtitle}</p>
+              </div>
+            </div>
+            <div className="flex flex-col gap-2">
+              {group.items.map((item) => (
+                <button
+                  key={item.name}
+                  onClick={() => {
+                    setNewItem({ name: item.name, icon: group.icon, value: 0, change: 0, type: group.type });
+                    setShowAddDialog(true);
+                  }}
+                  className="interactive-card flex items-center justify-between gap-3 rounded-xl bg-accent/40 px-3 py-2 text-left hover:bg-accent transition-colors"
+                >
+                  <div className="min-w-0">
+                    <p className="text-xs font-medium text-foreground truncate">{item.name}</p>
+                    <p className="text-[10px] text-muted-foreground truncate">{item.desc}</p>
+                  </div>
+                  <Plus className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+
+
       {/* Portfolio summary */}
       <div className="interactive-card rounded-2xl bg-gradient-to-br from-primary/20 to-card p-5 animate-stagger-in" style={{ animationDelay: "60ms" }}>
         <p className="text-sm text-muted-foreground">Patrimônio investido</p>
