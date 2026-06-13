@@ -303,7 +303,7 @@ function CardsPage() {
       if (paymentsRes.data) {
         const paid: Record<string, number> = {};
         const paidByPeriod: Record<string, Record<string, number>> = {};
-        const detailedPaidByPeriod: Record<string, Record<string, { amount: number, date: string }[]>> = {};
+        const detailedPaidByPeriod: Record<string, Record<string, { id: string, amount: number, date: string, bank_account_id: string | null }[]>> = {};
         
         for (const p of paymentsRes.data) {
           paid[p.card_id] = (paid[p.card_id] || 0) + Number(p.amount);
@@ -322,7 +322,7 @@ function CardsPage() {
 
               paidByPeriod[p.card_id][periodKey] = (paidByPeriod[p.card_id][periodKey] || 0) + Number(p.amount);
               if (!detailedPaidByPeriod[p.card_id][periodKey]) detailedPaidByPeriod[p.card_id][periodKey] = [];
-              detailedPaidByPeriod[p.card_id][periodKey].push({ amount: Number(p.amount), date: p.paid_at });
+              detailedPaidByPeriod[p.card_id][periodKey].push({ id: (p as any).id, amount: Number(p.amount), date: p.paid_at, bank_account_id: (p as any).bank_account_id ?? null });
             }
           }
         }
