@@ -207,7 +207,7 @@ export function FinancialChat({ initialPrompt, suggestions }: { initialPrompt?: 
                 Sugestões rápidas
               </div>
               <div className="flex flex-wrap gap-2">
-                {SUGGESTIONS.map((s) => (
+                {activeSuggestions.map((s) => (
                   <button
                     key={s}
                     onClick={() => send(s)}
