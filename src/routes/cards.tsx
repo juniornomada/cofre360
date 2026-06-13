@@ -918,10 +918,16 @@ function CardsPage() {
     );
   }
 
+  // Soma dos lançamentos da fatura ATUAL + FUTURAS (não inclui período "past")
+  const sumCurrentAndFuture = (cardName: string, closingDay: number | null, dueDay: number | null) => {
+    const txs = cardTransactions.filter(t => t.card === cardName);
+    const periods = groupByBillingCycle(txs, closingDay, dueDay);
+    return periods
+      .filter(p => p.key === "current" || p.key.startsWith("future_"))
+      .reduce((s, p) => s + (p.total || 0), 0);
+  };
   const totalAllInvoices = cards.reduce((sum, c) => {
-    const used = (cardTotals[c.name] || 0) + (c.used || 0);
-    const paid = cardPayments[c.id] || 0;
-    return sum + Math.max(0, used - paid);
+    return sum + Math.max(0, sumCurrentAndFuture(c.name, c.closing_day, c.due_day));
   }, 0);
   const totalLimit = cards.reduce((sum, c) => sum + (c.card_limit || 0), 0);
   const totalAvailable = Math.max(0, totalLimit - totalAllInvoices);
