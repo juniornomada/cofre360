@@ -2232,6 +2232,43 @@ function CardsPage() {
           />
         )}
       </Suspense>
+
+      <AlertDialog open={!!paymentToDelete} onOpenChange={(open) => { if (!open) setPaymentToDelete(null); }}>
+        <AlertDialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-md mx-auto rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir pagamento?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {paymentToDelete && (
+                <>
+                  Esta ação removerá o pagamento de{" "}
+                  <span className="font-semibold text-foreground">
+                    R$ {paymentToDelete.payment.amount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                  </span>{" "}
+                  em {format(new Date(paymentToDelete.payment.date), "dd/MM/yyyy")} e estornará a transação correspondente na conta bancária. Não é possível desfazer.
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={!!deletingPaymentId}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={!!deletingPaymentId}
+              onClick={async (e) => {
+                e.preventDefault();
+                if (!paymentToDelete) return;
+                const { payment, cardName } = paymentToDelete;
+                await handleDeletePayment(payment, cardName);
+                setPaymentToDelete(null);
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deletingPaymentId ? (
+                <span className="inline-flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Excluindo…</span>
+              ) : "Excluir"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
