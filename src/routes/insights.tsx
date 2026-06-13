@@ -390,7 +390,7 @@ function AIInsightsDashboard() {
                 <CardContent className="border-t bg-accent/20 p-6 space-y-6">
                   {result ? (
                     <>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="flex flex-col gap-6">
                         <div className="space-y-3">
                           <h4 className="text-sm font-bold flex items-center gap-2">
                             <AlertCircle className="h-4 w-4" />
