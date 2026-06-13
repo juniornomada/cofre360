@@ -41,19 +41,29 @@ interface TestCase {
   category: "Resumo" | "Categorias" | "Filtros" | "Comparação";
 }
 
+const MONTH_NAMES = [
+  "janeiro", "fevereiro", "março", "abril", "maio", "junho",
+  "julho", "agosto", "setembro", "outubro", "novembro", "dezembro",
+];
+
+const now = new Date();
+const currentMonth = MONTH_NAMES[now.getMonth()];
+const previousMonth = MONTH_NAMES[(now.getMonth() + 11) % 12];
+const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
 const TEST_SUITE: TestCase[] = [
   {
     id: "1",
-    name: "Resumo Geral de Abril",
-    query: "Qual foi meu resumo financeiro de abril?",
-    expectedKeywords: ["abril", "receitas", "despesas", "saldo"],
+    name: `Resumo Geral de ${capitalize(currentMonth)}`,
+    query: `Qual foi meu resumo financeiro de ${currentMonth}?`,
+    expectedKeywords: [currentMonth, "receitas", "despesas", "saldo"],
     category: "Resumo",
   },
   {
     id: "2",
-    name: "Gasto com Alimentação (Abril)",
-    query: "Quanto eu gastei com alimentação em abril?",
-    expectedKeywords: ["alimentação", "abril", "R$"],
+    name: `Gasto com Alimentação (${capitalize(currentMonth)})`,
+    query: `Quanto eu gastei com alimentação em ${currentMonth}?`,
+    expectedKeywords: ["alimentação", currentMonth, "R$"],
     category: "Categorias",
   },
   {
@@ -66,8 +76,8 @@ const TEST_SUITE: TestCase[] = [
   {
     id: "4",
     name: "Busca por Nome Específico",
-    query: "Quanto gastei com Mercado Pago em março?",
-    expectedKeywords: ["mercado pago", "março"],
+    query: `Quanto gastei com Mercado Pago em ${previousMonth}?`,
+    expectedKeywords: ["mercado pago", previousMonth],
     category: "Filtros",
   },
   {
