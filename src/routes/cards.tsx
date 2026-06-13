@@ -1249,6 +1249,14 @@ function CardsPage() {
                               Faltam <span className="text-destructive font-bold ml-1">{balanceVisible ? `R$ ${remainingThisPeriod.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "••••••"}</span>
                             </p>
                           </div>
+                          {availableLimit < 0 && (
+                            <div className="flex justify-start mt-2">
+                              <span className="rounded-full bg-red-600 text-white text-[8px] font-extrabold uppercase px-1.5 py-0.5 ring-1 ring-white/30 inline-flex items-center gap-0.5">
+                                <AlertCircle className="h-2.5 w-2.5" />
+                                Limite estourado
+                              </span>
+                            </div>
+                          )}
                           {isPartiallyPaid && (
                             <div className="flex justify-start mt-4">
                               <span className="rounded-full bg-blue-500/90 text-white text-[8px] font-extrabold uppercase px-1.5 py-0.5 ring-1 ring-white/30 inline-flex items-center gap-0.5">
