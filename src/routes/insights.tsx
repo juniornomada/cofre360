@@ -13,7 +13,10 @@ import {
   ShieldCheck,
   Zap,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Copy,
+  Check
+
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
