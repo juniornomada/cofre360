@@ -169,14 +169,20 @@ function InvestPage() {
 
   const handleAdd = async () => {
     try {
-      const { error } = await supabase.from("investments").insert([newItem]);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error("Faça login para adicionar investimentos");
+        return;
+      }
+      const { error } = await supabase.from("investments").insert([{ ...newItem, user_id: user.id }]);
       if (error) throw error;
       toast.success("Investimento adicionado");
       setShowAddDialog(false);
       setNewItem({ name: "", icon: "📈", value: 0, change: 0, type: "Renda Fixa" });
       fetchInvestments();
     } catch (error: any) {
-      toast.error("Erro ao adicionar");
+      console.error("Error adding investment:", error);
+      toast.error(error?.message || "Erro ao adicionar");
     }
   };
 

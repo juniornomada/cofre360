@@ -278,6 +278,42 @@ export type Database = {
         }
         Relationships: []
       }
+      investments: {
+        Row: {
+          change: number
+          created_at: string
+          icon: string
+          id: string
+          name: string
+          type: string
+          updated_at: string
+          user_id: string
+          value: number
+        }
+        Insert: {
+          change?: number
+          created_at?: string
+          icon?: string
+          id?: string
+          name: string
+          type?: string
+          updated_at?: string
+          user_id: string
+          value?: number
+        }
+        Update: {
+          change?: number
+          created_at?: string
+          icon?: string
+          id?: string
+          name?: string
+          type?: string
+          updated_at?: string
+          user_id?: string
+          value?: number
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           balance_visible: boolean | null
