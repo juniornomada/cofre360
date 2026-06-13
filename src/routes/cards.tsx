@@ -939,9 +939,9 @@ function CardsPage() {
     return sum + sumCurrentAndFuture(c.name, c.closing_day, c.due_day) + (c.used || 0);
   }, 0);
   const totalLimit = cards.reduce((sum, c) => sum + (c.card_limit || 0), 0);
-  // Pagamentos (parciais ou totais) restauram o limite disponível consolidado
+  // Regra definida pelo usuário: limite − (compras + pagamentos)
   const totalPaidAll = cards.reduce((sum, c) => sum + (cardPayments[c.id] || 0), 0);
-  const totalAvailable = totalLimit - totalAllInvoices + totalPaidAll;
+  const totalAvailable = totalLimit - (totalAllInvoices + totalPaidAll);
 
   return (
     <div className="animate-page-enter flex flex-col gap-5 px-4 pt-6 pb-24">
