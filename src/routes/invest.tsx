@@ -157,10 +157,12 @@ function InvestPage() {
         <p className="text-2xl font-bold text-foreground tabular-nums mt-1">
           R$ {totalValue.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
         </p>
-        <div className="mt-2 flex items-center gap-1">
-          <TrendingUp className="h-3 w-3 text-primary" />
-          <span className="text-xs font-medium text-primary">+R$ 320,00 (1.0%) este mês</span>
-        </div>
+        {totalValue > 0 && (
+          <div className="mt-2 flex items-center gap-1">
+            <TrendingUp className="h-3 w-3 text-primary" />
+            <span className="text-xs font-medium text-primary">+R$ 320,00 (1.0%) este mês</span>
+          </div>
+        )}
       </div>
 
       {/* Asset allocation */}
