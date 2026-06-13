@@ -527,10 +527,11 @@ function InvestPage() {
               <input
                 type="text"
                 inputMode="decimal"
-                value={newItem.change ? String(newItem.change).replace(".", ",") : ""}
+                value={newItemChangeInput}
                 onChange={e => {
-                  const raw = e.target.value.replace(/[^\d,.-]/g, "").replace(",", ".");
-                  setNewItem({ ...newItem, change: raw === "" || raw === "-" ? 0 : (parseFloat(raw) || 0) });
+                  const raw = normalizePercentInput(e.target.value);
+                  setNewItemChangeInput(raw);
+                  setNewItem({ ...newItem, change: parsePercentInput(raw) });
                 }}
                 placeholder="0,00"
                 className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none"
