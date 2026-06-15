@@ -19,8 +19,15 @@
        - name: Install dependencies
          run: bun install
  
-       - name: Run Accessibility & Component Tests
+      - name: Run Accessibility & Component Tests
          run: npm test
+ 
+       - name: Supabase Auth security check (pre-deploy)
+         env:
+           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+           SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+           SKIP_SUPABASE_AUTH_CHECK: ${{ secrets.SUPABASE_ACCESS_TOKEN == '' && '1' || '' }}
+         run: node scripts/check-supabase-auth.mjs
  
        - name: Build check
          run: bun run build
