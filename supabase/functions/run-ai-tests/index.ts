@@ -102,16 +102,43 @@ serve(async (req) => {
     const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 
+    // Require service-role (internal/cron) or an authenticated user.
+    const authHeader = req.headers.get("Authorization") ?? "";
+    const token = authHeader.toLowerCase().startsWith("bearer ")
+      ? authHeader.slice(7).trim()
+      : "";
+    const isServiceRole = !!token && token === SERVICE_KEY;
+    if (!isServiceRole) {
+      if (!token) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const userClient = createClient(SUPABASE_URL, ANON_KEY, {
+        global: { headers: { Authorization: `Bearer ${token}` } },
+        auth: { persistSession: false, autoRefreshToken: false },
+      });
+      const { data: userData, error: userErr } = await userClient.auth.getUser();
+      if (userErr || !userData?.user) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
     let trigger = "scheduled";
     try {
       const body = await req.json();
-      if (body?.trigger) trigger = String(body.trigger);
+      if (body?.trigger) trigger = String(body.trigger).slice(0, 64);
     } catch (_) {}
 
     const chatUrl = `${SUPABASE_URL}/functions/v1/financial-chat`;
     const results = [];
     for (const t of TEST_SUITE) {
-      results.push(await runOne(t, chatUrl, ANON_KEY));
+      // Forward the caller token so financial-chat's auth check passes.
+      results.push(await runOne(t, chatUrl, token));
     }
 
     const total = results.length;
