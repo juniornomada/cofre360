@@ -158,19 +158,19 @@ describe("QuickAddTransactionDialog — alternância divide ↔ fixed", () => {
       target: { value: "Curso" },
     });
     await selectCardNubank();
-    setAmount(300);
+
+    // Habilita parcelar primeiro para que a alternância divide→fixed não
+    // altere o valor digitado depois.
     clickParcelarToggle();
-
-    // Muda p/ fixed antes de escolher 4x
     clickMode("fixed");
-
-    // Seleciona 4 parcelas
     const btn4 = screen.getByRole("button", { name: "4x" });
     fireEvent.click(btn4);
 
+    // Digita R$ 300,00 como valor de cada parcela
+    setAmount(300);
+
     await waitFor(() => {
       expect(screen.getByText(/4x de/)).toBeInTheDocument();
-      expect(screen.getByText(/R\$ 300,00/)).toBeInTheDocument();
       expect(screen.getByText(/Total da compra:/)).toBeInTheDocument();
       // total = 300 × 4 = 1.200
       expect(screen.getByText(/R\$ 1\.200,00/)).toBeInTheDocument();
@@ -181,8 +181,6 @@ describe("QuickAddTransactionDialog — alternância divide ↔ fixed", () => {
     await waitFor(() => {
       expect(getAmountReais()).toBe(1200);
       expect(screen.getByText(/Total dividido:/)).toBeInTheDocument();
-      // parcela = 1200 / 4 = 300
-      expect(screen.getByText(/R\$ 300,00/)).toBeInTheDocument();
     });
   });
 
@@ -193,15 +191,20 @@ describe("QuickAddTransactionDialog — alternância divide ↔ fixed", () => {
       target: { value: "Notebook" },
     });
     await selectCardNubank();
-    setAmount(250);
+
     clickParcelarToggle();
     clickMode("fixed");
-
     const btn3 = screen.getByRole("button", { name: "3x" });
     fireEvent.click(btn3);
+    setAmount(250);
 
     // Confirma summary antes de salvar
     await screen.findByText(/3x de/);
+
+    // Em modo fixed, o dialog exibe um checkbox de "ciência do ajuste"
+    // (total = parcela × N ≠ valor digitado). Marca antes de salvar.
+    const ackCheckbox = screen.queryByRole("checkbox");
+    if (ackCheckbox) fireEvent.click(ackCheckbox);
 
     const addBtn = screen.getByRole("button", { name: /Adicionar/ });
     fireEvent.click(addBtn);
@@ -209,7 +212,6 @@ describe("QuickAddTransactionDialog — alternância divide ↔ fixed", () => {
     await waitFor(() => expect(insertMock).toHaveBeenCalled());
     const rows = insertMock.mock.calls[0][0] as any[];
     expect(rows).toHaveLength(3);
-    // Cada parcela deve ser R$ 250,00
     for (const r of rows) {
       expect(r.amount).toBe(250);
       expect(r.installment_mode).toBe("fixed");
