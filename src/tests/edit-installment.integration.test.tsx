@@ -312,4 +312,45 @@ describe("Edição de despesa parcelada no cartão — integração completa", (
     expect(updateMock).not.toHaveBeenCalled();
     expect(saveInstallmentPlan).not.toHaveBeenCalled();
   });
+
+  it("aplica a mesma regra a uma RECEITA parcelada no cartão (estorno/cashback em 3x)", async () => {
+    // Cenário: estorno parcelado de R$ 900 em 3x lançado como receita no cartão.
+    render(
+      <EditDialogHarness
+        initial={makeEditTx({
+          type: "income",
+          icon: "💰",
+          name: "Estorno 1/3",
+          category: "Receita > Estorno",
+          amount: 900,
+          total_installments: 3,
+        })}
+      />,
+    );
+
+    // divide → fixed: 900/3 = 300 por parcela, total econômico segue 900
+    fireEvent.click(screen.getByRole("button", { name: "Valor por parcela" }));
+    expect(screen.getByTestId("mode").textContent).toBe("fixed");
+    expect(screen.getByTestId("amount").textContent).toBe("300");
+
+    // fixed → divide: 300*3 = 900
+    fireEvent.click(screen.getByRole("button", { name: "Dividir total" }));
+    expect(screen.getByTestId("amount").textContent).toBe("900");
+
+    // Salva em divide — persistência espelha o fluxo de despesa
+    fireEvent.click(screen.getByRole("button", { name: /Salvar/ }));
+    await waitFor(() => expect(updateMock).toHaveBeenCalled());
+    const payload = (updateMock.mock.calls as any[])[0][0] as any;
+    expect(payload.type).toBe("income");
+    expect(payload.installment_mode).toBe("divide");
+    expect(payload.amount).toBe(300); // 900 / 3
+    expect(payload.installment_source_amount).toBe(900);
+
+    const planArg = (saveInstallmentPlan as any).mock.calls[0][0];
+    expect(planArg.type).toBe("income");
+    expect(planArg.installmentAmount).toBe(300);
+    expect(planArg.installmentSourceAmount).toBe(900);
+    expect(planArg.total).toBe(3);
+  });
 });
+
