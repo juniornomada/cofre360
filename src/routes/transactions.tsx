@@ -517,6 +517,13 @@ export function TransactionsPage() {
        const iconChanged = originalTx && (originalTx.icon || "") !== (editTx.icon || "");
 
        if (nameChanged || amountChanged || installmentsChanged || categoryChanged || iconChanged) {
+         const changes: string[] = [];
+         if (nameChanged) changes.push("Nome");
+         if (amountChanged) changes.push("Valor");
+         if (installmentsChanged) changes.push("Nº de parcelas");
+         if (categoryChanged) changes.push("Categoria");
+         if (iconChanged) changes.push("Ícone");
+         setScopeChanges(changes);
          setShowUpdateScopeDialog(true);
          return;
        }
