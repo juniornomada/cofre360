@@ -100,14 +100,15 @@ describe("Escopo aplicado — atualiza apenas as parcelas selecionadas", () => {
       date: "10 mar",
       amount: 50,
       type: "expense",
-      total_installments: 12,
-      installment_number: 3,
+      total: 12,
+      current: 3,
       installment_group_id: groupId,
-      installment_source_amount: 600,
-      account_id: null,
-      credit_card_id: "cc-1",
+      installmentSourceAmount: 600,
+      bank_account_id: null,
+      card: "cc-1",
       updateAllInGroup: false,
     });
+
 
     // Apenas 1 update, no id atual, com a nova categoria/ícone
     const touchedIds = updateCalls
