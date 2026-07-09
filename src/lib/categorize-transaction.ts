@@ -20,7 +20,7 @@ const CATEGORY_RULES: CategoryMatch[] = [
   { group: "Receita", sub: "Reembolso", icon: "↩️", keywords: [
     "reembolso", "estorno", "devolução", "devolucao",
   ]},
-  { group: "Receita", sub: "Rendimentos", icon: "📈", keywords: [
+  { group: "Receita", sub: "Juros", icon: "📈", keywords: [
     "rendimento", "rendimentos", "juros", "dividendo", "dividendos",
     "resgate", "lucro", "aplicação", "aplicacao", "cdb", "tesouro",
     "poupança", "poupanca", "fundo", "corretora", "investimento",
