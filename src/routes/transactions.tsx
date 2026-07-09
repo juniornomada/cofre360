@@ -992,15 +992,16 @@ export function TransactionsPage() {
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <div className="rounded-xl bg-card p-3">
+        <div className="rounded-xl bg-card p-3 text-right">
           <p className="text-[10px] text-muted-foreground">Total receitas</p>
           <p className="text-lg font-bold text-primary tabular-nums">R$ {formatCurrency(totalIncome)}</p>
         </div>
-        <div className="rounded-xl bg-card p-3">
+        <div className="rounded-xl bg-card p-3 text-right">
           <p className="text-[10px] text-muted-foreground">Total despesas</p>
           <p className="text-lg font-bold text-destructive tabular-nums">R$ {formatCurrency(totalExpense)}</p>
         </div>
       </div>
+
 
        <div ref={listRef} tabIndex={-1} className="flex flex-col gap-2 focus:outline-none">
          {sortedTransactions.map((tx, i) => (
