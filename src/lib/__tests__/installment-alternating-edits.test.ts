@@ -216,10 +216,10 @@ describe("Sequências alternadas de edição inválida ↔ válida mantêm drift
       { source: 0.07, n: 7 }, { source: 999.99, n: 11 }, { source: 0.01, n: 12 },
       { source: 1234.56, n: 12 }, { source: 777.77, n: 5 },
     ];
-    const cosmetics = [
+    const cosmetics: Array<Partial<Pick<InstallmentGroupRow, "category" | "icon" | "card" | "bank_account_id">>> = [
       { category: "A" }, { icon: "🎯" }, { card: "Itaú" }, { bank_account_id: "b1" },
       { category: "B", icon: "🍕" }, { card: null }, { bank_account_id: null },
-    ] as const;
+    ];
 
     let seed = 0xC0FFEE;
     const rnd = () => (seed = (seed * 1664525 + 1013904223) >>> 0) / 0x1_0000_0000;
