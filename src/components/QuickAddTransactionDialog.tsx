@@ -210,13 +210,19 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
       return;
     }
 
-    if ((newTx.amount || 0) <= 0) {
+    if (installmentEnabled && !isTransfer) {
+      const validationError = validateInstallmentInputs(
+        installmentMode,
+        newTx.amount,
+        installmentFixedValue,
+        Number(installmentCount) || 1,
+      );
+      if (validationError) {
+        toast.error(validationError);
+        return;
+      }
+    } else if ((newTx.amount || 0) <= 0) {
       toast.error("Por favor, insira um valor total maior que zero.");
-      return;
-    }
-
-    if (installmentEnabled && installmentMode === "fixed" && (installmentFixedValue || 0) <= 0) {
-      toast.error("Por favor, insira um valor por parcela maior que zero.");
       return;
     }
 
