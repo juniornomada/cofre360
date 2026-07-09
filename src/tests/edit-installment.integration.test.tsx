@@ -449,6 +449,83 @@ describe("Edição de despesa parcelada no cartão — integração completa", (
     await waitFor(() => expect(screen.getByTestId("error")).toBeInTheDocument());
     expect(updateMock).not.toHaveBeenCalled();
   });
+
+  it("RECEITA parcelada: divide→fixed→salvar persiste type/amount/source_amount corretos", async () => {
+    // Estorno de R$ 1.200 em 4x → parcela 300. Alterna para fixed e salva.
+    render(
+      <EditDialogHarness
+        initial={makeEditTx({
+          type: "income",
+          icon: "💰",
+          name: "Estorno 1/4",
+          category: "Receita > Estorno",
+          amount: 1200,
+          total_installments: 4,
+        })}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Valor por parcela" }));
+    expect(screen.getByTestId("mode").textContent).toBe("fixed");
+    expect(screen.getByTestId("amount").textContent).toBe("300");
+
+    fireEvent.click(screen.getByRole("button", { name: /Salvar/ }));
+    await waitFor(() => expect(updateMock).toHaveBeenCalled());
+
+    const payload = (updateMock.mock.calls as any[])[0][0] as any;
+    expect(payload.type).toBe("income");
+    expect(payload.installment_mode).toBe("fixed");
+    expect(payload.amount).toBe(300); // parcela por linha
+    // No modo fixed, o valor digitado É a parcela → source_amount = parcela.
+    expect(payload.installment_source_amount).toBe(300);
+
+    const planArg = (saveInstallmentPlan as any).mock.calls[0][0];
+    expect(planArg.type).toBe("income");
+    expect(planArg.installmentAmount).toBe(300);
+    expect(planArg.installmentSourceAmount).toBe(300);
+    expect(planArg.installmentMode).toBe("fixed");
+    expect(planArg.total).toBe(4);
+  });
+
+  it("RECEITA parcelada: fixed→divide→salvar persiste type/amount/source_amount corretos", async () => {
+    // Simula receita que já estava em fixed; usuário alterna para divide antes
+    // de salvar. Início: divide/1200/4x; toggle→fixed(300); toggle→divide(1200).
+    render(
+      <EditDialogHarness
+        initial={makeEditTx({
+          type: "income",
+          icon: "💰",
+          name: "Estorno 1/4",
+          category: "Receita > Estorno",
+          amount: 1200,
+          total_installments: 4,
+        })}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Valor por parcela" }));
+    expect(screen.getByTestId("mode").textContent).toBe("fixed");
+    fireEvent.click(screen.getByRole("button", { name: "Dividir total" }));
+    expect(screen.getByTestId("mode").textContent).toBe("divide");
+    expect(screen.getByTestId("amount").textContent).toBe("1200");
+
+    fireEvent.click(screen.getByRole("button", { name: /Salvar/ }));
+    await waitFor(() => expect(updateMock).toHaveBeenCalled());
+
+    const payload = (updateMock.mock.calls as any[])[0][0] as any;
+    expect(payload.type).toBe("income");
+    expect(payload.installment_mode).toBe("divide");
+    expect(payload.amount).toBe(300); // 1200 / 4
+    expect(payload.installment_source_amount).toBe(1200);
+
+    const planArg = (saveInstallmentPlan as any).mock.calls[0][0];
+    expect(planArg.type).toBe("income");
+    expect(planArg.installmentAmount).toBe(300);
+    expect(planArg.installmentSourceAmount).toBe(1200);
+    expect(planArg.installmentMode).toBe("divide");
+    expect(planArg.total).toBe(4);
+  });
 });
+
 
 
