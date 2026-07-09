@@ -150,7 +150,15 @@ export function TransactionsPage() {
     const [confirmInstallmentDiff, setConfirmInstallmentDiff] = useState(false);
     const [editNameMode, setEditNameMode] = useState<"none" | "text">("none");
     const [showUpdateScopeDialog, setShowUpdateScopeDialog] = useState(false);
-    const [updateScope, setUpdateScope] = useState<"single" | "all">("single");
+    const UPDATE_SCOPE_PREF_KEY = "installment.updateScope.preference";
+    const readSavedScope = (): "single" | "all" => {
+      if (typeof window === "undefined") return "single";
+      const v = window.localStorage.getItem(UPDATE_SCOPE_PREF_KEY);
+      return v === "all" ? "all" : "single";
+    };
+    const [updateScope, setUpdateScope] = useState<"single" | "all">(readSavedScope);
+    const [rememberScopeChoice, setRememberScopeChoice] = useState<boolean>(true);
+    const [scopeConfirmed, setScopeConfirmed] = useState(false);
  
  
      const editInstallmentDetails = editTx ? calculateInstallmentDetails(
@@ -498,7 +506,7 @@ export function TransactionsPage() {
      if (!editTx) return;
  
      // If it's part of an installment group and we haven't asked for scope yet
-     if (editTx.installment_group_id && !showUpdateScopeDialog && updateScope === "single") {
+     if (editTx.installment_group_id && !scopeConfirmed) {
        // Only ask if it's a card expense (user asked for "despesa no cartão") or general installments
        const originalTx = transactions.find(t => t.id === editTx.id);
        const nameChanged = originalTx && stripInstallmentSuffix(originalTx.name) !== stripInstallmentSuffix(editTx.name);
@@ -608,7 +616,9 @@ export function TransactionsPage() {
       (document.activeElement as HTMLElement)?.blur();
       setShowEditDialog(false);
       setShowUpdateScopeDialog(false);
-      setUpdateScope("single");
+      setScopeConfirmed(false);
+      // Reload preference (in case another tab/instance changed it) but keep the current session's choice
+      setUpdateScope(readSavedScope());
       setEditTx(null);
       fetchTransactions();
       fetchBankAccounts(); // Refresh balances
@@ -1391,12 +1401,11 @@ export function TransactionsPage() {
       <Dialog open={showUpdateScopeDialog} onOpenChange={(open) => {
         if (!open) {
           setShowUpdateScopeDialog(false);
-          setUpdateScope("single");
         }
       }}>
         <DialogContent className="max-w-[90vw] rounded-2xl bg-background">
           <DialogHeader>
-            <DialogTitle>Alterar parcelas</DialogTitle>
+            <DialogTitle>Aplicar em quais parcelas?</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <p className="text-sm text-muted-foreground">
@@ -1408,7 +1417,7 @@ export function TransactionsPage() {
                 className="justify-start h-auto py-3 px-4 flex flex-col items-start gap-1"
                 onClick={() => setUpdateScope("single")}
               >
-                <span className="font-semibold text-sm">Apenas esta</span>
+                <span className="font-semibold text-sm">Apenas esta parcela</span>
                 <span className="text-xs opacity-70">Altera somente o lançamento selecionado</span>
               </Button>
               <Button 
@@ -1416,20 +1425,39 @@ export function TransactionsPage() {
                 className="justify-start h-auto py-3 px-4 flex flex-col items-start gap-1"
                 onClick={() => setUpdateScope("all")}
               >
-                <span className="font-semibold text-sm">Todas as parcelas</span>
-                <span className="text-xs opacity-70">Atualiza o valor/nome de todo o grupo de parcelas</span>
+                <span className="font-semibold text-sm">Todas as parcelas do grupo</span>
+                <span className="text-xs opacity-70">Atualiza todo o grupo de parcelas</span>
               </Button>
             </div>
+            <label className="flex items-center gap-2 cursor-pointer select-none pt-1">
+              <input
+                type="checkbox"
+                checked={rememberScopeChoice}
+                onChange={(e) => setRememberScopeChoice(e.target.checked)}
+                className="h-3.5 w-3.5 rounded border-border text-primary focus:ring-primary"
+              />
+              <span className="text-xs text-muted-foreground">
+                Lembrar minha escolha nos próximos envios
+              </span>
+            </label>
           </div>
           <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="ghost" onClick={() => {
               setShowUpdateScopeDialog(false);
-              setUpdateScope("single");
             }}>Cancelar</Button>
-            <Button onClick={handleSaveEdit}>Confirmar e Salvar</Button>
+            <Button onClick={() => {
+              if (rememberScopeChoice && typeof window !== "undefined") {
+                window.localStorage.setItem(UPDATE_SCOPE_PREF_KEY, updateScope);
+              }
+              setScopeConfirmed(true);
+              setShowUpdateScopeDialog(false);
+              // handleSaveEdit will now proceed because scopeConfirmed=true
+              setTimeout(() => { handleSaveEdit(); }, 0);
+            }}>Confirmar e Salvar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
 
 
       {/* Batch Delete */}
