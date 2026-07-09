@@ -504,8 +504,10 @@ export function TransactionsPage() {
        const nameChanged = originalTx && stripInstallmentSuffix(originalTx.name) !== stripInstallmentSuffix(editTx.name);
        const amountChanged = originalTx && originalTx.amount !== (editInstallmentMode === "fixed" ? editTx.amount : editInstallmentDetails?.valorParcela);
        const installmentsChanged = originalTx && originalTx.total_installments !== editTx.total_installments;
+       const categoryChanged = originalTx && (originalTx.category || "") !== (editTx.category || "");
+       const iconChanged = originalTx && (originalTx.icon || "") !== (editTx.icon || "");
 
-       if (nameChanged || amountChanged || installmentsChanged) {
+       if (nameChanged || amountChanged || installmentsChanged || categoryChanged || iconChanged) {
          setShowUpdateScopeDialog(true);
          return;
        }
