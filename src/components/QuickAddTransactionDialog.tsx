@@ -10,6 +10,7 @@ import { BankLogo } from "@/components/BankLogo";
 import { CalculatorAmountInput } from "@/components/CalculatorAmountInput";
 import { format, parse } from "date-fns";
 import { calculateInstallmentDetails } from "@/lib/installment-utils";
+import { validateInstallmentInputs } from "@/lib/installment-mode-toggle";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
