@@ -301,6 +301,47 @@ describe("Edição de despesa parcelada no cartão — integração completa", (
     expect(screen.getByTestId("amount").textContent).toBe("250");
   });
 
+  it("preserva o total econômico com arredondamento (R$ 1.000 em 3x) ao alternar divide↔fixed", async () => {
+    render(
+      <EditDialogHarness
+        initial={makeEditTx({ amount: 1000, total_installments: 3 })}
+      />,
+    );
+
+    // Estado inicial: divide, total 1000, resumo 3x
+    expect(screen.getByTestId("mode").textContent).toBe("divide");
+    expect(screen.getByTestId("amount").textContent).toBe("1000");
+    expect(screen.getByTestId("summary").textContent).toMatch(/3x/);
+
+    // divide → fixed: parcela = round2(1000/3) = 333.33
+    fireEvent.click(screen.getByRole("button", { name: "Valor por parcela" }));
+    expect(screen.getByTestId("mode").textContent).toBe("fixed");
+    expect(screen.getByTestId("amount").textContent).toBe("333.33");
+    // Total econômico reconstituído fica a 1 centavo do original (limite
+    // conhecido do arredondamento a 2 casas) — 333.33 × 3 = 999.99.
+    expect(Math.abs(333.33 * 3 - 1000)).toBeLessThanOrEqual(0.01);
+
+    // fixed → divide: total = round2(333.33 × 3) = 999.99 (drift documentado)
+    fireEvent.click(screen.getByRole("button", { name: "Dividir total" }));
+    expect(screen.getByTestId("mode").textContent).toBe("divide");
+    expect(screen.getByTestId("amount").textContent).toBe("999.99");
+    expect(Math.abs(Number(screen.getByTestId("amount").textContent) - 1000)).toBeLessThanOrEqual(0.01);
+
+    // Salvar em divide com o total pós-round-trip: parcela = 999.99/3 = 333.33
+    fireEvent.click(screen.getByRole("button", { name: /Salvar/ }));
+    await waitFor(() => expect(updateMock).toHaveBeenCalled());
+    const payload = (updateMock.mock.calls as any[])[0][0] as any;
+    expect(payload.installment_mode).toBe("divide");
+    expect(payload.amount).toBe(333.33);
+    expect(payload.installment_source_amount).toBe(999.99);
+
+    const planArg = (saveInstallmentPlan as any).mock.calls[0][0];
+    expect(planArg.installmentAmount).toBe(333.33);
+    expect(planArg.installmentSourceAmount).toBe(999.99);
+    expect(planArg.total).toBe(3);
+  });
+
+
   it("bloqueia salvar quando o valor no modo ativo é zero (validação integrada)", async () => {
     render(
       <EditDialogHarness initial={makeEditTx({ amount: 0 })} />,
