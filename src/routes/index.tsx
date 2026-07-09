@@ -41,7 +41,7 @@ const QuickAddTransactionDialog = lazy(() => import("@/components/QuickAddTransa
 import { CalculatorAmountInput } from "@/components/CalculatorAmountInput";
 
 import type { QuickAddInitialType } from "@/components/QuickAddTransactionDialog";
-import { saveInstallmentPlan, stripInstallmentSuffix } from "@/lib/installment-edit";
+import { saveInstallmentPlan, stripInstallmentSuffix, propagateCosmeticFieldsToGroup } from "@/lib/installment-edit";
 import { deleteTransactionScope, isInstallmentTx } from "@/lib/installment-delete";
 import { toast } from "sonner";
 import { useUserPreferences } from "@/hooks/use-user-preferences";
@@ -565,6 +565,27 @@ function Dashboard() {
         installmentMode: editInstallmentMode,
         installmentSourceAmount: editTx.amount,
       });
+
+      // Always propagate cosmetic fields (category/icon/card/account) to all
+      // siblings in the group — a purchase's category/card is a property of
+      // the whole plan, not of a single installment.
+      if (editTx.installment_group_id) {
+        const originalTx = allTransactions.find(t => t.id === editTx.id);
+        const cosmeticChanged =
+          !originalTx ||
+          (originalTx.category || "") !== (editTx.category || "") ||
+          (originalTx.icon || "") !== (editTx.icon || "") ||
+          (originalTx.card || "") !== (editTx.card || "") ||
+          (originalTx.bank_account_id || "") !== (editTx.bank_account_id || "");
+        if (cosmeticChanged) {
+          await propagateCosmeticFieldsToGroup(editTx.installment_group_id, {
+            category: editTx.category,
+            icon: editTx.icon,
+            card: editTx.card ?? null,
+            bank_account_id: editTx.bank_account_id ?? null,
+          });
+        }
+      }
 
       if (result.cleared) {
         toast.success("Parcelamento removido");
