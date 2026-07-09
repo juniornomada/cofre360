@@ -1030,7 +1030,7 @@ export function TransactionsPage() {
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <div className="rounded-xl bg-card p-3 text-right">
+        <div className="rounded-xl bg-card p-3 text-left">
           <p className="text-[10px] text-muted-foreground">Total receitas</p>
           <p className="text-lg font-bold text-primary tabular-nums">R$ {formatCurrency(totalIncome)}</p>
         </div>
