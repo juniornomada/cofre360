@@ -508,28 +508,38 @@ export function TransactionsPage() {
  
      // If it's part of an installment group and we haven't asked for scope yet
      if (editTx.installment_group_id && !scopeConfirmed) {
-       // Only ask if it's a card expense (user asked for "despesa no cartão") or general installments
        const originalTx = transactions.find(t => t.id === editTx.id);
-       const nameChanged = originalTx && stripInstallmentSuffix(originalTx.name) !== stripInstallmentSuffix(editTx.name);
-       const amountChanged = originalTx && originalTx.amount !== (editInstallmentMode === "fixed" ? editTx.amount : editInstallmentDetails?.valorParcela);
-       const installmentsChanged = originalTx && originalTx.total_installments !== editTx.total_installments;
-       const categoryChanged = originalTx && (originalTx.category || "") !== (editTx.category || "");
-       const iconChanged = originalTx && (originalTx.icon || "") !== (editTx.icon || "");
-       const dateChanged = originalTx && (originalTx.date || "") !== (editTx.date || "");
-
-       if (nameChanged || amountChanged || installmentsChanged || categoryChanged || iconChanged || dateChanged) {
-         const changes: string[] = [];
-         if (nameChanged) changes.push("Nome");
-         if (amountChanged) changes.push("Valor");
-         if (installmentsChanged) changes.push("Nº de parcelas");
-         if (categoryChanged) changes.push("Categoria");
-         if (iconChanged) changes.push("Ícone");
-         if (dateChanged) changes.push("Data");
-         setScopeChanges(changes);
-         setShowUpdateScopeDialog(true);
-         return;
+       if (originalTx) {
+         const effectiveAmount = editInstallmentMode === "fixed"
+           ? editTx.amount
+           : (editInstallmentDetails?.valorParcela ?? editTx.amount);
+         const changes = detectInstallmentChanges(
+           {
+             name: originalTx.name,
+             amount: originalTx.amount,
+             total_installments: originalTx.total_installments,
+             category: originalTx.category,
+             icon: originalTx.icon,
+             date: originalTx.date,
+           },
+           {
+             name: editTx.name,
+             amount: editTx.amount,
+             total_installments: editTx.total_installments,
+             category: editTx.category,
+             icon: editTx.icon,
+             date: editTx.date,
+           },
+           effectiveAmount,
+         );
+         if (changes.length > 0) {
+           setScopeChanges(changes);
+           setShowUpdateScopeDialog(true);
+           return;
+         }
        }
      }
+
 
      if (hasEditDiff && !confirmInstallmentDiff) {
        toast.error("Por favor, confirme o ajuste de centavos no parcelamento.");
