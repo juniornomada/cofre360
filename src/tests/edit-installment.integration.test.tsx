@@ -737,6 +737,65 @@ describe("Edição de despesa parcelada no cartão — integração completa", (
     // Consistência: parcela × N = total econômico editado
     expect(planArg.installmentAmount * planArg.total).toBe(800);
   });
+
+  it("mantém coerência de campos calculados e total econômico ao alternar divide↔fixed após salvar (R$ 500 em 3x)", async () => {
+    render(
+      <EditDialogHarness
+        initial={makeEditTx({ amount: 500, total_installments: 3 })}
+      />,
+    );
+
+    // 1) Salva em divide: parcela = round2(500/3) = 166.67, source = 500
+    expect(screen.getByTestId("mode").textContent).toBe("divide");
+    expect(screen.getByTestId("amount").textContent).toBe("500");
+    fireEvent.click(screen.getByRole("button", { name: /Salvar/ }));
+    await waitFor(() => expect(updateMock).toHaveBeenCalledTimes(1));
+    let payload = (updateMock.mock.calls as any[])[0][0] as any;
+    expect(payload.installment_mode).toBe("divide");
+    expect(payload.amount).toBe(166.67);
+    expect(payload.installment_source_amount).toBe(500);
+    let planArg = (saveInstallmentPlan as any).mock.calls[0][0];
+    expect(planArg.installmentAmount).toBe(166.67);
+    expect(planArg.installmentSourceAmount).toBe(500);
+    expect(planArg.installmentMode).toBe("divide");
+
+    // 2) Alterna divide → fixed: parcela reconstituída = 166.67
+    fireEvent.click(screen.getByRole("button", { name: "Valor por parcela" }));
+    expect(screen.getByTestId("mode").textContent).toBe("fixed");
+    expect(screen.getByTestId("amount").textContent).toBe("166.67");
+    expect(screen.getByTestId("summary").textContent).toMatch(/3x/);
+
+    // Salva em fixed: amount e source = parcela (166.67)
+    fireEvent.click(screen.getByRole("button", { name: /Salvar/ }));
+    await waitFor(() => expect(updateMock).toHaveBeenCalledTimes(2));
+    payload = (updateMock.mock.calls as any[])[1][0] as any;
+    expect(payload.installment_mode).toBe("fixed");
+    expect(payload.amount).toBe(166.67);
+    expect(payload.installment_source_amount).toBe(166.67);
+    planArg = (saveInstallmentPlan as any).mock.calls[1][0];
+    expect(planArg.installmentAmount).toBe(166.67);
+    expect(planArg.installmentMode).toBe("fixed");
+    expect(planArg.total).toBe(3);
+
+    // 3) Alterna fixed → divide: total reconstituído = round2(166.67 × 3) = 500.01
+    fireEvent.click(screen.getByRole("button", { name: "Dividir total" }));
+    expect(screen.getByTestId("mode").textContent).toBe("divide");
+    expect(screen.getByTestId("amount").textContent).toBe("500.01");
+
+    // Salva novamente em divide: parcela recomputada = round2(500.01/3) = 166.67
+    fireEvent.click(screen.getByRole("button", { name: /Salvar/ }));
+    await waitFor(() => expect(updateMock).toHaveBeenCalledTimes(3));
+    payload = (updateMock.mock.calls as any[])[2][0] as any;
+    expect(payload.installment_mode).toBe("divide");
+    expect(payload.amount).toBe(166.67);
+    expect(payload.installment_source_amount).toBe(500.01);
+    planArg = (saveInstallmentPlan as any).mock.calls[2][0];
+    expect(planArg.installmentAmount).toBe(166.67);
+    expect(planArg.installmentSourceAmount).toBe(500.01);
+
+    // Total econômico preservado dentro do limite de arredondamento (≤ 2¢) vs 500 original
+    expect(Math.abs(planArg.installmentAmount * planArg.total - 500)).toBeLessThanOrEqual(0.02);
+  });
 });
 
 
