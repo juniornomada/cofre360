@@ -506,7 +506,7 @@ export function TransactionsPage() {
      if (!editTx) return;
  
      // If it's part of an installment group and we haven't asked for scope yet
-     if (editTx.installment_group_id && !showUpdateScopeDialog && updateScope === "single") {
+     if (editTx.installment_group_id && !scopeConfirmed) {
        // Only ask if it's a card expense (user asked for "despesa no cartão") or general installments
        const originalTx = transactions.find(t => t.id === editTx.id);
        const nameChanged = originalTx && stripInstallmentSuffix(originalTx.name) !== stripInstallmentSuffix(editTx.name);
