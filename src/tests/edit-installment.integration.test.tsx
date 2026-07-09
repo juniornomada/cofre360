@@ -198,6 +198,12 @@ function EditDialogHarness({ initial }: { initial: EditTx }) {
       >
         Mudar para 6x
       </button>
+      <input
+        data-testid="amount-input"
+        type="number"
+        value={editTx.amount}
+        onChange={(e) => setEditTx({ ...editTx, amount: Number(e.target.value) })}
+      />
       <button type="button" onClick={handleSave}>
         Salvar
       </button>
@@ -664,6 +670,38 @@ describe("Edição de despesa parcelada no cartão — integração completa", (
 
     // Total econômico preservado dentro do limite de arredondamento (≤ 2¢)
     expect(Math.abs(saved.per * dividePlanArg.total - 777.77)).toBeLessThanOrEqual(0.02);
+  });
+
+  it("edita a parcela em fixed (175), alterna para divide e persiste amount=175 + source=700", async () => {
+    render(<EditDialogHarness initial={makeEditTx()} />);
+
+    // divide → fixed (parcela = 1200/4 = 300)
+    fireEvent.click(screen.getByRole("button", { name: "Valor por parcela" }));
+    expect(screen.getByTestId("mode").textContent).toBe("fixed");
+    expect(screen.getByTestId("amount").textContent).toBe("300");
+
+    // Usuário edita a parcela no modo fixed: 300 → 175
+    fireEvent.change(screen.getByTestId("amount-input"), { target: { value: "175" } });
+    expect(screen.getByTestId("amount").textContent).toBe("175");
+
+    // Alterna fixed → divide: total reconstituído = 175 × 4 = 700
+    fireEvent.click(screen.getByRole("button", { name: "Dividir total" }));
+    expect(screen.getByTestId("mode").textContent).toBe("divide");
+    expect(screen.getByTestId("amount").textContent).toBe("700");
+
+    // Salva e valida payload persistido
+    fireEvent.click(screen.getByRole("button", { name: /Salvar/ }));
+    await waitFor(() => expect(updateMock).toHaveBeenCalled());
+    const payload = (updateMock.mock.calls as any[])[0][0] as any;
+    expect(payload.installment_mode).toBe("divide");
+    expect(payload.amount).toBe(175); // 700 / 4
+    expect(payload.installment_source_amount).toBe(700);
+
+    const planArg = (saveInstallmentPlan as any).mock.calls[0][0];
+    expect(planArg.installmentAmount).toBe(175);
+    expect(planArg.installmentSourceAmount).toBe(700);
+    expect(planArg.installmentMode).toBe("divide");
+    expect(planArg.total).toBe(4);
   });
 });
 
