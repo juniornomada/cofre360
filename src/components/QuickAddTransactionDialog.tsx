@@ -174,11 +174,27 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
     try {
       if (typeof window !== "undefined") {
         window.localStorage.setItem(PREFS_KEY, JSON.stringify(p));
+        setHasSavedPrefs(true);
       }
     } catch {
       // ignore quota / privacy-mode errors
     }
   };
+  const clearPrefs = () => {
+    try {
+      if (typeof window !== "undefined") window.localStorage.removeItem(PREFS_KEY);
+    } catch {
+      // ignore
+    }
+    setHasSavedPrefs(false);
+  };
+  const [hasSavedPrefs, setHasSavedPrefs] = useState<boolean>(() => {
+    try {
+      return typeof window !== "undefined" && window.localStorage.getItem(PREFS_KEY) !== null;
+    } catch {
+      return false;
+    }
+  });
 
   // Reset state every time the dialog opens with the requested initial type.
   useEffect(() => {
