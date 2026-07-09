@@ -1307,7 +1307,18 @@ export function TransactionsPage() {
                       <div className="flex gap-2">
                         <button
                           type="button"
-                          onClick={() => setEditInstallmentMode("divide")}
+                          onClick={() => {
+                            if (!editTx || editInstallmentMode === "divide") return;
+                            const count = Number(editTx.total_installments) || 1;
+                            const next = toDivideMode({
+                              fromMode: "fixed",
+                              amount: editTx.amount,
+                              fixedValue: editTx.amount,
+                              count,
+                            });
+                            setEditTx({ ...editTx, amount: next.amount });
+                            setEditInstallmentMode("divide");
+                          }}
                           className={`flex-1 rounded-lg py-1.5 text-[11px] font-medium transition-colors ${editInstallmentMode === "divide" ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground"}`}
                         >
                           Dividir total
@@ -1315,12 +1326,22 @@ export function TransactionsPage() {
                         <button
                           type="button"
                           onClick={() => {
+                            if (!editTx || editInstallmentMode === "fixed") return;
+                            const count = Number(editTx.total_installments) || 1;
+                            const next = toFixedMode({
+                              fromMode: "divide",
+                              amount: editTx.amount,
+                              fixedValue: 0,
+                              count,
+                            });
+                            setEditTx({ ...editTx, amount: next.amount });
                             setEditInstallmentMode("fixed");
-                          }}  
+                          }}
                           className={`flex-1 rounded-lg py-1.5 text-[11px] font-medium transition-colors ${editInstallmentMode === "fixed" ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground"}`}
                         >
                           Valor por parcela
                         </button>
+
                       </div>
                     </div>
 
