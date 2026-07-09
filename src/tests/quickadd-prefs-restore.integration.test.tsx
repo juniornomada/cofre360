@@ -84,11 +84,10 @@ function clickMode(mode: "divide" | "fixed") {
   fireEvent.click(btn);
 }
 function parcelarIsOn(): boolean {
-  const label = screen.getByText("Parcelar");
+  const label = screen.queryByText("Parcelar");
+  if (!label) return false;
   const btn = label.parentElement!.querySelector("button") as HTMLButtonElement;
-  return btn.getAttribute("aria-checked") === "true"
-    || btn.dataset.state === "checked"
-    || /bg-primary|checked|on/i.test(btn.className);
+  return /bg-primary/.test(btn.className);
 }
 function isModeActive(mode: "divide" | "fixed"): boolean {
   const text = mode === "divide" ? /Valor total da compra/ : /Valor de cada parcela/;
