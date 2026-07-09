@@ -642,6 +642,7 @@ export function TransactionsPage() {
       } else {
         toast.success("Transação atualizada");
       }
+      if (editTx?.id) clearEditDraft(editTx.id);
     } catch (e) {
       console.error(e);
       toast.error("Erro ao salvar transação");
