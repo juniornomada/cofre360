@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CategoryPicker } from "@/components/CategoryPicker";
-import { CalendarIcon, ArrowLeftRight, ArrowRight, CreditCard, Landmark, Loader2 } from "lucide-react";
+import { CalendarIcon, ArrowLeftRight, ArrowRight, CreditCard, Landmark, Loader2, RotateCcw } from "lucide-react";
 import { BankLogo } from "@/components/BankLogo";
 import { CalculatorAmountInput } from "@/components/CalculatorAmountInput";
 import { format, parse } from "date-fns";
