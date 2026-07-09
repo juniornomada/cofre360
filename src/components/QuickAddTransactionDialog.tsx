@@ -333,7 +333,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
           total_installments: count,
           installment_group_id: groupId,
           installment_mode: installmentMode,
-          installment_source_amount: newTx.amount,
+          installment_source_amount: installmentMode === "fixed" ? parcela * count : newTx.amount,
           is_visible: true
         });
        }
