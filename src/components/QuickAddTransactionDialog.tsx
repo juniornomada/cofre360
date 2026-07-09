@@ -695,7 +695,15 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                       <div className="flex gap-1.5">
                         <button
                           type="button"
-                          onClick={() => setInstallmentMode("divide")}
+                          onClick={() => {
+                            if (installmentMode === "fixed") {
+                              // fixed → divide: total = parcela × N, para manter consistência
+                              const count = Math.max(1, Number(installmentCount) || 1);
+                              const newTotal = Math.round((installmentFixedValue || 0) * count * 100) / 100;
+                              setNewTx(prev => ({ ...prev, amount: newTotal }));
+                            }
+                            setInstallmentMode("divide");
+                          }}
                           className={`flex-1 rounded-lg py-1.5 px-2 text-[10px] font-medium transition-colors leading-tight ${installmentMode === "divide" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground border border-border"}`}
                         >
                           Valor total da compra
@@ -704,8 +712,16 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                         <button
                           type="button"
                           onClick={() => {
+                            if (installmentMode === "divide") {
+                              // divide → fixed: parcela = total / N, para manter consistência
+                              const count = Math.max(1, Number(installmentCount) || 1);
+                              const perParcela = Math.round(((newTx.amount || 0) / count) * 100) / 100;
+                              setInstallmentFixedValue(perParcela);
+                              setNewTx(prev => ({ ...prev, amount: perParcela }));
+                            } else {
+                              setInstallmentFixedValue(newTx.amount || installmentFixedValue);
+                            }
                             setInstallmentMode("fixed");
-                            setInstallmentFixedValue(newTx.amount || installmentFixedValue);
                           }}
                           className={`flex-1 rounded-lg py-1.5 px-2 text-[10px] font-medium transition-colors leading-tight ${installmentMode === "fixed" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground border border-border"}`}
                         >
