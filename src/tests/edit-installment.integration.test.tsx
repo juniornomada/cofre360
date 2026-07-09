@@ -703,6 +703,40 @@ describe("Edição de despesa parcelada no cartão — integração completa", (
     expect(planArg.installmentMode).toBe("divide");
     expect(planArg.total).toBe(4);
   });
+
+  it("edita o total em divide (800), alterna para fixed e persiste amount=200 + source=200", async () => {
+    render(<EditDialogHarness initial={makeEditTx()} />);
+
+    // Estado inicial: divide, total 1200, 4x
+    expect(screen.getByTestId("mode").textContent).toBe("divide");
+    expect(screen.getByTestId("amount").textContent).toBe("1200");
+
+    // Usuário edita o total no modo divide: 1200 → 800
+    fireEvent.change(screen.getByTestId("amount-input"), { target: { value: "800" } });
+    expect(screen.getByTestId("amount").textContent).toBe("800");
+
+    // Alterna divide → fixed: parcela = 800 / 4 = 200
+    fireEvent.click(screen.getByRole("button", { name: "Valor por parcela" }));
+    expect(screen.getByTestId("mode").textContent).toBe("fixed");
+    expect(screen.getByTestId("amount").textContent).toBe("200");
+
+    // Salva e valida payload persistido
+    fireEvent.click(screen.getByRole("button", { name: /Salvar/ }));
+    await waitFor(() => expect(updateMock).toHaveBeenCalled());
+    const payload = (updateMock.mock.calls as any[])[0][0] as any;
+    expect(payload.installment_mode).toBe("fixed");
+    expect(payload.amount).toBe(200); // parcela no modo fixed
+    expect(payload.installment_source_amount).toBe(200);
+
+    const planArg = (saveInstallmentPlan as any).mock.calls[0][0];
+    expect(planArg.installmentAmount).toBe(200);
+    expect(planArg.installmentSourceAmount).toBe(200);
+    expect(planArg.installmentMode).toBe("fixed");
+    expect(planArg.total).toBe(4);
+
+    // Consistência: parcela × N = total econômico editado
+    expect(planArg.installmentAmount * planArg.total).toBe(800);
+  });
 });
 
 
