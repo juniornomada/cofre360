@@ -553,6 +553,8 @@ export function TransactionsPage() {
              category: originalTx.category,
              icon: originalTx.icon,
              date: originalTx.date,
+             card: originalTx.card,
+             bank_account_id: originalTx.bank_account_id,
            },
            {
              name: editTx.name,
@@ -561,16 +563,23 @@ export function TransactionsPage() {
              category: editTx.category,
              icon: editTx.icon,
              date: editTx.date,
+             card: editTx.card,
+             bank_account_id: editTx.bank_account_id,
            },
            effectiveAmount,
          );
-         if (changes.length > 0) {
-           setScopeChanges(changes);
+         const { structural } = splitInstallmentChanges(changes);
+         // Only ask about scope for structural changes (name/value/count/date).
+         // Cosmetic fields (category/icon/card/account) always propagate to the
+         // whole group automatically — they describe the purchase itself.
+         if (structural.length > 0) {
+           setScopeChanges(structural);
            setShowUpdateScopeDialog(true);
            return;
          }
        }
      }
+
 
 
      if (hasEditDiff && !confirmInstallmentDiff) {
