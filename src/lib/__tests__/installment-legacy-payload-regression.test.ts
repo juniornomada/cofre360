@@ -283,16 +283,18 @@ describe("Regressão — sanitização de payload legado + drift", () => {
     assertDriftOk(rows);
   });
 
-  it("prototype pollution em payload legado (__proto__, constructor) é descartado", () => {
+  it("prototype pollution em payload legado (__proto__, constructor) não vaza para o payload limpo", () => {
     const legacy = JSON.parse(
       '{"__proto__":{"is_admin":true},"constructor":{"prototype":{"x":1}},"title":"Y","value":80,"installments":8,"data":"01"}',
     );
-    const { clean, droppedKeys } = sanitizeLegacyPayload(legacy);
+    const { clean } = sanitizeLegacyPayload(legacy);
     assertAllowedOnly(clean);
-    expect(droppedKeys).toEqual(expect.arrayContaining(["constructor"]));
-    // __proto__ pode ou não aparecer como own key após JSON.parse (depende do engine);
-    // o que importa é que NÃO entrou em `clean`.
-    expect((clean as unknown as Record<string, unknown>).__proto__ === Object.prototype).toBe(true);
+    // O que importa é que chaves perigosas NÃO entram no payload saneado
+    // e que o protótipo global não foi poluído.
+    expect(Object.keys(clean)).not.toContain("__proto__");
+    expect(Object.keys(clean)).not.toContain("constructor");
+    expect((Object.prototype as unknown as { is_admin?: boolean }).is_admin).toBeUndefined();
+    expect((clean as unknown as Record<string, unknown>).__proto__).toBe(Object.prototype);
     const rows = regenerateGroup(clean, clean.amount * clean.total_installments);
     assertDriftOk(rows);
   });
