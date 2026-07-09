@@ -222,6 +222,8 @@ function assertNoExtraKeys(payload: PersistedPayload) {
 // -------- Testes ---------------------------------------------------------
 
 describe("Integração — Asserts de schema sobre payload persistido", () => {
+  afterEach(() => cleanup());
+
   it("payload feliz: todos os tipos corretos → schema ok + drift ok", () => {
     const r = run({
       name: "Compra",
