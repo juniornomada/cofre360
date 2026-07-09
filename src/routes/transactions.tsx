@@ -688,6 +688,7 @@ export function TransactionsPage() {
     if (!deleteTarget) return;
     try {
       const { deletedCount } = await deleteTransactionScope(deleteTarget, deleteScope);
+      if (deleteTarget?.id) clearEditDraft(deleteTarget.id);
       if (deletedCount > 1) {
         toast.success(`${deletedCount} transações excluídas`);
       } else {
