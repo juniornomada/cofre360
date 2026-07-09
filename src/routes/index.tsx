@@ -1115,9 +1115,11 @@ function Dashboard() {
                   to="/cards" 
                   className="interactive-card flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl bg-background/40 hover:bg-background/60 transition-colors overflow-hidden relative w-full"
                 >
-                  <div className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br text-base", card.color || "from-primary/20 to-primary/10")}>
-                    {card.emoji || "💳"}
+                  <div className={cn("relative flex h-7 w-10 shrink-0 items-center justify-center rounded-md bg-gradient-to-br text-sm shadow-sm ring-1 ring-black/5 overflow-hidden", card.color || "from-primary/20 to-primary/10")}>
+                    <span className="absolute left-1 top-1 h-1.5 w-2 rounded-[2px] bg-white/70" aria-hidden />
+                    <span className="leading-none">{card.emoji || "💳"}</span>
                   </div>
+
                   <div className="flex flex-col flex-1 min-w-0">
                     <p className="text-xs font-medium text-foreground truncate">{card.name}</p>
                     <span className="text-[10px] font-medium text-muted-foreground">Fatura Atual · Venc. {formatDueDate(displayDue)}</span>
