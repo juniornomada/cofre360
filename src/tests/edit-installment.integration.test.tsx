@@ -626,7 +626,14 @@ describe("Edição de despesa parcelada no cartão — integração completa", (
     fireEvent.click(screen.getByRole("button", { name: /Salvar/ }));
     await waitFor(() => expect(updateMock).toHaveBeenCalled());
 
-    const fixedPayload = (updateMock.mock.calls as any[])[0][0] as any;
+    // Filtra apenas as chamadas do payload principal (que carregam
+    // installment_mode) — saveInstallmentPlan aciona updates internos.
+    const mainUpdates = () =>
+      (updateMock.mock.calls as any[])
+        .map((c) => c[0])
+        .filter((p) => p && typeof p === "object" && "installment_mode" in p);
+
+    const fixedPayload = mainUpdates()[0];
     expect(fixedPayload.installment_mode).toBe("fixed");
     expect(fixedPayload.amount).toBe(155.55);
     expect(fixedPayload.installment_source_amount).toBe(155.55);
@@ -644,9 +651,11 @@ describe("Edição de despesa parcelada no cartão — integração completa", (
 
     // Salva em divide após round-trip: parcela recomputada = 777.75/5 = 155.55
     fireEvent.click(screen.getByRole("button", { name: /Salvar/ }));
-    await waitFor(() => expect(updateMock).toHaveBeenCalledTimes(2));
+    await waitFor(() =>
+      expect((saveInstallmentPlan as any).mock.calls.length).toBe(2),
+    );
 
-    const dividePayload = (updateMock.mock.calls as any[])[1][0] as any;
+    const dividePayload = mainUpdates()[1];
     expect(dividePayload.installment_mode).toBe("divide");
     expect(dividePayload.amount).toBe(155.55);
     expect(dividePayload.installment_source_amount).toBe(777.75);
