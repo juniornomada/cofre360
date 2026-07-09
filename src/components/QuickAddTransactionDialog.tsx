@@ -10,6 +10,7 @@ import { BankLogo } from "@/components/BankLogo";
 import { CalculatorAmountInput } from "@/components/CalculatorAmountInput";
 import { format, parse } from "date-fns";
 import { calculateInstallmentDetails } from "@/lib/installment-utils";
+import { validateInstallmentInputs } from "@/lib/installment-mode-toggle";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -209,13 +210,19 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
       return;
     }
 
-    if ((newTx.amount || 0) <= 0) {
+    if (installmentEnabled && !isTransfer) {
+      const validationError = validateInstallmentInputs(
+        installmentMode,
+        newTx.amount,
+        installmentFixedValue,
+        Number(installmentCount) || 1,
+      );
+      if (validationError) {
+        toast.error(validationError);
+        return;
+      }
+    } else if ((newTx.amount || 0) <= 0) {
       toast.error("Por favor, insira um valor total maior que zero.");
-      return;
-    }
-
-    if (installmentEnabled && installmentMode === "fixed" && (installmentFixedValue || 0) <= 0) {
-      toast.error("Por favor, insira um valor por parcela maior que zero.");
       return;
     }
 
@@ -695,7 +702,15 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                       <div className="flex gap-1.5">
                         <button
                           type="button"
-                          onClick={() => setInstallmentMode("divide")}
+                          onClick={() => {
+                            if (installmentMode === "fixed") {
+                              // fixed → divide: total = parcela × N, para manter consistência
+                              const count = Math.max(1, Number(installmentCount) || 1);
+                              const newTotal = Math.round((installmentFixedValue || 0) * count * 100) / 100;
+                              setNewTx(prev => ({ ...prev, amount: newTotal }));
+                            }
+                            setInstallmentMode("divide");
+                          }}
                           className={`flex-1 rounded-lg py-1.5 px-2 text-[10px] font-medium transition-colors leading-tight ${installmentMode === "divide" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground border border-border"}`}
                         >
                           Valor total da compra
@@ -704,8 +719,16 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                         <button
                           type="button"
                           onClick={() => {
+                            if (installmentMode === "divide") {
+                              // divide → fixed: parcela = total / N, para manter consistência
+                              const count = Math.max(1, Number(installmentCount) || 1);
+                              const perParcela = Math.round(((newTx.amount || 0) / count) * 100) / 100;
+                              setInstallmentFixedValue(perParcela);
+                              setNewTx(prev => ({ ...prev, amount: perParcela }));
+                            } else {
+                              setInstallmentFixedValue(newTx.amount || installmentFixedValue);
+                            }
                             setInstallmentMode("fixed");
-                            setInstallmentFixedValue(newTx.amount || installmentFixedValue);
                           }}
                           className={`flex-1 rounded-lg py-1.5 px-2 text-[10px] font-medium transition-colors leading-tight ${installmentMode === "fixed" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground border border-border"}`}
                         >
