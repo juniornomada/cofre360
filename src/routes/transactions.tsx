@@ -495,6 +495,30 @@ export function TransactionsPage() {
     setShowEditDialog(true);
   };
 
+  // Autosave edit draft while the edit dialog is open (debounced).
+  useEffect(() => {
+    if (!showEditDialog || !editTx?.id) return;
+    const id = editTx.id;
+    const handle = window.setTimeout(() => {
+      saveEditDraft(id, {
+        fields: {
+          amount: editTx.amount,
+          total_installments: editTx.total_installments ?? null,
+          installment_number: editTx.installment_number ?? null,
+          category: editTx.category,
+          icon: editTx.icon,
+          name: editTx.name,
+          date: editTx.date,
+          type: editTx.type,
+          card: editTx.card ?? null,
+          bank_account_id: editTx.bank_account_id ?? null,
+        },
+        mode: editInstallmentMode,
+      });
+    }, 300);
+    return () => window.clearTimeout(handle);
+  }, [showEditDialog, editTx, editInstallmentMode]);
+
   const handleCopy = (tx: Transaction) => {
     // Strip installment suffix for the copy
     const cleanName = stripInstallmentSuffix(tx.name);
