@@ -152,3 +152,67 @@ describe("Escopo aplicado — atualiza apenas as parcelas selecionadas", () => {
     }
   });
 });
+
+import { splitInstallmentChanges } from "@/lib/installment-edit";
+
+describe("Gate do diálogo — estrutural abre, cosmético não abre", () => {
+  const shouldOpenDialog = (orig: InstallmentEditSnapshot, edit: InstallmentEditSnapshot, effAmt = edit.amount) => {
+    const changes = detectInstallmentChanges(orig, edit, effAmt);
+    const { structural } = splitInstallmentChanges(changes);
+    return structural.length > 0;
+  };
+
+  it("NÃO abre quando apenas Categoria muda", () => {
+    expect(shouldOpenDialog(base, { ...base, category: "Lazer" })).toBe(false);
+  });
+
+  it("NÃO abre quando apenas Ícone muda", () => {
+    expect(shouldOpenDialog(base, { ...base, icon: "🎬" })).toBe(false);
+  });
+
+  it("NÃO abre quando apenas Cartão muda", () => {
+    expect(shouldOpenDialog(base, { ...base, card: "Nubank" })).toBe(false);
+  });
+
+  it("NÃO abre quando apenas Conta bancária muda", () => {
+    expect(shouldOpenDialog(base, { ...base, bank_account_id: "acc-1" })).toBe(false);
+  });
+
+  it("NÃO abre quando várias mudanças cosméticas ocorrem simultaneamente", () => {
+    expect(
+      shouldOpenDialog(base, {
+        ...base,
+        category: "Lazer",
+        icon: "🎬",
+        card: "Nubank",
+        bank_account_id: "acc-1",
+      }),
+    ).toBe(false);
+  });
+
+  it("ABRE quando o Nome muda (estrutural)", () => {
+    expect(shouldOpenDialog(base, { ...base, name: "Spotify (3/12)" })).toBe(true);
+  });
+
+  it("ABRE quando o Valor muda (estrutural)", () => {
+    expect(shouldOpenDialog(base, { ...base, amount: 75 }, 75)).toBe(true);
+  });
+
+  it("ABRE quando o Nº de parcelas muda (estrutural)", () => {
+    expect(shouldOpenDialog(base, { ...base, total_installments: 6 })).toBe(true);
+  });
+
+  it("ABRE quando a Data muda (estrutural)", () => {
+    expect(shouldOpenDialog(base, { ...base, date: "15 jan" })).toBe(true);
+  });
+
+  it("ABRE quando estrutural + cosmético mudam juntos (mesmo com cosmético presente)", () => {
+    expect(
+      shouldOpenDialog(base, { ...base, amount: 75, category: "Lazer" }, 75),
+    ).toBe(true);
+  });
+
+  it("NÃO abre quando nada muda (apenas o sufixo n/N do nome)", () => {
+    expect(shouldOpenDialog(base, { ...base, name: "Netflix (4/12)" })).toBe(false);
+  });
+});
