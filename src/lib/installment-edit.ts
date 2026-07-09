@@ -127,6 +127,121 @@ export async function propagateCosmeticFieldsToGroup(
   if (error) throw error;
 }
 
+/**
+ * Row shape expected by `validateGroupCoherence`. Only the fields relevant to
+ * the economic-total invariant are required; extra fields are ignored.
+ */
+export type InstallmentGroupRow = {
+  installment_group_id?: string | null;
+  installment_number?: number | null;
+  total_installments?: number | null;
+  amount: number;
+  installment_source_amount?: number | null;
+  installment_mode?: string | null;
+  category?: string | null;
+  icon?: string | null;
+  card?: string | null;
+  bank_account_id?: string | null;
+};
+
+export type GroupCoherenceReport = {
+  ok: boolean;
+  errors: string[];
+  warnings: string[];
+};
+
+/**
+ * Validates that an installment group is internally coherent after any edit
+ * (cosmetic or structural). Ensures:
+ *  - All rows share the same installment_group_id, total_installments,
+ *    installment_source_amount and installment_mode.
+ *  - installment_number values are unique and cover 1..N with N = total.
+ *  - Sum of `amount` matches `installment_source_amount` within a per-row
+ *    rounding tolerance (default 1 cent per row).
+ *  - For "fixed" mode, every parcel has the same `amount` (that IS the plan).
+ *  - Optional cosmetic fields (when passed via `expectCosmetic`) are equal
+ *    across all rows — this is the invariant guaranteed by
+ *    `propagateCosmeticFieldsToGroup`.
+ */
+export function validateGroupCoherence(
+  rows: InstallmentGroupRow[],
+  expectCosmetic?: {
+    category?: string | null;
+    icon?: string | null;
+    card?: string | null;
+    bank_account_id?: string | null;
+  },
+): GroupCoherenceReport {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+  if (rows.length === 0) {
+    return { ok: false, errors: ["Grupo vazio"], warnings };
+  }
+
+  const [first, ...rest] = rows;
+  const groupId = first.installment_group_id ?? null;
+  const total = first.total_installments ?? rows.length;
+  const source = Number(first.installment_source_amount ?? 0);
+  const mode = first.installment_mode ?? null;
+
+  for (const r of rest) {
+    if ((r.installment_group_id ?? null) !== groupId) errors.push("installment_group_id divergente entre parcelas");
+    if ((r.total_installments ?? rows.length) !== total) errors.push("total_installments divergente entre parcelas");
+    if (Number(r.installment_source_amount ?? 0) !== source) errors.push("installment_source_amount divergente entre parcelas");
+    if ((r.installment_mode ?? null) !== mode) errors.push("installment_mode divergente entre parcelas");
+  }
+
+  // 1..N unique
+  if (rows.length !== total) {
+    errors.push(`Contagem de parcelas (${rows.length}) diverge do total_installments (${total})`);
+  }
+  const seen = new Set<number>();
+  for (const r of rows) {
+    const n = r.installment_number ?? 0;
+    if (n < 1 || n > total || !Number.isInteger(n)) errors.push(`installment_number inválido: ${n}`);
+    if (seen.has(n)) errors.push(`installment_number duplicado: ${n}`);
+    seen.add(n);
+  }
+
+  // Economic total: sum(amount) ≈ source, within N cents (rounding).
+  const sum = rows.reduce((s, r) => s + Number(r.amount), 0);
+  const tolerance = rows.length * 0.01 + 1e-9;
+  if (source > 0 && Math.abs(sum - source) > tolerance) {
+    errors.push(`Soma das parcelas (${sum.toFixed(2)}) diverge do total econômico (${source.toFixed(2)})`);
+  }
+
+  // Fixed mode: every parcel identical.
+  if (mode === "fixed") {
+    const a0 = Number(first.amount);
+    for (const r of rest) {
+      if (Number(r.amount) !== a0) {
+        errors.push("Modo 'fixed' exige mesmo amount em todas as parcelas");
+        break;
+      }
+    }
+  }
+
+  // Cosmetic fields must be equal across all parcels.
+  if (expectCosmetic) {
+    const check = (key: keyof typeof expectCosmetic) => {
+      if (expectCosmetic[key] === undefined) return;
+      const expected = expectCosmetic[key];
+      for (const r of rows) {
+        if ((r[key] ?? null) !== (expected ?? null)) {
+          errors.push(`Campo cosmético '${key}' inconsistente entre parcelas`);
+          return;
+        }
+      }
+    };
+    check("category");
+    check("icon");
+    check("card");
+    check("bank_account_id");
+  }
+
+  return { ok: errors.length === 0, errors, warnings };
+}
+
 
 
 function uuid(): string {

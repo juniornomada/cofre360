@@ -318,3 +318,148 @@ describe("Propagação cosmética — chamada no-op não altera nada", () => {
     expect(updateCalls).toHaveLength(0);
   });
 });
+
+// -----------------------------------------------------------------------------
+// Validação pós-propagação — invariantes do grupo (categoria/ícone/cartão/conta)
+// -----------------------------------------------------------------------------
+import { validateGroupCoherence, type InstallmentGroupRow } from "@/lib/installment-edit";
+
+function makeRows(n: number, source: number, mode: "divide" | "fixed" = "divide"): InstallmentGroupRow[] {
+  const per = mode === "fixed"
+    ? Math.round((source / n) * 100) / 100
+    : Math.round((source / n) * 100) / 100;
+  const rows: InstallmentGroupRow[] = Array.from({ length: n }, (_, i) => ({
+    installment_group_id: "grp-val",
+    installment_number: i + 1,
+    total_installments: n,
+    amount: per,
+    installment_source_amount: source,
+    installment_mode: mode,
+    category: "Original",
+    icon: "🛒",
+    card: "Nubank",
+    bank_account_id: null,
+  }));
+  // Ajusta última parcela para absorver drift do arredondamento no modo "divide".
+  if (mode === "divide") {
+    const sum = rows.reduce((s, r) => s + r.amount, 0);
+    rows[rows.length - 1].amount = Math.round((rows[rows.length - 1].amount + (source - sum)) * 100) / 100;
+  }
+  return rows;
+}
+
+function applyCosmeticToRows(rows: InstallmentGroupRow[], patch: Partial<InstallmentGroupRow>): InstallmentGroupRow[] {
+  return rows.map((r) => ({ ...r, ...patch }));
+}
+
+describe("Validação pós-propagação — coerência do grupo", () => {
+  it("grupo saudável (12x, divide) passa em todos os invariantes", () => {
+    const rows = makeRows(12, 1000, "divide");
+    const report = validateGroupCoherence(rows);
+    expect(report.ok).toBe(true);
+    expect(report.errors).toEqual([]);
+  });
+
+  it("após propagar categoria/ícone/cartão/conta o grupo permanece coerente", async () => {
+    const rows = makeRows(12, 1000, "divide");
+    await propagateCosmeticFieldsToGroup("grp-val", {
+      category: "Mercado",
+      icon: "🍎",
+      card: "XP",
+      bank_account_id: "acc-1",
+    });
+    // Simula banco aplicando o UPDATE do capture.
+    const call = updateCalls[updateCalls.length - 1];
+    const updated = applyCosmeticToRows(rows, call.payload);
+    const report = validateGroupCoherence(updated, {
+      category: "Mercado",
+      icon: "🍎",
+      card: "XP",
+      bank_account_id: "acc-1",
+    });
+    expect(report.ok).toBe(true);
+  });
+
+  it("detecta parcela órfã com categoria antiga (propagação parcial)", () => {
+    const rows = makeRows(12, 1000, "divide");
+    const updated = applyCosmeticToRows(rows, { category: "Mercado" });
+    // Simula falha: parcela 5 ficou com a categoria antiga.
+    updated[4] = { ...updated[4], category: "Original" };
+    const report = validateGroupCoherence(updated, { category: "Mercado" });
+    expect(report.ok).toBe(false);
+    expect(report.errors.some((e) => e.includes("category"))).toBe(true);
+  });
+
+  it("detecta soma de parcelas divergente do total econômico", () => {
+    const rows = makeRows(12, 1000, "divide");
+    rows[0].amount = rows[0].amount + 5; // adulteração
+    const report = validateGroupCoherence(rows);
+    expect(report.ok).toBe(false);
+    expect(report.errors.some((e) => e.includes("total econômico"))).toBe(true);
+  });
+
+  it("detecta installment_source_amount divergente entre parcelas", () => {
+    const rows = makeRows(6, 600, "divide");
+    rows[2].installment_source_amount = 700;
+    const report = validateGroupCoherence(rows);
+    expect(report.ok).toBe(false);
+    expect(report.errors.some((e) => e.includes("installment_source_amount"))).toBe(true);
+  });
+
+  it("detecta modo divergente entre parcelas", () => {
+    const rows = makeRows(4, 400, "divide");
+    rows[1].installment_mode = "fixed";
+    const report = validateGroupCoherence(rows);
+    expect(report.ok).toBe(false);
+    expect(report.errors.some((e) => e.includes("installment_mode"))).toBe(true);
+  });
+
+  it("detecta installment_number duplicado", () => {
+    const rows = makeRows(3, 300, "divide");
+    rows[2].installment_number = 2;
+    const report = validateGroupCoherence(rows);
+    expect(report.ok).toBe(false);
+    expect(report.errors.some((e) => e.includes("duplicado"))).toBe(true);
+  });
+
+  it("modo 'fixed' exige mesmo amount em todas as parcelas", () => {
+    const rows = makeRows(4, 400, "fixed");
+    rows[2].amount = 110;
+    const report = validateGroupCoherence(rows);
+    expect(report.ok).toBe(false);
+    expect(report.errors.some((e) => e.includes("fixed"))).toBe(true);
+  });
+
+  it("edge case 1x: parcela única com source = amount é coerente", () => {
+    const rows = makeRows(1, 199.9, "divide");
+    const report = validateGroupCoherence(rows);
+    expect(report.ok).toBe(true);
+  });
+
+  it("edge case 2x: arredondamento tolerado (soma difere por ≤ 2 centavos)", () => {
+    // 100 / 2 = 50 exatamente — mas testamos com um drift proposital de 1¢.
+    const rows = makeRows(2, 100, "divide");
+    rows[0].amount = 49.99;
+    rows[1].amount = 50.01; // soma bate exato
+    let report = validateGroupCoherence(rows);
+    expect(report.ok).toBe(true);
+    // Drift dentro da tolerância (N * 0,01 = 0,02).
+    rows[1].amount = 50.00;
+    report = validateGroupCoherence(rows);
+    expect(report.ok).toBe(true); // 99.99 vs 100 → diff = 0.01 ≤ 0.02
+  });
+
+  it("edge case 12x com R$ 1000: drift de arredondamento (83,33 × 12 = 999,96) fica dentro da tolerância", () => {
+    const rows: InstallmentGroupRow[] = Array.from({ length: 12 }, (_, i) => ({
+      installment_group_id: "grp-drift",
+      installment_number: i + 1,
+      total_installments: 12,
+      amount: 83.33, // não absorve drift na última
+      installment_source_amount: 1000,
+      installment_mode: "divide",
+    }));
+    const report = validateGroupCoherence(rows);
+    // Diff = 0.04, tolerância = 12 * 0.01 = 0.12 → ok.
+    expect(report.ok).toBe(true);
+  });
+});
