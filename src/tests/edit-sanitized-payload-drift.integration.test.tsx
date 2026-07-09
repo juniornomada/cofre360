@@ -65,7 +65,7 @@ function sanitizePayload(original: Payload, draft: Payload): Payload {
   p.name = draft.name && draft.name.trim().length > 0 ? draft.name : original.name;
   p.amount =
     typeof draft.amount === "number" && !Number.isNaN(draft.amount) && draft.amount > 0
-      ? draft.amount
+      ? round2(draft.amount)
       : original.amount;
   p.total_installments =
     typeof draft.total_installments === "number" &&
