@@ -42,7 +42,7 @@ import { QuickAddTransactionDialog } from "@/components/QuickAddTransactionDialo
 const PREFS_KEY = "quickadd:card-installment-prefs:v1";
 
 // --- Helpers -------------------------------------------------------------
-function Harness({ initialType = "expense" as const, copyData = null as any }) {
+function Harness({ initialType = "expense", copyData = null as any }: { initialType?: "expense" | "income" | "transfer"; copyData?: any }) {
   const [open, setOpen] = React.useState(true);
   return (
     <>
