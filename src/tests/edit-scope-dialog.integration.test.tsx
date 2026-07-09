@@ -267,3 +267,153 @@ describe("Top-level edit flow — scope dialog visibility mirrors structural vs 
     expect(modes).toEqual(["silent", "with-dialog"]);
   });
 });
+
+/**
+ * Cancel-path harness: same gate, but tracks the persisted group so we can
+ * assert that cancelling either dialog leaves NO writes and preserves group
+ * coherence (all 12 rows keep original cosmetic + structural fields).
+ */
+type Row = Draft & { installment_number: number };
+
+const buildGroup = (base: Draft, n = 12): Row[] =>
+  Array.from({ length: n }, (_, i) => ({ ...base, installment_number: i + 1 }));
+
+function CancelHarness({ onPersist }: { onPersist: (rows: Row[]) => void }) {
+  const [group, setGroup] = useState<Row[]>(() => buildGroup(originalTx));
+  const [open, setOpen] = useState(false);
+  const [scopeOpen, setScopeOpen] = useState(false);
+  const [draft, setDraft] = useState<Draft>({ ...originalTx });
+
+  const openDialog = () => {
+    setDraft({ ...originalTx });
+    setOpen(true);
+  };
+
+  const persistCosmetic = (d: Draft) => {
+    const next = group.map((r) => ({
+      ...r,
+      category: d.category,
+      icon: d.icon,
+      card: d.card,
+      bank_account_id: d.bank_account_id,
+    }));
+    setGroup(next);
+    onPersist(next);
+  };
+
+  const persistAll = (d: Draft) => {
+    const next = group.map((r) => ({ ...r, ...d }));
+    setGroup(next);
+    onPersist(next);
+  };
+
+  const handleSave = () => {
+    const changes = detectInstallmentChanges(originalTx, draft, draft.amount);
+    const { structural } = splitInstallmentChanges(changes);
+    if (structural.length > 0) {
+      setScopeOpen(true);
+    } else {
+      persistCosmetic(draft);
+      setOpen(false);
+    }
+  };
+
+  return (
+    <div>
+      <button onClick={openDialog}>Editar transação</button>
+      <span data-testid="rows-json">{JSON.stringify(group)}</span>
+
+      {open && (
+        <div role="dialog" aria-label="Editar transação">
+          <input aria-label="nome" value={draft.name}
+            onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
+          <input aria-label="valor" type="number" value={draft.amount}
+            onChange={(e) => setDraft({ ...draft, amount: Number(e.target.value) })} />
+          <input aria-label="categoria" value={draft.category ?? ""}
+            onChange={(e) => setDraft({ ...draft, category: e.target.value })} />
+          <input aria-label="cartao" value={draft.card ?? ""}
+            onChange={(e) => setDraft({ ...draft, card: e.target.value })} />
+          <button onClick={handleSave}>Salvar</button>
+          <button onClick={() => setOpen(false)}>Cancelar edição</button>
+        </div>
+      )}
+
+      {scopeOpen && (
+        <div role="dialog" aria-label="Aplicar em quais parcelas?">
+          <button onClick={() => { persistAll(draft); setScopeOpen(false); setOpen(false); }}>
+            Todas do grupo
+          </button>
+          <button onClick={() => setScopeOpen(false)}>Cancelar escopo</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function currentRows(): Row[] {
+  return JSON.parse(screen.getByTestId("rows-json").textContent ?? "[]");
+}
+
+function assertGroupUnchanged(rows: Row[]) {
+  expect(rows).toHaveLength(12);
+  rows.forEach((r, i) => {
+    expect(r.installment_number).toBe(i + 1);
+    expect(r.name).toBe(originalTx.name);
+    expect(r.amount).toBe(originalTx.amount);
+    expect(r.total_installments).toBe(originalTx.total_installments);
+    expect(r.date).toBe(originalTx.date);
+    expect(r.category).toBe(originalTx.category);
+    expect(r.icon).toBe(originalTx.icon);
+    expect(r.card).toBe(originalTx.card);
+    expect(r.bank_account_id).toBe(originalTx.bank_account_id);
+  });
+}
+
+describe("Cancelamento — nenhuma alteração persistida e coerência do grupo preservada", () => {
+  it("cancelar o editor após MUDANÇA COSMÉTICA não persiste nada", () => {
+    const persisted: Row[][] = [];
+    render(<CancelHarness onPersist={(r) => persisted.push(r)} />);
+    openEditor();
+    setField("categoria", "Lazer");
+    setField("cartao", "XP");
+    fireEvent.click(screen.getByText("Cancelar edição"));
+    expect(persisted).toHaveLength(0);
+    assertGroupUnchanged(currentRows());
+  });
+
+  it("cancelar o editor após MUDANÇA ESTRUTURAL não persiste nada", () => {
+    const persisted: Row[][] = [];
+    render(<CancelHarness onPersist={(r) => persisted.push(r)} />);
+    openEditor();
+    setField("valor", "999");
+    fireEvent.click(screen.getByText("Cancelar edição"));
+    expect(persisted).toHaveLength(0);
+    expect(scopeDialogVisible()).toBe(false);
+    assertGroupUnchanged(currentRows());
+  });
+
+  it("cancelar o DIÁLOGO DE ESCOPO após mudança estrutural não persiste nada", () => {
+    const persisted: Row[][] = [];
+    render(<CancelHarness onPersist={(r) => persisted.push(r)} />);
+    openEditor();
+    setField("valor", "999");
+    setField("categoria", "Lazer");
+    fireEvent.click(screen.getByText("Salvar"));
+    expect(scopeDialogVisible()).toBe(true);
+    fireEvent.click(screen.getByText("Cancelar escopo"));
+    expect(scopeDialogVisible()).toBe(false);
+    expect(persisted).toHaveLength(0);
+    assertGroupUnchanged(currentRows());
+  });
+
+  it("reabrir após cancelar mostra os valores originais (draft resetado)", () => {
+    render(<CancelHarness onPersist={() => {}} />);
+    openEditor();
+    setField("valor", "500");
+    fireEvent.click(screen.getByText("Cancelar edição"));
+    openEditor();
+    expect(screen.getByLabelText("valor")).toHaveValue(originalTx.amount);
+    expect(screen.getByLabelText("categoria")).toHaveValue(originalTx.category);
+    assertGroupUnchanged(currentRows());
+  });
+});
