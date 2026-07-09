@@ -480,11 +480,17 @@ export function TransactionsPage() {
 
 
   const handleEdit = (tx: Transaction) => {
-    setEditTx({ 
-      ...tx, 
-      amount: tx.installment_mode === "divide" ? (tx.installment_source_amount ?? tx.amount) : tx.amount 
-    });
-    setEditInstallmentMode(tx.installment_mode || "divide");
+    const baseAmount = tx.installment_mode === "divide" ? (tx.installment_source_amount ?? tx.amount) : tx.amount;
+    const baseMode: "divide" | "fixed" = tx.installment_mode || "divide";
+    const draft = loadEditDraft(tx.id);
+    if (draft) {
+      setEditTx({ ...tx, amount: baseAmount, ...draft.fields });
+      setEditInstallmentMode(draft.mode ?? baseMode);
+      toast.info("Rascunho da edição anterior restaurado");
+    } else {
+      setEditTx({ ...tx, amount: baseAmount });
+      setEditInstallmentMode(baseMode);
+    }
     setEditNameMode("none");
     setShowEditDialog(true);
   };
