@@ -749,11 +749,13 @@ describe("Edição de despesa parcelada no cartão — integração completa", (
     expect(screen.getByTestId("mode").textContent).toBe("divide");
     expect(screen.getByTestId("amount").textContent).toBe("500");
     fireEvent.click(screen.getByRole("button", { name: /Salvar/ }));
-    await waitFor(() => expect(updateMock).toHaveBeenCalledTimes(1));
-    let payload = (updateMock.mock.calls as any[])[0][0] as any;
-    expect(payload.installment_mode).toBe("divide");
-    expect(payload.amount).toBe(166.67);
-    expect(payload.installment_source_amount).toBe(500);
+    await waitFor(() =>
+      expect((saveInstallmentPlan as any).mock.calls.length).toBe(1),
+    );
+    let saved = JSON.parse(screen.getByTestId("saved").textContent || "{}");
+    expect(saved.mode).toBe("divide");
+    expect(saved.per).toBe(166.67);
+    expect(saved.src).toBe(500);
     let planArg = (saveInstallmentPlan as any).mock.calls[0][0];
     expect(planArg.installmentAmount).toBe(166.67);
     expect(planArg.installmentSourceAmount).toBe(500);
@@ -767,13 +769,16 @@ describe("Edição de despesa parcelada no cartão — integração completa", (
 
     // Salva em fixed: amount e source = parcela (166.67)
     fireEvent.click(screen.getByRole("button", { name: /Salvar/ }));
-    await waitFor(() => expect(updateMock).toHaveBeenCalledTimes(2));
-    payload = (updateMock.mock.calls as any[])[1][0] as any;
-    expect(payload.installment_mode).toBe("fixed");
-    expect(payload.amount).toBe(166.67);
-    expect(payload.installment_source_amount).toBe(166.67);
+    await waitFor(() =>
+      expect((saveInstallmentPlan as any).mock.calls.length).toBe(2),
+    );
+    saved = JSON.parse(screen.getByTestId("saved").textContent || "{}");
+    expect(saved.mode).toBe("fixed");
+    expect(saved.per).toBe(166.67);
+    expect(saved.src).toBe(166.67);
     planArg = (saveInstallmentPlan as any).mock.calls[1][0];
     expect(planArg.installmentAmount).toBe(166.67);
+    expect(planArg.installmentSourceAmount).toBe(166.67);
     expect(planArg.installmentMode).toBe("fixed");
     expect(planArg.total).toBe(3);
 
@@ -784,11 +789,13 @@ describe("Edição de despesa parcelada no cartão — integração completa", (
 
     // Salva novamente em divide: parcela recomputada = round2(500.01/3) = 166.67
     fireEvent.click(screen.getByRole("button", { name: /Salvar/ }));
-    await waitFor(() => expect(updateMock).toHaveBeenCalledTimes(3));
-    payload = (updateMock.mock.calls as any[])[2][0] as any;
-    expect(payload.installment_mode).toBe("divide");
-    expect(payload.amount).toBe(166.67);
-    expect(payload.installment_source_amount).toBe(500.01);
+    await waitFor(() =>
+      expect((saveInstallmentPlan as any).mock.calls.length).toBe(3),
+    );
+    saved = JSON.parse(screen.getByTestId("saved").textContent || "{}");
+    expect(saved.mode).toBe("divide");
+    expect(saved.per).toBe(166.67);
+    expect(saved.src).toBe(500.01);
     planArg = (saveInstallmentPlan as any).mock.calls[2][0];
     expect(planArg.installmentAmount).toBe(166.67);
     expect(planArg.installmentSourceAmount).toBe(500.01);
