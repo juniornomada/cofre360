@@ -681,25 +681,31 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                   </div>
                   {installmentEnabled && (
                     <>
+                      <p className="text-[10px] text-muted-foreground -mt-1">
+                        O valor informado acima é…
+                      </p>
                       <div className="flex gap-1.5">
-                        <button 
-                          type="button" 
-                          onClick={() => setInstallmentMode("divide")} 
-                          className={`flex-1 rounded-lg py-1 text-[10px] font-medium transition-colors ${installmentMode === "divide" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground"}`}
+                        <button
+                          type="button"
+                          onClick={() => setInstallmentMode("divide")}
+                          className={`flex-1 rounded-lg py-1.5 px-2 text-[10px] font-medium transition-colors leading-tight ${installmentMode === "divide" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground border border-border"}`}
                         >
-                          Dividir total
+                          Valor total da compra
+                          <span className="block text-[8px] opacity-80">(será dividido em Nx)</span>
                         </button>
-                        <button 
-                          type="button" 
+                        <button
+                          type="button"
                           onClick={() => {
                             setInstallmentMode("fixed");
-                            setInstallmentFixedValue(newTx.amount / (Number(installmentCount) || 1));
-                          }} 
-                          className={`flex-1 rounded-lg py-1 text-[10px] font-medium transition-colors ${installmentMode === "fixed" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground"}`}
+                            setInstallmentFixedValue(newTx.amount || installmentFixedValue);
+                          }}
+                          className={`flex-1 rounded-lg py-1.5 px-2 text-[10px] font-medium transition-colors leading-tight ${installmentMode === "fixed" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground border border-border"}`}
                         >
-                          Valor fixo
+                          Valor de cada parcela
+                          <span className="block text-[8px] opacity-80">(total = parcela × Nx)</span>
                         </button>
                       </div>
+
                       <div className="space-y-2">
                         <div>
                           <label className="text-[11px] font-semibold text-foreground mb-1 block">Total de parcelas</label>
