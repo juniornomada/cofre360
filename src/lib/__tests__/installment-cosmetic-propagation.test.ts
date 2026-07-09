@@ -172,3 +172,149 @@ describe("Propagação de conta bancária (bank_account_id) em 12x", () => {
     expect(updateCalls[0].eqVal).toBe(GROUP_ID);
   });
 });
+
+// -----------------------------------------------------------------------------
+// Casos de borda: 1x, 2x e 12x
+// -----------------------------------------------------------------------------
+// Como propagateCosmeticFieldsToGroup filtra por installment_group_id, a
+// quantidade de parcelas afetadas depende exclusivamente das linhas com o
+// mesmo group_id no banco. Simulamos isso mockando a resposta do UPDATE
+// com um "banco" em memória, garantindo que:
+//   1) TODAS as parcelas do grupo recebem o novo valor cosmético.
+//   2) Nenhum campo estrutural (amount, installment_number, date,
+//      installment_source_amount) é tocado — invariante parcela × N do plano
+//      permanece intacto.
+
+type FakeRow = {
+  id: string;
+  installment_group_id: string;
+  installment_number: number;
+  total_installments: number;
+  amount: number;
+  installment_source_amount: number;
+  installment_mode: "divide" | "fixed";
+  date: string;
+  category: string;
+  icon: string;
+  card: string | null;
+  bank_account_id: string | null;
+};
+
+function buildGroup(groupId: string, n: number, sourceTotal: number): FakeRow[] {
+  const per = Math.round((sourceTotal / n) * 100) / 100;
+  return Array.from({ length: n }, (_, i) => ({
+    id: `${groupId}-${i + 1}`,
+    installment_group_id: groupId,
+    installment_number: i + 1,
+    total_installments: n,
+    amount: per,
+    installment_source_amount: sourceTotal,
+    installment_mode: "divide",
+    date: `10 ${["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"][i % 12]}`,
+    category: "Original",
+    icon: "🛒",
+    card: "Nubank",
+    bank_account_id: null,
+  }));
+}
+
+function applyLastUpdateTo(rows: FakeRow[]): FakeRow[] {
+  const call = updateCalls[updateCalls.length - 1];
+  if (!call || call.eqCol !== "installment_group_id") return rows;
+  return rows.map((r) =>
+    r.installment_group_id === call.eqVal ? { ...r, ...call.payload } : r,
+  );
+}
+
+const STRUCTURAL_KEYS: (keyof FakeRow)[] = [
+  "amount",
+  "installment_number",
+  "total_installments",
+  "installment_source_amount",
+  "date",
+];
+
+function assertNoStructuralDrift(before: FakeRow[], after: FakeRow[]) {
+  expect(after).toHaveLength(before.length);
+  for (let i = 0; i < before.length; i++) {
+    for (const k of STRUCTURAL_KEYS) {
+      expect(after[i][k]).toEqual(before[i][k]);
+    }
+  }
+  // Soma das parcelas continua batendo com o source do plano.
+  const sum = after.reduce((s, r) => s + r.amount, 0);
+  const source = after[0].installment_source_amount;
+  // Drift permitido para arredondamento de centavos (até N centavos).
+  expect(Math.abs(sum - source)).toBeLessThanOrEqual(after.length * 0.01);
+}
+
+describe.each([
+  { n: 1, source: 199.9, label: "1x (parcela única)" },
+  { n: 2, source: 100, label: "2x (divisão exata)" },
+  { n: 3, source: 500, label: "3x (arredondamento — R$ 166,67)" },
+  { n: 12, source: 1000, label: "12x (arredondamento — R$ 83,33)" },
+])("Propagação cosmética em $label", ({ n, source }) => {
+  const groupId = `grp-${n}x`;
+
+  it(`propaga categoria para todas as ${n} parcelas sem alterar cálculo`, async () => {
+    const before = buildGroup(groupId, n, source);
+    await propagateCosmeticFieldsToGroup(groupId, { category: "Mercado" });
+
+    // Um único UPDATE alcança todas as parcelas do grupo, seja n=1, 2, 3 ou 12.
+    expect(updateCalls).toHaveLength(1);
+    expect(updateCalls[0].eqCol).toBe("installment_group_id");
+    expect(updateCalls[0].eqVal).toBe(groupId);
+
+    const after = applyLastUpdateTo(before);
+    expect(after.every((r) => r.category === "Mercado")).toBe(true);
+    assertNoStructuralDrift(before, after);
+  });
+
+  it(`propaga ícone + cartão + conta em batch nas ${n} parcelas`, async () => {
+    const before = buildGroup(groupId, n, source);
+    await propagateCosmeticFieldsToGroup(groupId, {
+      icon: "🍎",
+      card: "XP",
+      bank_account_id: "acc-1",
+    });
+
+    expect(updateCalls).toHaveLength(1);
+    expect(updateCalls[0].payload).toEqual({
+      icon: "🍎",
+      card: "XP",
+      bank_account_id: "acc-1",
+    });
+
+    const after = applyLastUpdateTo(before);
+    expect(after.every((r) => r.icon === "🍎" && r.card === "XP" && r.bank_account_id === "acc-1")).toBe(true);
+    assertNoStructuralDrift(before, after);
+  });
+
+  it(`payload cosmético NUNCA carrega campos estruturais em ${n}x`, async () => {
+    await propagateCosmeticFieldsToGroup(groupId, {
+      category: "Mercado",
+      icon: "🍎",
+      card: "XP",
+      bank_account_id: "acc-1",
+    });
+    const payload = updateCalls[0].payload;
+    for (const forbidden of [
+      "amount",
+      "installment_number",
+      "installment_source_amount",
+      "installment_mode",
+      "total_installments",
+      "date",
+      "name",
+    ]) {
+      expect(payload).not.toHaveProperty(forbidden);
+    }
+  });
+});
+
+describe("Propagação cosmética — chamada no-op não altera nada", () => {
+  it("não emite UPDATE quando o payload está vazio (nenhum campo cosmético)", async () => {
+    await propagateCosmeticFieldsToGroup("grp-any", {});
+    expect(updateCalls).toHaveLength(0);
+  });
+});
