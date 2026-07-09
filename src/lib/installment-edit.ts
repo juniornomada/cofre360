@@ -171,11 +171,17 @@ export async function saveInstallmentPlan(input: SaveInstallmentInput): Promise<
       const updates = siblings.map(s => {
         // We use the sibling's current installment number but update other fields
         const n = s.installment_number || 1;
-        return supabase.from("transactions").update({
+        const perSibling: any = {
           ...updateData,
           name: baseName,
           installment_number: n,
-        }).eq("id", s.id);
+        };
+        // When syncDates is enabled, recompute each sibling's date based on
+        // the new anchor date (input.date) and its offset from the current one.
+        if (input.syncDates) {
+          perSibling.date = addMonthsKeepingFormat(input.date, n - current);
+        }
+        return supabase.from("transactions").update(perSibling).eq("id", s.id);
       });
       await Promise.all(updates);
     }
