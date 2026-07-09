@@ -91,11 +91,18 @@ export type SaveInstallmentInput = {
    * The original source amount typed by the user.
    */
   installmentSourceAmount?: number;
-  /**
+   /**
    * If true, updates all existing installments in the same group (siblings).
    * Useful when changing value or name and wanting it reflected everywhere.
    */
   updateAllInGroup?: boolean;
+  /**
+   * If true (and updateAllInGroup is true), reschedules the dates of ALL
+   * siblings using the new `date` as anchor for the CURRENT installment and
+   * shifting each sibling by (sibling.installment_number - current) months —
+   * preserving the monthly cadence of the plan.
+   */
+  syncDates?: boolean;
 };
 
 export type SaveInstallmentResult = {
