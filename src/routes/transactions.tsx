@@ -25,6 +25,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { supabase } from "@/integrations/supabase/client";
 import { saveInstallmentPlan, stripInstallmentSuffix, detectInstallmentChanges } from "@/lib/installment-edit";
+import { toDivideMode, toFixedMode, validateInstallmentInputs } from "@/lib/installment-mode-toggle";
 import { deleteTransactionScope, isInstallmentTx } from "@/lib/installment-delete";
 import { toast } from "sonner";
 import { Layers } from "lucide-react";
@@ -545,14 +546,18 @@ export function TransactionsPage() {
        toast.error("Por favor, confirme o ajuste de centavos no parcelamento.");
        return;
      }
-    if ((editTx.amount || 0) <= 0) {
-      toast.error("Por favor, insira um valor maior que zero.");
+    const editCount = Number(editTx.total_installments ?? 1);
+    const editValidationError = validateInstallmentInputs(
+      editInstallmentMode,
+      editInstallmentMode === "divide" ? editTx.amount : 0,
+      editInstallmentMode === "fixed" ? editTx.amount : 0,
+      editCount,
+    );
+    if (editValidationError) {
+      toast.error(editValidationError);
       return;
     }
-    if (editTx.total_installments === undefined || editTx.total_installments === null || Number(editTx.total_installments) < 1) {
-      toast.error("Por favor, insira um número válido de parcelas (mínimo 1).");
-      return;
-    }
+
     const total = Math.max(1, Math.floor(Number(editTx.total_installments)));
     const current = Math.max(1, Math.min(total, Math.floor(Number(editTx.installment_number) || 1)));
     const finalName = stripInstallmentSuffix(editTx.name);
@@ -1306,7 +1311,18 @@ export function TransactionsPage() {
                       <div className="flex gap-2">
                         <button
                           type="button"
-                          onClick={() => setEditInstallmentMode("divide")}
+                          onClick={() => {
+                            if (!editTx || editInstallmentMode === "divide") return;
+                            const count = Number(editTx.total_installments) || 1;
+                            const next = toDivideMode({
+                              fromMode: "fixed",
+                              amount: editTx.amount,
+                              fixedValue: editTx.amount,
+                              count,
+                            });
+                            setEditTx({ ...editTx, amount: next.amount });
+                            setEditInstallmentMode("divide");
+                          }}
                           className={`flex-1 rounded-lg py-1.5 text-[11px] font-medium transition-colors ${editInstallmentMode === "divide" ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground"}`}
                         >
                           Dividir total
@@ -1314,12 +1330,22 @@ export function TransactionsPage() {
                         <button
                           type="button"
                           onClick={() => {
+                            if (!editTx || editInstallmentMode === "fixed") return;
+                            const count = Number(editTx.total_installments) || 1;
+                            const next = toFixedMode({
+                              fromMode: "divide",
+                              amount: editTx.amount,
+                              fixedValue: 0,
+                              count,
+                            });
+                            setEditTx({ ...editTx, amount: next.amount });
                             setEditInstallmentMode("fixed");
-                          }}  
+                          }}
                           className={`flex-1 rounded-lg py-1.5 text-[11px] font-medium transition-colors ${editInstallmentMode === "fixed" ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground"}`}
                         >
                           Valor por parcela
                         </button>
+
                       </div>
                     </div>
 
