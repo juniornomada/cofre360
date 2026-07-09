@@ -626,17 +626,12 @@ describe("Edição de despesa parcelada no cartão — integração completa", (
     fireEvent.click(screen.getByRole("button", { name: /Salvar/ }));
     await waitFor(() => expect(updateMock).toHaveBeenCalled());
 
-    // Filtra apenas as chamadas do payload principal (que carregam
-    // installment_mode) — saveInstallmentPlan aciona updates internos.
-    const mainUpdates = () =>
-      (updateMock.mock.calls as any[])
-        .map((c) => c[0])
-        .filter((p) => p && typeof p === "object" && "installment_mode" in p);
-
-    const fixedPayload = mainUpdates()[0];
-    expect(fixedPayload.installment_mode).toBe("fixed");
-    expect(fixedPayload.amount).toBe(155.55);
-    expect(fixedPayload.installment_source_amount).toBe(155.55);
+    // Após primeiro salvar (modo fixed), lê estado exposto pelo harness
+    await waitFor(() => expect(screen.getByTestId("saved")).toBeTruthy());
+    let saved = JSON.parse(screen.getByTestId("saved").textContent || "{}");
+    expect(saved.mode).toBe("fixed");
+    expect(saved.per).toBe(155.55);
+    expect(saved.src).toBe(155.55);
 
     const fixedPlanArg = (saveInstallmentPlan as any).mock.calls[0][0];
     expect(fixedPlanArg.installmentAmount).toBe(155.55);
@@ -654,11 +649,12 @@ describe("Edição de despesa parcelada no cartão — integração completa", (
     await waitFor(() =>
       expect((saveInstallmentPlan as any).mock.calls.length).toBe(2),
     );
-
-    const dividePayload = mainUpdates()[1];
-    expect(dividePayload.installment_mode).toBe("divide");
-    expect(dividePayload.amount).toBe(155.55);
-    expect(dividePayload.installment_source_amount).toBe(777.75);
+    await waitFor(() => {
+      saved = JSON.parse(screen.getByTestId("saved").textContent || "{}");
+      expect(saved.mode).toBe("divide");
+    });
+    expect(saved.per).toBe(155.55);
+    expect(saved.src).toBe(777.75);
 
     const dividePlanArg = (saveInstallmentPlan as any).mock.calls[1][0];
     expect(dividePlanArg.installmentAmount).toBe(155.55);
@@ -667,7 +663,7 @@ describe("Edição de despesa parcelada no cartão — integração completa", (
     expect(dividePlanArg.total).toBe(5);
 
     // Total econômico preservado dentro do limite de arredondamento (≤ 2¢)
-    expect(Math.abs(dividePayload.amount * dividePlanArg.total - 777.77)).toBeLessThanOrEqual(0.02);
+    expect(Math.abs(saved.per * dividePlanArg.total - 777.77)).toBeLessThanOrEqual(0.02);
   });
 });
 
