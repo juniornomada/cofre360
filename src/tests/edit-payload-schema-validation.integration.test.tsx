@@ -190,8 +190,9 @@ function Harness({ input, onPersist }: { input: PayloadInput; onPersist: (r: Per
 
 function run(input: PayloadInput): PersistResult {
   let result: PersistResult | null = null;
-  const { getByText } = render(<Harness input={input} onPersist={(r) => { result = r; }} />);
-  fireEvent.click(getByText("Persistir"));
+  const utils = render(<Harness input={input} onPersist={(r) => { result = r; }} />);
+  fireEvent.click(utils.getByText("Persistir"));
+  utils.unmount();
   return result!;
 }
 
