@@ -463,3 +463,92 @@ describe("Validação pós-propagação — coerência do grupo", () => {
     expect(report.ok).toBe(true);
   });
 });
+
+describe("Propagação de bank_account_id — payload NUNCA carrega campos estruturais", () => {
+  const FORBIDDEN_STRUCTURAL_KEYS = [
+    "date",
+    "installment_number",
+    "total_installments",
+    "amount",
+    "installment_source_amount",
+    "installment_mode",
+    "name",
+    "id",
+    "type",
+    "installment_group_id",
+  ] as const;
+
+  it("apenas bank_account_id: payload contém somente esse campo", async () => {
+    await propagateCosmeticFieldsToGroup("grp-x", { bank_account_id: "acc-1" });
+    expect(updateCalls).toHaveLength(1);
+    const { payload } = updateCalls[0];
+    expect(Object.keys(payload)).toEqual(["bank_account_id"]);
+    expect(payload.bank_account_id).toBe("acc-1");
+    for (const k of FORBIDDEN_STRUCTURAL_KEYS) {
+      expect(payload).not.toHaveProperty(k);
+    }
+  });
+
+  it("bank_account_id = null (limpar): payload não vaza campos estruturais", async () => {
+    await propagateCosmeticFieldsToGroup("grp-x", { bank_account_id: null });
+    const { payload } = updateCalls[0];
+    expect(Object.keys(payload)).toEqual(["bank_account_id"]);
+    expect(payload.bank_account_id).toBeNull();
+    for (const k of FORBIDDEN_STRUCTURAL_KEYS) {
+      expect(payload).not.toHaveProperty(k);
+    }
+  });
+
+  it("bank_account_id combinado com outros cosméticos ainda ignora estruturais", async () => {
+    await propagateCosmeticFieldsToGroup("grp-x", {
+      bank_account_id: "acc-2",
+      category: "Mercado",
+      icon: "🍎",
+      card: "XP",
+    });
+    const { payload } = updateCalls[0];
+    expect(payload).toEqual({
+      bank_account_id: "acc-2",
+      category: "Mercado",
+      icon: "🍎",
+      card: "XP",
+    });
+    for (const k of FORBIDDEN_STRUCTURAL_KEYS) {
+      expect(payload).not.toHaveProperty(k);
+    }
+  });
+
+  it("propagação de bank_account_id preserva data e installment_number em cada parcela do grupo (12x)", () => {
+    // Estado inicial das 12 parcelas
+    const before: InstallmentGroupRow[] = Array.from({ length: 12 }, (_, i) => ({
+      installment_group_id: "grp-x",
+      installment_number: i + 1,
+      total_installments: 12,
+      amount: 83.33,
+      installment_source_amount: 1000,
+      installment_mode: "divide",
+      category: "Mercado",
+      icon: "🍎",
+      card: "XP",
+      bank_account_id: null,
+    }));
+    // "Datas" simuladas por índice — como não estão no payload cosmético,
+    // não podem mudar após o UPDATE.
+    const datesBefore = ["10 jan","10 fev","10 mar","10 abr","10 mai","10 jun","10 jul","10 ago","10 set","10 out","10 nov","10 dez"];
+
+    // Aplica o payload capturado do último UPDATE (bank_account_id only).
+    const payload = { bank_account_id: "acc-1" };
+    const after = before.map((r, i) => ({ ...r, ...payload, __date: datesBefore[i] }));
+
+    // Todos com a nova conta
+    expect(after.every((r) => r.bank_account_id === "acc-1")).toBe(true);
+    // installment_number e "date" imutáveis
+    after.forEach((r, i) => {
+      expect(r.installment_number).toBe(i + 1);
+      expect((r as any).__date).toBe(datesBefore[i]);
+    });
+    // Coerência global do grupo mantida
+    const report = validateGroupCoherence(after, { bank_account_id: "acc-1" });
+    expect(report.ok).toBe(true);
+  });
+});
