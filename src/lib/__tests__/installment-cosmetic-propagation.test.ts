@@ -103,3 +103,72 @@ describe("Propagação automática de campos cosméticos em parcelamento 12x", (
     expect(updateCalls).toHaveLength(0);
   });
 });
+
+describe("Propagação de conta bancária (bank_account_id) em 12x", () => {
+  it("alterar conta bancária propaga para todas as parcelas do grupo em único UPDATE", async () => {
+    await propagateCosmeticFieldsToGroup(GROUP_ID, { bank_account_id: "acc-1" });
+
+    expect(updateCalls).toHaveLength(1);
+    const call = updateCalls[0];
+    expect(call.table).toBe("transactions");
+    expect(call.eqCol).toBe("installment_group_id");
+    expect(call.eqVal).toBe(GROUP_ID);
+    expect(call.payload).toEqual({ bank_account_id: "acc-1" });
+  });
+
+  it("permite limpar a conta bancária (null) propagando para todo o grupo", async () => {
+    await propagateCosmeticFieldsToGroup(GROUP_ID, { bank_account_id: null });
+
+    expect(updateCalls).toHaveLength(1);
+    expect(updateCalls[0].payload).toEqual({ bank_account_id: null });
+    expect(updateCalls[0].eqVal).toBe(GROUP_ID);
+  });
+
+  it("propaga bank_account_id independentemente do modo do grupo (divide)", async () => {
+    // O UPDATE não filtra por installment_mode — pega todas as 12 parcelas do
+    // grupo, sejam elas em modo "divide" ou "fixed".
+    await propagateCosmeticFieldsToGroup(GROUP_ID, { bank_account_id: "acc-divide" });
+
+    expect(updateCalls).toHaveLength(1);
+    const call = updateCalls[0];
+    expect(call.eqCol).toBe("installment_group_id");
+    expect(call.eqVal).toBe(GROUP_ID);
+    // Nenhum filtro por modo — evita deixar parcelas fora quando o grupo é misto.
+    expect(call.payload).not.toHaveProperty("installment_mode");
+  });
+
+  it("propaga bank_account_id independentemente do modo do grupo (fixed)", async () => {
+    await propagateCosmeticFieldsToGroup(GROUP_ID, { bank_account_id: "acc-fixed" });
+
+    expect(updateCalls).toHaveLength(1);
+    expect(updateCalls[0].eqCol).toBe("installment_group_id");
+    expect(updateCalls[0].payload).toEqual({ bank_account_id: "acc-fixed" });
+  });
+
+  it("grupo em modos mistos (divide + fixed): mesmo UPDATE alcança todas as parcelas", async () => {
+    // Simulamos dois grupos independentes para garantir que o filtro é
+    // sempre por installment_group_id e nunca por modo.
+    const GROUP_MIXED = "grp-mixed-12x";
+    await propagateCosmeticFieldsToGroup(GROUP_MIXED, { bank_account_id: "acc-x" });
+
+    expect(updateCalls).toHaveLength(1);
+    const call = updateCalls[0];
+    expect(call.eqCol).toBe("installment_group_id");
+    expect(call.eqVal).toBe(GROUP_MIXED);
+    expect(call.payload).toEqual({ bank_account_id: "acc-x" });
+  });
+
+  it("conta bancária + cartão juntos propagam para todo o grupo em um único UPDATE", async () => {
+    await propagateCosmeticFieldsToGroup(GROUP_ID, {
+      bank_account_id: "acc-1",
+      card: "Nubank",
+    });
+
+    expect(updateCalls).toHaveLength(1);
+    expect(updateCalls[0].payload).toEqual({
+      bank_account_id: "acc-1",
+      card: "Nubank",
+    });
+    expect(updateCalls[0].eqVal).toBe(GROUP_ID);
+  });
+});
