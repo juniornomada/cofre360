@@ -159,6 +159,7 @@ export function TransactionsPage() {
     const [updateScope, setUpdateScope] = useState<"single" | "all">(readSavedScope);
     const [rememberScopeChoice, setRememberScopeChoice] = useState<boolean>(true);
     const [scopeConfirmed, setScopeConfirmed] = useState(false);
+    const [scopeChanges, setScopeChanges] = useState<string[]>([]);
  
  
      const editInstallmentDetails = editTx ? calculateInstallmentDetails(
