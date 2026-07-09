@@ -807,6 +807,57 @@ describe("Edição de despesa parcelada no cartão — integração completa", (
   it("fixed→divide→fixed com edições em cada etapa persiste amount e source esperados a cada save", async () => {
     render(<EditDialogHarness initial={makeEditTx()} />);
 
+    // Helper: valida a coerência entre `saved` (perInstallment + updatePayload),
+    // `planArg` (contrato de saveInstallmentPlan) e o payload observado em
+    // supabase.update(), incluindo campos financeiros derivados.
+    const assertDerivedFinancials = (
+      callIndex: number,
+      expected: {
+        mode: "divide" | "fixed";
+        per: number;
+        src: number;
+        total: number;
+        expectedTotalEconomico: number;
+      },
+    ) => {
+      const savedNow = JSON.parse(screen.getByTestId("saved").textContent || "{}");
+      const planNow = (saveInstallmentPlan as any).mock.calls[callIndex][0];
+      const updatePayload = (updateMock.mock.calls as any[])[callIndex][0] as any;
+
+      // 1) Contratos básicos
+      expect(savedNow.mode).toBe(expected.mode);
+      expect(savedNow.per).toBe(expected.per);
+      expect(savedNow.src).toBe(expected.src);
+
+      // 2) Coerência entre saveInstallmentPlan ↔ update() ↔ perInstallment
+      expect(planNow.installmentMode).toBe(expected.mode);
+      expect(planNow.installmentAmount).toBe(expected.per);
+      expect(planNow.installmentSourceAmount).toBe(expected.src);
+      expect(planNow.total).toBe(expected.total);
+      expect(updatePayload.installment_mode).toBe(expected.mode);
+      expect(updatePayload.amount).toBe(expected.per);
+      expect(updatePayload.installment_source_amount).toBe(expected.src);
+
+      // 3) Campos financeiros derivados — TOTAL ECONÔMICO
+      //   fixed  → source = parcela; total econômico = parcela × N
+      //   divide → source = total;   total econômico = source (parcela × N ≈ source ± 2¢)
+      const totalEconomicoFromPlan =
+        expected.mode === "fixed"
+          ? planNow.installmentAmount * planNow.total
+          : planNow.installmentSourceAmount;
+      expect(totalEconomicoFromPlan).toBe(expected.expectedTotalEconomico);
+
+      // Coerência interna independente do modo: parcela × N ≈ total econômico esperado
+      expect(
+        Math.abs(planNow.installmentAmount * planNow.total - expected.expectedTotalEconomico),
+      ).toBeLessThanOrEqual(0.02);
+
+      // No modo fixed a parcela por linha deve coincidir com o source (invariante do modo)
+      if (expected.mode === "fixed") {
+        expect(planNow.installmentSourceAmount).toBe(planNow.installmentAmount);
+      }
+    };
+
     // Etapa 1) divide → fixed: parcela reconstituída = 1200/4 = 300
     fireEvent.click(screen.getByRole("button", { name: "Valor por parcela" }));
     expect(screen.getByTestId("mode").textContent).toBe("fixed");
@@ -816,20 +867,18 @@ describe("Edição de despesa parcelada no cartão — integração completa", (
     fireEvent.change(screen.getByTestId("amount-input"), { target: { value: "250" } });
     expect(screen.getByTestId("amount").textContent).toBe("250");
 
-    // Salva fixed (250)
+    // Salva fixed (250) → total econômico = 250 × 4 = 1000
     fireEvent.click(screen.getByRole("button", { name: /Salvar/ }));
     await waitFor(() =>
       expect((saveInstallmentPlan as any).mock.calls.length).toBe(1),
     );
-    let saved = JSON.parse(screen.getByTestId("saved").textContent || "{}");
-    expect(saved.mode).toBe("fixed");
-    expect(saved.per).toBe(250);
-    expect(saved.src).toBe(250);
-    let planArg = (saveInstallmentPlan as any).mock.calls[0][0];
-    expect(planArg.installmentAmount).toBe(250);
-    expect(planArg.installmentSourceAmount).toBe(250);
-    expect(planArg.installmentMode).toBe("fixed");
-    expect(planArg.total).toBe(4);
+    assertDerivedFinancials(0, {
+      mode: "fixed",
+      per: 250,
+      src: 250,
+      total: 4,
+      expectedTotalEconomico: 1000,
+    });
 
     // Etapa 2) fixed → divide: total reconstituído = 250 × 4 = 1000
     fireEvent.click(screen.getByRole("button", { name: "Dividir total" }));
@@ -840,19 +889,18 @@ describe("Edição de despesa parcelada no cartão — integração completa", (
     fireEvent.change(screen.getByTestId("amount-input"), { target: { value: "1200" } });
     expect(screen.getByTestId("amount").textContent).toBe("1200");
 
-    // Salva divide (1200) → parcela = 1200/4 = 300, source = 1200
+    // Salva divide (1200) → parcela = 1200/4 = 300, source = 1200, total econômico = 1200
     fireEvent.click(screen.getByRole("button", { name: /Salvar/ }));
     await waitFor(() =>
       expect((saveInstallmentPlan as any).mock.calls.length).toBe(2),
     );
-    saved = JSON.parse(screen.getByTestId("saved").textContent || "{}");
-    expect(saved.mode).toBe("divide");
-    expect(saved.per).toBe(300);
-    expect(saved.src).toBe(1200);
-    planArg = (saveInstallmentPlan as any).mock.calls[1][0];
-    expect(planArg.installmentAmount).toBe(300);
-    expect(planArg.installmentSourceAmount).toBe(1200);
-    expect(planArg.installmentMode).toBe("divide");
+    assertDerivedFinancials(1, {
+      mode: "divide",
+      per: 300,
+      src: 1200,
+      total: 4,
+      expectedTotalEconomico: 1200,
+    });
 
     // Etapa 3) divide → fixed: parcela reconstituída = 1200/4 = 300
     fireEvent.click(screen.getByRole("button", { name: "Valor por parcela" }));
@@ -863,20 +911,18 @@ describe("Edição de despesa parcelada no cartão — integração completa", (
     fireEvent.change(screen.getByTestId("amount-input"), { target: { value: "275" } });
     expect(screen.getByTestId("amount").textContent).toBe("275");
 
-    // Salva fixed (275) → amount = source = 275
+    // Salva fixed (275) → total econômico = 275 × 4 = 1100
     fireEvent.click(screen.getByRole("button", { name: /Salvar/ }));
     await waitFor(() =>
       expect((saveInstallmentPlan as any).mock.calls.length).toBe(3),
     );
-    saved = JSON.parse(screen.getByTestId("saved").textContent || "{}");
-    expect(saved.mode).toBe("fixed");
-    expect(saved.per).toBe(275);
-    expect(saved.src).toBe(275);
-    planArg = (saveInstallmentPlan as any).mock.calls[2][0];
-    expect(planArg.installmentAmount).toBe(275);
-    expect(planArg.installmentSourceAmount).toBe(275);
-    expect(planArg.installmentMode).toBe("fixed");
-    expect(planArg.installmentAmount * planArg.total).toBe(1100);
+    assertDerivedFinancials(2, {
+      mode: "fixed",
+      per: 275,
+      src: 275,
+      total: 4,
+      expectedTotalEconomico: 1100,
+    });
   });
 });
 
