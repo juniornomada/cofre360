@@ -147,6 +147,39 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
 
   const isFirstRender = useRef(true);
 
+  const PREFS_KEY = "quickadd:card-installment-prefs:v1";
+  type Prefs = {
+    enabled: boolean;
+    mode: "divide" | "fixed";
+    count: number;
+    amount: number;
+  };
+  const readPrefs = (): Prefs | null => {
+    try {
+      const raw = typeof window !== "undefined" ? window.localStorage.getItem(PREFS_KEY) : null;
+      if (!raw) return null;
+      const p = JSON.parse(raw);
+      if (typeof p !== "object" || p === null) return null;
+      return {
+        enabled: !!p.enabled,
+        mode: p.mode === "fixed" ? "fixed" : "divide",
+        count: Number.isFinite(p.count) && p.count >= 1 ? Math.floor(p.count) : 2,
+        amount: Number.isFinite(p.amount) ? p.amount : 0,
+      };
+    } catch {
+      return null;
+    }
+  };
+  const writePrefs = (p: Prefs) => {
+    try {
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(PREFS_KEY, JSON.stringify(p));
+      }
+    } catch {
+      // ignore quota / privacy-mode errors
+    }
+  };
+
   // Reset state every time the dialog opens with the requested initial type.
   useEffect(() => {
      if (!open) {
@@ -167,16 +200,20 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
     setIsTransfer(copyData ? (copyData.category === "Transferência" || copyData.category === "Transferências" || copyData.category.startsWith("Transferências >")) : initialType === "transfer");
     setTransferFromId("");
     setTransferToId("");
-    setInstallmentEnabled(false);
-    setInstallmentCount(2);
-    setInstallmentMode("divide");
+
+    // Restaurar preferências de parcelamento (modo/valor/N) da última abertura,
+    // quando não estamos duplicando uma transação existente e o tipo é despesa.
+    const prefs = !copyData && initialType !== "income" && initialType !== "transfer" ? readPrefs() : null;
+    setInstallmentEnabled(prefs?.enabled ?? false);
+    setInstallmentCount(prefs?.count ?? 2);
+    setInstallmentMode(prefs?.mode ?? "divide");
 
     setNewTx({
       icon: copyData ? copyData.icon : (initialType === "income" ? "💰" : "🍔"),
       name: copyData ? copyData.name : "",
       category: copyData ? copyData.category : (initialType === "income" ? "Renda > Salário" : "Alimentação > Outros"),
       date: format(new Date(), "dd MMM", { locale: ptBR }),
-      amount: copyData ? copyData.amount : 0,
+      amount: copyData ? copyData.amount : (prefs?.amount ?? 0),
       type: copyData ? (copyData.category.startsWith("Receita") || (copyData.category !== "Transferência" && !copyData.category.startsWith("Transferências") && !copyData.category.startsWith("Alimentação") && initialType === "income") ? "income" : "expense") : (initialType === "income" ? "income" : "expense"),
       card: copyData ? copyData.card : null,
       bank_account_id: copyData ? copyData.bank_account_id : null,
@@ -188,6 +225,18 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
       setNewTx(prev => ({ ...prev, type: isInc ? "income" : "expense" }));
     }
   }, [open, initialType, fetchData, fetchHistory]);
+
+  // Persistir preferências de parcelamento ao alterar.
+  useEffect(() => {
+    if (!open) return;
+    writePrefs({
+      enabled: installmentEnabled,
+      mode: installmentMode,
+      count: Number(installmentCount) || 1,
+      amount: newTx.amount || 0,
+    });
+  }, [open, installmentEnabled, installmentMode, installmentCount, newTx.amount]);
+
 
   const [confirmInstallmentDiff, setConfirmInstallmentDiff] = useState(false);
 
