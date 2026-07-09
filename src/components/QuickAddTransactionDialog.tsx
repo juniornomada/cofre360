@@ -75,6 +75,14 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
   const [installmentFixedValue, setInstallmentFixedValue] = useState(0);
   const [nameInputMode, setNameInputMode] = useState<"none" | "text">("none");
 
+  // In "fixed" mode, the amount typed IS the value per installment.
+  useEffect(() => {
+    if (installmentEnabled && installmentMode === "fixed") {
+      setInstallmentFixedValue(newTx.amount || 0);
+    }
+  }, [newTx.amount, installmentMode, installmentEnabled]);
+
+
   const fetchData = useCallback(async () => {
     try {
       const [
