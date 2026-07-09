@@ -119,10 +119,11 @@ describe("QuickAddTransactionDialog — restoração de preferências ao reabrir
   });
 
   it("restaura modo fixed, N=4 e valor por parcela ao reabrir", async () => {
-    const { rerender } = render(<Harness />);
+    render(<Harness />);
     await waitForOpen();
 
-    // Configura: fixed, 4x, R$ 250,00
+    // Configura: seleciona cartão, fixed, 4x, R$ 250,00
+    await selectCardNubank();
     clickParcelarToggle();
     clickMode("fixed");
     fireEvent.click(screen.getByRole("button", { name: "4x" }));
@@ -146,25 +147,25 @@ describe("QuickAddTransactionDialog — restoração de preferências ao reabrir
     reopenDialog();
     await waitForOpen();
 
-    // Estado restaurado
+    // Valor e estado interno de parcelamento restaurados antes da seleção de cartão
+    expect(getAmountReais()).toBe(250);
+
+    // Ao reselecionar o cartão, a UI de parcelamento reflete o estado restaurado
+    await selectCardNubank();
     expect(parcelarIsOn()).toBe(true);
     expect(isModeActive("fixed")).toBe(true);
     expect(isCountActive(4)).toBe(true);
-    expect(getAmountReais()).toBe(250);
-    // Summary condiz com fixed × 4
     await waitFor(() => {
       expect(screen.getByText(/4x de/)).toBeInTheDocument();
       expect(screen.getByText(/Total da compra:/)).toBeInTheDocument();
     });
-
-    // rerender for TS unused-warning safety
-    rerender(<Harness />);
   });
 
   it("restaura modo divide, N=6 e valor total ao reabrir", async () => {
     render(<Harness />);
     await waitForOpen();
 
+    await selectCardNubank();
     clickParcelarToggle(); // default mode = divide
     fireEvent.click(screen.getByRole("button", { name: "6x" }));
     setAmount(1200);
@@ -178,16 +179,19 @@ describe("QuickAddTransactionDialog — restoração de preferências ao reabrir
     reopenDialog();
     await waitForOpen();
 
+    expect(getAmountReais()).toBe(1200);
+
+    await selectCardNubank();
     expect(parcelarIsOn()).toBe(true);
     expect(isModeActive("divide")).toBe(true);
     expect(isCountActive(6)).toBe(true);
-    expect(getAmountReais()).toBe(1200);
   });
 
   it("mantém 'Parcelar' desligado ao reabrir quando o usuário desativou antes de fechar", async () => {
     render(<Harness />);
     await waitForOpen();
 
+    await selectCardNubank();
     clickParcelarToggle(); // ON
     setAmount(500);
     clickParcelarToggle(); // OFF de novo
@@ -202,9 +206,10 @@ describe("QuickAddTransactionDialog — restoração de preferências ao reabrir
     reopenDialog();
     await waitForOpen();
 
-    expect(parcelarIsOn()).toBe(false);
-    // valor da última sessão continua restaurado (o campo é a "última despesa")
+    // Valor persistido; parcelamento desligado
     expect(getAmountReais()).toBe(500);
+    await selectCardNubank();
+    expect(parcelarIsOn()).toBe(false);
   });
 
   it("IGNORA preferências quando o diálogo abre com copyData (duplicação)", async () => {
