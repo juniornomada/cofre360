@@ -150,7 +150,14 @@ export function TransactionsPage() {
     const [confirmInstallmentDiff, setConfirmInstallmentDiff] = useState(false);
     const [editNameMode, setEditNameMode] = useState<"none" | "text">("none");
     const [showUpdateScopeDialog, setShowUpdateScopeDialog] = useState(false);
-    const [updateScope, setUpdateScope] = useState<"single" | "all">("single");
+    const UPDATE_SCOPE_PREF_KEY = "installment.updateScope.preference";
+    const readSavedScope = (): "single" | "all" => {
+      if (typeof window === "undefined") return "single";
+      const v = window.localStorage.getItem(UPDATE_SCOPE_PREF_KEY);
+      return v === "all" ? "all" : "single";
+    };
+    const [updateScope, setUpdateScope] = useState<"single" | "all">(readSavedScope);
+    const [rememberScopeChoice, setRememberScopeChoice] = useState<boolean>(true);
  
  
      const editInstallmentDetails = editTx ? calculateInstallmentDetails(
