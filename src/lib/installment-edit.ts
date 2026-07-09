@@ -66,7 +66,13 @@ export type InstallmentEditSnapshot = {
   category?: string | null;
   icon?: string | null;
   date?: string | null;
+  card?: string | null;
+  bank_account_id?: string | null;
 };
+
+// Fields that ALWAYS propagate to every installment in the group without asking
+// (they describe the purchase itself, not a specific parcel).
+export const COSMETIC_INSTALLMENT_FIELDS = ["Categoria", "Ícone", "Cartão", "Conta"] as const;
 
 export function detectInstallmentChanges(
   original: InstallmentEditSnapshot,
@@ -80,8 +86,47 @@ export function detectInstallmentChanges(
   if ((original.category || "") !== (edited.category || "")) changes.push("Categoria");
   if ((original.icon || "") !== (edited.icon || "")) changes.push("Ícone");
   if ((original.date || "") !== (edited.date || "")) changes.push("Data");
+  if ((original.card || "") !== (edited.card || "")) changes.push("Cartão");
+  if ((original.bank_account_id || "") !== (edited.bank_account_id || "")) changes.push("Conta");
   return changes;
 }
+
+export function splitInstallmentChanges(changes: string[]): {
+  cosmetic: string[];
+  structural: string[];
+} {
+  const cosmeticSet = new Set<string>(COSMETIC_INSTALLMENT_FIELDS);
+  const cosmetic: string[] = [];
+  const structural: string[] = [];
+  for (const c of changes) {
+    if (cosmeticSet.has(c)) cosmetic.push(c);
+    else structural.push(c);
+  }
+  return { cosmetic, structural };
+}
+
+/**
+ * Propagates "cosmetic" fields (category/icon/card/bank account) to every
+ * sibling in an installment group. Safe to call whenever such a field changed
+ * on any parcel — the whole purchase should stay in sync.
+ */
+export async function propagateCosmeticFieldsToGroup(
+  groupId: string,
+  fields: { category?: string | null; icon?: string | null; card?: string | null; bank_account_id?: string | null },
+): Promise<void> {
+  const updates: Record<string, any> = {};
+  if (fields.category !== undefined) updates.category = fields.category;
+  if (fields.icon !== undefined) updates.icon = fields.icon;
+  if (fields.card !== undefined) updates.card = fields.card;
+  if (fields.bank_account_id !== undefined) updates.bank_account_id = fields.bank_account_id;
+  if (Object.keys(updates).length === 0) return;
+  const { error } = await supabase
+    .from("transactions")
+    .update(updates)
+    .eq("installment_group_id", groupId);
+  if (error) throw error;
+}
+
 
 
 function uuid(): string {

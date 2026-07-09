@@ -24,7 +24,7 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { supabase } from "@/integrations/supabase/client";
-import { saveInstallmentPlan, stripInstallmentSuffix, detectInstallmentChanges } from "@/lib/installment-edit";
+import { saveInstallmentPlan, stripInstallmentSuffix, detectInstallmentChanges, splitInstallmentChanges, propagateCosmeticFieldsToGroup } from "@/lib/installment-edit";
 import { toDivideMode, toFixedMode, validateInstallmentInputs, changeInstallmentCount } from "@/lib/installment-mode-toggle";
 import { deleteTransactionScope, isInstallmentTx } from "@/lib/installment-delete";
 import { loadEditDraft, saveEditDraft, clearEditDraft } from "@/lib/edit-transaction-draft";
@@ -553,6 +553,8 @@ export function TransactionsPage() {
              category: originalTx.category,
              icon: originalTx.icon,
              date: originalTx.date,
+             card: originalTx.card,
+             bank_account_id: originalTx.bank_account_id,
            },
            {
              name: editTx.name,
@@ -561,16 +563,23 @@ export function TransactionsPage() {
              category: editTx.category,
              icon: editTx.icon,
              date: editTx.date,
+             card: editTx.card,
+             bank_account_id: editTx.bank_account_id,
            },
            effectiveAmount,
          );
-         if (changes.length > 0) {
-           setScopeChanges(changes);
+         const { structural } = splitInstallmentChanges(changes);
+         // Only ask about scope for structural changes (name/value/count/date).
+         // Cosmetic fields (category/icon/card/account) always propagate to the
+         // whole group automatically — they describe the purchase itself.
+         if (structural.length > 0) {
+           setScopeChanges(structural);
            setShowUpdateScopeDialog(true);
            return;
          }
        }
      }
+
 
 
      if (hasEditDiff && !confirmInstallmentDiff) {
@@ -656,6 +665,27 @@ export function TransactionsPage() {
         updateAllInGroup: updateScope === "all",
         syncDates: updateScope === "all" && !!scopeChanges.includes("Data"),
       });
+
+      // Always propagate cosmetic fields (category/icon/card/account) to all
+      // siblings in the group — a purchase's category/card is a property of
+      // the whole plan, not of a single installment.
+      if (editTx.installment_group_id) {
+        const originalTx = transactions.find(t => t.id === editTx.id);
+        const cosmeticChanged =
+          !originalTx ||
+          (originalTx.category || "") !== (editTx.category || "") ||
+          (originalTx.icon || "") !== (editTx.icon || "") ||
+          (originalTx.card || "") !== (editTx.card || "") ||
+          (originalTx.bank_account_id || "") !== (editTx.bank_account_id || "");
+        if (cosmeticChanged) {
+          await propagateCosmeticFieldsToGroup(editTx.installment_group_id, {
+            category: editTx.category,
+            icon: editTx.icon,
+            card: editTx.card ?? null,
+            bank_account_id: editTx.bank_account_id ?? null,
+          });
+        }
+      }
 
       if (result.cleared) {
         toast.success("Parcelamento removido");
