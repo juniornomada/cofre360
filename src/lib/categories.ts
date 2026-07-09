@@ -177,7 +177,7 @@ export const categoryTree: CategoryGroup[] = [
     subcategories: [
       { label: "Salário", icon: "💼" },
       { label: "Freelance", icon: "💻" },
-      { label: "Rendimentos", icon: "📈" },
+      { label: "Juros", icon: "📈" },
       { label: "Reembolso", icon: "↩️" },
       { label: "Outros", icon: "💰" },
     ],
