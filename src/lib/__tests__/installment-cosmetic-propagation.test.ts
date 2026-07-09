@@ -552,3 +552,139 @@ describe("Propagação de bank_account_id — payload NUNCA carrega campos estru
     expect(report.ok).toBe(true);
   });
 });
+
+describe("Cosmético-only — payload não recalcula estrutura em NENHUMA parcela", () => {
+  type StructuralSnapshot = {
+    installment_number: number;
+    amount: number;
+    installment_source_amount: number;
+    installment_mode: string;
+    date: string;
+    total_installments: number;
+  };
+
+  function snapshotStructure(rows: (InstallmentGroupRow & { date: string })[]): StructuralSnapshot[] {
+    return rows.map((r) => ({
+      installment_number: r.installment_number!,
+      amount: r.amount,
+      installment_source_amount: r.installment_source_amount!,
+      installment_mode: r.installment_mode!,
+      date: r.date,
+      total_installments: r.total_installments!,
+    }));
+  }
+
+  const DATES_12 = [
+    "10 jan","10 fev","10 mar","10 abr","10 mai","10 jun",
+    "10 jul","10 ago","10 set","10 out","10 nov","10 dez",
+  ];
+
+  function buildGroupWithDates(groupId: string, mode: "divide" | "fixed", perAmount: number, source: number) {
+    return DATES_12.map((d, i) => ({
+      installment_group_id: groupId,
+      installment_number: i + 1,
+      total_installments: 12,
+      amount: perAmount,
+      installment_source_amount: source,
+      installment_mode: mode,
+      date: d,
+      category: "Original",
+      icon: "🛒",
+      card: "Nubank",
+      bank_account_id: null,
+    })) as (InstallmentGroupRow & { date: string })[];
+  }
+
+  function applyLastPayload<T extends Record<string, any>>(rows: T[]): T[] {
+    const call = updateCalls[updateCalls.length - 1];
+    if (!call || call.eqCol !== "installment_group_id") return rows;
+    return rows.map((r) =>
+      r.installment_group_id === call.eqVal ? { ...r, ...call.payload } : r,
+    );
+  }
+
+  it("modo 'divide' 12x: payload cosmético não altera amount/date/source/mode/número de nenhuma das 12 parcelas", async () => {
+    const groupId = "grp-divide-12";
+    const before = buildGroupWithDates(groupId, "divide", 83.33, 1000);
+    const structBefore = snapshotStructure(before);
+
+    await propagateCosmeticFieldsToGroup(groupId, {
+      category: "Mercado",
+      icon: "🍎",
+      card: "XP",
+      bank_account_id: "acc-1",
+    });
+
+    // Payload NÃO contém nenhuma chave estrutural
+    const payload = updateCalls[0].payload;
+    expect(Object.keys(payload).sort()).toEqual(["bank_account_id", "card", "category", "icon"]);
+
+    const after = applyLastPayload(before);
+    // Cosméticos aplicados em TODAS
+    expect(after.every((r) =>
+      r.category === "Mercado" && r.icon === "🍎" && r.card === "XP" && r.bank_account_id === "acc-1",
+    )).toBe(true);
+    // Estrutura BYTE-IDÊNTICA em todas as 12 parcelas
+    expect(snapshotStructure(after)).toEqual(structBefore);
+    // Grupo permanece coerente
+    expect(validateGroupCoherence(after, {
+      category: "Mercado", icon: "🍎", card: "XP", bank_account_id: "acc-1",
+    }).ok).toBe(true);
+  });
+
+  it("modo 'fixed' 12x: payload cosmético não recalcula parcela nem source_amount", async () => {
+    const groupId = "grp-fixed-12";
+    const before = buildGroupWithDates(groupId, "fixed", 100, 100); // fixed: source = per
+    const structBefore = snapshotStructure(before);
+
+    await propagateCosmeticFieldsToGroup(groupId, { category: "Assinatura" });
+
+    expect(updateCalls[0].payload).toEqual({ category: "Assinatura" });
+    const after = applyLastPayload(before);
+    expect(snapshotStructure(after)).toEqual(structBefore);
+    expect(after.every((r) => r.installment_mode === "fixed" && r.amount === 100)).toBe(true);
+  });
+
+  it("propagação seletiva (apenas ícone) não mexe em categoria/cartão/conta das outras parcelas", async () => {
+    const groupId = "grp-selective";
+    const before = buildGroupWithDates(groupId, "divide", 83.33, 1000);
+
+    await propagateCosmeticFieldsToGroup(groupId, { icon: "🎬" });
+
+    expect(updateCalls[0].payload).toEqual({ icon: "🎬" });
+    const after = applyLastPayload(before);
+    // Ícone trocou em todas
+    expect(after.every((r) => r.icon === "🎬")).toBe(true);
+    // Demais cosméticos preservados
+    expect(after.every((r) =>
+      r.category === "Original" && r.card === "Nubank" && r.bank_account_id === null,
+    )).toBe(true);
+    // Estrutura intacta
+    expect(snapshotStructure(after)).toEqual(snapshotStructure(before));
+  });
+
+  it("total econômico do grupo permanece EXATAMENTE igual antes e depois da propagação", async () => {
+    const groupId = "grp-econ";
+    const before = buildGroupWithDates(groupId, "divide", 83.33, 1000);
+    const sumBefore = before.reduce((s, r) => s + r.amount, 0);
+    const sourceBefore = before[0].installment_source_amount!;
+
+    await propagateCosmeticFieldsToGroup(groupId, {
+      category: "Mercado", icon: "🍎", card: "XP", bank_account_id: "acc-1",
+    });
+    const after = applyLastPayload(before);
+    const sumAfter = after.reduce((s, r) => s + r.amount, 0);
+    const sourceAfter = after[0].installment_source_amount!;
+
+    expect(sumAfter).toBe(sumBefore);
+    expect(sourceAfter).toBe(sourceBefore);
+  });
+
+  it("cadência mensal (datas) preservada após propagação cosmética", async () => {
+    const groupId = "grp-dates";
+    const before = buildGroupWithDates(groupId, "divide", 83.33, 1000);
+    await propagateCosmeticFieldsToGroup(groupId, { card: "XP" });
+    const after = applyLastPayload(before);
+    expect(after.map((r) => r.date)).toEqual(DATES_12);
+  });
+});
