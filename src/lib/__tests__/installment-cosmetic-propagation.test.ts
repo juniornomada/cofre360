@@ -753,8 +753,9 @@ describe("Isolamento por installment_group_id — propagação NUNCA vaza para o
     });
     const other2 = buildGroup("grp-other-2", 3, {
       category: "Saúde", icon: "💊", card: "Itaú", bank_account_id: null,
-      perAmount: 200, source: 200, mode: "fixed",
+      perAmount: 200, source: 600, mode: "fixed",
     });
+
 
     const before = [...target, ...other1, ...other2];
     const otherBefore = snapshot([...other1, ...other2]);
