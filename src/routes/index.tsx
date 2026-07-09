@@ -566,6 +566,27 @@ function Dashboard() {
         installmentSourceAmount: editTx.amount,
       });
 
+      // Always propagate cosmetic fields (category/icon/card/account) to all
+      // siblings in the group — a purchase's category/card is a property of
+      // the whole plan, not of a single installment.
+      if (editTx.installment_group_id) {
+        const originalTx = allTransactions.find(t => t.id === editTx.id);
+        const cosmeticChanged =
+          !originalTx ||
+          (originalTx.category || "") !== (editTx.category || "") ||
+          (originalTx.icon || "") !== (editTx.icon || "") ||
+          (originalTx.card || "") !== (editTx.card || "") ||
+          (originalTx.bank_account_id || "") !== (editTx.bank_account_id || "");
+        if (cosmeticChanged) {
+          await propagateCosmeticFieldsToGroup(editTx.installment_group_id, {
+            category: editTx.category,
+            icon: editTx.icon,
+            card: editTx.card ?? null,
+            bank_account_id: editTx.bank_account_id ?? null,
+          });
+        }
+      }
+
       if (result.cleared) {
         toast.success("Parcelamento removido");
       } else if (result.futureRowsAdded > 0) {
