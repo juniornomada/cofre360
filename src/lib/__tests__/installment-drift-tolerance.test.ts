@@ -101,14 +101,12 @@ describe("Drift paramétrico — driftWithinTolerance", () => {
     }
   });
 
-  it("tolerância nunca é negativa: drift=0 com tol negativa falha (sanidade)", () => {
-    const rows = buildRowsWithDrift(N, SOURCE, 0);
-    // Convenção defensiva: tol < 0 ⇒ predicado impossível de satisfazer com drift > 0.
-    // Como drift==0 é o edge, com tol=-1 (=-0.01) e epsilon 1e-9 continua passando;
-    // já com drift=1¢ e tol=-1 falha, comprovando que valores negativos endurecem o limite.
-    expect(driftWithinTolerance(rows, SOURCE, -1)).toBe(true); // drift zero
-    const rows1 = buildRowsWithDrift(N, SOURCE, 1);
-    expect(driftWithinTolerance(rows1, SOURCE, -1)).toBe(false);
+  it("tolerância negativa endurece o limite: qualquer drift > 0 falha", () => {
+    for (const drift of [1, 2, 5, 10]) {
+      const rows = buildRowsWithDrift(N, SOURCE, drift);
+      expect(driftWithinTolerance(rows, SOURCE, -1)).toBe(false);
+      expect(driftWithinTolerance(rows, SOURCE, -drift)).toBe(false);
+    }
   });
 });
 
