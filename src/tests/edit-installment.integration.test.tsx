@@ -250,7 +250,7 @@ describe("Edição de despesa parcelada no cartão — integração completa", (
     fireEvent.click(screen.getByRole("button", { name: /Salvar/ }));
 
     await waitFor(() => expect(updateMock).toHaveBeenCalled());
-    const payload = updateMock.mock.calls[0][0] as any;
+    const payload = (updateMock.mock.calls as any[])[0][0] as any;
     expect(payload.installment_mode).toBe("fixed");
     expect(payload.amount).toBe(300); // amount da linha atual = parcela
     // No modo fixed, editTx.amount é a parcela → source_amount armazenado
@@ -271,7 +271,7 @@ describe("Edição de despesa parcelada no cartão — integração completa", (
     fireEvent.click(screen.getByRole("button", { name: /Salvar/ }));
 
     await waitFor(() => expect(updateMock).toHaveBeenCalled());
-    const payload = updateMock.mock.calls[0][0] as any;
+    const payload = (updateMock.mock.calls as any[])[0][0] as any;
     expect(payload.installment_mode).toBe("divide");
     expect(payload.amount).toBe(300); // 1200 / 4
     expect(payload.installment_source_amount).toBe(1200);
