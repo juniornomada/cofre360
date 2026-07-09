@@ -25,7 +25,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { supabase } from "@/integrations/supabase/client";
 import { saveInstallmentPlan, stripInstallmentSuffix, detectInstallmentChanges } from "@/lib/installment-edit";
-import { toDivideMode, toFixedMode, validateInstallmentInputs } from "@/lib/installment-mode-toggle";
+import { toDivideMode, toFixedMode, validateInstallmentInputs, changeInstallmentCount } from "@/lib/installment-mode-toggle";
 import { deleteTransactionScope, isInstallmentTx } from "@/lib/installment-delete";
 import { toast } from "sonner";
 import { Layers } from "lucide-react";
@@ -1276,7 +1276,16 @@ export function TransactionsPage() {
                         <button
                           key={n}
                           type="button"
-                          onClick={() => setEditTx({ ...editTx, total_installments: n })}
+                          onClick={() => {
+                            const prevCount = Math.max(1, Number(editTx.total_installments) || 1);
+                            const next = changeInstallmentCount({
+                              mode: editInstallmentMode,
+                              amount: editTx.amount,
+                              prevCount,
+                              newCount: n,
+                            });
+                            setEditTx({ ...editTx, total_installments: n, amount: next.amount });
+                          }}
                           className={cn(
                             "px-2 py-1 rounded text-[10px] font-medium transition-colors border",
                             Number(editTx.total_installments) === n 
@@ -1296,7 +1305,19 @@ export function TransactionsPage() {
                         value={editTx.total_installments ?? 1}
                         onChange={e => {
                           const val = e.target.value;
-                          setEditTx({ ...editTx, total_installments: val === "" ? null : Math.max(1, parseInt(val) || 1) });
+                          if (val === "") {
+                            setEditTx({ ...editTx, total_installments: null });
+                            return;
+                          }
+                          const newCount = Math.max(1, parseInt(val) || 1);
+                          const prevCount = Math.max(1, Number(editTx.total_installments) || 1);
+                          const next = changeInstallmentCount({
+                            mode: editInstallmentMode,
+                            amount: editTx.amount,
+                            prevCount,
+                            newCount,
+                          });
+                          setEditTx({ ...editTx, total_installments: newCount, amount: next.amount });
                         }}
                         className="w-full rounded-lg bg-background px-2 py-1.5 text-sm text-foreground outline-none border border-border focus:border-primary/50"
                       />

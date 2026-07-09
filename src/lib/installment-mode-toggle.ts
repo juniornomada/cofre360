@@ -73,6 +73,33 @@ export function computeTotal(mode: InstallmentMode, amount: number, fixedValue: 
 }
 
 /**
+ * Recompute the amount field when the installment count (N) changes, preserving
+ * the economic total (parcela × N) of the purchase:
+ *   - divide mode: the total lives in `amount`, so it stays put; only the
+ *     derived per-parcela changes (total / newCount).
+ *   - fixed mode: total = amount × prevCount; the new per-parcela becomes
+ *     total / newCount so the economic total remains invariant.
+ */
+export function changeInstallmentCount(input: {
+  mode: InstallmentMode;
+  amount: number;
+  fixedValue?: number;
+  prevCount: number;
+  newCount: number;
+}): ToggleOutput {
+  const prev = Math.max(1, Math.floor(input.prevCount || 1));
+  const next = Math.max(1, Math.floor(input.newCount || 1));
+  if (input.mode === "divide") {
+    const total = round2(input.amount || 0);
+    return { mode: "divide", amount: total, fixedValue: round2(total / next), total };
+  }
+  const per = input.amount || input.fixedValue || 0;
+  const total = round2(per * prev);
+  const newPer = round2(total / next);
+  return { mode: "fixed", amount: newPer, fixedValue: newPer, total };
+}
+
+/**
  * Validate that a mode + inputs represent a coherent installment plan.
  * Returns a friendly error message, or null when everything checks out.
  */
