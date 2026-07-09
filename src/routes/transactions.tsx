@@ -27,6 +27,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { saveInstallmentPlan, stripInstallmentSuffix, detectInstallmentChanges } from "@/lib/installment-edit";
 import { toDivideMode, toFixedMode, validateInstallmentInputs, changeInstallmentCount } from "@/lib/installment-mode-toggle";
 import { deleteTransactionScope, isInstallmentTx } from "@/lib/installment-delete";
+import { loadEditDraft, saveEditDraft, clearEditDraft } from "@/lib/edit-transaction-draft";
 import { toast } from "sonner";
 import { Layers } from "lucide-react";
 import { useUserPreferences } from "@/hooks/use-user-preferences";
@@ -479,14 +480,44 @@ export function TransactionsPage() {
 
 
   const handleEdit = (tx: Transaction) => {
-    setEditTx({ 
-      ...tx, 
-      amount: tx.installment_mode === "divide" ? (tx.installment_source_amount ?? tx.amount) : tx.amount 
-    });
-    setEditInstallmentMode(tx.installment_mode || "divide");
+    const baseAmount = tx.installment_mode === "divide" ? (tx.installment_source_amount ?? tx.amount) : tx.amount;
+    const baseMode: "divide" | "fixed" = tx.installment_mode || "divide";
+    const draft = loadEditDraft(tx.id);
+    if (draft) {
+      setEditTx({ ...tx, amount: baseAmount, ...draft.fields });
+      setEditInstallmentMode(draft.mode ?? baseMode);
+      toast.info("Rascunho da edição anterior restaurado");
+    } else {
+      setEditTx({ ...tx, amount: baseAmount });
+      setEditInstallmentMode(baseMode);
+    }
     setEditNameMode("none");
     setShowEditDialog(true);
   };
+
+  // Autosave edit draft while the edit dialog is open (debounced).
+  useEffect(() => {
+    if (!showEditDialog || !editTx?.id) return;
+    const id = editTx.id;
+    const handle = window.setTimeout(() => {
+      saveEditDraft(id, {
+        fields: {
+          amount: editTx.amount,
+          total_installments: editTx.total_installments ?? null,
+          installment_number: editTx.installment_number ?? null,
+          category: editTx.category,
+          icon: editTx.icon,
+          name: editTx.name,
+          date: editTx.date,
+          type: editTx.type,
+          card: editTx.card ?? null,
+          bank_account_id: editTx.bank_account_id ?? null,
+        },
+        mode: editInstallmentMode,
+      });
+    }, 300);
+    return () => window.clearTimeout(handle);
+  }, [showEditDialog, editTx, editInstallmentMode]);
 
   const handleCopy = (tx: Transaction) => {
     // Strip installment suffix for the copy
@@ -635,6 +666,7 @@ export function TransactionsPage() {
       } else {
         toast.success("Transação atualizada");
       }
+      if (editTx?.id) clearEditDraft(editTx.id);
     } catch (e) {
       console.error(e);
       toast.error("Erro ao salvar transação");
@@ -656,6 +688,7 @@ export function TransactionsPage() {
     if (!deleteTarget) return;
     try {
       const { deletedCount } = await deleteTransactionScope(deleteTarget, deleteScope);
+      if (deleteTarget?.id) clearEditDraft(deleteTarget.id);
       if (deletedCount > 1) {
         toast.success(`${deletedCount} transações excluídas`);
       } else {
