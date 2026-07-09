@@ -168,10 +168,10 @@ describe("Sequências alternadas de edição inválida ↔ válida mantêm drift
         const attempt: InstallmentEditSnapshot = {
           ...originalSnap,
           ...it.edit,
-          category: it.cosmetic.category ?? originalSnap.category,
-          icon: it.cosmetic.icon ?? originalSnap.icon,
-          card: it.cosmetic.card ?? originalSnap.card,
-          bank_account_id: it.cosmetic.bank_account_id ?? originalSnap.bank_account_id,
+          ...("category" in it.cosmetic ? { category: it.cosmetic.category } : {}),
+          ...("icon" in it.cosmetic ? { icon: it.cosmetic.icon } : {}),
+          ...("card" in it.cosmetic ? { card: it.cosmetic.card } : {}),
+          ...("bank_account_id" in it.cosmetic ? { bank_account_id: it.cosmetic.bank_account_id } : {}),
         };
         const sanitized = sanitize(originalSnap, attempt);
         const { structural, cosmetic } = splitInstallmentChanges(
