@@ -48,7 +48,7 @@ const InstallmentRowSchema = z
       .number()
       .positive()
       .finite()
-      .refine((n) => Math.round(n * 100) === n * 100, "amount must have ≤ 2 decimals"),
+      .refine((n) => Math.abs(Math.round(n * 100) - n * 100) < 1e-6, "amount must have ≤ 2 decimals"),
     installment_source_amount: z.number().positive().finite(),
     installment_mode: z.enum(["divide", "fixed"]),
     category: z.string().nullable(),
