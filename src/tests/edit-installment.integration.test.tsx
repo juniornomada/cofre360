@@ -182,6 +182,22 @@ function EditDialogHarness({ initial }: { initial: EditTx }) {
       >
         Valor por parcela
       </button>
+      <button
+        type="button"
+        data-testid="change-count-6"
+        onClick={() => {
+          const next = changeInstallmentCount({
+            mode: editInstallmentMode,
+            amount: editTx.amount,
+            fixedValue: editInstallmentMode === "fixed" ? editTx.amount : 0,
+            prevCount: editTx.total_installments,
+            newCount: 6,
+          });
+          setEditTx({ ...editTx, amount: next.amount, total_installments: 6 });
+        }}
+      >
+        Mudar para 6x
+      </button>
       <button type="button" onClick={handleSave}>
         Salvar
       </button>
