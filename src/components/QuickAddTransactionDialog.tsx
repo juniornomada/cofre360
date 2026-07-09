@@ -752,19 +752,24 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                             </div>
                           </div>
                         </div>
-                        {installmentMode === "fixed" && (
-                          <div className="space-y-1">
-                            <label className="text-[11px] font-semibold text-foreground block">Valor de cada parcela</label>
-                            <CalculatorAmountInput
-                              value={installmentFixedValue}
-                              onChange={v => setInstallmentFixedValue(v)}
-                            />
-                          </div>
-                        )}
                       </div>
-                        <div className="space-y-1.5">
-                          <p className="text-[10px] text-muted-foreground">
-                            {installmentDetails.formattedSummary}
+                        <div className="space-y-1.5 rounded-md bg-primary/5 border border-primary/20 p-2">
+                          <p className="text-[11px] text-foreground font-medium">
+                            {installmentMode === "fixed" ? (
+                              <>
+                                {installmentDetails.count}x de <span className="font-bold text-primary">R$ {installmentDetails.valorParcela.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
+                                <span className="block text-[10px] text-muted-foreground mt-0.5">
+                                  Total da compra: R$ {installmentDetails.totalCalculado.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                                </span>
+                              </>
+                            ) : (
+                              <>
+                                {installmentDetails.count}x de <span className="font-bold text-primary">R$ {installmentDetails.valorParcela.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
+                                <span className="block text-[10px] text-muted-foreground mt-0.5">
+                                  Total dividido: R$ {installmentDetails.totalCalculado.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}{installmentDetails.aviso}
+                                </span>
+                              </>
+                            )}
                           </p>
                           {hasDiff && (
                             <label className="flex items-center gap-2 cursor-pointer group">
@@ -780,6 +785,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                             </label>
                           )}
                         </div>
+
                     </>
                   )}
                 </div>
