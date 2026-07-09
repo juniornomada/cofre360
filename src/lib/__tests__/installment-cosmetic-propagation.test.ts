@@ -688,3 +688,193 @@ describe("Cosmético-only — payload não recalcula estrutura em NENHUMA parcel
     expect(after.map((r) => r.date)).toEqual(DATES_12);
   });
 });
+
+describe("Isolamento por installment_group_id — propagação NUNCA vaza para outros grupos", () => {
+  type Row = InstallmentGroupRow & { id: string; date: string };
+
+  const buildGroup = (
+    groupId: string,
+    n: number,
+    base: { category: string; icon: string; card: string; bank_account_id: string | null; perAmount: number; source: number; mode: "divide" | "fixed" },
+  ): Row[] =>
+    Array.from({ length: n }, (_, i) => ({
+      id: `${groupId}-${i + 1}`,
+      installment_group_id: groupId,
+      installment_number: i + 1,
+      total_installments: n,
+      amount: base.perAmount,
+      installment_source_amount: base.source,
+      installment_mode: base.mode,
+      date: `10 ${["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"][i % 12]}`,
+      category: base.category,
+      icon: base.icon,
+      card: base.card,
+      bank_account_id: base.bank_account_id,
+    }));
+
+  // Applies the LAST captured UPDATE to a heterogeneous payload of rows spanning
+  // multiple groups. Mirrors PostgREST semantics: only rows matching
+  // `installment_group_id = <value>` receive the payload.
+  function applyLastUpdateScoped(payload: Row[]): Row[] {
+    const call = updateCalls[updateCalls.length - 1];
+    if (!call || call.eqCol !== "installment_group_id") return payload;
+    return payload.map((r) =>
+      r.installment_group_id === call.eqVal ? { ...r, ...call.payload } : r,
+    );
+  }
+
+  const cosmeticFields = ["category", "icon", "card", "bank_account_id"] as const;
+  const structuralFields = [
+    "amount",
+    "installment_source_amount",
+    "installment_mode",
+    "installment_number",
+    "total_installments",
+    "date",
+  ] as const;
+
+  function snapshot(rows: Row[]) {
+    return rows.map((r) => ({
+      id: r.id,
+      installment_group_id: r.installment_group_id,
+      ...Object.fromEntries(cosmeticFields.map((k) => [k, r[k]])),
+      ...Object.fromEntries(structuralFields.map((k) => [k, (r as any)[k]])),
+    }));
+  }
+
+  it("altera SOMENTE as parcelas do grupo alvo — grupos vizinhos ficam byte-idênticos", async () => {
+    const target = buildGroup("grp-target", 12, {
+      category: "Original", icon: "🛒", card: "Nubank", bank_account_id: null,
+      perAmount: 83.33, source: 1000, mode: "divide",
+    });
+    const other1 = buildGroup("grp-other-1", 6, {
+      category: "Lazer", icon: "🎬", card: "XP", bank_account_id: "acc-x",
+      perAmount: 50, source: 300, mode: "divide",
+    });
+    const other2 = buildGroup("grp-other-2", 3, {
+      category: "Saúde", icon: "💊", card: "Itaú", bank_account_id: null,
+      perAmount: 200, source: 200, mode: "fixed",
+    });
+
+    const before = [...target, ...other1, ...other2];
+    const otherBefore = snapshot([...other1, ...other2]);
+
+    await propagateCosmeticFieldsToGroup("grp-target", {
+      category: "Mercado", icon: "🍎", card: "Bradesco", bank_account_id: "acc-new",
+    });
+
+    // Único UPDATE, filtrado pelo grupo alvo.
+    expect(updateCalls).toHaveLength(1);
+    expect(updateCalls[0].eqCol).toBe("installment_group_id");
+    expect(updateCalls[0].eqVal).toBe("grp-target");
+
+    const after = applyLastUpdateScoped(before);
+    const afterTarget = after.filter((r) => r.installment_group_id === "grp-target");
+    const afterOthers = after.filter((r) => r.installment_group_id !== "grp-target");
+
+    // TODAS as parcelas do alvo receberam os cosméticos.
+    expect(afterTarget).toHaveLength(12);
+    for (const r of afterTarget) {
+      expect(r.category).toBe("Mercado");
+      expect(r.icon).toBe("🍎");
+      expect(r.card).toBe("Bradesco");
+      expect(r.bank_account_id).toBe("acc-new");
+    }
+
+    // Grupos vizinhos permanecem BYTE-IDÊNTICOS ao snapshot anterior.
+    expect(snapshot(afterOthers)).toEqual(otherBefore);
+
+    // Cada grupo continua coerente isoladamente após o UPDATE.
+    expect(validateGroupCoherence(afterTarget, {
+      category: "Mercado", icon: "🍎", card: "Bradesco", bank_account_id: "acc-new",
+    }).ok).toBe(true);
+    expect(validateGroupCoherence(other1, {
+      category: "Lazer", icon: "🎬", card: "XP", bank_account_id: "acc-x",
+    }).ok).toBe(true);
+    expect(validateGroupCoherence(other2, {
+      category: "Saúde", icon: "💊", card: "Itaú", bank_account_id: null,
+    }).ok).toBe(true);
+  });
+
+  it("parcelas AVULSAS (installment_group_id = null) nunca são afetadas", async () => {
+    const target = buildGroup("grp-solo-target", 3, {
+      category: "A", icon: "🅰️", card: "N", bank_account_id: null,
+      perAmount: 100, source: 300, mode: "divide",
+    });
+    const orphan: Row = {
+      id: "orphan-1",
+      installment_group_id: null,
+      installment_number: 1,
+      total_installments: 1,
+      amount: 42,
+      installment_source_amount: 42,
+      installment_mode: null,
+      date: "05 jun",
+      category: "Avulsa",
+      icon: "🧾",
+      card: "Outro",
+      bank_account_id: "acc-orphan",
+    };
+
+    const before = [...target, orphan];
+    const orphanBefore = { ...orphan };
+
+    await propagateCosmeticFieldsToGroup("grp-solo-target", { card: "XP" });
+
+    const after = applyLastUpdateScoped(before);
+    const afterOrphan = after.find((r) => r.id === "orphan-1")!;
+    expect(afterOrphan).toEqual(orphanBefore);
+    // Alvo mudou.
+    expect(after.filter((r) => r.installment_group_id === "grp-solo-target").every((r) => r.card === "XP")).toBe(true);
+  });
+
+  it("grupo homônimo em substring NÃO é afetado (match é por igualdade exata)", async () => {
+    // Simula um bug hipotético onde alguém filtrasse por LIKE — aqui garantimos
+    // que o payload capturado usa comparação exata (eq), não prefixo.
+    const target = buildGroup("grp-abc", 4, {
+      category: "X", icon: "❌", card: "N", bank_account_id: null,
+      perAmount: 25, source: 100, mode: "divide",
+    });
+    const lookalike = buildGroup("grp-abc-2", 4, {
+      category: "Y", icon: "✅", card: "N", bank_account_id: null,
+      perAmount: 25, source: 100, mode: "divide",
+    });
+
+    const before = [...target, ...lookalike];
+    const lookalikeBefore = snapshot(lookalike);
+
+    await propagateCosmeticFieldsToGroup("grp-abc", { category: "Novo" });
+
+    // eqVal é a string exata — sem wildcards.
+    expect(updateCalls[0].eqVal).toBe("grp-abc");
+    const after = applyLastUpdateScoped(before);
+    expect(snapshot(after.filter((r) => r.installment_group_id === "grp-abc-2"))).toEqual(lookalikeBefore);
+    expect(after.filter((r) => r.installment_group_id === "grp-abc").every((r) => r.category === "Novo")).toBe(true);
+  });
+
+  it("três grupos, três propagações consecutivas: cada UPDATE escopa apenas seu próprio grupo", async () => {
+    const g1 = buildGroup("g1", 2, { category: "c1", icon: "1️⃣", card: "n", bank_account_id: null, perAmount: 10, source: 20, mode: "divide" });
+    const g2 = buildGroup("g2", 3, { category: "c2", icon: "2️⃣", card: "n", bank_account_id: null, perAmount: 10, source: 30, mode: "divide" });
+    const g3 = buildGroup("g3", 4, { category: "c3", icon: "3️⃣", card: "n", bank_account_id: null, perAmount: 10, source: 40, mode: "divide" });
+
+    let store = [...g1, ...g2, ...g3];
+
+    await propagateCosmeticFieldsToGroup("g1", { category: "novo-1" });
+    store = applyLastUpdateScoped(store);
+    await propagateCosmeticFieldsToGroup("g2", { icon: "🆕" });
+    store = applyLastUpdateScoped(store);
+    await propagateCosmeticFieldsToGroup("g3", { card: "banco-3" });
+    store = applyLastUpdateScoped(store);
+
+    // Cada grupo só recebeu SEU próprio delta.
+    expect(store.filter((r) => r.installment_group_id === "g1").every((r) => r.category === "novo-1" && r.icon === "1️⃣" && r.card === "n")).toBe(true);
+    expect(store.filter((r) => r.installment_group_id === "g2").every((r) => r.icon === "🆕" && r.category === "c2" && r.card === "n")).toBe(true);
+    expect(store.filter((r) => r.installment_group_id === "g3").every((r) => r.card === "banco-3" && r.category === "c3" && r.icon === "3️⃣")).toBe(true);
+
+    // 3 updates, todos filtrados por installment_group_id exato.
+    expect(updateCalls).toHaveLength(3);
+    expect(updateCalls.map((c) => c.eqCol)).toEqual(["installment_group_id", "installment_group_id", "installment_group_id"]);
+    expect(updateCalls.map((c) => c.eqVal)).toEqual(["g1", "g2", "g3"]);
+  });
+});
+
