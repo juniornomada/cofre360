@@ -25,7 +25,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { supabase } from "@/integrations/supabase/client";
 import { saveInstallmentPlan, stripInstallmentSuffix, detectInstallmentChanges } from "@/lib/installment-edit";
-import { toDivideMode, toFixedMode, validateInstallmentInputs } from "@/lib/installment-mode-toggle";
+import { toDivideMode, toFixedMode, validateInstallmentInputs, changeInstallmentCount } from "@/lib/installment-mode-toggle";
 import { deleteTransactionScope, isInstallmentTx } from "@/lib/installment-delete";
 import { toast } from "sonner";
 import { Layers } from "lucide-react";
