@@ -70,7 +70,7 @@ async function setup() {
     />,
   );
   // Wait for the mocked card to appear (async fetchData)
-  await screen.findByText("Nubank");
+  await screen.findAllByText("Nubank");
   return { user, onOpenChange, onSuccess };
 }
 
