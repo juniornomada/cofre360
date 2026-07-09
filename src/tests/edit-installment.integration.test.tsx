@@ -198,6 +198,12 @@ function EditDialogHarness({ initial }: { initial: EditTx }) {
       >
         Mudar para 6x
       </button>
+      <input
+        data-testid="amount-input"
+        type="number"
+        value={editTx.amount}
+        onChange={(e) => setEditTx({ ...editTx, amount: Number(e.target.value) })}
+      />
       <button type="button" onClick={handleSave}>
         Salvar
       </button>
