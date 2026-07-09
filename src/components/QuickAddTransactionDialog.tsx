@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CategoryPicker } from "@/components/CategoryPicker";
-import { CalendarIcon, ArrowLeftRight, ArrowRight, CreditCard, Landmark, Loader2 } from "lucide-react";
+import { CalendarIcon, ArrowLeftRight, ArrowRight, CreditCard, Landmark, Loader2, RotateCcw } from "lucide-react";
 import { BankLogo } from "@/components/BankLogo";
 import { CalculatorAmountInput } from "@/components/CalculatorAmountInput";
 import { format, parse } from "date-fns";
@@ -174,11 +174,27 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
     try {
       if (typeof window !== "undefined") {
         window.localStorage.setItem(PREFS_KEY, JSON.stringify(p));
+        setHasSavedPrefs(true);
       }
     } catch {
       // ignore quota / privacy-mode errors
     }
   };
+  const clearPrefs = () => {
+    try {
+      if (typeof window !== "undefined") window.localStorage.removeItem(PREFS_KEY);
+    } catch {
+      // ignore
+    }
+    setHasSavedPrefs(false);
+  };
+  const [hasSavedPrefs, setHasSavedPrefs] = useState<boolean>(() => {
+    try {
+      return typeof window !== "undefined" && window.localStorage.getItem(PREFS_KEY) !== null;
+    } catch {
+      return false;
+    }
+  });
 
   // Reset state every time the dialog opens with the requested initial type.
   useEffect(() => {
@@ -735,13 +751,33 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                 <div className="space-y-2 rounded-lg bg-card/50 p-2.5">
                   <div className="flex items-center justify-between">
                     <label className="text-[11px] font-semibold text-foreground">Parcelar</label>
-                    <button
-                      type="button"
-                      onClick={() => setInstallmentEnabled(!installmentEnabled)}
-                      className={`relative h-4 w-8 rounded-full transition-colors ${installmentEnabled ? "bg-primary" : "bg-muted"}`}
-                    >
-                      <span className={`absolute top-0.5 left-0.5 h-3 w-3 rounded-full bg-white transition-transform ${installmentEnabled ? "translate-x-4" : ""}`} />
-                    </button>
+                    <div className="flex items-center gap-2">
+                      {hasSavedPrefs && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            clearPrefs();
+                            setInstallmentEnabled(false);
+                            setInstallmentMode("divide");
+                            setInstallmentCount(2);
+                            toast.success("Preferências de parcelamento redefinidas");
+                          }}
+                          className="inline-flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+                          aria-label="Redefinir preferências de parcelamento"
+                          title="Redefinir preferências salvas"
+                        >
+                          <RotateCcw className="h-3 w-3" />
+                          Redefinir
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => setInstallmentEnabled(!installmentEnabled)}
+                        className={`relative h-4 w-8 rounded-full transition-colors ${installmentEnabled ? "bg-primary" : "bg-muted"}`}
+                      >
+                        <span className={`absolute top-0.5 left-0.5 h-3 w-3 rounded-full bg-white transition-transform ${installmentEnabled ? "translate-x-4" : ""}`} />
+                      </button>
+                    </div>
                   </div>
                   {installmentEnabled && (
                     <>
