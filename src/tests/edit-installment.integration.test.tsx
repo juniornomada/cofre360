@@ -62,7 +62,7 @@ type EditTx = {
   category: string;
   date: string;
   amount: number;
-  type: "expense";
+  type: "expense" | "income";
   card: string | null;
   bank_account_id: string | null;
   installment_group_id: string | null;
