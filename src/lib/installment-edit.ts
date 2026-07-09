@@ -55,6 +55,35 @@ export function stripInstallmentSuffix(name: string): string {
   return name.replace(/\s*\(\s*\d{1,2}\s*\/\s*\d{1,2}\s*\)\s*$/, "").trim();
 }
 
+// Detects which fields changed between the original transaction row and the
+// edited draft. Returns the list of user-facing change labels that should be
+// shown in the "Aplicar em quais parcelas?" scope dialog. When the array is
+// empty, the dialog must NOT be shown.
+export type InstallmentEditSnapshot = {
+  name: string;
+  amount: number;
+  total_installments?: number | null;
+  category?: string | null;
+  icon?: string | null;
+  date?: string | null;
+};
+
+export function detectInstallmentChanges(
+  original: InstallmentEditSnapshot,
+  edited: InstallmentEditSnapshot,
+  effectiveEditedAmount: number,
+): string[] {
+  const changes: string[] = [];
+  if (stripInstallmentSuffix(original.name) !== stripInstallmentSuffix(edited.name)) changes.push("Nome");
+  if (original.amount !== effectiveEditedAmount) changes.push("Valor");
+  if ((original.total_installments ?? null) !== (edited.total_installments ?? null)) changes.push("Nº de parcelas");
+  if ((original.category || "") !== (edited.category || "")) changes.push("Categoria");
+  if ((original.icon || "") !== (edited.icon || "")) changes.push("Ícone");
+  if ((original.date || "") !== (edited.date || "")) changes.push("Data");
+  return changes;
+}
+
+
 function uuid(): string {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
     return crypto.randomUUID();
