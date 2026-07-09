@@ -1401,12 +1401,11 @@ export function TransactionsPage() {
       <Dialog open={showUpdateScopeDialog} onOpenChange={(open) => {
         if (!open) {
           setShowUpdateScopeDialog(false);
-          setUpdateScope("single");
         }
       }}>
         <DialogContent className="max-w-[90vw] rounded-2xl bg-background">
           <DialogHeader>
-            <DialogTitle>Alterar parcelas</DialogTitle>
+            <DialogTitle>Aplicar em quais parcelas?</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <p className="text-sm text-muted-foreground">
@@ -1418,7 +1417,7 @@ export function TransactionsPage() {
                 className="justify-start h-auto py-3 px-4 flex flex-col items-start gap-1"
                 onClick={() => setUpdateScope("single")}
               >
-                <span className="font-semibold text-sm">Apenas esta</span>
+                <span className="font-semibold text-sm">Apenas esta parcela</span>
                 <span className="text-xs opacity-70">Altera somente o lançamento selecionado</span>
               </Button>
               <Button 
@@ -1426,20 +1425,39 @@ export function TransactionsPage() {
                 className="justify-start h-auto py-3 px-4 flex flex-col items-start gap-1"
                 onClick={() => setUpdateScope("all")}
               >
-                <span className="font-semibold text-sm">Todas as parcelas</span>
-                <span className="text-xs opacity-70">Atualiza o valor/nome de todo o grupo de parcelas</span>
+                <span className="font-semibold text-sm">Todas as parcelas do grupo</span>
+                <span className="text-xs opacity-70">Atualiza todo o grupo de parcelas</span>
               </Button>
             </div>
+            <label className="flex items-center gap-2 cursor-pointer select-none pt-1">
+              <input
+                type="checkbox"
+                checked={rememberScopeChoice}
+                onChange={(e) => setRememberScopeChoice(e.target.checked)}
+                className="h-3.5 w-3.5 rounded border-border text-primary focus:ring-primary"
+              />
+              <span className="text-xs text-muted-foreground">
+                Lembrar minha escolha nos próximos envios
+              </span>
+            </label>
           </div>
           <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="ghost" onClick={() => {
               setShowUpdateScopeDialog(false);
-              setUpdateScope("single");
             }}>Cancelar</Button>
-            <Button onClick={handleSaveEdit}>Confirmar e Salvar</Button>
+            <Button onClick={() => {
+              if (rememberScopeChoice && typeof window !== "undefined") {
+                window.localStorage.setItem(UPDATE_SCOPE_PREF_KEY, updateScope);
+              }
+              setScopeConfirmed(true);
+              setShowUpdateScopeDialog(false);
+              // handleSaveEdit will now proceed because scopeConfirmed=true
+              setTimeout(() => { handleSaveEdit(); }, 0);
+            }}>Confirmar e Salvar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
 
 
       {/* Batch Delete */}
