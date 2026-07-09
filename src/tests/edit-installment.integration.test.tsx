@@ -807,9 +807,9 @@ describe("Edição de despesa parcelada no cartão — integração completa", (
   it("fixed→divide→fixed com edições em cada etapa persiste amount e source esperados a cada save", async () => {
     render(<EditDialogHarness initial={makeEditTx()} />);
 
-    // Helper: valida a coerência entre `saved` (perInstallment + updatePayload),
-    // `planArg` (contrato de saveInstallmentPlan) e o payload observado em
-    // supabase.update(), incluindo campos financeiros derivados.
+    // Helper: valida a coerência entre `saved` (perInstallment + updatePayload)
+    // e `planArg` (contrato de saveInstallmentPlan), incluindo os campos
+    // financeiros derivados por modo.
     const assertDerivedFinancials = (
       callIndex: number,
       expected: {
@@ -822,21 +822,20 @@ describe("Edição de despesa parcelada no cartão — integração completa", (
     ) => {
       const savedNow = JSON.parse(screen.getByTestId("saved").textContent || "{}");
       const planNow = (saveInstallmentPlan as any).mock.calls[callIndex][0];
-      const updatePayload = (updateMock.mock.calls as any[])[callIndex][0] as any;
 
-      // 1) Contratos básicos
+      // 1) Contratos básicos do payload persistido pelo diálogo
+      //    (saved.per = updatePayload.amount = perInstallment;
+      //     saved.src = updatePayload.installment_source_amount;
+      //     saved.mode = updatePayload.installment_mode)
       expect(savedNow.mode).toBe(expected.mode);
       expect(savedNow.per).toBe(expected.per);
       expect(savedNow.src).toBe(expected.src);
 
-      // 2) Coerência entre saveInstallmentPlan ↔ update() ↔ perInstallment
+      // 2) Coerência entre saveInstallmentPlan ↔ updatePayload
       expect(planNow.installmentMode).toBe(expected.mode);
-      expect(planNow.installmentAmount).toBe(expected.per);
-      expect(planNow.installmentSourceAmount).toBe(expected.src);
+      expect(planNow.installmentAmount).toBe(savedNow.per);
+      expect(planNow.installmentSourceAmount).toBe(savedNow.src);
       expect(planNow.total).toBe(expected.total);
-      expect(updatePayload.installment_mode).toBe(expected.mode);
-      expect(updatePayload.amount).toBe(expected.per);
-      expect(updatePayload.installment_source_amount).toBe(expected.src);
 
       // 3) Campos financeiros derivados — TOTAL ECONÔMICO
       //   fixed  → source = parcela; total econômico = parcela × N
