@@ -515,14 +515,16 @@ export function TransactionsPage() {
        const installmentsChanged = originalTx && originalTx.total_installments !== editTx.total_installments;
        const categoryChanged = originalTx && (originalTx.category || "") !== (editTx.category || "");
        const iconChanged = originalTx && (originalTx.icon || "") !== (editTx.icon || "");
+       const dateChanged = originalTx && (originalTx.date || "") !== (editTx.date || "");
 
-       if (nameChanged || amountChanged || installmentsChanged || categoryChanged || iconChanged) {
+       if (nameChanged || amountChanged || installmentsChanged || categoryChanged || iconChanged || dateChanged) {
          const changes: string[] = [];
          if (nameChanged) changes.push("Nome");
          if (amountChanged) changes.push("Valor");
          if (installmentsChanged) changes.push("Nº de parcelas");
          if (categoryChanged) changes.push("Categoria");
          if (iconChanged) changes.push("Ícone");
+         if (dateChanged) changes.push("Data");
          setScopeChanges(changes);
          setShowUpdateScopeDialog(true);
          return;
@@ -606,6 +608,7 @@ export function TransactionsPage() {
         installmentMode: editInstallmentMode,
         installmentSourceAmount: editTx.amount,
         updateAllInGroup: updateScope === "all",
+        syncDates: updateScope === "all" && !!scopeChanges.includes("Data"),
       });
 
       if (result.cleared) {

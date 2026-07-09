@@ -159,4 +159,56 @@ describe("saveInstallmentPlan — propagação de ícone + categoria", () => {
     }
     expect(inserted.map(r => r.installment_number).sort()).toEqual([4, 5, 6]);
   });
+
+  it("syncDates=true reagenda todas as parcelas mantendo cadência mensal a partir da parcela atual", async () => {
+    selectResponders["transactions:grp-1"] = () => [
+      { id: "tx-1", installment_number: 1 },
+      { id: "tx-2", installment_number: 2 },
+      { id: "tx-3", installment_number: 3 },
+      { id: "tx-4", installment_number: 4 },
+      { id: "tx-5", installment_number: 5 },
+      { id: "tx-6", installment_number: 6 },
+    ];
+
+    // Ancoramos a parcela atual (3) em "15 dez" — as demais devem ficar
+    // 15/out, 15/nov, 15/dez, 15/jan, 15/fev, 15/mar (dois meses antes até três depois).
+    await saveInstallmentPlan({
+      ...baseInput,
+      date: "15 dez",
+      updateAllInGroup: true,
+      syncDates: true,
+    });
+
+    const updatesForGroup = updateCalls.filter(u => u.table === "transactions");
+    expect(updatesForGroup).toHaveLength(6);
+    const byNumber: Record<number, string> = {};
+    for (const c of updatesForGroup) byNumber[c.payload.installment_number] = c.payload.date;
+    expect(byNumber[3]).toBe("15 dez");
+    expect(byNumber[2]).toBe("15 nov");
+    expect(byNumber[1]).toBe("15 out");
+    expect(byNumber[4]).toBe("15 jan");
+    expect(byNumber[5]).toBe("15 fev");
+    expect(byNumber[6]).toBe("15 mar");
+  });
+
+  it("syncDates=false (default) NÃO altera a data das parcelas siblings", async () => {
+    selectResponders["transactions:grp-1"] = () => [
+      { id: "tx-1", installment_number: 1 },
+      { id: "tx-2", installment_number: 2 },
+      { id: "tx-3", installment_number: 3 },
+    ];
+
+    await saveInstallmentPlan({
+      ...baseInput,
+      total: 3,
+      date: "15 dez",
+      updateAllInGroup: true,
+    });
+
+    const updatesForGroup = updateCalls.filter(u => u.table === "transactions");
+    for (const c of updatesForGroup) {
+      // payload não deve incluir o campo `date`
+      expect(c.payload.date).toBeUndefined();
+    }
+  });
 });
