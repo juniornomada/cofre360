@@ -159,15 +159,6 @@ export function TransactionItem({
             ) : (
               <>
                 {restoreAccents(displayName)}
-                {isInstallment && (
-                  <span 
-                    className="ml-1 text-[11px] font-medium text-muted-foreground whitespace-nowrap bg-muted/50 px-1.5 py-0.5 rounded-md border border-border/30"
-                    aria-label={`Parcela ${installment_number} de ${total_installments}`}
-                    tabIndex={0}
-                  >
-                    Parcela {installment_number} de {total_installments} ({installment_number}/{total_installments})
-                  </span>
-                )}
               </>
             )}
           </p>
@@ -184,11 +175,21 @@ export function TransactionItem({
             <span className="text-[10px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded truncate max-w-[120px]">
               {getCategoryDisplay(category)}
             </span>
+            {isInstallment && (
+              <span
+                className="text-[10px] font-semibold text-amber-700 dark:text-amber-300 bg-amber-500/15 px-1.5 py-0.5 rounded border border-amber-500/30 shrink-0 tabular-nums"
+                aria-label={`Parcela ${installment_number} de ${total_installments}`}
+                tabIndex={0}
+              >
+                {installment_number}/{total_installments}
+              </span>
+            )}
             <span className="text-[10px] text-muted-foreground font-medium shrink-0">
               {formatTxDate(date)}
             </span>
           </div>
         </div>
+
       </div>
     </div>
   );
