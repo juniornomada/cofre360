@@ -608,6 +608,7 @@ export function TransactionsPage() {
         installmentMode: editInstallmentMode,
         installmentSourceAmount: editTx.amount,
         updateAllInGroup: updateScope === "all",
+        syncDates: updateScope === "all" && !!scopeChanges.includes("Data"),
       });
 
       if (result.cleared) {
