@@ -376,33 +376,6 @@ describe("Edição de despesa parcelada no cartão — integração completa", (
     expect(saveInstallmentPlan).not.toHaveBeenCalled();
   });
 
-  it("bloqueia salvar RECEITA parcelada quando o valor do modo ativo é zero (fixed)", async () => {
-    render(
-      <EditDialogHarness
-        initial={makeEditTx({
-          type: "income",
-          icon: "💰",
-          name: "Estorno 1/3",
-          category: "Receita > Estorno",
-          amount: 600,
-          total_installments: 3,
-        })}
-      />,
-    );
-    // Alterna para fixed → parcela = 200
-    fireEvent.click(screen.getByRole("button", { name: "Valor por parcela" }));
-    expect(screen.getByTestId("mode").textContent).toBe("fixed");
-    expect(screen.getByTestId("amount").textContent).toBe("200");
-
-    // Zera a parcela no modo ativo (fixed) e tenta salvar
-    fireEvent.click(screen.getByRole("button", { name: "Dividir total" }));
-    // volta para divide com total 600, depois zera o total e alterna p/ fixed
-    // usamos um harness simples: força amount=0 recarregando o componente
-    // via novo render em modo fixed com amount=0.
-    // (o toggle de volta manteria 600; para simular usuário apagando o campo
-    // no modo fixed, remontamos com amount=0.)
-    // → segundo render abaixo cobre o caso zero em fixed diretamente.
-  });
 
   it("bloqueia salvar quando a parcela (fixed) é zero em receita", async () => {
     // Harness dedicado que inicia diretamente em modo fixed com valor zero.
