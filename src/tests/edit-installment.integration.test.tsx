@@ -352,5 +352,62 @@ describe("Edição de despesa parcelada no cartão — integração completa", (
     expect(planArg.installmentSourceAmount).toBe(900);
     expect(planArg.total).toBe(3);
   });
+
+  it("bloqueia salvar RECEITA parcelada quando o valor do modo ativo é zero (divide)", async () => {
+    render(
+      <EditDialogHarness
+        initial={makeEditTx({
+          type: "income",
+          icon: "💰",
+          name: "Estorno 1/3",
+          category: "Receita > Estorno",
+          amount: 0,
+          total_installments: 3,
+        })}
+      />,
+    );
+    // Modo ativo: divide, total = 0 → deve bloquear
+    expect(screen.getByTestId("mode").textContent).toBe("divide");
+    fireEvent.click(screen.getByRole("button", { name: /Salvar/ }));
+    await waitFor(() => {
+      expect(screen.getByTestId("error")).toBeInTheDocument();
+    });
+    expect(updateMock).not.toHaveBeenCalled();
+    expect(saveInstallmentPlan).not.toHaveBeenCalled();
+  });
+
+
+  it("bloqueia salvar quando a parcela (fixed) é zero em receita", async () => {
+    // Harness dedicado que inicia diretamente em modo fixed com valor zero.
+    function Wrapper() {
+      const [mode] = useState<"divide" | "fixed">("fixed");
+      const tx = makeEditTx({ type: "income", amount: 0, total_installments: 3 });
+      const [error, setError] = useState<string | null>(null);
+      const onSave = () => {
+        const err = validateInstallmentInputs(
+          mode,
+          mode === "divide" ? tx.amount : 0,
+          mode === "fixed" ? tx.amount : 0,
+          tx.total_installments,
+        );
+        if (err) {
+          setError(err);
+          return;
+        }
+        void supabase.from("transactions").update({}).eq("id", tx.id);
+      };
+      return (
+        <div>
+          <button type="button" onClick={onSave}>Salvar</button>
+          {error && <div data-testid="error">{error}</div>}
+        </div>
+      );
+    }
+    render(<Wrapper />);
+    fireEvent.click(screen.getByRole("button", { name: /Salvar/ }));
+    await waitFor(() => expect(screen.getByTestId("error")).toBeInTheDocument());
+    expect(updateMock).not.toHaveBeenCalled();
+  });
 });
+
 
