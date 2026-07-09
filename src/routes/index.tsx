@@ -41,7 +41,7 @@ const QuickAddTransactionDialog = lazy(() => import("@/components/QuickAddTransa
 import { CalculatorAmountInput } from "@/components/CalculatorAmountInput";
 
 import type { QuickAddInitialType } from "@/components/QuickAddTransactionDialog";
-import { saveInstallmentPlan, stripInstallmentSuffix } from "@/lib/installment-edit";
+import { saveInstallmentPlan, stripInstallmentSuffix, propagateCosmeticFieldsToGroup } from "@/lib/installment-edit";
 import { deleteTransactionScope, isInstallmentTx } from "@/lib/installment-delete";
 import { toast } from "sonner";
 import { useUserPreferences } from "@/hooks/use-user-preferences";
