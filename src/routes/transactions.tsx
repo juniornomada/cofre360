@@ -616,7 +616,9 @@ export function TransactionsPage() {
       (document.activeElement as HTMLElement)?.blur();
       setShowEditDialog(false);
       setShowUpdateScopeDialog(false);
-      setUpdateScope("single");
+      setScopeConfirmed(false);
+      // Reload preference (in case another tab/instance changed it) but keep the current session's choice
+      setUpdateScope(readSavedScope());
       setEditTx(null);
       fetchTransactions();
       fetchBankAccounts(); // Refresh balances
