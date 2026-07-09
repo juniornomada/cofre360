@@ -216,3 +216,95 @@ describe("Gate do diálogo — estrutural abre, cosmético não abre", () => {
     expect(shouldOpenDialog(base, { ...base, name: "Netflix (4/12)" })).toBe(false);
   });
 });
+
+describe("Boundary — valores vazios/inválidos em campos estruturais", () => {
+  const shouldOpen = (orig: InstallmentEditSnapshot, edit: InstallmentEditSnapshot, effAmt = edit.amount) => {
+    const changes = detectInstallmentChanges(orig, edit, effAmt);
+    const { structural } = splitInstallmentChanges(changes);
+    return structural.length > 0;
+  };
+
+  // -- Nome --
+  it("Nome: string vazia diferente do original ABRE o diálogo", () => {
+    expect(shouldOpen(base, { ...base, name: "" })).toBe(true);
+  });
+
+  it("Nome: apenas espaços vs nome original ABRE (não são iguais após strip)", () => {
+    expect(shouldOpen(base, { ...base, name: "   " })).toBe(true);
+  });
+
+  it("Nome: somente sufixo (n/N) diferente NÃO abre (sufixo é ignorado)", () => {
+    expect(shouldOpen(base, { ...base, name: "Netflix (12/12)" })).toBe(false);
+  });
+
+  it("Nome: mesmo texto com sufixo distinto e espaços extras NÃO abre", () => {
+    expect(shouldOpen(base, { ...base, name: "Netflix ( 7 / 12 )" })).toBe(false);
+  });
+
+  // -- Valor --
+  it("Valor: zero (limpo pelo usuário) ABRE quando difere do original", () => {
+    expect(shouldOpen(base, { ...base, amount: 0 }, 0)).toBe(true);
+  });
+
+  it("Valor: NaN é tratado como mudança (≠ original) e ABRE", () => {
+    expect(shouldOpen(base, { ...base, amount: NaN }, NaN)).toBe(true);
+  });
+
+  it("Valor: mesmo número com precisão flutuante idêntica NÃO abre", () => {
+    expect(shouldOpen(base, { ...base, amount: 50 }, 50)).toBe(false);
+  });
+
+  it("Valor: negativo diferente do original ABRE", () => {
+    expect(shouldOpen(base, { ...base, amount: -50 }, -50)).toBe(true);
+  });
+
+  // -- Data --
+  it("Data: string vazia ABRE quando original tinha data", () => {
+    expect(shouldOpen(base, { ...base, date: "" })).toBe(true);
+  });
+
+  it("Data: null vs original com data ABRE", () => {
+    expect(shouldOpen(base, { ...base, date: null as any })).toBe(true);
+  });
+
+  it("Data: mesma string exata NÃO abre", () => {
+    expect(shouldOpen(base, { ...base, date: base.date })).toBe(false);
+  });
+
+  it("Data: diferença de formato ('10 jan' vs '2025-01-10') ABRE (comparação textual)", () => {
+    expect(shouldOpen(base, { ...base, date: "2025-01-10" })).toBe(true);
+  });
+
+  // -- Nº de parcelas --
+  it("Nº parcelas: null vs 12 ABRE", () => {
+    expect(shouldOpen(base, { ...base, total_installments: null })).toBe(true);
+  });
+
+  it("Nº parcelas: undefined vs 12 ABRE", () => {
+    expect(shouldOpen(base, { ...base, total_installments: undefined })).toBe(true);
+  });
+
+  it("Nº parcelas: 0 diferente de 12 ABRE", () => {
+    expect(shouldOpen(base, { ...base, total_installments: 0 })).toBe(true);
+  });
+
+  it("Nº parcelas: mesmo valor (12) NÃO abre", () => {
+    expect(shouldOpen(base, { ...base, total_installments: 12 })).toBe(false);
+  });
+
+  it("Nº parcelas: null↔undefined tratados como iguais (nullish coalescing) NÃO abrem", () => {
+    const noParcels: InstallmentEditSnapshot = { ...base, total_installments: null };
+    expect(shouldOpen(noParcels, { ...noParcels, total_installments: undefined })).toBe(false);
+  });
+
+  // -- Combinações estrutural + cosmético em cenários de borda --
+  it("Nome vazio + Categoria trocada: ABRE (estrutural presente)", () => {
+    expect(shouldOpen(base, { ...base, name: "", category: "Lazer" })).toBe(true);
+  });
+
+  it("Somente cosméticos com valores vazios NÃO abre (cosmético não conta como estrutural)", () => {
+    expect(
+      shouldOpen(base, { ...base, category: "", icon: "", card: "", bank_account_id: "" }),
+    ).toBe(false);
+  });
+});
