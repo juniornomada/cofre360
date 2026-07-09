@@ -602,6 +602,64 @@ describe("Edição de despesa parcelada no cartão — integração completa", (
     expect(planArg.installmentSourceAmount).toBe(1200);
     expect(planArg.total).toBe(6);
   });
+
+  it("preserva total econômico e campos calculados com arredondamento em 5x (R$ 777,77) após salvar", async () => {
+    render(
+      <EditDialogHarness
+        initial={makeEditTx({ amount: 777.77, total_installments: 5 })}
+      />,
+    );
+
+    // Estado inicial: divide, total 777.77, resumo 5x
+    expect(screen.getByTestId("mode").textContent).toBe("divide");
+    expect(screen.getByTestId("amount").textContent).toBe("777.77");
+    expect(screen.getByTestId("summary").textContent).toMatch(/5x/);
+
+    // divide → fixed: parcela = round2(777.77 / 5) = 155.55
+    fireEvent.click(screen.getByRole("button", { name: "Valor por parcela" }));
+    expect(screen.getByTestId("mode").textContent).toBe("fixed");
+    expect(screen.getByTestId("amount").textContent).toBe("155.55");
+    // Drift de arredondamento a 2 casas: 155.55 × 5 = 777.75 (a 2¢ do original)
+    expect(Math.abs(155.55 * 5 - 777.77)).toBeLessThanOrEqual(0.02);
+
+    // Salva em modo fixed: linha atual mantém parcela e source_amount = parcela
+    fireEvent.click(screen.getByRole("button", { name: /Salvar/ }));
+    await waitFor(() => expect(updateMock).toHaveBeenCalled());
+
+    const fixedPayload = (updateMock.mock.calls as any[])[0][0] as any;
+    expect(fixedPayload.installment_mode).toBe("fixed");
+    expect(fixedPayload.amount).toBe(155.55);
+    expect(fixedPayload.installment_source_amount).toBe(155.55);
+
+    const fixedPlanArg = (saveInstallmentPlan as any).mock.calls[0][0];
+    expect(fixedPlanArg.installmentAmount).toBe(155.55);
+    expect(fixedPlanArg.installmentSourceAmount).toBe(155.55);
+    expect(fixedPlanArg.installmentMode).toBe("fixed");
+    expect(fixedPlanArg.total).toBe(5);
+
+    // fixed → divide: total reconstituído = round2(155.55 × 5) = 777.75
+    fireEvent.click(screen.getByRole("button", { name: "Dividir total" }));
+    expect(screen.getByTestId("mode").textContent).toBe("divide");
+    expect(screen.getByTestId("amount").textContent).toBe("777.75");
+
+    // Salva em divide após round-trip: parcela recomputada = 777.75/5 = 155.55
+    fireEvent.click(screen.getByRole("button", { name: /Salvar/ }));
+    await waitFor(() => expect(updateMock).toHaveBeenCalledTimes(2));
+
+    const dividePayload = (updateMock.mock.calls as any[])[1][0] as any;
+    expect(dividePayload.installment_mode).toBe("divide");
+    expect(dividePayload.amount).toBe(155.55);
+    expect(dividePayload.installment_source_amount).toBe(777.75);
+
+    const dividePlanArg = (saveInstallmentPlan as any).mock.calls[1][0];
+    expect(dividePlanArg.installmentAmount).toBe(155.55);
+    expect(dividePlanArg.installmentSourceAmount).toBe(777.75);
+    expect(dividePlanArg.installmentMode).toBe("divide");
+    expect(dividePlanArg.total).toBe(5);
+
+    // Total econômico preservado dentro do limite de arredondamento (≤ 2¢)
+    expect(Math.abs(dividePayload.amount * dividePlanArg.total - 777.77)).toBeLessThanOrEqual(0.02);
+  });
 });
 
 
