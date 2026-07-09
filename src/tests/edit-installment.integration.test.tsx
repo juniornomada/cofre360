@@ -49,7 +49,7 @@ vi.mock("@/lib/installment-edit", async () => {
   };
 });
 
-import { toDivideMode, toFixedMode, validateInstallmentInputs } from "@/lib/installment-mode-toggle";
+import { toDivideMode, toFixedMode, changeInstallmentCount, validateInstallmentInputs } from "@/lib/installment-mode-toggle";
 import { calculateInstallmentDetails } from "@/lib/installment-utils";
 import { saveInstallmentPlan, stripInstallmentSuffix } from "@/lib/installment-edit";
 import { supabase } from "@/integrations/supabase/client";
