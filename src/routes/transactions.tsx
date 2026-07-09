@@ -546,14 +546,18 @@ export function TransactionsPage() {
        toast.error("Por favor, confirme o ajuste de centavos no parcelamento.");
        return;
      }
-    if ((editTx.amount || 0) <= 0) {
-      toast.error("Por favor, insira um valor maior que zero.");
+    const editCount = Number(editTx.total_installments ?? 1);
+    const editValidationError = validateInstallmentInputs(
+      editInstallmentMode,
+      editInstallmentMode === "divide" ? editTx.amount : 0,
+      editInstallmentMode === "fixed" ? editTx.amount : 0,
+      editCount,
+    );
+    if (editValidationError) {
+      toast.error(editValidationError);
       return;
     }
-    if (editTx.total_installments === undefined || editTx.total_installments === null || Number(editTx.total_installments) < 1) {
-      toast.error("Por favor, insira um número válido de parcelas (mínimo 1).");
-      return;
-    }
+
     const total = Math.max(1, Math.floor(Number(editTx.total_installments)));
     const current = Math.max(1, Math.min(total, Math.floor(Number(editTx.installment_number) || 1)));
     const finalName = stripInstallmentSuffix(editTx.name);
