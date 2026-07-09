@@ -11,8 +11,8 @@
  * o schema.
  */
 import React, { useState } from "react";
-import { describe, it, expect } from "vitest";
-import { render, fireEvent } from "@testing-library/react";
+import { describe, it, expect, afterEach } from "vitest";
+import { render, fireEvent, cleanup } from "@testing-library/react";
 import { z } from "zod";
 import {
   validateGroupCoherence,
