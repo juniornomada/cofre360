@@ -68,9 +68,14 @@ function coerceAmount(raw: unknown): number | undefined {
     if (!s) return undefined;
     // Aceita "R$ 1.234,56", "1234.56", "1,234.56", "1.234"
     let normalized = s.replace(/[R$\s]/gi, "");
-    // Se tem vírgula e ponto: assume ponto=milhar, vírgula=decimal (pt-BR).
+    // Se tem vírgula e ponto: o separador DECIMAL é o que aparece por último.
     if (normalized.includes(",") && normalized.includes(".")) {
-      normalized = normalized.replace(/\./g, "").replace(",", ".");
+      const decimalIsComma = normalized.lastIndexOf(",") > normalized.lastIndexOf(".");
+      if (decimalIsComma) {
+        normalized = normalized.replace(/\./g, "").replace(",", ".");
+      } else {
+        normalized = normalized.replace(/,/g, "");
+      }
     } else if (normalized.includes(",")) {
       normalized = normalized.replace(",", ".");
     }
