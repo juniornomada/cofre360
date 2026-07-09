@@ -332,7 +332,7 @@ describe("Integração — Asserts de schema sobre payload persistido", () => {
       assertSchema(r); // .refine garante que amount tem ≤ 2 casas
       for (const row of r.rows) {
         // round-trip: amount * 100 é inteiro
-        expect(Math.round(row.amount * 100)).toBe(row.amount * 100);
+        expect(Math.abs(Math.round(row.amount * 100) - row.amount * 100)).toBeLessThan(1e-6);
       }
       assertDrift(r);
     }
