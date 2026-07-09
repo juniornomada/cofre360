@@ -1417,8 +1417,20 @@ export function TransactionsPage() {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <p className="text-sm text-muted-foreground">
-              Você alterou uma transação parcelada. Deseja aplicar as alterações apenas nesta parcela ou em todas as demais?
+              Você alterou uma transação parcelada. Deseja aplicar as alterações apenas nesta parcela ou em todas as demais? Categoria e ícone são propagados juntos quando você escolhe "Todas as parcelas do grupo".
             </p>
+            {scopeChanges.length > 0 && (
+              <div className="rounded-lg border border-border/60 bg-muted/40 px-3 py-2">
+                <p className="text-xs font-medium text-muted-foreground mb-1">Alterações detectadas:</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {scopeChanges.map((c) => (
+                    <span key={c} className="inline-flex items-center rounded-full bg-primary/10 text-primary text-xs px-2 py-0.5">
+                      {c}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
             <div className="grid gap-2">
               <Button 
                 variant={updateScope === "single" ? "default" : "outline"}
