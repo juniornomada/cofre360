@@ -541,9 +541,17 @@ function RemindersPage() {
     <div className="flex flex-col gap-3 max-h-[60vh] overflow-y-auto">
       <div>
         <label className="text-xs text-muted-foreground mb-1 block">Ícone</label>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Ícone do lembrete">
           {iconOptions.map(ic => (
-            <button key={ic} onClick={() => setData(prev => ({ ...prev, icon: ic }))} className={`text-xl p-1 rounded-lg transition-colors ${data.icon === ic ? "bg-primary/20 ring-1 ring-primary" : "hover:bg-accent"}`}>{ic}</button>
+            <button
+              key={ic}
+              type="button"
+              role="radio"
+              aria-checked={data.icon === ic}
+              aria-label={`Ícone ${ic}`}
+              onClick={() => setData(prev => ({ ...prev, icon: ic }))}
+              className={`text-xl p-1 rounded-lg transition-colors ${data.icon === ic ? "bg-primary/20 ring-1 ring-primary" : "hover:bg-accent"}`}
+            >{ic}</button>
           ))}
         </div>
       </div>
