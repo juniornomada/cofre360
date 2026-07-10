@@ -156,7 +156,7 @@ function ShopPage() {
                 </div>
               </div>
               <div className="flex items-center justify-between mt-2">
-                <span className="text-lg font-bold text-primary">R$ {product.price.toFixed(2)}</span>
+                <span className="text-lg font-bold text-primary">R$ {formatBRL(product.price)}</span>
                 <Button 
                   size="sm" 
                   className="rounded-lg"
@@ -181,7 +181,7 @@ function ShopPage() {
                     <span className="text-lg">{item.icon}</span>
                     <div className="flex-1">
                       <p className="text-sm font-medium">{item.name}</p>
-                      <p className="text-xs text-muted-foreground">R$ {item.price.toFixed(2)}</p>
+                      <p className="text-xs text-muted-foreground">R$ {formatBRL(item.price)}</p>
                     </div>
                     <button onClick={() => removeFromCart(i)} className="text-destructive p-1">
                       <Trash2 className="h-4 w-4" />
@@ -190,7 +190,7 @@ function ShopPage() {
                 ))}
                 <div className="flex justify-between items-center pt-2 font-bold">
                   <span>Total</span>
-                  <span className="text-primary">R$ {total.toFixed(2)}</span>
+                  <span className="text-primary">R$ {formatBRL(total)}</span>
                 </div>
               </div>
             )}
