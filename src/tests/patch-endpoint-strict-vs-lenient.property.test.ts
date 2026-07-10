@@ -542,4 +542,158 @@ describe("PATCH — invariância normalização (estrito vs. leniente) sob campo
       assertInvariants(enriched, c.N);
     }
   });
+
+  /**
+   * Caso de FALLBACK — quando o parser estrito falha nos payloads brutos
+   * enriquecidos com campos futuros, o fluxo de fallback (leniente) deve
+   * produzir EXATAMENTE o mesmo resultado normalizado que a rota "feliz"
+   * (estrito aplicado ao base já normalizado).
+   *
+   * Invariante testado:
+   *   normalize(parseStrict(base))
+   *     ≡ normalize(parseLenient(enriched))     // via fallback
+   *     ≡ normalize(parseStrict(normalize(enriched)))
+   *
+   * Isto garante que a robustez do parser leniente não introduz variação:
+   * o produto final "digerido" pelo consumidor é bit-a-bit igual à rota
+   * estrita, mesmo quando o servidor emite metadados de versões futuras.
+   */
+  it("caso: fallback estrito→leniente preserva exatamente o resultado normalizado", async () => {
+    // Ordena chaves para tornar a comparação de igualdade estrutural
+    // insensível a ordem de inserção (JSON.stringify é sensível a ordem).
+    const canon = (v: unknown): unknown => {
+      if (Array.isArray(v)) return v.map(canon);
+      if (v && typeof v === "object") {
+        const out: Record<string, unknown> = {};
+        for (const k of Object.keys(v as Record<string, unknown>).sort()) {
+          out[k] = canon((v as Record<string, unknown>)[k]);
+        }
+        return out;
+      }
+      return v;
+    };
+
+    // Bag futura que GARANTE falha do parser estrito (`.strict()` rejeita
+    // qualquer chave desconhecida) — mesmo que o valor seja "inofensivo".
+    const futureBag = {
+      _v_next: "vNext",
+      _flags: { experimental: true, cohort: 42 },
+      _trace: ["a", "b", { nested: { x: 1 } }],
+      "dotted.key": "ok",
+      "🚀": true,
+    };
+
+    const cases: Array<{ N: number; amount: number; mode: "divide" | "fixed"; v: "1" | "2" | "3" }> = [
+      { N: 1, amount: 100, mode: "divide", v: "1" },
+      { N: 3, amount: 100, mode: "divide", v: "2" },
+      { N: 12, amount: 999.99, mode: "divide", v: "2" },
+      { N: 24, amount: 1234.56, mode: "fixed", v: "3" },
+      { N: 60, amount: 7, mode: "divide", v: "3" },
+      { N: 360, amount: 33.33, mode: "divide", v: "3" },
+    ];
+
+    // Simula o fluxo de consumo com fallback: tenta estrito, cai p/ leniente.
+    function parseWithFallback(
+      raw: EnvelopeShape,
+    ): { installments: unknown[]; drift?: unknown; usedFallback: boolean } {
+      const rows = (raw.data?.installments ?? []) as Array<Record<string, unknown>>;
+      const drift = raw.data?.drift as Record<string, unknown> | undefined;
+      let usedFallback = false;
+      const parsedRows = rows.map((r) => {
+        const s = InstallmentStrictZ.safeParse(r);
+        if (s.success) return s.data;
+        usedFallback = true;
+        return InstallmentLenientZ.parse(r);
+      });
+      let parsedDrift: unknown | undefined;
+      if (drift) {
+        const s = DriftStrictZ.safeParse(drift);
+        if (s.success) parsedDrift = s.data;
+        else {
+          usedFallback = true;
+          parsedDrift = DriftLenientZ.parse(drift);
+        }
+      }
+      return { installments: parsedRows, drift: parsedDrift, usedFallback };
+    }
+
+    for (const [i, c] of cases.entries()) {
+      const ctx = makeCtx();
+      const res = await handlePatchTransactionVersioned(
+        req(
+          { amount: c.amount, total_installments: c.N, installment_mode: c.mode },
+          c.v,
+          `tx-fallback-${i}`,
+        ),
+        ctx,
+      );
+      if (res.status !== 200) throw new Error(`bootstrap falhou (case ${i})`);
+
+      const rawBase = res.body as unknown as EnvelopeShape;
+      const enriched = enrich(rawBase, {
+        root: { ...futureBag },
+        data: { ...futureBag },
+        drift: { ...futureBag },
+        perRow: Array.from({ length: c.N }, () => ({ ...futureBag })),
+      });
+
+      // (a) Confirma que o estrito falha por causa dos campos futuros no bruto.
+      const rowsEnriched = (enriched.data?.installments ?? []) as Array<Record<string, unknown>>;
+      for (const r of rowsEnriched) {
+        expect(InstallmentStrictZ.safeParse(r).success).toBe(false);
+      }
+      if (enriched.data?.drift) {
+        expect(DriftStrictZ.safeParse(enriched.data.drift).success).toBe(false);
+      }
+
+      // (b) Rota "feliz": normaliza primeiro, então estrito aceita.
+      const normBase = normalize(rawBase);
+      const strictBaseRows = (normBase.data!.installments as unknown[]).map(
+        (r) => InstallmentStrictZ.parse(r),
+      );
+      const strictBaseDrift = normBase.data!.drift
+        ? DriftStrictZ.parse(normBase.data!.drift)
+        : undefined;
+
+      // (c) Rota de FALLBACK: parser leniente no bruto enriquecido + normalização.
+      const fallbackParsed = parseWithFallback(enriched);
+      expect(fallbackParsed.usedFallback).toBe(true);
+
+      // Reempacota como envelope para reusar `normalize`, que descarta chaves
+      // não-canônicas (i.e., os campos futuros que o leniente deixou passar).
+      const fallbackEnvelope: EnvelopeShape = {
+        data: {
+          installments: fallbackParsed.installments as Array<Record<string, unknown>>,
+          drift: fallbackParsed.drift as Record<string, unknown> | undefined,
+        },
+      };
+      const normFallback = normalize(fallbackEnvelope);
+      const fallbackRows = (normFallback.data!.installments as unknown[]).map(
+        (r) => InstallmentStrictZ.parse(r),
+      );
+      const fallbackDrift = normFallback.data!.drift
+        ? DriftStrictZ.parse(normFallback.data!.drift)
+        : undefined;
+
+      // (d) Igualdade EXATA entre rotas estrita e fallback (bit-a-bit em canônico).
+      expect(canon(fallbackRows)).toEqual(canon(strictBaseRows));
+      expect(canon(fallbackDrift)).toEqual(canon(strictBaseDrift));
+
+      // (e) Terceira rota: parser estrito aplicado ao ENRIQUECIDO normalizado
+      //     (equivalente a "normalizar antes, parsear depois") — mesmo resultado.
+      const normEnrichedFirst = normalize(enriched);
+      const strictEnrichedRows = (normEnrichedFirst.data!.installments as unknown[]).map(
+        (r) => InstallmentStrictZ.parse(r),
+      );
+      const strictEnrichedDrift = normEnrichedFirst.data!.drift
+        ? DriftStrictZ.parse(normEnrichedFirst.data!.drift)
+        : undefined;
+      expect(canon(strictEnrichedRows)).toEqual(canon(strictBaseRows));
+      expect(canon(strictEnrichedDrift)).toEqual(canon(strictBaseDrift));
+
+      // (f) Invariantes econômicos continuam de pé em ambos os payloads.
+      assertInvariants(rawBase, c.N);
+      assertInvariants(enriched, c.N);
+    }
+  });
 });
