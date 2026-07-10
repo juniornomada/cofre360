@@ -192,8 +192,8 @@ describe("toDriftInput — validação de runtime com Zod (anti-regressão)", ()
     const out = toDriftInput(contaminated);
     expect(() => DriftAssertInputZ.parse(out)).not.toThrow();
     // E o objeto de saída NÃO carrega a chave estranha.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    expect((out.data.installments[0] as any).server_metadata).toBeUndefined();
+    const probe = out.data.installments[0] as unknown as Record<string, unknown>;
+    expect(probe.server_metadata).toBeUndefined();
   });
 
   it("detecta tipagem afrouxada: amount como string quebra o schema", () => {
