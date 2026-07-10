@@ -645,9 +645,12 @@ function RemindersPage() {
           <Landmark className="h-3 w-3" />
           Conta Débito/Pix
         </label>
-        <div className="grid grid-cols-5 gap-1.5">
+        <div className="grid grid-cols-5 gap-1.5" role="radiogroup" aria-label="Conta bancária">
           <button
             type="button"
+            role="radio"
+            aria-checked={!data.bank_account_id}
+            aria-label="Nenhuma conta"
             onClick={() => setData(prev => ({ ...prev, bank_account_id: null }))}
             className={`flex flex-col items-center gap-0.5 rounded-lg p-1.5 transition-all ${
               !data.bank_account_id ? "bg-primary/15 ring-1 ring-primary" : "bg-card hover:bg-accent"
@@ -662,6 +665,9 @@ function RemindersPage() {
             <button
               key={a.id}
               type="button"
+              role="radio"
+              aria-checked={data.bank_account_id === a.id}
+              aria-label={`Conta ${a.name}`}
               onClick={() => {
                 setData(prev => {
                   const nextId = prev.bank_account_id === a.id ? null : a.id;
