@@ -755,13 +755,16 @@ function RemindersPage() {
           </div>
           <button
             type="button"
+            role="switch"
+            aria-checked={data.is_recurring}
+            aria-label="Repetir mensalmente"
             onClick={() => setData(prev => ({ ...prev, is_recurring: !prev.is_recurring }))}
             className={cn(
               "relative h-6 w-11 rounded-full transition-colors",
               data.is_recurring ? "bg-primary" : "bg-accent"
             )}
           >
-            <span className={cn(
+            <span aria-hidden="true" className={cn(
               "absolute top-0.5 h-5 w-5 rounded-full bg-background transition-transform",
               data.is_recurring ? "translate-x-5" : "translate-x-0.5"
             )} />
