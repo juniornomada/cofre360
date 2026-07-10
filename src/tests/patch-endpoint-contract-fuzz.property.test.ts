@@ -21,6 +21,7 @@
  */
 import { describe, it, expect, vi } from "vitest";
 import fc from "fast-check";
+import { fcAssertWithRepro } from "./helpers/fc-assert";
 import {
   handlePatchTransactionContract,
   type PatchContractResponse,
@@ -119,7 +120,7 @@ const NArb = fc.integer({ min: 1, max: 360 });
 // ---------------- suíte ----------------
 describe("Contrato PATCH — fuzz (fast-check)", () => {
   it("F1..F7 — para qualquer (amount, N) válido, invariantes divide se mantêm", async () => {
-    await fc.assert(
+    await fcAssertWithRepro(
       fc.asyncProperty(amountArb, NArb, async (amount, N) => {
         const res = await patch({ amount, total_installments: N });
         // Se por alguma razão o handler recusar (ex.: amount saneado vira 0
@@ -135,7 +136,7 @@ describe("Contrato PATCH — fuzz (fast-check)", () => {
   });
 
   it("F5 (foco) — |Σ − source| ≤ N¢ para varredura densa em N com amount aleatório", async () => {
-    await fc.assert(
+    await fcAssertWithRepro(
       fc.asyncProperty(amountArb, fc.integer({ min: 1, max: 360 }), async (amount, N) => {
         const res = await patch({ amount, total_installments: N });
         if (res.status !== 200) return;
@@ -154,7 +155,7 @@ describe("Contrato PATCH — fuzz (fast-check)", () => {
       .map((n) => Math.round(n * 100) / 100)
       .filter((n) => n > 0);
 
-    await fc.assert(
+    await fcAssertWithRepro(
       fc.asyncProperty(parcelaArb, NArb, async (parcela, N) => {
         const res = await patch(
           { amount: parcela },
@@ -190,7 +191,7 @@ describe("Contrato PATCH — fuzz (fast-check)", () => {
       fc.anything(),
     );
 
-    await fc.assert(
+    await fcAssertWithRepro(
       fc.asyncProperty(hostileBody, async (body) => {
         const res = await patch(body);
         expect([200, 400, 404, 405, 415, 422]).toContain(res.status);
@@ -209,7 +210,7 @@ describe("Contrato PATCH — fuzz (fast-check)", () => {
   });
 
   it("Idempotência — dois PATCHes com o mesmo payload aleatório produzem o mesmo contrato", async () => {
-    await fc.assert(
+    await fcAssertWithRepro(
       fc.asyncProperty(amountArb, NArb, async (amount, N) => {
         const r1 = await patch({ amount, total_installments: N });
         const r2 = await patch({ amount, total_installments: N });

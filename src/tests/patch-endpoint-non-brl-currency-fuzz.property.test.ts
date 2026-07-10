@@ -26,6 +26,7 @@
  */
 import { describe, it, expect, vi } from "vitest";
 import fc from "fast-check";
+import { fcAssertWithRepro } from "./helpers/fc-assert";
 import { handlePatchTransactionContract } from "@/lib/patch-transaction-contract";
 
 const toCents = (n: number) => Math.round(n * 100);
@@ -102,7 +103,7 @@ function makePersist() {
 
 describe("Fuzz — currencies não-BRL preservam drift e shape do normalized", () => {
   it("F1..F5 — payload multi-moeda com amount+N válidos mantém contrato", async () => {
-    await fc.assert(
+    await fcAssertWithRepro(
       fc.asyncProperty(currencyArb, currencyAliasKeyArb, amountArb, nArb, async (cur, aliasKey, amount, N) => {
         const bank = makePersist();
         const body: Record<string, unknown> = {
@@ -164,7 +165,7 @@ describe("Fuzz — currencies não-BRL preservam drift e shape do normalized", (
   });
 
   it("F6 — payload só com currency/aliases (sem amount/N) → 422 sem persistir", async () => {
-    await fc.assert(
+    await fcAssertWithRepro(
       fc.asyncProperty(
         fc.array(fc.tuple(currencyAliasKeyArb, currencyArb), { minLength: 1, maxLength: 5 }),
         async (pairs) => {
@@ -185,7 +186,7 @@ describe("Fuzz — currencies não-BRL preservam drift e shape do normalized", (
   });
 
   it("F1..F5 — currency + patch cosmético válido regenera parcelas a partir do currentRow", async () => {
-    await fc.assert(
+    await fcAssertWithRepro(
       fc.asyncProperty(
         currencyArb,
         currencyAliasKeyArb,

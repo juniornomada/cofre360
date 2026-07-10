@@ -12,6 +12,7 @@
  */
 import { describe, it, expect, vi } from "vitest";
 import fc from "fast-check";
+import { fcAssertWithRepro } from "./helpers/fc-assert";
 import {
   handlePatchTransactionContract,
   type PatchContractResponse,
@@ -140,7 +141,7 @@ function assertResponseShape(resp: PatchContractResponse) {
 
 describe("Property-based — payloads monetários aleatórios", () => {
   it("P1: para QUALQUER payload aleatório, o handler devolve um shape contratual", async () => {
-    await fc.assert(
+    await fcAssertWithRepro(
       fc.asyncProperty(arbFuzzPayload, async (payload) => {
         // NaN / Infinity viram null via JSON.stringify — reproduz fielmente o wire.
         const resp = await handlePatchTransactionContract(req(serialize(payload)), {
@@ -154,7 +155,7 @@ describe("Property-based — payloads monetários aleatórios", () => {
   });
 
   it("P1b: o handler tolera bodies não-JSON e Content-Type errado sem lançar exceção", async () => {
-    await fc.assert(
+    await fcAssertWithRepro(
       fc.asyncProperty(
         fc.oneof(
           fc.string(), // pode ou não ser JSON válido
@@ -177,7 +178,7 @@ describe("Property-based — payloads monetários aleatórios", () => {
   });
 
   it("P2: para QUALQUER (amount, N) válido, drift |Σ − source| ≤ N × 1¢", async () => {
-    await fc.assert(
+    await fcAssertWithRepro(
       fc.asyncProperty(arbValidPayload, async ({ amount, total_installments }) => {
         const resp = await handlePatchTransactionContract(
           req(JSON.stringify({ amount, total_installments })),
@@ -210,7 +211,7 @@ describe("Property-based — payloads monetários aleatórios", () => {
       },
       { requiredKeys: [] },
     );
-    await fc.assert(
+    await fcAssertWithRepro(
       fc.asyncProperty(arbValidPayload, hostileKeys, async (valid, evil) => {
         const merged = { ...evil, ...valid };
         const resp = await handlePatchTransactionContract(req(JSON.stringify(merged)), {
@@ -228,7 +229,7 @@ describe("Property-based — payloads monetários aleatórios", () => {
   });
 
   it("P4: NaN / Infinity em amount JAMAIS produzem 200 (sempre 422)", async () => {
-    await fc.assert(
+    await fcAssertWithRepro(
       fc.asyncProperty(
         fc.constantFrom(Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY),
         arbNiceN,
@@ -251,7 +252,7 @@ describe("Property-based — payloads monetários aleatórios", () => {
 
   it("P5: N extremos (>360 ou <1) sempre são rejeitados com 422 sem invocar persist", async () => {
     const persist = vi.fn(async (id: string, patch: Record<string, unknown>) => ({ id, ...patch }));
-    await fc.assert(
+    await fcAssertWithRepro(
       fc.asyncProperty(
         fc.oneof(
           fc.integer({ min: 361, max: 10_000_000 }),
