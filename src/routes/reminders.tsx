@@ -822,7 +822,7 @@ function RemindersPage() {
             className="w-full rounded-xl bg-card pl-10 pr-4 py-2 text-sm outline-none ring-primary/20 focus:ring-2"
           />
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2" role="tablist" aria-label="Filtrar lembretes">
           {([
             { key: "all", label: "Todos" },
             { key: "pending", label: "Pendentes" },
@@ -830,6 +830,9 @@ function RemindersPage() {
           ] as const).map(f => (
             <button
               key={f.key}
+              type="button"
+              role="tab"
+              aria-selected={filter === f.key}
               onClick={() => setFilter(f.key)}
               className={`interactive-button flex-1 whitespace-nowrap rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors duration-200 ${filter === f.key ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground"}`}
             >
