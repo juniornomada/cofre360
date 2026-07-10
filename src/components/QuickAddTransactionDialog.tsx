@@ -84,6 +84,13 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
     }
   }, [newTx.amount, installmentMode, installmentEnabled]);
 
+  // Garante que a "parcela atual" nunca exceda o total de parcelas.
+  useEffect(() => {
+    const max = Number(installmentCount) || 1;
+    if (installmentStart > max) setInstallmentStart(max);
+    if (installmentStart < 1) setInstallmentStart(1);
+  }, [installmentCount, installmentStart]);
+
 
   const fetchData = useCallback(async () => {
     try {
