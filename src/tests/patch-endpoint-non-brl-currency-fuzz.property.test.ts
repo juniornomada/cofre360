@@ -141,6 +141,37 @@ describe("Fuzz — currencies não-BRL preservam drift e shape do normalized", (
           for (const k of Object.keys(c)) expect(ALLOWLIST.has(k)).toBe(true);
         }
 
+        // ─── Q1..Q7 — QUANTIZAÇÃO EXATA de `normalized.amount` ────────────
+        // Independentemente da currency (allowlist ou não), amount tem que:
+        //   Q1. ser === round2(input.amount) (half-away-from-zero via Math.round).
+        //   Q2. ter no máximo 2 casas decimais (representável como inteiro em ¢).
+        //   Q3. ser um número finito, não-NaN.
+        //   Q4. ser estritamente positivo (Zod rejeita 0/negativo antes).
+        //   Q6. ser idempotente sob re-quantização: round2(round2(x)) === round2(x).
+        //   Q7. não sofrer drift extra por currency: mesmo input numérico produz
+        //       o mesmo normalized.amount independentemente do token de currency.
+        const na = normalized.amount as number;
+        expect(typeof na).toBe("number");
+        expect(Number.isFinite(na)).toBe(true);
+        expect(Number.isNaN(na)).toBe(false);              // Q3
+        expect(na).toBeGreaterThan(0);                     // Q4
+        expect(na).toBe(round2(amount));                   // Q1
+        // Q2 — inteiro em ¢ (tolerância de FP).
+        const cents = na * 100;
+        expect(Math.abs(cents - Math.round(cents))).toBeLessThan(1e-6);
+        expect(Math.round(cents)).toBe(toCents(na));
+        expect(round2(na)).toBe(na);                       // Q6
+
+        // Q7 — invariância vs currency: mesmo input sem currency dá o mesmo amount.
+        const baselineBank = makePersist();
+        const baseline = await handlePatchTransactionContract(
+          req({ amount, total_installments: N }),
+          { persist: baselineBank.persist, currentRow: null },
+        );
+        if (baseline.status === 200) {
+          expect(baseline.body.data.normalized.amount).toBe(na);
+        }
+
         // F5 — numeração / precisão / tamanho.
         expect(installments).toHaveLength(N);
         const nums = installments.map((r) => r.installment_number).sort((a, b) => a - b);
@@ -148,10 +179,14 @@ describe("Fuzz — currencies não-BRL preservam drift e shape do normalized", (
         for (const r of installments) {
           expect(r.total_installments).toBe(N);
           expect(round2(r.amount)).toBe(r.amount);
+          expect(Math.round(r.amount * 100)).toBe(toCents(r.amount));
         }
 
-        // F3 — drift regulamentar.
+        // Q8 — source é derivado exatamente de round2(na * N).
         const source = installments[0].installment_source_amount;
+        expect(source).toBe(round2(na * N));
+
+        // F3 — drift regulamentar.
         const sumCents = installments.reduce((s, r) => s + toCents(r.amount), 0);
         expect(Math.abs(sumCents - toCents(source))).toBeLessThanOrEqual(N);
 
