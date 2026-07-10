@@ -12,6 +12,7 @@
     "test": "bunx vitest run",
     "typecheck": "bunx tsc --noEmit",
     "test:schema-drift": "bunx vitest run src/lib/__tests__/drift-input-mapper.test.ts src/lib/__tests__/drift-input-mapper.runtime-zod.test.ts src/lib/__tests__/installment-drift-tolerance.test.ts src/tests/patch-endpoint-schema-versioning.integration.test.ts src/tests/patch-endpoint-schema-negotiation.integration.test.ts src/tests/patch-endpoint-schema-fallback.integration.test.ts src/tests/edit-sanitized-payload-drift.integration.test.tsx",
+    "test:preview-parity": "bunx vitest run src/tests/quickadd-preview-matches-handleadd.integration.test.ts src/tests/quickadd-installment-start-validation.integration.test.tsx src/tests/installment-cent-rounding.test.ts src/tests/installment-start-consistency.test.ts",
     "check:no-wide-casts": "node scripts/check-no-wide-casts.mjs"
   },
   "dependencies": {
