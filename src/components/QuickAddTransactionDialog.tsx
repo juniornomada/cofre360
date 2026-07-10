@@ -407,6 +407,12 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
       }
       
       const cardValue = newTx.card === "Nenhum" ? null : newTx.card;
+      // Coerção de tipo: se a categoria escolhida for de Receita (ex.: "Receita > Reembolso"
+      // para estornos), força type=income mesmo que o usuário tenha deixado a aba "Despesa"
+      // selecionada — evita que estornos/reembolsos entrem como despesa na fatura.
+      const categoryRoot = (newTx.category || "").split(">")[0].trim().toLowerCase();
+      const finalType: "income" | "expense" =
+        categoryRoot === "receita" || categoryRoot === "receitas" ? "income" : newTx.type;
     let baseDate: Date;
     try {
       baseDate = parse(newTx.date, "dd MMM", new Date(), { locale: ptBR });
@@ -433,7 +439,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
         rows.push({
           icon: newTx.icon, name: newTx.name, category: newTx.category,
           date: format(installDate, "dd MMM", { locale: ptBR }),
-          amount: parcela, type: newTx.type,
+          amount: parcela, type: finalType,
           card: cardValue, bank_account_id: newTx.bank_account_id || null,
           installment_number: i,
           total_installments: count,
@@ -448,7 +454,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
      } else {
        const { error } = await supabase.from("transactions").insert({
          icon: newTx.icon, name: newTx.name, category: newTx.category,
-         date: newTx.date, amount: newTx.amount, type: newTx.type,
+         date: newTx.date, amount: newTx.amount, type: finalType,
          card: cardValue, bank_account_id: newTx.bank_account_id || null,
          is_visible: true
        });
