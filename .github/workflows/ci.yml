@@ -33,6 +33,12 @@ jobs:
       - name: Schema-versioning & drift test suite
         run: bun run test:schema-drift
 
+      # Paridade prévia ↔ handleAdd do diálogo de nova transação parcelada.
+      # Roda isolado em cada PR para bloquear regressões que dessincronizem
+      # o "Valor por parcela" exibido dos valores efetivamente persistidos.
+      - name: Preview ↔ handleAdd parity (installments)
+        run: bun run test:preview-parity
+
       # Suíte completa restante (acessibilidade, componentes, integração).
       - name: Full test suite
         run: bun run test
