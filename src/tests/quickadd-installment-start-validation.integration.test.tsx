@@ -96,9 +96,13 @@ async function prepareParceladoDialog() {
   setAmount(400); // R$ 400,00
   clickParcelarToggle();
   await waitFor(() => {
-    const labels = Array.from(document.querySelectorAll("label"));
-    const found = labels.some((l) => /Parcela atual/.test(l.textContent || ""));
-    if (!found) throw new Error("label 'Parcela atual' não apareceu");
+    const labels = Array.from(document.querySelectorAll("label")).map((l) => l.textContent);
+    const found = labels.some((t) => /Parcela atual/.test(t || ""));
+    if (!found) {
+      // eslint-disable-next-line no-console
+      console.log("labels vistos:", labels);
+      throw new Error("label 'Parcela atual' não apareceu");
+    }
   });
 }
 
