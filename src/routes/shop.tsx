@@ -213,7 +213,7 @@ function ShopPage() {
               disabled={cart.length === 0 || isProcessing}
               onClick={handleCheckout}
             >
-              {isProcessing ? "Processando..." : `Finalizar Compra - R$ ${total.toFixed(2)}`}
+              {isProcessing ? "Processando..." : `Finalizar Compra - R$ ${formatBRL(total)}`}
             </Button>
             <Button variant="ghost" onClick={() => setStep("browsing")}>
               Continuar Comprando
