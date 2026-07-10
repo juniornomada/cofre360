@@ -139,19 +139,66 @@ async function patch(
   return handlePatchTransactionContract(req(body), { persist, currentRow });
 }
 
-/** Aplica as regras R1..R6 sobre qualquer body parseado. */
-function assertDriftRules(body: {
+/** Shape mínimo aceito por `assertDriftRules`. Modelado sobre `InstallmentPreview`
+ *  para eliminar casts amplos (TS2352) e manter tipagem exata dos campos. */
+type DriftMetric = {
+  sum: number;
+  source: number;
+  delta: number;
+  tolerance: number;
+  ok: boolean;
+};
+interface DriftAssertInput {
   data: {
-    installments: Array<{
+    installments: InstallmentPreview[];
+    drift?: DriftMetric;
+  };
+}
+
+/** Converte a saída de um Zod parse (que carrega `.passthrough()` e portanto
+ *  `[key: string]: unknown`) em `InstallmentPreview[]` sem cast amplo:
+ *  extraímos APENAS os campos do contrato e preservamos os tipos por campo. */
+function toInstallmentPreviews(
+  rows: ReadonlyArray<{
+    installment_number: number;
+    total_installments: number;
+    amount: number;
+    installment_source_amount: number;
+    installment_mode: "divide" | "fixed";
+  }>,
+): InstallmentPreview[] {
+  return rows.map((r) => ({
+    installment_number: r.installment_number,
+    total_installments: r.total_installments,
+    amount: r.amount,
+    installment_source_amount: r.installment_source_amount,
+    installment_mode: r.installment_mode,
+  }));
+}
+
+/** Adapta `{data:{installments, drift?}}` para a entrada tipada de `assertDriftRules`. */
+function toDriftInput(body: {
+  data: {
+    installments: ReadonlyArray<{
       installment_number: number;
       total_installments: number;
       amount: number;
       installment_source_amount: number;
       installment_mode: "divide" | "fixed";
     }>;
-    drift?: { sum: number; source: number; delta: number; tolerance: number; ok: boolean };
+    drift?: DriftMetric;
   };
-}) {
+}): DriftAssertInput {
+  return {
+    data: {
+      installments: toInstallmentPreviews(body.data.installments),
+      drift: body.data.drift,
+    },
+  };
+}
+
+/** Aplica as regras R1..R6 sobre qualquer body parseado. */
+function assertDriftRules(body: DriftAssertInput) {
   const { installments, drift } = body.data;
   const N = installments.length;
 
@@ -162,7 +209,7 @@ function assertDriftRules(body: {
   expect(nums).toEqual(Array.from({ length: N }, (_, i) => i + 1));
 
   // R3 / R4
-  const mode = installments[0].installment_mode;
+  const mode: InstallmentPreview["installment_mode"] = installments[0].installment_mode;
   for (const r of installments) {
     expect(r.installment_mode).toBe(mode);
     expect(Math.round(r.amount * 100) / 100).toBe(r.amount);
