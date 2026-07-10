@@ -1133,10 +1133,10 @@ function CardsPage() {
                     <div className="flex items-center gap-1 shrink-0 relative z-30">
                       {isEditing ? (
                         <div className="flex items-center gap-1 bg-white/20 backdrop-blur-md p-1 rounded-full border border-white/10 shadow-sm" onClick={(e) => e.stopPropagation()}>
-                          <button onClick={() => saveEdit(card.id)} className="p-1.5 rounded-full hover:bg-white/20 text-white transition-colors" title="Salvar">
+                          <button onClick={() => saveEdit(card.id)} data-on-card="true" className="p-1.5 rounded-full hover:bg-white/20 text-white transition-colors" title="Salvar" aria-label="Salvar alterações">
                             <Check className="h-3.5 w-3.5" />
                           </button>
-                          <button onClick={cancelEdit} className="p-1.5 rounded-full hover:bg-white/20 text-white transition-colors" title="Cancelar">
+                          <button onClick={cancelEdit} data-on-card="true" className="p-1.5 rounded-full hover:bg-white/20 text-white transition-colors" title="Cancelar" aria-label="Cancelar edição">
                             <X className="h-3.5 w-3.5" />
                           </button>
                         </div>
@@ -1144,10 +1144,10 @@ function CardsPage() {
                         <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                           {deleteConfirm === card.id ? (
                             <div className="flex items-center gap-1 bg-destructive/80 backdrop-blur-md p-1 rounded-full border border-white/10 shadow-sm animate-in zoom-in-95 duration-200">
-                              <button onClick={() => handleDelete(card.id)} className="p-1.5 rounded-full hover:bg-white/20 text-white transition-colors">
+                              <button onClick={() => handleDelete(card.id)} data-on-card="true" className="p-1.5 rounded-full hover:bg-white/20 text-white transition-colors" aria-label="Confirmar exclusão">
                                 <Check className="h-3.5 w-3.5" />
                               </button>
-                              <button onClick={() => setDeleteConfirm(null)} className="p-1.5 rounded-full hover:bg-white/20 text-white transition-colors">
+                              <button onClick={() => setDeleteConfirm(null)} data-on-card="true" className="p-1.5 rounded-full hover:bg-white/20 text-white transition-colors" aria-label="Cancelar exclusão">
                                 <X className="h-3.5 w-3.5" />
                               </button>
                             </div>
