@@ -107,18 +107,45 @@ function isSupported(v: string): v is SchemaVersion {
   return (SUPPORTED_VERSIONS as readonly string[]).includes(v);
 }
 
+/** Detect whether the client opted-in to safe fallback for unknown versions.
+ *  Header `Accept-Version-Fallback: default` (case-insensitive) or query
+ *  `?fallback=default` both enable the degrade path. Any other value → no fallback. */
+export function wantsSafeFallback(req: VersionedRequest): boolean {
+  const h = req.headers ?? {};
+  const lower: Record<string, string> = {};
+  for (const [k, v] of Object.entries(h)) if (v != null) lower[k.toLowerCase()] = v;
+  const headerVal = lower["accept-version-fallback"]?.trim().toLowerCase();
+  const queryVal = req.query?.fallback?.trim().toLowerCase();
+  return headerVal === "default" || queryVal === "default";
+}
+
 export async function handlePatchTransactionVersioned(
   req: VersionedRequest,
   ctx: PatchContractContext,
 ): Promise<VersionedResponse> {
-  const { version } = negotiateVersion(req);
-  if (!isSupported(version)) {
+  const { version: requested } = negotiateVersion(req);
+  let version: SchemaVersion;
+  let warning: VersionFallbackWarning | undefined;
+
+  if (isSupported(requested)) {
+    version = requested;
+  } else if (wantsSafeFallback(req)) {
+    // Opt-in graceful degrade: serve the DEFAULT_VERSION and attach a
+    // machine-readable warning so the client can log/alert on the mismatch.
+    version = DEFAULT_VERSION;
+    warning = {
+      code: "VERSION_FALLBACK",
+      requested,
+      served: DEFAULT_VERSION,
+      supported: SUPPORTED_VERSIONS,
+    };
+  } else {
     return {
       status: 406,
       body: {
         error: {
           code: "UNSUPPORTED_VERSION",
-          message: `Schema version '${version}' not supported. Use one of: ${SUPPORTED_VERSIONS.join(", ")}.`,
+          message: `Schema version '${requested}' not supported. Use one of: ${SUPPORTED_VERSIONS.join(", ")}.`,
           supported: SUPPORTED_VERSIONS,
         },
       },
@@ -137,13 +164,14 @@ export async function handlePatchTransactionVersioned(
         body: {
           schema_version: "1",
           data: { id: v2Data.id, installments: v2Data.installments },
+          ...(warning ? { warning } : {}),
         },
       };
     case "2":
       return {
         status: 200,
         version: "2",
-        body: { schema_version: "2", data: v2Data },
+        body: { schema_version: "2", data: v2Data, ...(warning ? { warning } : {}) },
       };
     case "3":
       return {
@@ -152,7 +180,9 @@ export async function handlePatchTransactionVersioned(
         body: {
           schema_version: "3",
           data: { ...v2Data, schema_version: "3" },
+          ...(warning ? { warning } : {}),
         },
       };
   }
 }
+
