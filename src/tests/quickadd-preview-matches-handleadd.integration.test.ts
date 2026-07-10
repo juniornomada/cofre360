@@ -28,6 +28,7 @@
  */
 import { describe, it, expect } from "vitest";
 import { calculateInstallmentDetails, type InstallmentMode } from "@/lib/installment-utils";
+import { toDivideMode, toFixedMode } from "@/lib/installment-mode-toggle";
 
 /** Espelho fiel do bloco de prévia do diálogo. */
 function computePreview(
