@@ -541,9 +541,17 @@ function RemindersPage() {
     <div className="flex flex-col gap-3 max-h-[60vh] overflow-y-auto">
       <div>
         <label className="text-xs text-muted-foreground mb-1 block">Ícone</label>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Ícone do lembrete">
           {iconOptions.map(ic => (
-            <button key={ic} onClick={() => setData(prev => ({ ...prev, icon: ic }))} className={`text-xl p-1 rounded-lg transition-colors ${data.icon === ic ? "bg-primary/20 ring-1 ring-primary" : "hover:bg-accent"}`}>{ic}</button>
+            <button
+              key={ic}
+              type="button"
+              role="radio"
+              aria-checked={data.icon === ic}
+              aria-label={`Ícone ${ic}`}
+              onClick={() => setData(prev => ({ ...prev, icon: ic }))}
+              className={`text-xl p-1 rounded-lg transition-colors ${data.icon === ic ? "bg-primary/20 ring-1 ring-primary" : "hover:bg-accent"}`}
+            >{ic}</button>
           ))}
         </div>
       </div>
@@ -568,23 +576,29 @@ function RemindersPage() {
       </div>
       <div>
         <label className="text-xs text-muted-foreground mb-1 block">Tipo</label>
-        <div className="flex gap-2">
-          <button 
+        <div className="flex gap-2" role="radiogroup" aria-label="Tipo do lembrete">
+          <button
+            type="button"
+            role="radio"
+            aria-checked={data.type === "expense"}
             onClick={() => {
               if (data.type !== "expense") {
                 setData(prev => ({ ...prev, type: "expense", category: "Moradia > Aluguel", icon: "🏠" }));
               }
-            }} 
+            }}
             className={`flex-1 rounded-xl py-2 text-xs font-medium transition-colors ${data.type === "expense" ? "bg-destructive text-destructive-foreground" : "bg-card text-muted-foreground"}`}
           >
             Pagamento
           </button>
-          <button 
+          <button
+            type="button"
+            role="radio"
+            aria-checked={data.type === "income"}
             onClick={() => {
               if (data.type !== "income") {
                 setData(prev => ({ ...prev, type: "income", category: "Receita > Salário", icon: "💰" }));
               }
-            }} 
+            }}
             className={`flex-1 rounded-xl py-2 text-xs font-medium transition-colors ${data.type === "income" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground"}`}
           >
             Recebimento
@@ -631,9 +645,12 @@ function RemindersPage() {
           <Landmark className="h-3 w-3" />
           Conta Débito/Pix
         </label>
-        <div className="grid grid-cols-5 gap-1.5">
+        <div className="grid grid-cols-5 gap-1.5" role="radiogroup" aria-label="Conta bancária">
           <button
             type="button"
+            role="radio"
+            aria-checked={!data.bank_account_id}
+            aria-label="Nenhuma conta"
             onClick={() => setData(prev => ({ ...prev, bank_account_id: null }))}
             className={`flex flex-col items-center gap-0.5 rounded-lg p-1.5 transition-all ${
               !data.bank_account_id ? "bg-primary/15 ring-1 ring-primary" : "bg-card hover:bg-accent"
@@ -648,6 +665,9 @@ function RemindersPage() {
             <button
               key={a.id}
               type="button"
+              role="radio"
+              aria-checked={data.bank_account_id === a.id}
+              aria-label={`Conta ${a.name}`}
               onClick={() => {
                 setData(prev => {
                   const nextId = prev.bank_account_id === a.id ? null : a.id;
@@ -670,9 +690,12 @@ function RemindersPage() {
             <CreditCard className="h-3 w-3" />
             Cartão de crédito
           </label>
-          <div className="grid grid-cols-5 gap-1.5">
+          <div className="grid grid-cols-5 gap-1.5" role="radiogroup" aria-label="Cartão de crédito">
             <button
               type="button"
+              role="radio"
+              aria-checked={!data.card_id}
+              aria-label="Nenhum cartão"
               onClick={() => setData(prev => ({ ...prev, card_id: null }))}
               className={`flex flex-col items-center gap-0.5 rounded-lg p-1.5 transition-all ${
                 !data.card_id ? "bg-primary/15 ring-1 ring-primary" : "bg-card hover:bg-accent"
@@ -689,6 +712,9 @@ function RemindersPage() {
                 <button
                   key={c.id}
                   type="button"
+                  role="radio"
+                  aria-checked={selected}
+                  aria-label={`Cartão ${c.name}`}
                   onClick={() => {
                     setData(prev => {
                       const nextId = prev.card_id === c.id ? null : c.id;
@@ -700,6 +726,7 @@ function RemindersPage() {
                   }`}
                 >
                   <div
+                    aria-hidden="true"
                     className={`h-7 w-10 rounded-[4px] flex items-end justify-start p-0.5 shadow-sm relative overflow-hidden bg-gradient-to-br ${c.color || "from-gray-600 to-gray-800"}`}
                   >
                     <div className="absolute top-1 left-1 h-1 w-1.5 rounded-[1px] bg-white/40" />
@@ -728,13 +755,16 @@ function RemindersPage() {
           </div>
           <button
             type="button"
+            role="switch"
+            aria-checked={data.is_recurring}
+            aria-label="Repetir mensalmente"
             onClick={() => setData(prev => ({ ...prev, is_recurring: !prev.is_recurring }))}
             className={cn(
               "relative h-6 w-11 rounded-full transition-colors",
               data.is_recurring ? "bg-primary" : "bg-accent"
             )}
           >
-            <span className={cn(
+            <span aria-hidden="true" className={cn(
               "absolute top-0.5 h-5 w-5 rounded-full bg-background transition-transform",
               data.is_recurring ? "translate-x-5" : "translate-x-0.5"
             )} />
@@ -758,8 +788,13 @@ function RemindersPage() {
             <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1.5 text-[10px] font-bold text-destructive-foreground">{pendingCount}</span>
           )}
         </div>
-        <button onClick={() => setShowAddDialog(true)} className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
-          <Plus className="h-4 w-4" />
+        <button
+          type="button"
+          onClick={() => setShowAddDialog(true)}
+          aria-label="Novo lembrete"
+          className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground"
+        >
+          <Plus className="h-4 w-4" aria-hidden="true" />
         </button>
       </div>
 
@@ -787,7 +822,7 @@ function RemindersPage() {
             className="w-full rounded-xl bg-card pl-10 pr-4 py-2 text-sm outline-none ring-primary/20 focus:ring-2"
           />
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2" role="tablist" aria-label="Filtrar lembretes">
           {([
             { key: "all", label: "Todos" },
             { key: "pending", label: "Pendentes" },
@@ -795,6 +830,9 @@ function RemindersPage() {
           ] as const).map(f => (
             <button
               key={f.key}
+              type="button"
+              role="tab"
+              aria-selected={filter === f.key}
               onClick={() => setFilter(f.key)}
               className={`interactive-button flex-1 whitespace-nowrap rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors duration-200 ${filter === f.key ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground"}`}
             >
@@ -819,7 +857,17 @@ function RemindersPage() {
             return (
               <div
                 key={reminder.id}
+                role="button"
+                tabIndex={0}
+                aria-label={`Editar lembrete ${reminder.title}`}
                 onClick={() => { setEditReminder({ ...reminder }); setShowEditDialog(true); }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    setEditReminder({ ...reminder });
+                    setShowEditDialog(true);
+                  }
+                }}
                 className={cn(
                   "group interactive-card relative flex items-center gap-2 rounded-xl bg-card p-2.5 cursor-pointer transition-all",
                   reminder.is_completed && "opacity-60"
