@@ -992,7 +992,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
             className="flex-1 h-8 text-xs"
             onClick={handleAdd}
             disabled={
-              isSubmitting || (isTransfer
+              isSubmitting || !!installmentStartError || (isTransfer
                 ? !transferFromId || !transferToId || transferFromId === transferToId || !newTx.amount
                 : !newTx.name || !newTx.amount)
             }
