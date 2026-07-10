@@ -388,9 +388,10 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
         : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
       const rows = [];
       const count = Number(installmentCount) || 1;
-      for (let i = 0; i < count; i++) {
+      const startAt = Math.min(Math.max(1, installmentStart || 1), count);
+      for (let i = startAt; i <= count; i++) {
         const installDate = new Date(baseDate);
-        installDate.setMonth(installDate.getMonth() + i);
+        installDate.setMonth(installDate.getMonth() + (i - startAt));
          const { valorParcela: parcela } = calculateInstallmentDetails(
            newTx.amount,
            count,
@@ -402,7 +403,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
           date: format(installDate, "dd MMM", { locale: ptBR }),
           amount: parcela, type: newTx.type,
           card: cardValue, bank_account_id: newTx.bank_account_id || null,
-          installment_number: i + 1,
+          installment_number: i,
           total_installments: count,
           installment_group_id: groupId,
           installment_mode: installmentMode,
