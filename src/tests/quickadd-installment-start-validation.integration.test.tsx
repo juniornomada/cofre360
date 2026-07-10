@@ -99,7 +99,6 @@ async function prepareParceladoDialog() {
 describe("QuickAddTransactionDialog — validação de 'Parcela atual'", () => {
   beforeEach(() => {
     insertMock.mockClear();
-    toastErrorMock.mockClear();
   });
 
   it("caso válido (default start=1, total=2): SEM erro e botão HABILITADO", async () => {
