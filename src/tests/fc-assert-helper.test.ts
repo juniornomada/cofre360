@@ -55,9 +55,13 @@ describe("fcAssertWithRepro", () => {
     expect(dumped).toMatch(/shrunk counterexample:/);
 
     // O counterexample deve ter sido encolhido para um número BAIXO — no
-    // extremo, 11 (primeiro inteiro que viola o predicado). Toleramos
-    // qualquer inteiro pequeno para não acoplar ao algoritmo interno.
-    const ceMatch = dumped.match(/shrunk counterexample:\s*\n[^[]*\[\s*\n\s*(-?\d+)/);
+    // extremo, 11 (primeiro inteiro que viola o predicado). O banner usa
+    // prefixo `│ ` em cada linha; procuramos o primeiro inteiro após o
+    // marcador do counterexample.
+    const idx = dumped.indexOf("shrunk counterexample");
+    expect(idx).toBeGreaterThanOrEqual(0);
+    const tail = dumped.slice(idx);
+    const ceMatch = tail.match(/(-?\d+)/);
     expect(ceMatch, "não achei o counterexample encolhido no output").not.toBeNull();
     if (ceMatch) {
       const shrunk = Number(ceMatch[1]);
@@ -65,6 +69,7 @@ describe("fcAssertWithRepro", () => {
       // 300 runs a partir de seed=42 devem encolher confortavelmente para <= 30.
       expect(Math.abs(shrunk)).toBeLessThanOrEqual(30);
     }
+
 
     // Bloco copy-paste para reprodução via env vars e via código.
     expect(dumped).toMatch(/FC_SEED=/);
