@@ -77,11 +77,14 @@ function getAddButton(): HTMLButtonElement {
   return screen.getByRole("button", { name: /^Adicionar$/ }) as HTMLButtonElement;
 }
 
+const parcelaAtualLabelMatcher = (_: string, el: Element | null) =>
+  el?.tagName === "LABEL" && /Parcela atual/.test(el.textContent || "");
+
 function getParcelaAtualInput(): HTMLInputElement {
-  // Único input com max = installmentCount atual (renderizado depois de habilitar parcelamento).
-  // Selecionamos via aria-describedby / vizinhança do label "Parcela atual".
-  const label = screen.getByText("Parcela atual");
-  return label.parentElement!.querySelector('input[type="number"]') as HTMLInputElement;
+  const label = screen.getByText(parcelaAtualLabelMatcher);
+  // O <label> e o <div> do input são irmãos dentro do mesmo bloco.
+  const wrapper = label.parentElement!;
+  return wrapper.querySelector('input[type="number"][max]') as HTMLInputElement;
 }
 
 async function prepareParceladoDialog() {
@@ -92,8 +95,7 @@ async function prepareParceladoDialog() {
   await selectCardNubank();
   setAmount(400); // R$ 400,00
   clickParcelarToggle();
-  // count default = 2. Aguarda a UI de parcelamento aparecer.
-  await screen.findByText("Parcela atual");
+  await screen.findByText(parcelaAtualLabelMatcher);
 }
 
 describe("QuickAddTransactionDialog — validação de 'Parcela atual'", () => {
