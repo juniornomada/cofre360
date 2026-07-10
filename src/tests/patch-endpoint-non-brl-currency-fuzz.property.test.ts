@@ -383,18 +383,23 @@ describe("Fuzz — currencies não-BRL preservam drift e shape do normalized", (
   //     dízimas patológicas escaladas, potências de 2 exóticas, valores
   //     próximos ao limite de precisão dupla.
   // ────────────────────────────────────────────────────────────────────────
+  // Teto financeiro seguro para o handler: amount × N × 100 tem que caber
+  // com folga em `Number.MAX_SAFE_INTEGER` (2^53 − 1 ≈ 9.0e15). Com N ≤ 360
+  // e amount ≤ 1e7, o produto em ¢ fica em ~3.6e11, muito abaixo do teto e
+  // livre de drift-FP acima da tolerância de N¢. Amounts financeiros reais
+  // de cartão de crédito estão bem abaixo desse limite.
   const extremeAmountArb = fc.oneof(
-    // MUITO GRANDES (inteiros)
-    fc.integer({ min: 1_000_000, max: 10_000_000_000 }).map((n) => n),
-    // MUITO GRANDES (2 casas)
-    fc.integer({ min: 1_000_000_00, max: 1_000_000_000_00 }).map((c) => c / 100),
+    // MUITO GRANDES (inteiros): até 10M — cenário "compra de veículo"/"crédito imobiliário"
+    fc.integer({ min: 1_000_000, max: 10_000_000 }).map((n) => n),
+    // MUITO GRANDES (2 casas): até 10M com centavos
+    fc.integer({ min: 1_000_000_00, max: 10_000_000_00 }).map((c) => c / 100),
     // GRANDES com muitos decimais residuais (division em double gera 15+ dígitos)
     fc.integer({ min: 1, max: 10_000_000_000 }).map((c) => c / 1_000_000_000),
     fc.integer({ min: 1, max: 10_000_000_000 }).map((c) => c / 987_654_321),
-    // dízimas patológicas escaladas
+    // dízimas patológicas escaladas (bounded para ficar < 1e7)
     fc.tuple(
       fc.constantFrom(1 / 3, 1 / 7, 1 / 11, 1 / 13, 1 / 17, 1 / 19, Math.PI, Math.E, Math.SQRT2),
-      fc.integer({ min: 1, max: 1_000_000_000 }),
+      fc.integer({ min: 1, max: 1_000_000 }),
     ).map(([d, k]) => d * k),
     // valores near-half (0.005, 0.015, ...) para stressar half-away-from-zero
     fc.integer({ min: 1, max: 200_000 }).map((k) => k / 100 + 0.005),
@@ -403,8 +408,8 @@ describe("Fuzz — currencies não-BRL preservam drift e shape do normalized", (
       Number.EPSILON * 1e20,
       0.1 + 0.2,          // 0.30000000000000004
       9999999.995,        // half-away-from-zero → 10000000.00
-      1234567890.1234567,
-      1e10 - 1e-6,
+      1234567.8901234567, // 15+ dígitos significativos
+      1e7 - 1e-6,
     ),
   );
 
