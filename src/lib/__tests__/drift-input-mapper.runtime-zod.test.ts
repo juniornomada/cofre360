@@ -331,9 +331,8 @@ describe("toDriftInput — validação de runtime com Zod (anti-regressão)", ()
       );
     }
     // Nenhuma linha vazou metadados V2/V3.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const anyRow = out.data.installments as any[];
-    for (const r of anyRow) {
+    const probes = out.data.installments as unknown as ReadonlyArray<Record<string, unknown>>;
+    for (const r of probes) {
       expect(r.server_generated_at).toBeUndefined();
       expect(r.rounding_policy).toBeUndefined();
       expect(r.currency_code).toBeUndefined();
