@@ -281,6 +281,18 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
   );
   const hasDiff = installmentEnabled && !isTransfer && installmentDetails.diff !== 0;
 
+  // Prévia efetiva quando "parcela atual" > 1: só lançamos de startAt até count.
+  const previewTotal = Number(installmentCount) || 1;
+  const previewStart = (() => {
+    const v = Number(installmentStart);
+    if (!Number.isFinite(v) || v < 1) return 1;
+    if (v > previewTotal) return previewTotal;
+    return Math.trunc(v);
+  })();
+  const previewRemaining = Math.max(0, previewTotal - previewStart + 1);
+  const previewRemainingTotal = installmentDetails.valorParcela * previewRemaining;
+  const isPartialLaunch = previewStart > 1;
+
   const handleAdd = async () => {
     // Dismiss keyboard on mobile
     (document.activeElement as HTMLElement)?.blur();
