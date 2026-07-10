@@ -265,7 +265,7 @@ describe("Fuzz — currencies não-BRL preservam drift e shape do normalized", (
   // currency injetado.
   // ────────────────────────────────────────────────────────────────────────
   const nonPositiveAmountArb = fc.oneof(
-    fc.constantFrom(0, -0, Number.NEGATIVE_ZERO),
+    fc.constantFrom(0, -0),
     // negativos "comuns" em 2 casas
     fc.integer({ min: 1, max: 100_000_00 }).map((c) => -c / 100),
     // negativos inteiros grandes (0-decimal)
