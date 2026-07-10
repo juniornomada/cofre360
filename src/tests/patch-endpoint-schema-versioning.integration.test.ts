@@ -155,45 +155,56 @@ interface DriftAssertInput {
 
 /** Converte a saída de um Zod parse (que carrega `.passthrough()` e portanto
  *  `[key: string]: unknown`) em `InstallmentPreview[]` sem cast amplo:
- *  extraímos APENAS os campos do contrato e preservamos os tipos por campo. */
-function toInstallmentPreviews(
-  rows: ReadonlyArray<{
-    installment_number: number;
-    total_installments: number;
-    amount: number;
-    installment_source_amount: number;
-    installment_mode: "divide" | "fixed";
-  }>,
-): InstallmentPreview[] {
-  return rows.map((r) => ({
-    installment_number: r.installment_number,
-    total_installments: r.total_installments,
-    amount: r.amount,
-    installment_source_amount: r.installment_source_amount,
-    installment_mode: r.installment_mode,
-  }));
-}
-
-/** Adapta `{data:{installments, drift?}}` para a entrada tipada de `assertDriftRules`. */
-function toDriftInput(body: {
+ *  extraímos APENAS os campos do contrato, narrando cada campo com o tipo
+ *  esperado por `InstallmentPreview` sem casts amplos (TS2352). */
+type RawInstallmentRow = {
+  installment_number?: number;
+  total_installments?: number;
+  amount?: number;
+  installment_source_amount?: number;
+  installment_mode?: "divide" | "fixed";
+};
+type RawDriftBody = {
   data: {
-    installments: ReadonlyArray<{
-      installment_number: number;
-      total_installments: number;
-      amount: number;
-      installment_source_amount: number;
-      installment_mode: "divide" | "fixed";
-    }>;
+    installments?: ReadonlyArray<RawInstallmentRow>;
     drift?: DriftMetric;
   };
-}): DriftAssertInput {
+};
+
+function narrowInstallment(row: RawInstallmentRow, i: number): InstallmentPreview {
+  const fields: Array<keyof RawInstallmentRow> = [
+    "installment_number",
+    "total_installments",
+    "amount",
+    "installment_source_amount",
+    "installment_mode",
+  ];
+  for (const key of fields) {
+    if (row[key] === undefined) {
+      throw new Error(`installments[${i}].${key} ausente no payload parseado`);
+    }
+  }
+  return {
+    installment_number: row.installment_number as number,
+    total_installments: row.total_installments as number,
+    amount: row.amount as number,
+    installment_source_amount: row.installment_source_amount as number,
+    installment_mode: row.installment_mode as "divide" | "fixed",
+  };
+}
+
+/** Adapta `{data:{installments, drift?}}` (Zod-parsed com passthrough) para
+ *  a entrada estritamente tipada de `assertDriftRules`. */
+function toDriftInput(body: RawDriftBody): DriftAssertInput {
+  const rows = body.data.installments ?? [];
   return {
     data: {
-      installments: toInstallmentPreviews(body.data.installments),
+      installments: rows.map((r, i) => narrowInstallment(r, i)),
       drift: body.data.drift,
     },
   };
 }
+
 
 /** Aplica as regras R1..R6 sobre qualquer body parseado. */
 function assertDriftRules(body: DriftAssertInput) {
