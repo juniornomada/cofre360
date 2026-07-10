@@ -81,12 +81,9 @@ const UNKNOWN_VERSIONS: readonly string[] = [
   "1.0", // decimal
   "1a", // ruído alfanumérico
   "v2", // prefixado
-  "2 ", // trailing space após trim vira "2"? — trim é aplicado; este é " 2 "
   "latest",
   "beta",
   "next",
-  "",
-  " ",
   "true",
   "null",
   "undefined",
