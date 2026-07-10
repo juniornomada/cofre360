@@ -40,13 +40,16 @@ export function CardIcon({ color, name, size = "md", className }: CardIconProps)
         // Base — fixed footprint, inset ring so state changes never resize the box
         "relative shrink-0 bg-gradient-to-br overflow-hidden",
         "shadow-sm ring-1 ring-inset ring-black/10",
-        "transition-[box-shadow,opacity,filter,--tw-ring-color,--tw-ring-shadow] duration-200 ease-out",
+        "transition-[box-shadow,opacity,filter] duration-200 ease-out",
         s.box,
         color || "from-primary/30 to-primary/10",
         // Hover (from ancestor `.group`)
         "group-hover:shadow-md group-hover:ring-white/40",
-        // Keyboard focus (from ancestor `.group`) — inset, no outer offset
-        "group-focus-visible:ring-2 group-focus-visible:ring-primary",
+        // Keyboard focus — two-tone inset ring (white core between dark halos)
+        // guarantees ≥3:1 vs any gradient in both light & dark themes without
+        // changing the outer box (all rings are inset).
+        "group-focus-visible:ring-2 group-focus-visible:ring-white",
+        "group-focus-visible:shadow-[inset_0_0_0_1px_rgba(0,0,0,0.85),inset_0_0_0_4px_rgba(0,0,0,0.85)]",
         // Disabled — from a disabled button/link ancestor OR aria-disabled
         "group-disabled:opacity-40 group-disabled:saturate-50 group-disabled:shadow-none",
         "group-aria-disabled:opacity-40 group-aria-disabled:saturate-50 group-aria-disabled:shadow-none",

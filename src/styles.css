@@ -207,20 +207,29 @@
   /* Consistent, keyboard-only focus ring for /cards and /accounts.
      Scoped via `a11y-focus-scope` on the route root so it never
      conflicts with shadcn's own focus-visible rings elsewhere. */
+  /* Two-tone focus ring: inner primary + outer dark/light halos so that at
+     least one edge always meets WCAG 1.4.11 (≥3:1) regardless of theme or
+     surface color underneath. */
   .a11y-focus-scope :is(button, a, [role="button"], [role="combobox"], [role="switch"], [role="tab"], [role="menuitem"], [role="option"], summary, [tabindex]:not([tabindex="-1"])):focus-visible {
     outline: 2px solid var(--color-ring);
     outline-offset: 2px;
-    box-shadow: 0 0 0 4px color-mix(in oklab, var(--color-ring) 22%, transparent);
+    box-shadow:
+      0 0 0 2px var(--background),               /* separator vs adjacent UI */
+      0 0 0 4px var(--foreground);               /* high-contrast outer halo */
     border-radius: inherit;
   }
-  /* On gradient card surfaces the green ring can blend in — use a
-     white outer glow so focus stays visible on colored backgrounds. */
+  /* On gradient card surfaces the green ring can blend in — sandwich a
+     white ring between two dark halos so focus stays visible on colored
+     backgrounds in BOTH themes (light ring ≥3:1 vs dark halo, dark halo
+     ≥3:1 vs light card gradient). */
   .a11y-focus-scope .on-card-surface:focus-visible,
   .a11y-focus-scope [data-on-card="true"]:focus-visible {
-    outline-color: #ffffff;
+    outline: 2px solid #ffffff;
+    outline-offset: 2px;
     box-shadow:
-      0 0 0 4px color-mix(in oklab, #ffffff 55%, transparent),
-      0 0 0 6px color-mix(in oklab, var(--color-ring) 60%, transparent);
+      0 0 0 2px rgb(0 0 0 / 0.85),
+      0 0 0 5px #ffffff,
+      0 0 0 7px rgb(0 0 0 / 0.85);
   }
  
    @media (prefers-reduced-motion: reduce) {
@@ -274,7 +283,12 @@ div[style*="Edit with Lovable"],
   &:active:not(:disabled) { background-color: rgb(255 255 255 / 0.3); }
   &:focus-visible {
     outline: none;
-    box-shadow: inset 0 0 0 2px rgb(255 255 255 / 0.9);
+    /* white ring sandwiched between dark halos — passes ≥3:1 even when the
+       card gradient is very light in light-mode. */
+    box-shadow:
+      inset 0 0 0 1px rgb(0 0 0 / 0.85),
+      inset 0 0 0 3px #ffffff,
+      inset 0 0 0 4px rgb(0 0 0 / 0.85);
   }
   &:disabled {
     opacity: 0.5;
@@ -299,8 +313,9 @@ div[style*="Edit with Lovable"],
   &:focus-visible {
     outline: none;
     box-shadow:
-      inset 0 0 0 2px rgb(255 255 255 / 0.9),
-      0 1px 2px 0 rgb(0 0 0 / 0.05);
+      inset 0 0 0 1px rgb(0 0 0 / 0.85),
+      inset 0 0 0 3px #ffffff,
+      inset 0 0 0 4px rgb(0 0 0 / 0.85);
   }
   &:disabled {
     opacity: 0.5;
