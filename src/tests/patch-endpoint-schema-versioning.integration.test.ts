@@ -317,7 +317,7 @@ describe("Contrato PATCH — versionamento de schema", () => {
           const {
             installment_source_amount: _drop,
             ...rest
-          } = r as Record<string, unknown>;
+          } = r as unknown as Record<string, unknown>;
           void _drop;
           return rest;
         }),
