@@ -203,6 +203,25 @@
    .nav-item-transition:active {
      transform: scale(0.9);
    }
+
+  /* Consistent, keyboard-only focus ring for /cards and /accounts.
+     Scoped via `a11y-focus-scope` on the route root so it never
+     conflicts with shadcn's own focus-visible rings elsewhere. */
+  .a11y-focus-scope :is(button, a, [role="button"], [role="combobox"], [role="switch"], [role="tab"], [role="menuitem"], [role="option"], summary, [tabindex]:not([tabindex="-1"])):focus-visible {
+    outline: 2px solid var(--color-ring);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px color-mix(in oklab, var(--color-ring) 22%, transparent);
+    border-radius: inherit;
+  }
+  /* On gradient card surfaces the green ring can blend in — use a
+     white outer glow so focus stays visible on colored backgrounds. */
+  .a11y-focus-scope .on-card-surface:focus-visible,
+  .a11y-focus-scope [data-on-card="true"]:focus-visible {
+    outline-color: #ffffff;
+    box-shadow:
+      0 0 0 4px color-mix(in oklab, #ffffff 55%, transparent),
+      0 0 0 6px color-mix(in oklab, var(--color-ring) 60%, transparent);
+  }
  
    @media (prefers-reduced-motion: reduce) {
      *, ::before, ::after {
