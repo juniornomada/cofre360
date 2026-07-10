@@ -336,7 +336,7 @@ function InvestPage() {
               <TrendingDown className="h-3 w-3 text-destructive" />
             )}
             <span className={`text-xs font-medium ${totalPnL >= 0 ? "text-primary" : "text-destructive"}`}>
-              {totalPnL >= 0 ? "+" : ""}{fmtBRL(totalPnL)} ({pnlPct.toFixed(2)}%)
+              {totalPnL >= 0 ? "+" : ""}{fmtBRL(totalPnL)} ({pnlPct.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%)
             </span>
           </div>
         )}
@@ -438,7 +438,7 @@ function InvestPage() {
                       <TrendingDown className="h-2.5 w-2.5 text-destructive" />
                     )}
                     <span className={`text-[10px] font-medium tabular-nums ${positive ? "text-primary" : "text-destructive"}`}>
-                      {positive ? "+" : ""}{val.pctChange.toFixed(2)}%
+                      {positive ? "+" : ""}{val.pctChange.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%
                     </span>
                   </div>
                 </div>
@@ -676,7 +676,7 @@ function InvestPage() {
                       <p className={`font-semibold tabular-nums ${v.grossPnL >= 0 ? "text-primary" : "text-destructive"}`}>
                         {v.grossPnL >= 0 ? "+" : ""}{fmtBRL(v.grossPnL)}
                       </p>
-                      <p className="text-[10px] text-muted-foreground">{v.pctChange.toFixed(2)}%</p>
+                      <p className="text-[10px] text-muted-foreground">{v.pctChange.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%</p>
                     </div>
                     <div className="rounded-xl bg-card p-3">
                       <p className="text-[10px] text-muted-foreground">Valor líquido</p>
