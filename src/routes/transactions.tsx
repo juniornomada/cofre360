@@ -1141,7 +1141,17 @@ export function TransactionsPage() {
 
       {/* Pie Charts */}
       <div className="mt-8 mb-8">
-        <CategoryPieCharts transactions={filtered} formatCurrency={formatCurrency} />
+        <CategoryPieCharts
+          transactions={filtered}
+          formatCurrency={formatCurrency}
+          activeCategory={activeCategory}
+          onCategoryClick={(cat) => {
+            setActiveCategory(cat);
+            if (typeof window !== "undefined") {
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }
+          }}
+        />
       </div>
 
       {/* Edit Dialog */}
