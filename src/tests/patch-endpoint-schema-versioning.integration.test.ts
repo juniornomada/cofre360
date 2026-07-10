@@ -164,10 +164,17 @@ type RawInstallmentRow = {
   installment_source_amount?: number;
   installment_mode?: "divide" | "fixed";
 };
+type RawDriftFields = {
+  sum?: number;
+  source?: number;
+  delta?: number;
+  tolerance?: number;
+  ok?: boolean;
+};
 type RawDriftBody = {
-  data: {
+  data?: {
     installments?: ReadonlyArray<RawInstallmentRow>;
-    drift?: DriftMetric;
+    drift?: RawDriftFields;
   };
 };
 
@@ -193,17 +200,33 @@ function narrowInstallment(row: RawInstallmentRow, i: number): InstallmentPrevie
   };
 }
 
+function narrowDrift(raw: RawDriftFields | undefined): DriftMetric | undefined {
+  if (!raw) return undefined;
+  const required: Array<keyof RawDriftFields> = ["sum", "source", "delta", "tolerance", "ok"];
+  for (const key of required) {
+    if (raw[key] === undefined) return undefined;
+  }
+  return {
+    sum: raw.sum as number,
+    source: raw.source as number,
+    delta: raw.delta as number,
+    tolerance: raw.tolerance as number,
+    ok: raw.ok as boolean,
+  };
+}
+
 /** Adapta `{data:{installments, drift?}}` (Zod-parsed com passthrough) para
  *  a entrada estritamente tipada de `assertDriftRules`. */
 function toDriftInput(body: RawDriftBody): DriftAssertInput {
-  const rows = body.data.installments ?? [];
+  const rows = body.data?.installments ?? [];
   return {
     data: {
       installments: rows.map((r, i) => narrowInstallment(r, i)),
-      drift: body.data.drift,
+      drift: narrowDrift(body.data?.drift),
     },
   };
 }
+
 
 
 /** Aplica as regras R1..R6 sobre qualquer body parseado. */
