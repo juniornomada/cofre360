@@ -146,7 +146,8 @@ describe("Fuzz — currencies não-BRL preservam drift e shape do normalized", (
         //   Q1. ser === round2(input.amount) (half-away-from-zero via Math.round).
         //   Q2. ter no máximo 2 casas decimais (representável como inteiro em ¢).
         //   Q3. ser um número finito, não-NaN.
-        //   Q4. ser estritamente positivo (Zod rejeita 0/negativo antes).
+        //   Q4. ser >= 0 após round2 (sub-cent colapsa para 0; Zod .positive()
+        //       corre ANTES do transform, então 0.001 vira normalized.amount=0).
         //   Q6. ser idempotente sob re-quantização: round2(round2(x)) === round2(x).
         //   Q7. não sofrer drift extra por currency: mesmo input numérico produz
         //       o mesmo normalized.amount independentemente do token de currency.
