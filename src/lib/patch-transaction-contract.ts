@@ -60,7 +60,7 @@ export async function handlePatchTransactionContract(
     },
   });
 
-  if (inner.status !== 200 || !captured) return inner;
+  if (inner.status !== 200 || !captured) return inner as PatchContractResponse;
 
   const { id, patch } = captured as { id: string; patch: PatchPayload };
   const current = ctx.currentRow;
