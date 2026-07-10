@@ -4,6 +4,7 @@ import { ShoppingCart, Package, CheckCircle2, ArrowLeft, Trash2, CreditCard as C
 import { Button } from "@/components/ui/button";
 import { SmartLink as Link } from "@/components/SmartLink";
 import { supabase } from "@/integrations/supabase/client";
+import { formatBRL } from "@/lib/format-brl";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
