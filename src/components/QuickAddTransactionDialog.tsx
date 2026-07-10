@@ -407,6 +407,12 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
       }
       
       const cardValue = newTx.card === "Nenhum" ? null : newTx.card;
+      // Coerção de tipo: se a categoria escolhida for de Receita (ex.: "Receita > Reembolso"
+      // para estornos), força type=income mesmo que o usuário tenha deixado a aba "Despesa"
+      // selecionada — evita que estornos/reembolsos entrem como despesa na fatura.
+      const categoryRoot = (newTx.category || "").split(">")[0].trim().toLowerCase();
+      const finalType: "income" | "expense" =
+        categoryRoot === "receita" || categoryRoot === "receitas" ? "income" : newTx.type;
     let baseDate: Date;
     try {
       baseDate = parse(newTx.date, "dd MMM", new Date(), { locale: ptBR });
