@@ -1213,15 +1213,17 @@ function CardsPage() {
                           {colorOptions.map((co) => (
                             <button
                               key={co.value}
+                              type="button"
                               onClick={() => setEditColor(co.value)}
                               className={cn(
-                                "w-6 h-6 rounded-full flex items-center justify-center text-[10px] transition-all shrink-0",
+                                "w-6 h-6 rounded-full bg-gradient-to-br ring-1 ring-black/10 transition-all shrink-0",
+                                co.value,
                                 editColor === co.value ? "ring-2 ring-white scale-110 shadow-lg" : "opacity-60 hover:opacity-100"
                               )}
                               title={co.label}
-                            >
-                              {co.emoji}
-                            </button>
+                              aria-label={`Cor ${co.label}`}
+                              aria-pressed={editColor === co.value}
+                            />
                           ))}
                         </div>
                       </div>
