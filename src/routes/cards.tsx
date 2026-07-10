@@ -1159,15 +1159,17 @@ function CardsPage() {
                                   e.stopPropagation();
                                   handleToggleVisibility(card.id, card.is_visible);
                                 }}
+                                data-on-card="true"
                                 className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors border border-white/10 shadow-sm"
                                 title={card.is_visible ? "Ocultar do Início" : "Mostrar no Início"}
+                                aria-label={card.is_visible ? "Ocultar cartão do início" : "Mostrar cartão no início"}
                               >
                                 {card.is_visible ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5 text-white/60" />}
                               </button>
 
                               <DropdownMenu modal={false}>
                                 <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                                  <button className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors border border-white/10 shadow-sm">
+                                  <button data-on-card="true" className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors border border-white/10 shadow-sm" aria-label="Mais ações do cartão">
                                     <MoreVertical className="h-3.5 w-3.5" />
                                   </button>
                                 </DropdownMenuTrigger>
