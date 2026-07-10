@@ -864,6 +864,32 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                             </div>
                           </div>
                         </div>
+                        <div>
+                          <label className="text-[11px] font-semibold text-foreground mb-1 block">
+                            Parcela atual <span className="text-muted-foreground font-normal">(lançar a partir de)</span>
+                          </label>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="number"
+                              min={1}
+                              max={Number(installmentCount) || 1}
+                              value={installmentStart}
+                              onChange={e => {
+                                const v = parseInt(e.target.value) || 1;
+                                const max = Number(installmentCount) || 1;
+                                setInstallmentStart(Math.min(Math.max(1, v), max));
+                              }}
+                              className="w-16 rounded-lg bg-card px-2.5 py-1.5 text-xs text-foreground outline-none border border-border focus:border-primary/50"
+                            />
+                            <span className="text-[11px] text-muted-foreground">
+                              de {Number(installmentCount) || 1} — serão lançadas{" "}
+                              <span className="font-semibold text-foreground">
+                                {Math.max(0, (Number(installmentCount) || 1) - Math.min(Math.max(1, installmentStart), Number(installmentCount) || 1) + 1)}
+                              </span>{" "}
+                              parcela(s) ({Math.min(Math.max(1, installmentStart), Number(installmentCount) || 1)}/{Number(installmentCount) || 1} → {Number(installmentCount) || 1}/{Number(installmentCount) || 1})
+                            </span>
+                          </div>
+                        </div>
                       </div>
                         <div className="space-y-1.5 rounded-md bg-primary/5 border border-primary/20 p-2">
                           <p className="text-[11px] text-foreground font-medium">
