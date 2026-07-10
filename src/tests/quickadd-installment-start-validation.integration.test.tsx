@@ -38,9 +38,8 @@ vi.mock("@/integrations/supabase/client", () => {
   };
 });
 
-const toastErrorMock = vi.fn();
 vi.mock("sonner", () => ({
-  toast: { error: toastErrorMock, success: vi.fn() },
+  toast: { error: vi.fn(), success: vi.fn() },
 }));
 
 import { QuickAddTransactionDialog } from "@/components/QuickAddTransactionDialog";
