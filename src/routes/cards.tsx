@@ -1160,7 +1160,7 @@ function CardsPage() {
                                   handleToggleVisibility(card.id, card.is_visible);
                                 }}
                                 data-on-card="true"
-                                className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors border border-white/10 shadow-sm"
+                                className="icon-btn-on-card-solid"
                                 title={card.is_visible ? "Ocultar do Início" : "Mostrar no Início"}
                                 aria-label={card.is_visible ? "Ocultar cartão do início" : "Mostrar cartão no início"}
                               >
