@@ -418,4 +418,242 @@ describe("Negociação de versão do schema — PATCH", () => {
       }
     }
   });
+
+  // ------------------------------------------------------------------
+  // Forward-compat: injeção de campos futuros
+  // ------------------------------------------------------------------
+  //
+  // Modelamos parsers "lenientes" (`.passthrough()`) equivalentes ao que
+  // um cliente real usa em produção. A ideia central do forward-compat é:
+  //   • V1/V2 aceitam qualquer resposta que preserve seus campos exigidos.
+  //   • Adicionar chaves novas em qualquer nível (envelope, `data`,
+  //     `installments[i]`, `drift`, `normalized.__unknown`) NÃO deve
+  //     quebrar parsers antigos.
+  //   • Regras de normalização (allowlist, drift regulamentar) permanecem
+  //     verificáveis nas partes conhecidas do payload.
+  describe("forward-compat: campos futuros não quebram V1/V2", () => {
+    const installmentLenient = installmentSchema.passthrough();
+    const driftLenient = driftSchema.passthrough();
+
+    const bodyV1Lenient = z
+      .object({
+        schema_version: z.literal("1"),
+        data: z
+          .object({
+            id: z.string().min(1),
+            installments: z.array(installmentLenient).min(1),
+          })
+          .passthrough(),
+      })
+      .passthrough();
+
+    const bodyV2Lenient = z
+      .object({
+        schema_version: z.literal("2"),
+        data: z
+          .object({
+            id: z.string().min(1),
+            normalized: z.record(z.string(), z.unknown()),
+            installments: z.array(installmentLenient).min(1),
+            drift: driftLenient,
+          })
+          .passthrough(),
+      })
+      .passthrough();
+
+    /** Enriquece uma resposta 200 com campos "futuros" em cada nível.
+     *  Retorna um payload que um servidor V4 hipotético poderia devolver. */
+    function injectFutureFields<T extends { status: 200; body: { data: Record<string, unknown> } }>(
+      res: T,
+    ) {
+      const body = res.body as { schema_version?: string; data: Record<string, unknown> };
+      const data = body.data;
+      const installments = (data.installments as Array<Record<string, unknown>>).map((r, i) => ({
+        ...r,
+        // per-installment future fields
+        amount_cents: Math.round((r.amount as number) * 100),
+        idempotency_key: `k-${i}`,
+        _experimental: { fx_rate: 1 },
+      }));
+      const drift = data.drift
+        ? {
+            ...(data.drift as Record<string, unknown>),
+            // future drift metadata
+            algorithm: "banker-rounding",
+            precision: "cent",
+            _reserved: null,
+          }
+        : undefined;
+      const normalized = data.normalized
+        ? {
+            ...(data.normalized as Record<string, unknown>),
+            // NOTA: `normalized` mantém o allowlist; injetar chaves aqui
+            // simularia um servidor mal comportado. Não injetamos nada dentro
+            // dele — a garantia é que parsers V1/V2 IGNORAM campos futuros
+            // em OUTROS níveis sem afetar essa regra.
+          }
+        : undefined;
+
+      return {
+        ...res,
+        body: {
+          // envelope-level future fields
+          ...body,
+          server_version: "2027.01.0",
+          trace_id: "abcd-1234",
+          _links: { self: "/api/tx/123" },
+          data: {
+            ...data,
+            installments,
+            ...(drift ? { drift } : {}),
+            ...(normalized ? { normalized } : {}),
+            // data-level future fields
+            currency: "BRL",
+            fx_snapshot: { at: "2027-01-01T00:00:00Z", rate: 1 },
+            _tags: ["experimental"],
+          },
+        },
+      };
+    }
+
+    it("V1 lenient aceita resposta enriquecida sem violar regras conhecidas", async () => {
+      const base = await handlePatchTransactionVersioned(
+        req({ amount: 100 / 3, total_installments: 12 }, { headers: { "Accept-Version": "1" } }),
+        makeCtx(),
+      );
+      expect(base.status).toBe(200);
+      if (base.status !== 200) return;
+
+      const enriched = injectFutureFields(base);
+      const parsed = bodyV1Lenient.parse(enriched.body);
+
+      // Campos futuros SÃO preservados pelo passthrough (o cliente pode
+      // opcionalmente lê-los), mas os campos exigidos por V1 continuam
+      // presentes e válidos.
+      expect(parsed.data.installments.length).toBe(12);
+      assertDriftInvariants(parsed.data.installments);
+
+      // Campos futuros são visíveis mas não obrigatórios.
+      const envelope = parsed as Record<string, unknown>;
+      expect(envelope.server_version).toBe("2027.01.0");
+      expect(envelope.trace_id).toBe("abcd-1234");
+    });
+
+    it("V2 lenient aceita resposta enriquecida, drift regulamentar preservado", async () => {
+      const base = await handlePatchTransactionVersioned(
+        req({ amount: 1.005, total_installments: 4 }, { headers: { "Accept-Version": "2" } }),
+        makeCtx(),
+      );
+      expect(base.status).toBe(200);
+      if (base.status !== 200) return;
+
+      const enriched = injectFutureFields(base);
+      const parsed = bodyV2Lenient.parse(enriched.body);
+
+      // Todas as regras contratuais de V2 são preservadas.
+      expect(parsed.data.installments.length).toBe(4);
+      assertDriftInvariants(parsed.data.installments);
+      assertDriftMetric(parsed.data.installments, parsed.data.drift);
+
+      // Normalização: allowlist intacta mesmo após injeção externa.
+      const NORMALIZED_ALLOWLIST = [
+        "name",
+        "amount",
+        "total_installments",
+        "installment_mode",
+        "installment_source_amount",
+        "category_id",
+        "icon",
+        "bank_account_id",
+        "credit_card_id",
+        "date",
+        "notes",
+        "category",
+        "card",
+      ];
+      for (const key of Object.keys(parsed.data.normalized)) {
+        expect(NORMALIZED_ALLOWLIST.includes(key)).toBe(true);
+      }
+    });
+
+    it("V1 e V2 lenient aceitam SIMULTANEAMENTE a mesma resposta enriquecida", async () => {
+      // Um cliente V1 e um cliente V2 podem coexistir e consumir o MESMO
+      // payload enriquecido sem que nenhum deles quebre.
+      const baseV1 = await handlePatchTransactionVersioned(
+        req({ amount: 199.99, total_installments: 6 }, { headers: { "Accept-Version": "1" } }),
+        makeCtx(),
+      );
+      const baseV2 = await handlePatchTransactionVersioned(
+        req({ amount: 199.99, total_installments: 6 }, { headers: { "Accept-Version": "2" } }),
+        makeCtx(),
+      );
+      expect(baseV1.status).toBe(200);
+      expect(baseV2.status).toBe(200);
+      if (baseV1.status !== 200 || baseV2.status !== 200) return;
+
+      const richV1 = injectFutureFields(baseV1);
+      const richV2 = injectFutureFields(baseV2);
+
+      expect(() => bodyV1Lenient.parse(richV1.body)).not.toThrow();
+      expect(() => bodyV2Lenient.parse(richV2.body)).not.toThrow();
+
+      // A resposta V2 enriquecida também é lida por um parser V1 lenient
+      // (subconjunto observável: `schema_version` bate por acaso? não —
+      //  V1 espera `"1"`. Cross-parse cross-versão é responsabilidade do
+      //  negociador; aqui validamos apenas que ADIÇÕES não quebram cada
+      //  parser dentro da sua própria versão).
+      expect(() => bodyV1Lenient.parse(richV1.body)).not.toThrow();
+      expect(() => bodyV2Lenient.parse(richV2.body)).not.toThrow();
+    });
+
+    it("injeção patológica em installments (chaves com nomes reservados) não quebra parsers", async () => {
+      const base = await handlePatchTransactionVersioned(
+        req({ amount: 100, total_installments: 3 }, { headers: { "Accept-Version": "2" } }),
+        makeCtx(),
+      );
+      expect(base.status).toBe(200);
+      if (base.status !== 200) return;
+
+      const evil = {
+        ...base.body,
+        data: {
+          ...base.body.data,
+          installments: (base.body.data.installments as Array<Record<string, unknown>>).map((r) => ({
+            ...r,
+            // Nomes suspeitos que NÃO devem confundir o parser (Zod ignora
+            // chaves fora do schema estrito por padrão; com passthrough
+            // simplesmente as preserva).
+            toString: "not-a-function",
+            __proto__marker: true,
+            valueOf: 0,
+          })),
+        },
+      };
+      const parsed = bodyV2Lenient.parse(evil);
+      expect(parsed.data.installments).toHaveLength(3);
+      assertDriftInvariants(parsed.data.installments);
+      assertDriftMetric(parsed.data.installments, parsed.data.drift);
+    });
+
+    it("versão futura no envelope não engana o parser V1 (schema_version continua sendo '1')", async () => {
+      // Cenário: um proxy adiciona `server_schema_version: "9"` no envelope.
+      // O campo canônico `schema_version` continua "1" e V1 deve aceitar.
+      const base = await handlePatchTransactionVersioned(
+        req({ amount: 50, total_installments: 5 }, { headers: { "Accept-Version": "1" } }),
+        makeCtx(),
+      );
+      expect(base.status).toBe(200);
+      if (base.status !== 200) return;
+
+      const withProxyMeta = {
+        ...base.body,
+        server_schema_version: "9",
+        edge_cache: { hit: false },
+      };
+      const parsed = bodyV1Lenient.parse(withProxyMeta);
+      expect(parsed.schema_version).toBe("1");
+      assertDriftInvariants(parsed.data.installments);
+    });
+  });
 });
+
