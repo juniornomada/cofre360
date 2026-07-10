@@ -690,9 +690,12 @@ function RemindersPage() {
             <CreditCard className="h-3 w-3" />
             Cartão de crédito
           </label>
-          <div className="grid grid-cols-5 gap-1.5">
+          <div className="grid grid-cols-5 gap-1.5" role="radiogroup" aria-label="Cartão de crédito">
             <button
               type="button"
+              role="radio"
+              aria-checked={!data.card_id}
+              aria-label="Nenhum cartão"
               onClick={() => setData(prev => ({ ...prev, card_id: null }))}
               className={`flex flex-col items-center gap-0.5 rounded-lg p-1.5 transition-all ${
                 !data.card_id ? "bg-primary/15 ring-1 ring-primary" : "bg-card hover:bg-accent"
@@ -709,6 +712,9 @@ function RemindersPage() {
                 <button
                   key={c.id}
                   type="button"
+                  role="radio"
+                  aria-checked={selected}
+                  aria-label={`Cartão ${c.name}`}
                   onClick={() => {
                     setData(prev => {
                       const nextId = prev.card_id === c.id ? null : c.id;
@@ -720,6 +726,7 @@ function RemindersPage() {
                   }`}
                 >
                   <div
+                    aria-hidden="true"
                     className={`h-7 w-10 rounded-[4px] flex items-end justify-start p-0.5 shadow-sm relative overflow-hidden bg-gradient-to-br ${c.color || "from-gray-600 to-gray-800"}`}
                   >
                     <div className="absolute top-1 left-1 h-1 w-1.5 rounded-[1px] bg-white/40" />
