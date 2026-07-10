@@ -618,7 +618,7 @@ describe("Negociação de versão do schema — PATCH", () => {
         ...base.body,
         data: {
           ...base.body.data,
-          installments: (base.body.data.installments as Array<Record<string, unknown>>).map((r) => ({
+          installments: (base.body.data.installments as unknown as Array<Record<string, unknown>>).map((r) => ({
             ...r,
             // Nomes suspeitos que NÃO devem confundir o parser (Zod ignora
             // chaves fora do schema estrito por padrão; com passthrough
