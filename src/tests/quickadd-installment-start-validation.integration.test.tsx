@@ -111,6 +111,9 @@ async function prepareParceladoDialog() {
 describe("QuickAddTransactionDialog — validação de 'Parcela atual'", () => {
   beforeEach(() => {
     insertMock.mockClear();
+    // Preferências de parcelamento são persistidas em localStorage entre renders;
+    // limpamos para isolar cada caso de teste.
+    window.localStorage.clear();
   });
 
   it("caso válido (default start=1, total=2): SEM erro e botão HABILITADO", async () => {
