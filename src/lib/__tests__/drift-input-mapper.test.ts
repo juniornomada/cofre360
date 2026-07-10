@@ -91,8 +91,8 @@ describe("toDriftInput — mapper Zod→InstallmentPreview", () => {
     const out = toDriftInput(body);
     expect(Object.keys(out.data.installments[0])).not.toContain("future_field");
     expect(Object.keys(out.data.installments[0])).not.toContain("server_metadata");
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    expect((out.data.installments[0] as any).pwned).toBeUndefined();
+    const probe = out.data.installments[0] as unknown as Record<string, unknown>;
+    expect(probe.pwned).toBeUndefined();
   });
 
   it("T3. preserva tipos exatos (number / union literal)", () => {
