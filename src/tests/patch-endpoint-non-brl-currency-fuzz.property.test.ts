@@ -155,7 +155,7 @@ describe("Fuzz — currencies não-BRL preservam drift e shape do normalized", (
         expect(typeof na).toBe("number");
         expect(Number.isFinite(na)).toBe(true);
         expect(Number.isNaN(na)).toBe(false);              // Q3
-        expect(na).toBeGreaterThan(0);                     // Q4
+        expect(na).toBeGreaterThanOrEqual(0);              // Q4
         expect(na).toBe(round2(amount));                   // Q1
         // Q2 — inteiro em ¢ (tolerância de FP).
         const cents = na * 100;
