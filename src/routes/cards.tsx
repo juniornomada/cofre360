@@ -998,7 +998,7 @@ function CardsPage() {
   const totalAvailable = totalLimit - totalAllInvoices + totalPaidAll;
 
   return (
-    <div className="animate-page-enter flex flex-col gap-5 px-4 pt-6 pb-24">
+    <div className="a11y-focus-scope animate-page-enter flex flex-col gap-5 px-4 pt-6 pb-24">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Link to="/" className="interactive-button flex h-10 w-10 items-center justify-center rounded-full bg-card border border-border shadow-sm hover:bg-accent transition-all">
