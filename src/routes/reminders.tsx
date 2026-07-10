@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Bell, Plus, Check, Trash2, Pencil, CalendarIcon, Loader2, Clock, Wallet, CreditCard, Repeat, Search, Landmark } from "lucide-react";
+import { CardIcon } from "@/components/CardIcon";
 import { useState, useEffect, useCallback } from "react";
 import { format, parse, isPast, isToday, isTomorrow, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
