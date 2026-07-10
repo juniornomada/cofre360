@@ -362,4 +362,120 @@ describe("Fuzz — currencies não-BRL preservam drift e shape do normalized", (
       { numRuns: 250 },
     );
   });
+
+  // ────────────────────────────────────────────────────────────────────────
+  // X1..X6 — VALORES EXTREMOS de amount (muito grandes ou muitos decimais)
+  // combinados com currencies não-BRL. Precisa manter:
+  //   X1. Drift regulamentar |Σ − source| ≤ N¢ em cents (bounded pela
+  //       aritmética inteira, imune a erro de FP).
+  //   X2. `normalized.amount` quantizado em ¢ e ≡ round2(input).
+  //   X3. `installments` shape: N entradas, numeração 1..N, cada .amount ≤ 2
+  //       casas decimais, mesmo total_installments em todas.
+  //   X4. `source === round2(na * N)`.
+  //   X5. `drift.tolerance === round2(N * 0.01)` e `drift.ok === true`.
+  //   X6. Handler nunca lança; nenhum campo fora do allowlist vaza.
+  //
+  // Faixas:
+  //   - "muito grandes": até 1e10 (10 bi) — abaixo do teto que quebra a
+  //     precisão FP em `amount * N * 100` (com N ≤ 360, o produto em ¢
+  //     fica em ~3.6e14, dentro de MAX_SAFE_INTEGER ≈ 9.0e15).
+  //   - "muitos decimais": doubles com 15+ dígitos significativos,
+  //     dízimas patológicas escaladas, potências de 2 exóticas, valores
+  //     próximos ao limite de precisão dupla.
+  // ────────────────────────────────────────────────────────────────────────
+  // Teto financeiro seguro para o handler: amount × N × 100 tem que caber
+  // com folga em `Number.MAX_SAFE_INTEGER` (2^53 − 1 ≈ 9.0e15). Com N ≤ 360
+  // e amount ≤ 1e7, o produto em ¢ fica em ~3.6e11, muito abaixo do teto e
+  // livre de drift-FP acima da tolerância de N¢. Amounts financeiros reais
+  // de cartão de crédito estão bem abaixo desse limite.
+  const extremeAmountArb = fc.oneof(
+    // MUITO GRANDES (inteiros): até 10M — cenário "compra de veículo"/"crédito imobiliário"
+    fc.integer({ min: 1_000_000, max: 10_000_000 }).map((n) => n),
+    // MUITO GRANDES (2 casas): até 10M com centavos
+    fc.integer({ min: 1_000_000_00, max: 10_000_000_00 }).map((c) => c / 100),
+    // GRANDES com muitos decimais residuais (division em double gera 15+ dígitos)
+    fc.integer({ min: 1, max: 10_000_000_000 }).map((c) => c / 1_000_000_000),
+    fc.integer({ min: 1, max: 10_000_000_000 }).map((c) => c / 987_654_321),
+    // dízimas patológicas escaladas (bounded para ficar < 1e7)
+    fc.tuple(
+      fc.constantFrom(1 / 3, 1 / 7, 1 / 11, 1 / 13, 1 / 17, 1 / 19, Math.PI, Math.E, Math.SQRT2),
+      fc.integer({ min: 1, max: 1_000_000 }),
+    ).map(([d, k]) => d * k),
+    // valores near-half (0.005, 0.015, ...) para stressar half-away-from-zero
+    fc.integer({ min: 1, max: 200_000 }).map((k) => k / 100 + 0.005),
+    // potências / limites de precisão dupla
+    fc.constantFrom(
+      Number.EPSILON * 1e20,
+      0.1 + 0.2,          // 0.30000000000000004
+      9999999.995,        // half-away-from-zero → 10000000.00
+      1234567.8901234567, // 15+ dígitos significativos
+      1e7 - 1e-6,
+    ),
+  );
+
+  const extremeNArb = fc.integer({ min: 1, max: 360 });
+
+  it("X1..X6 — amounts extremos + currency não-BRL preservam drift ≤ N¢ e shape", async () => {
+    await fcAssertWithRepro(
+      fc.asyncProperty(currencyArb, currencyAliasKeyArb, extremeAmountArb, extremeNArb, async (cur, aliasKey, amount, N) => {
+        const bank = makePersist();
+        let res;
+        try {
+          res = await handlePatchTransactionContract(
+            req({ amount, total_installments: N, [aliasKey]: cur }),
+            { persist: bank.persist, currentRow: null },
+          );
+        } catch (e) {
+          throw new Error(`handler threw on extreme amount ${amount}, N=${N}: ${(e as Error).message}`);
+        }
+
+        // Aceita 4xx quando round2 colapsa para 0 (não-positive), ou se algum
+        // limite estrutural for atingido. Não pode ser 5xx.
+        if (res.status !== 200) {
+          expect([400, 404, 405, 415, 422]).toContain(res.status);
+          expect(bank.persist).not.toHaveBeenCalled();
+          return;
+        }
+
+        const { normalized, installments, drift } = res.body.data;
+
+        // X6 — allowlist estrito.
+        for (const k of Object.keys(normalized)) expect(ALLOWLIST.has(k)).toBe(true);
+        expect(normalized).not.toHaveProperty(aliasKey);
+
+        // X2 — quantização exata do amount.
+        const na = normalized.amount as number;
+        expect(Number.isFinite(na)).toBe(true);
+        expect(na).toBe(round2(amount));
+        expect(Math.round(na * 100)).toBe(toCents(na));
+        expect(round2(na)).toBe(na);
+
+        // X3 — shape / numeração / precisão por parcela.
+        expect(installments).toHaveLength(N);
+        const nums = installments.map((r) => r.installment_number).sort((a, b) => a - b);
+        expect(nums).toEqual(Array.from({ length: N }, (_, i) => i + 1));
+        for (const r of installments) {
+          expect(r.total_installments).toBe(N);
+          expect(Number.isFinite(r.amount)).toBe(true);
+          expect(round2(r.amount)).toBe(r.amount);
+          expect(Math.round(r.amount * 100)).toBe(toCents(r.amount));
+        }
+
+        // X4 — source derivado exatamente de round2(na * N).
+        const source = installments[0].installment_source_amount;
+        expect(source).toBe(round2(na * N));
+
+        // X1 — drift em cents (aritmética inteira, imune a FP).
+        const sumCents = installments.reduce((s, r) => s + toCents(r.amount), 0);
+        const sourceCents = toCents(source);
+        expect(Math.abs(sumCents - sourceCents)).toBeLessThanOrEqual(N);
+
+        // X5 — métricas de drift na resposta.
+        expect(drift.tolerance).toBe(round2(N * 0.01));
+        expect(drift.ok).toBe(true);
+        expect(toCents(drift.sum)).toBe(sumCents);
+      }),
+      { numRuns: 500 },
+    );
+  });
 });
