@@ -184,7 +184,7 @@ describe("toDriftInput — mapper Zod→InstallmentPreview", () => {
       },
     };
     const once = toDriftInput(body);
-    const twice = toDriftInput(once as RawDriftBody);
+    const twice = toDriftInput(once as unknown as RawDriftBody);
     expect(twice).toEqual(once);
   });
 
