@@ -281,6 +281,18 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
   );
   const hasDiff = installmentEnabled && !isTransfer && installmentDetails.diff !== 0;
 
+  // Prévia efetiva quando "parcela atual" > 1: só lançamos de startAt até count.
+  const previewTotal = Number(installmentCount) || 1;
+  const previewStart = (() => {
+    const v = Number(installmentStart);
+    if (!Number.isFinite(v) || v < 1) return 1;
+    if (v > previewTotal) return previewTotal;
+    return Math.trunc(v);
+  })();
+  const previewRemaining = Math.max(0, previewTotal - previewStart + 1);
+  const previewRemainingTotal = installmentDetails.valorParcela * previewRemaining;
+  const isPartialLaunch = previewStart > 1;
+
   const handleAdd = async () => {
     // Dismiss keyboard on mobile
     (document.activeElement as HTMLElement)?.blur();
@@ -952,6 +964,11 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                                 <span className="block text-[10px] text-muted-foreground mt-0.5">
                                   Total da compra: R$ {installmentDetails.totalCalculado.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                                 </span>
+                                {isPartialLaunch && (
+                                  <span className="block text-[10px] text-primary mt-0.5">
+                                    A lançar: {previewRemaining}x ({previewStart}/{previewTotal} → {previewTotal}/{previewTotal}) = R$ {previewRemainingTotal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                                  </span>
+                                )}
                               </>
                             ) : (
                               <>
@@ -959,6 +976,11 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                                 <span className="block text-[10px] text-muted-foreground mt-0.5">
                                   Total dividido: R$ {installmentDetails.totalCalculado.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}{installmentDetails.aviso}
                                 </span>
+                                {isPartialLaunch && (
+                                  <span className="block text-[10px] text-primary mt-0.5">
+                                    A lançar: {previewRemaining}x ({previewStart}/{previewTotal} → {previewTotal}/{previewTotal}) = R$ {previewRemainingTotal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                                  </span>
+                                )}
                               </>
                             )}
                           </p>
