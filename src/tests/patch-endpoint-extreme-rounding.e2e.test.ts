@@ -239,8 +239,8 @@ describe("E2E PATCH /api/transactions/:id — arredondamento extremo", () => {
     expect(res.status).toBe(200);
     const body = (await res.json()) as OkBody;
     assertConsistent(body, 7, "divide");
-    // source herdado da linha atual
-    expect(body.data.drift.source).toBe(round2(33.33 * 7));
+    // source herdado da linha atual (installment_source_amount = 33.33 * 3)
+    expect(body.data.drift.source).toBe(round2(33.33 * 3));
   });
 
   // -------- erros HTTP --------
