@@ -1119,7 +1119,8 @@ function CardsPage() {
                     ) : (
                       <button
                         onClick={() => startEdit(card)}
-                        className="flex items-center gap-x-3 gap-y-1 flex-wrap min-w-0 flex-1 text-left hover:underline transition-all group/name"
+                        data-on-card="true"
+                        className="flex items-center gap-x-3 gap-y-1 flex-wrap min-w-0 flex-1 text-left hover:underline transition-all group/name rounded-md"
                       >
                         <span className="text-sm font-bold truncate max-w-full">{card.name}</span>
                         <div className="flex items-center gap-2 shrink-0">
