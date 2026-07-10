@@ -804,15 +804,9 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                         <button
                           type="button"
                           onClick={() => {
-                            if (installmentMode === "divide") {
-                              // divide → fixed: parcela = total / N, para manter consistência
-                              const count = Math.max(1, Number(installmentCount) || 1);
-                              const perParcela = Math.round(((newTx.amount || 0) / count) * 100) / 100;
-                              setInstallmentFixedValue(perParcela);
-                              setNewTx(prev => ({ ...prev, amount: perParcela }));
-                            } else {
-                              setInstallmentFixedValue(newTx.amount || installmentFixedValue);
-                            }
+                            // Ao selecionar "Valor por parcela", reutiliza o valor
+                            // já digitado no campo "Valor R$" — sem redigitar nem dividir.
+                            setInstallmentFixedValue(newTx.amount || installmentFixedValue);
                             setInstallmentMode("fixed");
                           }}
                           className={`flex-1 rounded-lg py-1.5 px-2 text-[10px] font-medium transition-colors leading-tight ${installmentMode === "fixed" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground border border-border"}`}
