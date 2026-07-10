@@ -31,8 +31,9 @@ describe("Arredondamento de centavos por parcela (modo divide)", () => {
       const d = calculateInstallmentDetails(c.amount, c.count, "divide");
       expect(d.valorParcela).toBe(c.esperadoParcela);
 
-      // valorParcela sempre inteiro em centavos.
-      expect(Math.round(d.valorParcela * 100)).toBe(d.valorParcela * 100);
+      // valorParcela é estável em centavos (após arredondamento, sem frações sub-centavo).
+      const parcelaCents = Math.round(d.valorParcela * 100);
+      expect(Math.abs(parcelaCents - d.valorParcela * 100)).toBeLessThan(1e-6);
 
       // Drift teórico: totalCalculado difere de amount em no máximo count centavos.
       const driftCents = Math.abs(
