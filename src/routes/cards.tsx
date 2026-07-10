@@ -1213,15 +1213,17 @@ function CardsPage() {
                           {colorOptions.map((co) => (
                             <button
                               key={co.value}
+                              type="button"
                               onClick={() => setEditColor(co.value)}
                               className={cn(
-                                "w-6 h-6 rounded-full flex items-center justify-center text-[10px] transition-all shrink-0",
+                                "w-6 h-6 rounded-full bg-gradient-to-br ring-1 ring-black/10 transition-all shrink-0",
+                                co.value,
                                 editColor === co.value ? "ring-2 ring-white scale-110 shadow-lg" : "opacity-60 hover:opacity-100"
                               )}
                               title={co.label}
-                            >
-                              {co.emoji}
-                            </button>
+                              aria-label={`Cor ${co.label}`}
+                              aria-pressed={editColor === co.value}
+                            />
                           ))}
                         </div>
                       </div>
@@ -1644,7 +1646,12 @@ function CardsPage() {
                   <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {colorOptions.map((c) => (
-                      <SelectItem key={c.value} value={c.value}>{c.emoji} {c.label}</SelectItem>
+                      <SelectItem key={c.value} value={c.value}>
+                        <span className="inline-flex items-center gap-2">
+                          <span aria-hidden className={cn("inline-block h-3 w-3 rounded-full bg-gradient-to-br ring-1 ring-black/10", c.value)} />
+                          {c.label}
+                        </span>
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>

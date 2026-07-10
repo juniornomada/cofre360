@@ -836,7 +836,12 @@ function AccountsPage() {
                    <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
                    <SelectContent>
                      {bankColorOptions.map((c) => (
-                       <SelectItem key={c.value} value={c.value}>{c.emoji} {c.label}</SelectItem>
+                       <SelectItem key={c.value} value={c.value}>
+                         <span className="inline-flex items-center gap-2">
+                           <span aria-hidden className={cn("inline-block h-3 w-3 rounded-full bg-gradient-to-br ring-1 ring-black/10", c.value)} />
+                           {c.label}
+                         </span>
+                       </SelectItem>
                      ))}
                    </SelectContent>
                  </Select>
