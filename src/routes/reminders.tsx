@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Bell, Plus, Check, Trash2, Pencil, CalendarIcon, Loader2, Clock, Wallet, CreditCard, Repeat, Search, Landmark } from "lucide-react";
+import { CardIcon } from "@/components/CardIcon";
 import { useState, useEffect, useCallback } from "react";
 import { format, parse, isPast, isToday, isTomorrow, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -847,14 +848,7 @@ function RemindersPage() {
                           </div>
                         )}
                         {linkedCard && (
-                          <div 
-                            title={linkedCard.name}
-                            className={cn("flex items-center gap-1 rounded-md px-1 py-0.5 shadow-sm shrink-0 bg-gradient-to-br", linkedCard.color)}
-                          >
-                            <div className="flex h-5 w-5 items-center justify-center rounded-sm bg-white/20 text-[10px]">
-                              {linkedCard.emoji || "💳"}
-                            </div>
-                          </div>
+                          <CardIcon color={linkedCard.color} name={linkedCard.name} size="xs" />
                         )}
                       </div>
                       <p className={cn("text-sm font-semibold truncate", reminder.is_completed ? "line-through text-muted-foreground" : "text-foreground")}>
@@ -1088,7 +1082,7 @@ function RemindersPage() {
                               SUGERIDO
                             </div>
                           )}
-                          <div className={cn("flex h-9 w-9 items-center justify-center rounded-lg text-base text-white bg-gradient-to-br shadow-sm", card.color)}>{card.emoji}</div>
+                          <CardIcon color={card.color} name={card.name} size="lg" />
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-foreground truncate">{card.name} •••• {card.last_four}</p>
                             <p className="text-[10px] text-muted-foreground tabular-nums">Disponível: R$ {available.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>

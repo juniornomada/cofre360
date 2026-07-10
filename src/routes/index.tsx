@@ -3,6 +3,7 @@ import { z } from "zod";
 import { TrendingUp, Eye, EyeOff, Bell, Pencil, Trash2, CalendarIcon, Loader2, Clock, Wallet, ChevronRight, ArrowUpRight, ArrowDownRight, AlertTriangle, Sparkles, Flame, Plus, Minus, ArrowLeftRight, Layers, GripVertical, Filter, FilterX, LogOut, CreditCard, Landmark, Search, SlidersHorizontal } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { TransactionItem } from "@/components/TransactionItem";
+import { CardIcon } from "@/components/CardIcon";
 import { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense } from "react";
 import { format, parse, isToday, isYesterday, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -1136,9 +1137,7 @@ function Dashboard() {
                   to="/cards" 
                   className="interactive-card flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl bg-background/40 hover:bg-background/60 transition-colors overflow-hidden relative w-full"
                 >
-                  <div className={cn("relative flex h-7 w-10 shrink-0 rounded-md bg-gradient-to-br shadow-sm ring-1 ring-black/5 overflow-hidden", card.color || "from-primary/20 to-primary/10")}>
-                    <span className="absolute left-1 top-1 h-1.5 w-2 rounded-[2px] bg-white/70" aria-hidden />
-                  </div>
+                  <CardIcon color={card.color} name={card.name} size="md" />
 
 
                   <div className="flex flex-col flex-1 min-w-0">
@@ -1378,11 +1377,7 @@ function Dashboard() {
                         </div>
                       )}
                       {linkedCard && (
-                        <div className={cn("flex items-center rounded-md px-1 py-0.5 shadow-sm shrink-0 bg-gradient-to-br", linkedCard.color)}>
-                          <div className="flex h-5 w-5 items-center justify-center rounded-sm bg-white/20 text-[10px]">
-                            {linkedCard.emoji || "💳"}
-                          </div>
-                        </div>
+                        <CardIcon color={linkedCard.color} name={linkedCard.name} size="xs" />
                       )}
                     </div>
                     <p className="text-[10px] text-muted-foreground">{(() => { const d = parseTxDateToDate(r.due_date || ""); if (!d) return r.due_date; const m = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"]; return `${d.getDate()} ${m[d.getMonth()]}`; })()}</p>
