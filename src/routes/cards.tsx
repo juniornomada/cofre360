@@ -1199,7 +1199,10 @@ function CardsPage() {
                           {brandPresets.map((bp) => (
                             <button
                               key={bp.id}
+                              type="button"
                               onClick={() => setEditBrand(bp.id)}
+                              data-on-card="true"
+                              aria-pressed={editBrand.toLowerCase() === bp.id.toLowerCase()}
                               className={cn(
                                 "px-2 py-0.5 rounded-md text-[10px] font-medium transition-colors",
                                 editBrand.toLowerCase() === bp.id.toLowerCase() ? "bg-white text-black" : "bg-white/20 text-white hover:bg-white/30"
@@ -1218,6 +1221,7 @@ function CardsPage() {
                               key={co.value}
                               type="button"
                               onClick={() => setEditColor(co.value)}
+                              data-on-card="true"
                               className={cn(
                                 "w-6 h-6 rounded-full bg-gradient-to-br ring-1 ring-black/10 transition-all shrink-0",
                                 co.value,
