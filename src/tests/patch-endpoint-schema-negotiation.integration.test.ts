@@ -150,11 +150,20 @@ function assertDriftInvariants(rawInstallments: ReadonlyArray<LooseInstallment>)
   expect(Math.abs(sumCents - toCents(source))).toBeLessThanOrEqual(N);
 }
 
+type LooseDrift = Partial<{ sum: number; source: number; delta: number; tolerance: number; ok: boolean }>;
+
 /** R6: métrica de drift explícita (só V2+). */
-function assertDriftMetric(
-  rawInstallments: ReadonlyArray<LooseInstallment>,
-  drift: { sum: number; source: number; delta: number; tolerance: number; ok: boolean },
-) {
+function assertDriftMetric(rawInstallments: ReadonlyArray<LooseInstallment>, rawDrift: LooseDrift) {
+  for (const k of ["sum", "source", "delta", "tolerance", "ok"] as const) {
+    if (rawDrift[k] === undefined) throw new Error(`drift.${k} ausente`);
+  }
+  const drift = {
+    sum: rawDrift.sum as number,
+    source: rawDrift.source as number,
+    delta: rawDrift.delta as number,
+    tolerance: rawDrift.tolerance as number,
+    ok: rawDrift.ok as boolean,
+  };
   const installments = narrow(rawInstallments);
   const N = installments.length;
 
@@ -164,6 +173,7 @@ function assertDriftMetric(
   expect(toCents(drift.sum)).toBe(sumCents);
   expect(drift.delta).toBeLessThanOrEqual(drift.tolerance + 1e-9);
 }
+
 
 // ---------------- Cenários ----------------
 
