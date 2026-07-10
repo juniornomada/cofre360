@@ -1591,7 +1591,7 @@ function Dashboard() {
                         <p className="text-[10px] text-muted-foreground leading-relaxed mt-1">
                           Total da compra:{" "}
                           <strong>
-                            R$ {(editInstallmentFixedValue * (editTx.total_installments ?? 1)).toFixed(2)}
+                            R$ {formatBRL(editInstallmentFixedValue * (editTx.total_installments ?? 1))}
                           </strong>
                         </p>
                       </div>
