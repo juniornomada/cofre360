@@ -307,7 +307,11 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
       toast.error("Por favor, insira um valor total maior que zero.");
       return;
     }
-
+      if (installmentStartError) {
+        toast.error(installmentStartError);
+        return;
+      }
+    
     setIsSubmitting(true);
     try {
       console.log("QuickAdd: Starting handleAdd", { isTransfer, transferFromId, transferToId, amount: newTx.amount });
