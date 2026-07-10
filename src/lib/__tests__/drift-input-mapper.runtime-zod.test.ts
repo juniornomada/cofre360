@@ -248,4 +248,115 @@ describe("toDriftInput — validação de runtime com Zod (anti-regressão)", ()
     const parsed = DriftAssertInputZ.parse(out);
     expect(() => assertCoherent(parsed)).toThrow();
   });
+
+  /**
+   * Compatibilidade total de versionamento de schema:
+   *
+   *   V1 (legado) — apenas os 5 campos obrigatórios do contrato.
+   *   V2 (atual)  — adiciona metadados por parcela (server_generated_at,
+   *                 rounding_policy, currency_code) e drift no envelope.
+   *   V3 (futuro hipotético) — acrescenta campos AINDA desconhecidos
+   *                 (audit_trail_id, ledger_ref, feature_flag), que os
+   *                 parsers V1/V2 devem tolerar por forward-compat.
+   *
+   * O mapper deve:
+   *   (a) manter os 5 campos obrigatórios de cada linha, independentemente
+   *       da versão de origem;
+   *   (b) descartar extras de qualquer versão (o schema `.strict()` acusa
+   *       vazamento se o mapper regredir);
+   *   (c) preservar coerência R1..R6 quando linhas heterogêneas coexistem
+   *       no mesmo grupo (cenário real de migração progressiva).
+   */
+  it("V1+V2+V3 misturadas na mesma resposta mantêm contrato e coerência", () => {
+    const v1Row: RawInstallmentRow = {
+      installment_number: 1,
+      total_installments: 3,
+      amount: 33.34,
+      installment_source_amount: 100,
+      installment_mode: "divide",
+    };
+    const v2Row: RawInstallmentRow = {
+      installment_number: 2,
+      total_installments: 3,
+      amount: 33.33,
+      installment_source_amount: 100,
+      installment_mode: "divide",
+      // metadados V2 (passthrough upstream)
+      server_generated_at: "2026-07-10T12:00:00.000Z",
+      rounding_policy: "half-away-from-zero",
+      currency_code: "BRL",
+    };
+    const v3Row: RawInstallmentRow = {
+      installment_number: 3,
+      total_installments: 3,
+      amount: 33.33,
+      installment_source_amount: 100,
+      installment_mode: "divide",
+      // metadados V3 futuros (ainda não modelados)
+      audit_trail_id: "at_abc123",
+      ledger_ref: { book: "cc-main", line: 42 },
+      feature_flag: ["exp.rounding-v3", "exp.currency-fxrate"],
+      // caso patológico: chave com nome colidindo com campo do contrato,
+      // mas em subestrutura — deve permanecer inerte
+      extras: { installment_number: 999, amount: -1 },
+    };
+
+    const body: RawDriftBody = {
+      data: {
+        installments: [v1Row, v2Row, v3Row],
+        drift: {
+          sum: 100,
+          source: 100,
+          delta: 0,
+          tolerance: 0.03,
+          ok: true,
+          // metadados futuros no envelope de drift
+          model_version: "drift-v3",
+        },
+      },
+    };
+
+    const out = toDriftInput(body);
+
+    // (a) Cinco campos obrigatórios, apenas eles, em CADA linha.
+    for (const r of out.data.installments) {
+      expect(Object.keys(r).sort()).toEqual(
+        [
+          "amount",
+          "installment_mode",
+          "installment_number",
+          "installment_source_amount",
+          "total_installments",
+        ],
+      );
+    }
+    // Nenhuma linha vazou metadados V2/V3.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const anyRow = out.data.installments as any[];
+    for (const r of anyRow) {
+      expect(r.server_generated_at).toBeUndefined();
+      expect(r.rounding_policy).toBeUndefined();
+      expect(r.currency_code).toBeUndefined();
+      expect(r.audit_trail_id).toBeUndefined();
+      expect(r.ledger_ref).toBeUndefined();
+      expect(r.feature_flag).toBeUndefined();
+      expect(r.extras).toBeUndefined();
+    }
+
+    // Drift extras também são descartados.
+    expect(Object.keys(out.data.drift!).sort()).toEqual(
+      ["delta", "ok", "source", "sum", "tolerance"],
+    );
+
+    // (b) Schema estrito passa (guarda contra .passthrough() leak).
+    const parsed = DriftAssertInputZ.parse(out);
+
+    // (c) R1..R6 coerentes entre linhas de versões distintas.
+    assertCoherent(parsed);
+
+    // Valores exatos das 3 linhas preservados (nada foi remapeado).
+    expect(parsed.data.installments.map((r) => r.amount)).toEqual([33.34, 33.33, 33.33]);
+    expect(parsed.data.installments.map((r) => r.installment_number)).toEqual([1, 2, 3]);
+  });
 });
+
