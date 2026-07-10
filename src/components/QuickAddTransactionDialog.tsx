@@ -72,6 +72,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
 
   const [installmentEnabled, setInstallmentEnabled] = useState(false);
   const [installmentCount, setInstallmentCount] = useState<number | "">(2);
+  const [installmentStart, setInstallmentStart] = useState<number>(1);
   const [installmentMode, setInstallmentMode] = useState<"divide" | "fixed">("divide");
   const [installmentFixedValue, setInstallmentFixedValue] = useState(0);
   const [nameInputMode, setNameInputMode] = useState<"none" | "text">("none");
