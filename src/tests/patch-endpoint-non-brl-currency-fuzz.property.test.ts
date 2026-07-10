@@ -256,4 +256,110 @@ describe("Fuzz — currencies não-BRL preservam drift e shape do normalized", (
       { numRuns: 300 },
     );
   });
+
+  // ────────────────────────────────────────────────────────────────────────
+  // Z1..Z5 — amounts zero/negativos + currencies não-BRL rejeitam com 422
+  // sem tocar o bank. `.positive()` do Zod corre ANTES do transform, então
+  // qualquer amount ≤ 0 (inclusive -0, NaN, ±Infinity) deve devolver 422
+  // com um envelope de erro consistente, independentemente do token de
+  // currency injetado.
+  // ────────────────────────────────────────────────────────────────────────
+  const nonPositiveAmountArb = fc.oneof(
+    fc.constantFrom(0, -0, Number.NEGATIVE_ZERO),
+    // negativos "comuns" em 2 casas
+    fc.integer({ min: 1, max: 100_000_00 }).map((c) => -c / 100),
+    // negativos inteiros grandes (0-decimal)
+    fc.integer({ min: 1, max: 10_000_000 }).map((n) => -n),
+    // negativos em 3 casas
+    fc.integer({ min: 1, max: 1_000_000_000 }).map((c) => -c / 1000),
+    // negativos "double" arbitrários
+    fc.double({ min: -1e9, max: -1e-6, noNaN: true, noDefaultInfinity: true }),
+    // patológicos: NaN / ±Infinity
+    fc.constantFrom(Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY),
+  );
+
+  it("Z1..Z5 — amount ≤ 0 / NaN / ±Infinity + currency não-BRL → 422 sem persistir", async () => {
+    await fcAssertWithRepro(
+      fc.asyncProperty(
+        currencyArb,
+        currencyAliasKeyArb,
+        nonPositiveAmountArb,
+        nArb,
+        async (cur, aliasKey, badAmount, N) => {
+          const bank = makePersist();
+          const body: Record<string, unknown> = {
+            amount: badAmount,
+            total_installments: N,
+            [aliasKey]: cur,
+          };
+
+          let res;
+          try {
+            res = await handlePatchTransactionContract(req(body), {
+              persist: bank.persist,
+              currentRow: null,
+            });
+          } catch (e) {
+            throw new Error(`handler threw on non-positive amount: ${(e as Error).message}`);
+          }
+
+          // Z1 — status é 422 (Unprocessable Entity), nunca 200 nem 5xx.
+          expect(res.status).toBe(422);
+
+          // Z2 — persistência NÃO é invocada (nenhuma escrita no estado).
+          expect(bank.persist).not.toHaveBeenCalled();
+          expect(bank.calls).toHaveLength(0);
+
+          // Z3 — envelope de erro consistente: shape { error: { code, ... } }.
+          const errBody = res.body as { error?: { code?: string; details?: unknown } };
+          expect(errBody).toHaveProperty("error");
+          expect(errBody.error).toBeTruthy();
+          expect(typeof errBody.error!.code).toBe("string");
+
+          // Z4 — nunca vaza `normalized`/`installments`/`drift` em resposta 4xx.
+          const anyBody = res.body as Record<string, unknown>;
+          expect(anyBody).not.toHaveProperty("data");
+          expect(anyBody).not.toHaveProperty("normalized");
+          expect(anyBody).not.toHaveProperty("installments");
+          expect(anyBody).not.toHaveProperty("drift");
+        },
+      ),
+      { numRuns: 400 },
+    );
+  });
+
+  // Reforço: mesmo com currentRow válido no estado, um PATCH inválido
+  // (amount ≤ 0) + currency não-BRL não pode regenerar parcelas nem
+  // sobrescrever o estado — deve devolver 422 e deixar o bank intocado.
+  it("Z5 — amount inválido + currency + currentRow existente não muta estado", async () => {
+    await fcAssertWithRepro(
+      fc.asyncProperty(
+        currencyArb,
+        currencyAliasKeyArb,
+        nonPositiveAmountArb,
+        nArb,
+        fc.integer({ min: 1, max: 100_000_00 }).map((c) => c / 100),
+        async (cur, aliasKey, badAmount, N, rowAmount) => {
+          const bank = makePersist();
+          const before = { rowAmount, N };
+          const res = await handlePatchTransactionContract(
+            req({ amount: badAmount, total_installments: N, [aliasKey]: cur }),
+            {
+              persist: bank.persist,
+              currentRow: {
+                amount: before.rowAmount,
+                total_installments: before.N,
+                installment_source_amount: round2(before.rowAmount * before.N),
+                installment_mode: "divide",
+              },
+            },
+          );
+          expect(res.status).toBe(422);
+          expect(bank.persist).not.toHaveBeenCalled();
+          expect(bank.calls).toHaveLength(0);
+        },
+      ),
+      { numRuns: 250 },
+    );
+  });
 });
