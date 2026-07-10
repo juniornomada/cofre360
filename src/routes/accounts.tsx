@@ -633,7 +633,7 @@ function AccountsPage() {
   const totalCurrent = accounts.reduce((sum, a) => sum + a.balance + (incomeByAccount[a.id] || 0) - (expenseByAccount[a.id] || 0), 0);
 
   return (
-    <div className="animate-page-enter flex flex-col gap-8 px-2 sm:px-4 pt-6 pb-28">
+    <div className="a11y-focus-scope animate-page-enter flex flex-col gap-8 px-2 sm:px-4 pt-6 pb-28">
       {/* Header and Total Balance */}
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3 min-w-0">
