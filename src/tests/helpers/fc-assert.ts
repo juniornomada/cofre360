@@ -77,12 +77,14 @@ function safeStringify(v: unknown): string {
 
 export async function fcAssertWithRepro(
   property: AnyProperty,
-  reproOpts: ReproOptions = {},
-  fcOpts: FcParams = {},
+  options: FcAssertOptions = {},
 ): Promise<void> {
+  const { label: rawLabel, logOnSuccess, ...fcOpts } = options;
+  const reproOpts: ReproOptions = { label: rawLabel, logOnSuccess };
   const envOverride = pickEnvSeed();
   const merged: FcParams = { ...fcOpts, ...envOverride };
   const label = reproOpts.label ?? "fast-check property";
+
 
   // Preferimos `fc.check` sobre `fc.assert` porque expõe programaticamente
   // seed, path, numRuns, numShrinks e o counterexample encolhido; assim o
