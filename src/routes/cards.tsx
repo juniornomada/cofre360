@@ -1133,10 +1133,10 @@ function CardsPage() {
                     <div className="flex items-center gap-1 shrink-0 relative z-30">
                       {isEditing ? (
                         <div className="flex items-center gap-1 bg-white/20 backdrop-blur-md p-1 rounded-full border border-white/10 shadow-sm" onClick={(e) => e.stopPropagation()}>
-                          <button onClick={() => saveEdit(card.id)} data-on-card="true" className="p-1.5 rounded-full hover:bg-white/20 text-white transition-colors" title="Salvar" aria-label="Salvar alterações">
+                          <button onClick={() => saveEdit(card.id)} data-on-card="true" className="icon-btn-on-card" title="Salvar" aria-label="Salvar alterações">
                             <Check className="h-3.5 w-3.5" />
                           </button>
-                          <button onClick={cancelEdit} data-on-card="true" className="p-1.5 rounded-full hover:bg-white/20 text-white transition-colors" title="Cancelar" aria-label="Cancelar edição">
+                          <button onClick={cancelEdit} data-on-card="true" className="icon-btn-on-card" title="Cancelar" aria-label="Cancelar edição">
                             <X className="h-3.5 w-3.5" />
                           </button>
                         </div>
