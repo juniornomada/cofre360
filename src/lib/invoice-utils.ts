@@ -59,14 +59,11 @@ export function getCycleDates(referenceDate: Date, closingDay: number, dueDay: n
     return d;
   };
 
-  let currentClose = new Date(year, month, cDay);
-  let currentDue = makeDue(currentClose);
-
-  // If we've passed the due date, we're in the next cycle's "current" window
-  if (referenceDate > currentDue) {
-    currentClose = new Date(year, month + 1, cDay);
-    currentDue = makeDue(currentClose);
-  }
+  // "Current" invoice is the one whose due date falls in the current
+  // calendar month — regardless of whether it's unpaid, partially paid or
+  // fully paid. It only rolls forward when the calendar month changes.
+  const currentClose = new Date(year, month, cDay);
+  const currentDue = makeDue(currentClose);
 
   const prevClose = new Date(currentClose.getFullYear(), currentClose.getMonth() - 1, cDay);
   return { currentClose, currentDue, prevClose, makeDue };
