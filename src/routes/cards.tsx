@@ -1133,10 +1133,10 @@ function CardsPage() {
                     <div className="flex items-center gap-1 shrink-0 relative z-30">
                       {isEditing ? (
                         <div className="flex items-center gap-1 bg-white/20 backdrop-blur-md p-1 rounded-full border border-white/10 shadow-sm" onClick={(e) => e.stopPropagation()}>
-                          <button onClick={() => saveEdit(card.id)} data-on-card="true" className="p-1.5 rounded-full hover:bg-white/20 text-white transition-colors" title="Salvar" aria-label="Salvar alterações">
+                          <button onClick={() => saveEdit(card.id)} data-on-card="true" className="icon-btn-on-card" title="Salvar" aria-label="Salvar alterações">
                             <Check className="h-3.5 w-3.5" />
                           </button>
-                          <button onClick={cancelEdit} data-on-card="true" className="p-1.5 rounded-full hover:bg-white/20 text-white transition-colors" title="Cancelar" aria-label="Cancelar edição">
+                          <button onClick={cancelEdit} data-on-card="true" className="icon-btn-on-card" title="Cancelar" aria-label="Cancelar edição">
                             <X className="h-3.5 w-3.5" />
                           </button>
                         </div>
@@ -1144,10 +1144,10 @@ function CardsPage() {
                         <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                           {deleteConfirm === card.id ? (
                             <div className="flex items-center gap-1 bg-destructive/80 backdrop-blur-md p-1 rounded-full border border-white/10 shadow-sm animate-in zoom-in-95 duration-200">
-                              <button onClick={() => handleDelete(card.id)} data-on-card="true" className="p-1.5 rounded-full hover:bg-white/20 text-white transition-colors" aria-label="Confirmar exclusão">
+                              <button onClick={() => handleDelete(card.id)} data-on-card="true" className="icon-btn-on-card" aria-label="Confirmar exclusão">
                                 <Check className="h-3.5 w-3.5" />
                               </button>
-                              <button onClick={() => setDeleteConfirm(null)} data-on-card="true" className="p-1.5 rounded-full hover:bg-white/20 text-white transition-colors" aria-label="Cancelar exclusão">
+                              <button onClick={() => setDeleteConfirm(null)} data-on-card="true" className="icon-btn-on-card" aria-label="Cancelar exclusão">
                                 <X className="h-3.5 w-3.5" />
                               </button>
                             </div>
@@ -1160,7 +1160,7 @@ function CardsPage() {
                                   handleToggleVisibility(card.id, card.is_visible);
                                 }}
                                 data-on-card="true"
-                                className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors border border-white/10 shadow-sm"
+                                className="icon-btn-on-card-solid"
                                 title={card.is_visible ? "Ocultar do Início" : "Mostrar no Início"}
                                 aria-label={card.is_visible ? "Ocultar cartão do início" : "Mostrar cartão no início"}
                               >
@@ -1169,7 +1169,7 @@ function CardsPage() {
 
                               <DropdownMenu modal={false}>
                                 <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                                  <button data-on-card="true" className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors border border-white/10 shadow-sm" aria-label="Mais ações do cartão">
+                                  <button data-on-card="true" className="icon-btn-on-card-solid" aria-label="Mais ações do cartão">
                                     <MoreVertical className="h-3.5 w-3.5" />
                                   </button>
                                 </DropdownMenuTrigger>
@@ -1532,7 +1532,7 @@ function CardsPage() {
                                     type="button"
                                     onClick={() => invoiceCard && requestDeletePayment(p, invoiceCard.name)}
                                     disabled={deletingPaymentId === p.id}
-                                    className="p-1 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50"
+                                    className="icon-btn-muted"
                                     title="Excluir pagamento"
                                     aria-label="Excluir pagamento"
                                   >
