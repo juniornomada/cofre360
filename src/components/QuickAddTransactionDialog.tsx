@@ -964,6 +964,11 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                                 <span className="block text-[10px] text-muted-foreground mt-0.5">
                                   Total da compra: R$ {installmentDetails.totalCalculado.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                                 </span>
+                                {isPartialLaunch && (
+                                  <span className="block text-[10px] text-primary mt-0.5">
+                                    A lançar: {previewRemaining}x ({previewStart}/{previewTotal} → {previewTotal}/{previewTotal}) = R$ {previewRemainingTotal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                                  </span>
+                                )}
                               </>
                             ) : (
                               <>
@@ -971,6 +976,11 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                                 <span className="block text-[10px] text-muted-foreground mt-0.5">
                                   Total dividido: R$ {installmentDetails.totalCalculado.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}{installmentDetails.aviso}
                                 </span>
+                                {isPartialLaunch && (
+                                  <span className="block text-[10px] text-primary mt-0.5">
+                                    A lançar: {previewRemaining}x ({previewStart}/{previewTotal} → {previewTotal}/{previewTotal}) = R$ {previewRemainingTotal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                                  </span>
+                                )}
                               </>
                             )}
                           </p>
