@@ -1144,10 +1144,10 @@ function CardsPage() {
                         <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                           {deleteConfirm === card.id ? (
                             <div className="flex items-center gap-1 bg-destructive/80 backdrop-blur-md p-1 rounded-full border border-white/10 shadow-sm animate-in zoom-in-95 duration-200">
-                              <button onClick={() => handleDelete(card.id)} data-on-card="true" className="p-1.5 rounded-full hover:bg-white/20 text-white transition-colors" aria-label="Confirmar exclusão">
+                              <button onClick={() => handleDelete(card.id)} data-on-card="true" className="icon-btn-on-card" aria-label="Confirmar exclusão">
                                 <Check className="h-3.5 w-3.5" />
                               </button>
-                              <button onClick={() => setDeleteConfirm(null)} data-on-card="true" className="p-1.5 rounded-full hover:bg-white/20 text-white transition-colors" aria-label="Cancelar exclusão">
+                              <button onClick={() => setDeleteConfirm(null)} data-on-card="true" className="icon-btn-on-card" aria-label="Cancelar exclusão">
                                 <X className="h-3.5 w-3.5" />
                               </button>
                             </div>
