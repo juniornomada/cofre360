@@ -109,11 +109,13 @@ export async function fcAssertWithRepro(
     (out.error instanceof Error ? out.error.stack ?? out.error.message : String(out.error ?? "unknown"));
 
   const reproSnippet =
-    `  await fcAssertWithRepro(prop, { label: ${JSON.stringify(label)} }, {\n` +
+    `  await fcAssertWithRepro(prop, {\n` +
+    `    label: ${JSON.stringify(label)},\n` +
     `    seed: ${seed},\n` +
     (path ? `    path: ${JSON.stringify(path)},\n` : "") +
     `    endOnFailure: true,\n` +
     `  });`;
+
 
   const envSnippet =
     `  FC_SEED=${seed}` + (path ? ` FC_PATH=${JSON.stringify(path)}` : "") + " bunx vitest run <arquivo>";
