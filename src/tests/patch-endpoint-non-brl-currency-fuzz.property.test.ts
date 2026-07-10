@@ -101,9 +101,9 @@ function makePersist() {
 }
 
 describe("Fuzz — currencies não-BRL preservam drift e shape do normalized", () => {
-  it("F1..F5 — payload multi-moeda com amount+N válidos mantém contrato", () => {
-    fc.assert(
-      fc.property(currencyArb, currencyAliasKeyArb, amountArb, nArb, async (cur, aliasKey, amount, N) => {
+  it("F1..F5 — payload multi-moeda com amount+N válidos mantém contrato", async () => {
+    await fc.assert(
+      fc.asyncProperty(currencyArb, currencyAliasKeyArb, amountArb, nArb, async (cur, aliasKey, amount, N) => {
         const bank = makePersist();
         const body: Record<string, unknown> = {
           amount,
@@ -163,9 +163,9 @@ describe("Fuzz — currencies não-BRL preservam drift e shape do normalized", (
     );
   });
 
-  it("F6 — payload só com currency/aliases (sem amount/N) → 422 sem persistir", () => {
-    fc.assert(
-      fc.property(
+  it("F6 — payload só com currency/aliases (sem amount/N) → 422 sem persistir", async () => {
+    await fc.assert(
+      fc.asyncProperty(
         fc.array(fc.tuple(currencyAliasKeyArb, currencyArb), { minLength: 1, maxLength: 5 }),
         async (pairs) => {
           const bank = makePersist();
@@ -184,9 +184,9 @@ describe("Fuzz — currencies não-BRL preservam drift e shape do normalized", (
     );
   });
 
-  it("F1..F5 — currency + patch cosmético válido regenera parcelas a partir do currentRow", () => {
-    fc.assert(
-      fc.property(
+  it("F1..F5 — currency + patch cosmético válido regenera parcelas a partir do currentRow", async () => {
+    await fc.assert(
+      fc.asyncProperty(
         currencyArb,
         currencyAliasKeyArb,
         amountArb,
