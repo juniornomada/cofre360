@@ -69,7 +69,9 @@ async function selectCardNubank() {
 
 function clickParcelarToggle() {
   const label = screen.getByText("Parcelar");
-  const toggle = label.parentElement!.querySelector("button")!;
+  const buttons = label.parentElement!.querySelectorAll("button");
+  // O toggle é o ÚLTIMO botão do bloco (o botão "Redefinir", quando aparece, vem antes).
+  const toggle = buttons[buttons.length - 1] as HTMLButtonElement;
   fireEvent.click(toggle);
 }
 
