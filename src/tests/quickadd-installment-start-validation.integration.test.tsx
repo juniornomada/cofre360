@@ -95,7 +95,11 @@ async function prepareParceladoDialog() {
   await selectCardNubank();
   setAmount(400); // R$ 400,00
   clickParcelarToggle();
-  await screen.findByText(parcelaAtualLabelMatcher);
+  await waitFor(() => {
+    const labels = Array.from(document.querySelectorAll("label"));
+    const found = labels.some((l) => /Parcela atual/.test(l.textContent || ""));
+    if (!found) throw new Error("label 'Parcela atual' não apareceu");
+  });
 }
 
 describe("QuickAddTransactionDialog — validação de 'Parcela atual'", () => {
