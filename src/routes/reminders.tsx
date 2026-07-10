@@ -576,23 +576,29 @@ function RemindersPage() {
       </div>
       <div>
         <label className="text-xs text-muted-foreground mb-1 block">Tipo</label>
-        <div className="flex gap-2">
-          <button 
+        <div className="flex gap-2" role="radiogroup" aria-label="Tipo do lembrete">
+          <button
+            type="button"
+            role="radio"
+            aria-checked={data.type === "expense"}
             onClick={() => {
               if (data.type !== "expense") {
                 setData(prev => ({ ...prev, type: "expense", category: "Moradia > Aluguel", icon: "🏠" }));
               }
-            }} 
+            }}
             className={`flex-1 rounded-xl py-2 text-xs font-medium transition-colors ${data.type === "expense" ? "bg-destructive text-destructive-foreground" : "bg-card text-muted-foreground"}`}
           >
             Pagamento
           </button>
-          <button 
+          <button
+            type="button"
+            role="radio"
+            aria-checked={data.type === "income"}
             onClick={() => {
               if (data.type !== "income") {
                 setData(prev => ({ ...prev, type: "income", category: "Receita > Salário", icon: "💰" }));
               }
-            }} 
+            }}
             className={`flex-1 rounded-xl py-2 text-xs font-medium transition-colors ${data.type === "income" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground"}`}
           >
             Recebimento
