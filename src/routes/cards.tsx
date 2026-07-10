@@ -1169,7 +1169,7 @@ function CardsPage() {
 
                               <DropdownMenu modal={false}>
                                 <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                                  <button data-on-card="true" className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors border border-white/10 shadow-sm" aria-label="Mais ações do cartão">
+                                  <button data-on-card="true" className="icon-btn-on-card-solid" aria-label="Mais ações do cartão">
                                     <MoreVertical className="h-3.5 w-3.5" />
                                   </button>
                                 </DropdownMenuTrigger>
