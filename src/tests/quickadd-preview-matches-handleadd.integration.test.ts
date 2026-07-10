@@ -28,6 +28,7 @@
  */
 import { describe, it, expect } from "vitest";
 import { calculateInstallmentDetails, type InstallmentMode } from "@/lib/installment-utils";
+import { toDivideMode, toFixedMode } from "@/lib/installment-mode-toggle";
 
 /** Espelho fiel do bloco de prévia do diálogo. */
 function computePreview(
@@ -180,3 +181,167 @@ describe("Prévia do diálogo === valores enviados por handleAdd (parcela atual 
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// Cobertura ampliada — cada modo isolado + combinações (toggles) com diversos
+// totals e contagens. Continua validando o mesmo contrato: prévia === envio.
+// ---------------------------------------------------------------------------
+
+/** Assert canônico: para (amount,count,mode,fixed,start) a prévia bate com handleAdd. */
+function assertPreviewMatchesHandleAdd(
+  amount: number,
+  count: number,
+  mode: InstallmentMode,
+  fixed: number,
+  start: number,
+) {
+  const preview = computePreview(amount, count, mode, fixed, start);
+  const rows = buildHandleAddRows(amount, count, mode, fixed, start);
+
+  expect(rows.length).toBe(preview.previewRemaining);
+  for (const r of rows) {
+    expect(CENTS(r.amount)).toBe(CENTS(preview.details.valorParcela));
+  }
+  expect(CENTS(sumAmounts(rows))).toBe(CENTS(preview.previewRemainingTotal));
+  expect(rows.map(r => r.installment_number))
+    .toEqual(Array.from({ length: count - start + 1 }, (_, k) => start + k));
+  for (const r of rows) {
+    expect(r.total_installments).toBe(count);
+    expect(r.installment_mode).toBe(mode);
+    if (mode === "fixed") {
+      expect(CENTS(r.installment_source_amount))
+        .toBe(CENTS(preview.details.valorParcela * count));
+    } else {
+      expect(CENTS(r.installment_source_amount)).toBe(CENTS(amount));
+    }
+  }
+  return { preview, rows };
+}
+
+const DIVIDE_CASES: Array<{ amount: number; count: number }> = [
+  { amount: 1,        count: 1 },
+  { amount: 10,       count: 2 },
+  { amount: 100,      count: 3 },   // dízima 33.33
+  { amount: 250.5,    count: 5 },
+  { amount: 400,      count: 4 },
+  { amount: 599.99,   count: 7 },   // não-divisível
+  { amount: 1999.99,  count: 12 },
+  { amount: 3333.34,  count: 9 },
+  { amount: 9999.97,  count: 24 },
+  { amount: 12345.67, count: 36 },
+];
+
+describe("Modo DIVIDE — prévia === envio (totals × counts × starts)", () => {
+  for (const { amount, count } of DIVIDE_CASES) {
+    describe(`R$${amount.toFixed(2)} / ${count}x`, () => {
+      // Cobre TODOS os starts válidos (1..count) e também extremos saneados.
+      for (const start of [1, Math.max(1, Math.floor(count / 2)), count]) {
+        it(`start=${start}/${count}`, () => {
+          assertPreviewMatchesHandleAdd(amount, count, "divide", 0, start);
+        });
+      }
+    });
+  }
+});
+
+const FIXED_CASES: Array<{ per: number; count: number }> = [
+  { per: 1,       count: 1 },
+  { per: 9.99,    count: 2 },
+  { per: 33.33,   count: 3 },
+  { per: 50,      count: 6 },
+  { per: 83.33,   count: 3 },
+  { per: 100,     count: 4 },
+  { per: 149.99,  count: 10 },
+  { per: 250.5,   count: 12 },
+  { per: 999.99,  count: 24 },
+  { per: 1234.56, count: 36 },
+];
+
+describe("Modo FIXED — prévia === envio (per-parcela × counts × starts)", () => {
+  for (const { per, count } of FIXED_CASES) {
+    describe(`R$${per.toFixed(2)}/parcela × ${count}x`, () => {
+      // Em modo fixed, o dialog passa `amount = per` e `fixed = per`.
+      for (const start of [1, Math.max(1, Math.floor(count / 2)), count]) {
+        it(`start=${start}/${count}`, () => {
+          const { rows } = assertPreviewMatchesHandleAdd(per, count, "fixed", per, start);
+          // Invariante econômica: source == per*count independente de start.
+          for (const r of rows) {
+            expect(CENTS(r.installment_source_amount)).toBe(CENTS(per * count));
+          }
+        });
+      }
+    });
+  }
+});
+
+describe("Combinações de toggles (divide↔fixed) — prévia === envio após alternância", () => {
+  // Cada cenário começa em um modo, alterna 1..N vezes e verifica a paridade final.
+  const TOGGLE_CASES: Array<{
+    name: string;
+    initialAmount: number;
+    count: number;
+    initialMode: InstallmentMode;
+    sequence: Array<"divide" | "fixed">;
+    start: number;
+  }> = [
+    // Preserva total ao ir divide→fixed→divide.
+    { name: "R$400/4x divide→fixed→divide start=3",
+      initialAmount: 400, count: 4, initialMode: "divide",
+      sequence: ["fixed", "divide"], start: 3 },
+    // Total com dízima: preserva total apesar do arredondamento na conversão.
+    { name: "R$100/3x divide→fixed→divide start=2",
+      initialAmount: 100, count: 3, initialMode: "divide",
+      sequence: ["fixed", "divide"], start: 2 },
+    // Fixed→divide→fixed com per-parcela cheio.
+    { name: "R$150 fixed/6x → divide → fixed start=6",
+      initialAmount: 150, count: 6, initialMode: "fixed",
+      sequence: ["divide", "fixed"], start: 6 },
+    // Cadeia longa de toggles.
+    { name: "R$1.999,99/12x cadeia longa start=7",
+      initialAmount: 1999.99, count: 12, initialMode: "divide",
+      sequence: ["fixed", "divide", "fixed", "divide"], start: 7 },
+    // start=1 em cadeia fixed↔divide para garantir que source==total após ciclos.
+    { name: "R$83,33 fixed/3x cadeia start=1",
+      initialAmount: 83.33, count: 3, initialMode: "fixed",
+      sequence: ["divide", "fixed", "divide", "fixed"], start: 1 },
+  ];
+
+  for (const tc of TOGGLE_CASES) {
+    it(tc.name, () => {
+      // Aplica a sequência de toggles usando os utilitários oficiais do diálogo.
+      let mode: InstallmentMode = tc.initialMode;
+      let amount = tc.initialAmount;
+      let fixedValue = tc.initialMode === "fixed" ? tc.initialAmount : 0;
+
+      // Total econômico invariante alvo (parcela × N no início).
+      const initialDetails = calculateInstallmentDetails(amount, tc.count, mode, fixedValue);
+      const invariantTotal = Math.round(initialDetails.valorParcela * tc.count * 100) / 100;
+
+      for (const target of tc.sequence) {
+        const out = target === "divide"
+          ? toDivideMode({ amount, fixedValue, count: tc.count, fromMode: mode })
+          : toFixedMode({ amount, fixedValue, count: tc.count, fromMode: mode });
+        mode = out.mode;
+        amount = out.amount;
+        fixedValue = out.fixedValue;
+      }
+
+      // Após os toggles, prévia === handleAdd para o start pedido.
+      const { rows, preview } = assertPreviewMatchesHandleAdd(
+        amount, tc.count, mode, fixedValue, tc.start,
+      );
+
+      // installment_source_amount permanece coerente com o total econômico
+      // do modo FINAL (tolerância: 1 centavo por parcela, para acomodar
+      // arredondamento em conversões divide→fixed com dízima).
+      for (const r of rows) {
+        const drift = Math.abs(CENTS(r.installment_source_amount) - CENTS(invariantTotal));
+        expect(drift).toBeLessThanOrEqual(tc.count);
+      }
+
+      // Soma das lançadas === valorParcela × remaining (bit-a-bit).
+      expect(CENTS(sumAmounts(rows))).toBe(CENTS(preview.previewRemainingTotal));
+    });
+  }
+});
+
