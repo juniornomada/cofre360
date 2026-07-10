@@ -35,6 +35,7 @@ import { z } from "zod";
 import {
   handlePatchTransactionContract,
   type PatchContractResponse,
+  type InstallmentPreview,
 } from "@/lib/patch-transaction-contract";
 
 const toCents = (n: number) => Math.round(n * 100);
@@ -44,15 +45,13 @@ const round2 = (n: number) => Math.round(n * 100) / 100;
 
 /** V1: apenas campos obrigatórios para clientes legados. `passthrough`
  *  significa que campos extras são tolerados (forward-compat). */
-const installmentV1 = z
-  .object({
-    installment_number: z.number().int().min(1),
-    total_installments: z.number().int().min(1),
-    amount: z.number().nonnegative(),
-    installment_source_amount: z.number().nonnegative(),
-    installment_mode: z.enum(["divide", "fixed"]),
-  })
-  .passthrough();
+const installmentV1 = z.object({
+  installment_number: z.number().int().min(1),
+  total_installments: z.number().int().min(1),
+  amount: z.number().nonnegative(),
+  installment_source_amount: z.number().nonnegative(),
+  installment_mode: z.enum(["divide", "fixed"]),
+});
 
 const responseV1 = z
   .object({
@@ -138,19 +137,100 @@ async function patch(
   return handlePatchTransactionContract(req(body), { persist, currentRow });
 }
 
-/** Aplica as regras R1..R6 sobre qualquer body parseado. */
-function assertDriftRules(body: {
+/** Shape mínimo aceito por `assertDriftRules`. Modelado sobre `InstallmentPreview`
+ *  para eliminar casts amplos (TS2352) e manter tipagem exata dos campos. */
+type DriftMetric = {
+  sum: number;
+  source: number;
+  delta: number;
+  tolerance: number;
+  ok: boolean;
+};
+interface DriftAssertInput {
   data: {
-    installments: Array<{
-      installment_number: number;
-      total_installments: number;
-      amount: number;
-      installment_source_amount: number;
-      installment_mode: "divide" | "fixed";
-    }>;
-    drift?: { sum: number; source: number; delta: number; tolerance: number; ok: boolean };
+    installments: InstallmentPreview[];
+    drift?: DriftMetric;
   };
-}) {
+}
+
+/** Converte a saída de um Zod parse (que carrega `.passthrough()` e portanto
+ *  `[key: string]: unknown`) em `InstallmentPreview[]` sem cast amplo:
+ *  extraímos APENAS os campos do contrato, narrando cada campo com o tipo
+ *  esperado por `InstallmentPreview` sem casts amplos (TS2352). */
+type RawInstallmentRow = {
+  installment_number?: number;
+  total_installments?: number;
+  amount?: number;
+  installment_source_amount?: number;
+  installment_mode?: "divide" | "fixed";
+};
+type RawDriftFields = {
+  sum?: number;
+  source?: number;
+  delta?: number;
+  tolerance?: number;
+  ok?: boolean;
+};
+type RawDriftBody = {
+  data?: {
+    installments?: ReadonlyArray<RawInstallmentRow>;
+    drift?: RawDriftFields;
+  };
+};
+
+function narrowInstallment(row: RawInstallmentRow, i: number): InstallmentPreview {
+  const fields: Array<keyof RawInstallmentRow> = [
+    "installment_number",
+    "total_installments",
+    "amount",
+    "installment_source_amount",
+    "installment_mode",
+  ];
+  for (const key of fields) {
+    if (row[key] === undefined) {
+      throw new Error(`installments[${i}].${key} ausente no payload parseado`);
+    }
+  }
+  return {
+    installment_number: row.installment_number as number,
+    total_installments: row.total_installments as number,
+    amount: row.amount as number,
+    installment_source_amount: row.installment_source_amount as number,
+    installment_mode: row.installment_mode as "divide" | "fixed",
+  };
+}
+
+function narrowDrift(raw: RawDriftFields | undefined): DriftMetric | undefined {
+  if (!raw) return undefined;
+  const required: Array<keyof RawDriftFields> = ["sum", "source", "delta", "tolerance", "ok"];
+  for (const key of required) {
+    if (raw[key] === undefined) return undefined;
+  }
+  return {
+    sum: raw.sum as number,
+    source: raw.source as number,
+    delta: raw.delta as number,
+    tolerance: raw.tolerance as number,
+    ok: raw.ok as boolean,
+  };
+}
+
+/** Adapta `{data:{installments, drift?}}` (Zod-parsed com passthrough) para
+ *  a entrada estritamente tipada de `assertDriftRules`. */
+function toDriftInput(body: RawDriftBody): DriftAssertInput {
+  const rows = body.data?.installments ?? [];
+  return {
+    data: {
+      installments: rows.map((r, i) => narrowInstallment(r, i)),
+      drift: narrowDrift(body.data?.drift),
+    },
+  };
+}
+
+
+
+/** Aplica as regras R1..R6 sobre qualquer body parseado. */
+function assertDriftRules(body: DriftAssertInput) {
   const { installments, drift } = body.data;
   const N = installments.length;
 
@@ -161,7 +241,7 @@ function assertDriftRules(body: {
   expect(nums).toEqual(Array.from({ length: N }, (_, i) => i + 1));
 
   // R3 / R4
-  const mode = installments[0].installment_mode;
+  const mode: InstallmentPreview["installment_mode"] = installments[0].installment_mode;
   for (const r of installments) {
     expect(r.installment_mode).toBe(mode);
     expect(Math.round(r.amount * 100) / 100).toBe(r.amount);
@@ -217,7 +297,7 @@ describe("Contrato PATCH — versionamento de schema", () => {
         if (res.status !== 200) return;
         const parsed = responseV1.parse(res.body);
         expect(parsed.data.installments).toHaveLength(s.expectedN);
-        assertDriftRules(parsed as Parameters<typeof assertDriftRules>[0]);
+        assertDriftRules(toDriftInput(parsed));
       });
 
       it("resposta atual satisfaz V2 (parser atual)", async () => {
@@ -226,7 +306,7 @@ describe("Contrato PATCH — versionamento de schema", () => {
         if (res.status !== 200) return;
         const parsed = responseV2.parse(res.body);
         expect(parsed.data.installments).toHaveLength(s.expectedN);
-        assertDriftRules(parsed as Parameters<typeof assertDriftRules>[0]);
+        assertDriftRules(toDriftInput(parsed));
       });
 
       it("resposta atual satisfaz V3 (parser futuro compatível)", async () => {
@@ -234,7 +314,7 @@ describe("Contrato PATCH — versionamento de schema", () => {
         expect(res.status).toBe(200);
         if (res.status !== 200) return;
         const parsed = responseV3.parse(res.body);
-        assertDriftRules(parsed as Parameters<typeof assertDriftRules>[0]);
+        assertDriftRules(toDriftInput(parsed));
       });
     });
   }
@@ -268,7 +348,7 @@ describe("Contrato PATCH — versionamento de schema", () => {
     expect(legacy.data.id).toBeTruthy();
     expect(legacy.data.installments.length).toBe(5);
     // O drift continua respeitando a regra regulamentar mesmo sem que o cliente o leia.
-    assertDriftRules(legacy as Parameters<typeof assertDriftRules>[0]);
+    assertDriftRules(toDriftInput(legacy));
   });
 
   it("forward-compat: campos adicionais no futuro não invalidam V1/V2 (passthrough)", async () => {
@@ -293,7 +373,7 @@ describe("Contrato PATCH — versionamento de schema", () => {
     expect(() => responseV1.parse(future)).not.toThrow();
     expect(() => responseV2.parse(future)).not.toThrow();
     // E as regras de drift continuam válidas.
-    assertDriftRules(future as Parameters<typeof assertDriftRules>[0]);
+    assertDriftRules(toDriftInput(future));
   });
 
   it("backward-break bloqueado: remover um campo obrigatório de V1 é detectado", async () => {
@@ -328,8 +408,8 @@ describe("Contrato PATCH — versionamento de schema", () => {
       if (res.status !== 200) continue;
       const v1 = responseV1.parse(res.body);
       const v2 = responseV2.parse(res.body);
-      assertDriftRules(v1 as Parameters<typeof assertDriftRules>[0]);
-      assertDriftRules(v2 as Parameters<typeof assertDriftRules>[0]);
+      assertDriftRules(toDriftInput(v1));
+      assertDriftRules(toDriftInput(v2));
     }
   });
 });
