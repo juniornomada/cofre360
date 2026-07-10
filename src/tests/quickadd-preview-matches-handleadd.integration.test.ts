@@ -345,3 +345,85 @@ describe("Combinações de toggles (divide↔fixed) — prévia === envio após 
   }
 });
 
+/* -------------------------------------------------------------------------- *
+ *  Cent-generating values: paridade bit-a-bit prévia ↔ handleAdd            *
+ *                                                                            *
+ *  Cenários projetados para forçar arredondamento em centavos (dízimas,     *
+ *  divisões não-exatas, valores com .01/.99 etc). Para cada caso, garantimos*
+ *  que "Valor por parcela"/"Valor de cada parcela" exibido na prévia bate  *
+ *  bit-a-bit (em centavos) com cada linha enviada por handleAdd, para todo *
+ *  start ∈ [1..N].                                                          *
+ * -------------------------------------------------------------------------- */
+const CENT_SCENARIOS: Scenario[] = [
+  // Dízimas puras (÷3, ÷6, ÷7, ÷9)
+  { name: "cents/ R$10 divide 3x",       amount: 10,      count: 3,  mode: "divide", fixed: 0 },
+  { name: "cents/ R$1 divide 3x",        amount: 1,       count: 3,  mode: "divide", fixed: 0 },
+  { name: "cents/ R$100 divide 6x",      amount: 100,     count: 6,  mode: "divide", fixed: 0 },
+  { name: "cents/ R$100 divide 7x",      amount: 100,     count: 7,  mode: "divide", fixed: 0 },
+  { name: "cents/ R$100 divide 9x",      amount: 100,     count: 9,  mode: "divide", fixed: 0 },
+  { name: "cents/ R$50 divide 12x",      amount: 50,      count: 12, mode: "divide", fixed: 0 },
+  // Valores com centavos "quebrados"
+  { name: "cents/ R$99,99 divide 3x",    amount: 99.99,   count: 3,  mode: "divide", fixed: 0 },
+  { name: "cents/ R$0,10 divide 3x",     amount: 0.10,    count: 3,  mode: "divide", fixed: 0 },
+  { name: "cents/ R$0,01 divide 2x",     amount: 0.01,    count: 2,  mode: "divide", fixed: 0 },
+  { name: "cents/ R$1234,56 divide 7x",  amount: 1234.56, count: 7,  mode: "divide", fixed: 0 },
+  { name: "cents/ R$1999,99 divide 11x", amount: 1999.99, count: 11, mode: "divide", fixed: 0 },
+  { name: "cents/ R$777,77 divide 13x",  amount: 777.77,  count: 13, mode: "divide", fixed: 0 },
+  // FIXED com parcela quebrada — força installment_source_amount = per × N
+  { name: "cents/ fixed 33,33 × 3",      amount: 99.99,   count: 3,  mode: "fixed",  fixed: 33.33 },
+  { name: "cents/ fixed 16,67 × 6",      amount: 100.02,  count: 6,  mode: "fixed",  fixed: 16.67 },
+  { name: "cents/ fixed 14,29 × 7",      amount: 100.03,  count: 7,  mode: "fixed",  fixed: 14.29 },
+  { name: "cents/ fixed 11,11 × 9",      amount: 99.99,   count: 9,  mode: "fixed",  fixed: 11.11 },
+  { name: "cents/ fixed 0,01 × 5",       amount: 0.05,    count: 5,  mode: "fixed",  fixed: 0.01 },
+  { name: "cents/ fixed 8,33 × 12",      amount: 99.96,   count: 12, mode: "fixed",  fixed: 8.33 },
+];
+
+describe("Paridade bit-a-bit com valores que geram centavos", () => {
+  for (const sc of CENT_SCENARIOS) {
+    describe(sc.name, () => {
+      for (let start = 1; start <= sc.count; start++) {
+        it(`start=${start}/${sc.count} — prévia == handleAdd (centavos)`, () => {
+          const preview = computePreview(sc.amount, sc.count, sc.mode, sc.fixed, start);
+          const rows = buildHandleAddRows(sc.amount, sc.count, sc.mode, sc.fixed, start);
+
+          // Sanidade: valorParcela da prévia deve estar em passos de 1 centavo.
+          expect(Number.isInteger(CENTS(preview.details.valorParcela))).toBe(true);
+
+          // (a) qtd de linhas === previewRemaining
+          expect(rows.length).toBe(preview.previewRemaining);
+
+          // (b) CADA linha === "Valor por parcela" da prévia, bit-a-bit em centavos.
+          for (const r of rows) {
+            expect(CENTS(r.amount)).toBe(CENTS(preview.details.valorParcela));
+          }
+
+          // (c) Σ(linhas) === previewRemainingTotal ("Valor total das lançadas")
+          //     bit-a-bit em centavos — sem drift acumulado por arredondamento.
+          expect(CENTS(sumAmounts(rows))).toBe(CENTS(preview.previewRemainingTotal));
+
+          // (d) installment_source_amount coerente com o modo (bit-a-bit).
+          for (const r of rows) {
+            if (sc.mode === "fixed") {
+              expect(CENTS(r.installment_source_amount))
+                .toBe(CENTS(preview.details.valorParcela * sc.count));
+            } else {
+              expect(CENTS(r.installment_source_amount)).toBe(CENTS(sc.amount));
+            }
+          }
+        });
+      }
+    });
+  }
+
+  // Invariante extra: em DIVIDE, Σ(todas as N parcelas) + drift residual == amount.
+  // Isso garante que o "drift de centavo" da dízima não escapa entre prévia e envio.
+  it("DIVIDE dízima — Σ(N parcelas) difere de amount em, no máximo, N centavos", () => {
+    for (const sc of CENT_SCENARIOS.filter(s => s.mode === "divide")) {
+      const rowsFull = buildHandleAddRows(sc.amount, sc.count, sc.mode, sc.fixed, 1);
+      const total = sumAmounts(rowsFull);
+      const drift = Math.abs(CENTS(total) - CENTS(sc.amount));
+      expect(drift).toBeLessThanOrEqual(sc.count);
+    }
+  });
+});
+
