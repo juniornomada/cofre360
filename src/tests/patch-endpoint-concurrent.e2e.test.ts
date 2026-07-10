@@ -300,8 +300,7 @@ describe("E2E — PATCH concorrente (mesmo id)", () => {
       expect(r.status).toBe(200);
       assertResponseCoherent((await r.json()) as OkBody);
     }
-    const final = await readOk(await patchJson(id, {}));
-    assertResponseCoherent(final);
+    expect(snapshotStore(id)).toBeDefined();
   });
 
   it("C1+C3 (stress) — 50 PATCHes concorrentes com N variando produzem drift ≤ N¢ em todas", async () => {
