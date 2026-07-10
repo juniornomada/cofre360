@@ -788,8 +788,13 @@ function RemindersPage() {
             <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1.5 text-[10px] font-bold text-destructive-foreground">{pendingCount}</span>
           )}
         </div>
-        <button onClick={() => setShowAddDialog(true)} className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
-          <Plus className="h-4 w-4" />
+        <button
+          type="button"
+          onClick={() => setShowAddDialog(true)}
+          aria-label="Novo lembrete"
+          className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground"
+        >
+          <Plus className="h-4 w-4" aria-hidden="true" />
         </button>
       </div>
 
