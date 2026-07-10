@@ -168,7 +168,7 @@ export function TransactionItem({
             isTransferPair ? "text-muted-foreground" : type === "income" ? "text-primary" : "text-foreground"
           )}>
             {isTransferPair ? "" : type === "expense" ? "- " : "+ "}
-            {amountVisible ? `R$ ${Math.abs(amount).toFixed(2)}` : "R$ ••••"}
+            {amountVisible ? `R$ ${formatBRL(Math.abs(amount))}` : "R$ ••••"}
           </span>
         </div>
         <div className="flex items-center justify-between gap-2 mt-0.5">
