@@ -72,7 +72,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
 
   const [installmentEnabled, setInstallmentEnabled] = useState(false);
   const [installmentCount, setInstallmentCount] = useState<number | "">(2);
-  const [installmentStart, setInstallmentStart] = useState<number>(1);
+  const [installmentStart, setInstallmentStart] = useState<number | "">(1);
   const [installmentMode, setInstallmentMode] = useState<"divide" | "fixed">("divide");
   const [installmentFixedValue, setInstallmentFixedValue] = useState(0);
   const [nameInputMode, setNameInputMode] = useState<"none" | "text">("none");
@@ -84,12 +84,21 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
     }
   }, [newTx.amount, installmentMode, installmentEnabled]);
 
-  // Garante que a "parcela atual" nunca exceda o total de parcelas.
-  useEffect(() => {
-    const max = Number(installmentCount) || 1;
-    if (installmentStart > max) setInstallmentStart(max);
-    if (installmentStart < 1) setInstallmentStart(1);
-  }, [installmentCount, installmentStart]);
+  // Validação da "parcela atual": deve ser um inteiro entre 1 e o total.
+  // Não clampeamos silenciosamente — o UI mostra o erro para o usuário.
+  const installmentStartError = (() => {
+    if (!installmentEnabled) return null;
+    const total = Number(installmentCount);
+    if (!Number.isFinite(total) || total < 1) return null;
+    if (installmentStart === "" || installmentStart === null || installmentStart === undefined) {
+      return "Informe a parcela atual (entre 1 e " + total + ").";
+    }
+    const v = Number(installmentStart);
+    if (!Number.isInteger(v)) return "A parcela atual deve ser um número inteiro.";
+    if (v < 1) return "A parcela atual não pode ser menor que 1.";
+    if (v > total) return `A parcela atual (${v}) não pode ser maior que o total de parcelas (${total}).`;
+    return null;
+  })();
 
 
   const fetchData = useCallback(async () => {
