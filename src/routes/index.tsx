@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
+import { formatBRL } from "@/lib/format-brl";
 import { TrendingUp, Eye, EyeOff, Bell, Pencil, Trash2, CalendarIcon, Loader2, Clock, Wallet, ChevronRight, ArrowUpRight, ArrowDownRight, AlertTriangle, Sparkles, Flame, Plus, Minus, ArrowLeftRight, Layers, GripVertical, Filter, FilterX, LogOut, CreditCard, Landmark, Search, SlidersHorizontal } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { TransactionItem } from "@/components/TransactionItem";
@@ -1578,7 +1579,7 @@ function Dashboard() {
                     {editInstallmentMode === "divide" ? (
                       <p className="text-[10px] text-muted-foreground leading-relaxed">
                         O <strong>valor</strong> acima é o total da compra. Cada parcela ficará com{" "}
-                        <strong>R$ {((editTx.amount || 0) / Math.max(1, editTx.total_installments ?? 1)).toFixed(2)}</strong>.
+                        <strong>R$ {formatBRL((editTx.amount || 0) / Math.max(1, editTx.total_installments ?? 1))}</strong>.
                       </p>
                     ) : (
                       <div>
@@ -1590,7 +1591,7 @@ function Dashboard() {
                         <p className="text-[10px] text-muted-foreground leading-relaxed mt-1">
                           Total da compra:{" "}
                           <strong>
-                            R$ {(editInstallmentFixedValue * (editTx.total_installments ?? 1)).toFixed(2)}
+                            R$ {formatBRL(editInstallmentFixedValue * (editTx.total_installments ?? 1))}
                           </strong>
                         </p>
                       </div>

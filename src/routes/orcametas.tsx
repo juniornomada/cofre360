@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { parseCategoryValue } from "@/lib/categories";
+import { formatBRL } from "@/lib/format-brl";
 import { toast } from "sonner";
 import { CalculatorAmountInput } from "@/components/CalculatorAmountInput";
 
@@ -362,8 +363,8 @@ function OrcaMetasPage() {
                     <div className={`h-full rounded-full transition-all duration-500 ${isOver ? "bg-destructive" : item.color}`} style={{ width: `${Math.min(pct, 100)}%` }} />
                   </div>
                   <div className="flex justify-between mt-1.5">
-                    <span className="text-[10px] text-muted-foreground tabular-nums">R$ {item.spent?.toFixed(2) || "0.00"}</span>
-                    <span className="text-[10px] text-muted-foreground tabular-nums">R$ {item.budget_limit?.toFixed(2) || "0.00"}</span>
+                    <span className="text-[10px] text-muted-foreground tabular-nums">R$ {formatBRL(item.spent ?? 0)}</span>
+                    <span className="text-[10px] text-muted-foreground tabular-nums">R$ {formatBRL(item.budget_limit ?? 0)}</span>
                   </div>
                 </div>
               );

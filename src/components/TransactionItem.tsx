@@ -1,6 +1,7 @@
 import { cn } from "@/lib/utils";
 import { getCategoryDisplay, getCategoryIcon } from "@/lib/categories";
 import { restoreAccents } from "@/lib/restore-accents";
+import { formatBRL } from "@/lib/format-brl";
 import { CreditCard, Landmark, ArrowLeftRight, Layers, Pencil, Trash2, Eye, EyeOff } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -167,7 +168,7 @@ export function TransactionItem({
             isTransferPair ? "text-muted-foreground" : type === "income" ? "text-primary" : "text-foreground"
           )}>
             {isTransferPair ? "" : type === "expense" ? "- " : "+ "}
-            {amountVisible ? `R$ ${Math.abs(amount).toFixed(2)}` : "R$ ••••"}
+            {amountVisible ? `R$ ${formatBRL(Math.abs(amount))}` : "R$ ••••"}
           </span>
         </div>
         <div className="flex items-center justify-between gap-2 mt-0.5">
