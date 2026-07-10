@@ -72,6 +72,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
 
   const [installmentEnabled, setInstallmentEnabled] = useState(false);
   const [installmentCount, setInstallmentCount] = useState<number | "">(2);
+  const [installmentStart, setInstallmentStart] = useState<number>(1);
   const [installmentMode, setInstallmentMode] = useState<"divide" | "fixed">("divide");
   const [installmentFixedValue, setInstallmentFixedValue] = useState(0);
   const [nameInputMode, setNameInputMode] = useState<"none" | "text">("none");
@@ -82,6 +83,13 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
       setInstallmentFixedValue(newTx.amount || 0);
     }
   }, [newTx.amount, installmentMode, installmentEnabled]);
+
+  // Garante que a "parcela atual" nunca exceda o total de parcelas.
+  useEffect(() => {
+    const max = Number(installmentCount) || 1;
+    if (installmentStart > max) setInstallmentStart(max);
+    if (installmentStart < 1) setInstallmentStart(1);
+  }, [installmentCount, installmentStart]);
 
 
   const fetchData = useCallback(async () => {
@@ -387,9 +395,10 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
         : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
       const rows = [];
       const count = Number(installmentCount) || 1;
-      for (let i = 0; i < count; i++) {
+      const startAt = Math.min(Math.max(1, installmentStart || 1), count);
+      for (let i = startAt; i <= count; i++) {
         const installDate = new Date(baseDate);
-        installDate.setMonth(installDate.getMonth() + i);
+        installDate.setMonth(installDate.getMonth() + (i - startAt));
          const { valorParcela: parcela } = calculateInstallmentDetails(
            newTx.amount,
            count,
@@ -401,7 +410,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
           date: format(installDate, "dd MMM", { locale: ptBR }),
           amount: parcela, type: newTx.type,
           card: cardValue, bank_account_id: newTx.bank_account_id || null,
-          installment_number: i + 1,
+          installment_number: i,
           total_installments: count,
           installment_group_id: groupId,
           installment_mode: installmentMode,
@@ -860,6 +869,32 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                                 placeholder="Ex: 15"
                               />
                             </div>
+                          </div>
+                        </div>
+                        <div>
+                          <label className="text-[11px] font-semibold text-foreground mb-1 block">
+                            Parcela atual <span className="text-muted-foreground font-normal">(lançar a partir de)</span>
+                          </label>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="number"
+                              min={1}
+                              max={Number(installmentCount) || 1}
+                              value={installmentStart}
+                              onChange={e => {
+                                const v = parseInt(e.target.value) || 1;
+                                const max = Number(installmentCount) || 1;
+                                setInstallmentStart(Math.min(Math.max(1, v), max));
+                              }}
+                              className="w-16 rounded-lg bg-card px-2.5 py-1.5 text-xs text-foreground outline-none border border-border focus:border-primary/50"
+                            />
+                            <span className="text-[11px] text-muted-foreground">
+                              de {Number(installmentCount) || 1} — serão lançadas{" "}
+                              <span className="font-semibold text-foreground">
+                                {Math.max(0, (Number(installmentCount) || 1) - Math.min(Math.max(1, installmentStart), Number(installmentCount) || 1) + 1)}
+                              </span>{" "}
+                              parcela(s) ({Math.min(Math.max(1, installmentStart), Number(installmentCount) || 1)}/{Number(installmentCount) || 1} → {Number(installmentCount) || 1}/{Number(installmentCount) || 1})
+                            </span>
                           </div>
                         </div>
                       </div>
