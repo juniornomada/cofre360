@@ -36,20 +36,32 @@ export interface VersionedRequest extends PatchRequest {
   query?: Record<string, string | undefined>;
 }
 
+/** Envelope de aviso emitido quando o cliente opta pelo fallback seguro
+ *  e a versão pedida não existe. Nunca aparece em respostas de versão suportada. */
+export interface VersionFallbackWarning {
+  code: "VERSION_FALLBACK";
+  requested: string;
+  served: SchemaVersion;
+  supported: readonly SchemaVersion[];
+}
+
 export interface VersionedSuccessV1 {
   schema_version: "1";
   data: {
     id: string;
     installments: InstallmentPreview[];
   };
+  warning?: VersionFallbackWarning;
 }
 export interface VersionedSuccessV2 {
   schema_version: "2";
   data: PatchContractSuccessBody["data"];
+  warning?: VersionFallbackWarning;
 }
 export interface VersionedSuccessV3 {
   schema_version: "3";
   data: PatchContractSuccessBody["data"] & { schema_version: "3" };
+  warning?: VersionFallbackWarning;
 }
 
 export type VersionedResponse =
@@ -67,6 +79,7 @@ export type VersionedResponse =
       };
     }
   | Exclude<PatchContractResponse, { status: 200 }>;
+
 
 /** Extract the requested version and its source, honoring precedence. */
 export function negotiateVersion(req: VersionedRequest): {
