@@ -265,7 +265,7 @@ describe("Contrato PATCH — versionamento de schema", () => {
         if (res.status !== 200) return;
         const parsed = responseV1.parse(res.body);
         expect(parsed.data.installments).toHaveLength(s.expectedN);
-        assertDriftRules(parsed as Parameters<typeof assertDriftRules>[0]);
+        assertDriftRules(toDriftInput(parsed));
       });
 
       it("resposta atual satisfaz V2 (parser atual)", async () => {
@@ -274,7 +274,7 @@ describe("Contrato PATCH — versionamento de schema", () => {
         if (res.status !== 200) return;
         const parsed = responseV2.parse(res.body);
         expect(parsed.data.installments).toHaveLength(s.expectedN);
-        assertDriftRules(parsed as Parameters<typeof assertDriftRules>[0]);
+        assertDriftRules(toDriftInput(parsed));
       });
 
       it("resposta atual satisfaz V3 (parser futuro compatível)", async () => {
@@ -282,7 +282,7 @@ describe("Contrato PATCH — versionamento de schema", () => {
         expect(res.status).toBe(200);
         if (res.status !== 200) return;
         const parsed = responseV3.parse(res.body);
-        assertDriftRules(parsed as Parameters<typeof assertDriftRules>[0]);
+        assertDriftRules(toDriftInput(parsed));
       });
     });
   }
@@ -316,7 +316,7 @@ describe("Contrato PATCH — versionamento de schema", () => {
     expect(legacy.data.id).toBeTruthy();
     expect(legacy.data.installments.length).toBe(5);
     // O drift continua respeitando a regra regulamentar mesmo sem que o cliente o leia.
-    assertDriftRules(legacy as Parameters<typeof assertDriftRules>[0]);
+    assertDriftRules(toDriftInput(legacy));
   });
 
   it("forward-compat: campos adicionais no futuro não invalidam V1/V2 (passthrough)", async () => {
@@ -341,7 +341,7 @@ describe("Contrato PATCH — versionamento de schema", () => {
     expect(() => responseV1.parse(future)).not.toThrow();
     expect(() => responseV2.parse(future)).not.toThrow();
     // E as regras de drift continuam válidas.
-    assertDriftRules(future as Parameters<typeof assertDriftRules>[0]);
+    assertDriftRules(toDriftInput(future));
   });
 
   it("backward-break bloqueado: remover um campo obrigatório de V1 é detectado", async () => {
@@ -376,8 +376,8 @@ describe("Contrato PATCH — versionamento de schema", () => {
       if (res.status !== 200) continue;
       const v1 = responseV1.parse(res.body);
       const v2 = responseV2.parse(res.body);
-      assertDriftRules(v1 as Parameters<typeof assertDriftRules>[0]);
-      assertDriftRules(v2 as Parameters<typeof assertDriftRules>[0]);
+      assertDriftRules(toDriftInput(v1));
+      assertDriftRules(toDriftInput(v2));
     }
   });
 });
