@@ -891,24 +891,57 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                           <div className="flex items-center gap-2">
                             <input
                               type="number"
+                              inputMode="numeric"
                               min={1}
                               max={Number(installmentCount) || 1}
                               value={installmentStart}
+                              aria-invalid={!!installmentStartError}
+                              aria-describedby={installmentStartError ? "installment-start-error" : undefined}
                               onChange={e => {
-                                const v = parseInt(e.target.value) || 1;
-                                const max = Number(installmentCount) || 1;
-                                setInstallmentStart(Math.min(Math.max(1, v), max));
+                                const raw = e.target.value;
+                                if (raw === "") {
+                                  setInstallmentStart("");
+                                  return;
+                                }
+                                const v = parseInt(raw, 10);
+                                setInstallmentStart(Number.isFinite(v) ? v : "");
                               }}
-                              className="w-16 rounded-lg bg-card px-2.5 py-1.5 text-xs text-foreground outline-none border border-border focus:border-primary/50"
+                              onBlur={() => {
+                                // Ao sair do campo, se estiver vazio, volta para 1 (default seguro).
+                                if (installmentStart === "") setInstallmentStart(1);
+                              }}
+                              className={`w-16 rounded-lg bg-card px-2.5 py-1.5 text-xs text-foreground outline-none border ${installmentStartError ? "border-destructive focus:border-destructive" : "border-border focus:border-primary/50"}`}
                             />
-                            <span className="text-[11px] text-muted-foreground">
-                              de {Number(installmentCount) || 1} — serão lançadas{" "}
-                              <span className="font-semibold text-foreground">
-                                {Math.max(0, (Number(installmentCount) || 1) - Math.min(Math.max(1, installmentStart), Number(installmentCount) || 1) + 1)}
-                              </span>{" "}
-                              parcela(s) ({Math.min(Math.max(1, installmentStart), Number(installmentCount) || 1)}/{Number(installmentCount) || 1} → {Number(installmentCount) || 1}/{Number(installmentCount) || 1})
-                            </span>
+                            {(() => {
+                              const total = Number(installmentCount) || 1;
+                              const startNum = Number(installmentStart);
+                              const validStart = Number.isFinite(startNum) && startNum >= 1 && startNum <= total;
+                              if (!validStart) {
+                                return (
+                                  <span className="text-[11px] text-muted-foreground">
+                                    de {total}
+                                  </span>
+                                );
+                              }
+                              const remaining = total - startNum + 1;
+                              return (
+                                <span className="text-[11px] text-muted-foreground">
+                                  de {total} — serão lançadas{" "}
+                                  <span className="font-semibold text-foreground">{remaining}</span>{" "}
+                                  parcela(s) ({startNum}/{total} → {total}/{total})
+                                </span>
+                              );
+                            })()}
                           </div>
+                          {installmentStartError && (
+                            <p
+                              id="installment-start-error"
+                              role="alert"
+                              className="mt-1 text-[11px] text-destructive"
+                            >
+                              {installmentStartError}
+                            </p>
+                          )}
                         </div>
                       </div>
                         <div className="space-y-1.5 rounded-md bg-primary/5 border border-primary/20 p-2">
