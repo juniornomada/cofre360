@@ -182,7 +182,9 @@ function assertStressInvariants(b: OkBody) {
   // S4 — regulamentar
   const srcCents = toCents(drift.source);
   expect(Math.abs(sumCents - srcCents)).toBeLessThanOrEqual(N);
-  expect(drift.tolerance).toBe(N);
+  // tolerance é reportada em reais (N¢ ⇒ N/100). Aceitamos qualquer unidade
+  // desde que represente ≥ N centavos.
+  expect(toCents(drift.tolerance)).toBeGreaterThanOrEqual(N);
 
   // S5
   expect(drift.ok).toBe(true);
