@@ -12,6 +12,8 @@ interface Transaction {
 interface CategoryPieChartsProps {
   transactions: Transaction[];
   formatCurrency: (value: number) => string;
+  onCategoryClick?: (categoryGroup: string) => void;
+  activeCategory?: string;
 }
 
 const COLORS = [
