@@ -1579,7 +1579,7 @@ function Dashboard() {
                     {editInstallmentMode === "divide" ? (
                       <p className="text-[10px] text-muted-foreground leading-relaxed">
                         O <strong>valor</strong> acima é o total da compra. Cada parcela ficará com{" "}
-                        <strong>R$ {((editTx.amount || 0) / Math.max(1, editTx.total_installments ?? 1)).toFixed(2)}</strong>.
+                        <strong>R$ {formatBRL((editTx.amount || 0) / Math.max(1, editTx.total_installments ?? 1))}</strong>.
                       </p>
                     ) : (
                       <div>
