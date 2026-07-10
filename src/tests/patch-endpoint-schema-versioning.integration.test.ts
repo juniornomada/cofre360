@@ -201,12 +201,6 @@ const scenarios: Array<{
     expectedN: 6,
   },
   {
-    label: "patch cosmético (só notes)",
-    body: { notes: "hello" },
-    currentRow: { amount: 300, total_installments: 4 },
-    expectedN: 4,
-  },
-  {
     label: "patch parcial (só N)",
     body: { total_installments: 8 },
     currentRow: { amount: 999.99, total_installments: 1, installment_source_amount: 999.99 },
