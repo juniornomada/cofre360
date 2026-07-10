@@ -186,6 +186,24 @@ async function readOk(res: Response): Promise<OkBody> {
   return (await res.json()) as OkBody;
 }
 
+/** Snapshot do estado persistido para verificar o "vencedor" da serialização,
+ *  sem depender de PATCH vazio (que o handler rejeita como 422). */
+function snapshotStore(id: string): Row | undefined {
+  const r = store.get(id);
+  return r ? { ...r } : undefined;
+}
+
+/** Extrai as chaves comparáveis (amount/N/mode/source) de uma OkBody. */
+function bodyToRowShape(b: OkBody): Partial<Row> {
+  const first = b.data.installments[0];
+  return {
+    amount: (b.data.normalized as { amount?: number }).amount,
+    total_installments: first.total_installments,
+    installment_mode: first.installment_mode,
+    installment_source_amount: first.installment_source_amount,
+  };
+}
+
 describe("E2E — PATCH concorrente (mesmo id)", () => {
   it("C1+C2 — 20 PATCHes idênticos concorrentes: respostas iguais e cada uma coerente", async () => {
     const id = "concurrent-idempotent";
