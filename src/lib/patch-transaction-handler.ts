@@ -44,16 +44,16 @@ export const patchSchema = z
     name: z.string().trim().min(1).max(200).optional(),
     amount: z
       .number()
-      .refine((n) => Number.isFinite(n), { message: "amount must be finite" })
       .positive()
+      .refine((n) => Number.isFinite(n), { message: "amount must be finite" })
       .transform(round2)
       .optional(),
     total_installments: z
       .number()
-      .refine((n) => Number.isFinite(n), { message: "total_installments must be finite" })
       .int()
       .min(1)
       .max(360)
+      .refine((n) => Number.isFinite(n), { message: "total_installments must be finite" })
       .optional(),
     date: z.string().trim().min(1).max(32).optional(),
     category: z.union([z.string().max(120), z.null()]).optional(),
