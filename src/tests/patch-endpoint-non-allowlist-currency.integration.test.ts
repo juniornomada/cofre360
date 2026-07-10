@@ -151,7 +151,6 @@ describe("Contrato PATCH — currencies fora do allowlist", () => {
       {
         persist: bank.persist,
         currentRow: {
-          id: "tx-cur",
           amount: 300,
           total_installments: 3,
           installment_mode: "divide",
