@@ -35,6 +35,7 @@ import { z } from "zod";
 import {
   handlePatchTransactionContract,
   type PatchContractResponse,
+  type InstallmentPreview,
 } from "@/lib/patch-transaction-contract";
 
 const toCents = (n: number) => Math.round(n * 100);
