@@ -857,7 +857,17 @@ function RemindersPage() {
             return (
               <div
                 key={reminder.id}
+                role="button"
+                tabIndex={0}
+                aria-label={`Editar lembrete ${reminder.title}`}
                 onClick={() => { setEditReminder({ ...reminder }); setShowEditDialog(true); }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    setEditReminder({ ...reminder });
+                    setShowEditDialog(true);
+                  }
+                }}
                 className={cn(
                   "group interactive-card relative flex items-center gap-2 rounded-xl bg-card p-2.5 cursor-pointer transition-all",
                   reminder.is_completed && "opacity-60"
