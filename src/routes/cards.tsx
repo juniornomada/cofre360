@@ -998,7 +998,7 @@ function CardsPage() {
   const totalAvailable = totalLimit - totalAllInvoices + totalPaidAll;
 
   return (
-    <div className="animate-page-enter flex flex-col gap-5 px-4 pt-6 pb-24">
+    <div className="a11y-focus-scope animate-page-enter flex flex-col gap-5 px-4 pt-6 pb-24">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Link to="/" className="interactive-button flex h-10 w-10 items-center justify-center rounded-full bg-card border border-border shadow-sm hover:bg-accent transition-all">
@@ -1119,7 +1119,8 @@ function CardsPage() {
                     ) : (
                       <button
                         onClick={() => startEdit(card)}
-                        className="flex items-center gap-x-3 gap-y-1 flex-wrap min-w-0 flex-1 text-left hover:underline transition-all group/name"
+                        data-on-card="true"
+                        className="flex items-center gap-x-3 gap-y-1 flex-wrap min-w-0 flex-1 text-left hover:underline transition-all group/name rounded-md"
                       >
                         <span className="text-sm font-bold truncate max-w-full">{card.name}</span>
                         <div className="flex items-center gap-2 shrink-0">
@@ -1132,10 +1133,10 @@ function CardsPage() {
                     <div className="flex items-center gap-1 shrink-0 relative z-30">
                       {isEditing ? (
                         <div className="flex items-center gap-1 bg-white/20 backdrop-blur-md p-1 rounded-full border border-white/10 shadow-sm" onClick={(e) => e.stopPropagation()}>
-                          <button onClick={() => saveEdit(card.id)} className="p-1.5 rounded-full hover:bg-white/20 text-white transition-colors" title="Salvar">
+                          <button onClick={() => saveEdit(card.id)} data-on-card="true" className="p-1.5 rounded-full hover:bg-white/20 text-white transition-colors" title="Salvar" aria-label="Salvar alterações">
                             <Check className="h-3.5 w-3.5" />
                           </button>
-                          <button onClick={cancelEdit} className="p-1.5 rounded-full hover:bg-white/20 text-white transition-colors" title="Cancelar">
+                          <button onClick={cancelEdit} data-on-card="true" className="p-1.5 rounded-full hover:bg-white/20 text-white transition-colors" title="Cancelar" aria-label="Cancelar edição">
                             <X className="h-3.5 w-3.5" />
                           </button>
                         </div>
@@ -1143,10 +1144,10 @@ function CardsPage() {
                         <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                           {deleteConfirm === card.id ? (
                             <div className="flex items-center gap-1 bg-destructive/80 backdrop-blur-md p-1 rounded-full border border-white/10 shadow-sm animate-in zoom-in-95 duration-200">
-                              <button onClick={() => handleDelete(card.id)} className="p-1.5 rounded-full hover:bg-white/20 text-white transition-colors">
+                              <button onClick={() => handleDelete(card.id)} data-on-card="true" className="p-1.5 rounded-full hover:bg-white/20 text-white transition-colors" aria-label="Confirmar exclusão">
                                 <Check className="h-3.5 w-3.5" />
                               </button>
-                              <button onClick={() => setDeleteConfirm(null)} className="p-1.5 rounded-full hover:bg-white/20 text-white transition-colors">
+                              <button onClick={() => setDeleteConfirm(null)} data-on-card="true" className="p-1.5 rounded-full hover:bg-white/20 text-white transition-colors" aria-label="Cancelar exclusão">
                                 <X className="h-3.5 w-3.5" />
                               </button>
                             </div>
@@ -1158,15 +1159,17 @@ function CardsPage() {
                                   e.stopPropagation();
                                   handleToggleVisibility(card.id, card.is_visible);
                                 }}
+                                data-on-card="true"
                                 className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors border border-white/10 shadow-sm"
                                 title={card.is_visible ? "Ocultar do Início" : "Mostrar no Início"}
+                                aria-label={card.is_visible ? "Ocultar cartão do início" : "Mostrar cartão no início"}
                               >
                                 {card.is_visible ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5 text-white/60" />}
                               </button>
 
                               <DropdownMenu modal={false}>
                                 <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                                  <button className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors border border-white/10 shadow-sm">
+                                  <button data-on-card="true" className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors border border-white/10 shadow-sm" aria-label="Mais ações do cartão">
                                     <MoreVertical className="h-3.5 w-3.5" />
                                   </button>
                                 </DropdownMenuTrigger>
@@ -1196,7 +1199,10 @@ function CardsPage() {
                           {brandPresets.map((bp) => (
                             <button
                               key={bp.id}
+                              type="button"
                               onClick={() => setEditBrand(bp.id)}
+                              data-on-card="true"
+                              aria-pressed={editBrand.toLowerCase() === bp.id.toLowerCase()}
                               className={cn(
                                 "px-2 py-0.5 rounded-md text-[10px] font-medium transition-colors",
                                 editBrand.toLowerCase() === bp.id.toLowerCase() ? "bg-white text-black" : "bg-white/20 text-white hover:bg-white/30"
@@ -1215,6 +1221,7 @@ function CardsPage() {
                               key={co.value}
                               type="button"
                               onClick={() => setEditColor(co.value)}
+                              data-on-card="true"
                               className={cn(
                                 "w-6 h-6 rounded-full bg-gradient-to-br ring-1 ring-black/10 transition-all shrink-0",
                                 co.value,
