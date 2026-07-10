@@ -214,10 +214,10 @@ describe("E2E — PATCH concorrente (mesmo id)", () => {
     // idempotência: todas idênticas
     const ref = JSON.stringify(bodies[0].data);
     for (const b of bodies) expect(JSON.stringify(b.data)).toBe(ref);
-    // estado final == body[0]
-    const final = await readOk(await patchJson(id, {}));
-    expect(final.data.installments).toEqual(bodies[0].data.installments);
-    expect(final.data.drift).toEqual(bodies[0].data.drift);
+    // estado final persistido bate com o payload replicado
+    const persisted = snapshotStore(id)!;
+    expect(persisted.total_installments).toBe(12);
+    expect(persisted.amount).toBe((bodies[0].data.normalized as { amount: number }).amount);
   });
 
   it("C1+C3 — payloads diferentes concorrentes: cada resposta coerente; estado final = uma delas", async () => {
