@@ -102,8 +102,36 @@ function req(
   };
 }
 
+/** Shape aceito pelos helpers: cada campo é opcional na entrada (Zod
+ *  `.object()` pode reportar propriedades como opcionais quando o parse
+ *  passa por schemas com `passthrough` em outros pontos do bundle). Fazemos
+ *  a narrowing explícita e falhamos com mensagem clara se algo falta. */
+type LooseInstallment = Partial<InstallmentPreview>;
+
+function narrow(rows: ReadonlyArray<LooseInstallment>): InstallmentPreview[] {
+  return rows.map((r, i) => {
+    for (const k of [
+      "installment_number",
+      "total_installments",
+      "amount",
+      "installment_source_amount",
+      "installment_mode",
+    ] as const) {
+      if (r[k] === undefined) throw new Error(`installments[${i}].${k} ausente`);
+    }
+    return {
+      installment_number: r.installment_number as number,
+      total_installments: r.total_installments as number,
+      amount: r.amount as number,
+      installment_source_amount: r.installment_source_amount as number,
+      installment_mode: r.installment_mode as "divide" | "fixed",
+    };
+  });
+}
+
 /** Regras invariantes R1..R5 sobre as parcelas — devem valer em toda versão. */
-function assertDriftInvariants(installments: InstallmentPreview[]) {
+function assertDriftInvariants(rawInstallments: ReadonlyArray<LooseInstallment>) {
+  const installments = narrow(rawInstallments);
   const N = installments.length;
   expect(N).toBeGreaterThanOrEqual(1);
   for (const r of installments) expect(r.total_installments).toBe(N);
@@ -124,10 +152,12 @@ function assertDriftInvariants(installments: InstallmentPreview[]) {
 
 /** R6: métrica de drift explícita (só V2+). */
 function assertDriftMetric(
-  installments: InstallmentPreview[],
+  rawInstallments: ReadonlyArray<LooseInstallment>,
   drift: { sum: number; source: number; delta: number; tolerance: number; ok: boolean },
 ) {
+  const installments = narrow(rawInstallments);
   const N = installments.length;
+
   const sumCents = installments.reduce((s, r) => s + toCents(r.amount), 0);
   expect(drift.tolerance).toBe(round2(N * 0.01));
   expect(drift.ok).toBe(true);
