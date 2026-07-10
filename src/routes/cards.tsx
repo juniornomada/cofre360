@@ -1532,7 +1532,7 @@ function CardsPage() {
                                     type="button"
                                     onClick={() => invoiceCard && requestDeletePayment(p, invoiceCard.name)}
                                     disabled={deletingPaymentId === p.id}
-                                    className="p-1 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50"
+                                    className="icon-btn-muted"
                                     title="Excluir pagamento"
                                     aria-label="Excluir pagamento"
                                   >
