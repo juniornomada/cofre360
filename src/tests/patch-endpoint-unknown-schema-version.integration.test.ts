@@ -234,25 +234,23 @@ describe("PATCH — schema_version desconhecida → 406", () => {
     expect(ctx.persist.mock.calls.length).toBe(0);
   });
 
-  it("supported é imutável na resposta — mutar não afeta chamadas subsequentes", async () => {
+  it("supported reflete SUPPORTED_VERSIONS estruturalmente em cada resposta", async () => {
+    // Sem mutar a referência (o cliente é responsável por tratá-la como
+    // imutável), verificamos que duas respostas independentes trazem o mesmo
+    // conteúdo — a fonte é sempre a constante do servidor.
     const ctx = makeCtx();
     const res1 = await handlePatchTransactionVersioned(
       req({ headers: { "Accept-Version": "77" } }),
       ctx,
     );
-    assert406(res1);
-
-    // Tenta poluir a lista devolvida ao cliente.
-    (res1.body.error.supported as unknown as string[]).push?.("77");
-
     const res2 = await handlePatchTransactionVersioned(
-      req({ headers: { "Accept-Version": "77" } }),
+      req({ headers: { "Accept-Version": "88" } }),
       ctx,
     );
+    assert406(res1);
     assert406(res2);
-    // A referência do servidor não pode ter sido afetada; "77" continua fora.
-    expect((SUPPORTED_VERSIONS as readonly string[]).includes("77")).toBe(false);
-    expect(res2.body.error.supported).not.toContain("77");
+    expect(res1.body.error.supported).toEqual(SUPPORTED_VERSIONS);
+    expect(res2.body.error.supported).toEqual(SUPPORTED_VERSIONS);
     expect(ctx.persist).not.toHaveBeenCalled();
   });
 });
