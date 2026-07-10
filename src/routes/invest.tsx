@@ -386,7 +386,7 @@ function InvestPage() {
             {pieData.map((d, i) => (
               <div key={d.name} className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
                 <div className="h-2 w-2 rounded-full" style={{ background: PIE_COLORS[i % PIE_COLORS.length] }} />
-                {d.name} {((d.value / totalGross) * 100).toFixed(1)}%
+                {d.name} {((d.value / totalGross) * 100).toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%
               </div>
             ))}
           </div>
