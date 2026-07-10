@@ -33,6 +33,8 @@ export interface ReproOptions {
   /** Se true, também loga o seed em execuções bem-sucedidas (debug). */
   logOnSuccess?: boolean;
 }
+export type FcAssertOptions = ReproOptions & NonNullable<FcParams>;
+
 
 interface FcFailure {
   failed: boolean;
