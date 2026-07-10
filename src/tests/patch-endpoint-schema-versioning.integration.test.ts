@@ -45,15 +45,13 @@ const round2 = (n: number) => Math.round(n * 100) / 100;
 
 /** V1: apenas campos obrigatórios para clientes legados. `passthrough`
  *  significa que campos extras são tolerados (forward-compat). */
-const installmentV1 = z
-  .object({
-    installment_number: z.number().int().min(1),
-    total_installments: z.number().int().min(1),
-    amount: z.number().nonnegative(),
-    installment_source_amount: z.number().nonnegative(),
-    installment_mode: z.enum(["divide", "fixed"]),
-  })
-  .passthrough();
+const installmentV1 = z.object({
+  installment_number: z.number().int().min(1),
+  total_installments: z.number().int().min(1),
+  amount: z.number().nonnegative(),
+  installment_source_amount: z.number().nonnegative(),
+  installment_mode: z.enum(["divide", "fixed"]),
+});
 
 const responseV1 = z
   .object({
