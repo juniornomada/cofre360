@@ -216,11 +216,14 @@ function SortableAccountItem({
                         openingIsOnlyComponent
                           ? "font-semibold text-primary"
                           : "text-muted-foreground",
+                        openingBalance < 0 && !openingIsOnlyComponent
+                          ? "text-destructive"
+                          : "",
                       )}
                       title="Saldo de abertura da conta"
                     >
                       Abertura: {balanceVisible
-                        ? `R$ ${openingBalance.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`
+                        ? formatSignedBRL(openingBalance)
                         : "R$ ••••"}
                     </span>
                     {openingIsOnlyComponent && (
