@@ -18,6 +18,7 @@ import { BankLogo, bankPresets } from "@/components/BankLogo";
 import { toast } from "sonner";
 import { CalculatorAmountInput } from "@/components/CalculatorAmountInput";
 import { cn } from "@/lib/utils";
+import { formatSignedBRL } from "@/lib/format-brl";
 import {
   DndContext,
   closestCenter,
@@ -215,11 +216,14 @@ function SortableAccountItem({
                         openingIsOnlyComponent
                           ? "font-semibold text-primary"
                           : "text-muted-foreground",
+                        openingBalance < 0 && !openingIsOnlyComponent
+                          ? "text-destructive"
+                          : "",
                       )}
                       title="Saldo de abertura da conta"
                     >
                       Abertura: {balanceVisible
-                        ? `R$ ${openingBalance.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`
+                        ? formatSignedBRL(openingBalance)
                         : "R$ ••••"}
                     </span>
                     {openingIsOnlyComponent && (
