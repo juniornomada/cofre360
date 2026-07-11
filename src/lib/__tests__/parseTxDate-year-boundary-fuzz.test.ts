@@ -46,7 +46,7 @@ function lcg(seed: number) {
 // match the intended textual date. Only the year is inferred.
 
 describe("fuzz — Dez↔Jan boundary without explicit year", () => {
-  const rnd = lcg(0xdec_jan);
+  const rnd = lcg(0xDECJAN);
   const NOVEMBER = 10;
   const DECEMBER = 11;
   const JANUARY = 0;
@@ -164,7 +164,7 @@ describe("fuzz — numeric separators around year boundary (DD/MM, DD-MM, DD MM)
 
 describe("fuzz — 2-digit year expansion around the boundary", () => {
   // YY em 3 dígitos: sempre → 20YY (jamais 19YY), inclusive perto de 00/99.
-  const rnd = lcg(0xyy2000);
+  const rnd = lcg(0xYY2000);
   const anchors = [
     "2025-12-31T23:00:00Z",
     "2026-01-01T00:30:00Z",
@@ -215,7 +215,7 @@ describe("fuzz — 2-digit year expansion around the boundary", () => {
 
 describe("fuzz — separator noise robustness at boundary", () => {
   // Espaços em torno do separador, separador duplicado, sufixos espúrios.
-  const rnd = lcg(0xn0isee);
+  const rnd = lcg(0xN0ISEE);
 
   const noiseWraps = [
     (s: string) => s,
