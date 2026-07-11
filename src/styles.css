@@ -204,6 +204,17 @@
       0 0 0 4px var(--foreground);
   }
 
+  /* Anel de foco imune a `overflow:hidden` ancestral: usa apenas `outline`
+     (o box-shadow do Tailwind ring é recortado por overflow-hidden e clip).
+     Contraste: `--color-ring` já atende WCAG 1.4.11 (≥3:1) contra
+     `--background` em ambos os temas — validado em
+     e2e/cardicon-focus-contrast.spec.ts. */
+  @media (any-hover: none), (pointer: coarse), (prefers-reduced-motion: reduce) {
+    .focus-ring-safe:focus-visible {
+      transition: none;
+    }
+  }
+
   .nav-item-transition {
     transition: color 0.2s ease, transform 0.2s ease;
   }
