@@ -30,26 +30,32 @@ export function resolveInvoiceOrder(params: {
 }): { orderedIds: string[]; nextSnapshot: string[] | null } {
   const { currentIds, priorSnapshot, dialogOpen } = params;
 
-  if (!priorSnapshot) {
+  if (!priorSnapshot || priorSnapshot.length === 0) {
     // First observation of this period: capture the current order as the
     // canonical baseline (whether the dialog is open or not).
     const snap = currentIds.slice();
-    return { orderedIds: dialogOpen ? snap : currentIds.slice(), nextSnapshot: snap };
+    return { orderedIds: snap, nextSnapshot: snap };
   }
-  // Snapshot exists — apply the same frozen-prefix + append-newcomers rule
-  // whether the dialog is open or closed. This guarantees that when the
-  // dialog reopens, new transactions land at the end without shuffling
-  // previously captured rows.
 
-  // Dialog open with an existing snapshot:
+  const currentSet = new Set(currentIds);
+  const snapshotSet = new Set(priorSnapshot);
+  const frozenPrefix = priorSnapshot.filter((id) => currentSet.has(id));
+
+  // Full invalidation: the snapshot shares no id with the current data.
+  // This happens when the caller reuses a stale key across a period switch
+  // or when every captured id was replaced. Reset the snapshot to the new
+  // canonical order instead of appending an unrelated tail.
+  if (frozenPrefix.length === 0) {
+    const snap = currentIds.slice();
+    return { orderedIds: snap, nextSnapshot: snap };
+  }
+
+  // Snapshot exists and still overlaps the current data:
   //  1. Keep the frozen prefix (snapshot order minus deleted ids).
   //  2. Append any current id that was not in the snapshot at the end,
   //     preserving the server-provided order among those newcomers.
   //  3. Extend the snapshot with the appended ids so subsequent refetches
   //     keep them in that same trailing position (no reshuffle).
-  const currentSet = new Set(currentIds);
-  const snapshotSet = new Set(priorSnapshot);
-  const frozenPrefix = priorSnapshot.filter((id) => currentSet.has(id));
   const appended = currentIds.filter((id) => !snapshotSet.has(id));
   const orderedIds = frozenPrefix.concat(appended);
   const nextSnapshot = appended.length > 0
@@ -57,4 +63,5 @@ export function resolveInvoiceOrder(params: {
     : priorSnapshot.slice();
   return { orderedIds, nextSnapshot };
 }
+
 
