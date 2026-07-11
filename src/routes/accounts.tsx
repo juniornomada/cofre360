@@ -112,6 +112,7 @@ function SortableAccountItem({
   setPdfImportAccount,
   
   handleToggleVisibility,
+  openRecalc,
   isSelectionMode,
   isSelected,
   onToggleSelect,
