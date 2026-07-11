@@ -47,14 +47,48 @@ describe("resolveInvoiceOrder — invoice list stability across edits", () => {
     expect(orderedIds).toEqual(["a", "c"]);
   });
 
-  it("ignores new ids arriving while the dialog is open", () => {
-    const { orderedIds } = resolveInvoiceOrder({
+  it("appends new ids at the end without reshuffling the frozen prefix", () => {
+    const { orderedIds, nextSnapshot } = resolveInvoiceOrder({
       currentIds: ["a", "b", "c", "z-new"],
       priorSnapshot: ["a", "b", "c"],
       dialogOpen: true,
     });
-    expect(orderedIds).toEqual(["a", "b", "c"]);
+    expect(orderedIds).toEqual(["a", "b", "c", "z-new"]);
+    // Snapshot extends so subsequent refetches keep z-new pinned at the end.
+    expect(nextSnapshot).toEqual(["a", "b", "c", "z-new"]);
   });
+
+  it("merge/replace: dropped ids removed, replacement appended predictably", () => {
+    // 'b' was merged into 'b2'; server now returns b2 in the middle.
+    const { orderedIds, nextSnapshot } = resolveInvoiceOrder({
+      currentIds: ["a", "b2", "c"],
+      priorSnapshot: ["a", "b", "c"],
+      dialogOpen: true,
+    });
+    // frozen prefix keeps [a, c] (b dropped); b2 appended at the end.
+    expect(orderedIds).toEqual(["a", "c", "b2"]);
+    expect(nextSnapshot).toEqual(["a", "b", "c", "b2"]);
+  });
+
+  it("preserves relative order among multiple newcomers as returned by server", () => {
+    const { orderedIds } = resolveInvoiceOrder({
+      currentIds: ["n1", "a", "n2", "b", "n3"],
+      priorSnapshot: ["a", "b"],
+      dialogOpen: true,
+    });
+    expect(orderedIds).toEqual(["a", "b", "n1", "n2", "n3"]);
+  });
+
+  it("all snapshot ids gone: falls back to current server order without reshuffle", () => {
+    const { orderedIds, nextSnapshot } = resolveInvoiceOrder({
+      currentIds: ["x", "y", "z"],
+      priorSnapshot: ["a", "b", "c"],
+      dialogOpen: true,
+    });
+    expect(orderedIds).toEqual(["x", "y", "z"]);
+    expect(nextSnapshot).toEqual(["a", "b", "c", "x", "y", "z"]);
+  });
+
 
   it("clears snapshot when dialog is closed (returns null for caller to drop)", () => {
     const { orderedIds, nextSnapshot } = resolveInvoiceOrder({
