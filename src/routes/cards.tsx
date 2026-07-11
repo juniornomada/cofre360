@@ -1147,6 +1147,17 @@ function CardsPage() {
       );
       const selPaid = cardPaymentsByPeriod[card.id]?.[selPeriodKey] || 0;
       const selRemaining = Math.max(0, selTotal - selPaid);
+
+      reportCycleSnapshot({
+        source: "cards",
+        cardId: card.id,
+        cardName: card.name,
+        periodKey: selPeriodKey,
+        monthLabel: monthNames[selDue.getMonth()],
+        total: selTotal,
+        paid: selPaid,
+        remaining: selRemaining,
+      });
       const selMonthLabel = monthNames[selDue.getMonth()];
       const selYearLabel = selDue.getFullYear();
       const currentYear = today.getFullYear();
