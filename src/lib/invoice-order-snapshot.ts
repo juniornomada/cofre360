@@ -64,4 +64,37 @@ export function resolveInvoiceOrder(params: {
   return { orderedIds, nextSnapshot };
 }
 
+/**
+ * Housekeeping called when the invoice dialog transitions from open → closed.
+ *
+ * Successive reopens must never surface stale ids or empty buckets. This
+ * helper reconciles the snapshot store in place:
+ *  - For every known bucket (period key) whose current ids we can observe,
+ *    remove ids from the snapshot that no longer exist in the current data.
+ *  - Delete buckets whose snapshot becomes empty after pruning (nothing left
+ *    to freeze — the next open will capture a fresh baseline).
+ *  - Buckets we cannot observe right now are left untouched; they will be
+ *    reconciled on the next render that includes their period.
+ *
+ * The captured order among surviving ids is preserved — this helper never
+ * reshuffles the snapshot.
+ */
+export function reconcileSnapshotOnClose(
+  snapshots: Map<string, string[]>,
+  currentIdsByKey: Record<string, string[] | undefined>,
+): void {
+  for (const [key, ids] of Array.from(snapshots.entries())) {
+    const current = currentIdsByKey[key];
+    if (!current) continue;
+    const currentSet = new Set(current);
+    const pruned = ids.filter((id) => currentSet.has(id));
+    if (pruned.length === 0) {
+      snapshots.delete(key);
+    } else if (pruned.length !== ids.length) {
+      snapshots.set(key, pruned);
+    }
+  }
+}
+
+
 
