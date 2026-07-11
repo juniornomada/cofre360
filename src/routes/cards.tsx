@@ -76,6 +76,7 @@ type PaymentLine = {
 };
 
 import { groupByBillingCycle, parseTxDate, getCycleDates, monthNames, type CardTransaction, type InvoicePeriod } from "@/lib/invoice-utils";
+import { reportCycleSnapshot } from "@/lib/cycle-consistency";
 
 const colorOptions = [
   { label: "Roxo", value: "from-purple-600 to-purple-900", emoji: "🟣" },
@@ -1146,6 +1147,17 @@ function CardsPage() {
       );
       const selPaid = cardPaymentsByPeriod[card.id]?.[selPeriodKey] || 0;
       const selRemaining = Math.max(0, selTotal - selPaid);
+
+      reportCycleSnapshot({
+        source: "cards",
+        cardId: card.id,
+        cardName: card.name,
+        periodKey: selPeriodKey,
+        monthLabel: monthNames[selDue.getMonth()],
+        total: selTotal,
+        paid: selPaid,
+        remaining: selRemaining,
+      });
       const selMonthLabel = monthNames[selDue.getMonth()];
       const selYearLabel = selDue.getFullYear();
       const currentYear = today.getFullYear();

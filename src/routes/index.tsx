@@ -72,6 +72,7 @@ interface Transaction {
 }
 
 import { groupByBillingCycle, getCycleDates, parseTxDate, monthNames, type InvoicePeriod } from "@/lib/invoice-utils";
+import { reportCycleSnapshot } from "@/lib/cycle-consistency";
 
 function parseTxDateToDate(dateStr: string): Date | null {
   if (!dateStr) return null;
@@ -1228,6 +1229,17 @@ function Dashboard() {
                 return pClose.toISOString().split("T")[0] === selPeriodKey ? s + p.amount : s;
               }, 0);
               const selRemaining = Math.max(0, selTotal - selPaid);
+
+              reportCycleSnapshot({
+                source: "home",
+                cardId: card.id,
+                cardName: card.name,
+                periodKey: selPeriodKey,
+                monthLabel: monthNames[selDue.getMonth()],
+                total: selTotal,
+                paid: selPaid,
+                remaining: selRemaining,
+              });
 
               const isFullyPaid = selTotal > 0 && selRemaining < 0.01;
               const isPartial = selPaid > 0 && selRemaining > 0.01;
