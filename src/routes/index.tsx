@@ -1324,19 +1324,6 @@ function Dashboard() {
                     <p className={cn("text-xs font-bold tabular-nums", isOpen || isPartial ? "text-destructive" : "text-primary")} data-testid="fatura-atual-valor">
                       {balanceVisible ? `R$ ${fmt(selTotal)}` : "R$ •••"}
                     </p>
-
-                    {selPaid > 0 && isPartial && (
-                      <p className="text-[10px] text-primary font-medium tabular-nums">
-                        Pago: R$ {balanceVisible ? fmt(selPaid) : "•••"}
-                      </p>
-                    )}
-
-                    {isPartial && (
-                      <p className="text-[10px] font-medium text-destructive tabular-nums">
-                        Faltam: R$ {balanceVisible ? fmt(selRemaining) : "•••"}
-                      </p>
-                    )}
-                    {/* Selo "PAGA" já sinaliza fatura quitada — omitir texto redundante */}
                   </div>
                 </Link>
               );
