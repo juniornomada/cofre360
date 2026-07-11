@@ -43,6 +43,15 @@ jobs:
       - name: Preview ↔ handleAdd parity (installments)
         run: bun run test:preview-parity
 
+      # Gate dedicado: qualquer regressão em fuzz determinístico do
+      # parseTxDate (LCG-seeded, resiliência, property-based, boundary
+      # de virada de ano, separadores) OU nos testes de cycle key
+      # (grouping por ciclo, drift de fuso, dedupe, tolerância,
+      # integração parser↔ciclo, year-rollover) trava o CI aqui —
+      # antes da suíte completa — com log isolado.
+      - name: Fuzz determinístico & cycle key gate
+        run: bun run test:fuzz-cycle
+
       # Suíte completa restante (acessibilidade, componentes, integração).
       - name: Full test suite
         run: bun run test
