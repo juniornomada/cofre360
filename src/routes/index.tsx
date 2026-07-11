@@ -71,7 +71,7 @@ interface Transaction {
   is_visible?: boolean;
 }
 
-import { groupByBillingCycle, type InvoicePeriod } from "@/lib/invoice-utils";
+import { groupByBillingCycle, getCycleDates, type InvoicePeriod } from "@/lib/invoice-utils";
 
 function parseTxDateToDate(dateStr: string): Date | null {
   if (!dateStr) return null;
