@@ -1,0 +1,33 @@
+# Codecov policy — o gate de cobertura vive aqui, não no workflow.
+# Assim o CI sempre sobe o relatório e o status check `codecov/*` decide.
+coverage:
+  status:
+    project:
+      default:
+        # Não travar a build por queda pequena; apenas informar.
+        target: auto
+        threshold: 1%
+        informational: false
+    patch:
+      default:
+        # Código novo em PRs deve ser coberto — mais rigoroso que o projeto.
+        target: 80%
+        threshold: 5%
+        informational: false
+
+comment:
+  layout: "reach, diff, flags, files"
+  behavior: default
+  require_changes: false
+
+ignore:
+  - "src/routeTree.gen.ts"
+  - "src/main.tsx"
+  - "src/router.tsx"
+  - "src/tests/**"
+  - "src/**/__tests__/**"
+  - "src/**/*.test.*"
+  - "src/**/*.spec.*"
+  - "e2e/**"
+  - "supabase/**"
+  - "scripts/**"

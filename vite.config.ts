@@ -15,6 +15,27 @@ export default defineTanstackConfig({
       environment: "jsdom",
       setupFiles: "./src/tests/setup.ts",
       exclude: [...defaultExclude, 'e2e/**'],
+      coverage: {
+        provider: 'v8',
+        // lcov → Codecov / Coveralls; text → log; html → artifact humano;
+        // json-summary → gate opcional em porcentagem sem parsear XML.
+        reporter: ['text', 'lcov', 'html', 'json-summary'],
+        reportsDirectory: './coverage',
+        include: ['src/**/*.{ts,tsx}'],
+        exclude: [
+          'src/**/*.d.ts',
+          'src/**/*.test.{ts,tsx}',
+          'src/**/*.spec.{ts,tsx}',
+          'src/tests/**',
+          'src/**/__tests__/**',
+          'src/routeTree.gen.ts',
+          'src/main.tsx',
+          'src/router.tsx',
+        ],
+        // Não falhamos a build por thresholds — deixamos o Codecov aplicar
+        // policy via codecov.yml. Assim o job sobe o relatório mesmo
+        // quando a cobertura regride, e o gate fica em um lugar só.
+      },
     },
   } as any,
 });
