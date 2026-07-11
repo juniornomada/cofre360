@@ -157,7 +157,7 @@ export const runNow = createServerFn({ method: "POST" })
   .handler(async (ctx: any) => {
     const $input = ctx.data;
     const $ctx = ctx.context;
-    const { supabase, userId } = context;
+    const { supabase, userId } = $ctx;
     const { data: run, error: runErr } = await supabase
       .from("reconciliation_runs")
       .insert({
