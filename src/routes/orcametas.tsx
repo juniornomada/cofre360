@@ -1,4 +1,9 @@
-import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useTabParam } from "@/lib/use-tab-param";
+
+const ORCAMETAS_TABS = ["budget", "goals"] as const;
+type OrcametasTab = (typeof ORCAMETAS_TABS)[number];
+
 import { SmartLink as Link } from "@/components/SmartLink";
 import { ArrowLeft, Plus, TrendingDown, Loader2, Pencil, Trash2, Target } from "lucide-react";
 import { useState, useEffect, useCallback, useMemo } from "react";
@@ -73,8 +78,8 @@ const MONTH_NAMES = [
 
 function OrcaMetasPage() {
   const navigate = useNavigate();
-  const search = useSearch({ from: "/orcametas" }) as { tab?: "budget" | "goals" };
-  const activeTab: "budget" | "goals" = search.tab === "goals" ? "goals" : "budget";
+  const activeTab = useTabParam(ORCAMETAS_TABS, "budget");
+
   // Budget state
   const [items, setItems] = useState<BudgetItem[]>([]);
   const [transactions, setTransactions] = useState<TxRow[]>([]);
@@ -316,7 +321,7 @@ function OrcaMetasPage() {
 
       <Tabs
         value={activeTab}
-        onValueChange={(v) => navigate({ to: "/orcametas", search: { tab: v as "budget" | "goals" } as any, replace: true })}
+        onValueChange={(v) => navigate({ to: "/orcametas", search: ((prev: any) => ({ ...prev, tab: v as OrcametasTab })) as any, replace: true })}
         className="flex flex-col gap-4"
       >
         <TabsList className="grid w-full grid-cols-2">
@@ -603,11 +608,16 @@ function OrcaMetasPage() {
   );
 }
 
-type OrcametasSearch = { tab: "budget" | "goals" };
+type OrcametasSearch = { tab: OrcametasTab } & Record<string, unknown>;
 export const Route = createFileRoute("/orcametas")({
-  validateSearch: (s: Record<string, unknown>): OrcametasSearch => ({
-    tab: s.tab === "goals" ? "goals" : "budget",
-  }),
+  validateSearch: (s: Record<string, unknown>): OrcametasSearch => {
+    const raw = typeof s.tab === "string" ? s.tab : "";
+    const tab: OrcametasTab = (ORCAMETAS_TABS as readonly string[]).includes(raw)
+      ? (raw as OrcametasTab)
+      : "budget";
+    return { ...s, tab };
+  },
+
   head: () => ({
     meta: [
       { title: "OrçaMetas — Cofre 360" },
