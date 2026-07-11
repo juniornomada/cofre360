@@ -103,7 +103,7 @@ function RootShell({ children }: { children: React.ReactNode }) {
           <HeadContent />
         </head>
         <body suppressHydrationWarning className="bg-background">
-          <div className="flex h-screen w-screen overflow-hidden">
+          <div className="flex h-dvh w-dvw overflow-hidden">
             <div className="light relative h-full w-1/2 overflow-y-auto border-r border-border bg-background pb-10">
               <div className="sticky top-0 z-50 flex items-center justify-between bg-card/80 p-4 backdrop-blur-md border-b">
                 <span className="text-sm font-bold text-foreground">Tema Claro</span>
