@@ -1327,6 +1327,8 @@ function CardsPage() {
                     const remainingThisPeriod = selRemaining;
                     const isFullyPaid = selTotal > 0 && remainingThisPeriod === 0;
                     const isPartiallyPaid = paidThisPeriod > 0 && remainingThisPeriod > 0;
+                    const isOpen = selTotal > 0 && paidThisPeriod === 0;
+                    const isEmpty = selTotal === 0;
                     const detailedPayments = selDetailedPayments;
                     void detailedPayments;
 
@@ -1394,6 +1396,16 @@ function CardsPage() {
                                 <span className="rounded-full bg-blue-500/90 text-white text-[8px] font-extrabold uppercase px-1.5 py-0.5 ring-1 ring-white/30 inline-flex items-center justify-center gap-0.5 shrink-0 text-center leading-none">
                                   <CheckCircle2 className="h-2.5 w-2.5" />
                                   Paga parcial
+                                </span>
+                              )}
+                              {isOpen && (
+                                <span className="rounded-full bg-amber-500/90 text-white text-[8px] font-extrabold uppercase px-1.5 py-0.5 ring-1 ring-white/30 inline-flex items-center justify-center shrink-0 text-center leading-none">
+                                  Em aberto
+                                </span>
+                              )}
+                              {isEmpty && (
+                                <span className="rounded-full bg-white/20 text-white text-[8px] font-extrabold uppercase px-1.5 py-0.5 ring-1 ring-white/30 inline-flex items-center justify-center shrink-0 text-center leading-none">
+                                  Sem fatura
                                 </span>
                               )}
                             </p>
