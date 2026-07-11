@@ -155,12 +155,15 @@ describe("parseTxDate — invalid textual formats", () => {
       expect(d.getFullYear()).toBe(2025);
     });
 
-    it("'jan 10' (reversed order) is treated as invalid → fallback wins", () => {
+    it("'jan 10' (reversed order) parses via the native Date fallback, not shortMonthMap", () => {
       const d = parseTxDate("jan 10", FALLBACK_ISO);
       expect(isValidDate(d)).toBe(true);
-      // Reversed order → parts[0]='jan' → parseInt NaN → falls through.
-      expect(d.getUTCFullYear()).toBe(2025);
-      expect(d.getUTCMonth()).toBe(3); // Apr from fallback
+      // parts[0]='jan' → parseInt NaN → shortMonthMap branch skipped.
+      // Then `new Date("jan 10")` succeeds natively (V8 interprets it as Jan 10 of year 2001).
+      // Whatever the native year is, the tx must NOT silently inherit the created_at year (2025).
+      expect(d.getMonth()).toBe(0);
+      expect(d.getDate()).toBe(10);
     });
+
   });
 });
