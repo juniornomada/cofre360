@@ -316,7 +316,7 @@ function OrcaMetasPage() {
 
       <Tabs
         value={activeTab}
-        onValueChange={(v) => navigate({ to: "/orcametas", search: { tab: v as "budget" | "goals" }, replace: true })}
+        onValueChange={(v) => navigate({ to: "/orcametas", search: { tab: v as "budget" | "goals" } as any, replace: true })}
         className="flex flex-col gap-4"
       >
         <TabsList className="grid w-full grid-cols-2">
