@@ -228,10 +228,14 @@ function SortableAccountItem({
                     </span>
                     {openingIsOnlyComponent && (
                       <span
-                        className="text-[9px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-primary/10 text-primary"
-                        aria-label="Sem movimentações — o saldo atual é apenas a abertura"
+                        role="status"
+                        aria-label={`Sem movimentações no período — o saldo atual (${
+                          balanceVisible ? formatSignedBRL(openingBalance) : "oculto"
+                        }) é composto exclusivamente pelo saldo de abertura da conta ${account.name}`}
+                        title="Saldo atual é apenas a abertura (sem movimentações no período)"
+                        className="text-[9px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-primary text-primary-foreground border border-primary"
                       >
-                        único componente
+                        <span aria-hidden="true">único componente</span>
                       </span>
                     )}
                   </div>
