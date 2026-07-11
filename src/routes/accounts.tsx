@@ -837,7 +837,18 @@ function AccountsPage() {
                 {isSelectionMode ? "Cancelar Seleção" : "Seleção Múltipla"}
               </button>
             </div>
+            {eligibleForZero.length > 0 && !isSelectionMode && (
+              <button
+                onClick={() => setZeroConfirmOpen(true)}
+                className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors"
+                title="Zerar abertura de contas sem transações visíveis"
+              >
+                <Eraser className="h-3 w-3" />
+                Zerar aberturas ({eligibleForZero.length})
+              </button>
+            )}
           </div>
+
           {isSelectionMode && selectedIds.size > 0 && (
             <div className="flex items-center gap-2 px-1 animate-in slide-in-from-top-1 duration-200">
               <button 
