@@ -67,10 +67,10 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
     icon: "🍔",
     name: "",
     category: "Alimentação > Outros",
-    date: todayFormatted,
+    date: initialDate || todayFormatted,
     amount: 0,
     type: initialType === "income" ? "income" : "expense",
-    card: null,
+    card: initialCardName || null,
     bank_account_id: null,
   });
 
