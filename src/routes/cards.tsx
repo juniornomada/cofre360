@@ -150,6 +150,8 @@ function CardsPage() {
   const [cardPayments, setCardPayments] = useState<Record<string, number>>({});
   const [cardPaymentsByPeriod, setCardPaymentsByPeriod] = useState<Record<string, Record<string, number>>>({});
   const [cardDetailedPaymentsByPeriod, setCardDetailedPaymentsByPeriod] = useState<Record<string, Record<string, { id: string, amount: number, date: string, bank_account_id: string | null }[]>>>({});
+  // Offset em meses relativo à fatura atual (0 = atual, -1 = mês anterior, +1 = próximo)
+  const [cardMonthOffset, setCardMonthOffset] = useState<Record<string, number>>({});
   const [deletingPaymentId, setDeletingPaymentId] = useState<string | null>(null);
   const [paymentToDelete, setPaymentToDelete] = useState<{ payment: { id: string; amount: number; date: string; bank_account_id: string | null }; cardName: string } | null>(null);
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
