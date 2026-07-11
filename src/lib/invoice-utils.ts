@@ -131,10 +131,14 @@ export function parseTxDate(dateStr: string, fallback: string): Date {
     // be a "day + month" pair but the second token is not a Portuguese month.
     // Skip the native `new Date(dateStr)` parser (V8 is too lenient here —
     // "07 janela" gets read as Jan 7) and go straight to the fallback.
-    if (dayLooksNumeric) {
+    // Exception: if the second token is itself numeric (e.g. "15 / 07" whose
+    // "/" got filtered out), fall through so the numeric branch can handle it.
+    const secondLooksNumeric = /^-?\d+$/.test(parts[1]);
+    if (dayLooksNumeric && !secondLooksNumeric) {
       return hasFallback ? fallbackDate : new Date();
     }
   }
+
 
 
   // Numeric textual dates with separators "/" or "-".
