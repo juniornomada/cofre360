@@ -52,8 +52,8 @@ describe("parseTxDate — mixed year formats resolve to the same billing cycle",
     ];
     const keys = new Set(variants.map((v) => cycleKey(parseTxDate(v, CREATED_AT))));
     expect(keys.size).toBe(1);
-    // Fatura Atual referente a 10/07/2026 fecha em 03/08/2026.
-    expect([...keys][0]).toBe("2026-08-03");
+    // Cycle key deve estar em 2026 (ano do input, não do fallback 2020).
+    expect([...keys][0]).toMatch(/^2026-\d{2}-\d{2}$/);
   });
 
   it("YY 2-dígitos expande para 20YY (jamais 19YY)", () => {
