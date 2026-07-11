@@ -16,6 +16,7 @@ import { CalculatorAmountInput } from "@/components/CalculatorAmountInput";
 import { getCategoryDisplay } from "@/lib/categories";
 import { toast } from "sonner";
 import { BankLogo } from "@/components/BankLogo";
+import { mapServerError } from "@/lib/map-server-error";
 
 export const Route = createFileRoute("/reminders")({
   head: () => ({

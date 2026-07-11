@@ -33,6 +33,7 @@ import { Layers } from "lucide-react";
 import { useUserPreferences } from "@/hooks/use-user-preferences";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { mapServerError } from "@/lib/map-server-error";
 
 
 

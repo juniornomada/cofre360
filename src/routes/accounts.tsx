@@ -37,6 +37,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { mapServerError } from "@/lib/map-server-error";
 
 
 type BankAccount = {

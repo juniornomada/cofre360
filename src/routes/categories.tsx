@@ -30,6 +30,7 @@ import {
 import { Plus, Pencil, Trash2, ArrowLeft } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
+import { mapServerError } from "@/lib/map-server-error";
 
 
 type Category = {
