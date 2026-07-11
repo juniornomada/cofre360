@@ -487,6 +487,45 @@ function CardsPage() {
     }
   };
 
+  // Scrollable container for the invoice transactions list. Captured so that
+  // silent refreshes (after edit/delete/installment) preserve scroll position
+  // instead of jumping back to the top.
+  const invoiceScrollRef = useRef<HTMLDivElement | null>(null);
+
+  // Refresh card transactions and totals WITHOUT toggling loadingTx (which
+  // would unmount the scroll container) or resetting activeInvoiceIdx. Scroll
+  // position is snapshotted and restored across the re-render.
+  const refreshInvoiceSilently = async (card: CardData | null) => {
+    if (!card) return;
+    const scrollEl = invoiceScrollRef.current;
+    const prevScrollTop = scrollEl?.scrollTop ?? 0;
+    try {
+      const [, txResult] = await Promise.all([
+        fetchAll(),
+        supabase
+          .from("transactions")
+          .select("id, name, icon, category, date, amount, type, card, created_at, total_installments, installment_number, installment_group_id")
+          .eq("card", card.name)
+          .order("created_at", { ascending: false }),
+      ]);
+      if (txResult.error) throw txResult.error;
+      setCardTransactions((txResult.data as CardTransaction[]) || []);
+    } catch (error: any) {
+      console.error("Error refreshing card transactions:", error);
+    } finally {
+      // Restore scroll after React commits the new list. Two rAFs to survive
+      // both the state flush and the layout pass.
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          if (invoiceScrollRef.current) {
+            invoiceScrollRef.current.scrollTop = prevScrollTop;
+          }
+        });
+      });
+    }
+  };
+
+
 
   const invoicePeriods = invoiceCard
     ? groupByBillingCycle(cardTransactions.filter(tx => tx.card === invoiceCard.name), invoiceCard.closing_day, invoiceCard.due_day)
@@ -720,7 +759,7 @@ function CardsPage() {
       setInstallmentDialogOpen(false);
       setInstallmentTx(null);
       // Refresh invoice list
-      await openInvoiceDialog(invoiceCard);
+      await refreshInvoiceSilently(invoiceCard);
     } catch (e) {
       console.error(e);
       toast.error("Erro ao salvar parcelamento");
@@ -789,8 +828,10 @@ function CardsPage() {
       toast.success("Transação atualizada com sucesso");
       setShowEditDialog(false);
       // Refresh transactions for the card
-      if (invoiceCard) openInvoiceDialog(invoiceCard);
-      fetchAll();
+      // Refresh transactions silently — preserves scroll and active period.
+      if (invoiceCard) refreshInvoiceSilently(invoiceCard);
+      else fetchAll();
+
     } catch (error: any) {
       console.error("Error updating transaction:", error);
       toast.error("Erro ao atualizar transação");
@@ -812,9 +853,10 @@ function CardsPage() {
       await deleteTransactionScope(deleteTarget, deleteScope);
       toast.success("Transação excluída com sucesso");
       setShowDeleteDialog(false);
-      // Refresh transactions for the card
-      if (invoiceCard) openInvoiceDialog(invoiceCard);
-      fetchAll();
+      // Refresh transactions silently — preserves scroll and active period.
+      if (invoiceCard) refreshInvoiceSilently(invoiceCard);
+      else fetchAll();
+
     } catch (error: any) {
       console.error("Error deleting transaction:", error);
       toast.error("Erro ao excluir transação");
@@ -1680,7 +1722,7 @@ function CardsPage() {
                 </div>
               )}
 
-              <div className="flex-1 overflow-y-auto px-5 pb-5">
+              <div ref={invoiceScrollRef} className="flex-1 overflow-y-auto px-5 pb-5">
                 {activePeriod && activePeriod.transactions.length === 0 && activePeriodPayments.length === 0 ? (
                   <p className="py-8 text-center text-xs text-muted-foreground">Nenhuma transação nesta fatura</p>
                 ) : (
