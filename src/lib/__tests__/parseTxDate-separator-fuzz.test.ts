@@ -113,7 +113,7 @@ describe("parseTxDate — separator fuzz (unicode dashes, tabs, multi-space)", (
     const mixes = [
       "15 – 07 - 2026", "15\u2014 07 \u2212 2026",
       "15\t–\t07\t/\t2026", "15  −  07  –  2026",
-      "15\u2010 07\u2011 2026", "15\uFF0D07\u201507\u20132026".replace("07\u201507", "07\u20152026"), // safe
+      "15\u2010 07\u2011 2026 ", "15\uFF0D07\u20132026",
     ];
     for (const v of mixes) {
       const t = parseTxDate(v, FALLBACK).getTime();
