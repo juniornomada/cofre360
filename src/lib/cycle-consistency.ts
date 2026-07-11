@@ -239,7 +239,7 @@ export function reportCycleSnapshot(input: ReportInput): boolean {
           cardName: input.cardName ?? null,
           periodKey: input.periodKey,
           monthLabel: input.monthLabel ?? null,
-          tolerance: { reais: TOLERANCE, cents: toCents(TOLERANCE) },
+          tolerance: { absolute: tolerance.absolute, absoluteCents: toCents(tolerance.absolute), percent: tolerance.percent },
           [otherSource]: normalize(other),
           [input.source]: normalize(snap),
           delta: {
