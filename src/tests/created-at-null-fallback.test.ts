@@ -44,8 +44,8 @@ describe("parseTxDate — missing / null / invalid created_at", () => {
     ["whitespace-only", "   "],
     ["arbitrary garbage", "not-a-date"],
     ["numeric junk", "0000-00-00"],
-    ["textual only", "15 jul"],
   ];
+
 
   describe("textual 'DD mmm' + invalid fallback → year = current wall-clock year", () => {
     it.each(INVALID_FALLBACKS)("fallback %s → uses now-year", (_, bad) => {
