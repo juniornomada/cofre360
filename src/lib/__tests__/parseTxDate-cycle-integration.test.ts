@@ -140,14 +140,19 @@ describe("Integração: parseTxDate canônico ↔ getCycleDates/groupByBillingCy
         const canonicalDate = parseTxDate(scenario.canonical, scenario.fallback);
         expect(Number.isFinite(canonicalDate.getTime())).toBe(true);
 
-        const expectedKey = periodKeyForDate(canonicalDate, closingDay, dueDay, REFERENCE);
+        // Usa a própria data canônica como referência do ciclo — garante
+        // que o bucket "current" abrange o tx canônico e, com isso, o
+        // teste valida um caso não-vazio para todas as configurações
+        // (fechamento/vencimento) e cenários de mês.
+        const reference = canonicalDate;
+        const expectedKey = periodKeyForDate(canonicalDate, closingDay, dueDay, reference);
 
         for (const noisy of scenario.noisy) {
           const noisyDate = parseTxDate(noisy, scenario.fallback);
           expect(Number.isFinite(noisyDate.getTime()), `NaN em ${JSON.stringify(noisy)}`).toBe(true);
 
           // (a) `getCycleDates` — cycle key computada diretamente.
-          const noisyKey = periodKeyForDate(noisyDate, closingDay, dueDay, REFERENCE);
+          const noisyKey = periodKeyForDate(noisyDate, closingDay, dueDay, reference);
           expect(
             noisyKey,
             `cycle drift: canonical=${JSON.stringify(scenario.canonical)} (${expectedKey}) vs noisy=${JSON.stringify(noisy)} (${noisyKey})`,
@@ -161,7 +166,7 @@ describe("Integração: parseTxDate canônico ↔ getCycleDates/groupByBillingCy
             makeTx("canonical", scenario.canonical, scenario.fallback),
             makeTx("noisy", noisy, scenario.fallback),
           ];
-          const periods = groupByBillingCycle(txs, closingDay, dueDay, REFERENCE);
+          const periods = groupByBillingCycle(txs, closingDay, dueDay, reference);
           const findPeriod = (id: string) =>
             periods.find((p) => p.transactions.some((t) => t.id === id));
           const canonicalPeriod = findPeriod("canonical");
