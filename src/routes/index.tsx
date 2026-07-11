@@ -920,6 +920,19 @@ function Dashboard() {
     return accountBalances.filter(a => a.is_visible !== false);
   }, [accountBalances]);
 
+  // Reconciliation divergences badge
+  const countOpenFn = useServerFn(countOpenDivergences);
+  const [openDivergences, setOpenDivergences] = useState(0);
+  useEffect(() => {
+    let cancelled = false;
+    countOpenFn()
+      .then((r: any) => { if (!cancelled) setOpenDivergences(Number(r?.count ?? 0)); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [countOpenFn]);
+
+
+
   return (
     <div className="animate-page-enter flex flex-col gap-4 px-3 pt-4 pb-20">
       {/* Header */}
