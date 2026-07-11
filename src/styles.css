@@ -191,10 +191,17 @@
   }
 
   .interactive-button {
-    transition: transform 0.15s ease, opacity 0.15s ease;
+    transition: transform 0.15s ease, opacity 0.15s ease, box-shadow 0.15s ease;
   }
   .interactive-button:active {
     transform: scale(0.93);
+  }
+  .interactive-button:focus-visible {
+    outline: 2px solid var(--color-ring);
+    outline-offset: 2px;
+    box-shadow:
+      0 0 0 2px var(--background),
+      0 0 0 4px var(--foreground);
   }
 
   .nav-item-transition {
