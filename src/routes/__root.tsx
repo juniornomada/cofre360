@@ -13,6 +13,9 @@ import { Toaster } from "@/components/ui/sonner";
 import appCss from "../styles.css?url";
 
 const BottomNav = lazy(() => import("@/components/BottomNav").then(m => ({ default: m.BottomNav })));
+const CycleMismatchDevBanner = lazy(() =>
+  import("@/components/CycleMismatchDevBanner").then((m) => ({ default: m.CycleMismatchDevBanner })),
+);
 
 
 function ErrorComponent({ error }: { error: any }) {
@@ -205,6 +208,11 @@ function RootShell({ children }: { children: React.ReactNode }) {
          )}
       </div>
       <Toaster />
+      {import.meta.env.DEV && (
+        <Suspense fallback={null}>
+          <CycleMismatchDevBanner />
+        </Suspense>
+      )}
     </TooltipProvider>
   );
 }
