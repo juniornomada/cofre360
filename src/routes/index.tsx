@@ -947,6 +947,7 @@ function Dashboard() {
         <div className="flex items-center gap-2">
           <button
             onClick={handleLogout}
+            aria-label="Sair"
             className="interactive-button flex h-10 w-10 items-center justify-center rounded-full bg-card border border-border shadow-sm hover:bg-accent transition-all"
             title="Sair"
           >

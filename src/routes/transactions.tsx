@@ -860,7 +860,7 @@ export function TransactionsPage() {
                   </button>
                 </div>
               )}
-              <button onClick={exitSelectionMode} className="flex h-8 w-8 items-center justify-center rounded-full bg-card text-muted-foreground border border-border">
+              <button onClick={exitSelectionMode} aria-label="Sair do modo de seleção" title="Sair do modo de seleção" className="flex h-8 w-8 items-center justify-center rounded-full bg-card text-muted-foreground border border-border">
                 <X className="h-4 w-4" />
               </button>
             </>
@@ -996,7 +996,7 @@ export function TransactionsPage() {
               </Popover>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="flex h-10 w-10 items-center justify-center rounded-full bg-card text-muted-foreground border border-border shadow-sm hover:bg-accent transition-all" title="Mais ações">
+                  <button className="flex h-10 w-10 items-center justify-center rounded-full bg-card text-muted-foreground border border-border shadow-sm hover:bg-accent transition-all" aria-label="Mais ações" title="Mais ações">
                     <MoreVertical className="h-5 w-5" />
                   </button>
                 </DropdownMenuTrigger>

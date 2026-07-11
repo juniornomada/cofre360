@@ -20,7 +20,7 @@ const CycleMismatchDevBanner = lazy(() =>
 
 function ErrorComponent({ error }: { error: any }) {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+    <div className="flex min-h-dvh items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
         <h1 className="text-xl font-bold text-foreground">Ocorreu um erro</h1>
         <p className="mt-2 text-sm text-muted-foreground">{error?.message || "Algo deu errado."}</p>
@@ -39,7 +39,7 @@ function ErrorComponent({ error }: { error: any }) {
 
 function NotFoundComponent() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+    <div className="flex min-h-dvh items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
         <h1 className="text-7xl font-bold text-foreground">404</h1>
         <p className="mt-2 text-sm text-muted-foreground">Página não encontrada</p>
@@ -103,7 +103,7 @@ function RootShell({ children }: { children: React.ReactNode }) {
           <HeadContent />
         </head>
         <body suppressHydrationWarning className="bg-background">
-          <div className="flex h-screen w-screen overflow-hidden">
+          <div className="flex h-dvh w-dvw overflow-hidden">
             <div className="light relative h-full w-1/2 overflow-y-auto border-r border-border bg-background pb-10">
               <div className="sticky top-0 z-50 flex items-center justify-between bg-card/80 p-4 backdrop-blur-md border-b">
                 <span className="text-sm font-bold text-foreground">Tema Claro</span>
@@ -180,7 +180,7 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
   if (authLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
+      <div className="flex min-h-dvh items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
@@ -192,7 +192,7 @@ function RootShell({ children }: { children: React.ReactNode }) {
   return (
     <TooltipProvider>
       <div className={cn(
-        "mx-auto min-h-screen bg-background pb-16",
+        "mx-auto min-h-dvh bg-background pb-16",
         !isComparisonMode && "max-w-md"
       )}>
         <Outlet />
