@@ -80,6 +80,32 @@ function fmt(n: number): string {
   return n.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+function round2(n: number): number {
+  return Math.round(n * 100) / 100;
+}
+
+function toCents(n: number): number {
+  return Math.round(n * 100);
+}
+
+function signed(n: number): string {
+  const s = fmt(Math.abs(n));
+  return `${n < 0 ? "-" : "+"}R$ ${s}`;
+}
+
+function signedCents(n: number): string {
+  const c = toCents(n);
+  return `${c < 0 ? "" : "+"}${c}`;
+}
+
+function normalize(s: CycleSnapshot) {
+  return {
+    total: { reais: round2(s.total), cents: toCents(s.total) },
+    paid: { reais: round2(s.paid), cents: toCents(s.paid) },
+    remaining: { reais: round2(s.remaining), cents: toCents(s.remaining) },
+  };
+}
+
 export type ReportInput = CycleSnapshot & {
   source: CycleSource;
   cardId: string;
@@ -121,11 +147,31 @@ export function reportCycleSnapshot(input: ReportInput): boolean {
         warned.add(dedupKey);
         const label = input.monthLabel ? ` (${input.monthLabel})` : "";
         const name = input.cardName ? ` "${input.cardName}"` : "";
+        const deltaTotal = snap.total - other.total;
+        const deltaPaid = snap.paid - other.paid;
+        const deltaRemaining = snap.remaining - other.remaining;
+        const meta = {
+          cardId: input.cardId,
+          cardName: input.cardName ?? null,
+          periodKey: input.periodKey,
+          monthLabel: input.monthLabel ?? null,
+          tolerance: { reais: TOLERANCE, cents: toCents(TOLERANCE) },
+          [otherSource]: normalize(other),
+          [input.source]: normalize(snap),
+          delta: {
+            total: { reais: round2(deltaTotal), cents: toCents(deltaTotal) },
+            paid: { reais: round2(deltaPaid), cents: toCents(deltaPaid) },
+            remaining: { reais: round2(deltaRemaining), cents: toCents(deltaRemaining) },
+          },
+        };
         // eslint-disable-next-line no-console
         console.warn(
-          `[cycle-consistency] Divergência de fatura para cartão${name}${label} — período ${input.periodKey}:\n` +
-            `  ${otherSource}: total=R$ ${fmt(other.total)} pago=R$ ${fmt(other.paid)} faltam=R$ ${fmt(other.remaining)}\n` +
-            `  ${input.source}: total=R$ ${fmt(snap.total)} pago=R$ ${fmt(snap.paid)} faltam=R$ ${fmt(snap.remaining)}`,
+          `[cycle-consistency] Divergência de fatura para cartão${name}${label}\n` +
+            `  cardId=${input.cardId} periodKey=${input.periodKey}\n` +
+            `  ${otherSource}: total=R$ ${fmt(other.total)} (${toCents(other.total)}¢) · pago=R$ ${fmt(other.paid)} (${toCents(other.paid)}¢) · faltam=R$ ${fmt(other.remaining)} (${toCents(other.remaining)}¢)\n` +
+            `  ${input.source}: total=R$ ${fmt(snap.total)} (${toCents(snap.total)}¢) · pago=R$ ${fmt(snap.paid)} (${toCents(snap.paid)}¢) · faltam=R$ ${fmt(snap.remaining)} (${toCents(snap.remaining)}¢)\n` +
+            `  Δ ${input.source}-${otherSource}: total=${signed(deltaTotal)} (${signedCents(deltaTotal)}¢) · pago=${signed(deltaPaid)} (${signedCents(deltaPaid)}¢) · faltam=${signed(deltaRemaining)} (${signedCents(deltaRemaining)}¢)`,
+          meta,
         );
         const event: CycleMismatchEvent = {
           key,
