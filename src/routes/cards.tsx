@@ -489,10 +489,12 @@ function CardsPage() {
   const invoicePeriods = invoiceCard
     ? groupByBillingCycle(cardTransactions.filter(tx => tx.card === invoiceCard.name), invoiceCard.closing_day, invoiceCard.due_day)
     : [];
-  // Preserve the transaction display order captured when the invoice dialog
-  // was first opened for a given (card, period) pair. Editing a transaction
-  // must not reshuffle the list under the user.
+  // Preserve the transaction display order captured on the first open of the
+  // invoice dialog for a given (card, period). Editing transactions — or
+  // reopening the dialog after cache refetches — must not reshuffle the list.
+  // The map persists for the component's lifetime; new tx ids append at the end.
   const invoiceOrderRef = useRef<Map<string, string[]>>(new Map());
+
   const rawActivePeriod = invoicePeriods[activeInvoiceIdx] || invoicePeriods[0];
   let stableActivePeriod = rawActivePeriod;
   if (rawActivePeriod && invoiceCard) {
