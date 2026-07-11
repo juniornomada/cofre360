@@ -1230,6 +1230,17 @@ function Dashboard() {
               }, 0);
               const selRemaining = Math.max(0, selTotal - selPaid);
 
+              reportCycleSnapshot({
+                source: "home",
+                cardId: card.id,
+                cardName: card.name,
+                periodKey: selPeriodKey,
+                monthLabel: monthNames[selDue.getMonth()],
+                total: selTotal,
+                paid: selPaid,
+                remaining: selRemaining,
+              });
+
               const isFullyPaid = selTotal > 0 && selRemaining < 0.01;
               const isPartial = selPaid > 0 && selRemaining > 0.01;
               const isOpen = selTotal > 0 && selPaid === 0;
