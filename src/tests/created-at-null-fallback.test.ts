@@ -184,15 +184,20 @@ describe("groupByBillingCycle — behavior when created_at is null/empty/invalid
     expect(keys[0]).toBe("current");
   });
 
-  it("fully empty tx (empty date + empty created_at) is placed in the CURRENT cycle (now)", () => {
-    // parseTxDate falls through to `new Date()` — which is inside the
-    // current cycle window while the clock is frozen mid-July.
+  it("fully empty tx (empty date + empty created_at) resolves to `now` and lands in a deterministic cycle", () => {
+    // parseTxDate falls through to `new Date()` (frozen at 15 Jul 2026, which
+    // is AFTER the 10 Jul closing) → the tx belongs to the NEXT cycle whose
+    // due date is 20 Aug 2026.
     const ref = new Date(FROZEN_NOW);
     const periods = groupByBillingCycle([mkTx("t", "", "")], CLOSING, DUE, ref);
     const p = periods.find((pd) => pd.transactions.some((x) => x.id === "t"));
     expect(p).toBeDefined();
-    expect(p!.key).toBe("current");
+    expect(p!.key).toBe("future_0");
+    expect(p!.dueDate.getFullYear()).toBe(2026);
+    expect(p!.dueDate.getMonth()).toBe(7); // Aug
+    expect(p!.dueDate.getDate()).toBe(20);
   });
+
 
   it("Jan tx with null created_at when clock is in December rolls into the NEXT year's cycle", () => {
     vi.setSystemTime(new Date(Date.UTC(2026, 11, 20, 12, 0, 0))); // 20 Dec 2026
