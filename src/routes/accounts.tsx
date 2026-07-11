@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { SmartLink as Link } from "@/components/SmartLink";
-import { ArrowLeft, Plus, Landmark, Trash2, X, Check, Loader2, Upload, FileText, MoreVertical, GripVertical, Pencil, Eye, EyeOff, CheckSquare, Square, Filter, FilterX, Search, SlidersHorizontal, Calculator, Eraser } from "lucide-react";
+import { ArrowLeft, Plus, Landmark, Trash2, X, Check, Loader2, Upload, FileText, MoreVertical, GripVertical, Pencil, Eye, EyeOff, CheckSquare, Square, Filter, FilterX, Search, SlidersHorizontal, Calculator, Eraser, Info, CreditCard } from "lucide-react";
 import { useUserPreferences } from "@/hooks/use-user-preferences";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
@@ -86,6 +86,8 @@ type SortableAccountItemProps = {
   
   handleToggleVisibility: (id: string, current: boolean | null) => void;
   openRecalc: (a: BankAccount) => void;
+  openBreakdown: (a: BankAccount) => void;
+
   isSelectionMode: boolean;
   isSelected: boolean;
   onToggleSelect: (id: string) => void;
@@ -113,6 +115,8 @@ function SortableAccountItem({
   
   handleToggleVisibility,
   openRecalc,
+  openBreakdown,
+
   isSelectionMode,
   isSelected,
   onToggleSelect,
@@ -292,10 +296,15 @@ function SortableAccountItem({
                     <Pencil className="h-4 w-4 mr-2" />
                     Editar conta
                   </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => openBreakdown(account)} className="cursor-pointer">
+                    <Info className="h-4 w-4 mr-2" />
+                    Composição do saldo
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => openRecalc(account)} className="cursor-pointer">
                     <Calculator className="h-4 w-4 mr-2" />
                     Recalcular saldo
                   </DropdownMenuItem>
+
                   <DropdownMenuItem onClick={() => setDeleteConfirm(account.id)} className="cursor-pointer text-destructive focus:text-destructive">
                     <Trash2 className="h-4 w-4 mr-2" />
                     Excluir conta
@@ -347,6 +356,19 @@ function AccountsPage() {
   const [recalcAccount, setRecalcAccount] = useState<BankAccount | null>(null);
   const [recalcRealBalance, setRecalcRealBalance] = useState<number>(0);
   const [isRecalcing, setIsRecalcing] = useState(false);
+  const [breakdownAccount, setBreakdownAccount] = useState<BankAccount | null>(null);
+  const [breakdownData, setBreakdownData] = useState<{
+    included: Array<{ id: string; date: string; description: string | null; amount: number; type: string }>;
+    hidden: Array<{ id: string; date: string; description: string | null; amount: number; type: string }>;
+    cardLinked: Array<{ id: string; date: string; description: string | null; amount: number; type: string; card: string | null }>;
+    incomeSum: number;
+    expenseSum: number;
+    hiddenIncomeSum: number;
+    hiddenExpenseSum: number;
+    cardSum: number;
+  } | null>(null);
+  const [isLoadingBreakdown, setIsLoadingBreakdown] = useState(false);
+
   const isUndoing = useRef(false);
 
   const [editingAccount, setEditingAccount] = useState<BankAccount | null>(null);
@@ -666,6 +688,49 @@ function AccountsPage() {
     setRecalcRealBalance(current);
   };
 
+  const openBreakdown = async (a: BankAccount) => {
+    setBreakdownAccount(a);
+    setBreakdownData(null);
+    setIsLoadingBreakdown(true);
+    try {
+      const { data, error } = await supabase
+        .from("transactions")
+        .select("id, date, description, amount, type, is_visible, card")
+        .eq("bank_account_id", a.id)
+        .order("date", { ascending: false });
+      if (error) throw error;
+
+      const included: any[] = [];
+      const hidden: any[] = [];
+      const cardLinked: any[] = [];
+      let incomeSum = 0, expenseSum = 0, hiddenIncomeSum = 0, hiddenExpenseSum = 0, cardSum = 0;
+
+      for (const tx of data || []) {
+        const amt = Number(tx.amount) || 0;
+        if (tx.card) {
+          cardLinked.push(tx);
+          cardSum += amt;
+        } else if (tx.is_visible === false) {
+          hidden.push(tx);
+          if (tx.type === "income") hiddenIncomeSum += amt;
+          else hiddenExpenseSum += amt;
+        } else {
+          included.push(tx);
+          if (tx.type === "income") incomeSum += amt;
+          else expenseSum += amt;
+        }
+      }
+      setBreakdownData({ included, hidden, cardLinked, incomeSum, expenseSum, hiddenIncomeSum, hiddenExpenseSum, cardSum });
+    } catch (error: any) {
+      console.error("Error loading breakdown:", error);
+      toast.error("Erro ao carregar composição: " + (error.message || "Erro desconhecido"));
+    } finally {
+      setIsLoadingBreakdown(false);
+    }
+  };
+
+
+
   const handleRecalc = async () => {
     if (!recalcAccount || isRecalcing) return;
     const income = incomeByAccount[recalcAccount.id] || 0;
@@ -892,6 +957,8 @@ function AccountsPage() {
                     setPdfImportAccount={setPdfImportAccount}
                     handleToggleVisibility={handleToggleVisibility}
                     openRecalc={openRecalc}
+                    openBreakdown={openBreakdown}
+
                     isSelectionMode={isSelectionMode}
                     isSelected={selectedIds.has(account.id)}
                     onToggleSelect={toggleSelect}
@@ -1128,6 +1195,128 @@ function AccountsPage() {
           })()}
         </DialogContent>
       </Dialog>
+
+      {/* Composição do saldo dialog */}
+      <Dialog open={!!breakdownAccount} onOpenChange={(v) => { if (!v) { setBreakdownAccount(null); setBreakdownData(null); } }}>
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Composição do saldo{breakdownAccount ? ` — ${breakdownAccount.name}` : ""}</DialogTitle>
+          </DialogHeader>
+          {isLoadingBreakdown && (
+            <div className="flex items-center justify-center py-10">
+              <Loader2 className="h-5 w-5 animate-spin text-primary" />
+            </div>
+          )}
+          {breakdownAccount && breakdownData && !isLoadingBreakdown && (() => {
+            const opening = Math.round(Number(breakdownAccount.balance || 0) * 100) / 100;
+            const income = breakdownData.incomeSum;
+            const expense = breakdownData.expenseSum;
+            const total = Math.round((opening + income - expense) * 100) / 100;
+            const fmt = (n: number) => `R$ ${n.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
+            const fmtDate = (d: string) => {
+              try { return new Date(d).toLocaleDateString("pt-BR"); } catch { return d; }
+            };
+            return (
+              <div className="space-y-5">
+                {/* Fórmula */}
+                <div className="rounded-xl border border-border bg-accent/30 p-4 space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Abertura</span>
+                    <span className="font-semibold tabular-nums">{fmt(opening)}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">+ Receitas ({breakdownData.included.filter(t => t.type === "income").length})</span>
+                    <span className="font-semibold tabular-nums text-emerald-600">{fmt(income)}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">− Despesas ({breakdownData.included.filter(t => t.type !== "income").length})</span>
+                    <span className="font-semibold tabular-nums text-destructive">{fmt(expense)}</span>
+                  </div>
+                  <div className="h-px bg-border my-1" />
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="font-bold text-foreground">= Saldo atual</span>
+                    <span className={cn("font-bold tabular-nums", total < 0 ? "text-destructive" : "text-foreground")}>{fmt(total)}</span>
+                  </div>
+                </div>
+
+                {/* Ignoradas: vinculadas a cartão */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <CreditCard className="h-3.5 w-3.5 text-muted-foreground" />
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                        Ignoradas — vinculadas a cartão ({breakdownData.cardLinked.length})
+                      </p>
+                    </div>
+                    <span className="text-[11px] tabular-nums text-muted-foreground">{fmt(breakdownData.cardSum)}</span>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground/80">Não afetam o saldo da conta — impactam a fatura do cartão.</p>
+                  {breakdownData.cardLinked.length > 0 ? (
+                    <div className="rounded-lg border border-border max-h-40 overflow-y-auto divide-y divide-border/60">
+                      {breakdownData.cardLinked.map((tx) => (
+                        <div key={tx.id} className="flex items-center justify-between px-3 py-1.5 text-xs">
+                          <div className="min-w-0 flex-1">
+                            <p className="font-medium text-foreground truncate">{tx.description || "(sem descrição)"}</p>
+                            <p className="text-[10px] text-muted-foreground">{fmtDate(tx.date)} · {tx.card}</p>
+                          </div>
+                          <span className={cn("tabular-nums font-semibold ml-2", tx.type === "income" ? "text-emerald-600" : "text-destructive")}>
+                            {tx.type === "income" ? "+" : "−"}{fmt(Number(tx.amount) || 0)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground italic px-1">Nenhuma.</p>
+                  )}
+                </div>
+
+                {/* Ocultadas */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <EyeOff className="h-3.5 w-3.5 text-muted-foreground" />
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                        Ocultadas ({breakdownData.hidden.length})
+                      </p>
+                    </div>
+                    <span className="text-[11px] tabular-nums text-muted-foreground">
+                      +{fmt(breakdownData.hiddenIncomeSum)} / −{fmt(breakdownData.hiddenExpenseSum)}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground/80">Marcadas como invisíveis — excluídas do saldo até serem reexibidas.</p>
+                  {breakdownData.hidden.length > 0 ? (
+                    <div className="rounded-lg border border-border max-h-40 overflow-y-auto divide-y divide-border/60">
+                      {breakdownData.hidden.map((tx) => (
+                        <div key={tx.id} className="flex items-center justify-between px-3 py-1.5 text-xs">
+                          <div className="min-w-0 flex-1">
+                            <p className="font-medium text-foreground truncate">{tx.description || "(sem descrição)"}</p>
+                            <p className="text-[10px] text-muted-foreground">{fmtDate(tx.date)}</p>
+                          </div>
+                          <span className={cn("tabular-nums font-semibold ml-2", tx.type === "income" ? "text-emerald-600" : "text-destructive")}>
+                            {tx.type === "income" ? "+" : "−"}{fmt(Number(tx.amount) || 0)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground italic px-1">Nenhuma.</p>
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => { setBreakdownAccount(null); setBreakdownData(null); }}
+                  className="w-full py-2.5 rounded-xl bg-accent text-foreground text-sm font-semibold hover:bg-accent/80 transition-colors"
+                >
+                  Fechar
+                </button>
+              </div>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
+
+
 
       <Dialog open={zeroConfirmOpen} onOpenChange={(v) => { if (!v && !isZeroing) setZeroConfirmOpen(false); }}>
         <DialogContent className="max-w-md">
