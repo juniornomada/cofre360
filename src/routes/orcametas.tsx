@@ -72,6 +72,9 @@ const MONTH_NAMES = [
 ];
 
 function OrcaMetasPage() {
+  const navigate = useNavigate();
+  const search = useSearch({ from: "/orcametas" }) as { tab?: "budget" | "goals" };
+  const activeTab: "budget" | "goals" = search.tab === "goals" ? "goals" : "budget";
   // Budget state
   const [items, setItems] = useState<BudgetItem[]>([]);
   const [transactions, setTransactions] = useState<TxRow[]>([]);
@@ -601,6 +604,9 @@ function OrcaMetasPage() {
 }
 
 export const Route = createFileRoute("/orcametas")({
+  validateSearch: (s: Record<string, unknown>): { tab?: "budget" | "goals" } => ({
+    tab: s.tab === "goals" ? "goals" : s.tab === "budget" ? "budget" : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "OrçaMetas — Cofre 360" },

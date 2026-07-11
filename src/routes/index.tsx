@@ -828,7 +828,7 @@ function Dashboard() {
 
   // Smart alerts: actionable insights for today
   const smartAlerts = useMemo(() => {
-    const alerts: { id: string; icon: typeof AlertTriangle; iconColor: string; bg: string; title: string; subtitle: string; to?: "/reminders" | "/goals" | "/transactions" | "/insights" }[] = [];
+    const alerts: { id: string; icon: typeof AlertTriangle; iconColor: string; bg: string; title: string; subtitle: string; to?: "/reminders" | "/orcametas" | "/transactions" | "/insights" }[] = [];
 
     // 1. Reminder due in next 3 days
     const today = new Date();
@@ -862,7 +862,7 @@ function Dashboard() {
             bg: "bg-primary/10",
             title: `${g.icon} ${g.name}: ${Math.round(pct)}% concluída!`,
             subtitle: `Faltam R$ ${fmt(Number(g.target_amount) - Number(g.current_amount))} para alcançar.`,
-            to: "/goals",
+            to: "/orcametas",
           });
           break;
         }
