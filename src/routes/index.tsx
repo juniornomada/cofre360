@@ -370,7 +370,7 @@ function Dashboard() {
             icon: "", // dummy
             category: "", // dummy
             type: t.type || "expense",
-            created_at: t.date || new Date().toISOString()
+            created_at: (t as any).created_at || new Date().toISOString()
           }));
           const billingCycles = groupByBillingCycle(formattedTxs as any, card.closing_day || 1, card.due_day || 10);
           const currentCycle = billingCycles.find(p => p.key === "current") || billingCycles[1] || billingCycles[0];
