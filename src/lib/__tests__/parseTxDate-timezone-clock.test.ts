@@ -88,7 +88,7 @@ describe("cycle key — offset suffix on created_at never affects classification
   const reference = new Date(2026, 6, 15); // 15 Jul 2026
 
   it("same textual date + created_at expressed in 7 different offsets → same cycle key", () => {
-    const txs = SAME_INSTANT_ISOS.map((iso) => tx("10 jul", iso));
+    const txs = SAME_INSTANT_ISOS.map((iso) => tx("09 jul", iso));
     const periods = groupByBillingCycle(txs, CLOSING, DUE, reference);
     const keys = new Set<string>();
     for (const p of periods) for (const t of p.transactions) keys.add(p.key);
@@ -177,12 +177,12 @@ describe("mocked getTimezoneOffset — cycle classification stays self-consisten
   });
 
   it.each(offsets)(
-    "under emulated host TZ %s: '10 jul' + created_at 10-Jul-2026 → cycle 'current'",
+    "under emulated host TZ %s: '09 jul' + created_at 09-Jul-2026 → cycle 'current'",
     ({ minutes }) => {
       tzSpy = vi.spyOn(Date.prototype, "getTimezoneOffset").mockReturnValue(minutes);
       const reference = new Date(2026, 6, 15);
       const periods = groupByBillingCycle(
-        [tx("10 jul", "2026-07-10T12:00:00Z")],
+        [tx("09 jul", "2026-07-09T12:00:00Z")],
         CLOSING, DUE, reference,
       );
       const found = periods.find((p) => p.transactions.length > 0);
