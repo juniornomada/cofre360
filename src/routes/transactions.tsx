@@ -1729,11 +1729,13 @@ export function TransactionsPage() {
        { name: "description", content: "Veja todas as suas transações" },
      ],
    }),
-   validateSearch: (search: Record<string, unknown>) => ({
-     action: (search.action as string) || undefined,
-      type: (search.type as string) || undefined,
-      category: (search.category as string) || undefined,
-      accountId: (search.accountId as string) || undefined,
-    }),
+  validateSearch: (search: Record<string, unknown>) => ({
+    action: (search.action as string) || undefined,
+     type: (search.type as string) || undefined,
+     category: (search.category as string) || undefined,
+     accountId: (search.accountId as string) || undefined,
+     card: (search.card as string) || undefined,
+     date: (search.date as string) || undefined,
+   }),
    component: TransactionsPage,
  });
