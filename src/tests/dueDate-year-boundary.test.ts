@@ -90,23 +90,24 @@ describe("dueDate at year boundaries — textual date + correct created_at", () 
   });
 
   describe("start-of-January transactions", () => {
-    it("'02 jan' created 2027-01-02 → due 20 Feb 2027", () => {
-      const ref = new Date(2027, 1, 5); // early Feb 2027
+    it("'02 jan' created 2027-01-02 → cycle closes 10 Jan 2027, due 20 Jan 2027", () => {
+      // 02 jan < 10 jan → falls in [10 Dec 2026, 10 Jan 2027).
+      const ref = new Date(2027, 0, 15);
       const p = periodOf("t", [mkTx("t", "02 jan", "2027-01-02T12:00:00Z")], ref);
       expect(p.dueDate.getFullYear()).toBe(2027);
-      expect(p.dueDate.getMonth()).toBe(1); // Feb
+      expect(p.dueDate.getMonth()).toBe(0); // Jan
       expect(p.dueDate.getDate()).toBe(20);
     });
 
-    it("'02 jan' created 2026-12-31T23:59Z (year-boundary heuristic) → due 20 Feb 2027", () => {
+    it("'02 jan' created 2026-12-31T23:59Z (year-boundary heuristic) → due 20 Jan 2027", () => {
       const parsed = parseTxDate("02 jan", "2026-12-31T23:59:00Z");
       expect(parsed.getFullYear()).toBe(2027);
       expect(parsed.getMonth()).toBe(0);
 
-      const ref = new Date(2027, 1, 5);
+      const ref = new Date(2027, 0, 15);
       const p = periodOf("t", [mkTx("t", "02 jan", "2026-12-31T23:59:00Z")], ref);
       expect(p.dueDate.getFullYear()).toBe(2027);
-      expect(p.dueDate.getMonth()).toBe(1);
+      expect(p.dueDate.getMonth()).toBe(0); // Jan
       expect(p.dueDate.getDate()).toBe(20);
     });
 
