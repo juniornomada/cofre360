@@ -387,8 +387,10 @@ export type Database = {
           investigated: boolean
           investigated_at: string | null
           note: string | null
+          resolved_at: string | null
           rule_id: string | null
           run_id: string
+          status: string
           updated_at: string
           user_id: string
         }
@@ -404,8 +406,10 @@ export type Database = {
           investigated?: boolean
           investigated_at?: string | null
           note?: string | null
+          resolved_at?: string | null
           rule_id?: string | null
           run_id: string
+          status?: string
           updated_at?: string
           user_id: string
         }
@@ -421,8 +425,10 @@ export type Database = {
           investigated?: boolean
           investigated_at?: string | null
           note?: string | null
+          resolved_at?: string | null
           rule_id?: string | null
           run_id?: string
+          status?: string
           updated_at?: string
           user_id?: string
         }
