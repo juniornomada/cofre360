@@ -18,6 +18,8 @@ import { ptBR } from "date-fns/locale";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { deleteTransactionScope, isInstallmentTx } from "@/lib/installment-delete";
+import { resolveInvoiceOrder } from "@/lib/invoice-order-snapshot";
+
 import { CategoryPicker } from "@/components/CategoryPicker";
 import { CalculatorAmountInput } from "@/components/CalculatorAmountInput";
 import { CardBrand, brandPresets } from "@/components/CardBrand";
@@ -543,27 +545,17 @@ function CardsPage() {
     const orderKey = `${invoiceCard.id}::${rawActivePeriod.endDate.toISOString().split("T")[0]}`;
     const currentIds = rawActivePeriod.transactions.map(t => t.id);
     const prior = invoiceOrderRef.current.get(orderKey);
-    let orderedIds: string[];
-    if (!invoiceDialogOpen) {
-      // Dialog closed: keep snapshot in sync with latest data so the next
-      // open shows the current list.
-      orderedIds = currentIds;
-      invoiceOrderRef.current.set(orderKey, orderedIds);
-    } else if (!prior) {
-      // First render with the dialog open for this period: take the snapshot.
-      orderedIds = currentIds;
-      invoiceOrderRef.current.set(orderKey, orderedIds);
-    } else {
-      // Dialog open: freeze to the snapshot. Only ids present at open time are
-      // shown, in the original order. New ids in the period are ignored until
-      // the dialog is reopened; deletions are respected to avoid ghost rows.
-      const currentSet = new Set(currentIds);
-      orderedIds = prior.filter(id => currentSet.has(id));
-    }
+    const { orderedIds, nextSnapshot } = resolveInvoiceOrder({
+      currentIds,
+      priorSnapshot: prior,
+      dialogOpen: invoiceDialogOpen,
+    });
+    invoiceOrderRef.current.set(orderKey, nextSnapshot);
     const byId = new Map(rawActivePeriod.transactions.map(t => [t.id, t]));
     const sortedTxs = orderedIds.map(id => byId.get(id)!).filter(Boolean);
     stableActivePeriod = { ...rawActivePeriod, transactions: sortedTxs };
   }
+
 
   const activePeriod = stableActivePeriod ? {
     ...stableActivePeriod,
