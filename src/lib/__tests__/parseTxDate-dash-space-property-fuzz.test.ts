@@ -82,7 +82,7 @@ function cycleKey(d: Date): string {
 
 describe("parseTxDate — property-based fuzz (dashes Unicode/ASCII + espaços)", () => {
   it("[I1] nunca retorna NaN para ruído composto de dashes + espaços", () => {
-    const rnd = mulberry32(0xd45h);
+    const rnd = mulberry32(0xda54ed);
     const N = 3000;
     for (let i = 0; i < N; i++) {
       const noise: string[] = [];
