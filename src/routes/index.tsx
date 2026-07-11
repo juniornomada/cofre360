@@ -371,7 +371,7 @@ function Dashboard() {
             icon: "", // dummy
             category: "", // dummy
             type: t.type || "expense",
-            created_at: (t as any).created_at || new Date().toISOString()
+            created_at: sanitizeCreatedAt((t as any).created_at, { context: "index.tsx:formattedTxs", onViolation: "warn" }),
           }));
           const billingCycles = groupByBillingCycle(formattedTxs as any, card.closing_day || 1, card.due_day || 10);
           const currentCycle = billingCycles.find(p => p.key === "current") || billingCycles[1] || billingCycles[0];
