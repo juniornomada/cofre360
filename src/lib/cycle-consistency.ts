@@ -80,6 +80,32 @@ function fmt(n: number): string {
   return n.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+function round2(n: number): number {
+  return Math.round(n * 100) / 100;
+}
+
+function toCents(n: number): number {
+  return Math.round(n * 100);
+}
+
+function signed(n: number): string {
+  const s = fmt(Math.abs(n));
+  return `${n < 0 ? "-" : "+"}R$ ${s}`;
+}
+
+function signedCents(n: number): string {
+  const c = toCents(n);
+  return `${c < 0 ? "" : "+"}${c}`;
+}
+
+function normalize(s: CycleSnapshot) {
+  return {
+    total: { reais: round2(s.total), cents: toCents(s.total) },
+    paid: { reais: round2(s.paid), cents: toCents(s.paid) },
+    remaining: { reais: round2(s.remaining), cents: toCents(s.remaining) },
+  };
+}
+
 export type ReportInput = CycleSnapshot & {
   source: CycleSource;
   cardId: string;
