@@ -104,7 +104,73 @@ function ReconciliationPage() {
   );
 }
 
+// ------------------------- DivergenceCard -------------------------
+const STATUS_LABEL: Record<string, { label: string; className: string }> = {
+  open: { label: "Aberta", className: "bg-destructive text-destructive-foreground" },
+  investigating: { label: "Em análise", className: "bg-amber-500 text-white" },
+  resolved: { label: "Resolvida", className: "bg-green-500 text-white" },
+};
+
+function DivergenceCard({
+  d,
+  onUpdate,
+}: {
+  d: any;
+  onUpdate: (id: string, patch: { status?: string; note?: string }) => void | Promise<void>;
+}) {
+  const [note, setNote] = useState<string>(d.note ?? "");
+  const status = (d.status ?? "open") as keyof typeof STATUS_LABEL;
+  const meta = STATUS_LABEL[status] ?? STATUS_LABEL.open;
+  return (
+    <Card className="p-3">
+      <div className="flex justify-between items-start gap-2">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Badge variant="outline" className="text-xs">{CHECK_LABEL[d.check_type as CheckType]}</Badge>
+            <Badge className={cn("text-xs", meta.className)}>{meta.label}</Badge>
+            <p className="text-sm font-medium truncate">{d.entity_label}</p>
+          </div>
+          <p className="text-xs text-muted-foreground mt-1">
+            esperado: {formatSignedBRL(Number(d.expected))} · real: {formatSignedBRL(Number(d.actual))}
+          </p>
+          <p className="text-sm font-semibold text-destructive mt-1">
+            Δ {formatSignedBRL(Number(d.delta))}
+          </p>
+        </div>
+        <div className="flex flex-col gap-1">
+          <Select value={status} onValueChange={(v) => onUpdate(d.id, { status: v })}>
+            <SelectTrigger className="h-8 w-[130px] text-xs" aria-label="Status da divergência">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="open">Aberta</SelectItem>
+              <SelectItem value="investigating">Em análise</SelectItem>
+              <SelectItem value="resolved">Resolvida</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+      <div className="mt-2">
+        <Textarea
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          placeholder="Anotação (ação, causa, responsável…)"
+          className="text-xs min-h-[52px]"
+          maxLength={1000}
+        />
+        {note !== (d.note ?? "") && (
+          <div className="flex justify-end mt-1 gap-2">
+            <Button size="sm" variant="ghost" onClick={() => setNote(d.note ?? "")}>Cancelar</Button>
+            <Button size="sm" onClick={() => onUpdate(d.id, { note })}>Salvar nota</Button>
+          </div>
+        )}
+      </div>
+    </Card>
+  );
+}
+
 // ------------------------- Dashboard -------------------------
+
 function DashboardTab() {
   const listRunsFn = useServerFn(listRuns);
   const openFn = useServerFn(listOpenDivergences);
