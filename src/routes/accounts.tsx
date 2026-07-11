@@ -86,6 +86,8 @@ type SortableAccountItemProps = {
   
   handleToggleVisibility: (id: string, current: boolean | null) => void;
   openRecalc: (a: BankAccount) => void;
+  openBreakdown: (a: BankAccount) => void;
+
   isSelectionMode: boolean;
   isSelected: boolean;
   onToggleSelect: (id: string) => void;
