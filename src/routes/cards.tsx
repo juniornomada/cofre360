@@ -1128,7 +1128,7 @@ function CardsPage() {
 
       // === Navegação por mês da fatura ===========================================
       // offset 0 = fatura vigente no mês atual; -1 = mês anterior; +1 = próximo, etc.
-      const monthOffset = cardMonthOffset[card.id] ?? 0;
+      const monthOffset = globalMonthOffset;
       const refDate = new Date(today.getFullYear(), today.getMonth() + monthOffset, 15);
       const selCycle = getCycleDates(refDate, card.closing_day, card.due_day);
       const selClose = selCycle.currentClose;
