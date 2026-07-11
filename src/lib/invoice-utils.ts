@@ -71,9 +71,9 @@ export function parseTxDate(dateStr: string, fallback: string): Date {
   // digits or month words (e.g. "01!", "10,/07", "jan..."). Keep "/" and
   // "-" so numeric separators survive.
   const cleaned = (dateStr || "")
-    .replace(/[\u200B-\u200D\uFEFF\u180E\u2028\u2029]/g, "")
-    .replace(/[\u00A0\u202F\u205F]/g, " ")
+    .replace(/[\u200B-\u200D\uFEFF\u180E\u2028\u2029\u00A0\u202F\u205F]/g, " ")
     .replace(/[.,;:!?]+/g, "")
+    .replace(/\s+/g, " ")
     .trim();
   const parts = cleaned.toLowerCase().split(/\s+/);
   const fallbackDate = new Date(fallback);
