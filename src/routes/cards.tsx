@@ -1527,7 +1527,7 @@ function CardsPage() {
                     invoiceOrderRef.current.delete(key);
                     // Force re-render so the freeze block re-snapshots from the
                     // current raw data in its canonical order.
-                    setActiveInvoiceIdx((i) => i);
+                    setInvoiceOrderTick((t) => t + 1);
                   }}
                   aria-label="Restaurar ordem original da fatura"
                   title="Restaurar ordem original"
