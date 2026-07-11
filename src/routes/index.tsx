@@ -1129,9 +1129,52 @@ function Dashboard() {
             CARTÕES
           </h2>
 
-          <Link to="/cards" className="text-[10px] font-medium text-primary flex items-center gap-0.5">
-            Gerenciar <ChevronRight className="h-3 w-3" />
-          </Link>
+          <div className="flex items-center gap-2">
+            {(() => {
+              const today = new Date();
+              const ref = new Date(today.getFullYear(), today.getMonth() + homeMonthOffset, 15);
+              const label = monthNames[ref.getMonth()];
+              const yearLabel = ref.getFullYear() !== today.getFullYear() ? ` ${ref.getFullYear()}` : "";
+              return (
+                <div className="flex items-center gap-0.5">
+                  <button
+                    type="button"
+                    onClick={() => setHomeMonthOffset(homeMonthOffset - 1)}
+                    className="h-6 w-6 rounded-md hover:bg-primary/10 text-primary flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                    aria-label="Fatura do mês anterior"
+                    title="Mês anterior"
+                  >
+                    <ChevronLeft className="h-3.5 w-3.5" />
+                  </button>
+                  <span className="text-[11px] font-semibold text-foreground capitalize tabular-nums min-w-[64px] text-center">
+                    {label}{yearLabel}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setHomeMonthOffset(homeMonthOffset + 1)}
+                    className="h-6 w-6 rounded-md hover:bg-primary/10 text-primary flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                    aria-label="Fatura do próximo mês"
+                    title="Próximo mês"
+                  >
+                    <ChevronRight className="h-3.5 w-3.5" />
+                  </button>
+                  {homeMonthOffset !== 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setHomeMonthOffset(0)}
+                      className="text-[10px] font-semibold text-primary hover:underline underline-offset-2 ml-1"
+                      aria-label="Voltar para a fatura atual"
+                    >
+                      hoje
+                    </button>
+                  )}
+                </div>
+              );
+            })()}
+            <Link to="/cards" className="text-[10px] font-medium text-primary flex items-center gap-0.5">
+              Gerenciar <ChevronRight className="h-3 w-3" />
+            </Link>
+          </div>
         </div>
 
 
@@ -1163,51 +1206,93 @@ function Dashboard() {
         ) : (
           <div className="mt-3 flex flex-col gap-1">
             {allCards.filter(c => c.is_visible !== false && c.is_visible !== null).map((card) => {
-              const isPaid = cardInvoicePaid[card.id] || false;
-              const displayAmount = cardNextInvoices[card.name] || 0; // Sincronizado com Faturas > Atual
-              const paidCurrent = cardPaidCurrentInvoice[card.id] || 0;
-              const remaining = Math.max(0, displayAmount - paidCurrent);
-              const isPartial = paidCurrent > 0 && remaining > 0.01;
-              const isFullyPaid = displayAmount > 0 && remaining < 0.01;
-
               const today = new Date();
-              // Compute due date exactly like in Cards.tsx
-              let displayDue = new Date(today.getFullYear(), today.getMonth(), card.due_day || 10);
-              if (displayDue < today) {
-                displayDue.setMonth(displayDue.getMonth() + 1);
-              }
+              const refDate = new Date(today.getFullYear(), today.getMonth() + homeMonthOffset, 15);
+              const cycle = getCycleDates(refDate, card.closing_day || 1, card.due_day || 10);
+              const { currentClose: selClose, prevClose: selPrevClose, currentDue: selDue } = cycle;
+              const selPeriodKey = selClose.toISOString().split("T")[0];
+
+              const txs = cardTxsByName[card.name] || [];
+              const selTxs = txs.filter(t => {
+                const d = parseTxDate(t.date, t.created_at);
+                return d >= selPrevClose && d < selClose;
+              });
+              const selTotal = selTxs.reduce(
+                (s, t) => s + (t.type === "income" ? -t.amount : t.amount),
+                0,
+              );
+              const pays = cardPaymentsByCard[card.id] || [];
+              const selPaid = pays.reduce((s, p) => {
+                if (!p.paid_at) return s;
+                const { currentClose: pClose } = getCycleDates(new Date(p.paid_at), card.closing_day || 1, card.due_day || 10);
+                return pClose.toISOString().split("T")[0] === selPeriodKey ? s + p.amount : s;
+              }, 0);
+              const selRemaining = Math.max(0, selTotal - selPaid);
+
+              const isFullyPaid = selTotal > 0 && selRemaining < 0.01;
+              const isPartial = selPaid > 0 && selRemaining > 0.01;
+              const isOpen = selTotal > 0 && selPaid === 0;
+              const isEmpty = selTotal === 0;
 
               const formatDueDate = (d: Date) => format(d, "dd/MM");
+              const selMonthLabel = monthNames[selDue.getMonth()];
 
               return (
-                <Link 
-                  key={card.id} 
-                  to="/cards" 
+                <Link
+                  key={card.id}
+                  to="/cards"
+                  search={homeMonthOffset !== 0 ? ({ mes: `${refDate.getFullYear()}-${String(refDate.getMonth() + 1).padStart(2, "0")}` } as any) : ({} as any)}
                   className="interactive-card flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl bg-background/40 hover:bg-background/60 transition-colors overflow-hidden relative w-full"
                 >
                   <CardIcon color={card.color} name={card.name} size="md" />
 
 
                   <div className="flex flex-col flex-1 min-w-0">
-                    <p className="text-xs font-medium text-foreground truncate">{card.name}</p>
-                    <span className="text-[10px] font-medium text-muted-foreground">Fatura Atual · Venc. {formatDueDate(displayDue)}</span>
+                    <p className="text-xs font-medium text-foreground truncate flex items-center gap-1.5 flex-wrap">
+                      {card.name}
+                      {isFullyPaid && (
+                        <span className="rounded-full bg-emerald-500/90 text-white text-[8px] font-extrabold uppercase px-1.5 py-0.5 inline-flex items-center gap-0.5 leading-none">
+                          <CheckCircle2 className="h-2.5 w-2.5" />
+                          Paga
+                        </span>
+                      )}
+                      {isPartial && (
+                        <span className="rounded-full bg-blue-500/90 text-white text-[8px] font-extrabold uppercase px-1.5 py-0.5 inline-flex items-center gap-0.5 leading-none">
+                          <CheckCircle2 className="h-2.5 w-2.5" />
+                          Parcial
+                        </span>
+                      )}
+                      {isOpen && (
+                        <span className="rounded-full bg-amber-500/90 text-white text-[8px] font-extrabold uppercase px-1.5 py-0.5 inline-flex items-center leading-none">
+                          Em aberto
+                        </span>
+                      )}
+                      {isEmpty && (
+                        <span className="rounded-full bg-muted text-muted-foreground text-[8px] font-extrabold uppercase px-1.5 py-0.5 inline-flex items-center leading-none">
+                          Sem fatura
+                        </span>
+                      )}
+                    </p>
+                    <span className="text-[10px] font-medium text-muted-foreground capitalize">
+                      Fatura {selMonthLabel} · Venc. {formatDueDate(selDue)}
+                    </span>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className={cn("text-xs font-bold tabular-nums", !isPaid && displayAmount > 0 ? "text-destructive" : "text-primary")} data-testid="fatura-atual-valor">
-                      {balanceVisible ? `R$ ${fmt(displayAmount)}` : "R$ •••"}
+                    <p className={cn("text-xs font-bold tabular-nums", isOpen || isPartial ? "text-destructive" : "text-primary")} data-testid="fatura-atual-valor">
+                      {balanceVisible ? `R$ ${fmt(selTotal)}` : "R$ •••"}
                     </p>
 
-                    {paidCurrent > 0 && (
+                    {selPaid > 0 && (
                       <p className="text-[10px] text-primary font-medium tabular-nums">
-                        Pago: R$ {balanceVisible ? fmt(paidCurrent) : "•••"}
+                        Pago: R$ {balanceVisible ? fmt(selPaid) : "•••"}
                       </p>
                     )}
                     {isPartial && (
                       <p className="text-[10px] font-medium text-destructive tabular-nums">
-                        Faltam: R$ {balanceVisible ? fmt(remaining) : "•••"}
+                        Faltam: R$ {balanceVisible ? fmt(selRemaining) : "•••"}
                       </p>
                     )}
-                    {isFullyPaid && paidCurrent > 0 && (
+                    {isFullyPaid && (
                       <p className="text-[10px] font-semibold text-primary">Fatura paga</p>
                     )}
                   </div>
