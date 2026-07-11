@@ -76,6 +76,7 @@ type PaymentLine = {
 };
 
 import { groupByBillingCycle, parseTxDate, getCycleDates, monthNames, type CardTransaction, type InvoicePeriod } from "@/lib/invoice-utils";
+import { reportCycleSnapshot } from "@/lib/cycle-consistency";
 
 const colorOptions = [
   { label: "Roxo", value: "from-purple-600 to-purple-900", emoji: "🟣" },
