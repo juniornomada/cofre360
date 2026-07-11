@@ -145,7 +145,7 @@ export function parseTxDate(dateStr: string, fallback: string): Date {
     return hasFallback ? fallbackDate : new Date();
   }
 
-  const d = new Date(dateStr);
+  const d = new Date(cleaned);
   return isNaN(d.getTime()) ? (hasFallback ? fallbackDate : new Date()) : d;
 }
 
