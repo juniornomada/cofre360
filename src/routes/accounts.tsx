@@ -126,7 +126,11 @@ function SortableAccountItem({
 
   // Saldo calculado exclusivamente a partir das transações lançadas (receitas, despesas e transferências).
   // O campo `account.balance` representa o saldo inicial/de abertura da conta.
-  const currentBalance = Math.round((Number(account.balance || 0) + income - expense) * 100) / 100;
+  const openingBalance = Math.round(Number(account.balance || 0) * 100) / 100;
+  const currentBalance = Math.round((openingBalance + income - expense) * 100) / 100;
+  const hasMovements = income !== 0 || expense !== 0;
+  // Destaque: quando não há movimentações, a abertura É o saldo atual.
+  const openingIsOnlyComponent = !hasMovements && openingBalance !== 0;
 
   return (
     <div
