@@ -138,7 +138,11 @@ export function parseTxDate(dateStr: string, fallback: string): Date {
     // Exception: if the second token is itself numeric (e.g. "15 / 07" whose
     // "/" got filtered out), fall through so the numeric branch can handle it.
     const secondLooksNumeric = /^-?\d+$/.test(parts[1]);
-    if (dayLooksNumeric && !secondLooksNumeric) {
+    // If the second token still carries a numeric separator (e.g. "16 /03"
+    // or "15 -07" after whitespace collapse), let the numeric branch handle
+    // it instead of bailing to fallback.
+    const secondHasNumericSep = /[\/\-]\d/.test(parts[1]);
+    if (dayLooksNumeric && !secondLooksNumeric && !secondHasNumericSep) {
       return hasFallback ? fallbackDate : new Date();
     }
   }
