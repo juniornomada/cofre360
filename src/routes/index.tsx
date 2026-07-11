@@ -407,7 +407,7 @@ function Dashboard() {
           amount: Number(t.amount),
           date: (t as any).date || "",
           type: t.type || "expense",
-          created_at: (t as any).created_at || new Date().toISOString(),
+          created_at: sanitizeCreatedAt((t as any).created_at, { context: "index.tsx:txsByName", onViolation: "warn" }),
         });
       }
       setCardTxsByName(txsByName);
