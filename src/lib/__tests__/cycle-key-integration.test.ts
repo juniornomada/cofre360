@@ -128,17 +128,22 @@ describe("cycle key ↔ parseTxDate — end-to-end integration", () => {
     }
   });
 
-  it("Dec/Jan boundary: 31/12 and 01/01 land in adjacent cycles, never swapped", () => {
+  it("Dec/Jan boundary: late-Dec and mid-Jan land in adjacent cycles, never swapped", () => {
     const reference = new Date(2027, 0, 15); // 15 Jan 2027
+    // With closing=10, due=20 (relative to 15 Jan 2027):
+    //   prevClose    = 10 Dec 2026
+    //   currentClose = 10 Jan 2027
+    //   future_0     = [10 Jan 2027, 10 Feb 2027)
+    // → 31 Dec 2026 lands in "current"; 15 Jan 2027 lands in "future_0".
     const txs = [
       // "31/12" typed on 01 Jan 2027 → must resolve to 31 Dec 2026 (heuristic)
       tx("31/12", "2027-01-01T00:30:00Z", 100),
       // "31 dez" same day, textual form
       tx("31 dez", "2027-01-01T00:31:00Z", 200),
-      // "01/01" typed on NYE 2026 → must resolve to 01 Jan 2027
-      tx("01/01", "2026-12-31T23:59:00Z", 300),
-      // "01 jan" same
-      tx("01 jan", "2026-12-31T23:58:00Z", 400),
+      // "15/01" typed on NYE 2026 → must resolve to 15 Jan 2027 (heuristic)
+      tx("15/01", "2026-12-31T23:59:00Z", 300),
+      // "15 jan" same
+      tx("15 jan", "2026-12-31T23:58:00Z", 400),
     ];
 
     const periods = groupByBillingCycle(txs, CLOSING, DUE, reference);
@@ -152,9 +157,7 @@ describe("cycle key ↔ parseTxDate — end-to-end integration", () => {
     // Dec and Jan keys differ.
     expect(keyOf(txs[0].id)).not.toBe(keyOf(txs[2].id));
 
-    // Dec 2026 cycle closes 10 Jan 2027 → is the "current" cycle at ref 15 Jan.
     expect(keyOf(txs[0].id)).toBe("current");
-    // Jan 2027 cycle closes 10 Feb 2027 → is future_0.
     expect(keyOf(txs[2].id)).toBe("future_0");
   });
 
