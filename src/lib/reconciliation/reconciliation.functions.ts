@@ -47,7 +47,7 @@ export const upsertRule = createServerFn({ method: "POST" })
   .handler(async (ctx: any) => {
     const $input = ctx.data;
     const $ctx = ctx.context;
-    const payload = { ...data, user_id: $ctx.userId };
+    const payload = { ...$input, user_id: $ctx.userId };
     const q = $input.id
       ? $ctx.supabase.from("reconciliation_rules").update(payload).eq("id", $input.id).select().single()
       : $ctx.supabase.from("reconciliation_rules").insert(payload).select().single();
