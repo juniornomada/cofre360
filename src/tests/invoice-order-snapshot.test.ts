@@ -105,7 +105,7 @@ describe("resolveInvoiceOrder — invoice list stability across edits", () => {
     const prior = ["a", "b", "c"];
     const current = ["c", "b", "a"];
     const first = resolveInvoiceOrder({ currentIds: current, priorSnapshot: prior, dialogOpen: true });
-    const second = resolveInvoiceOrder({ currentIds: current, priorSnapshot: first.nextSnapshot, dialogOpen: true });
+    const second = resolveInvoiceOrder({ currentIds: current, priorSnapshot: first.nextSnapshot ?? undefined, dialogOpen: true });
     expect(second.orderedIds).toEqual(first.orderedIds);
     expect(second.nextSnapshot).toEqual(first.nextSnapshot);
   });
