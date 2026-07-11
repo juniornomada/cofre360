@@ -38,7 +38,7 @@ export function ThemeToggle() {
   };
 
   const baseClass =
-    "interactive-button inline-flex items-center justify-center rounded-md text-muted-foreground min-h-11 min-w-11 h-11 w-11";
+    "interactive-button inline-flex items-center justify-center rounded-md min-h-11 min-w-11 h-11 w-11 text-foreground/80 hover:text-foreground hover:bg-accent active:bg-accent/80 transition-colors";
 
   if (!mounted) {
     return (
