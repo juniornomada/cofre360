@@ -120,10 +120,9 @@ describe("year rollover — parseTxDate + groupByBillingCycle", () => {
     expect(clobbered.getFullYear()).toBe(2026);
     expect(fixed.getFullYear()).toBe(2026);
 
-    // And when grouped, the buggy transaction lands in a different cycle key
-    // than the correctly-dated one.
+    // And when grouped, both variants now land in the SAME cycle key.
     const reference = new Date(2027, 0, 15);
-    const buggyPeriods = groupByBillingCycle(
+    const clobberedPeriods = groupByBillingCycle(
       [mkTx("a", "28 dez", "28 dez")],
       CLOSING_DAY,
       DUE_DAY,
@@ -135,9 +134,9 @@ describe("year rollover — parseTxDate + groupByBillingCycle", () => {
       DUE_DAY,
       reference,
     );
-    const kBuggy = buggyPeriods.find((p) => p.transactions.length > 0)?.key ?? null;
+    const kClobbered = clobberedPeriods.find((p) => p.transactions.length > 0)?.key ?? null;
     const kFixed = fixedPeriods.find((p) => p.transactions.length > 0)?.key ?? null;
-    expect(kBuggy).not.toBe(kFixed);
+    expect(kClobbered).toBe(kFixed);
   });
 
 });
