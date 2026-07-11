@@ -8,7 +8,7 @@ import type { ReconciliationInput } from "@/lib/reconciliation/types";
  * Runs reconciliation for the previous day for every user that has at least
  * one enabled rule, and persists divergences.
  */
-export const Route = createFileRoute("/api/public/hooks/reconciliation-daily")({
+export const Route = createFileRoute("/api/public/hooks/reconciliation-daily")({} as any).update({
   server: {
     handlers: {
       POST: async ({ request }) => {
