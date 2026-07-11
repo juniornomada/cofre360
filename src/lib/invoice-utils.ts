@@ -74,6 +74,7 @@ export function parseTxDate(dateStr: string, fallback: string): Date {
 
   if (parts.length === 2) {
     const day = parseInt(parts[0]);
+    const dayLooksNumeric = /^-?\d+(\.\d+)?$/.test(parts[0]);
     const monthIdx = resolveMonthIdx(parts[1]);
     if (!isNaN(day) && monthIdx !== undefined) {
       // Year-boundary disambiguation: the textual `date` carries no year,
@@ -88,10 +89,18 @@ export function parseTxDate(dateStr: string, fallback: string): Date {
       else if (monthIdx === 11 && fallbackMonth <= 1) year = fallbackYear - 1; // dez tx, created in Jan/Fev → previous year
       return new Date(year, monthIdx, day);
     }
+    // "DD <not-a-month>" (e.g. "07 marte", "07 janela"): the input claims to
+    // be a "day + month" pair but the second token is not a Portuguese month.
+    // Skip the native `new Date(dateStr)` parser (V8 is too lenient here —
+    // "07 janela" gets read as Jan 7) and go straight to the fallback.
+    if (dayLooksNumeric) {
+      return hasFallback ? fallbackDate : new Date();
+    }
   }
   const d = new Date(dateStr);
   return isNaN(d.getTime()) ? (hasFallback ? fallbackDate : new Date()) : d;
 }
+
 
 
 export function getCycleDates(referenceDate: Date, closingDay: number, dueDay: number) {
