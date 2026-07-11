@@ -142,7 +142,7 @@ describe("integration — parseTxDate boundary → cycle key determinism", () =>
     const created = "2026-07-15T00:00:00Z";
     const dates = [
       "01/07/2026", "02/07/2026", "03/07/2026", "04/07/2026",
-      "31/07/2026", "01/08/2026", "02/08/2026", "03/08/2026", "04/08/2026",
+      "31/07/2026", "01/08/2026", "02/08/2026", "04/08/2026", "05/08/2026",
     ];
     for (const date of dates) {
       const k = cycleKeyOfTx(mkTx({ date, created_at: created }));
