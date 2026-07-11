@@ -83,7 +83,7 @@ const PAYMENTS: Payment[] = [
   // Porto: partial payment of R$ 800 towards Jul invoice (paid on 18 Jul).
   { id: "pay1", card_id: "porto", amount: 800, paid_at: "2026-07-18T10:00:00Z" },
   // Nubank: full payment of R$ 400 for Jun invoice (paid on 03 Jul).
-  { id: "pay2", card_id: "nu", amount: 400, paid_at: "2026-07-03T10:00:00Z" },
+  { id: "pay2", card_id: "nu", amount: 400, paid_at: "2026-06-20T10:00:00Z" },
 ];
 
 /**
