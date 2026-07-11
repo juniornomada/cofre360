@@ -403,13 +403,13 @@ function CardsPage() {
   })();
   const setMonthOffset = (nextOffset: number) => {
     if (nextOffset === 0) {
-      navigate({ search: (prev) => ({ ...prev, mes: undefined }), replace: true });
+      navigate({ search: ((prev: Record<string, unknown>) => ({ ...prev, mes: undefined })) as never, replace: true });
       return;
     }
     const now = new Date();
     const target = new Date(now.getFullYear(), now.getMonth() + nextOffset, 1);
     const mes = `${target.getFullYear()}-${String(target.getMonth() + 1).padStart(2, "0")}`;
-    navigate({ search: (prev) => ({ ...prev, mes }), replace: true });
+    navigate({ search: ((prev: Record<string, unknown>) => ({ ...prev, mes })) as never, replace: true });
   };
 
   const openAddDialog = () => {
