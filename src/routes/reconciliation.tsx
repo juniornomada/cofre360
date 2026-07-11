@@ -198,27 +198,12 @@ function DashboardTab() {
           <h2 className="text-sm font-semibold mb-2">Divergências abertas</h2>
           <div className="space-y-2">
             {open.slice(0, 20).map((d) => (
-              <Card key={d.id} className="p-3">
-                <div className="flex justify-between items-start gap-2">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline" className="text-xs">{CHECK_LABEL[d.check_type as CheckType]}</Badge>
-                      <p className="text-sm font-medium truncate">{d.entity_label}</p>
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      esperado: {formatSignedBRL(Number(d.expected))} · real: {formatSignedBRL(Number(d.actual))}
-                    </p>
-                    <p className="text-sm font-semibold text-destructive mt-1">
-                      Δ {formatSignedBRL(Number(d.delta))}
-                    </p>
-                  </div>
-                  <Button size="sm" variant="outline" onClick={() => handleInvestigate(d.id)}>Investigada</Button>
-                </div>
-              </Card>
+              <DivergenceCard key={d.id} d={d} onUpdate={handleUpdate} />
             ))}
           </div>
         </div>
       )}
+
     </div>
   );
 }
