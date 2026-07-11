@@ -1,16 +1,16 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { parseTxDate, groupByBillingCycle, getCycleDates, type CardTransaction } from "../invoice-utils";
+import { parseTxDate, groupByBillingCycle, type CardTransaction } from "../invoice-utils";
 
 /**
- * Freezes the wall clock at the year rollover (02 Jan 2027, 03:15 local) and
- * ensures that card transactions whose textual `date` is "DD mmm" (no year)
- * but whose `created_at` carries the real year always land in the same
- * billing cycle they would have landed in if `date` were a full ISO string.
+ * Freezes the wall clock at the year rollover (02 Jan 2027) and ensures that
+ * card transactions whose textual `date` is "DD mmm" (no year) but whose
+ * `created_at` carries the real ISO year always land in the same billing
+ * cycle they would land in if `date` were a full ISO string.
  *
- * This is the regression the previous fix addressed on the Home page: when
- * `created_at` was clobbered with the textual date, `parseTxDate` fell back
- * to `new Date().getFullYear()` (2027 in this scenario) and December
- * transactions were misclassified into the January cycle.
+ * Regression under test: on the Home page `created_at` used to be clobbered
+ * with the textual date, so `parseTxDate` fell back to `new Date().getFullYear()`
+ * (i.e. 2027 in this scenario) and December transactions were misclassified
+ * one full year forward.
  */
 describe("year rollover — parseTxDate + groupByBillingCycle", () => {
   const CLOSING_DAY = 10;
@@ -31,8 +31,7 @@ describe("year rollover — parseTxDate + groupByBillingCycle", () => {
   });
 
   beforeEach(() => {
-    // Clock frozen a few days into the next calendar year, AFTER the closing
-    // day of the previous cycle (10 Dec 2026 → due 20 Jan 2027).
+    // Clock frozen shortly into the next calendar year.
     vi.useFakeTimers();
     vi.setSystemTime(new Date(2027, 0, 2, 3, 15, 0));
   });
@@ -53,25 +52,21 @@ describe("year rollover — parseTxDate + groupByBillingCycle", () => {
     expect(d.getDate()).toBe(28);
   });
 
-  it("December 2026 transactions land in the Jan/2027-due cycle regardless of textual vs ISO date", () => {
-    const referenceForDecCycle = new Date(2026, 11, 15); // any date inside Dec/2026
-    const cycle = getCycleDates(referenceForDecCycle, CLOSING_DAY, DUE_DAY);
-    const expectedKey = cycle.currentClose.toISOString().split("T")[0];
-    // Sanity: the cycle whose reference is mid-December must be due in Jan/2027.
-    expect(cycle.currentDue.getFullYear()).toBe(2027);
-    expect(cycle.currentDue.getMonth()).toBe(0);
+  it("textual and ISO variants of the same December date land in the exact same cycle key", () => {
+    // Reference at the moment the UI would be showing the Dec/2026 view.
+    const reference = new Date(2026, 11, 15);
 
     const textual = groupByBillingCycle(
       [mkTx("txt", "28 dez", "2026-12-28T14:00:00Z")],
       CLOSING_DAY,
       DUE_DAY,
-      referenceForDecCycle,
+      reference,
     );
     const iso = groupByBillingCycle(
       [mkTx("iso", "2026-12-28", "2026-12-28T14:00:00Z")],
       CLOSING_DAY,
       DUE_DAY,
-      referenceForDecCycle,
+      reference,
     );
 
     const findFor = (periods: typeof textual, id: string) =>
@@ -82,38 +77,20 @@ describe("year rollover — parseTxDate + groupByBillingCycle", () => {
     expect(pt, "textual date must be assigned to a cycle").toBeDefined();
     expect(pi, "iso date must be assigned to a cycle").toBeDefined();
     expect(pt!.key).toBe(pi!.key);
-    // And that cycle is precisely the Dec/2026 → Jan/2027-due one.
-    expect(pt!.key.startsWith(expectedKey.slice(0, 7))).toBe(true);
+    // With closing=10, due=20, a 28 Dec tx is in the cycle [Dec 10, Jan 10)
+    // which is due on 20 Jan 2027.
     expect(pt!.dueDate.getFullYear()).toBe(2027);
     expect(pt!.dueDate.getMonth()).toBe(0);
+    expect(pt!.dueDate.getDate()).toBe(20);
   });
 
-  it("January 2027 transactions land in the Feb/2027-due cycle", () => {
-    const referenceForJanCycle = new Date(2027, 0, 15);
-    const janCycle = getCycleDates(referenceForJanCycle, CLOSING_DAY, DUE_DAY);
-    expect(janCycle.currentDue.getFullYear()).toBe(2027);
-    expect(janCycle.currentDue.getMonth()).toBe(1); // Fev
-
-    const periods = groupByBillingCycle(
-      [mkTx("a", "05 jan", "2027-01-05T10:00:00Z")],
-      CLOSING_DAY,
-      DUE_DAY,
-      referenceForJanCycle,
-    );
-    const found = periods.find((p) => p.transactions.some((t) => t.id === "a"));
-    expect(found).toBeDefined();
-    expect(found!.dueDate.getMonth()).toBe(1);
-    expect(found!.dueDate.getFullYear()).toBe(2027);
-  });
-
-  it("mixed cycle: Dec/2026 and Jan/2027 transactions are placed in different cycles", () => {
-    // Reference in Jan so both the "previous" (Dec-due-Jan) and "current"
-    // (Jan-due-Fev) cycles are materialised by groupByBillingCycle.
+  it("mixed Dec/2026 and Jan/2027 transactions are placed in different, correctly-dated cycles", () => {
+    // Reference near the frozen "today" so both cycles are materialised.
     const reference = new Date(2027, 0, 15);
     const periods = groupByBillingCycle(
       [
         mkTx("dec", "28 dez", "2026-12-28T00:00:00Z"),
-        mkTx("jan", "05 jan", "2027-01-05T00:00:00Z"),
+        mkTx("jan", "15 jan", "2027-01-15T00:00:00Z"),
       ],
       CLOSING_DAY,
       DUE_DAY,
@@ -125,19 +102,23 @@ describe("year rollover — parseTxDate + groupByBillingCycle", () => {
     expect(decPeriod).toBeDefined();
     expect(janPeriod).toBeDefined();
     expect(decPeriod!.key).not.toBe(janPeriod!.key);
-    expect(decPeriod!.dueDate.getMonth()).toBe(0); // due Jan
-    expect(janPeriod!.dueDate.getMonth()).toBe(1); // due Fev
+    // 28 Dec → due 20 Jan 2027
+    expect(decPeriod!.dueDate.getFullYear()).toBe(2027);
+    expect(decPeriod!.dueDate.getMonth()).toBe(0);
+    // 15 Jan → due 20 Feb 2027
+    expect(janPeriod!.dueDate.getFullYear()).toBe(2027);
+    expect(janPeriod!.dueDate.getMonth()).toBe(1);
   });
 
-  it("regression: overwriting created_at with the textual date drifts December into the frozen year (2027)", () => {
-    // Simulates the pre-fix state: `created_at` was replaced by "28 dez".
+  it("regression: clobbering created_at with the textual date drifts the tx a full year forward", () => {
+    // Simulates the pre-fix Home behaviour.
     const buggy = parseTxDate("28 dez", "28 dez");
     const fixed = parseTxDate("28 dez", "2026-12-28T00:00:00Z");
-    expect(buggy.getFullYear()).toBe(2027); // wrong — frozen "now" year
-    expect(fixed.getFullYear()).toBe(2026); // correct
+    expect(buggy.getFullYear()).toBe(2027); // frozen "now" year — wrong
+    expect(fixed.getFullYear()).toBe(2026); // real year — correct
 
-    // And when grouped, the buggy transaction is pushed one full year forward,
-    // no longer sharing a cycle with the ISO-dated equivalent.
+    // And when grouped, the buggy transaction lands in a different cycle key
+    // than the correctly-dated one.
     const reference = new Date(2027, 0, 15);
     const buggyPeriods = groupByBillingCycle(
       [mkTx("a", "28 dez", "28 dez")],
@@ -154,5 +135,28 @@ describe("year rollover — parseTxDate + groupByBillingCycle", () => {
     const kBuggy = buggyPeriods.find((p) => p.transactions.length > 0)?.key ?? null;
     const kFixed = fixedPeriods.find((p) => p.transactions.length > 0)?.key ?? null;
     expect(kBuggy).not.toBe(kFixed);
+  });
+
+  it("multi-installment purchase spanning Dec→Jan keeps each parcela in its own correctly-dated cycle", () => {
+    const groupId = "grp-1";
+    const txs: CardTransaction[] = [
+      { ...mkTx("p1", "28 dez", "2026-12-28T00:00:00Z"), installment_number: 1, total_installments: 3, installment_group_id: groupId },
+      { ...mkTx("p2", "28 jan", "2026-12-28T00:00:00Z"), installment_number: 2, total_installments: 3, installment_group_id: groupId },
+      { ...mkTx("p3", "28 fev", "2026-12-28T00:00:00Z"), installment_number: 3, total_installments: 3, installment_group_id: groupId },
+    ];
+    const periods = groupByBillingCycle(txs, CLOSING_DAY, DUE_DAY, new Date(2027, 0, 15));
+    const dueMonthFor = (id: string) => {
+      const p = periods.find((pp) => pp.transactions.some((t) => t.id === id));
+      return p ? { y: p.dueDate.getFullYear(), m: p.dueDate.getMonth() } : null;
+    };
+    // 28/12 → due 20/01/2027 ; 28/01 → due 20/02/2027 ; 28/02 → due 20/03/2027
+    expect(dueMonthFor("p1")).toEqual({ y: 2027, m: 0 });
+    expect(dueMonthFor("p2")).toEqual({ y: 2027, m: 1 });
+    expect(dueMonthFor("p3")).toEqual({ y: 2027, m: 2 });
+    // All three parcelas live in distinct cycles.
+    const keys = new Set(
+      ["p1", "p2", "p3"].map((id) => periods.find((p) => p.transactions.some((t) => t.id === id))!.key),
+    );
+    expect(keys.size).toBe(3);
   });
 });
