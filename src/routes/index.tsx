@@ -1175,9 +1175,9 @@ function Dashboard() {
                   <button
                     type="button"
                     onClick={() => setHomeMonthOffset(homeMonthOffset - 1)}
-                    className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-md text-primary hover:bg-primary/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
-                    aria-label="Fatura do mês anterior"
-                    title="Mês anterior"
+                    className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-md text-primary transition-colors hover:bg-primary/15 hover:text-primary active:bg-primary/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-40"
+                    aria-label="Fatura anterior"
+                    title="Fatura anterior"
                   >
                     <ChevronLeft className="h-4 w-4" aria-hidden="true" />
                   </button>
@@ -1187,9 +1187,9 @@ function Dashboard() {
                   <button
                     type="button"
                     onClick={() => setHomeMonthOffset(homeMonthOffset + 1)}
-                    className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-md text-primary hover:bg-primary/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
-                    aria-label="Fatura do próximo mês"
-                    title="Próximo mês"
+                    className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-md text-primary transition-colors hover:bg-primary/15 hover:text-primary active:bg-primary/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-40"
+                    aria-label="Próxima fatura"
+                    title="Próxima fatura"
                   >
                     <ChevronRight className="h-4 w-4" aria-hidden="true" />
                   </button>
