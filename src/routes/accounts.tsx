@@ -115,6 +115,8 @@ function SortableAccountItem({
   
   handleToggleVisibility,
   openRecalc,
+  openBreakdown,
+
   isSelectionMode,
   isSelected,
   onToggleSelect,
