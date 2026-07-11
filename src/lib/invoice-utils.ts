@@ -85,6 +85,10 @@ export function parseTxDate(dateStr: string, fallback: string): Date {
   // "-" so numeric separators survive.
   const rawCleaned = (dateStr || "")
     .replace(/[\u200B-\u200D\uFEFF\u180E\u2028\u2029\u00A0\u202F\u205F]/g, " ")
+    // Normalize Unicode dash-likes into ASCII '-' so numeric separators
+    // (en dash, em dash, minus sign, hyphen variants) all reach the
+    // numeric branch below. Tabs and other whitespace collapse via \s+.
+    .replace(/[\u2010\u2011\u2012\u2013\u2014\u2015\u2212\uFE58\uFE63\uFF0D]/g, "-")
     .replace(/\s+/g, " ")
     .trim();
   // For token-based parsing we drop pontuação and collapse space-wrapped
