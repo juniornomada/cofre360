@@ -146,11 +146,15 @@ export function parseTxDate(dateStr: string, fallback: string): Date {
   // 4-digit leading segment; everything else is treated as day-first so that
   // "10/07", "10-07", "10/07/2026" and "10-07-2026" all resolve to the same
   // day/month (and, for 2-part inputs, the same billing cycle as "10 jul").
-  // Split from rawCleaned (not `cleaned`) so noise like " - " between digits
-  // — which the DD-Month path collapses to a single space — still resolves
-  // as a numeric separator here.
-  const numericSource = rawCleaned.replace(/\s*([\/\-])\s*/g, "$1");
+  // Split from a version of the input that keeps numeric separators intact —
+  // `cleaned` collapses " - " to a single space for the DD-Month path, which
+  // would destroy "31 - 12". Strip the same trailing punctuation `cleaned`
+  // removes so noisy inputs like "10.,/07!" still match.
+  const numericSource = rawCleaned
+    .replace(/[.,;:!?]+/g, "")
+    .replace(/\s*([\/\-])\s*/g, "$1");
   const numericParts = numericSource.split(/[\/\-]/);
+
 
   if (
     (numericParts.length === 2 || numericParts.length === 3) &&
