@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { SmartLink as Link } from "@/components/SmartLink";
-import { ArrowLeft, Plus, Landmark, Trash2, X, Check, Loader2, Upload, FileText, MoreVertical, GripVertical, Pencil, Eye, EyeOff, CheckSquare, Square, Filter, FilterX, Search, SlidersHorizontal } from "lucide-react";
+import { ArrowLeft, Plus, Landmark, Trash2, X, Check, Loader2, Upload, FileText, MoreVertical, GripVertical, Pencil, Eye, EyeOff, CheckSquare, Square, Filter, FilterX, Search, SlidersHorizontal, Calculator } from "lucide-react";
 import { useUserPreferences } from "@/hooks/use-user-preferences";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
@@ -85,6 +85,7 @@ type SortableAccountItemProps = {
   setPdfImportAccount: (a: BankAccount) => void;
   
   handleToggleVisibility: (id: string, current: boolean | null) => void;
+  openRecalc: (a: BankAccount) => void;
   isSelectionMode: boolean;
   isSelected: boolean;
   onToggleSelect: (id: string) => void;
@@ -111,6 +112,7 @@ function SortableAccountItem({
   setPdfImportAccount,
   
   handleToggleVisibility,
+  openRecalc,
   isSelectionMode,
   isSelected,
   onToggleSelect,
@@ -290,6 +292,10 @@ function SortableAccountItem({
                     <Pencil className="h-4 w-4 mr-2" />
                     Editar conta
                   </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => openRecalc(account)} className="cursor-pointer">
+                    <Calculator className="h-4 w-4 mr-2" />
+                    Recalcular saldo
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setDeleteConfirm(account.id)} className="cursor-pointer text-destructive focus:text-destructive">
                     <Trash2 className="h-4 w-4 mr-2" />
                     Excluir conta
@@ -338,6 +344,9 @@ function AccountsPage() {
   const [csvImportAccount, setCsvImportAccount] = useState<BankAccount | null>(null);
   const [pdfImportAccount, setPdfImportAccount] = useState<BankAccount | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [recalcAccount, setRecalcAccount] = useState<BankAccount | null>(null);
+  const [recalcRealBalance, setRecalcRealBalance] = useState<number>(0);
+  const [isRecalcing, setIsRecalcing] = useState(false);
   const isUndoing = useRef(false);
 
   const [editingAccount, setEditingAccount] = useState<BankAccount | null>(null);
@@ -648,6 +657,55 @@ function AccountsPage() {
     }
   };
 
+  const openRecalc = (a: BankAccount) => {
+    const income = incomeByAccount[a.id] || 0;
+    const expense = expenseByAccount[a.id] || 0;
+    const opening = Number(a.balance || 0);
+    const current = Math.round((opening + income - expense) * 100) / 100;
+    setRecalcAccount(a);
+    setRecalcRealBalance(current);
+  };
+
+  const handleRecalc = async () => {
+    if (!recalcAccount || isRecalcing) return;
+    const income = incomeByAccount[recalcAccount.id] || 0;
+    const expense = expenseByAccount[recalcAccount.id] || 0;
+    const newOpening = Math.round((recalcRealBalance - income + expense) * 100) / 100;
+    const previousOpening = Number(recalcAccount.balance || 0);
+
+    if (Math.abs(newOpening - previousOpening) < 0.005) {
+      toast.info("A abertura já está consistente com o saldo informado.");
+      setRecalcAccount(null);
+      return;
+    }
+
+    setIsRecalcing(true);
+    try {
+      const { error } = await supabase
+        .from("bank_accounts")
+        .update({ balance: newOpening })
+        .eq("id", recalcAccount.id);
+      if (error) throw error;
+
+      const { data: { user } } = await supabase.auth.getUser();
+      await supabase.from("bank_account_balance_history").insert({
+        bank_account_id: recalcAccount.id,
+        previous_balance: previousOpening,
+        new_balance: newOpening,
+        user_id: user?.id,
+      });
+
+      toast.success("Saldo recalculado com sucesso");
+      setRecalcAccount(null);
+      fetchAccounts();
+    } catch (error: any) {
+      console.error("Error recalculating balance:", error);
+      toast.error("Erro ao recalcular: " + (error.message || "Erro desconhecido"));
+    } finally {
+      setIsRecalcing(false);
+    }
+  };
+
    const cancelEdit = () => setEditingAccount(null);
 
   const handleDelete = async (id: string) => {
@@ -780,6 +838,7 @@ function AccountsPage() {
                     setCsvImportAccount={setCsvImportAccount}
                     setPdfImportAccount={setPdfImportAccount}
                     handleToggleVisibility={handleToggleVisibility}
+                    openRecalc={openRecalc}
                     isSelectionMode={isSelectionMode}
                     isSelected={selectedIds.has(account.id)}
                     onToggleSelect={toggleSelect}
@@ -950,6 +1009,74 @@ function AccountsPage() {
            </div>
          </DialogContent>
        </Dialog>
+
+      {/* Recalcular saldo dialog */}
+      <Dialog open={!!recalcAccount} onOpenChange={(v) => { if (!v) setRecalcAccount(null); }}>
+        <DialogContent className="max-w-sm mx-auto rounded-2xl">
+          <DialogHeader>
+            <DialogTitle>Recalcular saldo</DialogTitle>
+          </DialogHeader>
+          {recalcAccount && (() => {
+            const income = incomeByAccount[recalcAccount.id] || 0;
+            const expense = expenseByAccount[recalcAccount.id] || 0;
+            const opening = Number(recalcAccount.balance || 0);
+            const computed = Math.round((opening + income - expense) * 100) / 100;
+            const newOpening = Math.round((recalcRealBalance - income + expense) * 100) / 100;
+            const diff = Math.round((newOpening - opening) * 100) / 100;
+            const fmt = (n: number) => `R$ ${n.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
+            return (
+              <div className="flex flex-col gap-4 mt-2">
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Informe o saldo real da conta <span className="font-semibold text-foreground">{recalcAccount.name}</span> (ex.: do extrato bancário). O saldo de abertura será ajustado para bater com esse valor, preservando as transações visíveis.
+                </p>
+
+                <div className="rounded-xl bg-muted/40 p-3 space-y-1.5 text-[11px]">
+                  <div className="flex justify-between"><span className="text-muted-foreground">Abertura atual</span><span className="tabular-nums font-medium">{fmt(opening)}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">+ Receitas visíveis</span><span className="tabular-nums text-primary">{fmt(income)}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">− Despesas visíveis</span><span className="tabular-nums text-destructive">{fmt(expense)}</span></div>
+                  <div className="flex justify-between border-t border-border/40 pt-1.5 mt-1.5"><span className="font-semibold">Saldo calculado</span><span className="tabular-nums font-bold">{fmt(computed)}</span></div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Saldo real (R$)</Label>
+                  <CalculatorAmountInput
+                    value={recalcRealBalance}
+                    onChange={(v) => setRecalcRealBalance(v)}
+                  />
+                </div>
+
+                {Math.abs(diff) >= 0.005 && (
+                  <div className="rounded-xl bg-primary/5 border border-primary/20 p-3 text-[11px] space-y-1">
+                    <div className="flex justify-between"><span className="text-muted-foreground">Nova abertura</span><span className="tabular-nums font-bold">{fmt(newOpening)}</span></div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Ajuste</span>
+                      <span className={cn("tabular-nums font-semibold", diff > 0 ? "text-primary" : "text-destructive")}>{diff > 0 ? "+" : ""}{fmt(diff)}</span>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleRecalc}
+                    disabled={isRecalcing}
+                    className="flex-1 interactive-button flex items-center justify-center gap-2 rounded-2xl bg-primary py-3 text-sm font-medium text-primary-foreground disabled:opacity-50"
+                  >
+                    {isRecalcing ? <Loader2 className="h-4 w-4 animate-spin" /> : "Confirmar"}
+                  </button>
+                  <button
+                    onClick={() => setRecalcAccount(null)}
+                    className="flex-1 interactive-button flex items-center justify-center gap-2 rounded-2xl bg-accent py-3 text-sm font-medium text-foreground"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
+
+
 
 
       <Suspense fallback={null}>
