@@ -140,10 +140,12 @@ describe("parseTxDate — cycle-key stability across textual variants", () => {
     // one day after the closing of that cycle so both routes clearly match.
     for (const [token, monthIdx] of ALL_MONTHS) {
       const ref = new Date(2026, monthIdx, 15);
-      const canonical = groupByBillingCycle([mkTx("c", `05 ${token}`, "2026-01-01T00:00:00Z")], CLOSING_DAY, DUE_DAY, ref);
-      const upper = groupByBillingCycle([mkTx("u", `05 ${token.toUpperCase()}`, "2026-01-01T00:00:00Z")], CLOSING_DAY, DUE_DAY, ref);
-      const title = groupByBillingCycle([mkTx("t", `05 ${token[0].toUpperCase()}${token.slice(1)}`, "2026-01-01T00:00:00Z")], CLOSING_DAY, DUE_DAY, ref);
-      const spacey = groupByBillingCycle([mkTx("s", `  05   ${token}  `, "2026-01-01T00:00:00Z")], CLOSING_DAY, DUE_DAY, ref);
+      // Mid-year fallback avoids the Dec↔Jan year-boundary heuristic.
+      const created = "2026-06-15T00:00:00Z";
+      const canonical = groupByBillingCycle([mkTx("c", `05 ${token}`, created)], CLOSING_DAY, DUE_DAY, ref);
+      const upper = groupByBillingCycle([mkTx("u", `05 ${token.toUpperCase()}`, created)], CLOSING_DAY, DUE_DAY, ref);
+      const title = groupByBillingCycle([mkTx("t", `05 ${token[0].toUpperCase()}${token.slice(1)}`, created)], CLOSING_DAY, DUE_DAY, ref);
+      const spacey = groupByBillingCycle([mkTx("s", `  05   ${token}  `, created)], CLOSING_DAY, DUE_DAY, ref);
 
       const keyFor = (periods: typeof canonical, id: string) =>
         periods.find((p) => p.transactions.some((tx) => tx.id === id))?.key;
