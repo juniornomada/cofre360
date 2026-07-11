@@ -84,8 +84,10 @@ describe("parseTxDate — separadores espaçados (regressões pinadas)", () => {
         const spacedCycle = getCycleDates(spacedDate, closing, due);
         const canonicalCycle = getCycleDates(canonicalDate, closing, due);
 
-        // Comparação estrutural profunda: mesmas datas de fechamento e vencimento.
-        expect(spacedCycle).toEqual(canonicalCycle);
+        // Comparação estrutural das datas do ciclo (ignora helpers como makeDue).
+        expect(spacedCycle.currentClose.getTime()).toBe(canonicalCycle.currentClose.getTime());
+        expect(spacedCycle.currentDue.getTime()).toBe(canonicalCycle.currentDue.getTime());
+        expect(spacedCycle.prevClose.getTime()).toBe(canonicalCycle.prevClose.getTime());
 
         // Cycle key derivada do vencimento em formato YYYY-MM.
         const key = (d: Date) =>
