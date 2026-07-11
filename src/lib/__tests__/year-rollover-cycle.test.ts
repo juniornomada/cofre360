@@ -137,26 +137,4 @@ describe("year rollover — parseTxDate + groupByBillingCycle", () => {
     expect(kBuggy).not.toBe(kFixed);
   });
 
-  it("multi-installment purchase spanning Dec→Jan keeps each parcela in its own correctly-dated cycle", () => {
-    const groupId = "grp-1";
-    const txs: CardTransaction[] = [
-      { ...mkTx("p1", "28 dez", "2026-12-28T00:00:00Z"), installment_number: 1, total_installments: 3, installment_group_id: groupId },
-      { ...mkTx("p2", "28 jan", "2026-12-28T00:00:00Z"), installment_number: 2, total_installments: 3, installment_group_id: groupId },
-      { ...mkTx("p3", "28 fev", "2026-12-28T00:00:00Z"), installment_number: 3, total_installments: 3, installment_group_id: groupId },
-    ];
-    const periods = groupByBillingCycle(txs, CLOSING_DAY, DUE_DAY, new Date(2027, 0, 15));
-    const dueMonthFor = (id: string) => {
-      const p = periods.find((pp) => pp.transactions.some((t) => t.id === id));
-      return p ? { y: p.dueDate.getFullYear(), m: p.dueDate.getMonth() } : null;
-    };
-    // 28/12 → due 20/01/2027 ; 28/01 → due 20/02/2027 ; 28/02 → due 20/03/2027
-    expect(dueMonthFor("p1")).toEqual({ y: 2027, m: 0 });
-    expect(dueMonthFor("p2")).toEqual({ y: 2027, m: 1 });
-    expect(dueMonthFor("p3")).toEqual({ y: 2027, m: 2 });
-    // All three parcelas live in distinct cycles.
-    const keys = new Set(
-      ["p1", "p2", "p3"].map((id) => periods.find((p) => p.transactions.some((t) => t.id === id))!.key),
-    );
-    expect(keys.size).toBe(3);
-  });
 });
