@@ -19,6 +19,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { deleteTransactionScope, isInstallmentTx } from "@/lib/installment-delete";
 import { resolveInvoiceOrder, reconcileSnapshotOnClose } from "@/lib/invoice-order-snapshot";
+import { buildAddTransactionNavArgs } from "@/lib/add-transaction-nav";
 import { InvoiceEmptyState } from "@/components/cards/InvoiceEmptyState";
 
 import { CategoryPicker } from "@/components/CategoryPicker";
