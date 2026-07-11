@@ -202,6 +202,15 @@ export function parseTxDate(dateStr: string, fallback: string): Date {
   }
 
 
+  // Guard: recusar entradas que começam ou terminam com separador ambíguo
+  // ("-12", "31-", " - "). O `new Date("-12")` do V8 reinterpreta como ano
+  // negativo/UTC e retorna 2001-12-01, empurrando a tx para outro ciclo.
+  const trimmedForNative = rawCleaned.trim();
+  const startsOrEndsWithSep = /^[\/\-]|[\/\-]$/.test(trimmedForNative);
+  const hasDigit = /\d/.test(trimmedForNative);
+  if (!hasDigit || startsOrEndsWithSep) {
+    return hasFallback ? fallbackDate : new Date();
+  }
   const d = new Date(rawCleaned || dateStr);
   return isNaN(d.getTime()) ? (hasFallback ? fallbackDate : new Date()) : d;
 }
