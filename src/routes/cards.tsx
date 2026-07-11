@@ -1101,6 +1101,31 @@ function CardsPage() {
       const nextDue = new Date(currentDue.getFullYear(), currentDue.getMonth() + 1, card.due_day);
       const formatDueDate = (d: Date) => `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`;
       void nextDue; void isPaid; void invoiceClosed;
+
+      // === Navegação por mês da fatura ===========================================
+      // offset 0 = fatura vigente no mês atual; -1 = mês anterior; +1 = próximo, etc.
+      const monthOffset = cardMonthOffset[card.id] ?? 0;
+      const refDate = new Date(today.getFullYear(), today.getMonth() + monthOffset, 15);
+      const selCycle = getCycleDates(refDate, card.closing_day, card.due_day);
+      const selClose = selCycle.currentClose;
+      const selPrevClose = selCycle.prevClose;
+      const selDue = selCycle.currentDue;
+      const selPeriodKey = selClose.toISOString().split("T")[0];
+      // Total da fatura selecionada, calculado direto das transações no intervalo do ciclo
+      const selTxs = cardTransactionsFiltered.filter(t => {
+        const d = parseTxDate(t.date, t.created_at);
+        return d >= selPrevClose && d < selClose;
+      });
+      const selTotal = selTxs.reduce(
+        (s, t) => s + (t.type === "income" ? -Number(t.amount) : Number(t.amount)),
+        0,
+      );
+      const selPaid = cardPaymentsByPeriod[card.id]?.[selPeriodKey] || 0;
+      const selRemaining = Math.max(0, selTotal - selPaid);
+      const selMonthLabel = monthNames[selDue.getMonth()];
+      const selYearLabel = selDue.getFullYear();
+      const currentYear = today.getFullYear();
+      const selDetailedPayments = cardDetailedPaymentsByPeriod[card.id]?.[selPeriodKey] || [];
           return (
             <SortableCardWrapper key={card.id} id={card.id} animationDelay={60 + i * 80}>
               <div className={cn(
