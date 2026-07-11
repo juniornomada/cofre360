@@ -1125,13 +1125,13 @@ function Dashboard() {
 
       {/* Credit Cards Summary */}
       <div className="rounded-2xl bg-gradient-to-br from-primary/15 via-card to-card p-4 border border-border/40">
-        <div className="flex items-center justify-between gap-4 mb-2">
-          <h2 className="text-sm font-semibold text-foreground flex items-center gap-1.5 uppercase">
-            <CreditCard className="h-4 w-4 text-primary" />
-            CARTÕES
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 mb-2">
+          <h2 className="min-w-0 text-sm font-semibold text-foreground flex items-center gap-1.5 uppercase truncate">
+            <CreditCard className="h-4 w-4 shrink-0 text-primary" />
+            <span className="truncate">CARTÕES</span>
           </h2>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0 justify-self-end">
             {(() => {
               const today = new Date();
               const ref = new Date(today.getFullYear(), today.getMonth() + homeMonthOffset, 15);
