@@ -9,6 +9,12 @@
  *    reorder the visible list. Only deletions are respected (ghost rows are
  *    filtered out); new ids arriving in the same period are ignored until the
  *    dialog is reopened.
+ *  - Fallback for missing ids (delete / merge / replace): ids in the snapshot
+ *    that no longer exist in `currentIds` are dropped without reshuffling.
+ *    Any id present in `currentIds` but absent from the snapshot (e.g. a
+ *    merge that swapped an id, or a replacement row) is appended at the
+ *    end in the order the server returned it — predictable, never
+ *    interleaved into the frozen prefix.
  *  - While the dialog is closed, no snapshot is retained. Caller should drop
  *    the entry so that the next open captures a fresh order from the current
  *    data.
@@ -23,19 +29,26 @@ export function resolveInvoiceOrder(params: {
   const { currentIds, priorSnapshot, dialogOpen } = params;
 
   if (!dialogOpen) {
-    // Dialog closed: expose current data but forget the snapshot so the next
-    // open captures a fresh order at that moment.
     return { orderedIds: currentIds.slice(), nextSnapshot: null };
   }
   if (!priorSnapshot) {
-    // First render with the dialog open: capture the snapshot now.
     const snap = currentIds.slice();
     return { orderedIds: snap, nextSnapshot: snap };
   }
-  // Dialog open with an existing snapshot: keep frozen order. Drop deletions,
-  // ignore new ids. Refetches / edits that only mutate row content never
-  // reorder because we filter by the snapshot order.
+  // Dialog open with an existing snapshot:
+  //  1. Keep the frozen prefix (snapshot order minus deleted ids).
+  //  2. Append any current id that was not in the snapshot at the end,
+  //     preserving the server-provided order among those newcomers.
+  //  3. Extend the snapshot with the appended ids so subsequent refetches
+  //     keep them in that same trailing position (no reshuffle).
   const currentSet = new Set(currentIds);
-  const orderedIds = priorSnapshot.filter((id) => currentSet.has(id));
-  return { orderedIds, nextSnapshot: priorSnapshot.slice() };
+  const snapshotSet = new Set(priorSnapshot);
+  const frozenPrefix = priorSnapshot.filter((id) => currentSet.has(id));
+  const appended = currentIds.filter((id) => !snapshotSet.has(id));
+  const orderedIds = frozenPrefix.concat(appended);
+  const nextSnapshot = appended.length > 0
+    ? priorSnapshot.concat(appended)
+    : priorSnapshot.slice();
+  return { orderedIds, nextSnapshot };
 }
+
