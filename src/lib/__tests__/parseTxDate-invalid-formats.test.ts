@@ -108,28 +108,31 @@ describe("parseTxDate — invalid textual formats", () => {
     });
   });
 
-  describe("day-out-of-range is pinned to the current 'month rollover' behavior", () => {
-    // NOTE: this pins the CURRENT contract (native Date rollover: `new Date(y, 0, 32)`
-    // → Feb 1). If we later add strict validation, update these expectations.
-    it("'32 jan' rolls into February of the fallback year", () => {
+  describe("day-out-of-range falls back to created_at (no silent month rollover)", () => {
+    // Contract: `parseTxDate` MUST NOT let `new Date(y, m, day-out-of-range)`
+    // silently roll into an adjacent month — that would place the tx in the
+    // wrong billing cycle. Invalid days fall back to `created_at`.
+    const FALLBACK_TS = new Date(FALLBACK_ISO).getTime();
+
+    it("'32 jan' falls back to created_at (does NOT roll into February)", () => {
       const d = parseTxDate("32 jan", FALLBACK_ISO);
       expect(isValidDate(d)).toBe(true);
-      expect(d.getMonth()).toBe(1); // Feb (rolled over from Jan 32)
-      expect(d.getDate()).toBe(1);
+      expect(d.getTime()).toBe(FALLBACK_TS);
     });
 
-    it("'0 jan' rolls into December of the previous year", () => {
+    it("'0 jan' falls back to created_at (does NOT roll into previous December)", () => {
       const d = parseTxDate("0 jan", FALLBACK_ISO);
       expect(isValidDate(d)).toBe(true);
-      expect(d.getMonth()).toBe(11); // Dec
-      expect(d.getDate()).toBe(31);
+      expect(d.getTime()).toBe(FALLBACK_TS);
     });
 
-    it("'99 fev' still resolves to a valid Date (native rollover)", () => {
+    it("'99 fev' falls back to created_at", () => {
       const d = parseTxDate("99 fev", FALLBACK_ISO);
       expect(isValidDate(d)).toBe(true);
+      expect(d.getTime()).toBe(FALLBACK_TS);
     });
   });
+
 
   describe("resilience against exotic inputs", () => {
     it("does not throw on any malformed string from a fuzz-ish sample", () => {

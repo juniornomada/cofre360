@@ -59,16 +59,18 @@ describe("parseTxDate — 29/02 leap-day handling", () => {
     });
   });
 
-  // --------------- L2/L6: non-leap overflow ---------------
-  describe("L2/L6 — non-leap years overflow to Mar 1 of the SAME year", () => {
-    // Every entry: [year, encoding-builder]. `fallback` is same-year mid-year
-    // so the year-boundary heuristic is a non-issue for cases without a year.
+  // --------------- L2/L6: non-leap Feb 29 falls back to created_at ---------------
+  describe("L2/L6 — non-leap years reject Feb 29 and fall back to created_at", () => {
+    // Since Feb 29 is not a real date in a non-leap year, `parseTxDate` MUST
+    // NOT silently roll into Mar 1 (that would put the tx in the wrong
+    // billing cycle). It falls back to `created_at`, keeping the tx anchored
+    // to a well-defined moment.
     const nonLeap = [1900, 2023, 2025, 2026, 2027, 2100] as const;
 
     for (const y of nonLeap) {
-      it(`year ${y} — DD/MM, DD-MM, DD/MM/YYYY, DD-MM-YYYY, ISO and month-name variants all overflow to ${y}-03-01`, () => {
-        const target = iso(y, 2, 1); // March 1 of same year
+      it(`year ${y} — every encoding of 29/02 falls back to created_at`, () => {
         const fb = `${y}-08-15T10:00:00Z`;
+        const fbTs = new Date(fb).getTime();
         const inputs = [
           "29/02",
           "29-02",
@@ -82,16 +84,14 @@ describe("parseTxDate — 29/02 leap-day handling", () => {
         ];
         for (const input of inputs) {
           const d = parseTxDate(input, fb);
-          expect({ input, ts: d.getTime() }).toEqual({ input, ts: target });
-          // Stronger invariant: never bleeds into an adjacent year.
-          expect(d.getFullYear()).toBe(y);
+          expect({ input, ts: d.getTime() }).toEqual({ input, ts: fbTs });
         }
       });
     }
 
-    it("L2 — 1900 is NOT a leap year (Gregorian century rule): overflows to Mar 1", () => {
-      // 1900 is divisible by 100 but not 400 → not a leap year.
-      expect(parseTxDate("29/02/1900", "1900-01-01T00:00:00Z").getTime()).toBe(iso(1900, 2, 1));
+    it("L2 — 1900 is NOT a leap year (Gregorian century rule): falls back", () => {
+      const fb = "1900-01-01T00:00:00Z";
+      expect(parseTxDate("29/02/1900", fb).getTime()).toBe(new Date(fb).getTime());
     });
 
     it("L1 vs L2 — 2000 IS a leap year (divisible by 400): stays on Feb 29", () => {
@@ -100,41 +100,39 @@ describe("parseTxDate — 29/02 leap-day handling", () => {
   });
 
   // --------------- L3: heuristic must NOT touch February ---------------
-  describe("L3 — year-boundary heuristic does not shift February dates", () => {
-    it("29 fev typed with created_at in Nov/Dec keeps the fallback year (no +1 shift)", () => {
-      // Non-leap fallback year 2025 → overflow to Mar 1 2025, NEVER 2026.
-      const nov = parseTxDate("29 fev", "2025-11-30T23:00:00Z");
-      const dec = parseTxDate("29 fev", "2025-12-15T12:00:00Z");
-      expect(nov.getFullYear()).toBe(2025);
-      expect(dec.getFullYear()).toBe(2025);
-      expect(nov.getTime()).toBe(iso(2025, 2, 1));
-      expect(dec.getTime()).toBe(iso(2025, 2, 1));
+  describe("L3 — Feb inputs never leak into an adjacent year via the boundary heuristic", () => {
+    it("non-leap 29 fev with created_at in Nov/Dec falls back (never rolls into next year)", () => {
+      const nov = "2025-11-30T23:00:00Z";
+      const dec = "2025-12-15T12:00:00Z";
+      expect(parseTxDate("29 fev", nov).getTime()).toBe(new Date(nov).getTime());
+      expect(parseTxDate("29 fev", dec).getTime()).toBe(new Date(dec).getTime());
+      // Crucially, never lands in Feb 29 2026 either.
+      expect(parseTxDate("29 fev", nov).getFullYear()).toBe(2025);
+      expect(parseTxDate("29 fev", dec).getFullYear()).toBe(2025);
     });
 
-    it("29 fev typed with created_at in Jan/Fev keeps the fallback year (no -1 shift)", () => {
-      // Leap fallback year 2024 → Feb 29 2024 stays put.
+    it("leap 29 fev with created_at in Jan/Fev keeps the fallback year", () => {
       const jan = parseTxDate("29 fev", "2024-01-05T00:00:00Z");
       const feb = parseTxDate("29 fev", "2024-02-28T23:59:00Z");
       expect(jan.getTime()).toBe(iso(2024, 1, 29));
       expect(feb.getTime()).toBe(iso(2024, 1, 29));
     });
 
-    it("29/02 (numeric) with a fallback near the year boundary stays on the fallback year", () => {
-      // 2026 non-leap → overflow to Mar 1 2026, never 2025 or 2027.
-      const dec = parseTxDate("29/02", "2026-12-31T23:59:59Z");
-      const jan = parseTxDate("29/02", "2026-01-01T00:00:01Z");
-      expect(dec.getTime()).toBe(iso(2026, 2, 1));
-      expect(jan.getTime()).toBe(iso(2026, 2, 1));
+    it("29/02 numeric with fallback near year boundary falls back (non-leap)", () => {
+      const dec = "2026-12-31T23:59:59Z";
+      const jan = "2026-01-01T00:00:01Z";
+      expect(parseTxDate("29/02", dec).getTime()).toBe(new Date(dec).getTime());
+      expect(parseTxDate("29/02", jan).getTime()).toBe(new Date(jan).getTime());
     });
 
-    it("29-02 (dash) with a fallback near the year boundary stays on the fallback year", () => {
-      // 2028 leap → Feb 29 2028, not 2027 or 2029.
+    it("29-02 dash with fallback near year boundary — leap year still resolves to Feb 29", () => {
       const dec = parseTxDate("29-02", "2028-12-31T23:59:59Z");
       const jan = parseTxDate("29-02", "2028-01-01T00:00:01Z");
       expect(dec.getTime()).toBe(iso(2028, 1, 29));
       expect(jan.getTime()).toBe(iso(2028, 1, 29));
     });
   });
+
 
   // --------------- L4: canonicalization across encodings ---------------
   describe("L4 — every accepted encoding for the same leap date collapses to one timestamp", () => {

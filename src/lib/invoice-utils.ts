@@ -65,6 +65,19 @@ function resolveMonthIdx(token: string): number | undefined {
   return undefined;
 }
 
+/**
+ * Days-in-month, Gregorian. Feb varies by leap year.
+ * Leap: divisible by 4, except centuries not divisible by 400.
+ */
+function daysInMonth(year: number, monthIdx: number): number {
+  if (monthIdx === 1) {
+    const leap = (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+    return leap ? 29 : 28;
+  }
+  return [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][monthIdx];
+}
+
+
 export function parseTxDate(dateStr: string, fallback: string): Date {
   // Sanitize noisy inputs: strip zero-width / invisible unicode that would
   // otherwise split tokens, and drop stray pontuação that gets attached to
@@ -106,7 +119,13 @@ export function parseTxDate(dateStr: string, fallback: string): Date {
       let year = fallbackYear;
       if (monthIdx === 0 && fallbackMonth >= 10) year = fallbackYear + 1;   // jan tx, created in Nov/Dec → next year
       else if (monthIdx === 11 && fallbackMonth <= 1) year = fallbackYear - 1; // dez tx, created in Jan/Fev → previous year
-      return new Date(year, monthIdx, day);
+      // Reject day-of-month overflow (e.g. "31 nov", "31 abr", "30 fev"):
+      // silently letting `new Date(y,m,31)` roll into the next month would
+      // place the tx in the wrong billing cycle. Fall back to `created_at`.
+      if (day >= 1 && day <= daysInMonth(year, monthIdx)) {
+        return new Date(year, monthIdx, day);
+      }
+      return hasFallback ? fallbackDate : new Date();
     }
     // "DD <not-a-month>" (e.g. "07 marte", "07 janela"): the input claims to
     // be a "day + month" pair but the second token is not a Portuguese month.
@@ -116,6 +135,7 @@ export function parseTxDate(dateStr: string, fallback: string): Date {
       return hasFallback ? fallbackDate : new Date();
     }
   }
+
 
   // Numeric textual dates with separators "/" or "-".
   // pt-BR convention is DD/MM[/YYYY]; ISO is YYYY-MM-DD. We detect ISO by a
@@ -150,10 +170,16 @@ export function parseTxDate(dateStr: string, fallback: string): Date {
         if (monthIdx === 0 && fallbackMonth >= 10) year = fallbackYear + 1;
         else if (monthIdx === 11 && fallbackMonth <= 1) year = fallbackYear - 1;
       }
-      return new Date(year, monthIdx, day);
+      // Reject day-of-month overflow (e.g. "31/11", "31/04", "29/02" in a
+      // non-leap year). Silently rolling into the next month would place
+      // the tx in the wrong billing cycle — fall back to `created_at`.
+      if (day <= daysInMonth(year, monthIdx)) {
+        return new Date(year, monthIdx, day);
+      }
     }
     return hasFallback ? fallbackDate : new Date();
   }
+
 
   const d = new Date(rawCleaned || dateStr);
   return isNaN(d.getTime()) ? (hasFallback ? fallbackDate : new Date()) : d;
