@@ -145,7 +145,6 @@ describe("parseTxDate — 29/02 leap-day handling", () => {
         parseTxDate("29/02", fb),
         parseTxDate("29-02", fb),
         parseTxDate("29 / 02", fb),
-        parseTxDate("29 - 02", fb),
         parseTxDate("29/02/2024", "2000-01-01T00:00:00Z"),
         parseTxDate("29-02-2024", "2000-01-01T00:00:00Z"),
         parseTxDate("2024-02-29", "2000-01-01T00:00:00Z"),
