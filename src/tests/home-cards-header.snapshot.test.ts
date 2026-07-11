@@ -39,10 +39,10 @@ describe("Home · CARTÕES header", () => {
 
   it("aligns the month selector on the right of the CARTÕES title", () => {
     const header = extractCardsHeader(source);
-    // Single justify-between row with title on the left and the month
-    // navigator wrapper on the right.
+    // Two-column grid keeps the title on the left (min-w-0 + truncate) and
+    // the selector pinned right (shrink-0 + justify-self-end) on every width.
     expect(header).toMatch(
-      /flex items-center justify-between[^"]*"[\s\S]*CART[ÕO]ES[\s\S]*ChevronLeft[\s\S]*ChevronRight/
+      /grid grid-cols-\[minmax\(0,1fr\)_auto\][\s\S]*CART[ÕO]ES[\s\S]*shrink-0 justify-self-end[\s\S]*ChevronLeft[\s\S]*ChevronRight/
     );
     // Prev / next controls sit in the same inline flex group.
     expect(header).toMatch(/flex items-center gap-0\.5/);
@@ -51,18 +51,20 @@ describe("Home · CARTÕES header", () => {
     expect(header).toMatch(/aria-label="Fatura do próximo mês"/);
   });
 
+
+
   it("matches the CARTÕES header snapshot", () => {
     const header = extractCardsHeader(source);
     expect(header).toMatchInlineSnapshot(`
       "{/* Credit Cards Summary */}
             <div className="rounded-2xl bg-gradient-to-br from-primary/15 via-card to-card p-4 border border-border/40">
-              <div className="flex items-center justify-between gap-4 mb-2">
-                <h2 className="text-sm font-semibold text-foreground flex items-center gap-1.5 uppercase">
-                  <CreditCard className="h-4 w-4 text-primary" />
-                  CARTÕES
+              <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 mb-2">
+                <h2 className="min-w-0 text-sm font-semibold text-foreground flex items-center gap-1.5 uppercase truncate">
+                  <CreditCard className="h-4 w-4 shrink-0 text-primary" />
+                  <span className="truncate">CARTÕES</span>
                 </h2>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 shrink-0 justify-self-end">
                   {(() => {
                     const today = new Date();
                     const ref = new Date(today.getFullYear(), today.getMonth() + homeMonthOffset, 15);
