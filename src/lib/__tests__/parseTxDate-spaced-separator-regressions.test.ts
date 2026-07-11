@@ -90,7 +90,7 @@ describe("parseTxDate — separadores espaçados (regressões pinadas)", () => {
         // Cycle key derivada do vencimento em formato YYYY-MM.
         const key = (d: Date) =>
           `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-        expect(key(spacedCycle.dueDate)).toBe(key(canonicalCycle.dueDate));
+        expect(key(spacedCycle.currentDue)).toBe(key(canonicalCycle.currentDue));
       },
     );
   });
