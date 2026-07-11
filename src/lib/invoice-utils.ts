@@ -131,10 +131,14 @@ export function parseTxDate(dateStr: string, fallback: string): Date {
     // be a "day + month" pair but the second token is not a Portuguese month.
     // Skip the native `new Date(dateStr)` parser (V8 is too lenient here —
     // "07 janela" gets read as Jan 7) and go straight to the fallback.
-    if (dayLooksNumeric) {
+    // Exception: if the second token is itself numeric (e.g. "15 / 07" whose
+    // "/" got filtered out), fall through so the numeric branch can handle it.
+    const secondLooksNumeric = /^-?\d+$/.test(parts[1]);
+    if (dayLooksNumeric && !secondLooksNumeric) {
       return hasFallback ? fallbackDate : new Date();
     }
   }
+
 
 
   // Numeric textual dates with separators "/" or "-".
@@ -142,7 +146,16 @@ export function parseTxDate(dateStr: string, fallback: string): Date {
   // 4-digit leading segment; everything else is treated as day-first so that
   // "10/07", "10-07", "10/07/2026" and "10-07-2026" all resolve to the same
   // day/month (and, for 2-part inputs, the same billing cycle as "10 jul").
-  const numericParts = cleaned.split(/\s*[\/\-]\s*/);
+  // Split from a version of the input that keeps numeric separators intact —
+  // `cleaned` collapses " - " to a single space for the DD-Month path, which
+  // would destroy "31 - 12". Strip the same trailing punctuation `cleaned`
+  // removes so noisy inputs like "10.,/07!" still match.
+  const numericSource = rawCleaned
+    .replace(/[.,;:!?]+/g, "")
+    .replace(/\s*([\/\-])\s*/g, "$1");
+  const numericParts = numericSource.split(/[\/\-]/);
+
+
   if (
     (numericParts.length === 2 || numericParts.length === 3) &&
     numericParts.every((p) => /^\d+$/.test(p))
