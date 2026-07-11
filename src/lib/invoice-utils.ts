@@ -83,7 +83,9 @@ export function parseTxDate(dateStr: string, fallback: string): Date {
     .replace(/[.,;:!?]+/g, "")
     .replace(/\s+/g, " ")
     .trim();
-  const parts = cleaned.toLowerCase().split(/\s+/);
+  // Drop lone punctuation-only tokens (e.g. a trailing "-") that survive
+  // sanitization when they were space-separated in the original string.
+  const parts = cleaned.toLowerCase().split(/\s+/).filter((t) => /[a-z0-9]/.test(t));
   const fallbackDate = new Date(fallback);
   const hasFallback = !isNaN(fallbackDate.getTime());
   const fallbackYear = hasFallback ? fallbackDate.getFullYear() : new Date().getFullYear();
