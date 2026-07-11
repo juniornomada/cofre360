@@ -1071,7 +1071,7 @@ function Dashboard() {
           </h2>
 
 
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-2 shrink-0 justify-self-end">
             {healthScore !== null && balanceVisible && healthScore >= 40 && (
               <div className={cn(
                 "hidden sm:flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold",
