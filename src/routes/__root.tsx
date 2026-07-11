@@ -208,6 +208,11 @@ function RootShell({ children }: { children: React.ReactNode }) {
          )}
       </div>
       <Toaster />
+      {import.meta.env.DEV && (
+        <Suspense fallback={null}>
+          <CycleMismatchDevBanner />
+        </Suspense>
+      )}
     </TooltipProvider>
   );
 }
