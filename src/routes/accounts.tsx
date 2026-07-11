@@ -683,6 +683,49 @@ function AccountsPage() {
     setRecalcRealBalance(current);
   };
 
+  const openBreakdown = async (a: BankAccount) => {
+    setBreakdownAccount(a);
+    setBreakdownData(null);
+    setIsLoadingBreakdown(true);
+    try {
+      const { data, error } = await supabase
+        .from("transactions")
+        .select("id, date, description, amount, type, is_visible, card")
+        .eq("bank_account_id", a.id)
+        .order("date", { ascending: false });
+      if (error) throw error;
+
+      const included: any[] = [];
+      const hidden: any[] = [];
+      const cardLinked: any[] = [];
+      let incomeSum = 0, expenseSum = 0, hiddenIncomeSum = 0, hiddenExpenseSum = 0, cardSum = 0;
+
+      for (const tx of data || []) {
+        const amt = Number(tx.amount) || 0;
+        if (tx.card) {
+          cardLinked.push(tx);
+          cardSum += amt;
+        } else if (tx.is_visible === false) {
+          hidden.push(tx);
+          if (tx.type === "income") hiddenIncomeSum += amt;
+          else hiddenExpenseSum += amt;
+        } else {
+          included.push(tx);
+          if (tx.type === "income") incomeSum += amt;
+          else expenseSum += amt;
+        }
+      }
+      setBreakdownData({ included, hidden, cardLinked, incomeSum, expenseSum, hiddenIncomeSum, hiddenExpenseSum, cardSum });
+    } catch (error: any) {
+      console.error("Error loading breakdown:", error);
+      toast.error("Erro ao carregar composição: " + (error.message || "Erro desconhecido"));
+    } finally {
+      setIsLoadingBreakdown(false);
+    }
+  };
+
+
+
   const handleRecalc = async () => {
     if (!recalcAccount || isRecalcing) return;
     const income = incomeByAccount[recalcAccount.id] || 0;
