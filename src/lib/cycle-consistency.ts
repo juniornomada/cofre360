@@ -24,7 +24,89 @@ export type CycleSnapshot = {
 
 type Key = string; // `${cardId}::${periodKey}`
 
-const TOLERANCE = 0.01;
+/**
+ * Tolerance for considering two snapshots equal.
+ *
+ * - `absolute` — hard floor expressed in reais (e.g. `0.01` = 1 cent).
+ * - `percent`  — relative floor as a fraction of `max(|a|, |b|)` (e.g. `0.001` = 0.1%).
+ *
+ * Two values `a` and `b` are considered equal when
+ * `|a - b| <= max(absolute, percent * max(|a|, |b|))`.
+ *
+ * Defaults: `absolute = 0.01`, `percent = 0` (pure 1-cent tolerance).
+ *
+ * Overridable at runtime via `configureCycleTolerance()` (tests) or at
+ * bundle time via env vars read from `import.meta.env`:
+ *   - `VITE_CYCLE_TOLERANCE_CENTS` — integer cents, e.g. `"1"` or `"5"`.
+ *   - `VITE_CYCLE_TOLERANCE_REAIS` — decimal reais, e.g. `"0.01"`.
+ *   - `VITE_CYCLE_TOLERANCE_PERCENT` — fraction (`"0.001"`) or percent
+ *     string (`"0.1%"`).
+ * `CENTS` wins over `REAIS` when both are present.
+ */
+export type CycleTolerance = {
+  absolute: number;
+  percent: number;
+};
+
+function readEnv(name: string): string | undefined {
+  try {
+    const env = (import.meta as any)?.env;
+    const v = env?.[name];
+    if (typeof v === "string" && v.trim() !== "") return v.trim();
+  } catch { /* import.meta unavailable */ }
+  try {
+    const v = (globalThis as any)?.process?.env?.[name];
+    if (typeof v === "string" && v.trim() !== "") return v.trim();
+  } catch { /* no process */ }
+  return undefined;
+}
+
+function parseNumber(s: string | undefined): number | undefined {
+  if (s === undefined) return undefined;
+  const n = Number(s);
+  return Number.isFinite(n) ? n : undefined;
+}
+
+function parsePercent(s: string | undefined): number | undefined {
+  if (s === undefined) return undefined;
+  const trimmed = s.endsWith("%") ? s.slice(0, -1) : s;
+  const n = Number(trimmed);
+  if (!Number.isFinite(n)) return undefined;
+  return s.endsWith("%") ? n / 100 : n;
+}
+
+function defaultTolerance(): CycleTolerance {
+  const cents = parseNumber(readEnv("VITE_CYCLE_TOLERANCE_CENTS"));
+  const reais = parseNumber(readEnv("VITE_CYCLE_TOLERANCE_REAIS"));
+  const percent = parsePercent(readEnv("VITE_CYCLE_TOLERANCE_PERCENT"));
+  const absolute =
+    cents !== undefined && cents >= 0 ? cents / 100
+    : reais !== undefined && reais >= 0 ? reais
+    : 0.01;
+  return {
+    absolute,
+    percent: percent !== undefined && percent >= 0 ? percent : 0,
+  };
+}
+
+let tolerance: CycleTolerance = defaultTolerance();
+
+/** Override the tolerance at runtime. Pass `null` / no arg to reset to env defaults. */
+export function configureCycleTolerance(next?: Partial<CycleTolerance> | null): CycleTolerance {
+  if (!next) {
+    tolerance = defaultTolerance();
+  } else {
+    tolerance = {
+      absolute: next.absolute !== undefined && next.absolute >= 0 ? next.absolute : tolerance.absolute,
+      percent: next.percent !== undefined && next.percent >= 0 ? next.percent : tolerance.percent,
+    };
+  }
+  return { ...tolerance };
+}
+
+export function getCycleTolerance(): CycleTolerance {
+  return { ...tolerance };
+}
 
 const snapshots: Map<Key, Map<CycleSource, CycleSnapshot>> = new Map();
 const warned: Set<string> = new Set();
@@ -73,7 +155,9 @@ export function _debugSnapshots(): Record<string, Record<string, CycleSnapshot>>
 }
 
 function near(a: number, b: number): boolean {
-  return Math.abs(a - b) <= TOLERANCE;
+  const diff = Math.abs(a - b);
+  const bound = Math.max(tolerance.absolute, tolerance.percent * Math.max(Math.abs(a), Math.abs(b)));
+  return diff <= bound;
 }
 
 function fmt(n: number): string {
@@ -155,7 +239,7 @@ export function reportCycleSnapshot(input: ReportInput): boolean {
           cardName: input.cardName ?? null,
           periodKey: input.periodKey,
           monthLabel: input.monthLabel ?? null,
-          tolerance: { reais: TOLERANCE, cents: toCents(TOLERANCE) },
+          tolerance: { absolute: tolerance.absolute, absoluteCents: toCents(tolerance.absolute), percent: tolerance.percent },
           [otherSource]: normalize(other),
           [input.source]: normalize(snap),
           delta: {
