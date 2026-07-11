@@ -405,7 +405,7 @@ function Dashboard() {
           amount: Number(t.amount),
           date: (t as any).date || "",
           type: t.type || "expense",
-          created_at: (t as any).date || new Date().toISOString(),
+          created_at: (t as any).created_at || new Date().toISOString(),
         });
       }
       setCardTxsByName(txsByName);
