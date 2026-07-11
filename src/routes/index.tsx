@@ -395,6 +395,26 @@ function Dashboard() {
       setCardPayments(cardPaymentsMonthly);
       setCardInvoicePaid(invoicePaidStatus);
       setCardPaidCurrentInvoice(paidCurrentInvoice);
+
+      // Store raw txs/payments for month navigation
+      const txsByName: Record<string, { amount: number; date: string; type: string; created_at: string }[]> = {};
+      for (const t of txTotals) {
+        if (!t.card) continue;
+        if (!txsByName[t.card]) txsByName[t.card] = [];
+        txsByName[t.card].push({
+          amount: Number(t.amount),
+          date: (t as any).date || "",
+          type: t.type || "expense",
+          created_at: (t as any).date || new Date().toISOString(),
+        });
+      }
+      setCardTxsByName(txsByName);
+      const paysByCard: Record<string, { amount: number; paid_at: string | null }[]> = {};
+      for (const p of payments || []) {
+        if (!paysByCard[p.card_id]) paysByCard[p.card_id] = [];
+        paysByCard[p.card_id].push({ amount: Number(p.amount), paid_at: p.paid_at });
+      }
+      setCardPaymentsByCard(paysByCard);
     }
 
     const acctNameById: Record<string, string> = {};
