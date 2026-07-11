@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as TransactionsRouteImport } from './routes/transactions'
 import { Route as ShopRouteImport } from './routes/shop'
 import { Route as RemindersRouteImport } from './routes/reminders'
+import { Route as ReconciliationRouteImport } from './routes/reconciliation'
 import { Route as OrcametasRouteImport } from './routes/orcametas'
 import { Route as InvestRouteImport } from './routes/invest'
 import { Route as InsightsRouteImport } from './routes/insights'
@@ -23,6 +24,7 @@ import { Route as BudgetRouteImport } from './routes/budget'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AccountsRouteImport } from './routes/accounts'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiPublicHooksReconciliationDailyRouteImport } from './routes/api/public/hooks/reconciliation-daily'
 
 const TransactionsRoute = TransactionsRouteImport.update({
   id: '/transactions',
@@ -37,6 +39,11 @@ const ShopRoute = ShopRouteImport.update({
 const RemindersRoute = RemindersRouteImport.update({
   id: '/reminders',
   path: '/reminders',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReconciliationRoute = ReconciliationRouteImport.update({
+  id: '/reconciliation',
+  path: '/reconciliation',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OrcametasRoute = OrcametasRouteImport.update({
@@ -94,6 +101,12 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicHooksReconciliationDailyRoute =
+  ApiPublicHooksReconciliationDailyRouteImport.update({
+    id: '/api/public/hooks/reconciliation-daily',
+    path: '/api/public/hooks/reconciliation-daily',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -107,9 +120,11 @@ export interface FileRoutesByFullPath {
   '/insights': typeof InsightsRoute
   '/invest': typeof InvestRoute
   '/orcametas': typeof OrcametasRoute
+  '/reconciliation': typeof ReconciliationRoute
   '/reminders': typeof RemindersRoute
   '/shop': typeof ShopRoute
   '/transactions': typeof TransactionsRoute
+  '/api/public/hooks/reconciliation-daily': typeof ApiPublicHooksReconciliationDailyRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -123,9 +138,11 @@ export interface FileRoutesByTo {
   '/insights': typeof InsightsRoute
   '/invest': typeof InvestRoute
   '/orcametas': typeof OrcametasRoute
+  '/reconciliation': typeof ReconciliationRoute
   '/reminders': typeof RemindersRoute
   '/shop': typeof ShopRoute
   '/transactions': typeof TransactionsRoute
+  '/api/public/hooks/reconciliation-daily': typeof ApiPublicHooksReconciliationDailyRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -140,9 +157,11 @@ export interface FileRoutesById {
   '/insights': typeof InsightsRoute
   '/invest': typeof InvestRoute
   '/orcametas': typeof OrcametasRoute
+  '/reconciliation': typeof ReconciliationRoute
   '/reminders': typeof RemindersRoute
   '/shop': typeof ShopRoute
   '/transactions': typeof TransactionsRoute
+  '/api/public/hooks/reconciliation-daily': typeof ApiPublicHooksReconciliationDailyRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -158,9 +177,11 @@ export interface FileRouteTypes {
     | '/insights'
     | '/invest'
     | '/orcametas'
+    | '/reconciliation'
     | '/reminders'
     | '/shop'
     | '/transactions'
+    | '/api/public/hooks/reconciliation-daily'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -174,9 +195,11 @@ export interface FileRouteTypes {
     | '/insights'
     | '/invest'
     | '/orcametas'
+    | '/reconciliation'
     | '/reminders'
     | '/shop'
     | '/transactions'
+    | '/api/public/hooks/reconciliation-daily'
   id:
     | '__root__'
     | '/'
@@ -190,9 +213,11 @@ export interface FileRouteTypes {
     | '/insights'
     | '/invest'
     | '/orcametas'
+    | '/reconciliation'
     | '/reminders'
     | '/shop'
     | '/transactions'
+    | '/api/public/hooks/reconciliation-daily'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -207,9 +232,11 @@ export interface RootRouteChildren {
   InsightsRoute: typeof InsightsRoute
   InvestRoute: typeof InvestRoute
   OrcametasRoute: typeof OrcametasRoute
+  ReconciliationRoute: typeof ReconciliationRoute
   RemindersRoute: typeof RemindersRoute
   ShopRoute: typeof ShopRoute
   TransactionsRoute: typeof TransactionsRoute
+  ApiPublicHooksReconciliationDailyRoute: typeof ApiPublicHooksReconciliationDailyRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -233,6 +260,13 @@ declare module '@tanstack/react-router' {
       path: '/reminders'
       fullPath: '/reminders'
       preLoaderRoute: typeof RemindersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reconciliation': {
+      id: '/reconciliation'
+      path: '/reconciliation'
+      fullPath: '/reconciliation'
+      preLoaderRoute: typeof ReconciliationRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/orcametas': {
@@ -312,6 +346,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/reconciliation-daily': {
+      id: '/api/public/hooks/reconciliation-daily'
+      path: '/api/public/hooks/reconciliation-daily'
+      fullPath: '/api/public/hooks/reconciliation-daily'
+      preLoaderRoute: typeof ApiPublicHooksReconciliationDailyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -327,9 +368,12 @@ const rootRouteChildren: RootRouteChildren = {
   InsightsRoute: InsightsRoute,
   InvestRoute: InvestRoute,
   OrcametasRoute: OrcametasRoute,
+  ReconciliationRoute: ReconciliationRoute,
   RemindersRoute: RemindersRoute,
   ShopRoute: ShopRoute,
   TransactionsRoute: TransactionsRoute,
+  ApiPublicHooksReconciliationDailyRoute:
+    ApiPublicHooksReconciliationDailyRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
