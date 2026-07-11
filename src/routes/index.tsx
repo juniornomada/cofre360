@@ -1070,13 +1070,9 @@ function Dashboard() {
               <Landmark className="h-4 w-4 text-primary" />
               CONTAS
             </h2>
-            <p className={cn(
-              "text-2xl font-bold tabular-nums transition-all duration-300 truncate",
-              balance >= 0 ? "text-foreground" : "text-destructive"
-            )}>
-              {balanceVisible ? `R$ ${fmt(balance)}` : "R$ ••••••"}
-            </p>
           </div>
+
+
           
           <div className="flex items-center gap-2 shrink-0 self-end mb-0.5">
             {healthScore !== null && balanceVisible && healthScore >= 40 && (
