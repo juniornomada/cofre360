@@ -79,8 +79,14 @@ describe("Accounts · linha de Abertura", () => {
 
   it("mascara o valor quando balanceVisible = false", () => {
     expect(block).toMatch(/balanceVisible[\s\S]*R\$ ••••/);
-    // Formato pt-BR com 2 casas decimais quando visível.
-    expect(block).toMatch(/toLocaleString\("pt-BR", \{ minimumFractionDigits: 2 \}\)/);
+    // Usa o formatador centralizado com sinal explícito para débito/crédito.
+    expect(block).toMatch(/formatSignedBRL\(openingBalance\)/);
+  });
+
+  it("aplica cor destrutiva quando a abertura é negativa e não é o único componente", () => {
+    expect(block).toMatch(
+      /openingBalance < 0 && !openingIsOnlyComponent[\s\S]*\?\s*"text-destructive"/,
+    );
   });
 
   it("congela a marcação completa do bloco de Abertura (snapshot inline)", () => {
@@ -93,11 +99,14 @@ describe("Accounts · linha de Abertura", () => {
                               openingIsOnlyComponent
                                 ? "font-semibold text-primary"
                                 : "text-muted-foreground",
+                              openingBalance < 0 && !openingIsOnlyComponent
+                                ? "text-destructive"
+                                : "",
                             )}
                             title="Saldo de abertura da conta"
                           >
                             Abertura: {balanceVisible
-                              ? \`R$ \${openingBalance.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}\`
+                              ? formatSignedBRL(openingBalance)
                               : "R$ ••••"}
                           </span>
                           {openingIsOnlyComponent && (
