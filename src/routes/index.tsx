@@ -935,7 +935,23 @@ function Dashboard() {
 
   return (
     <div className="animate-page-enter flex flex-col gap-4 px-3 pt-4 pb-20">
+      {openDivergences > 0 && (
+        <Link
+          to="/reconciliation"
+          className="flex items-center justify-between gap-2 rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive hover:bg-destructive/15 transition-colors"
+          aria-label={`${openDivergences} divergência(s) de reconciliação abertas`}
+        >
+          <span className="flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 shrink-0" />
+            <span className="font-medium">
+              {openDivergences} divergência{openDivergences > 1 ? "s" : ""} de reconciliação aberta{openDivergences > 1 ? "s" : ""}
+            </span>
+          </span>
+          <span className="text-[10px] font-semibold uppercase tracking-wide">Revisar</span>
+        </Link>
+      )}
       {/* Header */}
+
       <div className="flex items-center justify-between">
         <div className="flex flex-col items-center">
           <div
