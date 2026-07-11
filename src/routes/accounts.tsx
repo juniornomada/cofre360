@@ -1196,6 +1196,128 @@ function AccountsPage() {
         </DialogContent>
       </Dialog>
 
+      {/* Composição do saldo dialog */}
+      <Dialog open={!!breakdownAccount} onOpenChange={(v) => { if (!v) { setBreakdownAccount(null); setBreakdownData(null); } }}>
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Composição do saldo{breakdownAccount ? ` — ${breakdownAccount.name}` : ""}</DialogTitle>
+          </DialogHeader>
+          {isLoadingBreakdown && (
+            <div className="flex items-center justify-center py-10">
+              <Loader2 className="h-5 w-5 animate-spin text-primary" />
+            </div>
+          )}
+          {breakdownAccount && breakdownData && !isLoadingBreakdown && (() => {
+            const opening = Math.round(Number(breakdownAccount.balance || 0) * 100) / 100;
+            const income = breakdownData.incomeSum;
+            const expense = breakdownData.expenseSum;
+            const total = Math.round((opening + income - expense) * 100) / 100;
+            const fmt = (n: number) => `R$ ${n.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
+            const fmtDate = (d: string) => {
+              try { return new Date(d).toLocaleDateString("pt-BR"); } catch { return d; }
+            };
+            return (
+              <div className="space-y-5">
+                {/* Fórmula */}
+                <div className="rounded-xl border border-border bg-accent/30 p-4 space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Abertura</span>
+                    <span className="font-semibold tabular-nums">{fmt(opening)}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">+ Receitas ({breakdownData.included.filter(t => t.type === "income").length})</span>
+                    <span className="font-semibold tabular-nums text-emerald-600">{fmt(income)}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">− Despesas ({breakdownData.included.filter(t => t.type !== "income").length})</span>
+                    <span className="font-semibold tabular-nums text-destructive">{fmt(expense)}</span>
+                  </div>
+                  <div className="h-px bg-border my-1" />
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="font-bold text-foreground">= Saldo atual</span>
+                    <span className={cn("font-bold tabular-nums", total < 0 ? "text-destructive" : "text-foreground")}>{fmt(total)}</span>
+                  </div>
+                </div>
+
+                {/* Ignoradas: vinculadas a cartão */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <CreditCard className="h-3.5 w-3.5 text-muted-foreground" />
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                        Ignoradas — vinculadas a cartão ({breakdownData.cardLinked.length})
+                      </p>
+                    </div>
+                    <span className="text-[11px] tabular-nums text-muted-foreground">{fmt(breakdownData.cardSum)}</span>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground/80">Não afetam o saldo da conta — impactam a fatura do cartão.</p>
+                  {breakdownData.cardLinked.length > 0 ? (
+                    <div className="rounded-lg border border-border max-h-40 overflow-y-auto divide-y divide-border/60">
+                      {breakdownData.cardLinked.map((tx) => (
+                        <div key={tx.id} className="flex items-center justify-between px-3 py-1.5 text-xs">
+                          <div className="min-w-0 flex-1">
+                            <p className="font-medium text-foreground truncate">{tx.description || "(sem descrição)"}</p>
+                            <p className="text-[10px] text-muted-foreground">{fmtDate(tx.date)} · {tx.card}</p>
+                          </div>
+                          <span className={cn("tabular-nums font-semibold ml-2", tx.type === "income" ? "text-emerald-600" : "text-destructive")}>
+                            {tx.type === "income" ? "+" : "−"}{fmt(Number(tx.amount) || 0)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground italic px-1">Nenhuma.</p>
+                  )}
+                </div>
+
+                {/* Ocultadas */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <EyeOff className="h-3.5 w-3.5 text-muted-foreground" />
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                        Ocultadas ({breakdownData.hidden.length})
+                      </p>
+                    </div>
+                    <span className="text-[11px] tabular-nums text-muted-foreground">
+                      +{fmt(breakdownData.hiddenIncomeSum)} / −{fmt(breakdownData.hiddenExpenseSum)}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground/80">Marcadas como invisíveis — excluídas do saldo até serem reexibidas.</p>
+                  {breakdownData.hidden.length > 0 ? (
+                    <div className="rounded-lg border border-border max-h-40 overflow-y-auto divide-y divide-border/60">
+                      {breakdownData.hidden.map((tx) => (
+                        <div key={tx.id} className="flex items-center justify-between px-3 py-1.5 text-xs">
+                          <div className="min-w-0 flex-1">
+                            <p className="font-medium text-foreground truncate">{tx.description || "(sem descrição)"}</p>
+                            <p className="text-[10px] text-muted-foreground">{fmtDate(tx.date)}</p>
+                          </div>
+                          <span className={cn("tabular-nums font-semibold ml-2", tx.type === "income" ? "text-emerald-600" : "text-destructive")}>
+                            {tx.type === "income" ? "+" : "−"}{fmt(Number(tx.amount) || 0)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground italic px-1">Nenhuma.</p>
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => { setBreakdownAccount(null); setBreakdownData(null); }}
+                  className="w-full py-2.5 rounded-xl bg-accent text-foreground text-sm font-semibold hover:bg-accent/80 transition-colors"
+                >
+                  Fechar
+                </button>
+              </div>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
+
+
+
       <Dialog open={zeroConfirmOpen} onOpenChange={(v) => { if (!v && !isZeroing) setZeroConfirmOpen(false); }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
