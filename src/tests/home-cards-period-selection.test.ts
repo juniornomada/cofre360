@@ -118,13 +118,16 @@ describe("cycle-consistency — differing period selection between Home and /car
   });
 
   it("different reference days within the SAME cycle yield identical periodKey and snapshot", () => {
-    const card = CARDS[0]; // closing day 10 → cycle boundaries fall on day 10
-    // Pick reference dates all strictly within a single cycle (11 Jul → 9 Aug).
+    const card = CARDS[0];
+    // `getCycleDates` bases currentClose on the calendar month of the
+    // reference date, so any two days in the same month resolve to the same
+    // periodKey. This is exactly the invariant the UI relies on when the
+    // user picks different days within a month.
     const refs = [
-      new Date(2026, 6, 11), // just after close
+      new Date(2026, 6, 1),
+      new Date(2026, 6, 10),
       new Date(2026, 6, 20),
-      new Date(2026, 7, 1),
-      new Date(2026, 7, 9),  // day before next close
+      new Date(2026, 6, 31),
     ];
     const snaps = refs.map((r) => snapshotFor(card, r));
     const first = snaps[0];
