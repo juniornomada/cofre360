@@ -1,8 +1,10 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import {
   reportCycleSnapshot,
   resetCycleConsistencyCheck,
   enableCycleConsistencyCheck,
+  configureCycleTolerance,
+  getCycleTolerance,
   _debugSnapshots,
 } from "../cycle-consistency";
 
@@ -10,7 +12,11 @@ describe("cycle-consistency", () => {
   beforeEach(() => {
     resetCycleConsistencyCheck();
     enableCycleConsistencyCheck(true);
+    configureCycleTolerance({ absolute: 0.01, percent: 0 });
     vi.restoreAllMocks();
+  });
+  afterEach(() => {
+    configureCycleTolerance(null);
   });
 
   it("does not warn when a single source reports", () => {
