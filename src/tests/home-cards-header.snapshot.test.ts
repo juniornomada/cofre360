@@ -22,13 +22,10 @@ const source = readFileSync(
 function extractCardsHeader(src: string): string {
   const start = src.indexOf("{/* Credit Cards Summary */}");
   if (start === -1) throw new Error("CARTÕES section marker not found");
-  // Grab a bounded slice large enough for the header block.
-  const slice = src.slice(start, start + 2000);
-  // Keep everything up to (and including) the closing of the header row
-  // (the `<div className="flex items-center justify-between ...">` block).
-  const headerEnd = slice.indexOf("</div>\n        </div>");
-  if (headerEnd === -1) throw new Error("CARTÕES header end not found");
-  return slice.slice(0, headerEnd + "</div>\n        </div>".length);
+  const endMarker = "{allCards.length === 0";
+  const endIdx = src.indexOf(endMarker, start);
+  if (endIdx === -1) throw new Error("CARTÕES header end not found");
+  return src.slice(start, endIdx).trimEnd();
 }
 
 describe("Home · CARTÕES header", () => {
