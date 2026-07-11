@@ -860,7 +860,7 @@ export function TransactionsPage() {
                   </button>
                 </div>
               )}
-              <button onClick={exitSelectionMode} className="flex h-8 w-8 items-center justify-center rounded-full bg-card text-muted-foreground border border-border">
+              <button onClick={exitSelectionMode} aria-label="Sair do modo de seleção" title="Sair do modo de seleção" className="flex h-8 w-8 items-center justify-center rounded-full bg-card text-muted-foreground border border-border">
                 <X className="h-4 w-4" />
               </button>
             </>
