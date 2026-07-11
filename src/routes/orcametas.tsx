@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";
 import { SmartLink as Link } from "@/components/SmartLink";
 import { ArrowLeft, Plus, TrendingDown, Loader2, Pencil, Trash2, Target } from "lucide-react";
 import { useState, useEffect, useCallback, useMemo } from "react";
@@ -72,6 +72,9 @@ const MONTH_NAMES = [
 ];
 
 function OrcaMetasPage() {
+  const navigate = useNavigate();
+  const search = useSearch({ from: "/orcametas" }) as { tab?: "budget" | "goals" };
+  const activeTab: "budget" | "goals" = search.tab === "goals" ? "goals" : "budget";
   // Budget state
   const [items, setItems] = useState<BudgetItem[]>([]);
   const [transactions, setTransactions] = useState<TxRow[]>([]);
@@ -307,11 +310,15 @@ function OrcaMetasPage() {
         </Link>
         <div>
           <h1 className="text-xl font-bold text-foreground">OrçaMetas</h1>
-          <p className="text-sm text-muted-foreground">Orçamento e metas em um só lugar</p>
+          <p className="text-sm text-muted-foreground">Orçamento e metas em um só lugar · {monthLabel}</p>
         </div>
       </div>
 
-      <Tabs defaultValue="budget" className="flex flex-col gap-4">
+      <Tabs
+        value={activeTab}
+        onValueChange={(v) => navigate({ to: "/orcametas", search: { tab: v as "budget" | "goals" } as any, replace: true })}
+        className="flex flex-col gap-4"
+      >
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="budget">Orçamento</TabsTrigger>
           <TabsTrigger value="goals">Metas</TabsTrigger>
@@ -597,6 +604,9 @@ function OrcaMetasPage() {
 }
 
 export const Route = createFileRoute("/orcametas")({
+  validateSearch: (s: Record<string, unknown>): { tab?: "budget" | "goals" } => ({
+    tab: s.tab === "goals" ? "goals" : s.tab === "budget" ? "budget" : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "OrçaMetas — Cofre 360" },
