@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { SmartLink as Link } from "@/components/SmartLink";
-import { ArrowLeft, Plus, Landmark, Trash2, X, Check, Loader2, Upload, FileText, MoreVertical, GripVertical, Pencil, Eye, EyeOff, CheckSquare, Square, Filter, FilterX, Search, SlidersHorizontal, Calculator } from "lucide-react";
+import { ArrowLeft, Plus, Landmark, Trash2, X, Check, Loader2, Upload, FileText, MoreVertical, GripVertical, Pencil, Eye, EyeOff, CheckSquare, Square, Filter, FilterX, Search, SlidersHorizontal, Calculator, Eraser } from "lucide-react";
 import { useUserPreferences } from "@/hooks/use-user-preferences";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
@@ -706,6 +706,48 @@ function AccountsPage() {
     }
   };
 
+  const [zeroConfirmOpen, setZeroConfirmOpen] = useState(false);
+  const [isZeroing, setIsZeroing] = useState(false);
+
+  const eligibleForZero = accounts.filter((a) => {
+    const income = incomeByAccount[a.id] || 0;
+    const expense = expenseByAccount[a.id] || 0;
+    return income === 0 && expense === 0 && Math.abs(Number(a.balance || 0)) >= 0.005;
+  });
+
+  const handleZeroOpenings = async () => {
+    if (eligibleForZero.length === 0 || isZeroing) return;
+    setIsZeroing(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const ids = eligibleForZero.map((a) => a.id);
+      const { error } = await supabase
+        .from("bank_accounts")
+        .update({ balance: 0 })
+        .in("id", ids);
+      if (error) throw error;
+
+      await supabase.from("bank_account_balance_history").insert(
+        eligibleForZero.map((a) => ({
+          bank_account_id: a.id,
+          previous_balance: Number(a.balance || 0),
+          new_balance: 0,
+          user_id: user?.id,
+        })),
+      );
+
+      toast.success(`${eligibleForZero.length} ${eligibleForZero.length === 1 ? "abertura zerada" : "aberturas zeradas"}`);
+      setZeroConfirmOpen(false);
+      fetchAccounts();
+    } catch (error: any) {
+      console.error("Error zeroing openings:", error);
+      toast.error("Erro ao zerar aberturas: " + (error.message || "Erro desconhecido"));
+    } finally {
+      setIsZeroing(false);
+    }
+  };
+
+
    const cancelEdit = () => setEditingAccount(null);
 
   const handleDelete = async (id: string) => {
@@ -795,7 +837,18 @@ function AccountsPage() {
                 {isSelectionMode ? "Cancelar Seleção" : "Seleção Múltipla"}
               </button>
             </div>
+            {eligibleForZero.length > 0 && !isSelectionMode && (
+              <button
+                onClick={() => setZeroConfirmOpen(true)}
+                className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors"
+                title="Zerar abertura de contas sem transações visíveis"
+              >
+                <Eraser className="h-3 w-3" />
+                Zerar aberturas ({eligibleForZero.length})
+              </button>
+            )}
           </div>
+
           {isSelectionMode && selectedIds.size > 0 && (
             <div className="flex items-center gap-2 px-1 animate-in slide-in-from-top-1 duration-200">
               <button 
@@ -1075,6 +1128,53 @@ function AccountsPage() {
           })()}
         </DialogContent>
       </Dialog>
+
+      <Dialog open={zeroConfirmOpen} onOpenChange={(v) => { if (!v && !isZeroing) setZeroConfirmOpen(false); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Zerar aberturas sem movimentações</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              O saldo de abertura das contas abaixo será definido como <span className="font-semibold text-foreground">R$ 0,00</span>. Somente contas <span className="font-semibold text-foreground">sem transações visíveis</span> serão afetadas. Esta ação será registrada no histórico.
+            </p>
+            <div className="max-h-56 overflow-y-auto rounded-lg border border-border divide-y divide-border">
+              {eligibleForZero.map((a) => (
+                <div key={a.id} className="flex items-center justify-between px-3 py-2 text-sm">
+                  <span className="font-medium text-foreground truncate">{a.name}</span>
+                  <span className="tabular-nums text-muted-foreground">
+                    R$ {Number(a.balance || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+              ))}
+              {eligibleForZero.length === 0 && (
+                <div className="px-3 py-4 text-sm text-muted-foreground text-center">Nenhuma conta elegível.</div>
+              )}
+            </div>
+            <div className="flex gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setZeroConfirmOpen(false)}
+                disabled={isZeroing}
+                className="flex-1 py-2.5 rounded-xl bg-accent text-foreground text-sm font-semibold hover:bg-accent/80 transition-colors disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleZeroOpenings}
+                disabled={isZeroing || eligibleForZero.length === 0}
+                className="flex-1 py-2.5 rounded-xl bg-destructive text-destructive-foreground text-sm font-semibold hover:brightness-110 transition-colors disabled:opacity-50 inline-flex items-center justify-center gap-2"
+              >
+                {isZeroing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eraser className="h-4 w-4" />}
+                Zerar {eligibleForZero.length > 0 ? `(${eligibleForZero.length})` : ""}
+              </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+
 
 
 
