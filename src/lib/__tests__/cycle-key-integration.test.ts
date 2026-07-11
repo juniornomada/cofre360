@@ -159,7 +159,6 @@ describe("cycle key ↔ parseTxDate — end-to-end integration", () => {
   });
 
   it("cycle key stability under textual-format fuzz (12 months × 8 variants)", () => {
-    const reference = new Date(2026, 5, 15); // 15 Jun 2026 — mid-year
     const ptMonths = [
       "jan", "fev", "mar", "abr", "mai", "jun",
       "jul", "ago", "set", "out", "nov", "dez",
@@ -173,8 +172,10 @@ describe("cycle key ↔ parseTxDate — end-to-end integration", () => {
       const day = 15;
       const dd = String(day).padStart(2, "0");
       const mm = String(mIdx + 1).padStart(2, "0");
-      // created_at anchored to the same day → forces the heuristic to be a no-op
-      // (fallback year equals the intended year, so all variants must agree).
+      // Reference sits inside the target month so every variant materialises
+      // a matching cycle. created_at anchored to the same day makes the
+      // heuristic a no-op → all variants must share one key.
+      const reference = new Date(2026, mIdx, 20);
       const created = new Date(Date.UTC(2026, mIdx, day, 12, 0, 0)).toISOString();
       const variants = [
         `${dd} ${ptMonths[mIdx]}`,
@@ -188,6 +189,9 @@ describe("cycle key ↔ parseTxDate — end-to-end integration", () => {
       ];
       const txs = variants.map((v) => tx(v, created));
       const periods = groupByBillingCycle(txs, CLOSING, DUE, reference);
+      // Every variant must have been placed somewhere.
+      const placed = periods.flatMap((p) => p.transactions.map((t) => t.id));
+      expect(placed.length, `month=${mIdx + 1} not all variants placed`).toBe(variants.length);
       const keys = new Set<string>();
       for (const p of periods) for (const t of p.transactions) keys.add(p.key);
       expect(
