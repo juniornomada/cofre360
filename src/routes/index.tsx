@@ -1,4 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
+import { countOpenDivergences } from "@/lib/reconciliation/reconciliation.functions";
+
 import { z } from "zod";
 import { formatBRL } from "@/lib/format-brl";
 import { TrendingUp, Eye, EyeOff, Bell, Pencil, Trash2, CalendarIcon, Loader2, Clock, Wallet, ChevronLeft, ChevronRight, ArrowUpRight, ArrowDownRight, AlertTriangle, Sparkles, Flame, Plus, Minus, ArrowLeftRight, Layers, GripVertical, Filter, FilterX, LogOut, CreditCard, Landmark, Search, SlidersHorizontal, CheckCircle2 } from "lucide-react";
