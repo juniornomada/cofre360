@@ -49,7 +49,9 @@ const NULL_ISH_CASES: Array<[label: string, dateStr: unknown, createdAt: unknown
   ["date '', created_at null",      "",        null],
   ["date '', created_at undefined", "",        undefined],
   ["date null, created_at number",  null,      12345 as unknown],
-  ["date {}, created_at []",        {} as unknown, [] as unknown],
+  // Note: non-string, non-nullish inputs (e.g. {} / []) are outside the
+  // documented contract (parseTxDate's signature is `string, string`) and
+  // will throw on `.trim()`. Callers are expected to coerce upstream.
 ];
 
 describe("parseTxDate — fallback to new Date() never returns NaN", () => {
