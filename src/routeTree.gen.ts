@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as TransactionsRouteImport } from './routes/transactions'
 import { Route as ShopRouteImport } from './routes/shop'
 import { Route as RemindersRouteImport } from './routes/reminders'
+import { Route as ReconciliationRouteImport } from './routes/reconciliation'
 import { Route as OrcametasRouteImport } from './routes/orcametas'
 import { Route as InvestRouteImport } from './routes/invest'
 import { Route as InsightsRouteImport } from './routes/insights'
@@ -37,6 +38,11 @@ const ShopRoute = ShopRouteImport.update({
 const RemindersRoute = RemindersRouteImport.update({
   id: '/reminders',
   path: '/reminders',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReconciliationRoute = ReconciliationRouteImport.update({
+  id: '/reconciliation',
+  path: '/reconciliation',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OrcametasRoute = OrcametasRouteImport.update({
@@ -107,6 +113,7 @@ export interface FileRoutesByFullPath {
   '/insights': typeof InsightsRoute
   '/invest': typeof InvestRoute
   '/orcametas': typeof OrcametasRoute
+  '/reconciliation': typeof ReconciliationRoute
   '/reminders': typeof RemindersRoute
   '/shop': typeof ShopRoute
   '/transactions': typeof TransactionsRoute
@@ -123,6 +130,7 @@ export interface FileRoutesByTo {
   '/insights': typeof InsightsRoute
   '/invest': typeof InvestRoute
   '/orcametas': typeof OrcametasRoute
+  '/reconciliation': typeof ReconciliationRoute
   '/reminders': typeof RemindersRoute
   '/shop': typeof ShopRoute
   '/transactions': typeof TransactionsRoute
@@ -140,6 +148,7 @@ export interface FileRoutesById {
   '/insights': typeof InsightsRoute
   '/invest': typeof InvestRoute
   '/orcametas': typeof OrcametasRoute
+  '/reconciliation': typeof ReconciliationRoute
   '/reminders': typeof RemindersRoute
   '/shop': typeof ShopRoute
   '/transactions': typeof TransactionsRoute
@@ -158,6 +167,7 @@ export interface FileRouteTypes {
     | '/insights'
     | '/invest'
     | '/orcametas'
+    | '/reconciliation'
     | '/reminders'
     | '/shop'
     | '/transactions'
@@ -174,6 +184,7 @@ export interface FileRouteTypes {
     | '/insights'
     | '/invest'
     | '/orcametas'
+    | '/reconciliation'
     | '/reminders'
     | '/shop'
     | '/transactions'
@@ -190,6 +201,7 @@ export interface FileRouteTypes {
     | '/insights'
     | '/invest'
     | '/orcametas'
+    | '/reconciliation'
     | '/reminders'
     | '/shop'
     | '/transactions'
@@ -207,6 +219,7 @@ export interface RootRouteChildren {
   InsightsRoute: typeof InsightsRoute
   InvestRoute: typeof InvestRoute
   OrcametasRoute: typeof OrcametasRoute
+  ReconciliationRoute: typeof ReconciliationRoute
   RemindersRoute: typeof RemindersRoute
   ShopRoute: typeof ShopRoute
   TransactionsRoute: typeof TransactionsRoute
@@ -233,6 +246,13 @@ declare module '@tanstack/react-router' {
       path: '/reminders'
       fullPath: '/reminders'
       preLoaderRoute: typeof RemindersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reconciliation': {
+      id: '/reconciliation'
+      path: '/reconciliation'
+      fullPath: '/reconciliation'
+      preLoaderRoute: typeof ReconciliationRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/orcametas': {
@@ -327,6 +347,7 @@ const rootRouteChildren: RootRouteChildren = {
   InsightsRoute: InsightsRoute,
   InvestRoute: InvestRoute,
   OrcametasRoute: OrcametasRoute,
+  ReconciliationRoute: ReconciliationRoute,
   RemindersRoute: RemindersRoute,
   ShopRoute: ShopRoute,
   TransactionsRoute: TransactionsRoute,

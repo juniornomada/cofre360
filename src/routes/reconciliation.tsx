@@ -73,7 +73,7 @@ export const Route = createFileRoute("/reconciliation")({
 function ReconciliationPage() {
   const { tab } = Route.useSearch();
   const navigate = useNavigate();
-  const setTab = (t: string) => navigate({ to: "/reconciliation", search: { tab: t } });
+  const setTab = (t: string) => navigate({ to: "/reconciliation", search: { tab: t } as any });
 
   return (
     <div className="min-h-dvh bg-background pb-24">
