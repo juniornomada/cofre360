@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";
 import { SmartLink as Link } from "@/components/SmartLink";
 import { ArrowLeft, Plus, TrendingDown, Loader2, Pencil, Trash2, Target } from "lucide-react";
 import { useState, useEffect, useCallback, useMemo } from "react";
@@ -307,11 +307,15 @@ function OrcaMetasPage() {
         </Link>
         <div>
           <h1 className="text-xl font-bold text-foreground">OrçaMetas</h1>
-          <p className="text-sm text-muted-foreground">Orçamento e metas em um só lugar</p>
+          <p className="text-sm text-muted-foreground">Orçamento e metas em um só lugar · {monthLabel}</p>
         </div>
       </div>
 
-      <Tabs defaultValue="budget" className="flex flex-col gap-4">
+      <Tabs
+        value={activeTab}
+        onValueChange={(v) => navigate({ to: "/orcametas", search: { tab: v as "budget" | "goals" }, replace: true })}
+        className="flex flex-col gap-4"
+      >
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="budget">Orçamento</TabsTrigger>
           <TabsTrigger value="goals">Metas</TabsTrigger>
