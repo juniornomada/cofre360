@@ -993,6 +993,7 @@ function CardsPage() {
           </button>
           <button 
             onClick={openAddDialog} 
+            aria-label="Adicionar cartão"
             className="interactive-button flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground border border-primary/20 shadow-lg hover:brightness-110 transition-all"
             title="Adicionar cartão"
           >
