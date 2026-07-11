@@ -1746,7 +1746,7 @@ function CardsPage() {
                     </div>
                     <p className="text-sm font-semibold text-foreground">Nenhuma transação neste período</p>
                     <p className="mt-1 text-xs text-muted-foreground max-w-[16rem]">
-                      Não há lançamentos entre {fmtFull(activePeriod.startDate)} e {fmtFull(activePeriod.endDate)} para {invoiceCard?.name}.
+                      Não há lançamentos entre {activePeriod.startDate.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })} e {activePeriod.endDate.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })} para {invoiceCard?.name}.
                     </p>
                     <div className="mt-4 flex items-center gap-2">
                       <button
