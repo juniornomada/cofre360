@@ -489,9 +489,38 @@ function CardsPage() {
   const invoicePeriods = invoiceCard
     ? groupByBillingCycle(cardTransactions.filter(tx => tx.card === invoiceCard.name), invoiceCard.closing_day, invoiceCard.due_day)
     : [];
-  const activePeriod = (invoicePeriods[activeInvoiceIdx] || invoicePeriods[0]) ? {
-    ...(invoicePeriods[activeInvoiceIdx] || invoicePeriods[0]),
-    label: (invoicePeriods[activeInvoiceIdx] || invoicePeriods[0])?.label.split("|")[0]
+  // Preserve the transaction display order captured when the invoice dialog
+  // was first opened for a given (card, period) pair. Editing a transaction
+  // must not reshuffle the list under the user.
+  const invoiceOrderRef = useRef<Map<string, string[]>>(new Map());
+  const rawActivePeriod = invoicePeriods[activeInvoiceIdx] || invoicePeriods[0];
+  let stableActivePeriod = rawActivePeriod;
+  if (rawActivePeriod && invoiceCard) {
+    const orderKey = `${invoiceCard.id}::${rawActivePeriod.endDate.toISOString().split("T")[0]}`;
+    const currentIds = rawActivePeriod.transactions.map(t => t.id);
+    const prior = invoiceOrderRef.current.get(orderKey);
+    let orderedIds: string[];
+    if (!prior) {
+      orderedIds = currentIds;
+      invoiceOrderRef.current.set(orderKey, orderedIds);
+    } else {
+      const currentSet = new Set(currentIds);
+      const kept = prior.filter(id => currentSet.has(id));
+      const priorSet = new Set(prior);
+      const added = currentIds.filter(id => !priorSet.has(id));
+      orderedIds = [...kept, ...added];
+      // Only persist if order changed to avoid unnecessary ref writes.
+      if (orderedIds.length !== prior.length || orderedIds.some((id, i) => prior[i] !== id)) {
+        invoiceOrderRef.current.set(orderKey, orderedIds);
+      }
+    }
+    const byId = new Map(rawActivePeriod.transactions.map(t => [t.id, t]));
+    const sortedTxs = orderedIds.map(id => byId.get(id)!).filter(Boolean);
+    stableActivePeriod = { ...rawActivePeriod, transactions: sortedTxs };
+  }
+  const activePeriod = stableActivePeriod ? {
+    ...stableActivePeriod,
+    label: stableActivePeriod.label.split("|")[0]
   } : null;
   const getInvoicePeriodKey = (period?: InvoicePeriod | null) => period?.endDate?.toISOString().split("T")[0] || "";
   const getPaymentsForPeriod = (cardId: string | undefined, period?: InvoicePeriod | null) => {
