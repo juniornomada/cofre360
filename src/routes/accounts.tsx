@@ -467,7 +467,7 @@ function AccountsPage() {
       }
     } catch (error: any) {
       console.error("Error fetching accounts:", error);
-      toast.error("Erro ao carregar contas: " + (error.message || "Erro desconhecido"));
+      toast.error(mapServerError(error, "Erro ao carregar contas"));
     } finally {
       setLoading(false);
     }
@@ -574,7 +574,7 @@ function AccountsPage() {
       toast.success("Conta adicionada com sucesso");
     } catch (error: any) {
       console.error("Error adding account:", error);
-      toast.error("Erro ao adicionar conta: " + (error.message || "Erro desconhecido"));
+      toast.error(mapServerError(error, "Erro ao adicionar conta"));
     } finally {
       setIsSubmitting(false);
     }
@@ -658,7 +658,7 @@ function AccountsPage() {
               fetchAccounts();
             } catch (err: any) {
               console.error("Undo error:", err);
-              toast.error("Erro ao desfazer: " + (err.message || "Erro desconhecido"));
+              toast.error(mapServerError(err, "Erro ao desfazer"));
             } finally {
               isUndoing.current = false;
             }
@@ -669,7 +669,7 @@ function AccountsPage() {
       fetchAccounts();
     } catch (error: any) {
       console.error("Error updating account:", error);
-      toast.error("Erro ao atualizar conta: " + (error.message || "Erro desconhecido"));
+      toast.error(mapServerError(error, "Erro ao atualizar conta"));
     } finally {
       setIsSubmitting(false);
     }
@@ -731,7 +731,7 @@ function AccountsPage() {
       setBreakdownData({ included, hidden, cardLinked, incomeSum, expenseSum, hiddenIncomeSum, hiddenExpenseSum, cardSum });
     } catch (error: any) {
       console.error("Error loading breakdown:", error);
-      toast.error("Erro ao carregar composição: " + (error.message || "Erro desconhecido"));
+      toast.error(mapServerError(error, "Erro ao carregar composição"));
     } finally {
       setIsLoadingBreakdown(false);
     }
@@ -773,7 +773,7 @@ function AccountsPage() {
       fetchAccounts();
     } catch (error: any) {
       console.error("Error recalculating balance:", error);
-      toast.error("Erro ao recalcular: " + (error.message || "Erro desconhecido"));
+      toast.error(mapServerError(error, "Erro ao recalcular"));
     } finally {
       setIsRecalcing(false);
     }
@@ -814,7 +814,7 @@ function AccountsPage() {
       fetchAccounts();
     } catch (error: any) {
       console.error("Error zeroing openings:", error);
-      toast.error("Erro ao zerar aberturas: " + (error.message || "Erro desconhecido"));
+      toast.error(mapServerError(error, "Erro ao zerar aberturas"));
     } finally {
       setIsZeroing(false);
     }
@@ -832,7 +832,7 @@ function AccountsPage() {
       toast.success("Conta excluída");
     } catch (error: any) {
       console.error("Error deleting account:", error);
-      toast.error("Erro ao excluir conta: " + (error.message || "Erro desconhecido"));
+      toast.error(mapServerError(error, "Erro ao excluir conta"));
     }
   };
 

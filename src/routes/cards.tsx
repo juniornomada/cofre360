@@ -290,7 +290,7 @@ function CardsPage() {
     } catch (error: any) {
       if (seq !== fetchSeqRef.current) return; // resposta obsoleta — não notifica
       console.error("Error fetching data:", error);
-      toast.error("Erro ao carregar dados: " + (error.message || "Erro desconhecido"));
+      toast.error(mapServerError(error, "Erro ao carregar dados"));
     } finally {
       setLoading(false);
     }
@@ -393,7 +393,7 @@ function CardsPage() {
       toast.success("Cartão adicionado com sucesso");
     } catch (error: any) {
       console.error("Error adding card:", error);
-      toast.error("Erro ao adicionar cartão: " + (error.message || "Erro desconhecido"));
+      toast.error(mapServerError(error, "Erro ao adicionar cartão"));
     }
   };
 
@@ -425,7 +425,7 @@ function CardsPage() {
       fetchAll();
     } catch (error: any) {
       console.error("Error updating card:", error);
-      toast.error("Erro ao atualizar cartão: " + (error.message || "Erro desconhecido"));
+      toast.error(mapServerError(error, "Erro ao atualizar cartão"));
     }
   };
 
@@ -440,7 +440,7 @@ function CardsPage() {
       toast.success("Cartão excluído");
     } catch (error: any) {
       console.error("Error deleting card:", error);
-      toast.error("Erro ao excluir cartão: " + (error.message || "Erro desconhecido"));
+      toast.error(mapServerError(error, "Erro ao excluir cartão"));
     }
   };
 
