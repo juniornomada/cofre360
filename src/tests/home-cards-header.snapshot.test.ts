@@ -50,10 +50,8 @@ describe("Home · CARTÕES header", () => {
     expect(header).toMatch(/aria-label="Fatura do mês anterior"/);
     expect(header).toMatch(/aria-label="Fatura do próximo mês"/);
   });
-    // ARIA labels for the navigator remain intact.
-    expect(header).toMatch(/aria-label="Fatura do mês anterior"/);
-    expect(header).toMatch(/aria-label="Fatura do próximo mês"/);
-  });
+
+
 
   it("matches the CARTÕES header snapshot", () => {
     const header = extractCardsHeader(source);
