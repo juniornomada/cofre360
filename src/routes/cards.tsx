@@ -75,7 +75,7 @@ type PaymentLine = {
   amount: string;
 };
 
-import { groupByBillingCycle, parseTxDate, getCycleDates, type CardTransaction, type InvoicePeriod } from "@/lib/invoice-utils";
+import { groupByBillingCycle, parseTxDate, getCycleDates, monthNames, type CardTransaction, type InvoicePeriod } from "@/lib/invoice-utils";
 
 const colorOptions = [
   { label: "Roxo", value: "from-purple-600 to-purple-900", emoji: "🟣" },
@@ -150,6 +150,8 @@ function CardsPage() {
   const [cardPayments, setCardPayments] = useState<Record<string, number>>({});
   const [cardPaymentsByPeriod, setCardPaymentsByPeriod] = useState<Record<string, Record<string, number>>>({});
   const [cardDetailedPaymentsByPeriod, setCardDetailedPaymentsByPeriod] = useState<Record<string, Record<string, { id: string, amount: number, date: string, bank_account_id: string | null }[]>>>({});
+  // Offset em meses relativo à fatura atual (0 = atual, -1 = mês anterior, +1 = próximo)
+  const [cardMonthOffset, setCardMonthOffset] = useState<Record<string, number>>({});
   const [deletingPaymentId, setDeletingPaymentId] = useState<string | null>(null);
   const [paymentToDelete, setPaymentToDelete] = useState<{ payment: { id: string; amount: number; date: string; bank_account_id: string | null }; cardName: string } | null>(null);
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
@@ -1099,6 +1101,31 @@ function CardsPage() {
       const nextDue = new Date(currentDue.getFullYear(), currentDue.getMonth() + 1, card.due_day);
       const formatDueDate = (d: Date) => `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`;
       void nextDue; void isPaid; void invoiceClosed;
+
+      // === Navegação por mês da fatura ===========================================
+      // offset 0 = fatura vigente no mês atual; -1 = mês anterior; +1 = próximo, etc.
+      const monthOffset = cardMonthOffset[card.id] ?? 0;
+      const refDate = new Date(today.getFullYear(), today.getMonth() + monthOffset, 15);
+      const selCycle = getCycleDates(refDate, card.closing_day, card.due_day);
+      const selClose = selCycle.currentClose;
+      const selPrevClose = selCycle.prevClose;
+      const selDue = selCycle.currentDue;
+      const selPeriodKey = selClose.toISOString().split("T")[0];
+      // Total da fatura selecionada, calculado direto das transações no intervalo do ciclo
+      const selTxs = cardTransactionsFiltered.filter(t => {
+        const d = parseTxDate(t.date, t.created_at);
+        return d >= selPrevClose && d < selClose;
+      });
+      const selTotal = selTxs.reduce(
+        (s, t) => s + (t.type === "income" ? -Number(t.amount) : Number(t.amount)),
+        0,
+      );
+      const selPaid = cardPaymentsByPeriod[card.id]?.[selPeriodKey] || 0;
+      const selRemaining = Math.max(0, selTotal - selPaid);
+      const selMonthLabel = monthNames[selDue.getMonth()];
+      const selYearLabel = selDue.getFullYear();
+      const currentYear = today.getFullYear();
+      const selDetailedPayments = cardDetailedPaymentsByPeriod[card.id]?.[selPeriodKey] || [];
           return (
             <SortableCardWrapper key={card.id} id={card.id} animationDelay={60 + i * 80}>
               <div className={cn(
@@ -1272,19 +1299,67 @@ function CardsPage() {
                 <div className="absolute inset-0 bg-black/15 pointer-events-none -z-10" />
                 <div className="relative">
                   {(() => {
-                    const periodKey = currentPeriod?.endDate?.toISOString().split("T")[0];
-                    const paidThisPeriod = periodKey ? (cardPaymentsByPeriod[card.id]?.[periodKey] || 0) : 0;
-                    const remainingThisPeriod = Math.max(0, invoiceRemaining - paidThisPeriod);
-                    const isFullyPaid = invoiceRemaining > 0 && remainingThisPeriod === 0;
+                    const paidThisPeriod = selPaid;
+                    const remainingThisPeriod = selRemaining;
+                    const isFullyPaid = selTotal > 0 && remainingThisPeriod === 0;
                     const isPartiallyPaid = paidThisPeriod > 0 && remainingThisPeriod > 0;
-                    const detailedPayments = periodKey ? cardDetailedPaymentsByPeriod[card.id]?.[periodKey] || [] : [];
-                    
+                    const detailedPayments = selDetailedPayments;
+                    void detailedPayments;
+
                     return (
                       <>
+                        {/* Navegador de mês da fatura */}
+                        <div className="flex items-center justify-center gap-2 mb-2 select-none">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setCardMonthOffset((prev) => ({ ...prev, [card.id]: (prev[card.id] ?? 0) - 1 }));
+                            }}
+                            data-on-card="true"
+                            className="icon-btn-on-card-solid h-6 w-6"
+                            aria-label="Fatura do mês anterior"
+                            title="Mês anterior"
+                          >
+                            <ChevronLeft className="h-3.5 w-3.5" />
+                          </button>
+                          <span className="text-[11px] font-bold uppercase tracking-wider text-white text-center min-w-[90px] tabular-nums">
+                            {selMonthLabel}
+                            {selYearLabel !== currentYear ? ` ${selYearLabel}` : ""}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setCardMonthOffset((prev) => ({ ...prev, [card.id]: (prev[card.id] ?? 0) + 1 }));
+                            }}
+                            data-on-card="true"
+                            className="icon-btn-on-card-solid h-6 w-6"
+                            aria-label="Fatura do próximo mês"
+                            title="Próximo mês"
+                          >
+                            <ChevronRight className="h-3.5 w-3.5" />
+                          </button>
+                          {monthOffset !== 0 && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setCardMonthOffset((prev) => ({ ...prev, [card.id]: 0 }));
+                              }}
+                              data-on-card="true"
+                              className="text-[9px] font-semibold text-white/80 hover:text-white underline underline-offset-2 ml-1"
+                              aria-label="Voltar para a fatura atual"
+                            >
+                              hoje
+                            </button>
+                          )}
+                        </div>
+
                         <div className="flex justify-between items-start gap-2 mb-1.5">
                           <div className="min-w-0">
                             <p className="text-[10px] font-bold uppercase tracking-wider text-white/90 flex items-center gap-1.5 flex-wrap">
-                              Fatura {activeInvoicePeriod?.label?.split("|")[0]?.split(" (")[0] || "atual"}
+                              Fatura {selMonthLabel}
                               {isFullyPaid && (
                                 <span className="rounded-full bg-emerald-500/90 text-white text-[8px] font-extrabold uppercase px-1.5 py-0.5 ring-1 ring-white/30 inline-flex items-center justify-center gap-0.5 shrink-0 text-center leading-none">
                                   <CheckCircle2 className="h-2.5 w-2.5" />
@@ -1299,15 +1374,15 @@ function CardsPage() {
                               )}
                             </p>
                             <p className="text-base font-extrabold text-white tabular-nums drop-shadow-md truncate" data-testid="fatura-atual-valor">
-                              {balanceVisible ? `R$ ${invoiceRemaining.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "••••••"}
+                              {balanceVisible ? `R$ ${remainingThisPeriod.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "••••••"}
                             </p>
                           </div>
                           <div className="flex flex-col items-end gap-0.5 text-[9px] font-semibold text-white shrink-0">
                             <span className="tabular-nums whitespace-nowrap">
-                              Fecha {formatDueDate(currentClose)}
+                              Fecha {formatDueDate(selClose)}
                             </span>
                             <span className="tabular-nums whitespace-nowrap">
-                              Vence {formatDueDate(currentDue)}
+                              Vence {formatDueDate(selDue)}
                             </span>
                           </div>
                         </div>
@@ -1327,7 +1402,7 @@ function CardsPage() {
                           </div>
                           <div className="flex justify-start mt-1.5">
                             <p className="text-[10px] text-white/70 font-medium">
-                              Faltam <span className="text-destructive font-bold ml-1">{balanceVisible ? `R$ ${remainingThisPeriod.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "••••••"}</span>
+                              Total da fatura <span className="text-white font-bold ml-1 tabular-nums">{balanceVisible ? `R$ ${selTotal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "••••••"}</span>
                             </p>
                           </div>
                          </div>
