@@ -759,7 +759,7 @@ function CardsPage() {
       setInstallmentDialogOpen(false);
       setInstallmentTx(null);
       // Refresh invoice list
-      await openInvoiceDialog(invoiceCard);
+      await refreshInvoiceSilently(invoiceCard);
     } catch (e) {
       console.error(e);
       toast.error("Erro ao salvar parcelamento");
