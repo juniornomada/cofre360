@@ -91,19 +91,18 @@ describe("parseTxDate — invalid near-boundary inputs are deterministic & cycle
   describe("B3 — invalid tx groups into the same billing cycle as an empty-date tx", () => {
     it.each(FALLBACKS)("fallback=%s", (fb) => {
       const ref = new Date(fb);
+      const mkTx = (id: string, date: string): CardTransaction => ({
+        id, name: "t", icon: null, category: "c", date, amount: 100,
+        type: "expense", created_at: fb,
+        total_installments: null, installment_number: null, installment_group_id: null,
+      });
       for (const { closing, due } of CYCLES) {
-        const baseline: CardTransaction[] = [
-          { id: "baseline", date: "", created_at: fb, amount: 100, type: "expense" },
-        ];
-        const baselineGroups = groupByBillingCycle(baseline, closing, due, ref);
-        const baselineKey = baselineGroups.find((g) => g.transactions.length > 0)?.periodKey;
+        const baselineGroups = groupByBillingCycle([mkTx("baseline", "")], closing, due, ref);
+        const baselineKey = baselineGroups.find((g) => g.transactions.length > 0)?.key;
 
         for (const input of INVALID_INPUTS) {
-          const txs: CardTransaction[] = [
-            { id: `t-${input}`, date: input, created_at: fb, amount: 100, type: "expense" },
-          ];
-          const groups = groupByBillingCycle(txs, closing, due, ref);
-          const key = groups.find((g) => g.transactions.length > 0)?.periodKey;
+          const groups = groupByBillingCycle([mkTx(`t-${input}`, input)], closing, due, ref);
+          const key = groups.find((g) => g.transactions.length > 0)?.key;
           expect({ input, key }).toEqual({ input, key: baselineKey });
         }
       }
