@@ -351,6 +351,19 @@ function AccountsPage() {
   const [recalcAccount, setRecalcAccount] = useState<BankAccount | null>(null);
   const [recalcRealBalance, setRecalcRealBalance] = useState<number>(0);
   const [isRecalcing, setIsRecalcing] = useState(false);
+  const [breakdownAccount, setBreakdownAccount] = useState<BankAccount | null>(null);
+  const [breakdownData, setBreakdownData] = useState<{
+    included: Array<{ id: string; date: string; description: string | null; amount: number; type: string }>;
+    hidden: Array<{ id: string; date: string; description: string | null; amount: number; type: string }>;
+    cardLinked: Array<{ id: string; date: string; description: string | null; amount: number; type: string; card: string | null }>;
+    incomeSum: number;
+    expenseSum: number;
+    hiddenIncomeSum: number;
+    hiddenExpenseSum: number;
+    cardSum: number;
+  } | null>(null);
+  const [isLoadingBreakdown, setIsLoadingBreakdown] = useState(false);
+
   const isUndoing = useRef(false);
 
   const [editingAccount, setEditingAccount] = useState<BankAccount | null>(null);
