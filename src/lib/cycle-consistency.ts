@@ -155,7 +155,9 @@ export function _debugSnapshots(): Record<string, Record<string, CycleSnapshot>>
 }
 
 function near(a: number, b: number): boolean {
-  return Math.abs(a - b) <= TOLERANCE;
+  const diff = Math.abs(a - b);
+  const bound = Math.max(tolerance.absolute, tolerance.percent * Math.max(Math.abs(a), Math.abs(b)));
+  return diff <= bound;
 }
 
 function fmt(n: number): string {
