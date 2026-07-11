@@ -1736,12 +1736,13 @@ function CardsPage() {
               )}
 
               <div ref={invoiceScrollRef} className="flex-1 overflow-y-auto px-5 pb-5">
-                {activePeriod && activePeriod.transactions.length === 0 && activePeriodPayments.length === 0 ? (
+                {activePeriod && activePeriod.transactions.length === 0 ? (
                   <InvoiceEmptyState
                     startDate={activePeriod.startDate}
                     endDate={activePeriod.endDate}
                     cardName={invoiceCard?.name}
                     canGoPrev={activeInvoiceIdx > 0}
+                    paymentsCount={activePeriodPayments.length}
                     onAdd={() => {
                       setInvoiceDialogOpen(false);
                       navigate({ to: "/transactions", search: { add: "1", cardId: invoiceCard?.id } as never });
