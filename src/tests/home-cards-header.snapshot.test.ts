@@ -39,13 +39,17 @@ describe("Home · CARTÕES header", () => {
 
   it("aligns the month selector on the right of the CARTÕES title", () => {
     const header = extractCardsHeader(source);
-    // Single justify-between row with title on the left and the month
-    // navigator wrapper on the right.
+    // Two-column grid keeps the title on the left (min-w-0 + truncate) and
+    // the selector pinned right (shrink-0 + justify-self-end) on every width.
     expect(header).toMatch(
-      /flex items-center justify-between[^"]*"[\s\S]*CART[ÕO]ES[\s\S]*ChevronLeft[\s\S]*ChevronRight/
+      /grid grid-cols-\[minmax\(0,1fr\)_auto\][\s\S]*CART[ÕO]ES[\s\S]*shrink-0 justify-self-end[\s\S]*ChevronLeft[\s\S]*ChevronRight/
     );
     // Prev / next controls sit in the same inline flex group.
     expect(header).toMatch(/flex items-center gap-0\.5/);
+    // ARIA labels for the navigator remain intact.
+    expect(header).toMatch(/aria-label="Fatura do mês anterior"/);
+    expect(header).toMatch(/aria-label="Fatura do próximo mês"/);
+  });
     // ARIA labels for the navigator remain intact.
     expect(header).toMatch(/aria-label="Fatura do mês anterior"/);
     expect(header).toMatch(/aria-label="Fatura do próximo mês"/);
