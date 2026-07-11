@@ -1,4 +1,4 @@
-import { Inbox, Plus, ChevronLeft } from "lucide-react";
+import { Inbox, Plus, ChevronLeft, Receipt } from "lucide-react";
 
 export interface InvoiceEmptyStateProps {
   startDate: Date;
@@ -7,6 +7,12 @@ export interface InvoiceEmptyStateProps {
   canGoPrev: boolean;
   onAdd: () => void;
   onPrev: () => void;
+  /**
+   * Distinct variant used when the period has NO transactions but DOES have
+   * one or more payments. Shows a softer note ("Somente pagamentos neste
+   * período") instead of the generic empty state.
+   */
+  paymentsCount?: number;
 }
 
 export function InvoiceEmptyState({
@@ -16,25 +22,34 @@ export function InvoiceEmptyState({
   canGoPrev,
   onAdd,
   onPrev,
+  paymentsCount = 0,
 }: InvoiceEmptyStateProps) {
   const fmt = (d: Date) =>
     d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+
+  const isPaymentsOnly = paymentsCount > 0;
+  const title = isPaymentsOnly
+    ? "Somente pagamentos neste período"
+    : "Nenhuma transação neste período";
+  const Icon = isPaymentsOnly ? Receipt : Inbox;
+  const suffix = cardName ? ` para ${cardName}` : "";
+  const description = isPaymentsOnly
+    ? `Existem ${paymentsCount} pagamento${paymentsCount === 1 ? "" : "s"} registrado${paymentsCount === 1 ? "" : "s"}${suffix}, mas nenhuma despesa foi lançada entre ${fmt(startDate)} e ${fmt(endDate)}.`
+    : `Não há lançamentos entre ${fmt(startDate)} e ${fmt(endDate)}${suffix}.`;
 
   return (
     <div
       role="status"
       aria-live="polite"
+      data-variant={isPaymentsOnly ? "payments-only" : "empty"}
       className="flex flex-col items-center justify-center text-center py-10 px-4 rounded-xl border border-dashed border-border bg-muted/20"
     >
       <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-3">
-        <Inbox className="h-6 w-6 text-muted-foreground" aria-hidden="true" />
+        <Icon className="h-6 w-6 text-muted-foreground" aria-hidden="true" />
       </div>
-      <p className="text-sm font-semibold text-foreground">
-        Nenhuma transação neste período
-      </p>
+      <p className="text-sm font-semibold text-foreground">{title}</p>
       <p className="mt-1 text-xs text-muted-foreground max-w-[16rem]">
-        Não há lançamentos entre {fmt(startDate)} e {fmt(endDate)}
-        {cardName ? ` para ${cardName}` : ""}.
+        {description}
       </p>
       <div className="mt-4 flex items-center gap-2">
         <button
