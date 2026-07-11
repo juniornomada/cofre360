@@ -15,6 +15,8 @@ import type { ReconciliationRule, CheckType, RuleKind, ToleranceKind } from "@/l
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -102,7 +104,73 @@ function ReconciliationPage() {
   );
 }
 
+// ------------------------- DivergenceCard -------------------------
+const STATUS_LABEL: Record<string, { label: string; className: string }> = {
+  open: { label: "Aberta", className: "bg-destructive text-destructive-foreground" },
+  investigating: { label: "Em análise", className: "bg-amber-500 text-white" },
+  resolved: { label: "Resolvida", className: "bg-green-500 text-white" },
+};
+
+function DivergenceCard({
+  d,
+  onUpdate,
+}: {
+  d: any;
+  onUpdate: (id: string, patch: { status?: string; note?: string }) => void | Promise<void>;
+}) {
+  const [note, setNote] = useState<string>(d.note ?? "");
+  const status = (d.status ?? "open") as keyof typeof STATUS_LABEL;
+  const meta = STATUS_LABEL[status] ?? STATUS_LABEL.open;
+  return (
+    <Card className="p-3">
+      <div className="flex justify-between items-start gap-2">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Badge variant="outline" className="text-xs">{CHECK_LABEL[d.check_type as CheckType]}</Badge>
+            <Badge className={cn("text-xs", meta.className)}>{meta.label}</Badge>
+            <p className="text-sm font-medium truncate">{d.entity_label}</p>
+          </div>
+          <p className="text-xs text-muted-foreground mt-1">
+            esperado: {formatSignedBRL(Number(d.expected))} · real: {formatSignedBRL(Number(d.actual))}
+          </p>
+          <p className="text-sm font-semibold text-destructive mt-1">
+            Δ {formatSignedBRL(Number(d.delta))}
+          </p>
+        </div>
+        <div className="flex flex-col gap-1">
+          <Select value={status} onValueChange={(v) => onUpdate(d.id, { status: v })}>
+            <SelectTrigger className="h-8 w-[130px] text-xs" aria-label="Status da divergência">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="open">Aberta</SelectItem>
+              <SelectItem value="investigating">Em análise</SelectItem>
+              <SelectItem value="resolved">Resolvida</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+      <div className="mt-2">
+        <Textarea
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          placeholder="Anotação (ação, causa, responsável…)"
+          className="text-xs min-h-[52px]"
+          maxLength={1000}
+        />
+        {note !== (d.note ?? "") && (
+          <div className="flex justify-end mt-1 gap-2">
+            <Button size="sm" variant="ghost" onClick={() => setNote(d.note ?? "")}>Cancelar</Button>
+            <Button size="sm" onClick={() => onUpdate(d.id, { note })}>Salvar nota</Button>
+          </div>
+        )}
+      </div>
+    </Card>
+  );
+}
+
 // ------------------------- Dashboard -------------------------
+
 function DashboardTab() {
   const listRunsFn = useServerFn(listRuns);
   const openFn = useServerFn(listOpenDivergences);
@@ -126,15 +194,16 @@ function DashboardTab() {
 
   useEffect(() => { load(); }, [load]);
 
-  const handleInvestigate = async (id: string) => {
+  const handleUpdate = async (id: string, patch: { status?: string; note?: string }) => {
     try {
-      await markFn({ data: { id, investigated: true } });
-      toast.success("Divergência marcada como investigada");
+      await markFn({ data: { id, ...patch } });
+      toast.success("Divergência atualizada");
       load();
     } catch (e) {
       toast.error(mapServerError(e));
     }
   };
+
 
   if (loading) return <div className="flex justify-center py-8"><Loader2 className="animate-spin h-6 w-6" /></div>;
 
@@ -197,27 +266,12 @@ function DashboardTab() {
           <h2 className="text-sm font-semibold mb-2">Divergências abertas</h2>
           <div className="space-y-2">
             {open.slice(0, 20).map((d) => (
-              <Card key={d.id} className="p-3">
-                <div className="flex justify-between items-start gap-2">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline" className="text-xs">{CHECK_LABEL[d.check_type as CheckType]}</Badge>
-                      <p className="text-sm font-medium truncate">{d.entity_label}</p>
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      esperado: {formatSignedBRL(Number(d.expected))} · real: {formatSignedBRL(Number(d.actual))}
-                    </p>
-                    <p className="text-sm font-semibold text-destructive mt-1">
-                      Δ {formatSignedBRL(Number(d.delta))}
-                    </p>
-                  </div>
-                  <Button size="sm" variant="outline" onClick={() => handleInvestigate(d.id)}>Investigada</Button>
-                </div>
-              </Card>
+              <DivergenceCard key={d.id} d={d} onUpdate={handleUpdate} />
             ))}
           </div>
         </div>
       )}
+
     </div>
   );
 }
