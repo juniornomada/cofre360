@@ -204,13 +204,24 @@
       0 0 0 4px var(--foreground);
   }
 
-  /* Anel de foco imune a `overflow:hidden` ancestral: usa apenas `outline`
-     (o box-shadow do Tailwind ring é recortado por overflow-hidden e clip).
-     Contraste: `--color-ring` já atende WCAG 1.4.11 (≥3:1) contra
-     `--background` em ambos os temas — validado em
-     e2e/cardicon-focus-contrast.spec.ts. */
-  @media (any-hover: none), (pointer: coarse), (prefers-reduced-motion: reduce) {
-    .focus-ring-safe:focus-visible {
+  /* Anel de foco imune a `overflow:hidden` ancestral.
+     Tailwind `ring-*` é implementado via box-shadow e é RECORTADO por
+     qualquer ancestral com overflow:hidden / clip-path. `outline` do CSS
+     não é. Use esta classe em botões dentro de cartões com cantos
+     arredondados (`rounded-* overflow-hidden`) para garantir visibilidade
+     do foco por teclado no dark mode.
+     Contraste do `--color-ring` já é validado em
+     e2e/cardicon-focus-contrast.spec.ts (≥3:1 WCAG 1.4.11). */
+  .focus-ring-safe:focus-visible {
+    outline: 2px solid var(--color-ring);
+    outline-offset: 2px;
+    /* z-index eleva o outline acima de siblings com stacking context
+       próprio (gradient overlays), sem afetar layout. */
+    position: relative;
+    z-index: 1;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .focus-ring-safe {
       transition: none;
     }
   }
