@@ -1302,9 +1302,7 @@ function Dashboard() {
                         Faltam: R$ {balanceVisible ? fmt(selRemaining) : "•••"}
                       </p>
                     )}
-                    {isFullyPaid && (
-                      <p className="text-[10px] font-semibold text-primary">Fatura paga</p>
-                    )}
+                    {/* Selo "PAGA" já sinaliza fatura quitada — omitir texto redundante */}
                   </div>
                 </Link>
               );
