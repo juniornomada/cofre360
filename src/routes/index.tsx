@@ -1072,7 +1072,7 @@ function Dashboard() {
             </h2>
           </div>
 
-          </div>
+
           
           <div className="flex items-center gap-2 shrink-0 self-end mb-0.5">
             {healthScore !== null && balanceVisible && healthScore >= 40 && (
