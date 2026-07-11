@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 import { formatBRL } from "@/lib/format-brl";
-import { TrendingUp, Eye, EyeOff, Bell, Pencil, Trash2, CalendarIcon, Loader2, Clock, Wallet, ChevronRight, ArrowUpRight, ArrowDownRight, AlertTriangle, Sparkles, Flame, Plus, Minus, ArrowLeftRight, Layers, GripVertical, Filter, FilterX, LogOut, CreditCard, Landmark, Search, SlidersHorizontal } from "lucide-react";
+import { TrendingUp, Eye, EyeOff, Bell, Pencil, Trash2, CalendarIcon, Loader2, Clock, Wallet, ChevronLeft, ChevronRight, ArrowUpRight, ArrowDownRight, AlertTriangle, Sparkles, Flame, Plus, Minus, ArrowLeftRight, Layers, GripVertical, Filter, FilterX, LogOut, CreditCard, Landmark, Search, SlidersHorizontal, CheckCircle2 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { TransactionItem } from "@/components/TransactionItem";
 import { CardIcon } from "@/components/CardIcon";
