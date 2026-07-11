@@ -68,10 +68,20 @@ describe("Accounts · linha de Abertura", () => {
 
   it("renderiza o selo 'único componente' com destaque quando openingIsOnlyComponent", () => {
     expect(block).toMatch(/\{openingIsOnlyComponent && \(/);
-    // Cor/estilo do selo (bg-primary/10 + text-primary + uppercase + pill).
+    // Contraste AA: usa tokens sólidos primary + primary-foreground (não a
+    // versão tingida `bg-primary/10` que reduzia o contraste em <9px).
+    expect(block).toMatch(/bg-primary text-primary-foreground/);
+    expect(block).not.toMatch(/bg-primary\/10/);
+    expect(block).toMatch(/border border-primary/);
+    // Acessibilidade: role="status" + aria-label descritivo com o valor
+    // real da abertura e o nome da conta.
+    expect(block).toMatch(/role="status"/);
     expect(block).toMatch(
-      /bg-primary\/10 text-primary[\s\S]*aria-label="Sem movimentações — o saldo atual é apenas a abertura"[\s\S]*único componente/,
+      /aria-label=\{`Sem movimentações no período[\s\S]*saldo de abertura da conta \$\{account\.name\}`\}/,
     );
+    // Texto visível marcado como aria-hidden para evitar leitura duplicada
+    // pelo leitor de tela (o aria-label já descreve o selo).
+    expect(block).toMatch(/<span aria-hidden="true">único componente<\/span>/);
     expect(block).toMatch(/rounded-full/);
     expect(block).toMatch(/uppercase/);
     expect(block).toMatch(/font-semibold/);
@@ -111,10 +121,14 @@ describe("Accounts · linha de Abertura", () => {
                           </span>
                           {openingIsOnlyComponent && (
                             <span
-                              className="text-[9px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-primary/10 text-primary"
-                              aria-label="Sem movimentações — o saldo atual é apenas a abertura"
+                              role="status"
+                              aria-label={\`Sem movimentações no período — o saldo atual (\${
+                                balanceVisible ? formatSignedBRL(openingBalance) : "oculto"
+                              }) é composto exclusivamente pelo saldo de abertura da conta \${account.name}\`}
+                              title="Saldo atual é apenas a abertura (sem movimentações no período)"
+                              className="text-[9px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-primary text-primary-foreground border border-primary"
                             >
-                              único componente
+                              <span aria-hidden="true">único componente</span>
                             </span>
                           )}
                         </div>
