@@ -1,29 +1,40 @@
 /**
  * Pure helper that decides which transaction IDs to show (and in which order)
- * for the invoice dialog, given:
- *  - the current list of transaction IDs in the period,
- *  - a snapshot of ordered IDs captured when the dialog first opened,
- *  - whether the dialog is currently open.
+ * for the invoice dialog.
  *
- * Rules:
- *  - Dialog closed: snapshot mirrors the current list (kept fresh for the next open).
- *  - Dialog open, no prior snapshot: take the current list as the snapshot.
- *  - Dialog open, snapshot exists: keep the snapshot order; drop deleted ids;
- *    ignore new ids until the dialog is reopened.
+ * Design invariants:
+ *  - The snapshot is taken exactly once per dialog open — at the first render
+ *    where `dialogOpen === true` and no prior snapshot exists.
+ *  - While the dialog is open, subsequent refetches / cache updates NEVER
+ *    reorder the visible list. Only deletions are respected (ghost rows are
+ *    filtered out); new ids arriving in the same period are ignored until the
+ *    dialog is reopened.
+ *  - While the dialog is closed, no snapshot is retained. Caller should drop
+ *    the entry so that the next open captures a fresh order from the current
+ *    data.
+ *
+ * `nextSnapshot === null` signals the caller to delete the stored entry.
  */
 export function resolveInvoiceOrder(params: {
   currentIds: string[];
   priorSnapshot: string[] | undefined;
   dialogOpen: boolean;
-}): { orderedIds: string[]; nextSnapshot: string[] } {
+}): { orderedIds: string[]; nextSnapshot: string[] | null } {
   const { currentIds, priorSnapshot, dialogOpen } = params;
 
   if (!dialogOpen) {
-    return { orderedIds: currentIds.slice(), nextSnapshot: currentIds.slice() };
+    // Dialog closed: expose current data but forget the snapshot so the next
+    // open captures a fresh order at that moment.
+    return { orderedIds: currentIds.slice(), nextSnapshot: null };
   }
   if (!priorSnapshot) {
-    return { orderedIds: currentIds.slice(), nextSnapshot: currentIds.slice() };
+    // First render with the dialog open: capture the snapshot now.
+    const snap = currentIds.slice();
+    return { orderedIds: snap, nextSnapshot: snap };
   }
+  // Dialog open with an existing snapshot: keep frozen order. Drop deletions,
+  // ignore new ids. Refetches / edits that only mutate row content never
+  // reorder because we filter by the snapshot order.
   const currentSet = new Set(currentIds);
   const orderedIds = priorSnapshot.filter((id) => currentSet.has(id));
   return { orderedIds, nextSnapshot: priorSnapshot.slice() };

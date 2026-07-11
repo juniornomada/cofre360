@@ -550,7 +550,9 @@ function CardsPage() {
       priorSnapshot: prior,
       dialogOpen: invoiceDialogOpen,
     });
-    invoiceOrderRef.current.set(orderKey, nextSnapshot);
+    if (nextSnapshot === null) invoiceOrderRef.current.delete(orderKey);
+    else invoiceOrderRef.current.set(orderKey, nextSnapshot);
+
     const byId = new Map(rawActivePeriod.transactions.map(t => [t.id, t]));
     const sortedTxs = orderedIds.map(id => byId.get(id)!).filter(Boolean);
     stableActivePeriod = { ...rawActivePeriod, transactions: sortedTxs };
