@@ -127,6 +127,8 @@ function CardsPage() {
 
   // Invoice dialog state
   const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
+  const [invoiceOrderTick, setInvoiceOrderTick] = useState(0);
+
   const [invoiceCard, setInvoiceCard] = useState<CardData | null>(null);
   const [cardTransactions, setCardTransactions] = useState<CardTransaction[]>([]);
   const [loadingTx, setLoadingTx] = useState(false);
