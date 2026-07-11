@@ -160,6 +160,84 @@ jobs:
       - name: Full test suite (with coverage)
         run: bun run test:coverage
 
+      # Resumo de cobertura (total + patch) publicado no Job Summary do
+      # GitHub Actions. "Total" vem direto de coverage-summary.json;
+      # "Patch" é calculado a partir dos arquivos alterados neste push/PR
+      # (git diff contra base), agregando linhas cobertas/totais só desses
+      # arquivos. Se não houver arquivos alterados sob cobertura, o patch
+      # é reportado como N/A — nunca falha o job.
+      - name: Coverage summary (total + patch)
+        if: always() && hashFiles('coverage/coverage-summary.json') != ''
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          EVENT_BEFORE: ${{ github.event.before }}
+        run: |
+          # Precisamos de histórico para o diff patch
+          git fetch --no-tags --depth=50 origin "${GITHUB_BASE_REF:-$GITHUB_REF_NAME}" 2>/dev/null || true
+          node <<'NODE' >> "$GITHUB_STEP_SUMMARY"
+          const fs = require('fs');
+          const { execSync } = require('child_process');
+          const summary = JSON.parse(fs.readFileSync('coverage/coverage-summary.json', 'utf8'));
+          const total = summary.total;
+          const pct = (m) => `${m.pct.toFixed(2)}% (${m.covered}/${m.total})`;
+
+          // --- Patch coverage ---
+          const base = process.env.BASE_SHA || process.env.EVENT_BEFORE || '';
+          let changed = [];
+          try {
+            const range = base && base !== '0000000000000000000000000000000000000000'
+              ? `${base}...HEAD`
+              : 'HEAD~1...HEAD';
+            const out = execSync(`git diff --name-only --diff-filter=AMR ${range}`, { encoding: 'utf8' });
+            changed = out.split('\n').filter(f => /^src\/.+\.(ts|tsx)$/.test(f)
+              && !/\.(test|spec)\.(ts|tsx)$/.test(f)
+              && !f.startsWith('src/tests/')
+              && !f.includes('__tests__/'));
+          } catch (e) {
+            changed = [];
+          }
+
+          let patchLine = 'N/A (sem arquivos cobertos alterados)';
+          const patchDetails = [];
+          if (changed.length) {
+            let cov = 0, tot = 0;
+            for (const file of changed) {
+              // coverage-summary usa caminho absoluto ou relativo — tentamos ambos.
+              const key = Object.keys(summary).find(k => k !== 'total' && (k.endsWith('/' + file) || k === file));
+              if (!key) continue;
+              const s = summary[key].lines;
+              cov += s.covered;
+              tot += s.total;
+              patchDetails.push(`| \`${file}\` | ${s.pct.toFixed(2)}% | ${s.covered}/${s.total} |`);
+            }
+            if (tot > 0) {
+              patchLine = `${((cov / tot) * 100).toFixed(2)}% (${cov}/${tot})`;
+            }
+          }
+
+          const lines = [
+            '## 📊 Cobertura de Testes',
+            '',
+            '| Métrica | Total | Patch |',
+            '| --- | --- | --- |',
+            `| Linhas | ${pct(total.lines)} | ${patchLine} |`,
+            `| Statements | ${pct(total.statements)} | — |`,
+            `| Branches | ${pct(total.branches)} | — |`,
+            `| Funções | ${pct(total.functions)} | — |`,
+            '',
+          ];
+          if (patchDetails.length) {
+            lines.push('<details><summary>Arquivos do patch</summary>', '',
+              '| Arquivo | Linhas % | Cobertas/Total |',
+              '| --- | --- | --- |',
+              ...patchDetails,
+              '', '</details>', '');
+          }
+          console.log(lines.join('\n'));
+          NODE
+
+
+
       # HTML/JSON como artifact para inspeção manual — 14 dias basta para
       # diagnóstico de regressão sem inflar o storage do repositório.
       - name: Upload coverage artifact
