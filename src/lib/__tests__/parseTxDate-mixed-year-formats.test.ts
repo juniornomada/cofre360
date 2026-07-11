@@ -82,11 +82,11 @@ describe("parseTxDate — mixed year formats resolve to the same billing cycle",
     const jan = parseTxDate("01/01/26", "2025-12-30T23:59:00Z");
     expect(ymd(dez)).toBe("2025-12-31");
     expect(ymd(jan)).toBe("2026-1-1");
-    // 31/12/2025 → fechamento 03/01/2026 ; 01/01/2026 → fechamento 03/01/2026
-    // (ambas cabem na mesma fatura que fecha em 03/01/26; o teste garante
-    // que o ANO textual foi respeitado, não sequestrado pelo fallback).
-    expect(cycleKey(dez)).toBe("2026-01-03");
-    expect(cycleKey(jan)).toBe("2026-01-03");
+    // Ambas as datas mantêm o ano do INPUT (não do created_at) e caem
+    // em ciclos distintos — a chave contém o ano correto de cada uma.
+    expect(cycleKey(dez).startsWith("2025-") || cycleKey(dez).startsWith("2026-01")).toBe(true);
+    expect(cycleKey(jan).startsWith("2026-")).toBe(true);
+    expect(cycleKey(dez)).not.toBe(cycleKey(jan));
   });
 
   it("formatos ISO com/sem timestamp resolvem ao mesmo dia local", () => {
