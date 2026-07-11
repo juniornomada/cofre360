@@ -8,8 +8,9 @@ import type { ReconciliationInput, ReconciliationRule, CheckType, RuleKind, Tole
 export const listRules = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async (ctx: any) => {
-    const { data, context } = ctx;
-    const { data, error } = await context.supabase
+    const $input = ctx.data;
+    const $ctx = ctx.context;
+    const { data, error } = await $ctx.supabase
       .from("reconciliation_rules")
       .select("*")
       .order("created_at", { ascending: false });
@@ -44,11 +45,12 @@ export const upsertRule = createServerFn({ method: "POST" })
     };
   })
   .handler(async (ctx: any) => {
-    const { data, context } = ctx;
-    const payload = { ...data, user_id: context.userId };
-    const q = data.id
-      ? context.supabase.from("reconciliation_rules").update(payload).eq("id", data.id).select().single()
-      : context.supabase.from("reconciliation_rules").insert(payload).select().single();
+    const $input = ctx.data;
+    const $ctx = ctx.context;
+    const payload = { ...data, user_id: $ctx.userId };
+    const q = $input.id
+      ? $ctx.supabase.from("reconciliation_rules").update(payload).eq("id", $input.id).select().single()
+      : $ctx.supabase.from("reconciliation_rules").insert(payload).select().single();
     const { data: row, error } = await q;
     if (error) throw error;
     return row as ReconciliationRule;
@@ -62,8 +64,9 @@ export const deleteRule = createServerFn({ method: "POST" })
     return { id: v.id };
   })
   .handler(async (ctx: any) => {
-    const { data, context } = ctx;
-    const { error } = await context.supabase.from("reconciliation_rules").delete().eq("id", data.id);
+    const $input = ctx.data;
+    const $ctx = ctx.context;
+    const { error } = await $ctx.supabase.from("reconciliation_rules").delete().eq("id", $input.id);
     if (error) throw error;
     return { ok: true };
   });
@@ -152,15 +155,16 @@ export const runNow = createServerFn({ method: "POST" })
     return { periodStart: v.periodStart, periodEnd: v.periodEnd };
   })
   .handler(async (ctx: any) => {
-    const { data, context } = ctx;
+    const $input = ctx.data;
+    const $ctx = ctx.context;
     const { supabase, userId } = context;
     const { data: run, error: runErr } = await supabase
       .from("reconciliation_runs")
       .insert({
         user_id: userId,
         triggered_by: "manual",
-        period_start: data.periodStart,
-        period_end: data.periodEnd,
+        period_start: $input.periodStart,
+        period_end: $input.periodEnd,
         status: "running",
       })
       .select()
@@ -168,7 +172,7 @@ export const runNow = createServerFn({ method: "POST" })
     if (runErr) throw runErr;
 
     try {
-      const input = await loadInputData(supabase, userId, data.periodStart, data.periodEnd);
+      const input = await loadInputData(supabase, userId, $input.periodStart, $input.periodEnd);
       const result = runReconciliation(input);
 
       if (result.divergences.length > 0) {
@@ -217,8 +221,9 @@ export const runNow = createServerFn({ method: "POST" })
 export const listRuns = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async (ctx: any) => {
-    const { data, context } = ctx;
-    const { data, error } = await context.supabase
+    const $input = ctx.data;
+    const $ctx = ctx.context;
+    const { data, error } = await $ctx.supabase
       .from("reconciliation_runs")
       .select("id,triggered_by,period_start,period_end,status,divergences_count,total_divergence_amount,started_at,completed_at")
       .order("started_at", { ascending: false })
@@ -230,8 +235,9 @@ export const listRuns = createServerFn({ method: "GET" })
 export const listOpenDivergences = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async (ctx: any) => {
-    const { data, context } = ctx;
-    const { data, error } = await context.supabase
+    const $input = ctx.data;
+    const $ctx = ctx.context;
+    const { data, error } = await $ctx.supabase
       .from("reconciliation_divergences")
       .select("*")
       .eq("investigated", false)
@@ -244,8 +250,9 @@ export const listOpenDivergences = createServerFn({ method: "GET" })
 export const countOpenDivergences = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async (ctx: any) => {
-    const { data, context } = ctx;
-    const { count, error } = await context.supabase
+    const $input = ctx.data;
+    const $ctx = ctx.context;
+    const { count, error } = await $ctx.supabase
       .from("reconciliation_divergences")
       .select("id", { count: "exact", head: true })
       .eq("investigated", false);
@@ -265,15 +272,16 @@ export const markInvestigated = createServerFn({ method: "POST" })
     };
   })
   .handler(async (ctx: any) => {
-    const { data, context } = ctx;
-    const { error } = await context.supabase
+    const $input = ctx.data;
+    const $ctx = ctx.context;
+    const { error } = await $ctx.supabase
       .from("reconciliation_divergences")
       .update({
-        investigated: data.investigated,
-        investigated_at: data.investigated ? new Date().toISOString() : null,
-        note: data.note,
+        investigated: $input.investigated,
+        investigated_at: $input.investigated ? new Date().toISOString() : null,
+        note: $input.note,
       })
-      .eq("id", data.id);
+      .eq("id", $input.id);
     if (error) throw error;
     return { ok: true };
   });
@@ -286,11 +294,12 @@ export const exportRunCsv = createServerFn({ method: "POST" })
     return { runId: v.runId };
   })
   .handler(async (ctx: any) => {
-    const { data, context } = ctx;
-    const { data: rows, error } = await context.supabase
+    const $input = ctx.data;
+    const $ctx = ctx.context;
+    const { data: rows, error } = await $ctx.supabase
       .from("reconciliation_divergences")
       .select("check_type,entity_label,expected,actual,delta,investigated,note,created_at")
-      .eq("run_id", data.runId)
+      .eq("run_id", $input.runId)
       .order("created_at", { ascending: true });
     if (error) throw error;
     const header = "tipo,entidade,esperado,real,delta,investigada,nota,data";
