@@ -18,6 +18,7 @@ import { BankLogo, bankPresets } from "@/components/BankLogo";
 import { toast } from "sonner";
 import { CalculatorAmountInput } from "@/components/CalculatorAmountInput";
 import { cn } from "@/lib/utils";
+import { formatSignedBRL } from "@/lib/format-brl";
 import {
   DndContext,
   closestCenter,
