@@ -896,6 +896,8 @@ function AccountsPage() {
                     setPdfImportAccount={setPdfImportAccount}
                     handleToggleVisibility={handleToggleVisibility}
                     openRecalc={openRecalc}
+                    openBreakdown={openBreakdown}
+
                     isSelectionMode={isSelectionMode}
                     isSelected={selectedIds.has(account.id)}
                     onToggleSelect={toggleSelect}
