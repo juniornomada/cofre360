@@ -66,7 +66,26 @@ function resolveMonthIdx(token: string): number | undefined {
 }
 
 export function parseTxDate(dateStr: string, fallback: string): Date {
-  const parts = (dateStr || "").trim().toLowerCase().split(/\s+/);
+  // Sanitize noisy inputs: strip zero-width / invisible unicode that would
+  // otherwise split tokens, and drop stray pontuação that gets attached to
+  // digits or month words (e.g. "01!", "10,/07", "jan..."). Keep "/" and
+  // "-" so numeric separators survive.
+  const rawCleaned = (dateStr || "")
+    .replace(/[\u200B-\u200D\uFEFF\u180E\u2028\u2029\u00A0\u202F\u205F]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  // For token-based parsing we drop pontuação and collapse space-wrapped
+  // dashes (e.g. "01 - jan") into a single space. For the native ISO
+  // fallback further below we keep colons/dots so `new Date(...)` can still
+  // read timestamps like "2026-07-10T12:00:00Z".
+  const cleaned = rawCleaned
+    .replace(/\s-\s/g, " ")
+    .replace(/[.,;:!?]+/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  // Drop lone punctuation-only tokens (e.g. a trailing "-") that survive
+  // sanitization when they were space-separated in the original string.
+  const parts = cleaned.toLowerCase().split(/\s+/).filter((t) => /[a-z0-9]/.test(t));
   const fallbackDate = new Date(fallback);
   const hasFallback = !isNaN(fallbackDate.getTime());
   const fallbackYear = hasFallback ? fallbackDate.getFullYear() : new Date().getFullYear();
@@ -103,7 +122,7 @@ export function parseTxDate(dateStr: string, fallback: string): Date {
   // 4-digit leading segment; everything else is treated as day-first so that
   // "10/07", "10-07", "10/07/2026" and "10-07-2026" all resolve to the same
   // day/month (and, for 2-part inputs, the same billing cycle as "10 jul").
-  const numericParts = (dateStr || "").trim().split(/[\/\-]/);
+  const numericParts = cleaned.split(/\s*[\/\-]\s*/);
   if (
     (numericParts.length === 2 || numericParts.length === 3) &&
     numericParts.every((p) => /^\d+$/.test(p))
@@ -136,7 +155,7 @@ export function parseTxDate(dateStr: string, fallback: string): Date {
     return hasFallback ? fallbackDate : new Date();
   }
 
-  const d = new Date(dateStr);
+  const d = new Date(rawCleaned || dateStr);
   return isNaN(d.getTime()) ? (hasFallback ? fallbackDate : new Date()) : d;
 }
 
