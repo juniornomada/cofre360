@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { SmartLink as Link } from "@/components/SmartLink";
-import { ArrowLeft, Plus, CreditCard, Trash2, X, Check, Loader2, Wallet, Landmark, ChevronLeft, ChevronRight, Receipt, FileUp, GripVertical, Layers, Pencil, MoreVertical, Eye, EyeOff, Copy, AlertCircle, CheckCircle2, Info, Search, SlidersHorizontal, CalendarIcon, Trash, ChevronDown, ChevronUp } from "lucide-react";
+import { ArrowLeft, Plus, CreditCard, Trash2, X, Check, Loader2, Wallet, Landmark, ChevronLeft, ChevronRight, Receipt, FileUp, GripVertical, Layers, Pencil, MoreVertical, Eye, EyeOff, Copy, AlertCircle, CheckCircle2, Info, Search, SlidersHorizontal, CalendarIcon, Trash, ChevronDown, ChevronUp, RotateCcw } from "lucide-react";
 import { useUserPreferences } from "@/hooks/use-user-preferences";
 import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
@@ -127,6 +127,8 @@ function CardsPage() {
 
   // Invoice dialog state
   const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
+  const [invoiceOrderTick, setInvoiceOrderTick] = useState(0);
+
   const [invoiceCard, setInvoiceCard] = useState<CardData | null>(null);
   const [cardTransactions, setCardTransactions] = useState<CardTransaction[]>([]);
   const [loadingTx, setLoadingTx] = useState(false);
@@ -1518,7 +1520,23 @@ function CardsPage() {
                 >
                   <ChevronRight className="h-4 w-4" />
                 </button>
+                <button
+                  onClick={() => {
+                    if (!invoiceCard || !rawActivePeriod) return;
+                    const key = `${invoiceCard.id}::${rawActivePeriod.endDate.toISOString().split("T")[0]}`;
+                    invoiceOrderRef.current.delete(key);
+                    // Force re-render so the freeze block re-snapshots from the
+                    // current raw data in its canonical order.
+                    setInvoiceOrderTick((t) => t + 1);
+                  }}
+                  aria-label="Restaurar ordem original da fatura"
+                  title="Restaurar ordem original"
+                  className="interactive-button p-1.5 rounded-lg bg-accent hover:bg-accent/80 transition-colors"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                </button>
               </div>
+
 
               <div className="flex gap-1 px-5 pb-3 overflow-x-auto no-scrollbar">
                 {invoicePeriods.map((period, idx) => (
