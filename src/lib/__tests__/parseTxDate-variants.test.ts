@@ -43,9 +43,10 @@ const ALL_MONTHS: Array<[string, number]> = [
 
 describe("parseTxDate — every short month token maps to the correct month index", () => {
   it.each(ALL_MONTHS)('"%s" → month index %i', (token, monthIdx) => {
-    // Use a fallback that is far from the target month so we know the token —
-    // not the fallback — drives the resolved month.
-    const d = parseTxDate(`15 ${token}`, "2024-01-01T00:00:00Z");
+    // Use a mid-year fallback so the Dec↔Jan year-boundary heuristic does
+    // NOT engage (it only fires when textual jan meets Nov/Dec fallback,
+    // or textual dez meets Jan/Feb fallback).
+    const d = parseTxDate(`15 ${token}`, "2024-06-15T00:00:00Z");
     expect(d.getFullYear()).toBe(2024);
     expect(d.getMonth()).toBe(monthIdx);
     expect(d.getDate()).toBe(15);
