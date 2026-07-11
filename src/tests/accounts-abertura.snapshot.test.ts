@@ -136,7 +136,6 @@ describe("Accounts · linha de Abertura", () => {
     `);
   });
 });
-});
 
 describe("Accounts · derivação de openingIsOnlyComponent", () => {
   it("está definido como !hasMovements && openingBalance !== 0", () => {
