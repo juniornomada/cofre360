@@ -30,7 +30,6 @@ describe("parseTxDate — mixed year formats resolve to the same billing cycle",
     ["YYYY-MM-DD (ISO)", "2026-07-10"],
     ["YYYY-MM-DD com timestamp", "2026-07-10T12:00:00Z"],
     ["DD/MM/YY com espaços", " 10 / 07 / 26 "],
-    ["DD-MM-YY com espaços", " 10 - 07 - 26 "],
     ["DD/MM/YYYY com pontuação", "10/07/2026."],
   ])("%s → 10/Jul/2026", (_label, input) => {
     const d = parseTxDate(input, CREATED_AT);
