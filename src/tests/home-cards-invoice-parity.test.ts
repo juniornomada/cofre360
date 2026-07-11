@@ -62,21 +62,21 @@ const NOW = new Date(2026, 6, 15, 10, 0, 0); // 15 Jul 2026
 // an income (estorno), and boundary dates around the closing day.
 const TXS: CardTransaction[] = [
   // Porto: current invoice (Jul cycle: 10 Jun – 10 Jul, due 20 Jul)
-  { id: "p1", name: "Compra Jul", icon: null, category: "food", card: "porto", date: "03 jul", amount: 500, type: "expense", created_at: "2026-07-03T10:00:00Z", total_installments: null, installment_number: null, installment_group_id: null },
-  { id: "p2", name: "Estorno Jul", icon: null, category: "food", card: "porto", date: "05 jul", amount: 50, type: "income", created_at: "2026-07-05T10:00:00Z", total_installments: null, installment_number: null, installment_group_id: null },
+  { id: "p1", name: "Compra Jul", icon: null, category: "food", card: "Porto Bank", date: "03 jul", amount: 500, type: "expense", created_at: "2026-07-03T10:00:00Z", total_installments: null, installment_number: null, installment_group_id: null },
+  { id: "p2", name: "Estorno Jul", icon: null, category: "food", card: "Porto Bank", date: "05 jul", amount: 50, type: "income", created_at: "2026-07-05T10:00:00Z", total_installments: null, installment_number: null, installment_group_id: null },
   // Porto: previous cycle (10 May – 10 Jun, due 20 Jun)
-  { id: "p3", name: "Compra Jun", icon: null, category: "shop", card: "porto", date: "28 mai", amount: 1000, type: "expense", created_at: "2026-05-28T10:00:00Z", total_installments: null, installment_number: null, installment_group_id: null },
+  { id: "p3", name: "Compra Jun", icon: null, category: "shop", card: "Porto Bank", date: "28 mai", amount: 1000, type: "expense", created_at: "2026-05-28T10:00:00Z", total_installments: null, installment_number: null, installment_group_id: null },
   // Porto: boundary — 10 jul is the closing day itself → goes to NEXT cycle
-  { id: "p4", name: "Fronteira", icon: null, category: "misc", card: "porto", date: "10 jul", amount: 200, type: "expense", created_at: "2026-07-10T10:00:00Z", total_installments: null, installment_number: null, installment_group_id: null },
+  { id: "p4", name: "Fronteira", icon: null, category: "misc", card: "Porto Bank", date: "10 jul", amount: 200, type: "expense", created_at: "2026-07-10T10:00:00Z", total_installments: null, installment_number: null, installment_group_id: null },
   // Porto: installment 2/3 lands in current (Jul) cycle
-  { id: "p5a", name: "Parcela 1/3", icon: null, category: "shop", card: "porto", date: "20 jun", amount: 333.33, type: "expense", created_at: "2026-06-20T10:00:00Z", total_installments: 3, installment_number: 1, installment_group_id: "g1" },
-  { id: "p5b", name: "Parcela 2/3", icon: null, category: "shop", card: "porto", date: "20 jul", amount: 333.33, type: "expense", created_at: "2026-06-20T10:00:00Z", total_installments: 3, installment_number: 2, installment_group_id: "g1" },
-  { id: "p5c", name: "Parcela 3/3", icon: null, category: "shop", card: "porto", date: "20 ago", amount: 333.34, type: "expense", created_at: "2026-06-20T10:00:00Z", total_installments: 3, installment_number: 3, installment_group_id: "g1" },
+  { id: "p5a", name: "Parcela 1/3", icon: null, category: "shop", card: "Porto Bank", date: "20 jun", amount: 333.33, type: "expense", created_at: "2026-06-20T10:00:00Z", total_installments: 3, installment_number: 1, installment_group_id: "g1" },
+  { id: "p5b", name: "Parcela 2/3", icon: null, category: "shop", card: "Porto Bank", date: "20 jul", amount: 333.33, type: "expense", created_at: "2026-06-20T10:00:00Z", total_installments: 3, installment_number: 2, installment_group_id: "g1" },
+  { id: "p5c", name: "Parcela 3/3", icon: null, category: "shop", card: "Porto Bank", date: "20 ago", amount: 333.34, type: "expense", created_at: "2026-06-20T10:00:00Z", total_installments: 3, installment_number: 3, installment_group_id: "g1" },
 
   // Nubank: current invoice (Jul cycle: 25 Jun – 25 Jul, due 5 Aug)
-  { id: "n1", name: "Compra Nu", icon: null, category: "food", card: "nu", date: "30 jun", amount: 200, type: "expense", created_at: "2026-06-30T10:00:00Z", total_installments: null, installment_number: null, installment_group_id: null },
+  { id: "n1", name: "Compra Nu", icon: null, category: "food", card: "Nubank", date: "30 jun", amount: 200, type: "expense", created_at: "2026-06-30T10:00:00Z", total_installments: null, installment_number: null, installment_group_id: null },
   // Nubank: previous cycle (25 May – 25 Jun, due 5 Jul) → fully paid below
-  { id: "n2", name: "Compra Nu Jun", icon: null, category: "food", card: "nu", date: "10 jun", amount: 400, type: "expense", created_at: "2026-06-10T10:00:00Z", total_installments: null, installment_number: null, installment_group_id: null },
+  { id: "n2", name: "Compra Nu Jun", icon: null, category: "food", card: "Nubank", date: "10 jun", amount: 400, type: "expense", created_at: "2026-06-10T10:00:00Z", total_installments: null, installment_number: null, installment_group_id: null },
 ];
 
 const PAYMENTS: Payment[] = [
