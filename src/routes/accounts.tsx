@@ -344,6 +344,9 @@ function AccountsPage() {
   const [csvImportAccount, setCsvImportAccount] = useState<BankAccount | null>(null);
   const [pdfImportAccount, setPdfImportAccount] = useState<BankAccount | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [recalcAccount, setRecalcAccount] = useState<BankAccount | null>(null);
+  const [recalcRealBalance, setRecalcRealBalance] = useState<number>(0);
+  const [isRecalcing, setIsRecalcing] = useState(false);
   const isUndoing = useRef(false);
 
   const [editingAccount, setEditingAccount] = useState<BankAccount | null>(null);
