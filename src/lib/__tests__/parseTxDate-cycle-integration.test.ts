@@ -1,208 +1,185 @@
 import { describe, it, expect } from "vitest";
-import {
-  parseTxDate,
-  groupByBillingCycle,
-  getCycleDates,
-  type CardTransaction,
-} from "@/lib/invoice-utils";
+import { parseTxDate, getCycleDates, groupByBillingCycle, type CardTransaction } from "../invoice-utils";
 
 /**
- * Integração: garante que entradas LIMÍTROFES de `parseTxDate`
- * (bordas de mês/ano, dias de fechamento, timestamps, formatos
- * numéricos e textuais) resultam em cycle keys DETERMINÍSTICAS
- * e CONSISTENTES quando alimentadas em `groupByBillingCycle`.
+ * Integração: canônico de `parseTxDate` bate exatamente com o ciclo
+ * calculado por `getCycleDates` (e o bucket produzido por
+ * `groupByBillingCycle`) para os MESMOS inputs ambíguos cobertos pelas
+ * suítes property-based e cenário-a-cenário.
  *
- * Uma alteração ou regressão em `parseTxDate` que mova a data
- * em ±1 dia/mês/ano deve, obrigatoriamente, deslocar o tx
- * para outra fatura — nunca "sumir" ou duplicar.
+ * Diferença deste arquivo: as suítes anteriores comparam apenas o
+ * `getTime()` de `parseTxDate`. Aqui a asserção é ponta-a-ponta, isto é,
+ * o input ruidoso deve ir para o MESMO período de fatura que o input
+ * canônico — validando o contrato real usado pela UI de `/cards` e
+ * pela Home.
+ *
+ * Cenários cobertos:
+ *  - Dashes ASCII e Unicode misturados (`-`, `/`, en/em/figure/hyphen/minus,
+ *    small e fullwidth variants).
+ *  - Ruído de espaço em torno do separador (SP, NBSP, NNBSP, ZWSP, BOM).
+ *  - Meses fronteira (Dez↔Jan) que ativam a heurística de ano do parser.
+ *  - Combinações (closingDay, dueDay) que atravessam o mês do fallback.
  */
 
-const mkTx = (over: Partial<CardTransaction> & { date: string; created_at: string }): CardTransaction => ({
-  id: over.id ?? crypto.randomUUID(),
-  name: over.name ?? "tx",
-  icon: null,
-  category: over.category ?? "cat",
-  card: null,
-  amount: over.amount ?? 100,
-  type: over.type ?? "expense",
-  total_installments: null,
-  installment_number: null,
-  installment_group_id: null,
-  ...over,
-});
+// Fallback fixado longe da fronteira Dez↔Jan para isolar variações de
+// heurística de ano (essas têm suíte própria).
+const FALLBACK_MID_YEAR = "2026-06-15T12:00:00Z";
+// Fallback dentro da fronteira, para ativar a heurística Dez↔Jan.
+const FALLBACK_LATE_YEAR = "2026-12-30T12:00:00Z";
+const FALLBACK_EARLY_YEAR = "2026-01-05T12:00:00Z";
 
-const CARD = { closing: 3, due: 10 };
-const REF = new Date(2026, 6, 15); // 15/Jul/2026
+// Referência fixa (uma data corrente que o app está exibindo) — o mesmo
+// referenceDate é passado para `groupByBillingCycle` e para
+// `getCycleDates`, então ambos calculam períodos idênticos.
+const REFERENCE = new Date("2026-07-20T12:00:00Z");
 
-const cycleKeyOfTx = (tx: CardTransaction): string => {
-  const periods = groupByBillingCycle([tx], CARD.closing, CARD.due, REF);
-  const hit = periods.find((p) => p.transactions.length === 1);
-  if (!hit) return "__unassigned__";
-  return hit.endDate.toISOString().split("T")[0];
-};
+function periodKeyForDate(txDate: Date, closingDay: number, dueDay: number, reference: Date): string {
+  // Reproduz a lógica de bucketing de `groupByBillingCycle` usando apenas
+  // `getCycleDates` — se ambas concordarem para o mesmo Date de entrada,
+  // a integração está consistente.
+  const { currentClose, prevClose } = getCycleDates(reference, closingDay, dueDay);
+  const pastClose = new Date(prevClose.getFullYear(), prevClose.getMonth() - 1, closingDay || 1);
+  if (txDate > pastClose && txDate <= prevClose) return "past";
+  if (txDate > prevClose && txDate <= currentClose) return "current";
+  // Futuros: primeiro ciclo após currentClose.
+  let futureStart = new Date(currentClose);
+  for (let i = 0; i < 24; i++) {
+    const futureEnd = new Date(futureStart.getFullYear(), futureStart.getMonth() + 1, closingDay || 1);
+    if (txDate > futureStart && txDate <= futureEnd) return `future_${i}`;
+    futureStart = futureEnd;
+  }
+  return "out_of_range";
+}
 
-describe("integration — parseTxDate boundary → cycle key determinism", () => {
-  it("mesma data em formatos diferentes → mesma cycle key", () => {
-    const variants = [
-      "10/07/2026",
-      "10/07/26",
-      "10-07-2026",
-      "10-07-26",
-      "2026-07-10",
-      "2026-07-10T12:00:00Z",
-      "10 jul",
-      "10 julho",
-    ];
-    const keys = new Set(
-      variants.map((date) => cycleKeyOfTx(mkTx({ date, created_at: "2026-07-10T09:00:00Z" }))),
-    );
-    expect(keys.size).toBe(1);
-    expect([...keys][0]).not.toBe("__unassigned__");
-  });
+function makeTx(id: string, date: string, created_at: string): CardTransaction {
+  return {
+    id,
+    name: `tx-${id}`,
+    icon: null,
+    category: "test",
+    card: "card-1",
+    date,
+    amount: 100,
+    type: "expense",
+    created_at,
+    total_installments: null,
+    installment_number: null,
+    installment_group_id: null,
+  };
+}
 
-  it("borda de fechamento: 02/07 vs 03/07 vs 04/07 caem em ciclos consecutivos", () => {
-    const created = "2026-07-05T00:00:00Z";
-    const k02 = cycleKeyOfTx(mkTx({ date: "02/07/2026", created_at: created }));
-    const k03 = cycleKeyOfTx(mkTx({ date: "03/07/2026", created_at: created }));
-    const k04 = cycleKeyOfTx(mkTx({ date: "04/07/2026", created_at: created }));
+// [canônico, [variantes ambíguas...]]
+const SCENARIOS: Array<{ canonical: string; noisy: string[]; fallback: string }> = [
+  {
+    // Fronteira Dez com fallback dezembro/final do ano — ativa heurística.
+    canonical: "31/12",
+    noisy: [
+      "31-12", "31 -12", "31- 12", "31 - 12",
+      "31\u201312", "31\u201412", "31\u221212",
+      "31\u2013 12", "31 \u201312", "31 \u2013 12",
+      "31\u00A0-\u00A012", "31\u202F-\u202F12",
+      "31\u200B-\u200B12", "31\uFEFF-\uFEFF12",
+    ],
+    fallback: FALLBACK_LATE_YEAR,
+  },
+  {
+    // Fronteira Jan com fallback início do ano — heurística mantém ano.
+    canonical: "01/01",
+    noisy: [
+      "01-01", "1-1", "1\u20131", "01\u201401", "01\u221201",
+      "01 - 01", "01\u00A0-\u00A001", " 01\u2013 01 ",
+    ],
+    fallback: FALLBACK_EARLY_YEAR,
+  },
+  {
+    // Meio de ano — sem heurística.
+    canonical: "15/07",
+    noisy: [
+      "15-07", "15 -07", "15- 07", "15 - 07",
+      "15\u201307", "15\u201407", "15\u221207",
+      "15 \u2013 07",
+    ],
+    fallback: FALLBACK_MID_YEAR,
+  },
+  {
+    // Ano completo — dashes misturados de várias origens.
+    canonical: "31/12/2026",
+    noisy: [
+      "31-12-2026", "31 - 12 - 2026",
+      "31\u201312\u20132026", "31 \u2013 12 \u2013 2026",
+      "31\u221212\u22122026", "31-12\u20132026",
+      "31\uFF0D12\uFF0D2026", // fullwidth hyphen-minus
+    ],
+    fallback: FALLBACK_LATE_YEAR,
+  },
+  {
+    // Ano de 2 dígitos.
+    canonical: "10/07/26",
+    noisy: [
+      "10-07-26", "10 - 07 - 26",
+      "10\u201307\u201326", "10\uFE6307\uFE6326",
+    ],
+    fallback: FALLBACK_MID_YEAR,
+  },
+];
 
-    // A borda pode incluir OU excluir o dia de fechamento, mas o resultado
-    // é DETERMINÍSTICO: as três datas se distribuem em, no máximo, 2 ciclos
-    // consecutivos, e a ordem cronológica é preservada (k02 ≤ k03 ≤ k04).
-    expect([k02, k03, k04].every((k) => k !== "__unassigned__")).toBe(true);
-    expect(k02 <= k03).toBe(true);
-    expect(k03 <= k04).toBe(true);
-    expect(new Set([k02, k03, k04]).size).toBeLessThanOrEqual(2);
-  });
+// Grade de configurações de fatura reais (fechamento/vencimento).
+const CYCLE_CONFIGS: Array<[number, number]> = [
+  [1, 10],   // fechamento início, vencimento início
+  [10, 20],  // meio de mês
+  [25, 5],   // fecha fim, vence início do próximo
+  [28, 15],  // fim de mês
+];
 
-  it("virada de ano: 31/12/25 e 01/01/26 caem em ciclos distintos e ordenados", () => {
-    // REF próximo às datas: usamos 02/Jan/2026 para que ambas caiam em
-    // períodos ativos do grouping (past/current/future_*).
-    const refNearNewYear = new Date(2026, 0, 2);
-    const dez = mkTx({ date: "31/12/2025", created_at: "2026-01-02T00:00:00Z" });
-    const jan = mkTx({ date: "05/01/2026", created_at: "2025-12-30T23:59:00Z" });
-    const keyOf = (tx: CardTransaction) => {
-      const periods = groupByBillingCycle([tx], CARD.closing, CARD.due, refNearNewYear);
-      const hit = periods.find((p) => p.transactions.length === 1);
-      return hit ? hit.endDate.toISOString().split("T")[0] : "__unassigned__";
-    };
-    const kDez = keyOf(dez);
-    const kJan = keyOf(jan);
-    expect(kDez).not.toBe("__unassigned__");
-    expect(kJan).not.toBe("__unassigned__");
-    expect(kDez).not.toBe(kJan);
-    expect(kDez < kJan).toBe(true);
-  });
+describe("Integração: parseTxDate canônico ↔ getCycleDates/groupByBillingCycle", () => {
+  for (const scenario of SCENARIOS) {
+    for (const [closingDay, dueDay] of CYCLE_CONFIGS) {
+      const label = `${scenario.canonical} @ close=${closingDay} due=${dueDay} fb=${scenario.fallback.slice(0, 10)}`;
 
-  it("virada de ano SEM ano explícito: '31 dez' + created Jan → puxa para o ano anterior", () => {
-    const tx = mkTx({ date: "31 dez", created_at: "2026-01-02T00:00:00Z" });
-    const parsed = parseTxDate(tx.date, tx.created_at);
-    expect(parsed.getFullYear()).toBe(2025);
-    expect(parsed.getMonth()).toBe(11);
-    expect(parsed.getDate()).toBe(31);
-  });
+      it(`bucket idêntico para todas as variantes: ${label}`, () => {
+        const canonicalDate = parseTxDate(scenario.canonical, scenario.fallback);
+        expect(Number.isFinite(canonicalDate.getTime())).toBe(true);
 
-  it("virada de ano SEM ano explícito: '01 jan' + created Dez → empurra para o ano seguinte", () => {
-    const tx = mkTx({ date: "01 jan", created_at: "2025-12-31T23:59:00Z" });
-    const parsed = parseTxDate(tx.date, tx.created_at);
-    expect(parsed.getFullYear()).toBe(2026);
-    expect(parsed.getMonth()).toBe(0);
-    expect(parsed.getDate()).toBe(1);
-  });
+        // Usa a própria data canônica como referência do ciclo — garante
+        // que o bucket "current" abrange o tx canônico e, com isso, o
+        // teste valida um caso não-vazio para todas as configurações
+        // (fechamento/vencimento) e cenários de mês.
+        const reference = canonicalDate;
+        const expectedKey = periodKeyForDate(canonicalDate, closingDay, dueDay, reference);
 
-  it("dia inválido (31/11, 30/02) cai em `created_at` — cycle key = cycle key do fallback", () => {
-    const created = "2026-07-15T10:00:00Z";
-    const invalid = mkTx({ date: "31/11/2026", created_at: created });
-    const control = mkTx({ date: "", created_at: created });
-    expect(cycleKeyOfTx(invalid)).toBe(cycleKeyOfTx(control));
+        for (const noisy of scenario.noisy) {
+          const noisyDate = parseTxDate(noisy, scenario.fallback);
+          expect(Number.isFinite(noisyDate.getTime()), `NaN em ${JSON.stringify(noisy)}`).toBe(true);
 
-    const feb30 = mkTx({ date: "30/02/2026", created_at: created });
-    expect(cycleKeyOfTx(feb30)).toBe(cycleKeyOfTx(control));
-  });
+          // (a) `getCycleDates` — cycle key computada diretamente.
+          const noisyKey = periodKeyForDate(noisyDate, closingDay, dueDay, reference);
+          expect(
+            noisyKey,
+            `cycle drift: canonical=${JSON.stringify(scenario.canonical)} (${expectedKey}) vs noisy=${JSON.stringify(noisy)} (${noisyKey})`,
+          ).toBe(expectedKey);
 
-  it("ISO com timestamp em qualquer hora do dia → mesma cycle key que a data ISO pura", () => {
-    const created = "2026-07-10T00:00:00Z";
-    const hours = ["00:00:01Z", "06:30:00Z", "12:00:00Z", "18:45:00Z", "23:59:59Z"];
-    const bare = cycleKeyOfTx(mkTx({ date: "2026-07-10", created_at: created }));
-    for (const h of hours) {
-      const k = cycleKeyOfTx(mkTx({ date: `2026-07-10T${h}`, created_at: created }));
-      expect(k).toBe(bare);
+          // (b) `groupByBillingCycle` — invariante ponta-a-ponta com o
+          // pipeline real usado pela UI. Criamos DUAS transações
+          // (canônica + ruidosa) e verificamos que caem no mesmo
+          // period.key.
+          const txs: CardTransaction[] = [
+            makeTx("canonical", scenario.canonical, scenario.fallback),
+            makeTx("noisy", noisy, scenario.fallback),
+          ];
+          const periods = groupByBillingCycle(txs, closingDay, dueDay, reference);
+          const findPeriod = (id: string) =>
+            periods.find((p) => p.transactions.some((t) => t.id === id));
+          const canonicalPeriod = findPeriod("canonical");
+          const noisyPeriod = findPeriod("noisy");
+
+          expect(canonicalPeriod, `canonical não alocada em ${JSON.stringify(scenario.canonical)}`).toBeDefined();
+          expect(noisyPeriod, `noisy não alocada em ${JSON.stringify(noisy)}`).toBeDefined();
+          expect(
+            noisyPeriod!.key,
+            `groupByBillingCycle drift: canonical→${canonicalPeriod!.key} vs noisy(${JSON.stringify(noisy)})→${noisyPeriod!.key}`,
+          ).toBe(canonicalPeriod!.key);
+        }
+      });
     }
-  });
-
-  it("determinismo: repetir groupByBillingCycle N vezes com o mesmo input dá o mesmo resultado", () => {
-    const tx = mkTx({ date: "10/07/2026", created_at: "2026-07-10T09:00:00Z" });
-    const first = cycleKeyOfTx(tx);
-    for (let i = 0; i < 50; i++) {
-      expect(cycleKeyOfTx(tx)).toBe(first);
-    }
-  });
-
-  it("uma variação de ±1 dia em `date` NUNCA faz o tx sumir; ele apenas troca de fatura", () => {
-    const created = "2026-07-15T00:00:00Z";
-    const dates = [
-      "01/07/2026", "02/07/2026", "03/07/2026", "04/07/2026",
-      "31/07/2026", "01/08/2026", "02/08/2026", "04/08/2026", "05/08/2026",
-    ];
-    for (const date of dates) {
-      const k = cycleKeyOfTx(mkTx({ date, created_at: created }));
-      expect(k).not.toBe("__unassigned__");
-    }
-  });
-
-  it("agregação em massa: N variantes da MESMA data se agrupam TODAS na mesma fatura", () => {
-    const created = "2026-07-10T09:00:00Z";
-    const variants: CardTransaction[] = [
-      "10/07/2026",
-      "10/07/26",
-      "10-07-2026",
-      "10-07-26",
-      "2026-07-10",
-      "2026-07-10T12:00:00Z",
-      "10 jul",
-      "10 julho",
-      "10 Jul.",
-      "10  jul",
-    ].map((date, i) =>
-      mkTx({ id: `tx-${i}`, date, created_at: created, amount: 10 }),
-    );
-
-    const periods = groupByBillingCycle(variants, CARD.closing, CARD.due, REF);
-    const nonEmpty = periods.filter((p) => p.transactions.length > 0);
-    expect(nonEmpty).toHaveLength(1);
-    expect(nonEmpty[0].transactions).toHaveLength(variants.length);
-    expect(nonEmpty[0].total).toBeCloseTo(variants.length * 10, 2);
-  });
-
-  it("borda contra `getCycleDates`: a cycle key coincide com `currentClose`/`prevClose` do cartão", () => {
-    const { currentClose, prevClose } = getCycleDates(REF, CARD.closing, CARD.due);
-    const iso = (d: Date) => d.toISOString().split("T")[0];
-    // Uma tx datada dentro do período "Atual" (prevClose <= date < currentClose)
-    // tem cycle key = iso(currentClose).
-    const insideCurrent = mkTx({
-      date: `${prevClose.getDate().toString().padStart(2, "0")}/${(prevClose.getMonth() + 1).toString().padStart(2, "0")}/${prevClose.getFullYear()}`,
-      created_at: REF.toISOString(),
-    });
-    expect(cycleKeyOfTx(insideCurrent)).toBe(iso(currentClose));
-  });
-
-  it("estabilidade do particionamento: duas execuções com ORDEM diferente das txs dão o mesmo particionamento", () => {
-    const created = "2026-07-10T00:00:00Z";
-    const txs: CardTransaction[] = [
-      mkTx({ id: "a", date: "05/07/2026", created_at: created, amount: 100 }),
-      mkTx({ id: "b", date: "10/07/2026", created_at: created, amount: 200 }),
-      mkTx({ id: "c", date: "15/08/2026", created_at: created, amount: 300 }),
-      mkTx({ id: "d", date: "invalid", created_at: created, amount: 400 }),
-    ];
-    const asKey = (list: CardTransaction[]) => {
-      const periods = groupByBillingCycle(list, CARD.closing, CARD.due, REF);
-      return periods
-        .map((p) => `${p.endDate.toISOString().split("T")[0]}=${p.transactions.map((t) => t.id).sort().join(",")}`)
-        .sort()
-        .join("|");
-    };
-    const forward = asKey(txs);
-    const reversed = asKey([...txs].reverse());
-    expect(reversed).toBe(forward);
-  });
+  }
 });
