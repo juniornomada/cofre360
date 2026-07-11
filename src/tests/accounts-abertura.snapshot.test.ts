@@ -99,13 +99,25 @@ describe("Accounts · linha de Abertura", () => {
     );
   });
 
+  it("mantém responsividade em telas pequenas (wrap + shrink-0 + truncate)", () => {
+    // Container permite quebra em duas linhas em telas estreitas sem
+    // achatar o selo.
+    expect(block).toMatch(/flex flex-wrap items-center gap-x-1\.5 gap-y-0\.5 min-w-0/);
+    // Texto da abertura pode encolher e truncar.
+    expect(block).toMatch(/text-\[11px\] tabular-nums leading-tight min-w-0 truncate/);
+    // Selo nunca encolhe nem quebra internamente e escala tipografia no sm.
+    expect(block).toMatch(/shrink-0 whitespace-nowrap text-\[10px\] sm:text-\[11px\]/);
+    // O tamanho anterior de 9px (abaixo do mínimo recomendado) foi removido.
+    expect(block).not.toMatch(/text-\[9px\]/);
+  });
+
   it("congela a marcação completa do bloco de Abertura (snapshot inline)", () => {
     expect(block).toMatchInlineSnapshot(`
       "{openingBalance !== 0 && (
-                        <div className="flex items-center gap-1.5 min-w-0">
+                        <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 min-w-0">
                           <span
                             className={cn(
-                              "text-[11px] tabular-nums leading-tight",
+                              "text-[11px] tabular-nums leading-tight min-w-0 truncate",
                               openingIsOnlyComponent
                                 ? "font-semibold text-primary"
                                 : "text-muted-foreground",
@@ -126,7 +138,7 @@ describe("Accounts · linha de Abertura", () => {
                                 balanceVisible ? formatSignedBRL(openingBalance) : "oculto"
                               }) é composto exclusivamente pelo saldo de abertura da conta \${account.name}\`}
                               title="Saldo atual é apenas a abertura (sem movimentações no período)"
-                              className="text-[9px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-primary text-primary-foreground border border-primary"
+                              className="shrink-0 whitespace-nowrap text-[10px] sm:text-[11px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-primary text-primary-foreground border border-primary"
                             >
                               <span aria-hidden="true">único componente</span>
                             </span>
