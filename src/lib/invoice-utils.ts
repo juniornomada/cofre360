@@ -85,6 +85,10 @@ export function parseTxDate(dateStr: string, fallback: string): Date {
   // "-" so numeric separators survive.
   const rawCleaned = (dateStr || "")
     .replace(/[\u200B-\u200D\uFEFF\u180E\u2028\u2029\u00A0\u202F\u205F]/g, " ")
+    // Normalize Unicode dash-likes into ASCII '-' so numeric separators
+    // (en dash, em dash, minus sign, hyphen variants) all reach the
+    // numeric branch below. Tabs and other whitespace collapse via \s+.
+    .replace(/[\u2010\u2011\u2012\u2013\u2014\u2015\u2212\uFE58\uFE63\uFF0D]/g, "-")
     .replace(/\s+/g, " ")
     .trim();
   // For token-based parsing we drop pontuação and collapse space-wrapped
@@ -134,7 +138,11 @@ export function parseTxDate(dateStr: string, fallback: string): Date {
     // Exception: if the second token is itself numeric (e.g. "15 / 07" whose
     // "/" got filtered out), fall through so the numeric branch can handle it.
     const secondLooksNumeric = /^-?\d+$/.test(parts[1]);
-    if (dayLooksNumeric && !secondLooksNumeric) {
+    // If the second token still carries a numeric separator (e.g. "16 /03"
+    // or "15 -07" after whitespace collapse), let the numeric branch handle
+    // it instead of bailing to fallback.
+    const secondHasNumericSep = /[\/\-]\d/.test(parts[1]);
+    if (dayLooksNumeric && !secondLooksNumeric && !secondHasNumericSep) {
       return hasFallback ? fallbackDate : new Date();
     }
   }
