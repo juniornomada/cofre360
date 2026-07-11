@@ -15,11 +15,13 @@
  *    merge that swapped an id, or a replacement row) is appended at the
  *    end in the order the server returned it — predictable, never
  *    interleaved into the frozen prefix.
- *  - While the dialog is closed, no snapshot is retained. Caller should drop
- *    the entry so that the next open captures a fresh order from the current
- *    data.
+ *  - The snapshot PERSISTS across close/reopen for the same invoice period.
+ *    On reopen, previously captured ids keep their original order and any
+ *    transaction created while the dialog was closed appears at the end.
+ *    A fresh snapshot is only taken when none exists yet for the period.
  *
- * `nextSnapshot === null` signals the caller to delete the stored entry.
+ * `nextSnapshot === null` is reserved for callers that want to invalidate
+ * the entry explicitly (e.g. period switch); this helper never returns it.
  */
 export function resolveInvoiceOrder(params: {
   currentIds: string[];
@@ -28,13 +30,17 @@ export function resolveInvoiceOrder(params: {
 }): { orderedIds: string[]; nextSnapshot: string[] | null } {
   const { currentIds, priorSnapshot, dialogOpen } = params;
 
-  if (!dialogOpen) {
-    return { orderedIds: currentIds.slice(), nextSnapshot: null };
-  }
   if (!priorSnapshot) {
+    // First observation of this period: capture the current order as the
+    // canonical baseline (whether the dialog is open or not).
     const snap = currentIds.slice();
-    return { orderedIds: snap, nextSnapshot: snap };
+    return { orderedIds: dialogOpen ? snap : currentIds.slice(), nextSnapshot: snap };
   }
+  // Snapshot exists — apply the same frozen-prefix + append-newcomers rule
+  // whether the dialog is open or closed. This guarantees that when the
+  // dialog reopens, new transactions land at the end without shuffling
+  // previously captured rows.
+
   // Dialog open with an existing snapshot:
   //  1. Keep the frozen prefix (snapshot order minus deleted ids).
   //  2. Append any current id that was not in the snapshot at the end,
