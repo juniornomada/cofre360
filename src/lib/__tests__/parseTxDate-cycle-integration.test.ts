@@ -76,10 +76,20 @@ describe("integration — parseTxDate boundary → cycle key determinism", () =>
   });
 
   it("virada de ano: 31/12/25 e 01/01/26 caem em ciclos distintos e ordenados", () => {
+    // REF próximo às datas: usamos 02/Jan/2026 para que ambas caiam em
+    // períodos ativos do grouping (past/current/future_*).
+    const refNearNewYear = new Date(2026, 0, 2);
     const dez = mkTx({ date: "31/12/2025", created_at: "2026-01-02T00:00:00Z" });
-    const jan = mkTx({ date: "01/01/2026", created_at: "2025-12-30T23:59:00Z" });
-    const kDez = cycleKeyOfTx(dez);
-    const kJan = cycleKeyOfTx(jan);
+    const jan = mkTx({ date: "05/01/2026", created_at: "2025-12-30T23:59:00Z" });
+    const keyOf = (tx: CardTransaction) => {
+      const periods = groupByBillingCycle([tx], CARD.closing, CARD.due, refNearNewYear);
+      const hit = periods.find((p) => p.transactions.length === 1);
+      return hit ? hit.endDate.toISOString().split("T")[0] : "__unassigned__";
+    };
+    const kDez = keyOf(dez);
+    const kJan = keyOf(jan);
+    expect(kDez).not.toBe("__unassigned__");
+    expect(kJan).not.toBe("__unassigned__");
     expect(kDez).not.toBe(kJan);
     expect(kDez < kJan).toBe(true);
   });
