@@ -1110,47 +1110,6 @@ function Dashboard() {
           </DndContext>
         )}
 
-        {/* Saldo inicial do mês + previsão fim do mês — moved to bottom */}
-        <div className="mt-2 grid grid-cols-2 gap-2">
-          <div className="rounded-xl bg-background/40 px-3 py-2 flex flex-col justify-between min-h-[58px]">
-            <p className="text-[10px] text-muted-foreground leading-none mb-1 flex items-center gap-1.5 min-h-[18px]">
-              Saldo inicial do mês
-            </p>
-            <p className={cn(
-              "text-sm font-semibold tabular-nums",
-              monthInitialBalance >= 0 ? "text-muted-foreground" : "text-destructive"
-            )}>
-              {balanceVisible ? `R$ ${fmt(monthInitialBalance)}` : "R$ ••••"}
-            </p>
-          </div>
-          <Link
-            to="/insights"
-            search={{
-              ask: `Olha meu saldo previsto para o fim do mês: R$ ${fmt(forecastBalance)} (saldo atual R$ ${fmt(balance)}). Considerando minhas receitas e despesas previstas, parcelas futuras e lembretes pendentes, esse saldo está saudável? Aponte os 3 maiores riscos do mês, sugira ajustes específicos por categoria (ex.: reduzir alimentação, evitar gastos aleatórios) com valores em R$, e diga se algum orçamento já está estourado ou prestes a estourar. Foque em ações práticas para manter ou melhorar esse saldo previsto.`,
-            } as any}
-            className="interactive-card rounded-xl bg-background/40 px-3 py-2 hover:bg-background/60 transition-colors text-left flex flex-col justify-between min-h-[58px]"
-          >
-            <p className="text-[10px] text-muted-foreground leading-none mb-1 flex items-center gap-1.5 min-h-[18px]">
-              Previsto fim do mês
-              <span
-                className="inline-flex items-center justify-center rounded-full p-1 bg-background"
-                style={{
-                  border: "1px solid hsl(142 95% 55%)",
-                  boxShadow:
-                    "0 0 6px hsl(142 95% 55% / 0.7), 0 0 12px hsl(142 95% 55% / 0.4), inset 0 0 4px hsl(142 95% 55% / 0.3)",
-                }}
-              >
-                <Sparkles className="h-2.5 w-2.5" style={{ color: "hsl(142 95% 55%)" }} />
-              </span>
-            </p>
-            <p className={cn(
-              "text-sm font-semibold tabular-nums",
-              forecastBalance >= 0 ? "text-muted-foreground" : "text-destructive"
-            )}>
-              {balanceVisible ? `R$ ${fmt(forecastBalance)}` : "R$ ••••"}
-            </p>
-          </Link>
-        </div>
 
       </div>
 
