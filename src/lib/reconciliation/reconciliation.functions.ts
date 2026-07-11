@@ -7,7 +7,8 @@ import type { ReconciliationInput, ReconciliationRule, CheckType, RuleKind, Tole
 
 export const listRules = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .handler(async (ctx: any) => {
+    const { data, context } = ctx;
     const { data, error } = await context.supabase
       .from("reconciliation_rules")
       .select("*")
@@ -42,7 +43,8 @@ export const upsertRule = createServerFn({ method: "POST" })
       enabled: v.enabled !== false,
     };
   })
-  .handler(async ({ data, context }) => {
+  .handler(async (ctx: any) => {
+    const { data, context } = ctx;
     const payload = { ...data, user_id: context.userId };
     const q = data.id
       ? context.supabase.from("reconciliation_rules").update(payload).eq("id", data.id).select().single()
@@ -59,7 +61,8 @@ export const deleteRule = createServerFn({ method: "POST" })
     if (!v?.id) throw new Error("id obrigatório");
     return { id: v.id };
   })
-  .handler(async ({ data, context }) => {
+  .handler(async (ctx: any) => {
+    const { data, context } = ctx;
     const { error } = await context.supabase.from("reconciliation_rules").delete().eq("id", data.id);
     if (error) throw error;
     return { ok: true };
@@ -148,7 +151,8 @@ export const runNow = createServerFn({ method: "POST" })
     if (v.periodStart > v.periodEnd) throw new Error("periodStart > periodEnd");
     return { periodStart: v.periodStart, periodEnd: v.periodEnd };
   })
-  .handler(async ({ data, context }) => {
+  .handler(async (ctx: any) => {
+    const { data, context } = ctx;
     const { supabase, userId } = context;
     const { data: run, error: runErr } = await supabase
       .from("reconciliation_runs")
@@ -212,7 +216,8 @@ export const runNow = createServerFn({ method: "POST" })
 
 export const listRuns = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .handler(async (ctx: any) => {
+    const { data, context } = ctx;
     const { data, error } = await context.supabase
       .from("reconciliation_runs")
       .select("id,triggered_by,period_start,period_end,status,divergences_count,total_divergence_amount,started_at,completed_at")
@@ -224,7 +229,8 @@ export const listRuns = createServerFn({ method: "GET" })
 
 export const listOpenDivergences = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .handler(async (ctx: any) => {
+    const { data, context } = ctx;
     const { data, error } = await context.supabase
       .from("reconciliation_divergences")
       .select("*")
@@ -237,7 +243,8 @@ export const listOpenDivergences = createServerFn({ method: "GET" })
 
 export const countOpenDivergences = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .handler(async (ctx: any) => {
+    const { data, context } = ctx;
     const { count, error } = await context.supabase
       .from("reconciliation_divergences")
       .select("id", { count: "exact", head: true })
@@ -257,7 +264,8 @@ export const markInvestigated = createServerFn({ method: "POST" })
       investigated: v.investigated !== false,
     };
   })
-  .handler(async ({ data, context }) => {
+  .handler(async (ctx: any) => {
+    const { data, context } = ctx;
     const { error } = await context.supabase
       .from("reconciliation_divergences")
       .update({
@@ -277,7 +285,8 @@ export const exportRunCsv = createServerFn({ method: "POST" })
     if (!v?.runId) throw new Error("runId obrigatório");
     return { runId: v.runId };
   })
-  .handler(async ({ data, context }) => {
+  .handler(async (ctx: any) => {
+    const { data, context } = ctx;
     const { data: rows, error } = await context.supabase
       .from("reconciliation_divergences")
       .select("check_type,entity_label,expected,actual,delta,investigated,note,created_at")
