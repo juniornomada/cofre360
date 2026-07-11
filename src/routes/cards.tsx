@@ -138,9 +138,14 @@ function SortableCardWrapper({ id, children, animationDelay }: { id: string; chi
        { name: "description", content: "Gerencie seus cartões" },
      ],
    }),
-   validateSearch: (search: Record<string, unknown>) => ({
-     action: (search.action as string) || undefined,
-   }),
+   validateSearch: (search: Record<string, unknown>) => {
+     const rawMes = typeof search.mes === "string" ? search.mes : undefined;
+     const mes = rawMes && /^\d{4}-(0[1-9]|1[0-2])$/.test(rawMes) ? rawMes : undefined;
+     return {
+       action: (search.action as string) || undefined,
+       mes,
+     };
+   },
    component: CardsPage,
  });
 function CardsPage() {
