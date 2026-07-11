@@ -157,8 +157,38 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-bun-
       - run: bun install --frozen-lockfile
-      - name: Full test suite
-        run: bun run test
+      - name: Full test suite (with coverage)
+        run: bun run test:coverage
+
+      # HTML/JSON como artifact para inspeção manual — 14 dias basta para
+      # diagnóstico de regressão sem inflar o storage do repositório.
+      - name: Upload coverage artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: |
+            coverage/lcov.info
+            coverage/coverage-summary.json
+            coverage/index.html
+            coverage/**/*.html
+          retention-days: 14
+          if-no-files-found: warn
+
+      # Codecov upload — usa OIDC/tokenless para repos públicos; para
+      # repos privados o usuário deve adicionar CODECOV_TOKEN como
+      # repository secret. `fail_ci_if_error: false` garante que uma
+      # indisponibilidade do Codecov nunca reprove o CI.
+      - name: Upload coverage to Codecov
+        if: always() && hashFiles('coverage/lcov.info') != ''
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./coverage/lcov.info
+          flags: unittests
+          name: cofre360-unittests
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
+          verbose: true
 
   supabase-auth-check:
     name: Supabase Auth security check (pre-deploy)
