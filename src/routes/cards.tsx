@@ -487,6 +487,45 @@ function CardsPage() {
     }
   };
 
+  // Scrollable container for the invoice transactions list. Captured so that
+  // silent refreshes (after edit/delete/installment) preserve scroll position
+  // instead of jumping back to the top.
+  const invoiceScrollRef = useRef<HTMLDivElement | null>(null);
+
+  // Refresh card transactions and totals WITHOUT toggling loadingTx (which
+  // would unmount the scroll container) or resetting activeInvoiceIdx. Scroll
+  // position is snapshotted and restored across the re-render.
+  const refreshInvoiceSilently = async (card: CardData | null) => {
+    if (!card) return;
+    const scrollEl = invoiceScrollRef.current;
+    const prevScrollTop = scrollEl?.scrollTop ?? 0;
+    try {
+      const [, txResult] = await Promise.all([
+        fetchAll(),
+        supabase
+          .from("transactions")
+          .select("id, name, icon, category, date, amount, type, card, created_at, total_installments, installment_number, installment_group_id")
+          .eq("card", card.name)
+          .order("created_at", { ascending: false }),
+      ]);
+      if (txResult.error) throw txResult.error;
+      setCardTransactions((txResult.data as CardTransaction[]) || []);
+    } catch (error: any) {
+      console.error("Error refreshing card transactions:", error);
+    } finally {
+      // Restore scroll after React commits the new list. Two rAFs to survive
+      // both the state flush and the layout pass.
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          if (invoiceScrollRef.current) {
+            invoiceScrollRef.current.scrollTop = prevScrollTop;
+          }
+        });
+      });
+    }
+  };
+
+
 
   const invoicePeriods = invoiceCard
     ? groupByBillingCycle(cardTransactions.filter(tx => tx.card === invoiceCard.name), invoiceCard.closing_day, invoiceCard.due_day)
