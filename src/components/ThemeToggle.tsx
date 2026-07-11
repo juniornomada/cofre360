@@ -37,24 +37,25 @@ export function ThemeToggle() {
     } catch {}
   };
 
+  const baseClass =
+    "interactive-button inline-flex items-center justify-center rounded-md text-muted-foreground min-h-11 min-w-11 h-11 w-11";
+
   if (!mounted) {
     return (
-      <button
-        aria-label="Alternar tema"
-        className="interactive-button flex items-center justify-center text-muted-foreground"
-      >
-        <Moon className="h-5 w-5" />
+      <button type="button" aria-label="Alternar tema" className={baseClass}>
+        <Moon className="h-5 w-5" aria-hidden="true" />
       </button>
     );
   }
 
   return (
     <button
+      type="button"
       onClick={toggle}
       aria-label={theme === "dark" ? "Mudar para tema claro" : "Mudar para tema escuro"}
-      className="interactive-button flex items-center justify-center text-muted-foreground"
+      className={baseClass}
     >
-      {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+      {theme === "dark" ? <Sun className="h-5 w-5" aria-hidden="true" /> : <Moon className="h-5 w-5" aria-hidden="true" />}
     </button>
   );
 }
