@@ -157,7 +157,10 @@ export function _debugSnapshots(): Record<string, Record<string, CycleSnapshot>>
 function near(a: number, b: number): boolean {
   const diff = Math.abs(a - b);
   const bound = Math.max(tolerance.absolute, tolerance.percent * Math.max(Math.abs(a), Math.abs(b)));
-  return diff <= bound;
+  // `+ 1e-9` matches the drift-tolerance convention used in
+  // `src/lib/patch-transaction-*` and prevents float noise from
+  // flipping exact-boundary comparisons (e.g. 100.01 - 100 ≈ 0.010000000000005116).
+  return diff <= bound + 1e-9;
 }
 
 function fmt(n: number): string {
