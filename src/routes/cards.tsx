@@ -1338,7 +1338,7 @@ function CardsPage() {
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
-                              setCardMonthOffset((prev) => ({ ...prev, [card.id]: (prev[card.id] ?? 0) - 1 }));
+                              setMonthOffset(globalMonthOffset - 1);
                             }}
                             data-on-card="true"
                             className="icon-btn-on-card-solid h-6 w-6"
