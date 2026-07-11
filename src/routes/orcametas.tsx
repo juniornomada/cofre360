@@ -73,8 +73,8 @@ const MONTH_NAMES = [
 
 function OrcaMetasPage() {
   const navigate = useNavigate();
-  const search = useSearch({ from: "/orcametas" }) as { tab?: "budget" | "goals" };
-  const activeTab: "budget" | "goals" = search.tab === "goals" ? "goals" : "budget";
+  const activeTab = useTabParam(ORCAMETAS_TABS, "budget");
+
   // Budget state
   const [items, setItems] = useState<BudgetItem[]>([]);
   const [transactions, setTransactions] = useState<TxRow[]>([]);
