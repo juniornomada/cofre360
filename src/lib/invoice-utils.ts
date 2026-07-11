@@ -97,6 +97,45 @@ export function parseTxDate(dateStr: string, fallback: string): Date {
       return hasFallback ? fallbackDate : new Date();
     }
   }
+
+  // Numeric textual dates with separators "/" or "-".
+  // pt-BR convention is DD/MM[/YYYY]; ISO is YYYY-MM-DD. We detect ISO by a
+  // 4-digit leading segment; everything else is treated as day-first so that
+  // "10/07", "10-07", "10/07/2026" and "10-07-2026" all resolve to the same
+  // day/month (and, for 2-part inputs, the same billing cycle as "10 jul").
+  const numericParts = (dateStr || "").trim().split(/[\/\-]/);
+  if (
+    (numericParts.length === 2 || numericParts.length === 3) &&
+    numericParts.every((p) => /^\d+$/.test(p))
+  ) {
+    let day: number, monthIdx: number, year: number | undefined;
+    if (numericParts[0].length === 4 && numericParts.length === 3) {
+      // ISO-like YYYY-MM-DD
+      year = parseInt(numericParts[0]);
+      monthIdx = parseInt(numericParts[1]) - 1;
+      day = parseInt(numericParts[2]);
+    } else {
+      // DD/MM or DD/MM/YYYY (pt-BR)
+      day = parseInt(numericParts[0]);
+      monthIdx = parseInt(numericParts[1]) - 1;
+      if (numericParts.length === 3) {
+        const y = parseInt(numericParts[2]);
+        year = y < 100 ? 2000 + y : y;
+      }
+    }
+    const validDay = day >= 1 && day <= 31;
+    const validMonth = monthIdx >= 0 && monthIdx <= 11;
+    if (validDay && validMonth) {
+      if (year === undefined) {
+        year = fallbackYear;
+        if (monthIdx === 0 && fallbackMonth >= 10) year = fallbackYear + 1;
+        else if (monthIdx === 11 && fallbackMonth <= 1) year = fallbackYear - 1;
+      }
+      return new Date(year, monthIdx, day);
+    }
+    return hasFallback ? fallbackDate : new Date();
+  }
+
   const d = new Date(dateStr);
   return isNaN(d.getTime()) ? (hasFallback ? fallbackDate : new Date()) : d;
 }
