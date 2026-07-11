@@ -1518,7 +1518,16 @@ function CardsPage() {
 
 
       {/* Invoice Dialog */}
-      <Dialog open={invoiceDialogOpen} onOpenChange={(open) => { setInvoiceDialogOpen(open); }}>
+      <Dialog open={invoiceDialogOpen} onOpenChange={(open) => {
+        setInvoiceDialogOpen(open);
+        if (!open) {
+          // Limpa o snapshot de ordem congelado ao fechar, para que uma
+          // nova abertura capture a ordem atual dos dados.
+          invoiceOrderRef.current.clear();
+          setInvoiceOrderTick((t) => t + 1);
+        }
+      }}>
+
         <DialogContent className="max-w-md mx-auto rounded-2xl max-h-[85vh] flex flex-col p-0 gap-0">
           <DialogHeader className="px-5 pt-5 pb-3">
             <DialogTitle className="flex items-center gap-2 text-base">
