@@ -1518,7 +1518,23 @@ function CardsPage() {
                 >
                   <ChevronRight className="h-4 w-4" />
                 </button>
+                <button
+                  onClick={() => {
+                    if (!invoiceCard || !rawActivePeriod) return;
+                    const key = `${invoiceCard.id}::${rawActivePeriod.endDate.toISOString().split("T")[0]}`;
+                    invoiceOrderRef.current.delete(key);
+                    // Force re-render so the freeze block re-snapshots from the
+                    // current raw data in its canonical order.
+                    setActiveInvoiceIdx((i) => i);
+                  }}
+                  aria-label="Restaurar ordem original da fatura"
+                  title="Restaurar ordem original"
+                  className="interactive-button p-1.5 rounded-lg bg-accent hover:bg-accent/80 transition-colors"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                </button>
               </div>
+
 
               <div className="flex gap-1 px-5 pb-3 overflow-x-auto no-scrollbar">
                 {invoicePeriods.map((period, idx) => (
