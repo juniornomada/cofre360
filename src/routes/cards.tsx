@@ -1719,7 +1719,7 @@ function CardsPage() {
                 </div>
               )}
 
-              <div className="flex-1 overflow-y-auto px-5 pb-5">
+              <div ref={invoiceScrollRef} className="flex-1 overflow-y-auto px-5 pb-5">
                 {activePeriod && activePeriod.transactions.length === 0 && activePeriodPayments.length === 0 ? (
                   <p className="py-8 text-center text-xs text-muted-foreground">Nenhuma transação nesta fatura</p>
                 ) : (
