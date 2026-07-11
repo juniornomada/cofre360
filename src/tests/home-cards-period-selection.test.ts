@@ -140,8 +140,8 @@ describe("cycle-consistency — differing period selection between Home and /car
     // Home reads with clock at 15 Jul; /cards was navigated with ?mes=2026-07
     // that mapped to a refDate of 1 Jul. Both should end up in the SAME cycle.
     const card = CARDS[0];
-    const homeRef = new Date(2026, 6, 15);
-    const cardsRef = new Date(2026, 6, 1);
+    const homeRef = new Date(2026, 6, 28); // late Jul
+    const cardsRef = new Date(2026, 6, 15); // mid Jul (both after close on 10 Jul → same cycle)
 
     const home = snapshotFor(card, homeRef);
     const cards = snapshotFor(card, cardsRef);
