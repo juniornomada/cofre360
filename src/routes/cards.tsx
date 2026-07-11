@@ -1327,6 +1327,8 @@ function CardsPage() {
                     const remainingThisPeriod = selRemaining;
                     const isFullyPaid = selTotal > 0 && remainingThisPeriod === 0;
                     const isPartiallyPaid = paidThisPeriod > 0 && remainingThisPeriod > 0;
+                    const isOpen = selTotal > 0 && paidThisPeriod === 0;
+                    const isEmpty = selTotal === 0;
                     const detailedPayments = selDetailedPayments;
                     void detailedPayments;
 
