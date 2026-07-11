@@ -116,15 +116,16 @@ describe("cycle-consistency dedup by (cardId, periodKey)", () => {
 
   it("snapshots within tolerance never warn, even when reported many times", () => {
     const base = { cardId: "c", periodKey: "p", cardName: "X" };
-    reportCycleSnapshot({ ...base, source: "home",  total: 100.00, paid: 0, remaining: 100.00 });
-    // 1-cent noise both directions — inside default tolerance.
-    reportCycleSnapshot({ ...base, source: "cards", total: 100.005, paid: 0, remaining: 99.995 });
-    reportCycleSnapshot({ ...base, source: "home",  total: 100.007, paid: 0, remaining: 99.998 });
-    reportCycleSnapshot({ ...base, source: "cards", total: 99.996, paid: 0, remaining: 100.004 });
+    reportCycleSnapshot({ ...base, source: "home",  total: 100.000, paid: 0, remaining: 100.000 });
+    // Sub-cent noise around 100.00 — all pairwise diffs stay ≤ 1 cent.
+    reportCycleSnapshot({ ...base, source: "cards", total: 100.003, paid: 0, remaining: 99.997 });
+    reportCycleSnapshot({ ...base, source: "home",  total: 100.004, paid: 0, remaining: 99.996 });
+    reportCycleSnapshot({ ...base, source: "cards", total: 100.001, paid: 0, remaining: 99.999 });
 
     expect(warnSpy).not.toHaveBeenCalled();
     expect(events).toHaveLength(0);
   });
+
 
   it("resetCycleConsistencyCheck() clears the dedup memory so the same tuple warns again", () => {
     const base = { cardId: "c", periodKey: "p" };
