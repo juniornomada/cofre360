@@ -110,12 +110,15 @@ describe("year rollover — parseTxDate + groupByBillingCycle", () => {
     expect(janPeriod!.dueDate.getMonth()).toBe(1);
   });
 
-  it("regression: clobbering created_at with the textual date drifts the tx a full year forward", () => {
-    // Simulates the pre-fix Home behaviour.
-    const buggy = parseTxDate("28 dez", "28 dez");
+  it("regression: even when created_at was clobbered with the textual date, the Dec↔Jan heuristic keeps December txs in December", () => {
+    // Frozen clock: 02 Jan 2027. "28 dez" with an invalid fallback used to
+    // resolve to Dec 2027. The year-boundary heuristic in parseTxDate now
+    // detects textual "dez" + current calendar month ≤ Feb and rolls the
+    // year back by one — matching the ISO-created_at path.
+    const clobbered = parseTxDate("28 dez", "28 dez");
     const fixed = parseTxDate("28 dez", "2026-12-28T00:00:00Z");
-    expect(buggy.getFullYear()).toBe(2027); // frozen "now" year — wrong
-    expect(fixed.getFullYear()).toBe(2026); // real year — correct
+    expect(clobbered.getFullYear()).toBe(2026);
+    expect(fixed.getFullYear()).toBe(2026);
 
     // And when grouped, the buggy transaction lands in a different cycle key
     // than the correctly-dated one.
