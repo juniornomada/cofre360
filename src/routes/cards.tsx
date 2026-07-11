@@ -387,11 +387,30 @@ function CardsPage() {
 
 
   const searchParams = Route.useSearch();
+  const navigate = useNavigate({ from: "/cards" });
   useEffect(() => {
     if (searchParams.action === "add") {
       openAddDialog();
     }
   }, [searchParams.action]);
+
+  // Offset global em meses derivado do parâmetro ?mes=YYYY-MM (0 = mês atual)
+  const globalMonthOffset = (() => {
+    if (!searchParams.mes) return 0;
+    const [y, m] = searchParams.mes.split("-").map(Number);
+    const now = new Date();
+    return (y - now.getFullYear()) * 12 + (m - 1 - now.getMonth());
+  })();
+  const setMonthOffset = (nextOffset: number) => {
+    if (nextOffset === 0) {
+      navigate({ search: (prev) => ({ ...prev, mes: undefined }), replace: true });
+      return;
+    }
+    const now = new Date();
+    const target = new Date(now.getFullYear(), now.getMonth() + nextOffset, 1);
+    const mes = `${target.getFullYear()}-${String(target.getMonth() + 1).padStart(2, "0")}`;
+    navigate({ search: (prev) => ({ ...prev, mes }), replace: true });
+  };
 
   const openAddDialog = () => {
     setFormName("");
