@@ -72,6 +72,7 @@ interface Transaction {
 }
 
 import { groupByBillingCycle, getCycleDates, parseTxDate, monthNames, type InvoicePeriod } from "@/lib/invoice-utils";
+import { reportCycleSnapshot } from "@/lib/cycle-consistency";
 
 function parseTxDateToDate(dateStr: string): Date | null {
   if (!dateStr) return null;
