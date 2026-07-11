@@ -126,15 +126,16 @@ function DashboardTab() {
 
   useEffect(() => { load(); }, [load]);
 
-  const handleInvestigate = async (id: string) => {
+  const handleUpdate = async (id: string, patch: { status?: string; note?: string }) => {
     try {
-      await markFn({ data: { id, investigated: true } });
-      toast.success("Divergência marcada como investigada");
+      await markFn({ data: { id, ...patch } });
+      toast.success("Divergência atualizada");
       load();
     } catch (e) {
       toast.error(mapServerError(e));
     }
   };
+
 
   if (loading) return <div className="flex justify-center py-8"><Loader2 className="animate-spin h-6 w-6" /></div>;
 
