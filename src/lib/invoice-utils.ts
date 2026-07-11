@@ -34,17 +34,29 @@ export const shortMonthMap: Record<string, number> = {
 export function parseTxDate(dateStr: string, fallback: string): Date {
   const parts = (dateStr || "").trim().toLowerCase().split(/\s+/);
   const fallbackDate = new Date(fallback);
-  const fallbackYear = !isNaN(fallbackDate.getTime()) ? fallbackDate.getFullYear() : new Date().getFullYear();
+  const hasFallback = !isNaN(fallbackDate.getTime());
+  const fallbackYear = hasFallback ? fallbackDate.getFullYear() : new Date().getFullYear();
+  const fallbackMonth = hasFallback ? fallbackDate.getMonth() : new Date().getMonth();
 
   if (parts.length === 2) {
     const day = parseInt(parts[0]);
     const monthIdx = shortMonthMap[parts[1]];
     if (!isNaN(day) && monthIdx !== undefined) {
-      return new Date(fallbackYear, monthIdx, day);
+      // Year-boundary disambiguation: the textual `date` carries no year,
+      // so we infer it from `created_at`. Near the Dec↔Jan boundary the
+      // raw fallback year can be off by one — e.g. a tx typed as "02 jan"
+      // whose row was created moments earlier at 2025-12-31T23:59:00Z
+      // would otherwise be placed in Jan 2025, dragging the tx into the
+      // previous year's billing cycle. Shift the year when the textual
+      // month is ≥10 months away from the fallback month.
+      let year = fallbackYear;
+      if (monthIdx === 0 && fallbackMonth >= 10) year = fallbackYear + 1;   // jan tx, created in Nov/Dec → next year
+      else if (monthIdx === 11 && fallbackMonth <= 1) year = fallbackYear - 1; // dez tx, created in Jan/Fev → previous year
+      return new Date(year, monthIdx, day);
     }
   }
   const d = new Date(dateStr);
-  return isNaN(d.getTime()) ? (!isNaN(fallbackDate.getTime()) ? fallbackDate : new Date()) : d;
+  return isNaN(d.getTime()) ? (hasFallback ? fallbackDate : new Date()) : d;
 }
 
 export function getCycleDates(referenceDate: Date, closingDay: number, dueDay: number) {
