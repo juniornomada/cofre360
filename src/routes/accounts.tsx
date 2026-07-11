@@ -124,7 +124,9 @@ function SortableAccountItem({
     touchAction: "manipulation",
   };
 
-  const currentBalance = Math.round((account.balance + income - expense) * 100) / 100;
+  // Saldo calculado exclusivamente a partir das transações lançadas (receitas, despesas e transferências).
+  // O campo `account.balance` representa o saldo inicial/de abertura da conta.
+  const currentBalance = Math.round((Number(account.balance || 0) + income - expense) * 100) / 100;
 
   return (
     <div
