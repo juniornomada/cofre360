@@ -1745,7 +1745,8 @@ function CardsPage() {
                     paymentsCount={activePeriodPayments.length}
                     onAdd={() => {
                       setInvoiceDialogOpen(false);
-                      navigate({ to: "/transactions", search: { add: "1", cardId: invoiceCard?.id } as never });
+                      const args = buildAddTransactionNavArgs(invoiceCard?.name, activePeriod.endDate);
+                      navigate({ to: "/transactions", search: args as never });
                     }}
                     onPrev={() => setActiveInvoiceIdx(Math.max(0, activeInvoiceIdx - 1))}
                   />
