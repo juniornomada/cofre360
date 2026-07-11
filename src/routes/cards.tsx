@@ -1513,11 +1513,21 @@ function CardsPage() {
 
       {/* Invoice Dialog */}
       <Dialog open={invoiceDialogOpen} onOpenChange={(open) => {
+        if (!open) {
+          // Reconcile the snapshot store on close: prune ids that no longer
+          // exist and drop empty buckets so successive reopens are consistent.
+          // The captured order among surviving ids is preserved; new items
+          // continue to be appended at the end on the next open.
+          const currentIdsByKey: Record<string, string[]> = {};
+          if (invoiceCard) {
+            for (const p of invoicePeriods) {
+              const k = `${invoiceCard.id}::${p.endDate.toISOString().split("T")[0]}`;
+              currentIdsByKey[k] = p.transactions.map((t) => t.id);
+            }
+          }
+          reconcileSnapshotOnClose(invoiceOrderRef.current, currentIdsByKey);
+        }
         setInvoiceDialogOpen(open);
-        // Snapshot persists across close/reopen: transações novas criadas
-        // enquanto o diálogo estava fechado aparecem no final ao reabrir,
-        // sem embaralhar as já capturadas. Use o botão "Restaurar ordem"
-        // para descartar o snapshot manualmente.
       }}>
 
 
