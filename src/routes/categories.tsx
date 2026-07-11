@@ -166,7 +166,7 @@ function CategoriesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-4">
+    <div className="min-h-dvh bg-background pb-4">
       <header className="sticky top-0 z-40 border-b border-border bg-card/80 backdrop-blur-xl">
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2">
