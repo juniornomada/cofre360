@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { SmartLink as Link } from "@/components/SmartLink";
-import { ArrowLeft, Plus, Landmark, Trash2, X, Check, Loader2, Upload, FileText, MoreVertical, GripVertical, Pencil, Eye, EyeOff, CheckSquare, Square, Filter, FilterX, Search, SlidersHorizontal, Calculator } from "lucide-react";
+import { ArrowLeft, Plus, Landmark, Trash2, X, Check, Loader2, Upload, FileText, MoreVertical, GripVertical, Pencil, Eye, EyeOff, CheckSquare, Square, Filter, FilterX, Search, SlidersHorizontal, Calculator, Eraser } from "lucide-react";
 import { useUserPreferences } from "@/hooks/use-user-preferences";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
