@@ -79,15 +79,17 @@ describe("resolveInvoiceOrder — invoice list stability across edits", () => {
     expect(orderedIds).toEqual(["a", "b", "n1", "n2", "n3"]);
   });
 
-  it("all snapshot ids gone: falls back to current server order without reshuffle", () => {
+  it("all snapshot ids gone: resets snapshot to the current recorte (no stale tail)", () => {
     const { orderedIds, nextSnapshot } = resolveInvoiceOrder({
       currentIds: ["x", "y", "z"],
       priorSnapshot: ["a", "b", "c"],
       dialogOpen: true,
     });
     expect(orderedIds).toEqual(["x", "y", "z"]);
-    expect(nextSnapshot).toEqual(["a", "b", "c", "x", "y", "z"]);
+    // Stale ids are discarded — the snapshot is rebuilt from the new data.
+    expect(nextSnapshot).toEqual(["x", "y", "z"]);
   });
+
 
 
   it("persists snapshot when dialog is closed (does not clear)", () => {
