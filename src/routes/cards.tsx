@@ -853,9 +853,10 @@ function CardsPage() {
       await deleteTransactionScope(deleteTarget, deleteScope);
       toast.success("Transação excluída com sucesso");
       setShowDeleteDialog(false);
-      // Refresh transactions for the card
-      if (invoiceCard) openInvoiceDialog(invoiceCard);
-      fetchAll();
+      // Refresh transactions silently — preserves scroll and active period.
+      if (invoiceCard) refreshInvoiceSilently(invoiceCard);
+      else fetchAll();
+
     } catch (error: any) {
       console.error("Error deleting transaction:", error);
       toast.error("Erro ao excluir transação");
