@@ -1064,11 +1064,12 @@ function Dashboard() {
 
       {/* Balance Card — refined with health score + daily available */}
       <div className="rounded-2xl bg-gradient-to-br from-primary/15 via-card to-card p-5 border border-border/40">
-        <div className="flex items-center justify-between gap-3">
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
           <h2 className="min-w-0 text-sm font-semibold text-foreground flex items-center gap-1.5 uppercase truncate">
             <Landmark className="h-4 w-4 shrink-0 text-primary" />
-            CONTAS
+            <span className="truncate">CONTAS</span>
           </h2>
+
 
           <div className="flex items-center gap-2 shrink-0">
             {healthScore !== null && balanceVisible && healthScore >= 40 && (
