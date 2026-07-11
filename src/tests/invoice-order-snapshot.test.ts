@@ -90,18 +90,18 @@ describe("resolveInvoiceOrder — invoice list stability across edits", () => {
   });
 
 
-  it("clears snapshot when dialog is closed (returns null for caller to drop)", () => {
+  it("persists snapshot when dialog is closed (does not clear)", () => {
     const { orderedIds, nextSnapshot } = resolveInvoiceOrder({
-      currentIds: ["x", "y", "z"],
-      priorSnapshot: ["a", "b", "c"], // stale
+      currentIds: ["a", "b", "c"],
+      priorSnapshot: ["a", "b", "c"],
       dialogOpen: false,
     });
-    expect(orderedIds).toEqual(["x", "y", "z"]);
-    expect(nextSnapshot).toBeNull();
+    expect(orderedIds).toEqual(["a", "b", "c"]);
+    expect(nextSnapshot).toEqual(["a", "b", "c"]);
   });
 
-  it("open → edit → close → reopen: reopen captures fresh order at open moment", () => {
-    // 1) open — take snapshot
+  it("reopen after close: new transactions appear at the end without shuffling", () => {
+    // 1) open — capture snapshot
     let state = resolveInvoiceOrder({
       currentIds: ["a", "b", "c"],
       priorSnapshot: undefined,
@@ -109,31 +109,45 @@ describe("resolveInvoiceOrder — invoice list stability across edits", () => {
     });
     expect(state.orderedIds).toEqual(["a", "b", "c"]);
 
-    // 2) edit while open — server reorders; visible order stays; snapshot stable
+    // 2) close — snapshot persists
     state = resolveInvoiceOrder({
-      currentIds: ["b", "a", "c"],
-      priorSnapshot: state.nextSnapshot ?? undefined,
-      dialogOpen: true,
-    });
-    expect(state.orderedIds).toEqual(["a", "b", "c"]);
-
-    // 3) close — snapshot is cleared (null)
-    state = resolveInvoiceOrder({
-      currentIds: ["b", "a", "c"],
+      currentIds: ["a", "b", "c"],
       priorSnapshot: state.nextSnapshot ?? undefined,
       dialogOpen: false,
     });
-    expect(state.nextSnapshot).toBeNull();
+    expect(state.nextSnapshot).toEqual(["a", "b", "c"]);
 
-
-    // 4) reopen — new snapshot captured from refreshed data
+    // 3) while closed, two new transactions are created; server returns them
+    //    interleaved by date (e.g. between b and c).
     state = resolveInvoiceOrder({
-      currentIds: ["b", "a", "c"],
-      priorSnapshot: undefined, // simulating the onOpenChange clear
+      currentIds: ["a", "b", "new1", "c", "new2"],
+      priorSnapshot: state.nextSnapshot ?? undefined,
+      dialogOpen: false,
+    });
+    // Even while closed, the resolved order keeps the captured prefix and
+    // appends newcomers at the end.
+    expect(state.orderedIds).toEqual(["a", "b", "c", "new1", "new2"]);
+
+    // 4) reopen — visible order is prefix + appended newcomers, no shuffle.
+    state = resolveInvoiceOrder({
+      currentIds: ["a", "b", "new1", "c", "new2"],
+      priorSnapshot: state.nextSnapshot ?? undefined,
       dialogOpen: true,
     });
-    expect(state.orderedIds).toEqual(["b", "a", "c"]);
+    expect(state.orderedIds).toEqual(["a", "b", "c", "new1", "new2"]);
+    expect(state.nextSnapshot).toEqual(["a", "b", "c", "new1", "new2"]);
   });
+
+  it("subsequent refetch keeps newly appended ids pinned at the end", () => {
+    // After reopen appended new1/new2, another refetch reorders again:
+    const state = resolveInvoiceOrder({
+      currentIds: ["new2", "a", "b", "new1", "c"],
+      priorSnapshot: ["a", "b", "c", "new1", "new2"],
+      dialogOpen: true,
+    });
+    expect(state.orderedIds).toEqual(["a", "b", "c", "new1", "new2"]);
+  });
+
 
   it("is idempotent when called repeatedly with the same inputs", () => {
     const prior = ["a", "b", "c"];
