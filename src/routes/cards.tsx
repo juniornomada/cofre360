@@ -945,8 +945,8 @@ function CardsPage() {
       const isTotalPayment = Math.abs(paymentTotal - remainingBeforeThis) < 0.01;
       
       const paymentName = isTotalPayment 
-        ? `Pagamento Total fatura cartão ${payingCard.name}` 
-        : `Pagamento Parcial fatura cartão ${payingCard.name}`;
+        ? `Pagamento Total cartão ${payingCard.name}` 
+        : `Pagamento Parcial cartão ${payingCard.name}`;
 
        const today = new Date();
        const monthsAbbr = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
