@@ -706,6 +706,48 @@ function AccountsPage() {
     }
   };
 
+  const [zeroConfirmOpen, setZeroConfirmOpen] = useState(false);
+  const [isZeroing, setIsZeroing] = useState(false);
+
+  const eligibleForZero = accounts.filter((a) => {
+    const income = incomeByAccount[a.id] || 0;
+    const expense = expenseByAccount[a.id] || 0;
+    return income === 0 && expense === 0 && Math.abs(Number(a.balance || 0)) >= 0.005;
+  });
+
+  const handleZeroOpenings = async () => {
+    if (eligibleForZero.length === 0 || isZeroing) return;
+    setIsZeroing(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const ids = eligibleForZero.map((a) => a.id);
+      const { error } = await supabase
+        .from("bank_accounts")
+        .update({ balance: 0 })
+        .in("id", ids);
+      if (error) throw error;
+
+      await supabase.from("bank_account_balance_history").insert(
+        eligibleForZero.map((a) => ({
+          bank_account_id: a.id,
+          previous_balance: Number(a.balance || 0),
+          new_balance: 0,
+          user_id: user?.id,
+        })),
+      );
+
+      toast.success(`${eligibleForZero.length} ${eligibleForZero.length === 1 ? "abertura zerada" : "aberturas zeradas"}`);
+      setZeroConfirmOpen(false);
+      fetchAccounts();
+    } catch (error: any) {
+      console.error("Error zeroing openings:", error);
+      toast.error("Erro ao zerar aberturas: " + (error.message || "Erro desconhecido"));
+    } finally {
+      setIsZeroing(false);
+    }
+  };
+
+
    const cancelEdit = () => setEditingAccount(null);
 
   const handleDelete = async (id: string) => {
