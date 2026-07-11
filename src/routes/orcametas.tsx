@@ -1,4 +1,9 @@
-import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useTabParam } from "@/lib/use-tab-param";
+
+const ORCAMETAS_TABS = ["budget", "goals"] as const;
+type OrcametasTab = (typeof ORCAMETAS_TABS)[number];
+
 import { SmartLink as Link } from "@/components/SmartLink";
 import { ArrowLeft, Plus, TrendingDown, Loader2, Pencil, Trash2, Target } from "lucide-react";
 import { useState, useEffect, useCallback, useMemo } from "react";
