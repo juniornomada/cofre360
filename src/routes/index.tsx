@@ -1325,11 +1325,12 @@ function Dashboard() {
                       {balanceVisible ? `R$ ${fmt(selTotal)}` : "R$ •••"}
                     </p>
 
-                    {selPaid > 0 && (
+                    {selPaid > 0 && isPartial && (
                       <p className="text-[10px] text-primary font-medium tabular-nums">
                         Pago: R$ {balanceVisible ? fmt(selPaid) : "•••"}
                       </p>
                     )}
+
                     {isPartial && (
                       <p className="text-[10px] font-medium text-destructive tabular-nums">
                         Faltam: R$ {balanceVisible ? fmt(selRemaining) : "•••"}
