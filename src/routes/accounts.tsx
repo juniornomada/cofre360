@@ -657,6 +657,55 @@ function AccountsPage() {
     }
   };
 
+  const openRecalc = (a: BankAccount) => {
+    const income = incomeByAccount[a.id] || 0;
+    const expense = expenseByAccount[a.id] || 0;
+    const opening = Number(a.balance || 0);
+    const current = Math.round((opening + income - expense) * 100) / 100;
+    setRecalcAccount(a);
+    setRecalcRealBalance(current);
+  };
+
+  const handleRecalc = async () => {
+    if (!recalcAccount || isRecalcing) return;
+    const income = incomeByAccount[recalcAccount.id] || 0;
+    const expense = expenseByAccount[recalcAccount.id] || 0;
+    const newOpening = Math.round((recalcRealBalance - income + expense) * 100) / 100;
+    const previousOpening = Number(recalcAccount.balance || 0);
+
+    if (Math.abs(newOpening - previousOpening) < 0.005) {
+      toast.info("A abertura já está consistente com o saldo informado.");
+      setRecalcAccount(null);
+      return;
+    }
+
+    setIsRecalcing(true);
+    try {
+      const { error } = await supabase
+        .from("bank_accounts")
+        .update({ balance: newOpening })
+        .eq("id", recalcAccount.id);
+      if (error) throw error;
+
+      const { data: { user } } = await supabase.auth.getUser();
+      await supabase.from("bank_account_balance_history").insert({
+        bank_account_id: recalcAccount.id,
+        previous_balance: previousOpening,
+        new_balance: newOpening,
+        user_id: user?.id,
+      });
+
+      toast.success("Saldo recalculado com sucesso");
+      setRecalcAccount(null);
+      fetchAccounts();
+    } catch (error: any) {
+      console.error("Error recalculating balance:", error);
+      toast.error("Erro ao recalcular: " + (error.message || "Erro desconhecido"));
+    } finally {
+      setIsRecalcing(false);
+    }
+  };
+
    const cancelEdit = () => setEditingAccount(null);
 
   const handleDelete = async (id: string) => {
