@@ -18,6 +18,8 @@ import { ptBR } from "date-fns/locale";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { deleteTransactionScope, isInstallmentTx } from "@/lib/installment-delete";
+import { resolveInvoiceOrder } from "@/lib/invoice-order-snapshot";
+
 import { CategoryPicker } from "@/components/CategoryPicker";
 import { CalculatorAmountInput } from "@/components/CalculatorAmountInput";
 import { CardBrand, brandPresets } from "@/components/CardBrand";
