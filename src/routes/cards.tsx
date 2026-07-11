@@ -1398,6 +1398,16 @@ function CardsPage() {
                                   Paga parcial
                                 </span>
                               )}
+                              {isOpen && (
+                                <span className="rounded-full bg-amber-500/90 text-white text-[8px] font-extrabold uppercase px-1.5 py-0.5 ring-1 ring-white/30 inline-flex items-center justify-center shrink-0 text-center leading-none">
+                                  Em aberto
+                                </span>
+                              )}
+                              {isEmpty && (
+                                <span className="rounded-full bg-white/20 text-white text-[8px] font-extrabold uppercase px-1.5 py-0.5 ring-1 ring-white/30 inline-flex items-center justify-center shrink-0 text-center leading-none">
+                                  Sem fatura
+                                </span>
+                              )}
                             </p>
                             <p className="text-base font-extrabold text-white tabular-nums drop-shadow-md truncate" data-testid="fatura-atual-valor">
                               {balanceVisible ? `R$ ${remainingThisPeriod.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "••••••"}
