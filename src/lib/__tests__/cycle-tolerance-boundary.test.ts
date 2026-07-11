@@ -109,8 +109,9 @@ describe("cycle-consistency tolerance — exact boundaries", () => {
       configureCycleTolerance({ absolute: 0, percent: 0.00025 });
       // a=4000, b=4001 → bound = 0.00025 * 4001 = 1.00025; Δ=1 → inside.
       expect(probe(4000, 4001)).toBe(false);
-      // a=4000, b=4001.001 → bound ≈ 1.00025025; Δ=1.001 → inside.
-      expect(probe(4000, 4001.001)).toBe(false);
+      // Δ exactly on bound: a=4000, b=4000 + 1.00025 = 4001.00025 →
+      // bound = 0.00025 * 4001.00025 ≈ 1.0002500625; Δ=1.00025 → inside.
+      expect(probe(4000, 4001.00025)).toBe(false);
       // a=4000, b=4002 → Δ=2 outside bound ≈1.0005 → mismatch.
       expect(probe(4000, 4002)).toBe(true);
     });
