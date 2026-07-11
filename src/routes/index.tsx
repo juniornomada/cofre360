@@ -1187,7 +1187,7 @@ function Dashboard() {
                   <button
                     type="button"
                     onClick={() => setHomeMonthOffset(homeMonthOffset + 1)}
-                    className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-md text-primary transition-colors hover:bg-primary/15 hover:text-primary active:bg-primary/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-40"
+                    className="focus-ring-safe inline-flex min-h-11 min-w-11 items-center justify-center rounded-md text-primary transition-colors hover:bg-primary/15 hover:text-primary active:bg-primary/25 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-40"
                     aria-label="Próxima fatura"
                     title="Próxima fatura"
                   >
