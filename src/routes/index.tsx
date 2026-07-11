@@ -1142,8 +1142,11 @@ function Dashboard() {
             {allCards.filter(c => c.is_visible !== false && c.is_visible !== null).map((card) => {
               const isPaid = cardInvoicePaid[card.id] || false;
               const displayAmount = cardNextInvoices[card.name] || 0; // Sincronizado com Faturas > Atual
-              const paidThisMonth = cardPayments[card.id] || 0;
-              
+              const paidCurrent = cardPaidCurrentInvoice[card.id] || 0;
+              const remaining = Math.max(0, displayAmount - paidCurrent);
+              const isPartial = paidCurrent > 0 && remaining > 0.01;
+              const isFullyPaid = displayAmount > 0 && remaining < 0.01;
+
               const today = new Date();
               // Compute due date exactly like in Cards.tsx
               let displayDue = new Date(today.getFullYear(), today.getMonth(), card.due_day || 10);
@@ -1171,10 +1174,18 @@ function Dashboard() {
                       {balanceVisible ? `R$ ${fmt(displayAmount)}` : "R$ •••"}
                     </p>
 
-                    {paidThisMonth > 0 && (
-                      <p className="text-[10px] text-primary font-medium">
-                        Pago: R$ {balanceVisible ? fmt(paidThisMonth) : "•••"}
+                    {paidCurrent > 0 && (
+                      <p className="text-[10px] text-primary font-medium tabular-nums">
+                        Pago: R$ {balanceVisible ? fmt(paidCurrent) : "•••"}
                       </p>
+                    )}
+                    {isPartial && (
+                      <p className="text-[10px] font-medium text-destructive tabular-nums">
+                        Faltam: R$ {balanceVisible ? fmt(remaining) : "•••"}
+                      </p>
+                    )}
+                    {isFullyPaid && paidCurrent > 0 && (
+                      <p className="text-[10px] font-semibold text-primary">Fatura paga</p>
                     )}
                   </div>
                 </Link>
