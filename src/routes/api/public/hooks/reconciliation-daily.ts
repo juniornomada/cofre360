@@ -52,9 +52,9 @@ export const Route = createFileRoute("/api/public/hooks/reconciliation-daily")({
               periodEnd,
               transactions: (txs.data ?? []) as any,
               cards: (cards.data ?? []) as any,
-              bank_accounts: (banks.data ?? []) as any,
-              budget_categories: (buds.data ?? []) as any,
-              card_payments: (pays.data ?? []) as any,
+              bankAccounts: (banks.data ?? []) as any,
+              budgets: (buds.data ?? []) as any,
+              cardPayments: (pays.data ?? []) as any,
               rules: [],
             };
             const result = runReconciliation(input);
