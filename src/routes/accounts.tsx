@@ -296,10 +296,15 @@ function SortableAccountItem({
                     <Pencil className="h-4 w-4 mr-2" />
                     Editar conta
                   </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => openBreakdown(account)} className="cursor-pointer">
+                    <Info className="h-4 w-4 mr-2" />
+                    Composição do saldo
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => openRecalc(account)} className="cursor-pointer">
                     <Calculator className="h-4 w-4 mr-2" />
                     Recalcular saldo
                   </DropdownMenuItem>
+
                   <DropdownMenuItem onClick={() => setDeleteConfirm(account.id)} className="cursor-pointer text-destructive focus:text-destructive">
                     <Trash2 className="h-4 w-4 mr-2" />
                     Excluir conta
