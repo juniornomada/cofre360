@@ -1064,17 +1064,13 @@ function Dashboard() {
 
       {/* Balance Card — refined with health score + daily available */}
       <div className="rounded-2xl bg-gradient-to-br from-primary/15 via-card to-card p-5 border border-border/40">
-        <div className="flex items-center justify-between gap-4 mb-2">
-          <div className="flex flex-col min-w-0">
-            <h2 className="text-sm font-semibold text-foreground flex items-center gap-1.5 uppercase">
-              <Landmark className="h-4 w-4 text-primary" />
-              CONTAS
-            </h2>
-          </div>
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="min-w-0 text-sm font-semibold text-foreground flex items-center gap-1.5 uppercase truncate">
+            <Landmark className="h-4 w-4 shrink-0 text-primary" />
+            CONTAS
+          </h2>
 
-
-          
-          <div className="flex items-center gap-2 shrink-0 self-end mb-0.5">
+          <div className="flex items-center gap-2 shrink-0">
             {healthScore !== null && balanceVisible && healthScore >= 40 && (
               <div className={cn(
                 "hidden sm:flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold",
@@ -1085,13 +1081,17 @@ function Dashboard() {
                 {healthScore >= 80 ? "Saudável" : healthScore >= 60 ? "Estável" : "Atenção"}
               </div>
             )}
-            <div className="flex items-center gap-1">
-              <button onClick={() => updateBalanceVisible(!balanceVisible)} className="interactive-button p-1.5 rounded-lg hover:bg-accent/50 text-muted-foreground">
-                {balanceVisible ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-              </button>
-            </div>
+            <button
+              onClick={() => updateBalanceVisible(!balanceVisible)}
+              className="interactive-button inline-flex min-h-9 min-w-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-accent/50"
+              aria-label={balanceVisible ? "Ocultar saldos" : "Mostrar saldos"}
+              title={balanceVisible ? "Ocultar saldos" : "Mostrar saldos"}
+            >
+              {balanceVisible ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+            </button>
           </div>
         </div>
+
 
         {/* Per-account balances */}
         {displayAccounts.length > 0 && (
