@@ -85,6 +85,7 @@ type SortableAccountItemProps = {
   setPdfImportAccount: (a: BankAccount) => void;
   
   handleToggleVisibility: (id: string, current: boolean | null) => void;
+  openRecalc: (a: BankAccount) => void;
   isSelectionMode: boolean;
   isSelected: boolean;
   onToggleSelect: (id: string) => void;
