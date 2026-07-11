@@ -1638,6 +1638,8 @@ export function TransactionsPage() {
             open={showAddDialog} 
             onOpenChange={setShowAddDialog}
             initialType={quickAddType}
+            initialCardName={searchParams.card}
+            initialDate={searchParams.date}
             copyData={copyTxData}
             onSuccess={fetchTransactions}
           />
