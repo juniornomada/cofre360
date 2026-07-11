@@ -1514,13 +1514,12 @@ function CardsPage() {
       {/* Invoice Dialog */}
       <Dialog open={invoiceDialogOpen} onOpenChange={(open) => {
         setInvoiceDialogOpen(open);
-        if (!open) {
-          // Limpa o snapshot de ordem congelado ao fechar, para que uma
-          // nova abertura capture a ordem atual dos dados.
-          invoiceOrderRef.current.clear();
-          setInvoiceOrderTick((t) => t + 1);
-        }
+        // Snapshot persists across close/reopen: transações novas criadas
+        // enquanto o diálogo estava fechado aparecem no final ao reabrir,
+        // sem embaralhar as já capturadas. Use o botão "Restaurar ordem"
+        // para descartar o snapshot manualmente.
       }}>
+
 
         <DialogContent className="max-w-md mx-auto rounded-2xl max-h-[85vh] flex flex-col p-0 gap-0">
           <DialogHeader className="px-5 pt-5 pb-3">
