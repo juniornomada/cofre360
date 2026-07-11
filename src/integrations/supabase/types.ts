@@ -374,6 +374,168 @@ export type Database = {
         }
         Relationships: []
       }
+      reconciliation_divergences: {
+        Row: {
+          actual: number
+          check_type: string
+          created_at: string
+          delta: number
+          entity_id: string | null
+          entity_label: string
+          expected: number
+          id: string
+          investigated: boolean
+          investigated_at: string | null
+          note: string | null
+          rule_id: string | null
+          run_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          actual?: number
+          check_type: string
+          created_at?: string
+          delta?: number
+          entity_id?: string | null
+          entity_label: string
+          expected?: number
+          id?: string
+          investigated?: boolean
+          investigated_at?: string | null
+          note?: string | null
+          rule_id?: string | null
+          run_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          actual?: number
+          check_type?: string
+          created_at?: string
+          delta?: number
+          entity_id?: string | null
+          entity_label?: string
+          expected?: number
+          id?: string
+          investigated?: boolean
+          investigated_at?: string | null
+          note?: string | null
+          rule_id?: string | null
+          run_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reconciliation_divergences_rule_id_fkey"
+            columns: ["rule_id"]
+            isOneToOne: false
+            referencedRelation: "reconciliation_rules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reconciliation_divergences_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "reconciliation_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reconciliation_rules: {
+        Row: {
+          check_type: string
+          created_at: string
+          enabled: boolean
+          id: string
+          name: string
+          rule_kind: string
+          target_ids: string[]
+          tolerance_kind: string
+          tolerance_value: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          check_type: string
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          name: string
+          rule_kind: string
+          target_ids?: string[]
+          tolerance_kind?: string
+          tolerance_value?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          check_type?: string
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          name?: string
+          rule_kind?: string
+          target_ids?: string[]
+          tolerance_kind?: string
+          tolerance_value?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      reconciliation_runs: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          divergences_count: number
+          error_message: string | null
+          id: string
+          payload: Json | null
+          period_end: string
+          period_start: string
+          started_at: string
+          status: string
+          total_divergence_amount: number
+          triggered_by: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          divergences_count?: number
+          error_message?: string | null
+          id?: string
+          payload?: Json | null
+          period_end: string
+          period_start: string
+          started_at?: string
+          status?: string
+          total_divergence_amount?: number
+          triggered_by?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          divergences_count?: number
+          error_message?: string | null
+          id?: string
+          payload?: Json | null
+          period_end?: string
+          period_start?: string
+          started_at?: string
+          status?: string
+          total_divergence_amount?: number
+          triggered_by?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       reminders: {
         Row: {
           amount: number | null
