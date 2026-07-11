@@ -26,6 +26,10 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   initialType?: QuickAddInitialType;
+  /** Pré-seleciona o cartão de crédito pelo nome (fluxo "Adicionar transação" a partir da fatura). */
+  initialCardName?: string;
+  /** Pré-seleciona a data em formato "dd MMM" (pt-BR). Fallback: hoje. */
+  initialDate?: string;
   onSuccess?: () => void;
   copyData?: {
     name: string;
@@ -48,7 +52,7 @@ interface NewTx {
   bank_account_id: string | null;
 }
 
-export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "expense", onSuccess, copyData }: Props) {
+export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "expense", initialCardName, initialDate, onSuccess, copyData }: Props) {
   const todayFormatted = format(new Date(), "dd MMM", { locale: ptBR });
 
   const [bankAccounts, setBankAccounts] = useState<BankAccountOption[]>([]);
