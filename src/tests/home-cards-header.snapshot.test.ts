@@ -55,48 +55,48 @@ describe("Home · CARTÕES header", () => {
     const header = extractCardsHeader(source);
     expect(header).toMatchInlineSnapshot(`
       "{/* Credit Cards Summary */}
-            <div className=\\"rounded-2xl bg-gradient-to-br from-primary/15 via-card to-card p-4 border border-border/40\\">
-              <div className=\\"flex items-center justify-between gap-4 mb-2\\">
-                <h2 className=\\"text-sm font-semibold text-foreground flex items-center gap-1.5 uppercase\\">
-                  <CreditCard className=\\"h-4 w-4 text-primary\\" />
+            <div className="rounded-2xl bg-gradient-to-br from-primary/15 via-card to-card p-4 border border-border/40">
+              <div className="flex items-center justify-between gap-4 mb-2">
+                <h2 className="text-sm font-semibold text-foreground flex items-center gap-1.5 uppercase">
+                  <CreditCard className="h-4 w-4 text-primary" />
                   CARTÕES
                 </h2>
 
-                <div className=\\"flex items-center gap-2\\">
+                <div className="flex items-center gap-2">
                   {(() => {
                     const today = new Date();
                     const ref = new Date(today.getFullYear(), today.getMonth() + homeMonthOffset, 15);
                     const label = monthNames[ref.getMonth()];
-                    const yearLabel = ref.getFullYear() !== today.getFullYear() ? \` \${ref.getFullYear()}\` : \\"\\";
+                    const yearLabel = ref.getFullYear() !== today.getFullYear() ? \` \${ref.getFullYear()}\` : "";
                     return (
-                      <div className=\\"flex items-center gap-0.5\\">
+                      <div className="flex items-center gap-0.5">
                         <button
-                          type=\\"button\\"
+                          type="button"
                           onClick={() => setHomeMonthOffset(homeMonthOffset - 1)}
-                          className=\\"h-6 w-6 rounded-md hover:bg-primary/10 text-primary flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50\\"
-                          aria-label=\\"Fatura do mês anterior\\"
-                          title=\\"Mês anterior\\"
+                          className="h-6 w-6 rounded-md hover:bg-primary/10 text-primary flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                          aria-label="Fatura do mês anterior"
+                          title="Mês anterior"
                         >
-                          <ChevronLeft className=\\"h-3.5 w-3.5\\" />
+                          <ChevronLeft className="h-3.5 w-3.5" />
                         </button>
-                        <span className=\\"text-[11px] font-semibold text-foreground capitalize tabular-nums min-w-[64px] text-center\\">
+                        <span className="text-[11px] font-semibold text-foreground capitalize tabular-nums min-w-[64px] text-center">
                           {label}{yearLabel}
                         </span>
                         <button
-                          type=\\"button\\"
+                          type="button"
                           onClick={() => setHomeMonthOffset(homeMonthOffset + 1)}
-                          className=\\"h-6 w-6 rounded-md hover:bg-primary/10 text-primary flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50\\"
-                          aria-label=\\"Fatura do próximo mês\\"
-                          title=\\"Próximo mês\\"
+                          className="h-6 w-6 rounded-md hover:bg-primary/10 text-primary flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                          aria-label="Fatura do próximo mês"
+                          title="Próximo mês"
                         >
-                          <ChevronRight className=\\"h-3.5 w-3.5\\" />
+                          <ChevronRight className="h-3.5 w-3.5" />
                         </button>
                         {homeMonthOffset !== 0 && (
                           <button
-                            type=\\"button\\"
+                            type="button"
                             onClick={() => setHomeMonthOffset(0)}
-                            className=\\"text-[10px] font-semibold text-primary hover:underline underline-offset-2 ml-1\\"
-                            aria-label=\\"Voltar para a fatura atual\\"
+                            className="text-[10px] font-semibold text-primary hover:underline underline-offset-2 ml-1"
+                            aria-label="Voltar para a fatura atual"
                           >
                             hoje
                           </button>
