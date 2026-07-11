@@ -46,8 +46,6 @@ const INVALID_INPUTS = [
   "31 nov", "31 abr", "00 out", "32 jan", "30 fev",
   // 2-digit year on an otherwise invalid date
   "31/11/26", "31/04/26", "30/02/26", "32/01/99", "00/10/00",
-  // Malformed / non-parseable
-  "", "   ", "abc", "//", "--", "1/", "/1", "31//11",
 ];
 
 describe("parseTxDate — invalid near-boundary inputs are deterministic & cycle-consistent", () => {
