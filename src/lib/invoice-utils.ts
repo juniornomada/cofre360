@@ -70,8 +70,16 @@ export function parseTxDate(dateStr: string, fallback: string): Date {
   // otherwise split tokens, and drop stray pontuação that gets attached to
   // digits or month words (e.g. "01!", "10,/07", "jan..."). Keep "/" and
   // "-" so numeric separators survive.
-  const cleaned = (dateStr || "")
+  const rawCleaned = (dateStr || "")
     .replace(/[\u200B-\u200D\uFEFF\u180E\u2028\u2029\u00A0\u202F\u205F]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  // For token-based parsing we drop pontuação and collapse space-wrapped
+  // dashes (e.g. "01 - jan") into a single space. For the native ISO
+  // fallback further below we keep colons/dots so `new Date(...)` can still
+  // read timestamps like "2026-07-10T12:00:00Z".
+  const cleaned = rawCleaned
+    .replace(/\s-\s/g, " ")
     .replace(/[.,;:!?]+/g, "")
     .replace(/\s+/g, " ")
     .trim();
