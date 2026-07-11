@@ -370,18 +370,26 @@ function AccountsPage() {
       if (error) throw error;
       if (data) setAccounts(data);
 
-      const { data: txData, error: txError } = await supabase.from("transactions").select("bank_account_id, amount, type").eq("user_id", session.user.id).not("bank_account_id", "is", null);
+      // Buscar transações visíveis vinculadas a contas bancárias (exclui card e ocultas/soft-deleted).
+      const { data: txData, error: txError } = await supabase
+        .from("transactions")
+        .select("bank_account_id, amount, type, is_visible, card")
+        .eq("user_id", session.user.id)
+        .not("bank_account_id", "is", null)
+        .is("card", null);
       if (txError) throw txError;
 
       if (txData) {
         const incMap: Record<string, number> = {};
         const expMap: Record<string, number> = {};
         for (const tx of txData) {
+          if (tx.is_visible === false) continue; // ignora transações ocultas/removidas logicamente
           const id = tx.bank_account_id as string;
+          const amt = Number(tx.amount) || 0;
           if (tx.type === "income") {
-            incMap[id] = (incMap[id] || 0) + Number(tx.amount);
+            incMap[id] = (incMap[id] || 0) + amt;
           } else {
-            expMap[id] = (expMap[id] || 0) + Number(tx.amount);
+            expMap[id] = (expMap[id] || 0) + amt;
           }
         }
         setIncomeByAccount(incMap);
