@@ -31,6 +31,40 @@ export const shortMonthMap: Record<string, number> = {
   jul: 6, ago: 7, set: 8, out: 9, nov: 10, dez: 11,
 };
 
+const longMonthMap: Record<string, number> = {
+  janeiro: 0, fevereiro: 1, marco: 2, abril: 3, maio: 4, junho: 5,
+  julho: 6, agosto: 7, setembro: 8, outubro: 9, novembro: 10, dezembro: 11,
+};
+
+/**
+ * Normalizes a Portuguese month token so that pontuação, acentos e
+ * capitalização não impeçam o reconhecimento. Ex.: "Março" → "marco",
+ * "fev." → "fev", "Setembro" → "setembro".
+ */
+function normalizeMonthToken(raw: string): string {
+  return raw
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // strip diacritics
+    .replace(/[.,;:]+$/g, "")         // strip trailing pontuação
+    .replace(/[^a-z]/g, "");          // drop any remaining non-letters
+}
+
+function resolveMonthIdx(token: string): number | undefined {
+  const norm = normalizeMonthToken(token);
+  if (norm === "") return undefined;
+  if (norm in shortMonthMap) return shortMonthMap[norm];
+  if (norm in longMonthMap) return longMonthMap[norm];
+  // Long names that start with a known short abbreviation (e.g. "janeiro" → "jan")
+  // fall through to shortMonthMap. Keep as an explicit fallback so unrelated
+  // words like "janela" are NOT accepted.
+  const prefix = norm.slice(0, 3);
+  if (norm.length > 3 && prefix in shortMonthMap && longMonthMap[norm] !== undefined) {
+    return shortMonthMap[prefix];
+  }
+  return undefined;
+}
+
 export function parseTxDate(dateStr: string, fallback: string): Date {
   const parts = (dateStr || "").trim().toLowerCase().split(/\s+/);
   const fallbackDate = new Date(fallback);
@@ -40,7 +74,8 @@ export function parseTxDate(dateStr: string, fallback: string): Date {
 
   if (parts.length === 2) {
     const day = parseInt(parts[0]);
-    const monthIdx = shortMonthMap[parts[1]];
+    const dayLooksNumeric = /^-?\d+(\.\d+)?$/.test(parts[0]);
+    const monthIdx = resolveMonthIdx(parts[1]);
     if (!isNaN(day) && monthIdx !== undefined) {
       // Year-boundary disambiguation: the textual `date` carries no year,
       // so we infer it from `created_at`. Near the Dec↔Jan boundary the
@@ -54,10 +89,19 @@ export function parseTxDate(dateStr: string, fallback: string): Date {
       else if (monthIdx === 11 && fallbackMonth <= 1) year = fallbackYear - 1; // dez tx, created in Jan/Fev → previous year
       return new Date(year, monthIdx, day);
     }
+    // "DD <not-a-month>" (e.g. "07 marte", "07 janela"): the input claims to
+    // be a "day + month" pair but the second token is not a Portuguese month.
+    // Skip the native `new Date(dateStr)` parser (V8 is too lenient here —
+    // "07 janela" gets read as Jan 7) and go straight to the fallback.
+    if (dayLooksNumeric) {
+      return hasFallback ? fallbackDate : new Date();
+    }
   }
   const d = new Date(dateStr);
   return isNaN(d.getTime()) ? (hasFallback ? fallbackDate : new Date()) : d;
 }
+
+
 
 export function getCycleDates(referenceDate: Date, closingDay: number, dueDay: number) {
   const cDay = closingDay || 1;
