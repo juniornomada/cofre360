@@ -98,7 +98,6 @@ const SCENARIOS: Array<{ canonical: string; noisy: string[]; fallback: string }>
       "15-07", "15 -07", "15- 07", "15 - 07",
       "15\u201307", "15\u201407", "15\u221207",
       "15 \u2013 07",
-      "15 \u2013 07",
     ],
     fallback: FALLBACK_MID_YEAR,
   },
