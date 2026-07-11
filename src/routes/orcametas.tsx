@@ -603,9 +603,10 @@ function OrcaMetasPage() {
   );
 }
 
+type OrcametasSearch = { tab: "budget" | "goals" };
 export const Route = createFileRoute("/orcametas")({
-  validateSearch: (s: Record<string, unknown>): { tab?: "budget" | "goals" } => ({
-    tab: s.tab === "goals" ? "goals" : s.tab === "budget" ? "budget" : undefined,
+  validateSearch: (s: Record<string, unknown>): OrcametasSearch => ({
+    tab: s.tab === "goals" ? "goals" : "budget",
   }),
   head: () => ({
     meta: [
