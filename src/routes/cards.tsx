@@ -42,10 +42,10 @@ import {
   arrayMove,
   SortableContext,
   sortableKeyboardCoordinates,
-  useSortable,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
+import { SortableCardWrapper } from "@/components/cards/SortableCardWrapper";
+import { colorOptions } from "@/components/cards/card-color-options";
 
 
 type CardData = {
@@ -78,59 +78,6 @@ type PaymentLine = {
 import { groupByBillingCycle, parseTxDate, getCycleDates, monthNames, type CardTransaction, type InvoicePeriod } from "@/lib/invoice-utils";
 import { reportCycleSnapshot } from "@/lib/cycle-consistency";
 
-const colorOptions = [
-  { label: "Roxo", value: "from-purple-600 to-purple-900", emoji: "🟣" },
-  { label: "Laranja", value: "from-orange-500 to-orange-700", emoji: "🟠" },
-  { label: "Preto", value: "from-gray-700 to-gray-900", emoji: "⚫" },
-  { label: "Azul", value: "from-blue-500 to-blue-800", emoji: "🔵" },
-  { label: "Azul Marinho", value: "from-blue-900 to-blue-950", emoji: "🌑" },
-  { label: "Ciano", value: "from-cyan-400 to-cyan-600", emoji: "💎" },
-  { label: "Verde", value: "from-green-500 to-green-800", emoji: "🟢" },
-  { label: "Verde Escuro", value: "from-green-800 to-green-950", emoji: "🌲" },
-  { label: "Vermelho", value: "from-red-500 to-red-800", emoji: "🔴" },
-  { label: "Amarelo", value: "from-yellow-400 to-yellow-600", emoji: "🟡" },
-  { label: "Rosa", value: "from-pink-400 to-pink-700", emoji: "🌸" },
-  { label: "Índigo", value: "from-indigo-600 to-indigo-900", emoji: "🌌" },
-  { label: "Teal", value: "from-teal-500 to-teal-800", emoji: "🌊" },
-  { label: "Dourado", value: "from-yellow-600 to-amber-900", emoji: "📀" },
-  { label: "Prateado", value: "from-slate-300 to-slate-500", emoji: "🥈" },
-];
-
-
-
-
-function SortableCardWrapper({ id, children, animationDelay }: { id: string; children: React.ReactNode; animationDelay: number }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    zIndex: isDragging ? 50 : "auto",
-    animationDelay: `${animationDelay}ms`,
-    touchAction: "manipulation" as const,
-  } as React.CSSProperties;
-  return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      {...attributes}
-      {...listeners}
-      className={cn(
-        "animate-stagger-in cursor-grab active:cursor-grabbing relative select-none",
-        isDragging && "ring-2 ring-primary ring-offset-2 ring-offset-background rounded-2xl shadow-2xl scale-[1.02] transition-transform",
-      )}
-    >
-      {children}
-      {isDragging && (
-        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-black/30 backdrop-blur-[1px] animate-fade-in">
-          <div className="flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1.5 text-xs font-bold text-gray-900 shadow-lg ring-2 ring-primary">
-            <GripVertical className="h-4 w-4" />
-            Mover cartão
-          </div>
-        </div>
-      )}
-    </div>
-  );
- }
 
  export const Route = createFileRoute("/cards")({
    head: () => ({
