@@ -325,18 +325,33 @@ function Dashboard() {
       const nextInvoiceTotals: Record<string, number> = {};
       const cardPaymentsMonthly: Record<string, number> = {};
       const cardPaymentsTotalMap: Record<string, number> = {};
+      const paidByPeriod: Record<string, Record<string, number>> = {};
       const invoicePaidStatus: Record<string, boolean> = {};
+      const paidCurrentInvoice: Record<string, number> = {};
       const now = new Date();
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-      
+      const cardsById: Record<string, any> = {};
+      for (const c of cards || []) cardsById[c.id] = c;
+
       // Calculate payments
       if (payments) {
         for (const p of payments) {
           cardPaymentsTotalMap[p.card_id] = (cardPaymentsTotalMap[p.card_id] || 0) + Number(p.amount);
-          
+
           const pDate = p.paid_at ? new Date(p.paid_at) : (p.created_at ? new Date(p.created_at) : null);
           if (pDate && pDate >= startOfMonth) {
             cardPaymentsMonthly[p.card_id] = (cardPaymentsMonthly[p.card_id] || 0) + Number(p.amount);
+          }
+
+          // Bucket payment into the billing cycle it belongs to (same logic as /cards)
+          if (p.paid_at) {
+            const card = cardsById[p.card_id];
+            if (card) {
+              const { currentClose } = getCycleDates(new Date(p.paid_at), card.closing_day || 1, card.due_day || 10);
+              const periodKey = currentClose.toISOString().split("T")[0];
+              if (!paidByPeriod[p.card_id]) paidByPeriod[p.card_id] = {};
+              paidByPeriod[p.card_id][periodKey] = (paidByPeriod[p.card_id][periodKey] || 0) + Number(p.amount);
+            }
           }
         }
       }
@@ -357,21 +372,26 @@ function Dashboard() {
           const billingCycles = groupByBillingCycle(formattedTxs as any, card.closing_day || 1, card.due_day || 10);
           const currentCycle = billingCycles.find(p => p.key === "current") || billingCycles[1] || billingCycles[0];
           const currentInvoiceAmount = currentCycle?.total || 0;
-          
+
           const totalUsedEver = txList.reduce((sum, t) => sum + (t.type === "income" ? -Number(t.amount) : Number(t.amount)), 0);
           const totalPaidEver = cardPaymentsTotalMap[card.id] || 0;
           const outstandingBalance = Math.max(0, totalUsedEver - totalPaidEver);
-          
+
+          const currentPeriodKey = currentCycle ? currentCycle.endDate.toISOString().split("T")[0] : "";
+          const paidCurrent = (paidByPeriod[card.id]?.[currentPeriodKey]) || 0;
+
           nextInvoiceTotals[card.name] = currentInvoiceAmount;
           invoicePaidStatus[card.id] = (outstandingBalance < 0.01 && totalUsedEver > 0);
           totals[card.name] = totalUsedEver;
+          paidCurrentInvoice[card.id] = paidCurrent;
         }
       }
-      
+
       setCardTotals(totals);
       setCardNextInvoices(nextInvoiceTotals);
       setCardPayments(cardPaymentsMonthly);
       setCardInvoicePaid(invoicePaidStatus);
+      setCardPaidCurrentInvoice(paidCurrentInvoice);
     }
 
     const acctNameById: Record<string, string> = {};
