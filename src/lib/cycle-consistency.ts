@@ -127,6 +127,20 @@ export function reportCycleSnapshot(input: ReportInput): boolean {
             `  ${otherSource}: total=R$ ${fmt(other.total)} pago=R$ ${fmt(other.paid)} faltam=R$ ${fmt(other.remaining)}\n` +
             `  ${input.source}: total=R$ ${fmt(snap.total)} pago=R$ ${fmt(snap.paid)} faltam=R$ ${fmt(snap.remaining)}`,
         );
+        const event: CycleMismatchEvent = {
+          key,
+          cardId: input.cardId,
+          cardName: input.cardName,
+          periodKey: input.periodKey,
+          monthLabel: input.monthLabel,
+          sources: [
+            { source: otherSource, snapshot: other },
+            { source: input.source, snapshot: snap },
+          ],
+        };
+        for (const l of listeners) {
+          try { l(event); } catch { /* listener errors must not break the reporter */ }
+        }
       }
     }
   }
