@@ -13,6 +13,9 @@ import { Toaster } from "@/components/ui/sonner";
 import appCss from "../styles.css?url";
 
 const BottomNav = lazy(() => import("@/components/BottomNav").then(m => ({ default: m.BottomNav })));
+const CycleMismatchDevBanner = lazy(() =>
+  import("@/components/CycleMismatchDevBanner").then((m) => ({ default: m.CycleMismatchDevBanner })),
+);
 
 
 function ErrorComponent({ error }: { error: any }) {
