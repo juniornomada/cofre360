@@ -66,7 +66,16 @@ function resolveMonthIdx(token: string): number | undefined {
 }
 
 export function parseTxDate(dateStr: string, fallback: string): Date {
-  const parts = (dateStr || "").trim().toLowerCase().split(/\s+/);
+  // Sanitize noisy inputs: strip zero-width / invisible unicode that would
+  // otherwise split tokens, and drop stray pontuação that gets attached to
+  // digits or month words (e.g. "01!", "10,/07", "jan..."). Keep "/" and
+  // "-" so numeric separators survive.
+  const cleaned = (dateStr || "")
+    .replace(/[\u200B-\u200D\uFEFF\u180E\u2028\u2029]/g, "")
+    .replace(/[\u00A0\u202F\u205F]/g, " ")
+    .replace(/[.,;:!?]+/g, "")
+    .trim();
+  const parts = cleaned.toLowerCase().split(/\s+/);
   const fallbackDate = new Date(fallback);
   const hasFallback = !isNaN(fallbackDate.getTime());
   const fallbackYear = hasFallback ? fallbackDate.getFullYear() : new Date().getFullYear();
