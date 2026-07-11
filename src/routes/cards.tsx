@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { SmartLink as Link } from "@/components/SmartLink";
 import { ArrowLeft, Plus, CreditCard, Trash2, X, Check, Loader2, Wallet, Landmark, ChevronLeft, ChevronRight, Receipt, FileUp, GripVertical, Layers, Pencil, MoreVertical, Eye, EyeOff, Copy, AlertCircle, CheckCircle2, Info, Search, SlidersHorizontal, CalendarIcon, Trash, ChevronDown, ChevronUp } from "lucide-react";
 import { useUserPreferences } from "@/hooks/use-user-preferences";
@@ -138,9 +138,14 @@ function SortableCardWrapper({ id, children, animationDelay }: { id: string; chi
        { name: "description", content: "Gerencie seus cartões" },
      ],
    }),
-   validateSearch: (search: Record<string, unknown>) => ({
-     action: (search.action as string) || undefined,
-   }),
+   validateSearch: (search: Record<string, unknown>) => {
+     const rawMes = typeof search.mes === "string" ? search.mes : undefined;
+     const mes = rawMes && /^\d{4}-(0[1-9]|1[0-2])$/.test(rawMes) ? rawMes : undefined;
+     return {
+       action: (search.action as string) || undefined,
+       mes,
+     };
+   },
    component: CardsPage,
  });
 function CardsPage() {
@@ -150,8 +155,8 @@ function CardsPage() {
   const [cardPayments, setCardPayments] = useState<Record<string, number>>({});
   const [cardPaymentsByPeriod, setCardPaymentsByPeriod] = useState<Record<string, Record<string, number>>>({});
   const [cardDetailedPaymentsByPeriod, setCardDetailedPaymentsByPeriod] = useState<Record<string, Record<string, { id: string, amount: number, date: string, bank_account_id: string | null }[]>>>({});
-  // Offset em meses relativo à fatura atual (0 = atual, -1 = mês anterior, +1 = próximo)
-  const [cardMonthOffset, setCardMonthOffset] = useState<Record<string, number>>({});
+  // Offset em meses relativo à fatura atual — controlado por URL (?mes=YYYY-MM), global a todos os cartões
+  // Mantido aqui apenas como fallback se o parâmetro não estiver presente.
   const [deletingPaymentId, setDeletingPaymentId] = useState<string | null>(null);
   const [paymentToDelete, setPaymentToDelete] = useState<{ payment: { id: string; amount: number; date: string; bank_account_id: string | null }; cardName: string } | null>(null);
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
@@ -382,11 +387,30 @@ function CardsPage() {
 
 
   const searchParams = Route.useSearch();
+  const navigate = useNavigate({ from: "/cards" });
   useEffect(() => {
     if (searchParams.action === "add") {
       openAddDialog();
     }
   }, [searchParams.action]);
+
+  // Offset global em meses derivado do parâmetro ?mes=YYYY-MM (0 = mês atual)
+  const globalMonthOffset = (() => {
+    if (!searchParams.mes) return 0;
+    const [y, m] = searchParams.mes.split("-").map(Number);
+    const now = new Date();
+    return (y - now.getFullYear()) * 12 + (m - 1 - now.getMonth());
+  })();
+  const setMonthOffset = (nextOffset: number) => {
+    if (nextOffset === 0) {
+      navigate({ search: ((prev: Record<string, unknown>) => ({ ...prev, mes: undefined })) as never, replace: true });
+      return;
+    }
+    const now = new Date();
+    const target = new Date(now.getFullYear(), now.getMonth() + nextOffset, 1);
+    const mes = `${target.getFullYear()}-${String(target.getMonth() + 1).padStart(2, "0")}`;
+    navigate({ search: ((prev: Record<string, unknown>) => ({ ...prev, mes })) as never, replace: true });
+  };
 
   const openAddDialog = () => {
     setFormName("");
@@ -1104,7 +1128,7 @@ function CardsPage() {
 
       // === Navegação por mês da fatura ===========================================
       // offset 0 = fatura vigente no mês atual; -1 = mês anterior; +1 = próximo, etc.
-      const monthOffset = cardMonthOffset[card.id] ?? 0;
+      const monthOffset = globalMonthOffset;
       const refDate = new Date(today.getFullYear(), today.getMonth() + monthOffset, 15);
       const selCycle = getCycleDates(refDate, card.closing_day, card.due_day);
       const selClose = selCycle.currentClose;
@@ -1314,7 +1338,7 @@ function CardsPage() {
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
-                              setCardMonthOffset((prev) => ({ ...prev, [card.id]: (prev[card.id] ?? 0) - 1 }));
+                              setMonthOffset(globalMonthOffset - 1);
                             }}
                             data-on-card="true"
                             className="icon-btn-on-card-solid h-6 w-6"
@@ -1331,7 +1355,7 @@ function CardsPage() {
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
-                              setCardMonthOffset((prev) => ({ ...prev, [card.id]: (prev[card.id] ?? 0) + 1 }));
+                              setMonthOffset(globalMonthOffset + 1);
                             }}
                             data-on-card="true"
                             className="icon-btn-on-card-solid h-6 w-6"
@@ -1345,7 +1369,7 @@ function CardsPage() {
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                setCardMonthOffset((prev) => ({ ...prev, [card.id]: 0 }));
+                                setMonthOffset(0);
                               }}
                               data-on-card="true"
                               className="text-[9px] font-semibold text-white/80 hover:text-white underline underline-offset-2 ml-1"
