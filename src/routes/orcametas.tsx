@@ -608,11 +608,16 @@ function OrcaMetasPage() {
   );
 }
 
-type OrcametasSearch = { tab: "budget" | "goals" };
+type OrcametasSearch = { tab: OrcametasTab } & Record<string, unknown>;
 export const Route = createFileRoute("/orcametas")({
-  validateSearch: (s: Record<string, unknown>): OrcametasSearch => ({
-    tab: s.tab === "goals" ? "goals" : "budget",
-  }),
+  validateSearch: (s: Record<string, unknown>): OrcametasSearch => {
+    const raw = typeof s.tab === "string" ? s.tab : "";
+    const tab: OrcametasTab = (ORCAMETAS_TABS as readonly string[]).includes(raw)
+      ? (raw as OrcametasTab)
+      : "budget";
+    return { ...s, tab };
+  },
+
   head: () => ({
     meta: [
       { title: "OrçaMetas — Cofre 360" },
