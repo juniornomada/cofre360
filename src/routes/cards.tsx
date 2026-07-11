@@ -1375,10 +1375,10 @@ function CardsPage() {
                           </div>
                           <div className="flex flex-col items-end gap-0.5 text-[9px] font-semibold text-white shrink-0">
                             <span className="tabular-nums whitespace-nowrap">
-                              Fecha {formatDueDate(selClose)}
+                              Fecha em {formatDueDate(selClose)}
                             </span>
                             <span className="tabular-nums whitespace-nowrap">
-                              Vence {formatDueDate(selDue)}
+                              Vence em {formatDueDate(selDue)}
                             </span>
                           </div>
                         </div>
