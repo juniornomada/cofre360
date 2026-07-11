@@ -29,6 +29,29 @@ const TOLERANCE = 0.01;
 const snapshots: Map<Key, Map<CycleSource, CycleSnapshot>> = new Map();
 const warned: Set<string> = new Set();
 
+export type CycleMismatchEvent = {
+  key: Key;
+  cardId: string;
+  cardName?: string;
+  periodKey: string;
+  monthLabel?: string;
+  sources: {
+    source: CycleSource;
+    snapshot: CycleSnapshot;
+  }[];
+};
+
+type Listener = (event: CycleMismatchEvent) => void;
+const listeners: Set<Listener> = new Set();
+
+/** Subscribe to mismatch events (fires once per deduped mismatch). */
+export function subscribeCycleMismatch(fn: Listener): () => void {
+  listeners.add(fn);
+  return () => {
+    listeners.delete(fn);
+  };
+}
+
 let enabled: boolean = typeof import.meta !== "undefined" && !!(import.meta as any)?.env?.DEV;
 
 export function enableCycleConsistencyCheck(on: boolean = true): void {
