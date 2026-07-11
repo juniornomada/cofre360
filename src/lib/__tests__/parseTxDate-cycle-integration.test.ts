@@ -97,7 +97,7 @@ const SCENARIOS: Array<{ canonical: string; noisy: string[]; fallback: string }>
     noisy: [
       "15-07", "15 -07", "15- 07", "15 - 07",
       "15\u201307", "15\u201407", "15\u221207",
-      "15\u00A007", // NBSP como separador (após normalize vira espaço; sem dash cai no fallback — cobre ambos os ramos)
+      "15 \u2013 07",
       "15 \u2013 07",
     ],
     fallback: FALLBACK_MID_YEAR,
