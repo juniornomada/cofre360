@@ -30,6 +30,7 @@ import {
 import { Plus, Pencil, Trash2, ArrowLeft } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
+import { mapServerError } from "@/lib/map-server-error";
 
 
 type Category = {
@@ -81,7 +82,7 @@ function CategoriesPage() {
       if (s.data) setSubcategories(s.data as Subcategory[]);
     } catch (error: any) {
       console.error("Error loading categories:", error);
-      toast.error("Erro ao carregar categorias: " + (error.message || "Erro desconhecido"));
+      toast.error(mapServerError(error, "Erro ao carregar categorias"));
     } finally {
       setLoading(false);
     }
@@ -146,7 +147,7 @@ function CategoriesPage() {
       load();
     } catch (error: any) {
       console.error("Error saving category/subcategory:", error);
-      toast.error("Erro ao salvar: " + (error.message || "Erro desconhecido"));
+      toast.error(mapServerError(error, "Erro ao salvar"));
     }
   }
 
@@ -161,7 +162,7 @@ function CategoriesPage() {
       load();
     } catch (error: any) {
       console.error("Error deleting category/subcategory:", error);
-      toast.error("Erro ao excluir: " + (error.message || "Erro desconhecido"));
+      toast.error(mapServerError(error, "Erro ao excluir"));
     }
   }
 

@@ -33,6 +33,7 @@ import { Layers } from "lucide-react";
 import { useUserPreferences } from "@/hooks/use-user-preferences";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { mapServerError } from "@/lib/map-server-error";
 
 
 
@@ -224,7 +225,7 @@ export function TransactionsPage() {
       }
     } catch (error: any) {
       console.error("Error fetching cards:", error);
-      toast.error("Erro ao carregar cartões: " + (error.message || "Erro desconhecido"));
+      toast.error(mapServerError(error, "Erro ao carregar cartões"));
     }
   }, []);
 
@@ -264,7 +265,7 @@ export function TransactionsPage() {
       }
     } catch (error: any) {
       console.error("Error fetching bank accounts:", error);
-      toast.error("Erro ao carregar contas: " + (error.message || "Erro desconhecido"));
+      toast.error(mapServerError(error, "Erro ao carregar contas"));
     }
   }, []);
 
@@ -308,7 +309,7 @@ export function TransactionsPage() {
       }
     } catch (error: any) {
       console.error("Error fetching transactions:", error);
-      toast.error("Erro ao carregar transações: " + (error.message || "Erro desconhecido"));
+      toast.error(mapServerError(error, "Erro ao carregar transações"));
     } finally {
       setLoading(false);
       setLoadingMore(false);

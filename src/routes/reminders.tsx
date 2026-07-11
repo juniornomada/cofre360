@@ -16,6 +16,7 @@ import { CalculatorAmountInput } from "@/components/CalculatorAmountInput";
 import { getCategoryDisplay } from "@/lib/categories";
 import { toast } from "sonner";
 import { BankLogo } from "@/components/BankLogo";
+import { mapServerError } from "@/lib/map-server-error";
 
 export const Route = createFileRoute("/reminders")({
   head: () => ({
@@ -106,7 +107,7 @@ function RemindersPage() {
       if (cardsRes.data) setCards(cardsRes.data);
     } catch (error: any) {
       console.error("Error fetching reminders:", error);
-      toast.error("Erro ao carregar lembretes: " + (error.message || "Erro desconhecido"));
+      toast.error(mapServerError(error, "Erro ao carregar lembretes"));
     } finally {
       setLoading(false);
     }
@@ -149,7 +150,7 @@ function RemindersPage() {
       fetchReminders();
     } catch (error: any) {
       console.error("Error adding reminder:", error);
-      toast.error("Erro ao criar lembrete: " + (error.message || "Erro desconhecido"));
+      toast.error(mapServerError(error, "Erro ao criar lembrete"));
     }
   };
 
@@ -234,7 +235,7 @@ function RemindersPage() {
       setTimeout(() => fetchReminders(), 100);
     } catch (error: any) {
       console.error("Error updating reminder:", error);
-      toast.error("Erro ao atualizar lembrete: " + (error.message || "Erro desconhecido"));
+      toast.error(mapServerError(error, "Erro ao atualizar lembrete"));
     }
   };
 
@@ -453,7 +454,7 @@ function RemindersPage() {
       fetchReminders();
     } catch (error: any) {
       console.error("Error deleting reminder:", error);
-      toast.error("Erro ao excluir lembrete: " + (error.message || "Erro desconhecido"));
+      toast.error(mapServerError(error, "Erro ao excluir lembrete"));
     }
   };
 

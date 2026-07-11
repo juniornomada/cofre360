@@ -77,6 +77,7 @@ type PaymentLine = {
 
 import { groupByBillingCycle, parseTxDate, getCycleDates, monthNames, type CardTransaction, type InvoicePeriod } from "@/lib/invoice-utils";
 import { reportCycleSnapshot } from "@/lib/cycle-consistency";
+import { mapServerError } from "@/lib/map-server-error";
 
 
  export const Route = createFileRoute("/cards")({
@@ -290,7 +291,7 @@ function CardsPage() {
     } catch (error: any) {
       if (seq !== fetchSeqRef.current) return; // resposta obsoleta — não notifica
       console.error("Error fetching data:", error);
-      toast.error("Erro ao carregar dados: " + (error.message || "Erro desconhecido"));
+      toast.error(mapServerError(error, "Erro ao carregar dados"));
     } finally {
       setLoading(false);
     }
@@ -393,7 +394,7 @@ function CardsPage() {
       toast.success("Cartão adicionado com sucesso");
     } catch (error: any) {
       console.error("Error adding card:", error);
-      toast.error("Erro ao adicionar cartão: " + (error.message || "Erro desconhecido"));
+      toast.error(mapServerError(error, "Erro ao adicionar cartão"));
     }
   };
 
@@ -425,7 +426,7 @@ function CardsPage() {
       fetchAll();
     } catch (error: any) {
       console.error("Error updating card:", error);
-      toast.error("Erro ao atualizar cartão: " + (error.message || "Erro desconhecido"));
+      toast.error(mapServerError(error, "Erro ao atualizar cartão"));
     }
   };
 
@@ -440,7 +441,7 @@ function CardsPage() {
       toast.success("Cartão excluído");
     } catch (error: any) {
       console.error("Error deleting card:", error);
-      toast.error("Erro ao excluir cartão: " + (error.message || "Erro desconhecido"));
+      toast.error(mapServerError(error, "Erro ao excluir cartão"));
     }
   };
 
@@ -1375,10 +1376,10 @@ function CardsPage() {
                           </div>
                           <div className="flex flex-col items-end gap-0.5 text-[9px] font-semibold text-white shrink-0">
                             <span className="tabular-nums whitespace-nowrap">
-                              Fecha {formatDueDate(selClose)}
+                              Fecha em {formatDueDate(selClose)}
                             </span>
                             <span className="tabular-nums whitespace-nowrap">
-                              Vence {formatDueDate(selDue)}
+                              Vence em {formatDueDate(selDue)}
                             </span>
                           </div>
                         </div>
