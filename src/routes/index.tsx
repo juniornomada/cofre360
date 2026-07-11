@@ -1172,9 +1172,6 @@ function Dashboard() {
                 </div>
               );
             })()}
-            <Link to="/cards" className="text-[10px] font-medium text-primary flex items-center gap-0.5">
-              Gerenciar <ChevronRight className="h-3 w-3" />
-            </Link>
           </div>
         </div>
 
