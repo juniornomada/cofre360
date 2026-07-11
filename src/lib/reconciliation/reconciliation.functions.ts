@@ -235,14 +235,13 @@ export const listRuns = createServerFn({ method: "GET" })
 export const listOpenDivergences = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async (ctx: any) => {
-    const $input = ctx.data;
     const $ctx = ctx.context;
     const { data, error } = await $ctx.supabase
       .from("reconciliation_divergences")
       .select("*")
-      .eq("investigated", false)
+      .neq("status", "resolved")
       .order("created_at", { ascending: false })
-      .limit(100);
+      .limit(200);
     if (error) throw error;
     return data ?? [];
   });
@@ -250,41 +249,52 @@ export const listOpenDivergences = createServerFn({ method: "GET" })
 export const countOpenDivergences = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async (ctx: any) => {
-    const $input = ctx.data;
     const $ctx = ctx.context;
     const { count, error } = await $ctx.supabase
       .from("reconciliation_divergences")
       .select("id", { count: "exact", head: true })
-      .eq("investigated", false);
+      .neq("status", "resolved");
     if (error) throw error;
     return { count: count ?? 0 };
   });
 
-export const markInvestigated = createServerFn({ method: "POST" })
+export const updateDivergence = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((raw: unknown) => {
-    const v = raw as { id?: string; note?: string; investigated?: boolean };
+    const v = raw as { id?: string; status?: string; note?: string };
     if (!v?.id) throw new Error("id obrigatório");
+    const status = v.status;
+    if (status && !["open", "investigating", "resolved"].includes(status)) {
+      throw new Error("status inválido");
+    }
     return {
       id: v.id,
-      note: typeof v.note === "string" ? v.note.slice(0, 500) : null,
-      investigated: v.investigated !== false,
+      status: (status as "open" | "investigating" | "resolved" | undefined) ?? undefined,
+      note: typeof v.note === "string" ? v.note.slice(0, 1000) : undefined,
     };
   })
   .handler(async (ctx: any) => {
     const $input = ctx.data;
     const $ctx = ctx.context;
+    const patch: Record<string, unknown> = {};
+    if ($input.status !== undefined) {
+      patch.status = $input.status;
+      patch.investigated = $input.status !== "open";
+      patch.investigated_at = $input.status !== "open" ? new Date().toISOString() : null;
+      patch.resolved_at = $input.status === "resolved" ? new Date().toISOString() : null;
+    }
+    if ($input.note !== undefined) patch.note = $input.note;
     const { error } = await $ctx.supabase
       .from("reconciliation_divergences")
-      .update({
-        investigated: $input.investigated,
-        investigated_at: $input.investigated ? new Date().toISOString() : null,
-        note: $input.note,
-      })
+      .update(patch)
       .eq("id", $input.id);
     if (error) throw error;
     return { ok: true };
   });
+
+// Legacy alias for previous callers
+export const markInvestigated = updateDivergence;
+
 
 export const exportRunCsv = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
