@@ -1301,7 +1301,9 @@ function AccountsPage() {
                       {breakdownData.hidden.map((tx) => (
                         <div key={tx.id} className="flex items-center justify-between px-3 py-1.5 text-xs">
                           <div className="min-w-0 flex-1">
-                            <p className="font-medium text-foreground truncate">{tx.description || "(sem descrição)"}</p>
+                            <p className="font-medium text-foreground min-w-0">
+                              <PaymentDescriptionText name={tx.description} />
+                            </p>
                             <p className="text-[10px] text-muted-foreground">{fmtDate(tx.date)}</p>
                           </div>
                           <span className={cn("tabular-nums font-semibold ml-2", tx.type === "income" ? "text-emerald-600" : "text-destructive")}>
