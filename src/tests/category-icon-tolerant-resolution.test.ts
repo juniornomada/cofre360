@@ -117,10 +117,11 @@ describe("getCategoryIcon — resolução tolerante para Pagamento de Cartão", 
   });
 
   it("retorna fallback para valores não-string sem lançar", () => {
-    // Guard defensivo — nunca lançar em runtime, mesmo com entrada inválida.
-    // @ts-expect-error — valida guarda para chamadas indevidas em JS puro.
-    expect(getCategoryIcon(undefined)).toBe(FALLBACK_ICON);
-    // @ts-expect-error — idem.
-    expect(getCategoryIcon(null)).toBe(FALLBACK_ICON);
+    // Guard defensivo — nunca lançar em runtime, mesmo com entrada inválida
+    // vinda de payloads externos (importações OFX/CSV, migrações, etc.).
+    const unsafe = getCategoryIcon as unknown as (v: unknown) => string;
+    expect(unsafe(undefined)).toBe(FALLBACK_ICON);
+    expect(unsafe(null)).toBe(FALLBACK_ICON);
+    expect(unsafe(123)).toBe(FALLBACK_ICON);
   });
 });
