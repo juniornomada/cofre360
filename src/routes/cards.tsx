@@ -603,7 +603,23 @@ function CardsPage() {
     for (const tx of txs) {
       const raw = tx?.name ?? "";
       if (!raw) continue;
-      if (normalizeCardPaymentLabel(raw) !== raw) fixed += 1;
+      const canonical = normalizeCardPaymentLabel(raw);
+      if (canonical !== raw) {
+        fixed += 1;
+        // Telemetria: registra cada detecção para auditar imports (PDF/CSV
+        // com wording legada). Não muda o dado no banco — apenas na UI.
+        recordLegacyLabelDetection({
+          raw,
+          canonical,
+          source: "/cards:invoice-dialog",
+          context: {
+            cardId: invoiceCard.id,
+            cardName: invoiceCard.name ?? null,
+            period: activePeriodKey,
+            transactionId: tx?.id ?? null,
+          },
+        });
+      }
     }
     if (fixed <= 0) return;
     normalizationNoticeShownRef.current.add(noticeKey);
