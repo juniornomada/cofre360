@@ -74,6 +74,13 @@ jobs:
       # críticas de schema-versioning e drift.
       - name: Check no wide casts (schema-versioning & drift surfaces)
         run: bun run check:no-wide-casts
+      # Guarda de wording: descrições de pagamento de cartão devem seguir
+      # o formato canônico "Pagamento {Parcial|Total} cartão <Nome>".
+      # Falha o CI se a wording legada com "fatura" reaparecer em
+      # qualquer arquivo do repo (código, migrations, seeds, docs) fora
+      # do ALLOWLIST em scripts/check-payment-wording.mjs.
+      - name: Check no legacy card-payment wording (repo + migrations + seeds)
+        run: bun run check:payment-wording
 
   typecheck:
     name: Typecheck (strict, no emit)
