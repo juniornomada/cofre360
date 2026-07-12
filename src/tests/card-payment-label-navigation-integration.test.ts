@@ -13,9 +13,14 @@ import { formatCardPaymentLabel } from "@/lib/card-payment-label";
 
 const SRC_DIR = join(process.cwd(), "src");
 const CANONICAL_HELPER = join("src", "lib", "card-payment-label.ts");
+// Módulo de saneamento pré-persistência: contém, por natureza, o regex
+// que detecta o rótulo legado para converter/rejeitar payloads. É uma
+// referência controlada — não uma reintrodução em UI/handler.
+const SANITIZER_MODULE = join("src", "lib", "normalize-transaction-name.ts");
 
 const CODE_EXTENSIONS = new Set([".ts", ".tsx"]);
 const EXCLUDED_SEGMENTS = ["__tests__", "/tests/", ".test.", ".spec."];
+const ALLOWLISTED_FILES = new Set([CANONICAL_HELPER, SANITIZER_MODULE]);
 
 function walk(dir: string, acc: string[] = []): string[] {
   for (const entry of readdirSync(dir)) {
@@ -33,7 +38,7 @@ function walk(dir: string, acc: string[] = []): string[] {
 function productionFiles(): string[] {
   return walk(SRC_DIR).filter((p) => {
     const rel = p.slice(process.cwd().length + 1);
-    if (rel === CANONICAL_HELPER) return false;
+    if (ALLOWLISTED_FILES.has(rel)) return false;
     return !EXCLUDED_SEGMENTS.some((seg) => rel.includes(seg));
   });
 }

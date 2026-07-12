@@ -1,4 +1,4 @@
-name: CI - Typecheck, Schema-Versioning, Drift, Fuzz/Cycle & Preview Parity
+name: CI - Typecheck, Schema-Versioning, Drift, Fuzz/Cycle, Label/Navigation & Preview Parity
 
 on:
   push:
@@ -17,6 +17,7 @@ concurrency:
 #          ├─► test-schema-drift
 #          ├─► test-preview-parity
 #          ├─► test-fuzz-cycle
+#          ├─► test-label-navigation
 #          ├─► test-full
 #          ├─► supabase-auth-check
 #          └─► build
@@ -149,6 +150,34 @@ jobs:
       - run: bun install --frozen-lockfile
       - name: Fuzz + cycle key gate
         run: bun run test:fuzz-cycle
+
+  # Gate dedicado à wording canônica de pagamento de cartão e à navegação
+  # entre faturas/telas que emitem esse rótulo. Falha o CI se:
+  #   - qualquer teste da suíte de rótulo/navegação regredir;
+  #   - qualquer arquivo de produção (fora do helper canônico e do módulo
+  #     de saneamento) voltar a conter "Pagamento ... fatura cartão";
+  #   - o rótulo for remontado inline com template literal em vez de
+  #     `formatCardPaymentLabel`.
+  # O `check:payment-wording` (job `static`) já roda como grep no repo
+  # inteiro, mas aqui garantimos cobertura dinâmica: chamadas reais dos
+  # handlers de pagamento, transições de período (fatura anterior/atual/
+  # futura) e fluxos de "Adicionar transação" a partir do empty-state.
+  test-label-navigation:
+    name: Tests · rótulo de pagamento & navegação de faturas
+    runs-on: ubuntu-latest
+    needs: setup
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ needs.setup.outputs.cache-key }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+      - run: bun install --frozen-lockfile
+      - name: Label + navigation regression suite
+        run: bun run test:label-navigation
 
   test-full:
     name: Tests · full suite (a11y, componentes, integração)
@@ -326,6 +355,7 @@ jobs:
       - test-schema-drift
       - test-preview-parity
       - test-fuzz-cycle
+      - test-label-navigation
       - test-full
       - supabase-auth-check
       - build
@@ -333,14 +363,15 @@ jobs:
       - name: Aggregate job results
         run: |
           echo "Job results:"
-          echo "  static:              ${{ needs.static.result }}"
-          echo "  typecheck:           ${{ needs.typecheck.result }}"
-          echo "  test-schema-drift:   ${{ needs.test-schema-drift.result }}"
-          echo "  test-preview-parity: ${{ needs.test-preview-parity.result }}"
-          echo "  test-fuzz-cycle:     ${{ needs.test-fuzz-cycle.result }}"
-          echo "  test-full:           ${{ needs.test-full.result }}"
-          echo "  supabase-auth-check: ${{ needs.supabase-auth-check.result }}"
-          echo "  build:               ${{ needs.build.result }}"
+          echo "  static:                ${{ needs.static.result }}"
+          echo "  typecheck:             ${{ needs.typecheck.result }}"
+          echo "  test-schema-drift:     ${{ needs.test-schema-drift.result }}"
+          echo "  test-preview-parity:   ${{ needs.test-preview-parity.result }}"
+          echo "  test-fuzz-cycle:       ${{ needs.test-fuzz-cycle.result }}"
+          echo "  test-label-navigation: ${{ needs.test-label-navigation.result }}"
+          echo "  test-full:             ${{ needs.test-full.result }}"
+          echo "  supabase-auth-check:   ${{ needs.supabase-auth-check.result }}"
+          echo "  build:                 ${{ needs.build.result }}"
           if [ "${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}" = "true" ]; then
             echo "::error::One or more required jobs failed or were cancelled."
             exit 1

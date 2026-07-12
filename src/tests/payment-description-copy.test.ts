@@ -50,9 +50,12 @@ describe("Descrição de pagamento de cartão", () => {
       path.resolve(process.cwd(), "src/routes/cards.tsx"),
       "utf8",
     );
+    // Guarda contra reintrodução do rótulo legado em qualquer forma.
     expect(source).not.toMatch(/Pagamento\s+Parcial\s+fatura\s+cartão/i);
     expect(source).not.toMatch(/Pagamento\s+Total\s+fatura\s+cartão/i);
-    expect(source).toMatch(/Pagamento Total cartão \$\{[^}]+\}/);
-    expect(source).toMatch(/Pagamento Parcial cartão \$\{[^}]+\}/);
+    // O rótulo é construído via helper canônico (fonte única de verdade)
+    // — nenhum template string literal com "Pagamento ... cartão ${...}"
+    // deve ser reintroduzido inline no componente.
+    expect(source).toMatch(/formatCardPaymentLabel\s*\(/);
   });
 });
