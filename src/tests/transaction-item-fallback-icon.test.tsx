@@ -41,7 +41,9 @@ const INVALID_CATEGORIES = [
   "   ",
   "Categoria Inexistente",
   "Pagamento Cartão", // faltando "de" — não deve casar
-  "pagamento de cartão", // capitalização errada
+  // NOTE: "pagamento de cartão" (só diferenças de capitalização) resolve
+  // intencionalmente para 💳 via normalização tolerante — coberto em
+  // src/tests/category-icon-tolerant-resolution.test.ts.
   "Pagamento de Cartão XPTO", // sufixo espúrio no nome do grupo
   "Random > Subcategoria",
   ">",
