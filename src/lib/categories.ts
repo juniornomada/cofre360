@@ -183,6 +183,16 @@ export const categoryTree: CategoryGroup[] = [
     ],
   },
   {
+    label: "Pagamento de Cartão",
+    icon: "💳",
+    type: "expense",
+    subcategories: [
+      { label: "Pagamento Total", icon: "💳" },
+      { label: "Pagamento Parcial", icon: "💳" },
+      { label: "Outros", icon: "💳" },
+    ],
+  },
+  {
     label: "Outros",
     icon: "📄",
     type: "expense",
@@ -191,6 +201,7 @@ export const categoryTree: CategoryGroup[] = [
     ],
   },
 ];
+
 
 /** Flat list of "Categoria > Subcategoria" values for storage */
 export function getCategoryValue(group: string, sub: string): string {
