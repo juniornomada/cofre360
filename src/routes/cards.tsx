@@ -84,6 +84,7 @@ import { reportCycleSnapshot } from "@/lib/cycle-consistency";
 import { formatCardPaymentLabel } from "@/lib/card-payment-label";
 import { sortInvoiceChronoAsc } from "@/lib/invoice-chrono-sort";
 import { mapServerError } from "@/lib/map-server-error";
+import { AutoFitText } from "@/components/AutoFitText";
 
 
  export const Route = createFileRoute("/cards")({
