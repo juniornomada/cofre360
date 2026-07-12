@@ -130,28 +130,22 @@ async function login(page: import('@playwright/test').Page) {
 
 function assertNoLegacyWording(sample: string, where: string) {
   const normalized = normalizeForCheck(sample);
-  // Sanidade: se a normalização apagou tudo, algo está errado no capture.
+  // Sanidade: se a normalização apagou tudo, algo está errado no capture —
+  // não queremos que o teste "passe" contra uma string vazia.
   expect(
     normalized.length,
     `Amostra vazia após normalização em ${where} — captura provavelmente falhou`,
   ).toBeGreaterThan(0);
 
-  // Guarda anti-falso-positivo: o formato CANÔNICO deve continuar presente
-  // sempre que o teste renderiza um pagamento (evita passar por engano
-  // quando o app simplesmente não renderiza nada).
-  if (/pagamento (?:total|parcial) cartao\b/.test(normalized)) {
-    // ok — encontrou pelo menos uma ocorrência canônica.
-  }
-
-  for (const rx of LEGACY_PATTERNS) {
-    const hit = rx.exec(normalized);
-    expect(
-      hit,
-      `Wording legada detectada em ${where}: /${rx.source}/\n` +
-        `Trecho: "${hit ? normalized.slice(Math.max(0, hit.index - 20), hit.index + hit[0].length + 20) : ''}"`,
-    ).toBeNull();
-  }
+  const hit = findLegacyPaymentWording(sample);
+  expect(
+    hit,
+    hit
+      ? `Wording legada detectada em ${where}: /${hit.pattern.source}/\nTrecho: "${hit.excerpt}"`
+      : '',
+  ).toBeNull();
 }
+
 
 test.describe('/cards — wording de pagamento canônica', () => {
   test.beforeEach(async ({ page }) => {
