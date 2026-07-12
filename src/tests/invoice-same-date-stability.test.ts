@@ -28,7 +28,7 @@ describe("Cards /cards — mesma data: estabilidade após refetch e edições", 
 
   it("ordem inicial obedece (created_at asc, depois id localeCompare)", () => {
     // b (08h) < a=m=z (09h → id: a,m,z) < k (10h30)
-    expect(sortInvoiceChronoAsc(baseline).map((t) => t.id)).toEqual([
+    expect(sortInvoiceChronoAsc(baseline).map((t) => String(t.id))).toEqual([
       "b",
       "a",
       "m",
@@ -38,7 +38,7 @@ describe("Cards /cards — mesma data: estabilidade após refetch e edições", 
   });
 
   it("refetch com payload embaralhado do servidor não muda a ordem visível", () => {
-    const first = sortInvoiceChronoAsc(baseline).map((t) => t.id);
+    const first = sortInvoiceChronoAsc(baseline).map((t) => String(t.id));
 
     // Snapshot capturado na primeira renderização (dialog abriu).
     const { nextSnapshot: snap1 } = resolveInvoiceOrder({
@@ -49,7 +49,7 @@ describe("Cards /cards — mesma data: estabilidade após refetch e edições", 
 
     // Servidor devolve os mesmos itens em ordem arbitrária.
     const shuffled = [baseline[2], baseline[4], baseline[0], baseline[3], baseline[1]];
-    const refetched = sortInvoiceChronoAsc(shuffled).map((t) => t.id);
+    const refetched = sortInvoiceChronoAsc(shuffled).map((t) => String(t.id));
 
     const { orderedIds } = resolveInvoiceOrder({
       currentIds: refetched,
@@ -66,13 +66,13 @@ describe("Cards /cards — mesma data: estabilidade após refetch e edições", 
     const edited = baseline.map((t) =>
       t.id === "m" ? { ...t } : t,
     );
-    const before = sortInvoiceChronoAsc(baseline).map((t) => t.id);
-    const after = sortInvoiceChronoAsc(edited).map((t) => t.id);
+    const before = sortInvoiceChronoAsc(baseline).map((t) => String(t.id));
+    const after = sortInvoiceChronoAsc(edited).map((t) => String(t.id));
     expect(after).toEqual(before);
   });
 
   it("exclusão de um item mantém a ordem relativa dos restantes", () => {
-    const first = sortInvoiceChronoAsc(baseline).map((t) => t.id);
+    const first = sortInvoiceChronoAsc(baseline).map((t) => String(t.id));
     const { nextSnapshot: snap } = resolveInvoiceOrder({
       currentIds: first,
       priorSnapshot: undefined,
@@ -81,7 +81,7 @@ describe("Cards /cards — mesma data: estabilidade após refetch e edições", 
 
     // Usuário exclui "m".
     const remaining = baseline.filter((t) => t.id !== "m");
-    const refetched = sortInvoiceChronoAsc(remaining).map((t) => t.id);
+    const refetched = sortInvoiceChronoAsc(remaining).map((t) => String(t.id));
 
     const { orderedIds } = resolveInvoiceOrder({
       currentIds: refetched,
@@ -93,7 +93,7 @@ describe("Cards /cards — mesma data: estabilidade após refetch e edições", 
   });
 
   it("novo lançamento na mesma data entra no FIM (não intercala prefixo congelado)", () => {
-    const first = sortInvoiceChronoAsc(baseline).map((t) => t.id);
+    const first = sortInvoiceChronoAsc(baseline).map((t) => String(t.id));
     const { nextSnapshot: snap } = resolveInvoiceOrder({
       currentIds: first,
       priorSnapshot: undefined,
@@ -106,7 +106,7 @@ describe("Cards /cards — mesma data: estabilidade após refetch e edições", 
       ...baseline,
       tx("c", "10/07", "2026-07-10T09:00:00Z"),
     ];
-    const refetched = sortInvoiceChronoAsc(withNew).map((t) => t.id);
+    const refetched = sortInvoiceChronoAsc(withNew).map((t) => String(t.id));
 
     const { orderedIds } = resolveInvoiceOrder({
       currentIds: refetched,
@@ -119,12 +119,12 @@ describe("Cards /cards — mesma data: estabilidade após refetch e edições", 
 
   it("edição sucessiva com refetches intercalados: ordem permanece estável (idempotência)", () => {
     let snap: string[] | undefined = undefined;
-    const first = sortInvoiceChronoAsc(baseline).map((t) => t.id);
+    const first = sortInvoiceChronoAsc(baseline).map((t) => String(t.id));
 
     for (let i = 0; i < 5; i++) {
       // Cada iteração simula um refetch com payload embaralhado.
       const shuffled = [...baseline].reverse();
-      const refetched = sortInvoiceChronoAsc(shuffled).map((t) => t.id);
+      const refetched = sortInvoiceChronoAsc(shuffled).map((t) => String(t.id));
       const result = resolveInvoiceOrder({
         currentIds: refetched,
         priorSnapshot: snap,
@@ -149,7 +149,7 @@ describe("Cards /cards — mesma data: estabilidade após refetch e edições", 
       [trio[1], trio[0], trio[2]],
     ];
     for (const perm of permutations) {
-      expect(sortInvoiceChronoAsc(perm).map((t) => t.id)).toEqual(expected);
+      expect(sortInvoiceChronoAsc(perm).map((t) => String(t.id))).toEqual(expected);
     }
   });
 });
