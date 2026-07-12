@@ -551,7 +551,19 @@ function CardsPage() {
   let stableActivePeriod = rawActivePeriod;
   if (rawActivePeriod && invoiceCard) {
     const orderKey = `${invoiceCard.id}::${rawActivePeriod.endDate.toISOString().split("T")[0]}`;
-    const currentIds = rawActivePeriod.transactions.map(t => t.id);
+    // Order invoice transactions chronologically ascending (oldest first),
+    // so users read the invoice like a statement. Ties break by created_at,
+    // then by id, to keep the order deterministic across refetches.
+    const chronoAsc = [...rawActivePeriod.transactions].sort((a, b) => {
+      const da = parseTxDate(a.date, a.created_at).getTime();
+      const db = parseTxDate(b.date, b.created_at).getTime();
+      if (da !== db) return da - db;
+      const ca = a.created_at ? new Date(a.created_at).getTime() : 0;
+      const cb = b.created_at ? new Date(b.created_at).getTime() : 0;
+      if (ca !== cb) return ca - cb;
+      return String(a.id).localeCompare(String(b.id));
+    });
+    const currentIds = chronoAsc.map(t => t.id);
     const prior = invoiceOrderRef.current.get(orderKey);
     const { orderedIds, nextSnapshot } = resolveInvoiceOrder({
       currentIds,
