@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { getFriendlyErrorMessage } from "@/lib/utils";
+import { sanitizeTransactionWrite, sanitizeTransactionWrites } from "@/lib/normalize-transaction-name";
 
 export type QuickAddInitialType = "expense" | "income" | "transfer";
 
@@ -362,7 +363,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
         
         console.log("QuickAdd: Inserting transfer transactions", { groupId, fromName, toName });
         
-        const { error, data } = await supabase.from("transactions").insert([
+        const { error, data } = await supabase.from("transactions").insert(sanitizeTransactionWrites([
           {
             icon: "🔄", name: `Transferência → ${toName}`, category: "Transferências > Outros",
             date: newTx.date, amount: newTx.amount, type: "expense",
@@ -375,7 +376,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
             card: null, bank_account_id: transferToId, installment_group_id: groupId,
             is_visible: true
           },
-        ]).select();
+        ])).select();
 
         if (error) {
           console.error("QuickAdd: Supabase insertion error", error);
@@ -453,15 +454,15 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
           is_visible: true
         });
        }
-       const { error } = await supabase.from("transactions").insert(rows);
+       const { error } = await supabase.from("transactions").insert(sanitizeTransactionWrites(rows));
        if (error) throw error;
      } else {
-       const { error } = await supabase.from("transactions").insert({
+       const { error } = await supabase.from("transactions").insert(sanitizeTransactionWrite({
          icon: newTx.icon, name: newTx.name, category: newTx.category,
          date: newTx.date, amount: newTx.amount, type: finalType,
          card: cardValue, bank_account_id: newTx.bank_account_id || null,
          is_visible: true
-       });
+       }));
        if (error) throw error;
      }
     (document.activeElement as HTMLElement)?.blur();

@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Tables, TablesInsert } from "@/integrations/supabase/types";
 import { categorizeTransaction } from "@/lib/categorize-transaction";
 import { restoreAccents } from "@/lib/restore-accents";
+import { sanitizeTransactionWrite, sanitizeTransactionWrites, InvalidTransactionNameError } from "@/lib/normalize-transaction-name";
 
 type AccountOption = { id: string; name: string };
 
@@ -150,9 +151,21 @@ async function fetchExistingTransactions(bankAccountId: string | null) {
 
 async function insertTransactionsSkippingDuplicates(transactions: TransactionInsert[]) {
   let importedCount = 0;
+  // Sanitiza descrições antes de qualquer insert — impede que rótulos legados
+  // ("Pagamento ... fatura cartão ...") ou caracteres de controle vindos do
+  // arquivo importado sejam persistidos.
+  let sanitized: TransactionInsert[];
+  try {
+    sanitized = sanitizeTransactionWrites(transactions);
+  } catch (err) {
+    if (err instanceof InvalidTransactionNameError) {
+      return { importedCount, error: { code: "INVALID_NAME", message: err.message } as any };
+    }
+    throw err;
+  }
 
-  for (let start = 0; start < transactions.length; start += IMPORT_INSERT_BATCH_SIZE) {
-    const batch = transactions.slice(start, start + IMPORT_INSERT_BATCH_SIZE);
+  for (let start = 0; start < sanitized.length; start += IMPORT_INSERT_BATCH_SIZE) {
+    const batch = sanitized.slice(start, start + IMPORT_INSERT_BATCH_SIZE);
     const { error } = await supabase.from("transactions").insert(batch);
 
     if (!error) {

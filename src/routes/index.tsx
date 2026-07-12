@@ -47,6 +47,7 @@ import { CalculatorAmountInput } from "@/components/CalculatorAmountInput";
 
 import type { QuickAddInitialType } from "@/components/QuickAddTransactionDialog";
 import { saveInstallmentPlan, stripInstallmentSuffix, propagateCosmeticFieldsToGroup } from "@/lib/installment-edit";
+import { sanitizeTransactionName } from "@/lib/normalize-transaction-name";
 import { deleteTransactionScope, isInstallmentTx } from "@/lib/installment-delete";
 import { toast } from "sonner";
 import { useUserPreferences } from "@/hooks/use-user-preferences";
@@ -553,7 +554,7 @@ function Dashboard() {
     const total = Math.max(1, Math.floor(Number(editTx.total_installments)));
     const current = Math.max(1, Math.min(total, Math.floor(Number(editTx.installment_number) || 1)));
     const baseName = stripInstallmentSuffix(editTx.name);
-    const finalName = total > 1 ? `${baseName} (${current}/${total})` : baseName;
+    const finalName = sanitizeTransactionName(total > 1 ? `${baseName} (${current}/${total})` : baseName);
 
     // Compute per-installment value (only relevant when total > 1).
     let perInstallment = editTx.amount;

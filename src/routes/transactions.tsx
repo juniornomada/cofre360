@@ -34,6 +34,7 @@ import { useUserPreferences } from "@/hooks/use-user-preferences";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { mapServerError } from "@/lib/map-server-error";
+import { sanitizeTransactionName } from "@/lib/normalize-transaction-name";
 
 
 
@@ -601,7 +602,7 @@ export function TransactionsPage() {
 
     const total = Math.max(1, Math.floor(Number(editTx.total_installments)));
     const current = Math.max(1, Math.min(total, Math.floor(Number(editTx.installment_number) || 1)));
-    const finalName = stripInstallmentSuffix(editTx.name);
+    const finalName = sanitizeTransactionName(stripInstallmentSuffix(editTx.name));
 
      // Compute per-installment value
       const { valorParcela: perInstallment } = calculateInstallmentDetails(

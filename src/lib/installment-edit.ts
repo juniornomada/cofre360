@@ -1,6 +1,7 @@
 // Shared helpers for editing the installment plan of an existing transaction.
 // Used by the "Editar Transação" dialogs in both /transactions and / (home).
 import { supabase } from "@/integrations/supabase/client";
+import { sanitizeTransactionWrite, sanitizeTransactionWrites, sanitizeTransactionName } from "@/lib/normalize-transaction-name";
 
 const shortMonthNames = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
 const shortMonthMap: Record<string, number> = {
@@ -305,7 +306,7 @@ export type SaveInstallmentResult = {
  * - total > 1 → set group, current/total on the row, append missing future rows
  */
 export async function saveInstallmentPlan(input: SaveInstallmentInput): Promise<SaveInstallmentResult> {
-  const baseName = stripInstallmentSuffix(input.name);
+  const baseName = sanitizeTransactionName(stripInstallmentSuffix(input.name));
   const total = Math.floor(input.total);
   const current = Math.floor(input.current);
 

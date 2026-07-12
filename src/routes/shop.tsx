@@ -8,6 +8,7 @@ import { formatBRL } from "@/lib/format-brl";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { sanitizeTransactionWrite } from "@/lib/normalize-transaction-name";
 
 interface Product {
   id: string;
@@ -73,7 +74,7 @@ function ShopPage() {
       const today = format(new Date(), "dd MMM", { locale: ptBR });
 
       // Create a transaction for each item or one for the total
-      const { error } = await supabase.from("transactions").insert({
+      const { error } = await supabase.from("transactions").insert(sanitizeTransactionWrite({
         name: `Compra: ${cart.map(item => item.name).join(", ")}`,
         amount: total,
         type: "expense",
@@ -81,7 +82,7 @@ function ShopPage() {
         date: today,
         bank_account_id: bankAccountId,
         icon: "🛍️"
-      });
+      }));
 
       if (error) throw error;
 

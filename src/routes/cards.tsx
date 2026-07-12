@@ -82,6 +82,7 @@ type PaymentLine = {
 import { groupByBillingCycle, parseTxDate, getCycleDates, monthNames, type CardTransaction, type InvoicePeriod } from "@/lib/invoice-utils";
 import { reportCycleSnapshot } from "@/lib/cycle-consistency";
 import { formatCardPaymentLabel, normalizeCardPaymentLabel } from "@/lib/card-payment-label";
+import { sanitizeTransactionWrite, sanitizeTransactionWrites } from "@/lib/normalize-transaction-name";
 import { sortInvoiceChronoAsc } from "@/lib/invoice-chrono-sort";
 import { mapServerError } from "@/lib/map-server-error";
 import { AutoFitText } from "@/components/AutoFitText";
@@ -755,7 +756,7 @@ function CardsPage() {
         }
 
         if (toInsert.length > 0) {
-          const { error: insErr } = await supabase.from("transactions").insert(toInsert);
+          const { error: insErr } = await supabase.from("transactions").insert(sanitizeTransactionWrites(toInsert));
           if (insErr) throw insErr;
         }
         toast.success(
@@ -1003,7 +1004,7 @@ function CardsPage() {
           // await supabase.from("bank_accounts").update({ balance: account.balance - amount }).eq("id", line.accountId);
           
           // Create transaction for history/debiting from reports
-          const { error: txInsError } = await supabase.from("transactions").insert({
+          const { error: txInsError } = await supabase.from("transactions").insert(sanitizeTransactionWrite({
             name: paymentName,
             amount: amount,
             type: "expense",
@@ -1012,7 +1013,7 @@ function CardsPage() {
             date: dateFormatted,
             bank_account_id: line.accountId,
             created_at: new Date().toISOString()
-          });
+          }));
           
           if (txInsError) throw txInsError;
         }
