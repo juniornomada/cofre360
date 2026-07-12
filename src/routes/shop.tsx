@@ -8,6 +8,7 @@ import { formatBRL } from "@/lib/format-brl";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { sanitizeTransactionWrite } from "@/lib/normalize-transaction-name";
 
 interface Product {
   id: string;
