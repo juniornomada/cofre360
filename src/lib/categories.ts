@@ -231,12 +231,46 @@ export function getCategoryDisplay(value: string): string {
   return sub;
 }
 
+/**
+ * Normaliza um rótulo para comparação tolerante:
+ *  - remove diacríticos (á → a)
+ *  - converte para minúsculas
+ *  - colapsa qualquer whitespace (incl. NBSP, tabs, quebras) em um único espaço
+ *  - trim
+ * Usado apenas em comparação — não altera valores armazenados.
+ */
+function normalizeCategoryLabel(s: string): string {
+  return s
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[\s\u00A0]+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
 /** Get the icon for a stored category value */
 export function getCategoryIcon(value: string): string {
+  if (typeof value !== "string" || !value) return "📄";
   const { group, sub } = parseCategoryValue(value);
-  const g = categoryTree.find(c => c.label === group);
+
+  // 1) Match exato (rápido / caminho canônico).
+  let g = categoryTree.find(c => c.label === group);
+  let s = g?.subcategories.find(sc => sc.label === sub);
+  if (g && (s || sub === "Outros")) return s?.icon || g.icon;
+
+  // 2) Fallback tolerante: aceita variações de whitespace / capitalização /
+  // acentos tanto no separador ">" quanto nos rótulos. Divide o valor bruto
+  // por "/\s*>\s*/" para não depender do split canônico " > ".
+  const rawParts = value.split(/\s*>\s*/);
+  const rawGroup = rawParts[0] ?? "";
+  const rawSub = rawParts.length > 1 ? rawParts.slice(1).join(" > ") : "";
+  const nGroup = normalizeCategoryLabel(rawGroup);
+  const nSub = rawSub ? normalizeCategoryLabel(rawSub) : "";
+
+  g = categoryTree.find(c => normalizeCategoryLabel(c.label) === nGroup);
   if (!g) return "📄";
-  const s = g.subcategories.find(sc => sc.label === sub);
+  if (!nSub) return g.icon;
+  s = g.subcategories.find(sc => normalizeCategoryLabel(sc.label) === nSub);
   return s?.icon || g.icon;
 }
 
