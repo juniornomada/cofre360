@@ -84,6 +84,7 @@ import { reportCycleSnapshot } from "@/lib/cycle-consistency";
 import { formatCardPaymentLabel } from "@/lib/card-payment-label";
 import { sortInvoiceChronoAsc } from "@/lib/invoice-chrono-sort";
 import { mapServerError } from "@/lib/map-server-error";
+import { AutoFitText } from "@/components/AutoFitText";
 
 
  export const Route = createFileRoute("/cards")({
@@ -1775,13 +1776,15 @@ function CardsPage() {
                       <div key={tx.id} className="flex items-center gap-2 py-2.5 border-b border-border/50 last:border-0">
                         <span className="text-lg">{tx.icon}</span>
                         <div className="flex-1 min-w-0">
-                          <p className="text-xs font-medium text-foreground truncate">
-                            {tx.name.replace(/\s*\(\s*\d{1,2}\s*\/\s*\d{1,2}\s*\)\s*$/, "").trim()}
-                            {(tx.total_installments || 1) > 1 && (
-                              <span className="ml-1 text-[10px] font-normal text-muted-foreground">
-                                ({tx.installment_number}/{tx.total_installments})
-                              </span>
-                            )}
+                          <p className="text-xs font-medium text-foreground min-w-0">
+                            <AutoFitText>
+                              {tx.name.replace(/\s*\(\s*\d{1,2}\s*\/\s*\d{1,2}\s*\)\s*$/, "").trim()}
+                              {(tx.total_installments || 1) > 1 && (
+                                <span className="ml-1 text-[10px] font-normal text-muted-foreground">
+                                  ({tx.installment_number}/{tx.total_installments})
+                                </span>
+                              )}
+                            </AutoFitText>
                           </p>
                           <p className="text-[10px] text-muted-foreground">{tx.category} · {tx.date}</p>
                         </div>
@@ -2036,7 +2039,7 @@ function CardsPage() {
                           <div className="flex items-center gap-1.5 min-w-0 flex-1">
                             <span className="text-[12px] shrink-0 opacity-80">{tx.icon}</span>
                             <div className="flex flex-col min-w-0 leading-tight">
-                              <span className="truncate text-[10px] text-foreground font-medium">
+                              <AutoFitText className="text-[10px] text-foreground font-medium" minFontSizePx={8}>
                                 {tx.name.replace(/\s*\(\s*\d{1,2}\s*\/\s*\d{1,2}\s*\)\s*$/, "").trim()}
                                 {(tx.total_installments || 1) > 1 && (
                                   <span
@@ -2046,7 +2049,7 @@ function CardsPage() {
                                     {tx.installment_number}/{tx.total_installments}
                                   </span>
                                 )}
-                              </span>
+                              </AutoFitText>
                               <span className="text-[8px] text-muted-foreground">{tx.date && tx.date.includes(" ") ? tx.date : (tx.date ? format(new Date(tx.date), "dd MMM", { locale: ptBR }) : "")}</span>
                             </div>
                           </div>

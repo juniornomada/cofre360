@@ -4,6 +4,7 @@ import { restoreAccents } from "@/lib/restore-accents";
 import { formatBRL } from "@/lib/format-brl";
 import { CreditCard, Landmark, ArrowLeftRight, Layers, Pencil, Trash2, Eye, EyeOff } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { AutoFitText } from "@/components/AutoFitText";
 
 const MONTHS_PT_ABBR = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
 
@@ -142,13 +143,13 @@ export function TransactionItem({
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between gap-2">
-          <p className="text-sm font-semibold text-foreground truncate">
+          <p className="text-sm font-semibold text-foreground min-w-0">
             {isTransferPair && transferFromName && transferToName ? (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <span className="transition-colors hover:text-primary">
+                  <AutoFitText className="transition-colors hover:text-primary">
                     {transferFromName} → {transferToName}
-                  </span>
+                  </AutoFitText>
                 </TooltipTrigger>
                 <TooltipContent>
                   <div className="flex flex-col items-center">
@@ -158,9 +159,9 @@ export function TransactionItem({
                 </TooltipContent>
               </Tooltip>
             ) : (
-              <>
+              <AutoFitText titleFallback={restoreAccents(displayName)}>
                 {restoreAccents(displayName)}
-              </>
+              </AutoFitText>
             )}
           </p>
           <span className={cn(
