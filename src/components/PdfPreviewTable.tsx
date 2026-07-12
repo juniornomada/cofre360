@@ -1,6 +1,7 @@
 import { Trash2, Pencil, Check, X } from "lucide-react";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
+import { PaymentDescriptionText } from "@/components/PaymentDescriptionText";
 
 export type PdfPreviewRow = {
   date: string;
