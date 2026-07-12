@@ -275,11 +275,17 @@ function CardsPage() {
           if (p.paid_at) {
             const card = cardsRes.data?.find(c => c.id === p.card_id);
             if (card) {
-              const billingDate = new Date(p.paid_at);
-              // Use the same cycle logic as groupByBillingCycle so payments map
-              // to the "Atual" period (its endDate / next closing).
-              const { currentClose } = getCycleDates(billingDate, card.closing_day || 1, card.due_day || 10);
-              const periodKey = currentClose.toISOString().split("T")[0];
+              // Prefer explicit target invoice period saved when the payment was made.
+              // Fall back to the billing cycle that contains paid_at for legacy rows.
+              let periodKey: string;
+              const tp = (p as any).target_period as string | null | undefined;
+              if (tp) {
+                periodKey = tp.length >= 10 ? tp.slice(0, 10) : tp;
+              } else {
+                const billingDate = new Date(p.paid_at);
+                const { currentClose } = getCycleDates(billingDate, card.closing_day || 1, card.due_day || 10);
+                periodKey = currentClose.toISOString().split("T")[0];
+              }
 
               if (!paidByPeriod[p.card_id]) paidByPeriod[p.card_id] = {};
               if (!detailedPaidByPeriod[p.card_id]) detailedPaidByPeriod[p.card_id] = {};
