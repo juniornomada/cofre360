@@ -65,14 +65,38 @@ export const CARD_PAYMENT_LABEL_REGEX =
 
 /**
  * Detecta o rótulo legado — "Pagamento (Total|Parcial) fatura cartão <Nome>" —
- * em qualquer capitalização, com espaços múltiplos, NBSP, dashes/underscores
- * entre "fatura" e "cartão", "cartao" sem acento etc. Usado apenas para
- * fallback de renderização: dados são migrados no banco, mas transações
- * importadas ou copiadas de fontes antigas ainda podem chegar com o texto
- * legado. Este helper normaliza para o padrão canônico em tempo de UI.
+ * em qualquer capitalização, com whitespace ruidoso (NBSP, tabs, quebras) e
+ * com **pontuação/separadores** entre os tokens fixos: hífen `-`, en-dash `–`,
+ * em-dash `—`, dois-pontos `:`, pipe `|`, barra `/`, middot `·`, underscore
+ * `_`, vírgula `,` e ponto `.`. Também cobre "cartao" sem acento e conectores
+ * "do/da/de/dos/das" entre "fatura" e "cartão".
+ *
+ * Exemplos que casam:
+ *   "Pagamento Parcial fatura cartão Porto Bank"
+ *   "PAGAMENTO - TOTAL - FATURA - CARTÃO Nubank"
+ *   "pagamento: parcial | fatura do cartão Itaú"
+ *   "pagamento_total_fatura_cartao_C6"
+ *   "Pagamento — Parcial — fatura — cartão XP"
+ *   "Pagamento Total fatura da cartão Santander Free"
+ *
+ * Notas:
+ *  - Separadores DENTRO do nome do cartão são preservados (ex.:
+ *    "Santander-Free" continua "Santander-Free" no output canônico).
+ *  - Strip trailing só de whitespace/pontuação suave (`.`, `;`, `:`) — nunca
+ *    de `-`/`_` porque podem ser parte do nome.
  */
-const LEGACY_CARD_PAYMENT_LABEL_REGEX =
-  /^\s*pagamento\s+(total|parcial)\s+fatura(?:\s+(?:do|da|de))?\s+cart[aã]o\s+(.+?)\s*$/iu;
+// Separadores permitidos ENTRE tokens fixos do rótulo legado. Inclui:
+//  \s  → qualquer whitespace Unicode
+//  - – — → hífen, en-dash, em-dash
+//  : | / · _ , .  → pontuação/separadores comuns em imports
+const LEGACY_SEP = "[\\s\\-\\u2013\\u2014:|/·_,.]+";
+const LEGACY_CARD_PAYMENT_LABEL_REGEX = new RegExp(
+  `^[\\s\\-\\u2013\\u2014:|/·_,.]*` +
+    `pagamento${LEGACY_SEP}(total|parcial)${LEGACY_SEP}fatura` +
+    `(?:${LEGACY_SEP}(?:do|da|de|dos|das))?` +
+    `${LEGACY_SEP}cart[aã]o${LEGACY_SEP}(.+?)[\\s.;:]*$`,
+  "iu",
+);
 
 /**
  * Reformata rótulos legados para o padrão canônico no momento da renderização.
@@ -82,7 +106,9 @@ const LEGACY_CARD_PAYMENT_LABEL_REGEX =
  * - Caso contrário (rótulo desconhecido), devolve o input inalterado. O
  *   caller deve continuar exibindo o texto original.
  *
- * Idempotente: `f(f(x)) === f(x)`.
+ * Idempotente: `f(f(x)) === f(x)`. A saída canônica só contém whitespace
+ * simples entre os tokens fixos e nunca contém a palavra "fatura", então
+ * jamais volta a casar com o regex legado.
  */
 export function normalizeCardPaymentLabel(raw: string | null | undefined): string {
   if (raw == null) return "";
