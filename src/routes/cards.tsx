@@ -1778,7 +1778,7 @@ function CardsPage() {
                         <div className="flex-1 min-w-0">
                           <p className="text-xs font-medium text-foreground min-w-0">
                             <AutoFitText>
-                              {tx.name.replace(/\s*\(\s*\d{1,2}\s*\/\s*\d{1,2}\s*\)\s*$/, "").trim()}
+                              {normalizeCardPaymentLabel(tx.name).replace(/\s*\(\s*\d{1,2}\s*\/\s*\d{1,2}\s*\)\s*$/, "").trim()}
                               {(tx.total_installments || 1) > 1 && (
                                 <span className="ml-1 text-[10px] font-normal text-muted-foreground">
                                   ({tx.installment_number}/{tx.total_installments})
