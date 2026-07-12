@@ -306,7 +306,7 @@ export type SaveInstallmentResult = {
  * - total > 1 → set group, current/total on the row, append missing future rows
  */
 export async function saveInstallmentPlan(input: SaveInstallmentInput): Promise<SaveInstallmentResult> {
-  const baseName = stripInstallmentSuffix(input.name);
+  const baseName = sanitizeTransactionName(stripInstallmentSuffix(input.name));
   const total = Math.floor(input.total);
   const current = Math.floor(input.current);
 
