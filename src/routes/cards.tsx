@@ -1584,20 +1584,34 @@ function CardsPage() {
       }}>
 
 
-        <DialogContent className="max-w-md mx-auto rounded-2xl max-h-[85vh] flex flex-col p-0 gap-0">
+        <DialogContent
+          data-testid="invoice-dialog"
+          className="max-w-md mx-auto rounded-2xl max-h-[85vh] flex flex-col p-0 gap-0"
+        >
           <DialogHeader className="px-5 pt-5 pb-3">
-            <DialogTitle className="flex items-center gap-2 text-base">
+            <DialogTitle
+              data-testid="invoice-dialog-title"
+              className="flex items-center gap-2 text-base"
+            >
               <Receipt className="h-4 w-4 text-primary" />
-              Faturas — {invoiceCard?.name}
+              <span>
+                Faturas — <span data-testid="invoice-dialog-card-name">{invoiceCard?.name}</span>
+              </span>
             </DialogTitle>
           </DialogHeader>
 
           {loadingTx ? (
-            <div className="flex items-center justify-center py-12">
+            <div className="flex items-center justify-center py-12" data-testid="invoice-dialog-loading">
               <Loader2 className="h-5 w-5 animate-spin text-primary" />
             </div>
           ) : cardTransactions.length === 0 ? (
-            <p className="py-12 text-center text-sm text-muted-foreground">Nenhuma transação neste cartão</p>
+            <p
+              data-testid="invoice-dialog-empty"
+              className="py-12 text-center text-sm text-muted-foreground"
+            >
+              Nenhuma transação neste cartão
+            </p>
+
           ) : (
             <div className="flex flex-col flex-1 min-h-0">
               <div className="flex items-center gap-2 px-5 pb-3">
@@ -1703,8 +1717,10 @@ function CardsPage() {
                     return (
                       <section
                         aria-labelledby="billing-composition-title"
+                        data-testid="invoice-composition"
                         className="rounded-xl bg-emerald-500/5 border border-emerald-500/10 p-3"
                       >
+
                         <header className="mb-2 flex flex-wrap items-baseline justify-between gap-2 border-b border-emerald-500/10 pb-2">
                           <div className="min-w-0">
                             <h3
@@ -1742,19 +1758,26 @@ function CardsPage() {
                         </div>
 
                         {activePeriodPayments.length === 0 ? (
-                          <p className="py-2 text-center text-[11px] text-muted-foreground">
+                          <p
+                            data-testid="invoice-payments-empty"
+                            className="py-2 text-center text-[11px] text-muted-foreground"
+                          >
                             Nenhum pagamento vinculado ao período.
                           </p>
                         ) : (
                           <ul
                             key={`composicao-${activePeriodKey}-${activePeriodPayments.length}`}
+                            data-testid="invoice-payments-list"
                             className="space-y-1.5 list-none m-0 p-0 animate-in fade-in duration-300"
                           >
                             {activePeriodPayments.map((p, pIdx) => (
                               <li
                                 key={`paid-detail-${p.id || pIdx}`}
+                                data-testid="invoice-payment-item"
+                                data-payment-id={p.id ?? ""}
                                 className="group/payrow flex justify-between items-center text-[10px] gap-2"
                               >
+
                                 <span className="text-muted-foreground font-medium">{format(new Date(p.date), "dd/MM/yyyy")}</span>
                                 <div className="flex items-center gap-1.5">
                                   <span className="text-emerald-600 font-bold tabular-nums">
@@ -1787,7 +1810,11 @@ function CardsPage() {
                 </div>
               )}
 
-              <div ref={invoiceScrollRef} className="flex-1 overflow-y-auto px-5 pb-5">
+              <div
+                ref={invoiceScrollRef}
+                data-testid="invoice-scroll"
+                className="flex-1 overflow-y-auto px-5 pb-5"
+              >
                 {activePeriod && activePeriod.transactions.length === 0 ? (
                   <InvoiceEmptyState
                     startDate={activePeriod.startDate}
@@ -1803,12 +1830,20 @@ function CardsPage() {
                     onPrev={() => setActiveInvoiceIdx(Math.max(0, activeInvoiceIdx - 1))}
                   />
                 ) : (
-                  <div className="flex flex-col gap-0.5">
+                  <div className="flex flex-col gap-0.5" data-testid="invoice-transactions-list">
                     {activePeriod?.transactions.map((tx) => (
-                      <div key={tx.id} className="flex items-center gap-2 py-2.5 border-b border-border/50 last:border-0">
+                      <div
+                        key={tx.id}
+                        data-testid="invoice-transaction-item"
+                        data-tx-id={tx.id}
+                        className="flex items-center gap-2 py-2.5 border-b border-border/50 last:border-0"
+                      >
                         <span className="text-lg">{tx.icon}</span>
                         <div className="flex-1 min-w-0">
-                          <p className="text-xs font-medium text-foreground min-w-0">
+                          <p
+                            data-testid="invoice-transaction-name"
+                            className="text-xs font-medium text-foreground min-w-0"
+                          >
                             <AutoFitText>
                               {normalizeCardPaymentLabel(tx.name).replace(/\s*\(\s*\d{1,2}\s*\/\s*\d{1,2}\s*\)\s*$/, "").trim()}
                               {(tx.total_installments || 1) > 1 && (
@@ -1820,6 +1855,7 @@ function CardsPage() {
                           </p>
                           <p className="text-[10px] text-muted-foreground">{tx.category} · {tx.date}</p>
                         </div>
+
                         <div className="flex items-center gap-2 group/card-tx-row relative">
                           <span className="text-xs font-semibold text-destructive tabular-nums shrink-0">
                             -R$ {Number(tx.amount).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
