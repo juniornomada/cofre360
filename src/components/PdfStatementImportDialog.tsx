@@ -186,7 +186,15 @@ export function PdfStatementImportDialog({ open, onOpenChange, bankAccountId, ba
     let imported = 0;
     for (let i = 0; i < dedupResult.toImport.length; i += BATCH) {
       const batch = dedupResult.toImport.slice(i, i + BATCH);
-      const { error: insErr } = await supabase.from("transactions").insert(batch);
+      let sanitizedBatch: typeof batch;
+      try {
+        sanitizedBatch = sanitizeTransactionWrites(batch);
+      } catch (err) {
+        setSaving(false);
+        setError(err instanceof InvalidTransactionNameError ? err.message : "Descrição inválida em uma das transações.");
+        return;
+      }
+      const { error: insErr } = await supabase.from("transactions").insert(sanitizedBatch);
       if (insErr) {
         setSaving(false);
         setError("Erro ao importar: " + insErr.message);
