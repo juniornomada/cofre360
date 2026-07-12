@@ -2039,7 +2039,7 @@ function CardsPage() {
                           <div className="flex items-center gap-1.5 min-w-0 flex-1">
                             <span className="text-[12px] shrink-0 opacity-80">{tx.icon}</span>
                             <div className="flex flex-col min-w-0 leading-tight">
-                              <span className="truncate text-[10px] text-foreground font-medium">
+                              <AutoFitText className="text-[10px] text-foreground font-medium" minFontSizePx={8}>
                                 {tx.name.replace(/\s*\(\s*\d{1,2}\s*\/\s*\d{1,2}\s*\)\s*$/, "").trim()}
                                 {(tx.total_installments || 1) > 1 && (
                                   <span
@@ -2049,7 +2049,7 @@ function CardsPage() {
                                     {tx.installment_number}/{tx.total_installments}
                                   </span>
                                 )}
-                              </span>
+                              </AutoFitText>
                               <span className="text-[8px] text-muted-foreground">{tx.date && tx.date.includes(" ") ? tx.date : (tx.date ? format(new Date(tx.date), "dd MMM", { locale: ptBR }) : "")}</span>
                             </div>
                           </div>
