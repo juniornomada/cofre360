@@ -166,17 +166,15 @@ test.describe('/cards — wording de pagamento canônica', () => {
     const cardTrigger = page.getByText(CARD_NAME).first();
     if (await cardTrigger.isVisible().catch(() => false)) {
       await cardTrigger.click();
-      // Aguarda o diálogo abrir; heurística: title/heading contendo "fatura"
-      // (o nome do diálogo em pt-BR) OU role=dialog visível.
-      await page
-        .waitForSelector('[role="dialog"]', { timeout: 5_000 })
-        .catch(() => {
-          /* tolerante — segue com o body inteiro */
-        });
-      const dialogText =
-        (await page.locator('[role="dialog"]').first().textContent().catch(() => null)) ??
-        (await page.textContent('body')) ??
-        '';
+      // Seletor estável por data-testid, independente do layout/role.
+      const dialog = page.getByTestId('invoice-dialog').first();
+      const opened = await dialog
+        .waitFor({ state: 'visible', timeout: 5_000 })
+        .then(() => true)
+        .catch(() => false);
+      const dialogText = opened
+        ? await collectInvoiceDialogText(page, dialog)
+        : ((await page.textContent('body')) ?? '');
       assertNoLegacyWording(dialogText, 'diálogo da fatura');
     }
 
@@ -184,6 +182,8 @@ test.describe('/cards — wording de pagamento canônica', () => {
     const finalText = (await page.textContent('body')) ?? '';
     assertNoLegacyWording(finalText, '/cards (pós-diálogo)');
   });
+});
+
 });
 
 /* ------------------------------------------------------------------ *
