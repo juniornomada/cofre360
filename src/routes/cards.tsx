@@ -1584,20 +1584,34 @@ function CardsPage() {
       }}>
 
 
-        <DialogContent className="max-w-md mx-auto rounded-2xl max-h-[85vh] flex flex-col p-0 gap-0">
+        <DialogContent
+          data-testid="invoice-dialog"
+          className="max-w-md mx-auto rounded-2xl max-h-[85vh] flex flex-col p-0 gap-0"
+        >
           <DialogHeader className="px-5 pt-5 pb-3">
-            <DialogTitle className="flex items-center gap-2 text-base">
+            <DialogTitle
+              data-testid="invoice-dialog-title"
+              className="flex items-center gap-2 text-base"
+            >
               <Receipt className="h-4 w-4 text-primary" />
-              Faturas — {invoiceCard?.name}
+              <span>
+                Faturas — <span data-testid="invoice-dialog-card-name">{invoiceCard?.name}</span>
+              </span>
             </DialogTitle>
           </DialogHeader>
 
           {loadingTx ? (
-            <div className="flex items-center justify-center py-12">
+            <div className="flex items-center justify-center py-12" data-testid="invoice-dialog-loading">
               <Loader2 className="h-5 w-5 animate-spin text-primary" />
             </div>
           ) : cardTransactions.length === 0 ? (
-            <p className="py-12 text-center text-sm text-muted-foreground">Nenhuma transação neste cartão</p>
+            <p
+              data-testid="invoice-dialog-empty"
+              className="py-12 text-center text-sm text-muted-foreground"
+            >
+              Nenhuma transação neste cartão
+            </p>
+
           ) : (
             <div className="flex flex-col flex-1 min-h-0">
               <div className="flex items-center gap-2 px-5 pb-3">
