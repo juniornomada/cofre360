@@ -1,4 +1,4 @@
-name: CI - Typecheck, Schema-Versioning, Drift, Fuzz/Cycle & Preview Parity
+name: CI - Typecheck, Schema-Versioning, Drift, Fuzz/Cycle, Label/Navigation & Preview Parity
 
 on:
   push:
