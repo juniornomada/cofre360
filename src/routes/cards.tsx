@@ -1717,8 +1717,10 @@ function CardsPage() {
                     return (
                       <section
                         aria-labelledby="billing-composition-title"
+                        data-testid="invoice-composition"
                         className="rounded-xl bg-emerald-500/5 border border-emerald-500/10 p-3"
                       >
+
                         <header className="mb-2 flex flex-wrap items-baseline justify-between gap-2 border-b border-emerald-500/10 pb-2">
                           <div className="min-w-0">
                             <h3
