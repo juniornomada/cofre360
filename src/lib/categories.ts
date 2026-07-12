@@ -231,12 +231,50 @@ export function getCategoryDisplay(value: string): string {
   return sub;
 }
 
+/**
+ * Normaliza um rótulo para comparação tolerante:
+ *  - remove diacríticos (á → a)
+ *  - converte para minúsculas
+ *  - colapsa qualquer whitespace (incl. NBSP, tabs, quebras) em um único espaço
+ *  - trim
+ * Usado apenas em comparação — não altera valores armazenados.
+ */
+function normalizeCategoryLabel(s: string): string {
+  return s
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[\s\u00A0]+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
 /** Get the icon for a stored category value */
 export function getCategoryIcon(value: string): string {
-  const { group, sub } = parseCategoryValue(value);
-  const g = categoryTree.find(c => c.label === group);
+  if (typeof value !== "string" || !value) return "📄";
+
+  // Divisão tolerante — aceita separador com whitespace irregular ou ausente
+  // ao redor de ">" ("A > B", "A>B", "A  >\tB", etc.). Se não houver ">",
+  // trata o valor inteiro como grupo.
+  const rawParts = value.split(/\s*>\s*/);
+  const rawGroup = rawParts[0] ?? "";
+  const rawSub = rawParts.length > 1 ? rawParts.slice(1).join(" > ") : "";
+  const nGroup = normalizeCategoryLabel(rawGroup);
+  const nSub = rawSub ? normalizeCategoryLabel(rawSub) : "";
+
+  // 1) Match exato (caminho canônico rápido).
+  let g = categoryTree.find(c => c.label === rawGroup);
+  if (!g) {
+    // 2) Match tolerante (case/acentos/whitespace).
+    g = categoryTree.find(c => normalizeCategoryLabel(c.label) === nGroup);
+  }
   if (!g) return "📄";
-  const s = g.subcategories.find(sc => sc.label === sub);
+
+  if (!rawSub) return g.icon;
+
+  let s = g.subcategories.find(sc => sc.label === rawSub);
+  if (!s) {
+    s = g.subcategories.find(sc => normalizeCategoryLabel(sc.label) === nSub);
+  }
   return s?.icon || g.icon;
 }
 
