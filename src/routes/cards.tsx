@@ -2040,7 +2040,7 @@ function CardsPage() {
                             <span className="text-[12px] shrink-0 opacity-80">{tx.icon}</span>
                             <div className="flex flex-col min-w-0 leading-tight">
                               <AutoFitText className="text-[10px] text-foreground font-medium" minFontSizePx={8}>
-                                {tx.name.replace(/\s*\(\s*\d{1,2}\s*\/\s*\d{1,2}\s*\)\s*$/, "").trim()}
+                                {normalizeCardPaymentLabel(tx.name).replace(/\s*\(\s*\d{1,2}\s*\/\s*\d{1,2}\s*\)\s*$/, "").trim()}
                                 {(tx.total_installments || 1) > 1 && (
                                   <span
                                     className="ml-1 inline-flex items-center rounded border border-amber-500/30 bg-amber-500/15 px-1 py-0 text-[8px] font-semibold tabular-nums text-amber-700 dark:text-amber-300"
