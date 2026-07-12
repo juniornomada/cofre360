@@ -5,6 +5,7 @@ import { formatBRL } from "@/lib/format-brl";
 import { CreditCard, Landmark, ArrowLeftRight, Layers, Pencil, Trash2, Eye, EyeOff } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { AutoFitText } from "@/components/AutoFitText";
+import { normalizeCardPaymentLabel } from "@/lib/card-payment-label";
 
 const MONTHS_PT_ABBR = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
 
