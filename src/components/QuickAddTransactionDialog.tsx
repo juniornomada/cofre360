@@ -454,15 +454,15 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
           is_visible: true
         });
        }
-       const { error } = await supabase.from("transactions").insert(rows);
+       const { error } = await supabase.from("transactions").insert(sanitizeTransactionWrites(rows));
        if (error) throw error;
      } else {
-       const { error } = await supabase.from("transactions").insert({
+       const { error } = await supabase.from("transactions").insert(sanitizeTransactionWrite({
          icon: newTx.icon, name: newTx.name, category: newTx.category,
          date: newTx.date, amount: newTx.amount, type: finalType,
          card: cardValue, bank_account_id: newTx.bank_account_id || null,
          is_visible: true
-       });
+       }));
        if (error) throw error;
      }
     (document.activeElement as HTMLElement)?.blur();
