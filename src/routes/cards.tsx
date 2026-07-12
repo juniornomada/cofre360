@@ -87,6 +87,7 @@ import { sanitizeTransactionWrite, sanitizeTransactionWrites } from "@/lib/norma
 import { sortInvoiceChronoAsc } from "@/lib/invoice-chrono-sort";
 import { mapServerError } from "@/lib/map-server-error";
 import { AutoFitText } from "@/components/AutoFitText";
+import { PaymentDescriptionText, normalizePaymentDescription } from "@/components/PaymentDescriptionText";
 
 
  export const Route = createFileRoute("/cards")({
@@ -1861,8 +1862,8 @@ function CardsPage() {
                             data-testid="invoice-transaction-name"
                             className="text-xs font-medium text-foreground min-w-0"
                           >
-                            <AutoFitText>
-                              {normalizeCardPaymentLabel(tx.name).replace(/\s*\(\s*\d{1,2}\s*\/\s*\d{1,2}\s*\)\s*$/, "").trim()}
+                            <AutoFitText titleFallback={normalizePaymentDescription(tx.name, { stripInstallmentSuffix: true })}>
+                              {normalizePaymentDescription(tx.name, { stripInstallmentSuffix: true })}
                               {(tx.total_installments || 1) > 1 && (
                                 <span className="ml-1 text-[10px] font-normal text-muted-foreground">
                                   ({tx.installment_number}/{tx.total_installments})
@@ -2124,8 +2125,12 @@ function CardsPage() {
                           <div className="flex items-center gap-1.5 min-w-0 flex-1">
                             <span className="text-[12px] shrink-0 opacity-80">{tx.icon}</span>
                             <div className="flex flex-col min-w-0 leading-tight">
-                              <AutoFitText className="text-[10px] text-foreground font-medium" minFontSizePx={8}>
-                                {normalizeCardPaymentLabel(tx.name).replace(/\s*\(\s*\d{1,2}\s*\/\s*\d{1,2}\s*\)\s*$/, "").trim()}
+                              <AutoFitText
+                                className="text-[10px] text-foreground font-medium"
+                                minFontSizePx={8}
+                                titleFallback={normalizePaymentDescription(tx.name, { stripInstallmentSuffix: true })}
+                              >
+                                {normalizePaymentDescription(tx.name, { stripInstallmentSuffix: true })}
                                 {(tx.total_installments || 1) > 1 && (
                                   <span
                                     className="ml-1 inline-flex items-center rounded border border-amber-500/30 bg-amber-500/15 px-1 py-0 text-[8px] font-semibold tabular-nums text-amber-700 dark:text-amber-300"
@@ -2330,7 +2335,9 @@ function CardsPage() {
           {installmentTx && (
             <div className="flex flex-col gap-4 mt-2">
               <div className="rounded-xl bg-accent/50 p-3">
-                <p className="text-xs font-medium text-foreground truncate">{installmentTx.name}</p>
+                <p className="text-xs font-medium text-foreground min-w-0">
+                  <PaymentDescriptionText name={installmentTx.name} />
+                </p>
                 <p className="text-[11px] text-muted-foreground mt-0.5">
                   R$ {Number(installmentTx.amount).toLocaleString("pt-BR", { minimumFractionDigits: 2 })} · {installmentTx.date}
                 </p>

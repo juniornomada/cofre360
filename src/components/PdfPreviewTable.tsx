@@ -1,6 +1,7 @@
 import { Trash2, Pencil, Check, X } from "lucide-react";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
+import { PaymentDescriptionText } from "@/components/PaymentDescriptionText";
 
 export type PdfPreviewRow = {
   date: string;
@@ -118,13 +119,17 @@ export function PdfPreviewTable({ rows, onChange, itemLabel = "transações" }: 
             return (
               <tr key={i} className={`border-t border-border group ${r.isFuture ? "bg-muted/20" : ""}`}>
                 <td className="p-2 text-muted-foreground whitespace-nowrap">{r.date}</td>
-                <td className="p-2 truncate max-w-[140px]">
-                  <span className="align-middle">{r.name}</span>
-                  {r.isFuture && (
-                    <span className="ml-1 inline-block align-middle text-[9px] font-semibold px-1 py-0.5 rounded bg-primary/10 text-primary">
-                      futura
-                    </span>
-                  )}
+                <td className="p-2 max-w-[140px]">
+                  <div className="flex items-center min-w-0">
+                    <div className="min-w-0 flex-1">
+                      <PaymentDescriptionText name={r.name} />
+                    </div>
+                    {r.isFuture && (
+                      <span className="ml-1 inline-block align-middle text-[9px] font-semibold px-1 py-0.5 rounded bg-primary/10 text-primary shrink-0">
+                        futura
+                      </span>
+                    )}
+                  </div>
                 </td>
                 <td className={`p-2 text-right font-medium tabular-nums ${r.type === "income" ? "text-primary" : "text-destructive"}`}>
                   {r.type === "expense" ? "-" : "+"}R$ {r.amount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
