@@ -977,7 +977,7 @@ function CardsPage() {
          })(),
          target_period: targetPeriod,
        }));
-       const { error: paymentInsertError } = await supabase.from("card_payments").insert(inserts);
+       const { error: paymentInsertError } = await supabase.from("card_payments").insert(inserts as any);
        if (paymentInsertError) throw paymentInsertError;
 
       // 2. Update bank balances and create expense transactions
