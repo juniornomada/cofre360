@@ -589,6 +589,37 @@ function CardsPage() {
   const activePeriodKey = getInvoicePeriodKey(activePeriod);
   const activePeriodPayments = getPaymentsForPeriod(invoiceCard?.id, activePeriod);
 
+  // Aviso sutil: quando o rótulo canônico é aplicado no momento da renderização
+  // (fallback para transações legadas ainda não migradas), notificamos o usuário
+  // uma única vez por (cartão, período) visitado — sem repetir a cada re-render
+  // nem em navegações consecutivas para o mesmo recorte.
+  const normalizationNoticeShownRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    if (!invoiceCard?.id || !activePeriodKey || !activePeriod) return;
+    const noticeKey = `${invoiceCard.id}::${activePeriodKey}`;
+    if (normalizationNoticeShownRef.current.has(noticeKey)) return;
+    const txs = activePeriod.transactions ?? [];
+    let fixed = 0;
+    for (const tx of txs) {
+      const raw = tx?.name ?? "";
+      if (!raw) continue;
+      if (normalizeCardPaymentLabel(raw) !== raw) fixed += 1;
+    }
+    if (fixed <= 0) return;
+    normalizationNoticeShownRef.current.add(noticeKey);
+    toast(
+      fixed === 1
+        ? "1 descrição ajustada ao formato padrão"
+        : `${fixed} descrições ajustadas ao formato padrão`,
+      {
+        description:
+          "Rótulos legados de pagamento de cartão foram exibidos no formato canônico apenas na tela — os dados originais permanecem no banco até a próxima sincronização.",
+        duration: 4000,
+      },
+    );
+  }, [invoiceCard?.id, activePeriodKey, activePeriod]);
+
+
   // Exclui um pagamento (card_payments) e remove a transação correspondente
   // criada no banco (categoria "Pagamento de Cartão" com mesmo valor/conta/data),
   // estornando o débito na conta bancária.
