@@ -1,5 +1,19 @@
-import { describe, it, expect } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { describe, it, expect, beforeAll } from "vitest";
+import { render } from "@testing-library/react";
+
+// jsdom não implementa ResizeObserver — AutoFitText (usado por TransactionItem)
+// depende dele. Instala um stub inerte antes de montar o componente.
+beforeAll(() => {
+  if (typeof globalThis.ResizeObserver === "undefined") {
+    class RO {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    }
+    (globalThis as unknown as { ResizeObserver: typeof RO }).ResizeObserver = RO;
+  }
+});
+
 import { TransactionItem } from "@/components/TransactionItem";
 import { getCategoryIcon } from "@/lib/categories";
 
