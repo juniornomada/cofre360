@@ -2022,7 +2022,7 @@ function CardsPage() {
                     <span className="tabular-nums text-primary font-medium text-right">
                       {(() => {
                         const payments = getPaymentsForPeriod(payingCard.id, activePeriod);
-                        // Sort payments by date to ensure chronological order in the formula
+                        // invoice-order-safe: card_payments (não são transações da fatura) — ordenação simples por data para exibir a fórmula do total pago em ordem cronológica.
                         const sortedPayments = [...payments].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
                         const totalPaid = sortedPayments.reduce((sum, p) => sum + p.amount, 0);
                         
