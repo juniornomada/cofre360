@@ -354,6 +354,7 @@ jobs:
       - test-schema-drift
       - test-preview-parity
       - test-fuzz-cycle
+      - test-label-navigation
       - test-full
       - supabase-auth-check
       - build
@@ -361,14 +362,15 @@ jobs:
       - name: Aggregate job results
         run: |
           echo "Job results:"
-          echo "  static:              ${{ needs.static.result }}"
-          echo "  typecheck:           ${{ needs.typecheck.result }}"
-          echo "  test-schema-drift:   ${{ needs.test-schema-drift.result }}"
-          echo "  test-preview-parity: ${{ needs.test-preview-parity.result }}"
-          echo "  test-fuzz-cycle:     ${{ needs.test-fuzz-cycle.result }}"
-          echo "  test-full:           ${{ needs.test-full.result }}"
-          echo "  supabase-auth-check: ${{ needs.supabase-auth-check.result }}"
-          echo "  build:               ${{ needs.build.result }}"
+          echo "  static:                ${{ needs.static.result }}"
+          echo "  typecheck:             ${{ needs.typecheck.result }}"
+          echo "  test-schema-drift:     ${{ needs.test-schema-drift.result }}"
+          echo "  test-preview-parity:   ${{ needs.test-preview-parity.result }}"
+          echo "  test-fuzz-cycle:       ${{ needs.test-fuzz-cycle.result }}"
+          echo "  test-label-navigation: ${{ needs.test-label-navigation.result }}"
+          echo "  test-full:             ${{ needs.test-full.result }}"
+          echo "  supabase-auth-check:   ${{ needs.supabase-auth-check.result }}"
+          echo "  build:                 ${{ needs.build.result }}"
           if [ "${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}" = "true" ]; then
             echo "::error::One or more required jobs failed or were cancelled."
             exit 1
