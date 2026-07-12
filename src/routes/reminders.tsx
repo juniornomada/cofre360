@@ -17,6 +17,7 @@ import { getCategoryDisplay } from "@/lib/categories";
 import { toast } from "sonner";
 import { BankLogo } from "@/components/BankLogo";
 import { mapServerError } from "@/lib/map-server-error";
+import { sanitizeTransactionWrite } from "@/lib/normalize-transaction-name";
 
 export const Route = createFileRoute("/reminders")({
   head: () => ({
