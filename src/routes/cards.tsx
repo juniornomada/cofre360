@@ -225,7 +225,7 @@ function CardsPage() {
         supabase.from("cards").select("*").eq("user_id", session.user.id).order("sort_order", { ascending: true }).order("created_at", { ascending: true }),
         supabase.from("transactions").select("id, name, amount, date, created_at, card, icon, category, type, total_installments, installment_number, installment_group_id").eq("user_id", session.user.id).not("card", "is", null).limit(10000),
         supabase.from("bank_accounts").select("*").eq("user_id", session.user.id).order("created_at", { ascending: true }),
-        supabase.from("card_payments").select("id, card_id, bank_account_id, amount, paid_at").eq("user_id", session.user.id).limit(10000),
+        supabase.from("card_payments").select("id, card_id, bank_account_id, amount, paid_at, target_period").eq("user_id", session.user.id).limit(10000),
         supabase.from("transactions").select("bank_account_id, amount, type, is_visible").eq("user_id", session.user.id).not("bank_account_id", "is", null).limit(10000),
       ]);
 
@@ -275,11 +275,17 @@ function CardsPage() {
           if (p.paid_at) {
             const card = cardsRes.data?.find(c => c.id === p.card_id);
             if (card) {
-              const billingDate = new Date(p.paid_at);
-              // Use the same cycle logic as groupByBillingCycle so payments map
-              // to the "Atual" period (its endDate / next closing).
-              const { currentClose } = getCycleDates(billingDate, card.closing_day || 1, card.due_day || 10);
-              const periodKey = currentClose.toISOString().split("T")[0];
+              // Prefer explicit target invoice period saved when the payment was made.
+              // Fall back to the billing cycle that contains paid_at for legacy rows.
+              let periodKey: string;
+              const tp = (p as any).target_period as string | null | undefined;
+              if (tp) {
+                periodKey = tp.length >= 10 ? tp.slice(0, 10) : tp;
+              } else {
+                const billingDate = new Date(p.paid_at);
+                const { currentClose } = getCycleDates(billingDate, card.closing_day || 1, card.due_day || 10);
+                periodKey = currentClose.toISOString().split("T")[0];
+              }
 
               if (!paidByPeriod[p.card_id]) paidByPeriod[p.card_id] = {};
               if (!detailedPaidByPeriod[p.card_id]) detailedPaidByPeriod[p.card_id] = {};
@@ -952,7 +958,11 @@ function CardsPage() {
        const monthsAbbr = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
        const dateFormatted = paymentDate;
 
-       // 1. Create card_payments records
+       // 1. Create card_payments records — attach target_period so the payment
+       // is attributed to the invoice the user was viewing, not the cycle of paid_at.
+       const targetPeriod = activePeriod?.endDate
+         ? activePeriod.endDate.toISOString().slice(0, 10)
+         : null;
        const inserts = validLines.map((l) => ({
          card_id: payingCard.id,
          bank_account_id: l.accountId,
@@ -964,9 +974,10 @@ function CardsPage() {
            } catch {
              return new Date().toISOString();
            }
-         })()
+         })(),
+         target_period: targetPeriod,
        }));
-       const { error: paymentInsertError } = await supabase.from("card_payments").insert(inserts);
+       const { error: paymentInsertError } = await supabase.from("card_payments").insert(inserts as any);
        if (paymentInsertError) throw paymentInsertError;
 
       // 2. Update bank balances and create expense transactions
