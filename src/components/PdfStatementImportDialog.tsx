@@ -8,6 +8,7 @@ import { categorizeTransaction } from "@/lib/categorize-transaction";
 import { restoreAccents } from "@/lib/restore-accents";
 import { parseCardInvoicePdf } from "../server-fns/parse-card-invoice";
 import { PdfPreviewTable } from "@/components/PdfPreviewTable";
+import { sanitizeTransactionWrites, InvalidTransactionNameError } from "@/lib/normalize-transaction-name";
 
 type Props = {
   open: boolean;
