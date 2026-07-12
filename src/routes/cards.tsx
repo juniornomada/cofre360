@@ -1810,7 +1810,11 @@ function CardsPage() {
                 </div>
               )}
 
-              <div ref={invoiceScrollRef} className="flex-1 overflow-y-auto px-5 pb-5">
+              <div
+                ref={invoiceScrollRef}
+                data-testid="invoice-scroll"
+                className="flex-1 overflow-y-auto px-5 pb-5"
+              >
                 {activePeriod && activePeriod.transactions.length === 0 ? (
                   <InvoiceEmptyState
                     startDate={activePeriod.startDate}
@@ -1826,12 +1830,20 @@ function CardsPage() {
                     onPrev={() => setActiveInvoiceIdx(Math.max(0, activeInvoiceIdx - 1))}
                   />
                 ) : (
-                  <div className="flex flex-col gap-0.5">
+                  <div className="flex flex-col gap-0.5" data-testid="invoice-transactions-list">
                     {activePeriod?.transactions.map((tx) => (
-                      <div key={tx.id} className="flex items-center gap-2 py-2.5 border-b border-border/50 last:border-0">
+                      <div
+                        key={tx.id}
+                        data-testid="invoice-transaction-item"
+                        data-tx-id={tx.id}
+                        className="flex items-center gap-2 py-2.5 border-b border-border/50 last:border-0"
+                      >
                         <span className="text-lg">{tx.icon}</span>
                         <div className="flex-1 min-w-0">
-                          <p className="text-xs font-medium text-foreground min-w-0">
+                          <p
+                            data-testid="invoice-transaction-name"
+                            className="text-xs font-medium text-foreground min-w-0"
+                          >
                             <AutoFitText>
                               {normalizeCardPaymentLabel(tx.name).replace(/\s*\(\s*\d{1,2}\s*\/\s*\d{1,2}\s*\)\s*$/, "").trim()}
                               {(tx.total_installments || 1) > 1 && (
@@ -1843,6 +1855,7 @@ function CardsPage() {
                           </p>
                           <p className="text-[10px] text-muted-foreground">{tx.category} · {tx.date}</p>
                         </div>
+
                         <div className="flex items-center gap-2 group/card-tx-row relative">
                           <span className="text-xs font-semibold text-destructive tabular-nums shrink-0">
                             -R$ {Number(tx.amount).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
