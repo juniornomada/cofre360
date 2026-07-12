@@ -412,7 +412,7 @@ function RemindersPage() {
       const today = format(payDate, "yyyy-MM-dd");
       const amount = Number(latestReminder.amount);
 
-      await supabase.from("transactions").insert({
+      await supabase.from("transactions").insert(sanitizeTransactionWrite({
         name: latestReminder.title,
         amount,
         date: today,
@@ -420,7 +420,7 @@ function RemindersPage() {
         category: category || latestReminder.category,
         icon: latestReminder.icon || icon,
         card: card.name,
-      });
+      }));
 
       await supabase.from("cards").update({ used: Number(card.used) + amount }).eq("id", cardId);
       await supabase.from("reminders").update({ 
