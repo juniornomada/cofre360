@@ -958,7 +958,11 @@ function CardsPage() {
        const monthsAbbr = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
        const dateFormatted = paymentDate;
 
-       // 1. Create card_payments records
+       // 1. Create card_payments records — attach target_period so the payment
+       // is attributed to the invoice the user was viewing, not the cycle of paid_at.
+       const targetPeriod = activePeriod?.endDate
+         ? activePeriod.endDate.toISOString().slice(0, 10)
+         : null;
        const inserts = validLines.map((l) => ({
          card_id: payingCard.id,
          bank_account_id: l.accountId,
@@ -970,7 +974,8 @@ function CardsPage() {
            } catch {
              return new Date().toISOString();
            }
-         })()
+         })(),
+         target_period: targetPeriod,
        }));
        const { error: paymentInsertError } = await supabase.from("card_payments").insert(inserts);
        if (paymentInsertError) throw paymentInsertError;
