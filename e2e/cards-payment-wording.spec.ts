@@ -146,6 +146,48 @@ function assertNoLegacyWording(sample: string, where: string) {
   ).toBeNull();
 }
 
+/**
+ * Coleta o texto do diálogo da fatura via data-testid estáveis, sem
+ * depender de role="dialog" ou de posicionamento no DOM. Concatena o
+ * conteúdo dos slots relevantes (título, composição, pagamentos,
+ * transações e estados vazios) em uma única string para a checagem de
+ * wording.
+ */
+async function collectInvoiceDialogText(
+  page: import('@playwright/test').Page,
+  dialog: import('@playwright/test').Locator,
+): Promise<string> {
+  // Fallback: texto inteiro do diálogo via testid raiz.
+  const rootText = (await dialog.textContent().catch(() => null)) ?? '';
+
+  // Slots explícitos — se um dia o layout mudar, cada um continua
+  // acessível pelo seu testid.
+  const slotIds = [
+    'invoice-dialog-title',
+    'invoice-dialog-card-name',
+    'invoice-dialog-empty',
+    'invoice-composition',
+    'invoice-payments-list',
+    'invoice-payment-item',
+    'invoice-payments-empty',
+    'invoice-transactions-list',
+    'invoice-transaction-item',
+    'invoice-transaction-name',
+  ] as const;
+
+  const parts: string[] = [rootText];
+  for (const id of slotIds) {
+    const loc = page.getByTestId(id);
+    const count = await loc.count().catch(() => 0);
+    for (let i = 0; i < count; i += 1) {
+      const t = await loc.nth(i).textContent().catch(() => null);
+      if (t) parts.push(t);
+    }
+  }
+  return parts.join('\n');
+}
+
+
 
 test.describe('/cards — wording de pagamento canônica', () => {
   test.beforeEach(async ({ page }) => {
