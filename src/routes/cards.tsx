@@ -756,7 +756,7 @@ function CardsPage() {
         }
 
         if (toInsert.length > 0) {
-          const { error: insErr } = await supabase.from("transactions").insert(toInsert);
+          const { error: insErr } = await supabase.from("transactions").insert(sanitizeTransactionWrites(toInsert));
           if (insErr) throw insErr;
         }
         toast.success(
