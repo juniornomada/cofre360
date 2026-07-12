@@ -87,7 +87,7 @@ import { sanitizeTransactionWrite, sanitizeTransactionWrites } from "@/lib/norma
 import { sortInvoiceChronoAsc } from "@/lib/invoice-chrono-sort";
 import { mapServerError } from "@/lib/map-server-error";
 import { AutoFitText } from "@/components/AutoFitText";
-import { PaymentDescriptionText } from "@/components/PaymentDescriptionText";
+import { PaymentDescriptionText, normalizePaymentDescription } from "@/components/PaymentDescriptionText";
 
 
  export const Route = createFileRoute("/cards")({
