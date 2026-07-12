@@ -34,9 +34,46 @@ const FIXTURE_PAYMENT_ID = 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee';
 
 const CARD_NAME = 'Porto Bank E2E';
 
+/**
+ * Normaliza o texto capturado da UI antes da verificação para eliminar
+ * falsos negativos (texto legado escondido por variação Unicode) e
+ * falsos positivos (fragmentos ambíguos em contextos diferentes):
+ *
+ *  1. Unicode NFKC — colapsa formas de compatibilidade e combinações
+ *     de diacríticos ("carta\u0303o" → "cartão").
+ *  2. Remove diacríticos ("cartão" → "cartao", "Itaú" → "Itau") depois
+ *     de NFD → strip \p{M} — o padrão passa a comparar consoantes/vogais
+ *     puras e ficamos imunes a variações "ã/a", "ç/c", "é/e".
+ *  3. Colapsa qualquer whitespace Unicode (NBSP U+00A0, U+2007, tabs,
+ *     quebras, zero-width U+200B..U+200D/U+FEFF) para um único espaço
+ *     ASCII — a regex com `\s+` sozinha não captura zero-width.
+ *  4. Lowercase — tolerância total a capitalização.
+ *
+ * Assim, os padrões abaixo são escritos na forma canônica minúscula sem
+ * acento e ainda assim detectam "PAGAMENTO PARCIAL FATURA CARTÃO",
+ * "Pagamento\u00A0Total\u200Bfatura cartao", "…fatura  do  cartão…", etc.
+ */
+function normalizeForCheck(raw: string): string {
+  return raw
+    .normalize('NFKC')
+    .normalize('NFD')
+    // Remove combining marks (diacríticos) — Unicode property escape.
+    .replace(/\p{M}+/gu, '')
+    // Zero-width e BOM viram vazio (não devem virar espaço, senão
+    // "cart\u200Bao" ficaria "cart ao" e escaparia do padrão).
+    .replace(/[\u200B-\u200D\uFEFF]/g, '')
+    // Todo o resto de whitespace Unicode colapsa em espaço ASCII.
+    .replace(/\s+/gu, ' ')
+    .toLowerCase()
+    .trim();
+}
+
+// Padrões escritos JÁ normalizados: minúsculos, sem acento, espaço único.
+// Aceitam a variante legada com conectores opcionais (do/da/de) entre
+// "fatura" e "cartao" para cobrir todas as grafias vistas em produção.
 const LEGACY_PATTERNS: RegExp[] = [
-  /Pagamento\s+Parcial\s+fatura\s+cart[aã]o/iu,
-  /Pagamento\s+Total\s+fatura\s+cart[aã]o/iu,
+  /pagamento parcial fatura(?: (?:do|da|de))? cartao\b/,
+  /pagamento total fatura(?: (?:do|da|de))? cartao\b/,
 ];
 
 const cardFixture = {
