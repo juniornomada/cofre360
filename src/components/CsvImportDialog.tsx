@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Tables, TablesInsert } from "@/integrations/supabase/types";
 import { categorizeTransaction } from "@/lib/categorize-transaction";
 import { restoreAccents } from "@/lib/restore-accents";
+import { sanitizeTransactionWrite, sanitizeTransactionWrites, InvalidTransactionNameError } from "@/lib/normalize-transaction-name";
 
 type AccountOption = { id: string; name: string };
 
