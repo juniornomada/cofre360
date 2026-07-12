@@ -1,0 +1,1 @@
+ALTER TABLE public.card_payments ADD COLUMN IF NOT EXISTS target_period DATE;
