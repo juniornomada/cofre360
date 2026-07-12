@@ -251,26 +251,30 @@ function normalizeCategoryLabel(s: string): string {
 /** Get the icon for a stored category value */
 export function getCategoryIcon(value: string): string {
   if (typeof value !== "string" || !value) return "📄";
-  const { group, sub } = parseCategoryValue(value);
 
-  // 1) Match exato (rápido / caminho canônico).
-  let g = categoryTree.find(c => c.label === group);
-  let s = g?.subcategories.find(sc => sc.label === sub);
-  if (g && (s || sub === "Outros")) return s?.icon || g.icon;
-
-  // 2) Fallback tolerante: aceita variações de whitespace / capitalização /
-  // acentos tanto no separador ">" quanto nos rótulos. Divide o valor bruto
-  // por "/\s*>\s*/" para não depender do split canônico " > ".
+  // Divisão tolerante — aceita separador com whitespace irregular ou ausente
+  // ao redor de ">" ("A > B", "A>B", "A  >\tB", etc.). Se não houver ">",
+  // trata o valor inteiro como grupo.
   const rawParts = value.split(/\s*>\s*/);
   const rawGroup = rawParts[0] ?? "";
   const rawSub = rawParts.length > 1 ? rawParts.slice(1).join(" > ") : "";
   const nGroup = normalizeCategoryLabel(rawGroup);
   const nSub = rawSub ? normalizeCategoryLabel(rawSub) : "";
 
-  g = categoryTree.find(c => normalizeCategoryLabel(c.label) === nGroup);
+  // 1) Match exato (caminho canônico rápido).
+  let g = categoryTree.find(c => c.label === rawGroup);
+  if (!g) {
+    // 2) Match tolerante (case/acentos/whitespace).
+    g = categoryTree.find(c => normalizeCategoryLabel(c.label) === nGroup);
+  }
   if (!g) return "📄";
-  if (!nSub) return g.icon;
-  s = g.subcategories.find(sc => normalizeCategoryLabel(sc.label) === nSub);
+
+  if (!rawSub) return g.icon;
+
+  let s = g.subcategories.find(sc => sc.label === rawSub);
+  if (!s) {
+    s = g.subcategories.find(sc => normalizeCategoryLabel(sc.label) === nSub);
+  }
   return s?.icon || g.icon;
 }
 
