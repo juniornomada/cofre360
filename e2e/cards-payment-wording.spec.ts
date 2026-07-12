@@ -1,4 +1,8 @@
 import { test, expect, type Route, type Request } from '@playwright/test';
+import {
+  findLegacyPaymentWording,
+  normalizeForCheck,
+} from './helpers/payment-wording';
 
 /**
  * E2E — /cards não exibe wording legada de pagamento
@@ -11,16 +15,19 @@ import { test, expect, type Route, type Request } from '@playwright/test';
  * O formato canônico é "Pagamento {Total|Parcial} cartão <Nome>" —
  * qualquer variação com "fatura" indica regressão.
  *
- * Estratégia:
+ * A verificação passa por `normalizeForCheck` (NFKC + strip de
+ * diacríticos + colapso de whitespace Unicode + lowercase) antes de
+ * casar contra os padrões, o que elimina:
+ *   – falsos NEGATIVOS por variação de acento/capitalização/whitespace
+ *     Unicode (NBSP, zero-width, combining diacritic);
+ *   – falsos POSITIVOS por casamento de substring fora de contexto —
+ *     os padrões exigem a sequência completa "pagamento (total|parcial)
+ *     fatura [do|da|de]? cartao" com word boundary final.
+ *
+ * Estratégia de fixture:
  *  1. Faz login (se o ambiente permitir; caso contrário `skip`).
  *  2. Intercepta o PostgREST e devolve fixtures com um cartão, uma
- *     despesa e um pagamento cuja descrição canônica é válida — e
- *     TAMBÉM devolve um segundo pagamento cuja descrição é o rótulo
- *     legado, para testar a resiliência: se o app tivesse essa string
- *     hardcoded, o teste falharia; se apenas renderizasse o que veio
- *     do banco, aceitaríamos falso-positivo. Por isso, além de checar
- *     o texto, também garantimos que o cartão fixture não tem "fatura"
- *     no nome.
+ *     despesa e um pagamento cuja descrição canônica é válida.
  *  3. Navega para /cards, abre o diálogo da fatura e escaneia o body.
  */
 
@@ -34,10 +41,6 @@ const FIXTURE_PAYMENT_ID = 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee';
 
 const CARD_NAME = 'Porto Bank E2E';
 
-const LEGACY_PATTERNS: RegExp[] = [
-  /Pagamento\s+Parcial\s+fatura\s+cart[aã]o/iu,
-  /Pagamento\s+Total\s+fatura\s+cart[aã]o/iu,
-];
 
 const cardFixture = {
   id: FIXTURE_CARD_ID,
@@ -126,13 +129,23 @@ async function login(page: import('@playwright/test').Page) {
 }
 
 function assertNoLegacyWording(sample: string, where: string) {
-  for (const rx of LEGACY_PATTERNS) {
-    expect(
-      rx.test(sample),
-      `Wording legada detectada em ${where}: /${rx.source}/`,
-    ).toBe(false);
-  }
+  const normalized = normalizeForCheck(sample);
+  // Sanidade: se a normalização apagou tudo, algo está errado no capture —
+  // não queremos que o teste "passe" contra uma string vazia.
+  expect(
+    normalized.length,
+    `Amostra vazia após normalização em ${where} — captura provavelmente falhou`,
+  ).toBeGreaterThan(0);
+
+  const hit = findLegacyPaymentWording(sample);
+  expect(
+    hit,
+    hit
+      ? `Wording legada detectada em ${where}: /${hit.pattern.source}/\nTrecho: "${hit.excerpt}"`
+      : '',
+  ).toBeNull();
 }
+
 
 test.describe('/cards — wording de pagamento canônica', () => {
   test.beforeEach(async ({ page }) => {
