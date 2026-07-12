@@ -1862,8 +1862,8 @@ function CardsPage() {
                             data-testid="invoice-transaction-name"
                             className="text-xs font-medium text-foreground min-w-0"
                           >
-                            <AutoFitText>
-                              {normalizeCardPaymentLabel(tx.name).replace(/\s*\(\s*\d{1,2}\s*\/\s*\d{1,2}\s*\)\s*$/, "").trim()}
+                            <AutoFitText titleFallback={normalizePaymentDescription(tx.name, { stripInstallmentSuffix: true })}>
+                              {normalizePaymentDescription(tx.name, { stripInstallmentSuffix: true })}
                               {(tx.total_installments || 1) > 1 && (
                                 <span className="ml-1 text-[10px] font-normal text-muted-foreground">
                                   ({tx.installment_number}/{tx.total_installments})
