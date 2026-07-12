@@ -1758,19 +1758,26 @@ function CardsPage() {
                         </div>
 
                         {activePeriodPayments.length === 0 ? (
-                          <p className="py-2 text-center text-[11px] text-muted-foreground">
+                          <p
+                            data-testid="invoice-payments-empty"
+                            className="py-2 text-center text-[11px] text-muted-foreground"
+                          >
                             Nenhum pagamento vinculado ao período.
                           </p>
                         ) : (
                           <ul
                             key={`composicao-${activePeriodKey}-${activePeriodPayments.length}`}
+                            data-testid="invoice-payments-list"
                             className="space-y-1.5 list-none m-0 p-0 animate-in fade-in duration-300"
                           >
                             {activePeriodPayments.map((p, pIdx) => (
                               <li
                                 key={`paid-detail-${p.id || pIdx}`}
+                                data-testid="invoice-payment-item"
+                                data-payment-id={p.id ?? ""}
                                 className="group/payrow flex justify-between items-center text-[10px] gap-2"
                               >
+
                                 <span className="text-muted-foreground font-medium">{format(new Date(p.date), "dd/MM/yyyy")}</span>
                                 <div className="flex items-center gap-1.5">
                                   <span className="text-emerald-600 font-bold tabular-nums">
