@@ -81,6 +81,7 @@ type PaymentLine = {
 
 import { groupByBillingCycle, parseTxDate, getCycleDates, monthNames, type CardTransaction, type InvoicePeriod } from "@/lib/invoice-utils";
 import { reportCycleSnapshot } from "@/lib/cycle-consistency";
+import { formatCardPaymentLabel } from "@/lib/card-payment-label";
 import { mapServerError } from "@/lib/map-server-error";
 
 
