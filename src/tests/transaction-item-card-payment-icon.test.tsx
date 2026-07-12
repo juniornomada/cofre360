@@ -61,6 +61,39 @@ describe("TransactionItem — ícone de Pagamento de Cartão", () => {
     unmount();
   });
 
+  it.each([
+    ["Pagamento de Cartão"],
+    ["Pagamento de Cartão > Pagamento Total"],
+    ["Pagamento de Cartão > Pagamento Parcial"],
+    ["Pagamento de Cartão > Outros"],
+  ])(
+    "a11y: o ícone renderizado tem role=\"img\" e aria-label exatamente igual à categoria (%s)",
+    (category) => {
+      const { container, unmount } = renderItem(category);
+
+      // Localiza o ícone da categoria (o span do menu de transferência usa
+      // aria-hidden="true" e é filtrado abaixo).
+      const iconEls = Array.from(
+        container.querySelectorAll<HTMLSpanElement>('span[role="img"]'),
+      ).filter((el) => !el.hasAttribute("aria-hidden"));
+
+      expect(iconEls.length).toBeGreaterThan(0);
+      const categoryIcon = iconEls[0]!;
+
+      // Asserção principal: o aria-label é a categoria completa, permitindo
+      // que leitores de tela anunciem "Pagamento de Cartão > Pagamento Total".
+      expect(categoryIcon.getAttribute("aria-label")).toBe(category);
+      expect(categoryIcon.getAttribute("role")).toBe("img");
+      expect(categoryIcon.textContent).toBe(CARD_ICON);
+
+      // Garante que o ícone NÃO está marcado como decorativo — leitores de
+      // tela DEVEM anunciar a categoria associada.
+      expect(categoryIcon.getAttribute("aria-hidden")).not.toBe("true");
+
+      unmount();
+    },
+  );
+
   it("prefere o ícone da categoria em vez do prop `icon` fornecido", () => {
     // Passa um ícone genérico via prop — o componente deve ignorá-lo em favor
     // do ícone canônico derivado da categoria "Pagamento de Cartão".
@@ -74,8 +107,15 @@ describe("TransactionItem — ícone de Pagamento de Cartão", () => {
         type="expense"
       />
     );
-    const iconEl = container.querySelector('span[role="img"]');
-    expect(iconEl?.textContent).toBe(CARD_ICON);
-    expect(iconEl?.textContent).not.toBe("📄");
+    const iconEl = container.querySelector(
+      'span[role="img"][aria-label="Pagamento de Cartão > Pagamento Parcial"]',
+    );
+    expect(iconEl).not.toBeNull();
+    expect(iconEl!.textContent).toBe(CARD_ICON);
+    expect(iconEl!.textContent).not.toBe("📄");
+    // Reforço a11y: o aria-label reflete a categoria — não o ícone bruto.
+    expect(iconEl!.getAttribute("aria-label")).toBe(
+      "Pagamento de Cartão > Pagamento Parcial",
+    );
   });
 });
