@@ -1004,7 +1004,7 @@ function CardsPage() {
           // await supabase.from("bank_accounts").update({ balance: account.balance - amount }).eq("id", line.accountId);
           
           // Create transaction for history/debiting from reports
-          const { error: txInsError } = await supabase.from("transactions").insert({
+          const { error: txInsError } = await supabase.from("transactions").insert(sanitizeTransactionWrite({
             name: paymentName,
             amount: amount,
             type: "expense",
@@ -1013,7 +1013,7 @@ function CardsPage() {
             date: dateFormatted,
             bank_account_id: line.accountId,
             created_at: new Date().toISOString()
-          });
+          }));
           
           if (txInsError) throw txInsError;
         }
