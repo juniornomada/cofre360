@@ -1273,8 +1273,8 @@ function Dashboard() {
                         </span>
                       )}
                     </p>
-                    <span className="text-[10px] font-medium text-muted-foreground capitalize">
-                      Fatura {selMonthLabel} · Venc. {formatDueDate(selDue)}
+                    <span className="text-[10px] font-medium text-muted-foreground">
+                      Venc. {formatDueDate(selDue)}
                     </span>
                   </div>
                   <div className="text-right shrink-0">
