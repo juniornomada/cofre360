@@ -351,7 +351,7 @@ function RemindersPage() {
       const isIncome = latestReminder.type === "income";
       const amount = Number(latestReminder.amount);
 
-      await supabase.from("transactions").insert({
+      await supabase.from("transactions").insert(sanitizeTransactionWrite({
         name: latestReminder.title,
         amount,
         date: today,
@@ -359,7 +359,7 @@ function RemindersPage() {
         category: category || latestReminder.category,
         icon: latestReminder.icon || icon,
         bank_account_id: accountId,
-      });
+      }));
 
       const newBalance = isIncome
         ? Number(account.balance) + amount
