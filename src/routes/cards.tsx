@@ -2330,7 +2330,9 @@ function CardsPage() {
           {installmentTx && (
             <div className="flex flex-col gap-4 mt-2">
               <div className="rounded-xl bg-accent/50 p-3">
-                <p className="text-xs font-medium text-foreground truncate">{installmentTx.name}</p>
+                <p className="text-xs font-medium text-foreground min-w-0">
+                  <PaymentDescriptionText name={installmentTx.name} />
+                </p>
                 <p className="text-[11px] text-muted-foreground mt-0.5">
                   R$ {Number(installmentTx.amount).toLocaleString("pt-BR", { minimumFractionDigits: 2 })} · {installmentTx.date}
                 </p>
