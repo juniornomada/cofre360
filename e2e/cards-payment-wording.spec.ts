@@ -425,16 +425,18 @@ test.describe('/cards — navegação entre múltiplos cartões preserva wording
 
       await trigger.click();
 
-      const dialog = page.locator('[role="dialog"]').first();
+      // Seletor estável por data-testid — não depende de role/aria/layout.
+      const dialog = page.getByTestId('invoice-dialog').first();
       const opened = await dialog.waitFor({ state: 'visible', timeout: 5_000 })
         .then(() => true)
         .catch(() => false);
 
       const dialogText = opened
-        ? ((await dialog.textContent().catch(() => null)) ?? '')
+        ? await collectInvoiceDialogText(page, dialog)
         : ((await page.textContent('body')) ?? '');
 
       assertNoLegacyWording(dialogText, `diálogo da fatura — ${card.name}`);
+
 
       // Verificação positiva complementar: o diálogo aberto para ESTE
       // cartão deve conter o nome dele em algum lugar do texto (garante
