@@ -363,7 +363,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
         
         console.log("QuickAdd: Inserting transfer transactions", { groupId, fromName, toName });
         
-        const { error, data } = await supabase.from("transactions").insert([
+        const { error, data } = await supabase.from("transactions").insert(sanitizeTransactionWrites([
           {
             icon: "🔄", name: `Transferência → ${toName}`, category: "Transferências > Outros",
             date: newTx.date, amount: newTx.amount, type: "expense",
@@ -376,7 +376,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
             card: null, bank_account_id: transferToId, installment_group_id: groupId,
             is_visible: true
           },
-        ]).select();
+        ])).select();
 
         if (error) {
           console.error("QuickAdd: Supabase insertion error", error);
