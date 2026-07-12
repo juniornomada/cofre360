@@ -32,8 +32,7 @@ beforeAll(() => {
     unobserve() {}
     disconnect() {}
   }
-  // @ts-expect-error - polyfill de teste
-  globalThis.ResizeObserver = globalThis.ResizeObserver ?? RO;
+  (globalThis as { ResizeObserver?: unknown }).ResizeObserver ??= RO;
 });
 
 afterEach(() => cleanup());
