@@ -46,8 +46,8 @@ function isBrowser(): boolean {
 function isDev(): boolean {
   // Vite injects import.meta.env; guard para SSR/worker.
   try {
-    // @ts-expect-error import.meta.env é definido em tempo de build
-    return Boolean(import.meta?.env?.DEV);
+    const meta = import.meta as unknown as { env?: { DEV?: boolean } };
+    return Boolean(meta?.env?.DEV);
   } catch {
     return false;
   }
