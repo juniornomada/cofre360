@@ -52,7 +52,7 @@ describe("sanitizeTransactionName", () => {
 
 describe("sanitizeTransactionWrite / sanitizeTransactionWrites", () => {
   it("normaliza o campo name em objetos de insert/update", () => {
-    const row = sanitizeTransactionWrite({
+    const row = sanitizeTransactionWrite<{ name?: string | null; amount?: number }>({
       name: "Pagamento Parcial fatura cartão Porto Bank",
       amount: 100,
     });
@@ -61,7 +61,7 @@ describe("sanitizeTransactionWrite / sanitizeTransactionWrites", () => {
   });
 
   it("mantém payloads sem name intactos (update parcial)", () => {
-    const row = sanitizeTransactionWrite({ amount: 42 });
+    const row = sanitizeTransactionWrite<{ name?: string | null; amount?: number }>({ amount: 42 });
     expect(row).toEqual({ amount: 42 });
   });
 
