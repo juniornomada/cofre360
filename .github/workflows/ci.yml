@@ -17,6 +17,7 @@ concurrency:
 #          ├─► test-schema-drift
 #          ├─► test-preview-parity
 #          ├─► test-fuzz-cycle
+#          ├─► test-label-navigation
 #          ├─► test-full
 #          ├─► supabase-auth-check
 #          └─► build
