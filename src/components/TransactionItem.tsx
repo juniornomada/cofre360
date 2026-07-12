@@ -5,6 +5,7 @@ import { formatBRL } from "@/lib/format-brl";
 import { CreditCard, Landmark, ArrowLeftRight, Layers, Pencil, Trash2, Eye, EyeOff } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { AutoFitText } from "@/components/AutoFitText";
+import { normalizeCardPaymentLabel } from "@/lib/card-payment-label";
 
 const MONTHS_PT_ABBR = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
 
@@ -56,9 +57,14 @@ export function TransactionItem({
 }: TransactionItemProps) {
   const isInstallment = !!total_installments && total_installments > 1 && !!installment_number;
   // Strip the trailing "(n/m)" from the displayed name since we'll show it as a badge.
+  // Reformata rótulos legados de pagamento de cartão ("... fatura cartão X")
+  // para o padrão canônico ("... cartão X") em tempo de render — cobre dados
+  // importados ou copiados de fontes antigas que escapem da migração.
+  const normalizedName = normalizeCardPaymentLabel(name);
+  // Strip the trailing "(n/m)" from the displayed name since we'll show it as a badge.
   const displayName = isInstallment
-    ? name.replace(/\s*\(\s*\d{1,2}\s*\/\s*\d{1,2}\s*\)\s*$/, "").trim()
-    : name;
+    ? normalizedName.replace(/\s*\(\s*\d{1,2}\s*\/\s*\d{1,2}\s*\)\s*$/, "").trim()
+    : normalizedName;
   const displayIcon = getCategoryIcon(category) || icon;
   const isCard = !!card;
   const isTransfer = category === "Transferência" || category === "Transferências" || category.startsWith("Transferências >") || isTransferPair;

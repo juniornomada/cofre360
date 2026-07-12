@@ -76,6 +76,8 @@ const ALLOWLIST = new Set([
   "src/tests/payment-description-copy.test.ts",
   "src/tests/card-payment-label-navigation-integration.test.ts",
   "src/tests/card-payment-label.test.ts",
+  "src/tests/normalize-card-payment-label.test.ts",
+  "src/lib/card-payment-label.ts",
   "e2e/cards-payment-wording.spec.ts",
 ]);
 

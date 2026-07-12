@@ -81,7 +81,7 @@ type PaymentLine = {
 
 import { groupByBillingCycle, parseTxDate, getCycleDates, monthNames, type CardTransaction, type InvoicePeriod } from "@/lib/invoice-utils";
 import { reportCycleSnapshot } from "@/lib/cycle-consistency";
-import { formatCardPaymentLabel } from "@/lib/card-payment-label";
+import { formatCardPaymentLabel, normalizeCardPaymentLabel } from "@/lib/card-payment-label";
 import { sortInvoiceChronoAsc } from "@/lib/invoice-chrono-sort";
 import { mapServerError } from "@/lib/map-server-error";
 import { AutoFitText } from "@/components/AutoFitText";
@@ -1778,7 +1778,7 @@ function CardsPage() {
                         <div className="flex-1 min-w-0">
                           <p className="text-xs font-medium text-foreground min-w-0">
                             <AutoFitText>
-                              {tx.name.replace(/\s*\(\s*\d{1,2}\s*\/\s*\d{1,2}\s*\)\s*$/, "").trim()}
+                              {normalizeCardPaymentLabel(tx.name).replace(/\s*\(\s*\d{1,2}\s*\/\s*\d{1,2}\s*\)\s*$/, "").trim()}
                               {(tx.total_installments || 1) > 1 && (
                                 <span className="ml-1 text-[10px] font-normal text-muted-foreground">
                                   ({tx.installment_number}/{tx.total_installments})
@@ -2040,7 +2040,7 @@ function CardsPage() {
                             <span className="text-[12px] shrink-0 opacity-80">{tx.icon}</span>
                             <div className="flex flex-col min-w-0 leading-tight">
                               <AutoFitText className="text-[10px] text-foreground font-medium" minFontSizePx={8}>
-                                {tx.name.replace(/\s*\(\s*\d{1,2}\s*\/\s*\d{1,2}\s*\)\s*$/, "").trim()}
+                                {normalizeCardPaymentLabel(tx.name).replace(/\s*\(\s*\d{1,2}\s*\/\s*\d{1,2}\s*\)\s*$/, "").trim()}
                                 {(tx.total_installments || 1) > 1 && (
                                   <span
                                     className="ml-1 inline-flex items-center rounded border border-amber-500/30 bg-amber-500/15 px-1 py-0 text-[8px] font-semibold tabular-nums text-amber-700 dark:text-amber-300"

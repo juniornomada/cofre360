@@ -62,3 +62,39 @@ export function formatCardPaymentLabel(
  */
 export const CARD_PAYMENT_LABEL_REGEX =
   /^Pagamento (Total|Parcial) cartão .+\S$/;
+
+/**
+ * Detecta o rótulo legado — "Pagamento (Total|Parcial) fatura cartão <Nome>" —
+ * em qualquer capitalização, com espaços múltiplos, NBSP, dashes/underscores
+ * entre "fatura" e "cartão", "cartao" sem acento etc. Usado apenas para
+ * fallback de renderização: dados são migrados no banco, mas transações
+ * importadas ou copiadas de fontes antigas ainda podem chegar com o texto
+ * legado. Este helper normaliza para o padrão canônico em tempo de UI.
+ */
+const LEGACY_CARD_PAYMENT_LABEL_REGEX =
+  /^\s*pagamento\s+(total|parcial)\s+fatura(?:\s+(?:do|da|de))?\s+cart[aã]o\s+(.+?)\s*$/iu;
+
+/**
+ * Reformata rótulos legados para o padrão canônico no momento da renderização.
+ * - Se `raw` já estiver no formato canônico, retorna `raw` intacto.
+ * - Se casar com o padrão legado, remonta via `formatCardPaymentLabel` — o que
+ *   também aplica sanitização de whitespace/controles no nome do cartão.
+ * - Caso contrário (rótulo desconhecido), devolve o input inalterado. O
+ *   caller deve continuar exibindo o texto original.
+ *
+ * Idempotente: `f(f(x)) === f(x)`.
+ */
+export function normalizeCardPaymentLabel(raw: string | null | undefined): string {
+  if (raw == null) return "";
+  const input = String(raw);
+  if (CARD_PAYMENT_LABEL_REGEX.test(input)) return input;
+  const match = LEGACY_CARD_PAYMENT_LABEL_REGEX.exec(input);
+  if (!match) return input;
+  const kind: CardPaymentKind = match[1].toLowerCase() === "total" ? "total" : "partial";
+  const name = match[2];
+  const canonical = formatCardPaymentLabel(kind, name);
+  // Se a sanitização zerar o nome (ex.: só controles), preserva o input original
+  // para não mascarar dados problemáticos com string vazia.
+  return canonical || input;
+}
+
