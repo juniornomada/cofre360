@@ -1467,7 +1467,7 @@ function CardsPage() {
                             }}
                             data-on-card="true"
                             className="icon-btn-on-card-solid h-6 w-6"
-                            aria-label="Fatura do próximo mês"
+                            aria-label="Vencimento do próximo mês"
                             title="Próximo mês"
                           >
                             <ChevronRight className="h-3.5 w-3.5" />
