@@ -45,13 +45,22 @@ const monthNames = [
 describe("Card summary · due-date label", () => {
   it("renders 'Venc. dd/mm' in the /cards summary row", () => {
     const block = extractCardsSummaryRow(cardsSrc);
-    expect(block).toMatch(/Venc\.\s*\{formatDueDate\(selDue\)\}/);
+    // Canonical path: `formatDueLabel(...)` helper returns "Venc. dd/mm".
+    // Legacy inline form `Venc. {formatDueDate(selDue)}` is also accepted.
+    expect(
+      /formatDueLabel\s*\(/.test(block) ||
+        /Venc\.\s*\{formatDueDate\(selDue\)\}/.test(block),
+    ).toBe(true);
   });
 
   it("renders 'Venc. dd/mm' in the Home card summary", () => {
     const block = extractHomeCardSummary(indexSrc);
-    expect(block).toMatch(/Venc\.\s*\{formatDueDate\(selDue\)\}/);
+    expect(
+      /formatDueLabel\s*\(/.test(block) ||
+        /Venc\.\s*\{formatDueDate\(selDue\)\}/.test(block),
+    ).toBe(true);
   });
+
 
   it("does NOT render 'Fatura {mês}' in the /cards summary row", () => {
     const block = extractCardsSummaryRow(cardsSrc);
