@@ -1275,7 +1275,7 @@ function Dashboard() {
                       )}
                     </p>
                     <span className="text-[10px] font-medium text-muted-foreground">
-                      Venc. {formatDueDate(selDue)}
+                      {formatDueLabel(selDue)}
                     </span>
                   </div>
                   <div className="text-right shrink-0">
