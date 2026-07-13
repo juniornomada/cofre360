@@ -4,7 +4,7 @@ import { countOpenDivergences } from "@/lib/reconciliation/reconciliation.functi
 
 import { z } from "zod";
 import { formatBRL } from "@/lib/format-brl";
-import { formatDueLabel } from "@/lib/format-due-date";
+import { formatDueLabel, formatDueAriaLabel } from "@/lib/format-due-date";
 import { TrendingUp, Eye, EyeOff, Bell, Pencil, Trash2, CalendarIcon, Loader2, Clock, Wallet, ChevronLeft, ChevronRight, ArrowUpRight, ArrowDownRight, AlertTriangle, Sparkles, Flame, Plus, Minus, ArrowLeftRight, Layers, GripVertical, Filter, FilterX, LogOut, CreditCard, Landmark, Search, SlidersHorizontal, CheckCircle2 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { TransactionItem } from "@/components/TransactionItem";
@@ -1134,8 +1134,8 @@ function Dashboard() {
                     type="button"
                     onClick={() => setHomeMonthOffset(homeMonthOffset - 1)}
                     className="focus-ring-safe inline-flex min-h-11 min-w-11 items-center justify-center rounded-md text-primary transition-colors hover:bg-primary/15 hover:text-primary active:bg-primary/25 disabled:pointer-events-none disabled:opacity-40"
-                    aria-label="Fatura anterior"
-                    title="Fatura anterior"
+                    aria-label="Vencimento anterior"
+                    title="Vencimento anterior"
                   >
                     <ChevronLeft className="h-4 w-4" aria-hidden="true" />
                   </button>
@@ -1146,8 +1146,8 @@ function Dashboard() {
                     type="button"
                     onClick={() => setHomeMonthOffset(homeMonthOffset + 1)}
                     className="focus-ring-safe inline-flex min-h-11 min-w-11 items-center justify-center rounded-md text-primary transition-colors hover:bg-primary/15 hover:text-primary active:bg-primary/25 disabled:pointer-events-none disabled:opacity-40"
-                    aria-label="Próxima fatura"
-                    title="Próxima fatura"
+                    aria-label="Próximo vencimento"
+                    title="Próximo vencimento"
                   >
                     <ChevronRight className="h-4 w-4" aria-hidden="true" />
                   </button>
@@ -1156,7 +1156,7 @@ function Dashboard() {
                       type="button"
                       onClick={() => setHomeMonthOffset(0)}
                       className="text-[10px] font-semibold text-primary hover:underline underline-offset-2 ml-1"
-                      aria-label="Voltar para a fatura atual"
+                      aria-label="Voltar para o vencimento atual"
                     >
                       hoje
                     </button>
@@ -1274,8 +1274,8 @@ function Dashboard() {
                         </span>
                       )}
                     </p>
-                    <span className="text-[10px] font-medium text-muted-foreground">
-                      {formatDueLabel(selDue)}
+                    <span className="text-[10px] font-medium text-muted-foreground" aria-label={formatDueAriaLabel(selDue)}>
+                      <span aria-hidden="true">{formatDueLabel(selDue)}</span>
                     </span>
                   </div>
                   <div className="text-right shrink-0">

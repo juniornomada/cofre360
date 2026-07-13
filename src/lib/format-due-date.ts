@@ -17,3 +17,16 @@ export function formatDueDate(d: Date | null | undefined): string {
 export function formatDueLabel(d: Date | null | undefined): string {
   return `Venc. ${formatDueDate(d)}`;
 }
+
+/**
+ * Screen-reader friendly expansion of `formatDueLabel`. Avoids the "Venc."
+ * abbreviation (which assistive tech may read as "vench") and never leaks the
+ * legacy "Fatura {mês}" wording into the accessibility tree.
+ *
+ * Returns "Vencimento em dd/mm" for real dates, "Vencimento indisponível" as
+ * fallback for null/undefined/invalid dates (loading/empty/error states).
+ */
+export function formatDueAriaLabel(d: Date | null | undefined): string {
+  if (!(d instanceof Date) || Number.isNaN(d.getTime())) return "Vencimento indisponível";
+  return `Vencimento em ${formatDueDate(d)}`;
+}
