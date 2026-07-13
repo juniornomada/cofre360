@@ -30,23 +30,30 @@ const IGNORE = new Set<string>([
   // Test files and doc/audit artefacts.
 ]);
 
-function listFrontendFiles(): string[] {
-  const patterns = [
-    "src/routes/**/*.{ts,tsx}",
-    "src/components/**/*.{ts,tsx}",
-    "src/lib/**/*.{ts,tsx}",
-    "src/hooks/**/*.{ts,tsx}",
-  ];
-  const files = new Set<string>();
-  for (const p of patterns) {
-    for (const f of globSync(p, { cwd: resolve(__dirname, "../.."), absolute: true })) {
-      if (/(\.test\.|\.spec\.|__tests__)/.test(f)) continue;
-      if (IGNORE.has(f)) continue;
-      files.add(f);
+function walk(dir: string, out: string[] = []): string[] {
+  for (const entry of readdirSync(dir)) {
+    const full = join(dir, entry);
+    const st = statSync(full);
+    if (st.isDirectory()) {
+      if (entry === "__tests__" || entry === "node_modules") continue;
+      walk(full, out);
+    } else if (/\.(ts|tsx)$/.test(entry) && !/(\.test\.|\.spec\.)/.test(entry)) {
+      out.push(full);
     }
   }
-  return [...files];
+  return out;
 }
+
+function listFrontendFiles(): string[] {
+  const root = resolve(__dirname, "../..");
+  const dirs = ["src/routes", "src/components", "src/lib", "src/hooks"];
+  const files: string[] = [];
+  for (const d of dirs) {
+    try { walk(join(root, d), files); } catch { /* dir may not exist */ }
+  }
+  return files.filter((f) => !IGNORE.has(f));
+}
+
 
 describe("no legacy 'Fatura {mês}' wording in the front-end", () => {
   const files = listFrontendFiles();
