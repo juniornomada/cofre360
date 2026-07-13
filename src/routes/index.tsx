@@ -4,7 +4,7 @@ import { countOpenDivergences } from "@/lib/reconciliation/reconciliation.functi
 
 import { z } from "zod";
 import { formatBRL } from "@/lib/format-brl";
-import { formatDueDate } from "@/lib/format-due-date";
+import { formatDueLabel } from "@/lib/format-due-date";
 import { TrendingUp, Eye, EyeOff, Bell, Pencil, Trash2, CalendarIcon, Loader2, Clock, Wallet, ChevronLeft, ChevronRight, ArrowUpRight, ArrowDownRight, AlertTriangle, Sparkles, Flame, Plus, Minus, ArrowLeftRight, Layers, GripVertical, Filter, FilterX, LogOut, CreditCard, Landmark, Search, SlidersHorizontal, CheckCircle2 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { TransactionItem } from "@/components/TransactionItem";
@@ -1275,7 +1275,7 @@ function Dashboard() {
                       )}
                     </p>
                     <span className="text-[10px] font-medium text-muted-foreground">
-                      Venc. {formatDueDate(selDue)}
+                      {formatDueLabel(selDue)}
                     </span>
                   </div>
                   <div className="text-right shrink-0">

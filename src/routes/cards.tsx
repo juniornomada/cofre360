@@ -20,7 +20,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { deleteTransactionScope, isInstallmentTx } from "@/lib/installment-delete";
 import { resolveInvoiceOrder, reconcileSnapshotOnClose } from "@/lib/invoice-order-snapshot";
 import { buildAddTransactionNavArgs } from "@/lib/add-transaction-nav";
-import { formatDueDate } from "@/lib/format-due-date";
+import { formatDueDate, formatDueLabel } from "@/lib/format-due-date";
 import { InvoiceEmptyState } from "@/components/cards/InvoiceEmptyState";
 
 import { CategoryPicker } from "@/components/CategoryPicker";
@@ -1491,7 +1491,7 @@ function CardsPage() {
                         <div className="flex justify-between items-start gap-2 mb-1.5">
                           <div className="min-w-0">
                             <p className="text-[10px] font-bold uppercase tracking-wider text-white/90 flex items-center gap-1.5 flex-wrap">
-                              Venc. {formatDueDate(selDue)}
+                              {formatDueLabel(selDue)}
                               {isFullyPaid && (
                                 <span className="rounded-full bg-emerald-500/90 text-white text-[8px] font-extrabold uppercase px-1.5 py-0.5 ring-1 ring-white/30 inline-flex items-center justify-center gap-0.5 shrink-0 text-center leading-none">
                                   <CheckCircle2 className="h-2.5 w-2.5" />
