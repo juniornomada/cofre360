@@ -1481,7 +1481,7 @@ function CardsPage() {
                               }}
                               data-on-card="true"
                               className="text-[9px] font-semibold text-white/80 hover:text-white underline underline-offset-2 ml-1"
-                              aria-label="Voltar para a fatura atual"
+                              aria-label="Voltar para o vencimento atual"
                             >
                               hoje
                             </button>
