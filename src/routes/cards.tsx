@@ -1450,7 +1450,7 @@ function CardsPage() {
                             }}
                             data-on-card="true"
                             className="icon-btn-on-card-solid h-6 w-6"
-                            aria-label="Fatura do mês anterior"
+                            aria-label="Vencimento do mês anterior"
                             title="Mês anterior"
                           >
                             <ChevronLeft className="h-3.5 w-3.5" />
