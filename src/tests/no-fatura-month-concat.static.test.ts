@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { globSync } from "node:fs";
+import { globSync } from "glob";
 
 /**
  * Static-source guard: no front-end file may build the legacy label
