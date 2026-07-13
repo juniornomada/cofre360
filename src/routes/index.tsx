@@ -1235,7 +1235,7 @@ function Dashboard() {
               const isOpen = selTotal > 0 && selPaid === 0;
               const isEmpty = selTotal === 0;
 
-              const formatDueDate = (d: Date) => format(d, "dd/MM");
+              // formatDueDate importado de @/lib/format-due-date.
               const selMonthLabel = monthNames[selDue.getMonth()];
 
               return (
