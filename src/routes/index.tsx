@@ -1274,8 +1274,8 @@ function Dashboard() {
                         </span>
                       )}
                     </p>
-                    <span className="text-[10px] font-medium text-muted-foreground">
-                      {formatDueLabel(selDue)}
+                    <span className="text-[10px] font-medium text-muted-foreground" aria-label={formatDueAriaLabel(selDue)}>
+                      <span aria-hidden="true">{formatDueLabel(selDue)}</span>
                     </span>
                   </div>
                   <div className="text-right shrink-0">
