@@ -1218,7 +1218,7 @@ function CardsPage() {
       if (currentClose < today) currentClose.setMonth(currentClose.getMonth() + 1);
       // Next invoice due date (one month after current)
       const nextDue = new Date(currentDue.getFullYear(), currentDue.getMonth() + 1, card.due_day);
-      const formatDueDate = (d: Date) => `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`;
+      // formatDueDate importado de @/lib/format-due-date (canônico "dd/MM").
       void nextDue; void isPaid; void invoiceClosed;
 
       // === Navegação por mês da fatura ===========================================
