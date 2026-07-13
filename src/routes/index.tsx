@@ -1156,7 +1156,7 @@ function Dashboard() {
                       type="button"
                       onClick={() => setHomeMonthOffset(0)}
                       className="text-[10px] font-semibold text-primary hover:underline underline-offset-2 ml-1"
-                      aria-label="Voltar para a fatura atual"
+                      aria-label="Voltar para o vencimento atual"
                     >
                       hoje
                     </button>
