@@ -1249,40 +1249,41 @@ function Dashboard() {
 
 
                   <div className="flex flex-col flex-1 min-w-0">
-                    <p className="text-xs font-medium text-foreground truncate flex items-center gap-1.5 flex-wrap">
+                    <p className="text-xs font-medium text-foreground truncate">
                       {card.name}
-                      {isFullyPaid && (
-                        <span className="rounded-full bg-emerald-500/90 text-white text-[8px] font-extrabold uppercase px-1.5 py-0.5 inline-flex items-center gap-0.5 leading-none">
-                          <CheckCircle2 className="h-2.5 w-2.5" />
-                          Paga
-                        </span>
-                      )}
-                      {isPartial && (
-                        <span className="rounded-full bg-blue-500/90 text-white text-[8px] font-extrabold uppercase px-1.5 py-0.5 inline-flex items-center gap-0.5 leading-none">
-                          <CheckCircle2 className="h-2.5 w-2.5" />
-                          Parcial
-                        </span>
-                      )}
-                      {isOpen && (
-                        <span className="rounded-full bg-amber-500/90 text-white text-[8px] font-extrabold uppercase px-1.5 py-0.5 inline-flex items-center leading-none">
-                          Em aberto
-                        </span>
-                      )}
-                      {isEmpty && (
-                        <span className="rounded-full bg-muted text-muted-foreground text-[8px] font-extrabold uppercase px-1.5 py-0.5 inline-flex items-center leading-none">
-                          Sem fatura
-                        </span>
-                      )}
                     </p>
                     <span className="text-[10px] font-medium text-muted-foreground" aria-label={formatDueAriaLabel(selDue)}>
                       <span aria-hidden="true">{formatDueLabel(selDue)}</span>
                     </span>
                   </div>
-                  <div className="text-right shrink-0">
+                  <div className="text-right shrink-0 flex items-center gap-1.5">
                     <p className={cn("text-xs font-bold tabular-nums", isOpen || isPartial ? "text-destructive" : "text-primary")} data-testid="fatura-atual-valor">
                       {balanceVisible ? `R$ ${fmt(selTotal)}` : "R$ •••"}
                     </p>
+                    {isFullyPaid && (
+                      <span className="rounded-full bg-emerald-500/90 text-white text-[8px] font-extrabold uppercase px-1.5 py-0.5 inline-flex items-center gap-0.5 leading-none">
+                        <CheckCircle2 className="h-2.5 w-2.5" />
+                        Paga
+                      </span>
+                    )}
+                    {isPartial && (
+                      <span className="rounded-full bg-blue-500/90 text-white text-[8px] font-extrabold uppercase px-1.5 py-0.5 inline-flex items-center gap-0.5 leading-none">
+                        <CheckCircle2 className="h-2.5 w-2.5" />
+                        Parcial
+                      </span>
+                    )}
+                    {isOpen && (
+                      <span className="rounded-full bg-amber-500/90 text-white text-[8px] font-extrabold uppercase px-1.5 py-0.5 inline-flex items-center leading-none">
+                        Em aberto
+                      </span>
+                    )}
+                    {isEmpty && (
+                      <span className="rounded-full bg-muted text-muted-foreground text-[8px] font-extrabold uppercase px-1.5 py-0.5 inline-flex items-center leading-none">
+                        Sem fatura
+                      </span>
+                    )}
                   </div>
+
                 </Link>
               );
             })}
