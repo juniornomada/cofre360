@@ -4,6 +4,7 @@ import { countOpenDivergences } from "@/lib/reconciliation/reconciliation.functi
 
 import { z } from "zod";
 import { formatBRL } from "@/lib/format-brl";
+import { formatDueDate } from "@/lib/format-due-date";
 import { TrendingUp, Eye, EyeOff, Bell, Pencil, Trash2, CalendarIcon, Loader2, Clock, Wallet, ChevronLeft, ChevronRight, ArrowUpRight, ArrowDownRight, AlertTriangle, Sparkles, Flame, Plus, Minus, ArrowLeftRight, Layers, GripVertical, Filter, FilterX, LogOut, CreditCard, Landmark, Search, SlidersHorizontal, CheckCircle2 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { TransactionItem } from "@/components/TransactionItem";
@@ -1234,7 +1235,7 @@ function Dashboard() {
               const isOpen = selTotal > 0 && selPaid === 0;
               const isEmpty = selTotal === 0;
 
-              const formatDueDate = (d: Date) => format(d, "dd/MM");
+              // formatDueDate importado de @/lib/format-due-date.
               const selMonthLabel = monthNames[selDue.getMonth()];
 
               return (
