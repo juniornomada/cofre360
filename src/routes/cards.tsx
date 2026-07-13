@@ -2038,12 +2038,13 @@ function CardsPage() {
               <div className="rounded-xl bg-accent/50 p-3">
                 <div className="flex justify-between items-start mb-1">
                   <div>
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                      Fatura {activePeriod?.label?.split("|")[0]?.split(" (")[0] || "selecionada"}
+                    <p
+                      className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground"
+                      aria-label={formatDueAriaLabel(activePeriod?.dueDate)}
+                    >
+                      <span aria-hidden="true">{formatDueLabel(activePeriod?.dueDate)}</span>
                     </p>
-                    <p className="text-xs text-muted-foreground">
-                      {activePeriod?.label?.split("|")[0]?.includes("(") ? "(" + activePeriod.label.split("|")[0].split(" (")[1] : ""}
-                    </p>
+
                   </div>
                   <span className="text-sm font-bold text-foreground tabular-nums">
                     R$ {(activePeriod?.total || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
