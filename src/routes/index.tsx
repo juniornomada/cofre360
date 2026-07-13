@@ -1146,8 +1146,8 @@ function Dashboard() {
                     type="button"
                     onClick={() => setHomeMonthOffset(homeMonthOffset + 1)}
                     className="focus-ring-safe inline-flex min-h-11 min-w-11 items-center justify-center rounded-md text-primary transition-colors hover:bg-primary/15 hover:text-primary active:bg-primary/25 disabled:pointer-events-none disabled:opacity-40"
-                    aria-label="Próxima fatura"
-                    title="Próxima fatura"
+                    aria-label="Próximo vencimento"
+                    title="Próximo vencimento"
                   >
                     <ChevronRight className="h-4 w-4" aria-hidden="true" />
                   </button>
