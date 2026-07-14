@@ -1,0 +1,169 @@
+name: Security Scan
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: security-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  security-scan:
+    name: Security scan (deps + Supabase Auth)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Cache Bun dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lockb', '**/bun.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      # 1. Dependency vulnerability audit (high/critical only fails the job)
+      - name: Dependency audit
+        id: audit
+        run: |
+          set +e
+          bun audit --json > audit.json
+          echo "exit_code=$?" >> "$GITHUB_OUTPUT"
+          set -e
+
+          node <<'NODE' >> "$GITHUB_STEP_SUMMARY"
+          const fs = require('fs');
+          let report;
+          try { report = JSON.parse(fs.readFileSync('audit.json', 'utf8')); }
+          catch { console.log('## 🔐 Dependency Audit\n\nNo audit output produced.'); process.exit(0); }
+
+          const vulns = report.vulnerabilities || {};
+          const rows = Object.entries(vulns).map(([name, v]) => ({
+            name,
+            severity: v.severity || 'unknown',
+            version: v.version || (v.via && v.via[0] && v.via[0].range) || 'n/a',
+            fix: v.fixAvailable ? (v.fixAvailable.version || 'yes') : 'no',
+          }));
+
+          const bySev = (s) => rows.filter(r => r.severity === s).length;
+          const critical = bySev('critical');
+          const high = bySev('high');
+          const moderate = bySev('moderate');
+          const low = bySev('low');
+
+          const lines = [
+            '## 🔐 Dependency Audit',
+            '',
+            `| Critical | High | Moderate | Low |`,
+            `| --- | --- | --- | --- |`,
+            `| ${critical} | ${high} | ${moderate} | ${low} |`,
+            '',
+          ];
+          if (rows.length) {
+            lines.push('<details><summary>Vulnerable packages</summary>', '',
+              '| Package | Severity | Installed | Fix available |',
+              '| --- | --- | --- | --- |',
+              ...rows.map(r => `| \`${r.name}\` | ${r.severity} | ${r.version} | ${r.fix} |`),
+              '', '</details>', '');
+          } else {
+            lines.push('_No vulnerabilities detected._', '');
+          }
+          console.log(lines.join('\n'));
+
+          // Fail the job only on high/critical
+          if (critical > 0 || high > 0) {
+            console.error(`::error::Found ${critical} critical and ${high} high severity vulnerabilities`);
+            process.exit(1);
+          }
+          NODE
+
+      # 2. Supabase Auth configuration check (leaked-password / OTP / min length)
+      - name: Supabase Auth security check
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          SKIP_SUPABASE_AUTH_CHECK: ${{ secrets.SUPABASE_ACCESS_TOKEN == '' && '1' || '' }}
+        run: |
+          {
+            echo '## 🛡️ Supabase Auth Check'
+            echo ''
+            echo '```'
+            node scripts/check-supabase-auth.mjs 2>&1 | tee auth-check.log
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # 3. Post a summary comment on the PR
+      - name: Comment scan summary on PR
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            let auditMd = '_audit did not run_';
+            try {
+              const report = JSON.parse(fs.readFileSync('audit.json', 'utf8'));
+              const vulns = Object.entries(report.vulnerabilities || {});
+              const count = (sev) => vulns.filter(([,v]) => v.severity === sev).length;
+              auditMd = `**Critical:** ${count('critical')} · **High:** ${count('high')} · **Moderate:** ${count('moderate')} · **Low:** ${count('low')}`;
+            } catch {}
+
+            let authMd = '_auth check did not run_';
+            try { authMd = '```\n' + fs.readFileSync('auth-check.log', 'utf8').trim() + '\n```'; } catch {}
+
+            const body = [
+              '### 🔐 Security Scan Results',
+              '',
+              '**Dependency audit**',
+              '',
+              auditMd,
+              '',
+              '**Supabase Auth check**',
+              '',
+              authMd,
+              '',
+              `_Full logs: [job run](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})_`,
+            ].join('\n');
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const marker = '### 🔐 Security Scan Results';
+            const existing = comments.find(c => c.body && c.body.startsWith(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
+
+      - name: Upload audit artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-scan-results
+          path: |
+            audit.json
+            auth-check.log
+          if-no-files-found: warn
+          retention-days: 14
