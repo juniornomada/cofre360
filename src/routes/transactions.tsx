@@ -1482,6 +1482,8 @@ export function TransactionsPage() {
                   Defina o total maior que 1 para parcelar. As parcelas futuras serão criadas nos meses seguintes. Use total = 1 para remover o parcelamento.
                 </p>
               </div>
+              )}
+
             </div>
           )}
           </div>
