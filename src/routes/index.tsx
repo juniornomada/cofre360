@@ -558,7 +558,9 @@ function Dashboard() {
       return;
     }
 
+    const total = editTx.card ? Math.max(1, Math.floor(Number(editTx.total_installments) || 1)) : 1;
     const current = Math.max(1, Math.min(total, Math.floor(Number(editTx.installment_number) || 1)));
+
     const baseName = stripInstallmentSuffix(editTx.name);
     const finalName = sanitizeTransactionName(total > 1 ? `${baseName} (${current}/${total})` : baseName);
 
