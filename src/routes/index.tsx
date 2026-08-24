@@ -548,11 +548,16 @@ function Dashboard() {
 
   const handleSaveEdit = async () => {
     if (!editTx) return;
-    if (editTx.total_installments === undefined || editTx.total_installments === null || editTx.total_installments < 1) {
+    // Parcelamento só existe em despesas no cartão de crédito. Em lançamentos
+    // em conta (débito), o total de parcelas é sempre 1 e não é validado.
+    if (!editTx.card) {
+      editTx.total_installments = 1;
+      editTx.installment_number = 1;
+    } else if (editTx.total_installments === undefined || editTx.total_installments === null || editTx.total_installments < 1) {
       toast.error("Por favor, insira um número válido de parcelas (mínimo 1).");
       return;
     }
-    const total = Math.max(1, Math.floor(Number(editTx.total_installments)));
+
     const current = Math.max(1, Math.min(total, Math.floor(Number(editTx.installment_number) || 1)));
     const baseName = stripInstallmentSuffix(editTx.name);
     const finalName = sanitizeTransactionName(total > 1 ? `${baseName} (${current}/${total})` : baseName);
