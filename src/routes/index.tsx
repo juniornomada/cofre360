@@ -1627,12 +1627,24 @@ function Dashboard() {
                 </div>
               )}
 
-              {/* Parcelamento */}
+              {/* Parcelamento — apenas para despesas no cartão de crédito */}
+              {!editTx.card ? (
+                <div className="rounded-xl bg-card p-3 space-y-1">
+                  <div className="flex items-center gap-2">
+                    <Layers className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="text-xs font-medium text-muted-foreground">Parcelamento indisponível</span>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground leading-relaxed">
+                    Esta transação foi lançada em conta (débito). O parcelamento está disponível apenas para despesas no cartão de crédito.
+                  </p>
+                </div>
+              ) : (
               <div className="rounded-xl bg-card p-3 space-y-2">
                 <div className="flex items-center gap-2">
                   <Layers className="h-3.5 w-3.5 text-primary" />
                   <span className="text-xs font-medium text-foreground">Parcelamento</span>
                 </div>
+
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <label className="text-[10px] text-muted-foreground mb-1 block">Parcela atual</label>
