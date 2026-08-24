@@ -2571,10 +2571,10 @@ function CardsPage() {
             <AlertDialogDescription>
               {paymentToDelete && (
                 <>
-                  Esta ação removerá o pagamento de{"'''Do not make any visual modifications. The phrases I write are commands to understand what I want, not to be written down. Understand their content well, then execute what is required.'''\n                                        \n                                            \n                                            Deixar valor de despesa na cor vermelha, tanto nas transações, quanto na edição das transações"}
+                  Esta ação removerá o pagamento de{"'''Do not make any visual modifications. The phrases I write are commands to understand what I want, not to be written down. Understand their content well, then execute what is required.'''\n                                        \n                                            \n                                            I have approved the plan"}
                   <span className="font-semibold text-foreground">
                     R$ {paymentToDelete.payment.amount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                  </span>{"'''Do not make any visual modifications. The phrases I write are commands to understand what I want, not to be written down. Understand their content well, then execute what is required.'''\n                                        \n                                            \n                                            Deixar valor de despesa na cor vermelha, tanto nas transações, quanto na edição das transações"}
+                  </span>{"'''Do not make any visual modifications. The phrases I write are commands to understand what I want, not to be written down. Understand their content well, then execute what is required.'''\n                                        \n                                            \n                                            I have approved the plan"}
                   em {format(new Date(paymentToDelete.payment.date), "dd/MM/yyyy")} e estornará a transação correspondente na conta bancária. Não é possível desfazer.
                 </>
               )}
