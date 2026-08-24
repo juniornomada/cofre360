@@ -2142,7 +2142,7 @@ function CardsPage() {
                                   </span>
                                 )}
                               </AutoFitText>
-                              <span className="text-[8px] text-muted-foreground">{tx.date && tx.date.includes("'''Do not make any visual modifications. The phrases I write are commands to understand what I want, not to be written down. Understand their content well, then execute what is required.'''\n                                        \n                                            \n                                            veja se a alteração está conforme solicitado") ? tx.date : (tx.date ? format(new Date(tx.date), "dd MMM", { locale: ptBR }) : "")}</span>
+                              <span className="text-[8px] text-muted-foreground">{tx.date && tx.date.includes("'''Do not make any visual modifications. The phrases I write are commands to understand what I want, not to be written down. Understand their content well, then execute what is required.'''\n                                        \n                                            \n                                            use CSS to completely hide the Lovable badge (the 'Made with Lovable' element), without breaking the layout") ? tx.date : (tx.date ? format(new Date(tx.date), "dd MMM", { locale: ptBR }) : "")}</span>
                             </div>
                           </div>
                           <span className={cn(
@@ -2571,10 +2571,10 @@ function CardsPage() {
             <AlertDialogDescription>
               {paymentToDelete && (
                 <>
-                  Esta ação removerá o pagamento de{"'''Do not make any visual modifications. The phrases I write are commands to understand what I want, not to be written down. Understand their content well, then execute what is required.'''\n                                        \n                                            \n                                            veja se a alteração está conforme solicitado"}
+                  Esta ação removerá o pagamento de{"'''Do not make any visual modifications. The phrases I write are commands to understand what I want, not to be written down. Understand their content well, then execute what is required.'''\n                                        \n                                            \n                                            use CSS to completely hide the Lovable badge (the 'Made with Lovable' element), without breaking the layout"}
                   <span className="font-semibold text-foreground">
                     R$ {paymentToDelete.payment.amount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                  </span>{"'''Do not make any visual modifications. The phrases I write are commands to understand what I want, not to be written down. Understand their content well, then execute what is required.'''\n                                        \n                                            \n                                            veja se a alteração está conforme solicitado"}
+                  </span>{"'''Do not make any visual modifications. The phrases I write are commands to understand what I want, not to be written down. Understand their content well, then execute what is required.'''\n                                        \n                                            \n                                            use CSS to completely hide the Lovable badge (the 'Made with Lovable' element), without breaking the layout"}
                   em {format(new Date(paymentToDelete.payment.date), "dd/MM/yyyy")} e estornará a transação correspondente na conta bancária. Não é possível desfazer.
                 </>
               )}

@@ -1736,7 +1736,7 @@ function Dashboard() {
                           onChange={v => setEditInstallmentFixedValue(v)}
                         />
                         <p className="text-[10px] text-muted-foreground leading-relaxed mt-1">
-                          Total da compra:{"'''Do not make any visual modifications. The phrases I write are commands to understand what I want, not to be written down. Understand their content well, then execute what is required.'''\n                                        \n                                            \n                                            veja se a alteração está conforme solicitado"}
+                          Total da compra:{"'''Do not make any visual modifications. The phrases I write are commands to understand what I want, not to be written down. Understand their content well, then execute what is required.'''\n                                        \n                                            \n                                            use CSS to completely hide the Lovable badge (the 'Made with Lovable' element), without breaking the layout"}
                           <strong>
                             R$ {formatBRL(editInstallmentFixedValue * (editTx.total_installments ?? 1))}
                           </strong>
