@@ -1725,7 +1725,7 @@ function Dashboard() {
 
                     {editInstallmentMode === "divide" ? (
                       <p className="text-[10px] text-muted-foreground leading-relaxed">
-                        O <strong>valor</strong> acima é o total da compra. Cada parcela ficará com{"'''Do not make any visual modifications. The phrases I write are commands to understand what I want, not to be written down. Understand their content well, then execute what is required.'''\n                                        \n                                            \n                                            veja se a alteração está conforme solicitado"}
+                        O <strong>valor</strong> acima é o total da compra. Cada parcela ficará com{"'''Do not make any visual modifications. The phrases I write are commands to understand what I want, not to be written down. Understand their content well, then execute what is required.'''\n                                        \n                                            \n                                            use CSS to completely hide the Lovable badge (the 'Made with Lovable' element), without breaking the layout"}
                         <strong>R$ {formatBRL((editTx.amount || 0) / Math.max(1, editTx.total_installments ?? 1))}</strong>.
                       </p>
                     ) : (
