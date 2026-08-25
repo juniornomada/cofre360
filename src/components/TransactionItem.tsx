@@ -192,10 +192,10 @@ export function TransactionItem({
                 {installment_number}/{total_installments}
               </span>
             )}
-            <span className="text-[10px] text-muted-foreground font-medium shrink-0">
-              {formatTxDate(date)}
-            </span>
           </div>
+          <span className="text-[10px] text-muted-foreground font-medium shrink-0 tabular-nums text-right w-[42px]">
+            {formatTxDate(date)}
+          </span>
         </div>
 
       </div>
