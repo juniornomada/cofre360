@@ -1585,7 +1585,7 @@ function Dashboard() {
               </div>
               <div>
                 <label className="text-xs text-muted-foreground mb-1 block">Valor (R$)</label>
-                <CalculatorAmountInput value={editTx.amount} onChange={v => setEditTx({ ...editTx, amount: v })} />
+                <CalculatorAmountInput value={editTx.amount} onChange={v => setEditTx({ ...editTx, amount: v })} className={editTx.type === "expense" ? "text-destructive" : editTx.type === "income" ? "text-primary" : undefined} />
               </div>
               <div>
                 <label className="text-xs text-muted-foreground mb-1 block">Tipo</label>
