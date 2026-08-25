@@ -949,8 +949,8 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                               const remaining = total - startNum + 1;
                               return (
                                 <span className="text-[11px] text-muted-foreground">
-                                   de {total} — serão lançadas{"'''Do not make any visual modifications. The phrases I write are commands to understand what I want, not to be written down. Understand their content well, then execute what is required.'''\n                                        \n                                            \n                                            Aplicar a cor vermelha automaticamente nos valores de despesa tanto na lista quanto nos detalhes das transações."}
-                                  <span className="font-semibold text-foreground">{remaining}</span>{"'''Do not make any visual modifications. The phrases I write are commands to understand what I want, not to be written down. Understand their content well, then execute what is required.'''\n                                        \n                                            \n                                            Aplicar a cor vermelha automaticamente nos valores de despesa tanto na lista quanto nos detalhes das transações."}
+                                   de {total} — serão lançadas 
+                                  <span className="font-semibold text-foreground">{remaining}</span> 
                                   parcela(s) ({startNum}/{total} → {total}/{total})
                                 </span>
                               );

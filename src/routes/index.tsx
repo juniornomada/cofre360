@@ -1725,7 +1725,7 @@ function Dashboard() {
 
                     {editInstallmentMode === "divide" ? (
                       <p className="text-[10px] text-muted-foreground leading-relaxed">
-                        O <strong>valor</strong> acima é o total da compra. Cada parcela ficará com{"'''Do not make any visual modifications. The phrases I write are commands to understand what I want, not to be written down. Understand their content well, then execute what is required.'''\n                                        \n                                            \n                                            Aplicar a cor vermelha automaticamente nos valores de despesa tanto na lista quanto nos detalhes das transações."}
+                        O <strong>valor</strong> acima é o total da compra. Cada parcela ficará com 
                         <strong>R$ {formatBRL((editTx.amount || 0) / Math.max(1, editTx.total_installments ?? 1))}</strong>.
                       </p>
                     ) : (
@@ -1736,7 +1736,7 @@ function Dashboard() {
                           onChange={v => setEditInstallmentFixedValue(v)}
                         />
                         <p className="text-[10px] text-muted-foreground leading-relaxed mt-1">
-                          Total da compra:{"'''Do not make any visual modifications. The phrases I write are commands to understand what I want, not to be written down. Understand their content well, then execute what is required.'''\n                                        \n                                            \n                                            Aplicar a cor vermelha automaticamente nos valores de despesa tanto na lista quanto nos detalhes das transações."}
+                          Total da compra: 
                           <strong>
                             R$ {formatBRL(editInstallmentFixedValue * (editTx.total_installments ?? 1))}
                           </strong>
