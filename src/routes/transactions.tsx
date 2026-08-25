@@ -1249,6 +1249,8 @@ export function TransactionsPage() {
                     setEditTx({ ...editTx, amount: v });
                   }}  
                   autoFocus={false}
+                  className={editTx.type === "expense" ? "text-destructive" : editTx.type === "income" ? "text-primary" : undefined}
+
                 />
               </div>
               <div>
