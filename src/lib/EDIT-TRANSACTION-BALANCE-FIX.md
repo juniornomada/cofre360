@@ -1,0 +1,1 @@
+A validação correta para edição de uma despesa existente é: alterar data/nome/categoria não cria nova saída. Na mesma conta, somente aumento do valor exige saldo adicional. Mudança de conta exige validação do valor na nova conta.
