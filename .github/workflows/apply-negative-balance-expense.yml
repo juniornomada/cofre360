@@ -1,12 +1,12 @@
 name: Allow expense beyond account balance
 on:
   push:
-    branches: [feat/debit-credit-installment-date-sync]
+    branches:
+      - feat/debit-credit-installment-date-sync
 permissions:
   contents: write
 jobs:
   patch:
-    if: ${{ !contains(github.event.head_commit.message, '[negative-balance-expense-applied]') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -16,25 +16,17 @@ jobs:
           from pathlib import Path
           p = Path('src/components/QuickAddTransactionDialog.tsx')
           s = p.read_text()
-          old = '''      // Balance check for expenses from bank accounts
-      if (newTx.type === "expense" && newTx.bank_account_id) {
-        const acc = bankAccounts.find(a => a.id === newTx.bank_account_id);
-        if (acc && (acc.balance || 0) < newTx.amount) {
-          toast.error(`Saldo insuficiente na conta ${acc.name}. Saldo disponível: R$ ${(acc.balance || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`);
-          setIsSubmitting(false);
-          return;
-        }
-      }
-      '''
-          if old not in s:
-              raise SystemExit('expense balance blocker not found')
-          s = s.replace(old, '', 1)
+          start = s.index('      // Balance check for expenses from bank accounts\n')
+          end = s.index('      const cardValue =', start)
+          s = s[:start] + '      // Expenses may intentionally leave the selected account with a negative balance.\n\n' + s[end:]
           p.write_text(s)
           PY
-      - name: Commit change
+      - name: Commit change and remove workflow
         run: |
+          git rm .github/workflows/apply-negative-balance-expense.yml
+          git rm -f scripts/trigger-negative-balance-expense.txt || true
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add src/components/QuickAddTransactionDialog.tsx
-          git commit -m "feat: allow expenses beyond account balance [negative-balance-expense-applied]"
+          git commit -m "feat: allow expenses beyond account balance"
           git push
