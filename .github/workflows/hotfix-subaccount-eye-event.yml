@@ -1,0 +1,55 @@
+name: hotfix-subaccount-eye-event
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/hotfix-subaccount-eye-event.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Isolate visibility button events
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('src/routes/accounts.tsx')
+          s = p.read_text()
+          old = '''              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleToggleVisibility(account.id, account.is_visible);
+                }}
+                className="interactive-button h-9 w-9 flex items-center justify-center rounded-full hover:bg-accent transition-colors"
+                title={account.is_visible ? "Ocultar do Início" : "Mostrar no Início"}
+              >'''
+          new = '''              <button
+                type="button"
+                onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                onTouchStart={(e) => { e.stopPropagation(); }}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleToggleVisibility(account.id, account.is_visible);
+                }}
+                className="interactive-button h-9 w-9 flex items-center justify-center rounded-full hover:bg-accent transition-colors"
+                title={account.is_visible ? "Ocultar do Início" : "Mostrar no Início"}
+              >'''
+          if old not in s:
+              raise SystemExit('visibility button block not found')
+          p.write_text(s.replace(old, new, 1))
+          PY
+      - name: Commit patch and remove workflow
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git rm .github/workflows/hotfix-subaccount-eye-event.yml
+          git add src/routes/accounts.tsx
+          git commit -m 'fix: isolate subaccount visibility tap'
+          git push
