@@ -1,0 +1,23 @@
+name: hotfix-subaccount-eye-event-v2
+on:
+  push:
+    branches:
+      - main
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch visibility button
+        shell: bash
+        run: |
+          python3 -c "from pathlib import Path; p=Path('src/routes/accounts.tsx'); s=p.read_text(); old='''              <button\n                onClick={(e) => {\n                  e.preventDefault();\n                  e.stopPropagation();\n                  handleToggleVisibility(account.id, account.is_visible);\n                }}\n                className=\"interactive-button h-9 w-9 flex items-center justify-center rounded-full hover:bg-accent transition-colors\"\n                title={account.is_visible ? \"Ocultar do Início\" : \"Mostrar no Início\"}\n              >'''; new='''              <button\n                type=\"button\"\n                onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); }}\n                onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }}\n                onTouchStart={(e) => { e.stopPropagation(); }}\n                onClick={(e) => {\n                  e.preventDefault();\n                  e.stopPropagation();\n                  handleToggleVisibility(account.id, account.is_visible);\n                }}\n                className=\"interactive-button h-9 w-9 flex items-center justify-center rounded-full hover:bg-accent transition-colors\"\n                title={account.is_visible ? \"Ocultar do Início\" : \"Mostrar no Início\"}\n              >'''; assert old in s; p.write_text(s.replace(old,new,1))"
+      - name: Commit
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/routes/accounts.tsx
+          git commit -m "fix: isolate subaccount visibility tap"
+          git push
