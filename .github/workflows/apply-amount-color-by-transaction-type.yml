@@ -12,27 +12,54 @@ jobs:
       - name: Apply amount input colors
         run: |
           python3 - <<'PY'
+          import re
           from pathlib import Path
+
           p = Path('src/components/QuickAddTransactionDialog.tsx')
           s = p.read_text()
+          matches = list(re.finditer(r'<CalculatorAmountInput\b[\s\S]*?/>', s))
+          if not matches:
+              raise SystemExit('no CalculatorAmountInput blocks found')
 
-          transfer_anchor = '''                      autoFocus={false}
-                    />'''
-          transfer_new = '''                      autoFocus={false}
-                      className="!text-black dark:!text-white"
-                    />'''
-          if transfer_anchor not in s:
-              raise SystemExit('transfer amount input anchor not found')
-          s = s.replace(transfer_anchor, transfer_new, 1)
+          changed_transfer = 0
+          changed_regular = 0
+          out = []
+          cursor = 0
 
-          regular_anchor = '''                      onEnter={handleAdd}
-                    />'''
-          regular_new = '''                      onEnter={handleAdd}
-                      className={newTx.type === "expense" ? "!text-red-500" : "!text-green-600 dark:!text-green-500"}
-                    />'''
-          if regular_anchor not in s:
-              raise SystemExit('regular amount input anchor not found')
-          s = s.replace(regular_anchor, regular_new, 1)
+          for m in matches:
+              block = m.group(0)
+              new_block = block
+
+              if 'autoFocus={false}' in block and 'setNewTx({ ...newTx, amount: v })' in block:
+                  if '!text-black dark:!text-white' not in block:
+                      new_block, n = re.subn(
+                          r'(?m)^(\s*)autoFocus=\{false\}\s*$',
+                          r'\1autoFocus={false}\n\1className="!text-black dark:!text-white"',
+                          block,
+                          count=1,
+                      )
+                      changed_transfer += n
+              elif 'onEnter={handleAdd}' in block and 'setNewTx({ ...newTx, amount: v });' in block:
+                  if '!text-red-500' not in block:
+                      new_block, n = re.subn(
+                          r'(?m)^(\s*)onEnter=\{handleAdd\}\s*$',
+                          r'\1onEnter={handleAdd}\n\1className={newTx.type === "expense" ? "!text-red-500" : "!text-green-600 dark:!text-green-500"}',
+                          block,
+                          count=1,
+                      )
+                      changed_regular += n
+
+              out.append(s[cursor:m.start()])
+              out.append(new_block)
+              cursor = m.end()
+
+          out.append(s[cursor:])
+          s = ''.join(out)
+
+          if changed_transfer != 1:
+              raise SystemExit(f'expected one transfer block, changed {changed_transfer}')
+          if changed_regular != 1:
+              raise SystemExit(f'expected one regular block, changed {changed_regular}')
 
           p.write_text(s)
           PY
