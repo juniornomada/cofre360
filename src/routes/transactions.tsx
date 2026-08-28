@@ -1260,7 +1260,7 @@ export function TransactionsPage() {
                     setEditTx({ ...editTx, amount: v });
                   }}  
                   autoFocus={false}
-                  className={editTx.type === "expense" ? "text-destructive" : editTx.type === "income" ? "text-primary" : undefined}
+                  className={editTx.type === "expense" && !(editTx.category === "Transferência" || editTx.category === "Transferências" || editTx.category?.startsWith("Transferências >")) ? "text-destructive" : editTx.type === "income" && !(editTx.category === "Transferência" || editTx.category === "Transferências" || editTx.category?.startsWith("Transferências >")) ? "text-primary" : "text-foreground"}
 
                 />
               </div>
