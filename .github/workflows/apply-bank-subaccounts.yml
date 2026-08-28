@@ -1,0 +1,144 @@
+name: Apply bank subaccounts feature
+on:
+  push:
+    branches: [feat/bank-subaccounts]
+permissions:
+  contents: write
+jobs:
+  patch:
+    if: ${{ !contains(github.event.head_commit.message, '[subaccounts-applied]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch bank subaccounts
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          p = Path('src/routes/accounts.tsx')
+          s = p.read_text()
+
+          s = s.replace(
+            '  is_visible: boolean | null;\n};',
+            '  is_visible: boolean | null;\n  parent_account_id: string | null;\n};',
+            1,
+          )
+
+          s = s.replace(
+            '  balanceVisible: boolean;\n};',
+            '  balanceVisible: boolean;\n  onAddSubaccount: (account: BankAccount) => void;\n};',
+            1,
+          )
+          s = s.replace(
+            '  balanceVisible,\n}: SortableAccountItemProps)',
+            '  balanceVisible,\n  onAddSubaccount,\n}: SortableAccountItemProps)',
+            1,
+          )
+
+          s = s.replace(
+            '        "animate-stagger-in group relative bg-card hover:bg-accent/40 transition-colors select-none",',
+            '        "animate-stagger-in group relative bg-card hover:bg-accent/40 transition-colors select-none",\n        account.parent_account_id && "ml-5 sm:ml-8 border-l-2 border-primary/20 bg-primary/[0.025]",',
+            1,
+          )
+
+          name_marker = '<p className="text-[14px] font-semibold text-foreground truncate tracking-tight leading-tight">{account.name}</p>'
+          assert name_marker in s
+          s = s.replace(
+            name_marker,
+            name_marker + '\n                  {account.parent_account_id && (\n                    <span className="shrink-0 rounded-full bg-primary/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-primary">Subconta</span>\n                  )}',
+            1,
+          )
+
+          menu_marker = '''                  <DropdownMenuSeparator />\n                  <DropdownMenuItem onClick={() => { startEdit(account); }} className="cursor-pointer">'''
+          assert menu_marker in s
+          s = s.replace(
+            menu_marker,
+            '''                  <DropdownMenuSeparator />\n                  {!account.parent_account_id && (\n                    <DropdownMenuItem onClick={() => onAddSubaccount(account)} className="cursor-pointer">\n                      <Plus className="h-4 w-4 mr-2" />\n                      Adicionar subconta\n                    </DropdownMenuItem>\n                  )}\n                  <DropdownMenuItem onClick={() => { startEdit(account); }} className="cursor-pointer">''',
+            1,
+          )
+
+          state_marker = '  const [formColor, setFormColor] = useState(bankPresets.find(b => b.id === "custom")!.color);'
+          assert state_marker in s
+          s = s.replace(
+            state_marker,
+            state_marker + '\n  const [formParentAccountId, setFormParentAccountId] = useState<string | null>(null);',
+            1,
+          )
+
+          old_open = '''   const openAddDialog = () => {\n     setFormName("");\n     setFormBalance("");\n     setFormIcon("custom");\n     setFormColor(bankPresets.find(b => b.id === "custom")!.color);\n     setDialogOpen(true);\n   };'''
+          assert old_open in s
+          s = s.replace(
+            old_open,
+            '''   const openAddDialog = (parentAccount?: BankAccount) => {\n     setFormName("");\n     setFormBalance("");\n     setFormParentAccountId(parentAccount?.id ?? null);\n     setFormIcon(parentAccount?.icon || "custom");\n     setFormColor(parentAccount?.color || bankPresets.find(b => b.id === "custom")!.color);\n     setDialogOpen(true);\n   };''',
+            1,
+          )
+
+          s = s.replace('onClick={() => setDialogOpen(true)}', 'onClick={() => openAddDialog()}', 1)
+          s = s.replace('onClick={openAddDialog}', 'onClick={() => openAddDialog()}', 1)
+
+          payload_marker = '''        ...valid,\n        icon: formIcon,\n        color: formColor,'''
+          assert payload_marker in s
+          s = s.replace(
+            payload_marker,
+            '''        ...valid,\n        icon: formIcon,\n        color: formColor,\n        parent_account_id: formParentAccountId,''',
+            1,
+          )
+
+          fetch_marker = '      if (data) setAccounts(data);'
+          assert fetch_marker in s
+          s = s.replace(
+            fetch_marker,
+            '''      if (data) {\n        const rootAccounts = data.filter((account) => !account.parent_account_id);\n        const childAccounts = data.filter((account) => !!account.parent_account_id);\n        const orderedAccounts = rootAccounts.flatMap((root) => [\n          root,\n          ...childAccounts.filter((child) => child.parent_account_id === root.id),\n        ]);\n        const knownIds = new Set(orderedAccounts.map((account) => account.id));\n        setAccounts([...orderedAccounts, ...childAccounts.filter((account) => !knownIds.has(account.id))]);\n      }''',
+            1,
+          )
+
+          pass_marker = '                    balanceVisible={balanceVisible}\n                  />'
+          assert pass_marker in s
+          s = s.replace(
+            pass_marker,
+            '                    balanceVisible={balanceVisible}\n                    onAddSubaccount={openAddDialog}\n                  />',
+            1,
+          )
+
+          title_marker = '<DialogTitle>{editingAccount ? "Editar conta" : "Nova conta"}</DialogTitle>'
+          assert title_marker in s
+          s = s.replace(
+            title_marker,
+            '<DialogTitle>{editingAccount ? "Editar conta" : (formParentAccountId ? "Nova subconta" : "Nova conta")}</DialogTitle>',
+            1,
+          )
+
+          form_start = '''           <div className="flex flex-col gap-4 mt-2">\n             <div className="space-y-1.5">\n               <Label className="text-xs text-muted-foreground">Banco</Label>'''
+          assert form_start in s
+          replacement = '''           <div className="flex flex-col gap-4 mt-2">\n             {!editingAccount && (\n               <div className="space-y-1.5">\n                 <Label className="text-xs text-muted-foreground">Vincular a</Label>\n                 <Select\n                   value={formParentAccountId || "__main__"}\n                   onValueChange={(value) => {\n                     const nextParentId = value === "__main__" ? null : value;\n                     setFormParentAccountId(nextParentId);\n                     const parent = accounts.find((account) => account.id === nextParentId);\n                     if (parent) {\n                       setFormIcon(parent.icon || "custom");\n                       setFormColor(parent.color || bankPresets.find(b => b.id === "custom")!.color);\n                     }\n                   }}\n                 >\n                   <SelectTrigger className="rounded-xl">\n                     <SelectValue placeholder="Conta principal" />\n                   </SelectTrigger>\n                   <SelectContent>\n                     <SelectItem value="__main__">Conta principal (sem vínculo)</SelectItem>\n                     {accounts.filter((account) => !account.parent_account_id).map((account) => (\n                       <SelectItem key={account.id} value={account.id}>\n                         Subconta de {account.name}\n                       </SelectItem>\n                     ))}\n                   </SelectContent>\n                 </Select>\n                 {formParentAccountId && (\n                   <p className="text-[11px] text-muted-foreground">O saldo desta subconta será controlado separadamente do saldo disponível na conta principal.</p>\n                 )}\n               </div>\n             )}\n             <div className="space-y-1.5">\n               <Label className="text-xs text-muted-foreground">Banco</Label>'''
+          s = s.replace(form_start, replacement, 1)
+
+          p.write_text(s)
+
+          t = Path('src/integrations/supabase/types.ts')
+          ts = t.read_text()
+          old = '''          is_visible: boolean | null\n          name: string\n          sort_order: number | null'''
+          new = '''          is_visible: boolean | null\n          name: string\n          parent_account_id: string | null\n          sort_order: number | null'''
+          assert old in ts
+          ts = ts.replace(old, new, 1)
+          old = '''          is_visible?: boolean | null\n          name: string\n          sort_order?: number | null'''
+          new = '''          is_visible?: boolean | null\n          name: string\n          parent_account_id?: string | null\n          sort_order?: number | null'''
+          assert old in ts
+          ts = ts.replace(old, new, 1)
+          old = '''          is_visible?: boolean | null\n          name?: string\n          sort_order?: number | null'''
+          new = '''          is_visible?: boolean | null\n          name?: string\n          parent_account_id?: string | null\n          sort_order?: number | null'''
+          assert old in ts
+          ts = ts.replace(old, new, 1)
+          ts = ts.replace('        Relationships: []\n      }\n      budget_categories:', '''        Relationships: [\n          {\n            foreignKeyName: "bank_accounts_parent_account_id_fkey"\n            columns: ["parent_account_id"]\n            isOneToOne: false\n            referencedRelation: "bank_accounts"\n            referencedColumns: ["id"]\n          },\n        ]\n      }\n      budget_categories:''', 1)
+          t.write_text(ts)
+
+          test = Path('src/tests/bank-subaccounts.test.ts')
+          test.write_text('''import { describe, expect, it } from "vitest";\nimport fs from "node:fs";\nimport path from "node:path";\n\ndescribe("bank subaccounts", () => {\n  const accountsSource = fs.readFileSync(path.resolve(process.cwd(), "src/routes/accounts.tsx"), "utf8");\n  const typesSource = fs.readFileSync(path.resolve(process.cwd(), "src/integrations/supabase/types.ts"), "utf8");\n\n  it("stores a parent account when creating a subaccount", () => {\n    expect(accountsSource).toContain("parent_account_id: formParentAccountId");\n    expect(accountsSource).toContain("Adicionar subconta");\n    expect(accountsSource).toContain("Subconta de {account.name}");\n  });\n\n  it("groups child accounts below their parent", () => {\n    expect(accountsSource).toContain("child.parent_account_id === root.id");\n    expect(accountsSource).toContain("account.parent_account_id && \\\"ml-5 sm:ml-8");\n  });\n\n  it("keeps generated Supabase types aware of parent_account_id", () => {\n    expect(typesSource).toContain("parent_account_id: string | null");\n    expect(typesSource).toContain("bank_accounts_parent_account_id_fkey");\n  });\n});\n''')
+          PY
+      - name: Commit patch
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/routes/accounts.tsx src/integrations/supabase/types.ts src/tests/bank-subaccounts.test.ts
+          git commit -m "feat: support bank subaccounts [subaccounts-applied]"
+          git push
