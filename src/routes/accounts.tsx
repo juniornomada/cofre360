@@ -454,7 +454,7 @@ function AccountsPage() {
       // Buscar transações visíveis vinculadas a contas bancárias (exclui card e ocultas/soft-deleted).
       const { data: txData, error: txError } = await supabase
         .from("transactions")
-        .select("bank_account_id, amount, type, is_visible, card")
+        .select("bank_account_id, amount, type, is_visible, card, date")
         .eq("user_id", session.user.id)
         .not("bank_account_id", "is", null)
         .is("card", null);
@@ -463,8 +463,11 @@ function AccountsPage() {
       if (txData) {
         const incMap: Record<string, number> = {};
         const expMap: Record<string, number> = {};
+        const todayKey = new Date().toLocaleDateString("en-CA");
         for (const tx of txData) {
           if (tx.is_visible === false) continue; // ignora transações ocultas/removidas logicamente
+          const transactionDateKey = typeof tx.date === "string" ? tx.date.slice(0, 10) : undefined;
+          if (transactionDateKey && transactionDateKey > todayKey) continue;
           const id = tx.bank_account_id as string;
           const amt = Number(tx.amount) || 0;
           if (tx.type === "income") {
@@ -892,8 +895,6 @@ function AccountsPage() {
           </button>
         </div>
       </div>
-
-      {/* Empty state */}
       {accounts.length === 0 && (
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
@@ -903,8 +904,6 @@ function AccountsPage() {
           <p className="text-sm text-muted-foreground max-w-[240px]">Adicione sua primeira conta bancária para acompanhar saldos e movimentações</p>
         </div>
       )}
-
-      {/* Accounts list — grouped card with dividers */}
       {accounts.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center justify-between px-1">
@@ -993,7 +992,6 @@ function AccountsPage() {
         </div>
       )}
 
-      {/* Add button */}
       <button
         onClick={() => openAddDialog()}
         className="interactive-button flex items-center justify-center gap-2 rounded-full bg-foreground py-3.5 text-sm font-medium text-background hover:bg-foreground/90 transition-colors"
@@ -1002,7 +1000,6 @@ function AccountsPage() {
         Adicionar conta
       </button>
 
-       {/* Add/Edit Account Dialog */}
        <Dialog open={dialogOpen || !!editingAccount} onOpenChange={(v) => {
          if (!v) {
            setDialogOpen(false);
@@ -1184,7 +1181,6 @@ function AccountsPage() {
          </DialogContent>
        </Dialog>
 
-      {/* Recalcular saldo dialog */}
       <Dialog open={!!recalcAccount} onOpenChange={(v) => { if (!v) setRecalcAccount(null); }}>
         <DialogContent className="max-w-sm mx-auto rounded-2xl">
           <DialogHeader>
@@ -1250,7 +1246,6 @@ function AccountsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Composição do saldo dialog */}
       <Dialog open={!!breakdownAccount} onOpenChange={(v) => { if (!v) { setBreakdownAccount(null); setBreakdownData(null); } }}>
         <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader>
@@ -1272,7 +1267,6 @@ function AccountsPage() {
             };
             return (
               <div className="space-y-5">
-                {/* Fórmula */}
                 <div className="rounded-xl border border-border bg-accent/30 p-4 space-y-2">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Abertura</span>
@@ -1293,7 +1287,6 @@ function AccountsPage() {
                   </div>
                 </div>
 
-                {/* Ignoradas: vinculadas a cartão */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
@@ -1326,7 +1319,6 @@ function AccountsPage() {
                   )}
                 </div>
 
-                {/* Ocultadas */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
@@ -1374,8 +1366,6 @@ function AccountsPage() {
         </DialogContent>
       </Dialog>
 
-
-
       <Dialog open={zeroConfirmOpen} onOpenChange={(v) => { if (!v && !isZeroing) setZeroConfirmOpen(false); }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -1420,11 +1410,6 @@ function AccountsPage() {
           </div>
         </DialogContent>
       </Dialog>
-
-
-
-
-
 
       <Suspense fallback={null}>
         {csvImportAccount && (
