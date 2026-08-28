@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { inferDebitInstallmentContext, type InstallmentHistoryTransaction } from "@/lib/debit-installment-history-sync";
 import {
@@ -98,5 +99,20 @@ describe("debit expense date edit feedback", () => {
     const message = getTransactionEditSuccessMessage(successfulMetadataEdit);
     expect(message).toBe("Transação atualizada");
     expect(message).not.toContain("Parcelamento removido");
+  });
+
+  it("guards the real transactions UI against routing debit metadata edits through installment removal", () => {
+    const source = readFileSync(new URL("../routes/transactions.tsx", import.meta.url), "utf8");
+
+    // The production edit flow must classify a plain debit expense as having
+    // no owned installment plan and use a non-cleared fallback result.
+    expect(source).toContain("const hasInstallmentPlan = !!editTx.card || !!editTx.installment_group_id;");
+    expect(source).toContain(": { cleared: false, futureRowsAdded: 0 };");
+
+    // Removal feedback is only legal when the installment engine explicitly
+    // reports `cleared`; the debit metadata path above never produces it.
+    expect(source).toContain("if (result.cleared)");
+    expect(source).toContain('toast.success("Parcelamento removido")');
+    expect(source).toContain('toast.success("Transação atualizada")');
   });
 });
