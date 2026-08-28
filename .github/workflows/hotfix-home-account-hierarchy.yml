@@ -19,14 +19,10 @@ jobs:
           from pathlib import Path
           p = Path('src/routes/home.tsx')
           s = p.read_text()
-          old = '''          {visibleAccounts.map((account) => (
-            <Link key={account.id} to="/transactions" search={{ accountId: account.id } as any} className="flex items-center gap-2.5 rounded-xl bg-background/40 px-2.5 py-2">
-              <BankLogo icon={account.icon} color={account.color} name={account.name} size="sm" />
-              <span className="min-w-0 flex-1 text-xs font-medium text-foreground">{account.name}</span>
-              <span className={cn("text-xs font-bold tabular-nums", account.balance < 0 && "text-destructive")}>{balanceVisible ? `R$ ${fmt(account.balance)}` : "R$ ••••"}</span>
-            </Link>
-          ))}'''
-          new = '''          {mainAccounts.map((account) => {
+          start = s.index('          {visibleAccounts.map((account) => (')
+          end_marker = '          ))}\n          {!loading && visibleAccounts.length === 0'
+          end = s.index(end_marker, start) + len('          ))}\n')
+          replacement = '''          {mainAccounts.map((account) => {
             const subaccounts = visibleAccounts.filter((item) => item.parent_account_id === account.id);
             return (
               <div key={account.id} className="flex flex-col gap-1">
@@ -49,12 +45,11 @@ jobs:
                 ))}
               </div>
             );
-          })}'''
-          if old not in s:
-              raise SystemExit('home accounts block not found')
-          p.write_text(s.replace(old, new, 1))
+          })}
+'''
+          p.write_text(s[:start] + replacement + s[end:])
           PY
-      - name: Commit patch and remove one-shot workflow
+      - name: Commit patch and remove workflow
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
