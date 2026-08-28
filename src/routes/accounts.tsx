@@ -140,9 +140,8 @@ function SortableAccountItem({
   // O campo `account.balance` representa o saldo inicial/de abertura da conta.
   const openingBalance = Math.round(Number(account.balance || 0) * 100) / 100;
   const currentBalance = Math.round((openingBalance + income - expense) * 100) / 100;
-  const hasMovements = income !== 0 || expense !== 0;
-  // Destaque: quando não há movimentações, a abertura É o saldo atual.
-  const openingIsOnlyComponent = !hasMovements && openingBalance !== 0;
+  const performance = Math.round((currentBalance - openingBalance) * 100) / 100;
+  const performancePct = openingBalance !== 0 ? (performance / Math.abs(openingBalance)) * 100 : 0;
 
   return (
     <div
@@ -217,36 +216,19 @@ function SortableAccountItem({
                     <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground shrink-0" />
                   </button>
                 </div>
-                {openingBalance !== 0 && (
-                  <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 min-w-0">
-                    <span
-                      className={cn(
-                        "text-[11px] tabular-nums leading-tight min-w-0 truncate",
-                        openingIsOnlyComponent
-                          ? "font-semibold text-primary"
-                          : "text-muted-foreground",
-                        openingBalance < 0 && !openingIsOnlyComponent
-                          ? "text-destructive"
-                          : "",
-                      )}
-                      title="Saldo de abertura da conta"
-                    >
-                      Abertura: {balanceVisible
-                        ? formatSignedBRL(openingBalance)
+                {account.parent_account_id && openingBalance !== 0 && (
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 min-w-0">
+                    <span className="text-[11px] tabular-nums leading-tight text-muted-foreground">
+                      Saldo inicial: {balanceVisible ? formatSignedBRL(openingBalance) : "R$ ••••"}
+                    </span>
+                    <span className={cn(
+                      "text-[11px] tabular-nums leading-tight font-medium",
+                      performance > 0 ? "text-primary" : performance < 0 ? "text-destructive" : "text-muted-foreground"
+                    )}>
+                      Rendimento: {balanceVisible
+                        ? `${formatSignedBRL(performance)} (${performancePct.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%)`
                         : "R$ ••••"}
                     </span>
-                    {openingIsOnlyComponent && (
-                      <span
-                        role="status"
-                        aria-label={`Sem movimentações no período — o saldo atual (${
-                          balanceVisible ? formatSignedBRL(openingBalance) : "oculto"
-                        }) é composto exclusivamente pelo saldo de abertura da conta ${account.name}`}
-                        title="Saldo atual é apenas a abertura (sem movimentações no período)"
-                        className="shrink-0 whitespace-nowrap text-[10px] sm:text-[11px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-primary text-primary-foreground border border-primary"
-                      >
-                        <span aria-hidden="true">único componente</span>
-                      </span>
-                    )}
                   </div>
                 )}
               </div>
