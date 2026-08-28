@@ -619,23 +619,29 @@ function Dashboard() {
       }).eq("id", editTx.id);
       if (updErr) throw updErr;
 
-      const result = await saveInstallmentPlan({
-        id: editTx.id,
-        name: finalName,
-        icon: editTx.icon,
-        category: editTx.category,
-        date: editTx.date,
-        amount: editTx.amount,
-        type: editTx.type,
-        card: editTx.card ?? null,
-        bank_account_id: editTx.bank_account_id ?? null,
-        installment_group_id: editTx.installment_group_id ?? null,
-        current,
-        total,
-        installmentAmount: perInstallment,
-        installmentMode: editInstallmentMode,
-        installmentSourceAmount: editTx.amount,
-      });
+      // Debit expenses (no card) have no installment plan — skip the plan
+      // engine entirely so editing metadata (e.g. the date) never reports
+      // "Parcelamento removido".
+      const hasInstallmentPlan = !!editTx.card || !!editTx.installment_group_id;
+      const result = hasInstallmentPlan
+        ? await saveInstallmentPlan({
+            id: editTx.id,
+            name: finalName,
+            icon: editTx.icon,
+            category: editTx.category,
+            date: editTx.date,
+            amount: editTx.amount,
+            type: editTx.type,
+            card: editTx.card ?? null,
+            bank_account_id: editTx.bank_account_id ?? null,
+            installment_group_id: editTx.installment_group_id ?? null,
+            current,
+            total,
+            installmentAmount: perInstallment,
+            installmentMode: editInstallmentMode,
+            installmentSourceAmount: editTx.amount,
+          })
+        : { cleared: false, futureRowsAdded: 0 };
 
       // Always propagate cosmetic fields (category/icon/card/account) to all
       // siblings in the group — a purchase's category/card is a property of
