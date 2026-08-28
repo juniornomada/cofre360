@@ -172,7 +172,7 @@ export function TransactionItem({
           </p>
           <span className={cn(
             "text-sm font-bold tabular-nums shrink-0",
-            isTransferPair ? "text-muted-foreground" : type === "income" ? "text-primary" : "text-destructive"
+            isTransferPair ? "text-foreground" : type === "income" ? "text-primary" : "text-destructive"
           )}>
             {isTransferPair ? "" : type === "expense" ? "- " : "+ "}
             {amountVisible ? `R$ ${formatBRL(Math.abs(amount))}` : "R$ ••••"}
