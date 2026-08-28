@@ -1,0 +1,40 @@
+name: Allow expense beyond account balance
+on:
+  push:
+    branches: [feat/debit-credit-installment-date-sync]
+permissions:
+  contents: write
+jobs:
+  patch:
+    if: ${{ !contains(github.event.head_commit.message, '[negative-balance-expense-applied]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Remove expense balance blocker
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('src/components/QuickAddTransactionDialog.tsx')
+          s = p.read_text()
+          old = '''      // Balance check for expenses from bank accounts
+      if (newTx.type === "expense" && newTx.bank_account_id) {
+        const acc = bankAccounts.find(a => a.id === newTx.bank_account_id);
+        if (acc && (acc.balance || 0) < newTx.amount) {
+          toast.error(`Saldo insuficiente na conta ${acc.name}. Saldo disponível: R$ ${(acc.balance || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`);
+          setIsSubmitting(false);
+          return;
+        }
+      }
+      '''
+          if old not in s:
+              raise SystemExit('expense balance blocker not found')
+          s = s.replace(old, '', 1)
+          p.write_text(s)
+          PY
+      - name: Commit change
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/components/QuickAddTransactionDialog.tsx
+          git commit -m "feat: allow expenses beyond account balance [negative-balance-expense-applied]"
+          git push
