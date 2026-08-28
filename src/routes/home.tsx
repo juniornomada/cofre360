@@ -199,10 +199,17 @@ function RecoveredHome() {
     return { income, expense };
   }, [transactions]);
 
-  const recent = useMemo(
-    () => transactions.filter((tx) => tx.is_visible !== false).slice(0, 8),
-    [transactions],
-  );
+  const recent = useMemo(() => {
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+    return transactions
+      .filter((tx) => {
+        if (tx.is_visible === false) return false;
+        const transactionDate = safeDate(tx.date);
+        return !transactionDate || transactionDate <= today;
+      })
+      .slice(0, 8);
+  }, [transactions]);
 
   const cardTotals = useMemo(() => {
     const result: Record<string, number> = {};
