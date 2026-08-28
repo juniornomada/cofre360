@@ -579,15 +579,26 @@ function Dashboard() {
       if (editTx.type === "expense" && editTx.bank_account_id) {
         const acc = accountBalances.find(a => a.id === editTx.bank_account_id);
         if (acc) {
-          const originalTx = allTransactions.find(t => t.id === editTx.id);
+          const originalTx =
+            allTransactions.find((t: any) => t.id === editTx.id) ??
+            (transactions as any[]).find((t: any) => t.id === editTx.id);
           let availableBalance = acc.balance || 0;
-          
+
           // If editing an existing expense from the same account, add back the current amount to check limit
           if (originalTx && originalTx.bank_account_id === editTx.bank_account_id && originalTx.type === "expense") {
-            availableBalance += originalTx.amount;
+            availableBalance += Number(originalTx.amount) || 0;
           }
-          
-          if (perInstallment > availableBalance) {
+
+          // Only block when the edit actually increases the amount charged to the account.
+          const isSameAccountExpenseEdit =
+            !!originalTx &&
+            originalTx.type === "expense" &&
+            originalTx.bank_account_id === editTx.bank_account_id;
+          const delta = isSameAccountExpenseEdit
+            ? Math.max(0, perInstallment - (Number(originalTx.amount) || 0))
+            : perInstallment;
+
+          if (delta > (acc.balance || 0)) {
             toast.error(`Saldo insuficiente na conta ${acc.name} (Saldo disponível: R$ ${availableBalance.toLocaleString("pt-BR", { minimumFractionDigits: 2 })})`);
             return;
           }
