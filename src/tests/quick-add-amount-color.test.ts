@@ -3,16 +3,23 @@ import fs from "node:fs";
 import path from "node:path";
 
 describe("QuickAdd amount color by transaction type", () => {
-  const source = fs.readFileSync(
-    path.resolve(process.cwd(), "src/components/QuickAddTransactionDialog.tsx"),
-    "utf8",
-  );
+  const dialogSource = fs.readFileSync(path.resolve(process.cwd(), "src/components/QuickAddTransactionDialog.tsx"), "utf8");
+  const inputSource = fs.readFileSync(path.resolve(process.cwd(), "src/components/CalculatorAmountInput.tsx"), "utf8");
 
-  it("uses red for expenses and green for income", () => {
-    expect(source).toContain('newTx.type === "expense" ? "!text-red-500 !border-red-500 focus-visible:!ring-red-500" : "!text-green-600 dark:!text-green-500 !border-green-600 dark:!border-green-500 focus-visible:!ring-green-600 dark:focus-visible:!ring-green-500"');
+  it("passes the active transaction type to the amount field", () => {
+    expect(dialogSource).toContain('tone={newTx.type}');
   });
 
-  it("uses neutral black/light and white/dark for transfers", () => {
-    expect(source).toContain('className="!text-black dark:!text-white !border-black dark:!border-white focus-visible:!ring-black dark:focus-visible:!ring-white"');
+  it("uses an explicit transfer tone", () => {
+    expect(dialogSource).toContain('tone="transfer"');
+  });
+
+  it("maps expense, income and transfer to distinct text and border colors", () => {
+    expect(inputSource).toContain('tone === "expense"');
+    expect(inputSource).toContain('!text-red-500 !border-red-500');
+    expect(inputSource).toContain('tone === "income"');
+    expect(inputSource).toContain('!text-green-600 dark:!text-green-500 !border-green-600 dark:!border-green-500');
+    expect(inputSource).toContain('tone === "transfer"');
+    expect(inputSource).toContain('!text-black dark:!text-white !border-black dark:!border-white');
   });
 });
