@@ -653,26 +653,31 @@ export function TransactionsPage() {
       }).eq("id", editTx.id);
       if (updErr) throw updErr;
 
-      // 2) Apply installment plan (creates/clears group + future rows)
-      const result = await saveInstallmentPlan({
-        id: editTx.id,
-        name: finalName,
-        icon: editTx.icon,
-        category: editTx.category,
-        date: editTx.date,
-        amount: editTx.amount,
-        type: editTx.type,
-        card: editTx.card ?? null,
-        bank_account_id: editTx.bank_account_id ?? null,
-        installment_group_id: editTx.installment_group_id ?? null,
-        current,
-        total,
-        installmentAmount: perInstallment,
-        installmentMode: editInstallmentMode,
-        installmentSourceAmount: editTx.amount,
-        updateAllInGroup: updateScope === "all",
-        syncDates: updateScope === "all" && !!scopeChanges.includes("Data"),
-      });
+      // 2) Apply installment plan (creates/clears group + future rows).
+      // Debit expenses (no card, no group) have no plan — skip the engine so
+      // metadata edits never report "Parcelamento removido".
+      const hasInstallmentPlan = !!editTx.card || !!editTx.installment_group_id;
+      const result = hasInstallmentPlan
+        ? await saveInstallmentPlan({
+            id: editTx.id,
+            name: finalName,
+            icon: editTx.icon,
+            category: editTx.category,
+            date: editTx.date,
+            amount: editTx.amount,
+            type: editTx.type,
+            card: editTx.card ?? null,
+            bank_account_id: editTx.bank_account_id ?? null,
+            installment_group_id: editTx.installment_group_id ?? null,
+            current,
+            total,
+            installmentAmount: perInstallment,
+            installmentMode: editInstallmentMode,
+            installmentSourceAmount: editTx.amount,
+            updateAllInGroup: updateScope === "all",
+            syncDates: updateScope === "all" && !!scopeChanges.includes("Data"),
+          })
+        : { cleared: false, futureRowsAdded: 0 };
 
       // Always propagate cosmetic fields (category/icon/card/account) to all
       // siblings in the group — a purchase's category/card is a property of
