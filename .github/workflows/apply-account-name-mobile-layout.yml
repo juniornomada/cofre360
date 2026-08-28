@@ -1,0 +1,31 @@
+name: Apply account name mobile layout
+on:
+  push:
+    branches: [fix/account-name-mobile-layout]
+    paths: [.github/workflows/apply-account-name-mobile-layout.yml]
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch account row layout
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('src/routes/accounts.tsx')
+          s=p.read_text()
+          old='''            <div className="flex items-center justify-between gap-2 py-3">\n              <div className="flex flex-col min-w-0 gap-0.5">\n                <div className="flex items-center gap-1.5 min-w-0">\n                  <p className="text-[14px] font-semibold text-foreground truncate tracking-tight leading-tight">{account.name}</p>'''
+          new='''            <div className="flex items-start justify-between gap-1.5 py-3">\n              <div className="flex flex-col min-w-0 flex-1 gap-0.5">\n                <div className="flex items-start gap-1 min-w-0">\n                  <p className="text-[12px] sm:text-[14px] font-semibold text-foreground whitespace-normal break-words tracking-tight leading-tight">{account.name}</p>'''
+          if old not in s:
+              raise SystemExit('target layout not found')
+          s=s.replace(old,new,1)
+          s=s.replace('''                "text-[14px] font-bold tabular-nums tracking-tight leading-tight whitespace-nowrap shrink-0",''','''                "text-[12px] sm:text-[14px] font-bold tabular-nums tracking-tight leading-tight whitespace-nowrap shrink-0 pt-0.5",''',1)
+          p.write_text(s)
+          PY
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/routes/accounts.tsx
+          git commit -m "fix: show full account names on mobile"
+          git push
