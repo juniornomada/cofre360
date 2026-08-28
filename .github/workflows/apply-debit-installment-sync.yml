@@ -1,30 +1,21 @@
 name: Apply debit installment sync
-
 on:
   push:
-    branches:
-      - feat/debit-credit-installment-date-sync
-    paths:
-      - .github/workflows/apply-debit-installment-sync.yml
-      - scripts/apply-debit-installment-sync.py
-
+    branches: [feat/debit-credit-installment-date-sync]
 permissions:
   contents: write
-
 jobs:
   patch:
+    if: ${{ !contains(github.event.head_commit.message, '[debit-sync-applied]') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: feat/debit-credit-installment-date-sync
-          fetch-depth: 0
-      - name: Apply patch
+      - name: Apply debit installment history sync
         run: python3 scripts/apply-debit-installment-sync.py
-      - name: Commit patch
+      - name: Commit sync
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add src/routes/transactions.tsx
-          git commit -m "feat: reuse credit installment history on debit date edit"
-          git push origin HEAD:feat/debit-credit-installment-date-sync
+          git commit -m "feat: reuse credit installment history on debit date edit [debit-sync-applied]"
+          git push
