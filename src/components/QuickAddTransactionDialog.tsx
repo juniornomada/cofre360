@@ -580,6 +580,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                       onChange={(v) => setNewTx({ ...newTx, amount: v })} 
                       onEnter={handleAdd}
                       autoFocus={false}
+                      className="!text-black dark:!text-white"
                     />
                  </div>
               </div>
@@ -660,6 +661,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                         setNewTx({ ...newTx, amount: v });
                       }} 
                       onEnter={handleAdd}
+                      className={newTx.type === "expense" ? "!text-red-500" : "!text-green-600 dark:!text-green-500"}
                     />
                   </div>
               </div>
