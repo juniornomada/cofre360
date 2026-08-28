@@ -48,6 +48,7 @@ type BankAccount = {
   icon: string | null;
   color: string | null;
   is_visible: boolean | null;
+  parent_account_id: string | null;
 };
 
 const bankColorOptions = [
@@ -95,6 +96,7 @@ type SortableAccountItemProps = {
   isSelected: boolean;
   onToggleSelect: (id: string) => void;
   balanceVisible: boolean;
+  onAddSubaccount: (account: BankAccount) => void;
 };
 
 function SortableAccountItem({
@@ -124,6 +126,7 @@ function SortableAccountItem({
   isSelected,
   onToggleSelect,
   balanceVisible,
+  onAddSubaccount,
 }: SortableAccountItemProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: account.id });
   const style: React.CSSProperties = {
@@ -149,6 +152,7 @@ function SortableAccountItem({
       {...listeners}
       className={cn(
         "animate-stagger-in group relative bg-card hover:bg-accent/40 transition-colors select-none",
+        account.parent_account_id && "ml-5 sm:ml-8 border-l-2 border-primary/20 bg-primary/[0.025]",
         !isSelectionMode && "cursor-grab active:cursor-grabbing",
         isDragging && "ring-2 ring-primary ring-offset-2 ring-offset-background shadow-2xl scale-[1.01] z-50",
       )}
@@ -199,6 +203,9 @@ function SortableAccountItem({
               <div className="flex flex-col min-w-0 gap-0.5">
                 <div className="flex items-center gap-1.5 min-w-0">
                   <p className="text-[14px] font-semibold text-foreground truncate tracking-tight leading-tight">{account.name}</p>
+                  {account.parent_account_id && (
+                    <span className="shrink-0 rounded-full bg-primary/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-primary">Subconta</span>
+                  )}
                   {account.is_visible === false && (
                     <EyeOff className="h-3 w-3 text-muted-foreground/60 shrink-0" />
                   )}
@@ -302,6 +309,12 @@ function SortableAccountItem({
                     Importar extrato PDF
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
+                  {!account.parent_account_id && (
+                    <DropdownMenuItem onClick={() => onAddSubaccount(account)} className="cursor-pointer">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Adicionar subconta
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem onClick={() => { startEdit(account); }} className="cursor-pointer">
                     <Pencil className="h-4 w-4 mr-2" />
                     Editar conta
@@ -392,6 +405,7 @@ function AccountsPage() {
   const [formBalance, setFormBalance] = useState("");
   const [formIcon, setFormIcon] = useState("custom");
   const [formColor, setFormColor] = useState(bankPresets.find(b => b.id === "custom")!.color);
+  const [formParentAccountId, setFormParentAccountId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isSelectionMode, setIsSelectionMode] = useState(false);
 
@@ -440,7 +454,16 @@ function AccountsPage() {
 
       const { data, error } = await supabase.from("bank_accounts").select("*").eq("user_id", session.user.id).order("sort_order", { ascending: true }).order("created_at", { ascending: true });
       if (error) throw error;
-      if (data) setAccounts(data);
+      if (data) {
+        const rootAccounts = data.filter((account) => !account.parent_account_id);
+        const childAccounts = data.filter((account) => !!account.parent_account_id);
+        const orderedAccounts = rootAccounts.flatMap((root) => [
+          root,
+          ...childAccounts.filter((child) => child.parent_account_id === root.id),
+        ]);
+        const knownIds = new Set(orderedAccounts.map((account) => account.id));
+        setAccounts([...orderedAccounts, ...childAccounts.filter((account) => !knownIds.has(account.id))]);
+      }
 
       // Buscar transações visíveis vinculadas a contas bancárias (exclui card e ocultas/soft-deleted).
       const { data: txData, error: txError } = await supabase
@@ -523,11 +546,12 @@ function AccountsPage() {
      }
    };
  
-   const openAddDialog = () => {
+   const openAddDialog = (parentAccount?: BankAccount) => {
      setFormName("");
      setFormBalance("");
-     setFormIcon("custom");
-     setFormColor(bankPresets.find(b => b.id === "custom")!.color);
+     setFormParentAccountId(parentAccount?.id ?? null);
+     setFormIcon(parentAccount?.icon || "custom");
+     setFormColor(parentAccount?.color || bankPresets.find(b => b.id === "custom")!.color);
      setDialogOpen(true);
    };
 
@@ -568,6 +592,7 @@ function AccountsPage() {
         ...valid,
         icon: formIcon,
         color: formColor,
+        parent_account_id: formParentAccountId,
       };
       const { error } = await supabase.from("bank_accounts").insert(payload);
       if (error) throw error;
@@ -873,7 +898,7 @@ function AccountsPage() {
             {balanceVisible ? <Eye className="h-5 w-5 text-muted-foreground" /> : <EyeOff className="h-5 w-5 text-muted-foreground" />}
           </button>
           <button 
-            onClick={() => setDialogOpen(true)} 
+            onClick={() => openAddDialog()} 
             className="interactive-button flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground border border-primary/20 shadow-lg hover:brightness-110 transition-all"
             title="Adicionar conta"
           >
@@ -973,6 +998,7 @@ function AccountsPage() {
                     isSelected={selectedIds.has(account.id)}
                     onToggleSelect={toggleSelect}
                     balanceVisible={balanceVisible}
+                    onAddSubaccount={openAddDialog}
                   />
                 ))}
               </div>
@@ -983,7 +1009,7 @@ function AccountsPage() {
 
       {/* Add button */}
       <button
-        onClick={openAddDialog}
+        onClick={() => openAddDialog()}
         className="interactive-button flex items-center justify-center gap-2 rounded-full bg-foreground py-3.5 text-sm font-medium text-background hover:bg-foreground/90 transition-colors"
       >
         <Plus className="h-4 w-4" />
@@ -999,9 +1025,41 @@ function AccountsPage() {
        }}>
          <DialogContent className="max-w-sm mx-auto rounded-2xl">
            <DialogHeader>
-             <DialogTitle>{editingAccount ? "Editar conta" : "Nova conta"}</DialogTitle>
+             <DialogTitle>{editingAccount ? "Editar conta" : (formParentAccountId ? "Nova subconta" : "Nova conta")}</DialogTitle>
            </DialogHeader>
            <div className="flex flex-col gap-4 mt-2">
+             {!editingAccount && (
+               <div className="space-y-1.5">
+                 <Label className="text-xs text-muted-foreground">Vincular a</Label>
+                 <Select
+                   value={formParentAccountId || "__main__"}
+                   onValueChange={(value) => {
+                     const nextParentId = value === "__main__" ? null : value;
+                     setFormParentAccountId(nextParentId);
+                     const parent = accounts.find((account) => account.id === nextParentId);
+                     if (parent) {
+                       setFormIcon(parent.icon || "custom");
+                       setFormColor(parent.color || bankPresets.find(b => b.id === "custom")!.color);
+                     }
+                   }}
+                 >
+                   <SelectTrigger className="rounded-xl">
+                     <SelectValue placeholder="Conta principal" />
+                   </SelectTrigger>
+                   <SelectContent>
+                     <SelectItem value="__main__">Conta principal (sem vínculo)</SelectItem>
+                     {accounts.filter((account) => !account.parent_account_id).map((account) => (
+                       <SelectItem key={account.id} value={account.id}>
+                         Subconta de {account.name}
+                       </SelectItem>
+                     ))}
+                   </SelectContent>
+                 </Select>
+                 {formParentAccountId && (
+                   <p className="text-[11px] text-muted-foreground">O saldo desta subconta será controlado separadamente do saldo disponível na conta principal.</p>
+                 )}
+               </div>
+             )}
              <div className="space-y-1.5">
                <Label className="text-xs text-muted-foreground">Banco</Label>
                <div className="grid grid-cols-4 gap-2 max-h-40 overflow-y-auto pr-1">
