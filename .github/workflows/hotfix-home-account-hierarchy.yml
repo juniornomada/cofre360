@@ -1,0 +1,64 @@
+name: hotfix-home-account-hierarchy
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/hotfix-home-account-hierarchy.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Group subaccounts under parent accounts on Home
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('src/routes/home.tsx')
+          s = p.read_text()
+          old = '''          {visibleAccounts.map((account) => (
+            <Link key={account.id} to="/transactions" search={{ accountId: account.id } as any} className="flex items-center gap-2.5 rounded-xl bg-background/40 px-2.5 py-2">
+              <BankLogo icon={account.icon} color={account.color} name={account.name} size="sm" />
+              <span className="min-w-0 flex-1 text-xs font-medium text-foreground">{account.name}</span>
+              <span className={cn("text-xs font-bold tabular-nums", account.balance < 0 && "text-destructive")}>{balanceVisible ? `R$ ${fmt(account.balance)}` : "R$ ••••"}</span>
+            </Link>
+          ))}'''
+          new = '''          {mainAccounts.map((account) => {
+            const subaccounts = visibleAccounts.filter((item) => item.parent_account_id === account.id);
+            return (
+              <div key={account.id} className="flex flex-col gap-1">
+                <Link to="/transactions" search={{ accountId: account.id } as any} className="flex items-center gap-2.5 rounded-xl bg-background/40 px-2.5 py-2">
+                  <BankLogo icon={account.icon} color={account.color} name={account.name} size="sm" />
+                  <span className="min-w-0 flex-1 text-xs font-medium text-foreground">{account.name}</span>
+                  <span className={cn("text-xs font-bold tabular-nums", account.balance < 0 && "text-destructive")}>{balanceVisible ? `R$ ${fmt(account.balance)}` : "R$ ••••"}</span>
+                </Link>
+                {subaccounts.map((subaccount) => (
+                  <Link
+                    key={subaccount.id}
+                    to="/transactions"
+                    search={{ accountId: subaccount.id } as any}
+                    className="ml-5 flex items-center gap-2.5 rounded-xl border-l-2 border-primary/20 bg-primary/[0.025] px-2.5 py-2 sm:ml-8"
+                  >
+                    <BankLogo icon={subaccount.icon} color={subaccount.color} name={subaccount.name} size="sm" />
+                    <span className="min-w-0 flex-1 text-xs font-medium text-foreground">{subaccount.name}</span>
+                    <span className={cn("text-xs font-bold tabular-nums", subaccount.balance < 0 && "text-destructive")}>{balanceVisible ? `R$ ${fmt(subaccount.balance)}` : "R$ ••••"}</span>
+                  </Link>
+                ))}
+              </div>
+            );
+          })}'''
+          if old not in s:
+              raise SystemExit('home accounts block not found')
+          p.write_text(s.replace(old, new, 1))
+          PY
+      - name: Commit patch and remove one-shot workflow
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git rm .github/workflows/hotfix-home-account-hierarchy.yml
+          git add src/routes/home.tsx
+          git commit -m 'fix: show subaccounts under parent accounts on home'
+          git push
