@@ -1,0 +1,35 @@
+name: Patch subaccount balance labels
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/patch-subaccount-balance-labels.yml']
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Update account labels
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('src/routes/accounts.tsx')
+          s=p.read_text()
+          s=s.replace('  const hasMovements = income !== 0 || expense !== 0;\n  // Destaque: quando não há movimentações, a abertura É o saldo atual.\n  const openingIsOnlyComponent = !hasMovements && openingBalance !== 0;\n', '  const performance = Math.round((currentBalance - openingBalance) * 100) / 100;\n  const performancePct = openingBalance !== 0 ? (performance / Math.abs(openingBalance)) * 100 : 0;\n')
+          start=s.index('                {openingBalance !== 0 && (')
+          end=s.index('              </div>\n              <p className={cn(', start)
+          replacement='''                {account.parent_account_id && openingBalance !== 0 && (\n                  <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 min-w-0">\n                    <span className="text-[11px] tabular-nums leading-tight text-muted-foreground">\n                      Saldo inicial: {balanceVisible ? formatSignedBRL(openingBalance) : "R$ ••••"}\n                    </span>\n                    <span className={cn(\n                      "text-[11px] tabular-nums leading-tight font-medium",\n                      performance > 0 ? "text-primary" : performance < 0 ? "text-destructive" : "text-muted-foreground"\n                    )}>\n                      Rendimento: {balanceVisible\n                        ? `${formatSignedBRL(performance)} (${performancePct.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%)`\n                        : "R$ ••••"}\n                    </span>\n                  </div>\n                )}\n'''
+          s=s[:start]+replacement+s[end:]
+          p.write_text(s)
+          PY
+      - name: Commit patch and remove workflow
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/routes/accounts.tsx
+          git commit -m "fix: show initial balance and performance for subaccounts"
+          git rm .github/workflows/patch-subaccount-balance-labels.yml
+          git commit --amend --no-edit
+          git push
