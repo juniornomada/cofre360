@@ -1,24 +1,19 @@
 alter table public.bank_accounts
   add column if not exists parent_account_id text null;
 
-create unique index if not exists bank_accounts_id_unique_idx
-  on public.bank_accounts(id);
-
+-- parent_account_id is intentionally text because older Cofre360 environments
+-- use text IDs while newer preview schemas may expose bank_accounts.id as uuid.
+-- Referential ownership is enforced by the trigger below using id::text,
+-- which keeps the migration compatible with both schemas.
 alter table public.bank_accounts
   drop constraint if exists bank_accounts_parent_account_id_fkey;
-
-alter table public.bank_accounts
-  add constraint bank_accounts_parent_account_id_fkey
-  foreign key (parent_account_id)
-  references public.bank_accounts(id)
-  on delete cascade;
 
 alter table public.bank_accounts
   drop constraint if exists bank_accounts_parent_not_self;
 
 alter table public.bank_accounts
   add constraint bank_accounts_parent_not_self
-  check (parent_account_id is null or parent_account_id <> id);
+  check (parent_account_id is null or parent_account_id <> id::text);
 
 create index if not exists bank_accounts_parent_account_id_idx
   on public.bank_accounts(parent_account_id);
@@ -40,7 +35,7 @@ begin
   select user_id, parent_account_id
     into parent_user_id, parent_parent_id
   from public.bank_accounts
-  where id = new.parent_account_id;
+  where id::text = new.parent_account_id;
 
   if parent_user_id is null then
     raise exception 'Conta principal não encontrada';
