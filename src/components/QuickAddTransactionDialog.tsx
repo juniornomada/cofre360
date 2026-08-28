@@ -401,16 +401,8 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
       // We also removed the balance check for standard transactions to maintain consistency
       // as this is a tracking app and users might want to record transactions even with insufficient app-balance.
 
-      // Balance check for expenses from bank accounts
-      if (newTx.type === "expense" && newTx.bank_account_id) {
-        const acc = bankAccounts.find(a => a.id === newTx.bank_account_id);
-        if (acc && (acc.balance || 0) < newTx.amount) {
-          toast.error(`Saldo insuficiente na conta ${acc.name}. Saldo disponível: R$ ${(acc.balance || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`);
-          setIsSubmitting(false);
-          return;
-        }
-      }
-      
+      // Expenses may intentionally leave the selected account with a negative balance.
+
       const cardValue = newTx.card === "Nenhum" ? null : newTx.card;
       // Coerção de tipo: se a categoria escolhida for de Receita (ex.: "Receita > Reembolso"
       // para estornos), força type=income mesmo que o usuário tenha deixado a aba "Despesa"
