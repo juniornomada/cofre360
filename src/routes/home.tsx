@@ -256,14 +256,14 @@ function RecoveredHome() {
           <span className="text-lg font-bold tabular-nums text-foreground">{balanceVisible ? `R$ ${fmt(accountTotal)}` : "R$ ••••"}</span>
         </div>
         <div className="mt-3 flex flex-col gap-1">
-          {mainAccounts.map((account) => (
+          {visibleAccounts.map((account) => (
             <Link key={account.id} to="/transactions" search={{ accountId: account.id } as any} className="flex items-center gap-2.5 rounded-xl bg-background/40 px-2.5 py-2">
               <BankLogo icon={account.icon} color={account.color} name={account.name} size="sm" />
               <span className="min-w-0 flex-1 text-xs font-medium text-foreground">{account.name}</span>
               <span className={cn("text-xs font-bold tabular-nums", account.balance < 0 && "text-destructive")}>{balanceVisible ? `R$ ${fmt(account.balance)}` : "R$ ••••"}</span>
             </Link>
           ))}
-          {!loading && mainAccounts.length === 0 && <p className="py-5 text-center text-xs text-muted-foreground">Nenhuma conta visível.</p>}
+          {!loading && visibleAccounts.length === 0 && <p className="py-5 text-center text-xs text-muted-foreground">Nenhuma conta visível.</p>}
         </div>
       </section>
 
