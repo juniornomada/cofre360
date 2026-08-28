@@ -1,6 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useServerFn } from "@tanstack/react-start";
-import { countOpenDivergences } from "@/lib/reconciliation/reconciliation.functions";
 
 import { z } from "zod";
 import { formatBRL } from "@/lib/format-brl";
@@ -946,8 +944,8 @@ function Dashboard() {
     return accountBalances.filter(a => a.is_visible !== false);
   }, [accountBalances]);
 
-  // Reconciliation divergences badge
-  const countOpenFn = useServerFn(countOpenDivergences);
+  // Reconciliation divergences badge. Query directly through the authenticated
+  // browser client so Home does not depend on a TanStack server-function endpoint.
   const [openDivergences, setOpenDivergences] = useState(0);
   useEffect(() => {
     let cancelled = false;
@@ -955,14 +953,18 @@ function Dashboard() {
       try {
         const { data } = await supabase.auth.getSession();
         if (!data.session || cancelled) return;
-        const r: any = await countOpenFn();
-        if (!cancelled) setOpenDivergences(Number(r?.count ?? 0));
+        const { count, error } = await supabase
+          .from("reconciliation_divergences")
+          .select("id", { count: "exact", head: true })
+          .neq("status", "resolved");
+        if (error) throw error;
+        if (!cancelled) setOpenDivergences(Number(count ?? 0));
       } catch {
-        // ignora: sem sessão ou sem permissão
+        if (!cancelled) setOpenDivergences(0);
       }
     })();
     return () => { cancelled = true; };
-  }, [countOpenFn]);
+  }, []);
 
 
 
