@@ -264,6 +264,10 @@ function SortableAccountItem({
           ) : (
             <div className="flex items-center gap-0.5">
               <button
+                type="button"
+                onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                onTouchStart={(e) => { e.stopPropagation(); }}
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
