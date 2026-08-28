@@ -1,0 +1,32 @@
+name: Fix home serverfn 404
+on:
+  push:
+    branches: [fix/home-serverfn-404]
+    paths: [.github/workflows/fix-home-serverfn-404.yml]
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch Home reconciliation count
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('src/routes/index.tsx')
+          s = p.read_text()
+          s = s.replace('import { useServerFn } from "@tanstack/react-start";\n', '')
+          s = s.replace('import { countOpenDivergences } from "@/lib/reconciliation/reconciliation.functions";\n', '')
+          old = '''  // Reconciliation divergences badge\n  const countOpenFn = useServerFn(countOpenDivergences);\n  const [openDivergences, setOpenDivergences] = useState(0);\n  useEffect(() => {\n    let cancelled = false;\n    (async () => {\n      try {\n        const { data } = await supabase.auth.getSession();\n        if (!data.session || cancelled) return;\n        const r: any = await countOpenFn();\n        if (!cancelled) setOpenDivergences(Number(r?.count ?? 0));\n      } catch {\n        // ignora: sem sessão ou sem permissão\n      }\n    })();\n    return () => { cancelled = true; };\n  }, [countOpenFn]);\n'''
+          new = '''  // Reconciliation divergences badge. Query directly through the authenticated\n  // browser client so Home does not depend on a TanStack server-function endpoint.\n  const [openDivergences, setOpenDivergences] = useState(0);\n  useEffect(() => {\n    let cancelled = false;\n    (async () => {\n      try {\n        const { data } = await supabase.auth.getSession();\n        if (!data.session || cancelled) return;\n        const { count, error } = await supabase\n          .from("reconciliation_divergences")\n          .select("id", { count: "exact", head: true })\n          .neq("status", "resolved");\n        if (error) throw error;\n        if (!cancelled) setOpenDivergences(Number(count ?? 0));\n      } catch {\n        if (!cancelled) setOpenDivergences(0);\n      }\n    })();\n    return () => { cancelled = true; };\n  }, []);\n'''
+          if old not in s:
+              raise SystemExit('target reconciliation block not found')
+          s = s.replace(old, new, 1)
+          p.write_text(s)
+          PY
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/routes/index.tsx
+          git commit -m "fix: avoid server-function 404 on home"
+          git push
