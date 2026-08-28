@@ -1,4 +1,1 @@
-.ml-5 button[title="Ocultar do Início"],
-.ml-5 button[title="Mostrar no Início"] {
-  display: none !important;
-}
+/* Subcontas usam o mesmo controle de visibilidade das contas principais. */
