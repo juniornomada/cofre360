@@ -65,6 +65,7 @@ export type Database = {
           id: string
           is_visible: boolean | null
           name: string
+          parent_account_id: string | null
           sort_order: number | null
           updated_at: string
           user_id: string
@@ -77,6 +78,7 @@ export type Database = {
           id: string
           is_visible?: boolean | null
           name: string
+          parent_account_id?: string | null
           sort_order?: number | null
           updated_at?: string
           user_id?: string
@@ -89,11 +91,20 @@ export type Database = {
           id?: string
           is_visible?: boolean | null
           name?: string
+          parent_account_id?: string | null
           sort_order?: number | null
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "bank_accounts_parent_account_id_fkey"
+            columns: ["parent_account_id"]
+            isOneToOne: false
+            referencedRelation: "bank_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       budget_categories: {
         Row: {
