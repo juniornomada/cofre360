@@ -1,0 +1,71 @@
+name: hotfix-current-balance-date
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/hotfix-current-balance-date.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Exclude future transactions from account balances
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          # Home: rawTx already contains date, so skip future-dated transactions while calculating balances.
+          p = Path('src/routes/home.tsx')
+          s = p.read_text()
+          old = '''        for (const tx of rawTx) {
+          if (tx.is_visible === false || !tx.bank_account_id) continue;
+          if (tx.type === "expense" && tx.card) continue;
+          const amount = Number(tx.amount || 0);'''
+          new = '''        const today = new Date();
+        today.setHours(23, 59, 59, 999);
+        for (const tx of rawTx) {
+          if (tx.is_visible === false || !tx.bank_account_id) continue;
+          if (tx.type === "expense" && tx.card) continue;
+          const transactionDate = safeDate(tx.date);
+          if (transactionDate && transactionDate > today) continue;
+          const amount = Number(tx.amount || 0);'''
+          if old not in s:
+            raise SystemExit('home balance loop not found')
+          p.write_text(s.replace(old, new, 1))
+
+          # Accounts: fetch transaction date and skip dates after today in the maps used by current balance.
+          p = Path('src/routes/accounts.tsx')
+          s = p.read_text()
+          s2 = s.replace(
+            '.select("bank_account_id, amount, type, is_visible, card")',
+            '.select("bank_account_id, amount, type, is_visible, card, date")',
+            1,
+          )
+          if s2 == s:
+            raise SystemExit('accounts transaction select not found')
+          s = s2
+          old = '''        for (const tx of txData) {
+          if (tx.is_visible === false) continue; // ignora transações ocultas/removidas logicamente
+          const id = tx.bank_account_id as string;'''
+          new = '''        const todayKey = new Date().toLocaleDateString("en-CA");
+        for (const tx of txData) {
+          if (tx.is_visible === false) continue; // ignora transações ocultas/removidas logicamente
+          const transactionDateKey = typeof tx.date === "string" ? tx.date.match(/^\\d{4}-\\d{2}-\\d{2}/)?.[0] : undefined;
+          if (transactionDateKey && transactionDateKey > todayKey) continue;
+          const id = tx.bank_account_id as string;'''
+          if old not in s:
+            raise SystemExit('accounts balance loop not found')
+          p.write_text(s.replace(old, new, 1))
+          PY
+      - name: Commit patch and remove one-shot workflow
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git rm .github/workflows/hotfix-current-balance-date.yml
+          git add src/routes/home.tsx src/routes/accounts.tsx
+          git commit -m 'fix: exclude future transactions from current balances'
+          git push
