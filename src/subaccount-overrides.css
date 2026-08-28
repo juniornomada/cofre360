@@ -1,1 +1,10 @@
 /* Subcontas usam o mesmo controle de visibilidade das contas principais. */
+
+/* Home: centraliza títulos/ícones e valores dos cards de receitas e despesas do mês. */
+.animate-page-enter > section.grid.grid-cols-2 > div {
+  text-align: center;
+}
+
+.animate-page-enter > section.grid.grid-cols-2 > div > div {
+  justify-content: center;
+}
