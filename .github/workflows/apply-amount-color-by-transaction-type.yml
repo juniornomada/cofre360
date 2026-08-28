@@ -1,0 +1,88 @@
+name: Apply amount color by transaction type
+on:
+  push:
+    branches: [feat/debit-credit-installment-date-sync]
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply amount input colors
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('src/components/QuickAddTransactionDialog.tsx')
+          s = p.read_text()
+
+          transfer_old = '''                    <CalculatorAmountInput 
+                      value={newTx.amount} 
+                      onChange={(v) => setNewTx({ ...newTx, amount: v })} 
+                      onEnter={handleAdd}
+                      autoFocus={false}
+                    />'''
+          transfer_new = '''                    <CalculatorAmountInput 
+                      value={newTx.amount} 
+                      onChange={(v) => setNewTx({ ...newTx, amount: v })} 
+                      onEnter={handleAdd}
+                      autoFocus={false}
+                      className="!text-black dark:!text-white"
+                    />'''
+          if transfer_old not in s:
+              raise SystemExit('transfer amount input not found')
+          s = s.replace(transfer_old, transfer_new, 1)
+
+          regular_old = '''                    <CalculatorAmountInput 
+                      value={newTx.amount} 
+                      onChange={(v) => {
+                        setNewTx({ ...newTx, amount: v });
+                      }} 
+                      onEnter={handleAdd}
+                    />'''
+          regular_new = '''                    <CalculatorAmountInput 
+                      value={newTx.amount} 
+                      onChange={(v) => {
+                        setNewTx({ ...newTx, amount: v });
+                      }} 
+                      onEnter={handleAdd}
+                      className={newTx.type === "expense" ? "!text-red-500" : "!text-green-600 dark:!text-green-500"}
+                    />'''
+          if regular_old not in s:
+              raise SystemExit('regular amount input not found')
+          s = s.replace(regular_old, regular_new, 1)
+
+          p.write_text(s)
+          PY
+
+      - name: Add regression test
+        run: |
+          cat > src/tests/quick-add-amount-color.test.ts <<'EOF'
+          import { describe, expect, it } from "vitest";
+          import fs from "node:fs";
+          import path from "node:path";
+
+          describe("QuickAdd amount color by transaction type", () => {
+            const source = fs.readFileSync(
+              path.resolve(process.cwd(), "src/components/QuickAddTransactionDialog.tsx"),
+              "utf8",
+            );
+
+            it("uses red for expenses and green for income", () => {
+              expect(source).toContain('newTx.type === "expense" ? "!text-red-500" : "!text-green-600 dark:!text-green-500"');
+            });
+
+            it("uses neutral black/light and white/dark for transfers", () => {
+              expect(source).toContain('className="!text-black dark:!text-white"');
+            });
+          });
+          EOF
+
+      - name: Commit changes and remove temporary workflow
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git rm .github/workflows/apply-amount-color-by-transaction-type.yml
+          git add src/components/QuickAddTransactionDialog.tsx src/tests/quick-add-amount-color.test.ts
+          git commit -m "feat: color amount by transaction type"
+          git push
