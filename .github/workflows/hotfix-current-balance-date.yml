@@ -1,9 +1,10 @@
 name: hotfix-current-balance-date
 on:
   push:
-    branches: [main]
+    branches:
+      - main
     paths:
-      - '.github/workflows/hotfix-current-balance-date.yml'
+      - .github/workflows/hotfix-current-balance-date.yml
 permissions:
   contents: write
 jobs:
@@ -13,14 +14,14 @@ jobs:
       - uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Exclude future transactions from account balances
+      - name: Patch current balances
+        shell: bash
         run: |
-          python - <<'PY'
+          python3 <<'PY'
           from pathlib import Path
 
-          # Home: rawTx already contains date, so skip future-dated transactions while calculating balances.
-          p = Path('src/routes/home.tsx')
-          s = p.read_text()
+          home = Path("src/routes/home.tsx")
+          text = home.read_text()
           old = '''        for (const tx of rawTx) {
           if (tx.is_visible === false || !tx.bank_account_id) continue;
           if (tx.type === "expense" && tx.card) continue;
@@ -33,39 +34,36 @@ jobs:
           const transactionDate = safeDate(tx.date);
           if (transactionDate && transactionDate > today) continue;
           const amount = Number(tx.amount || 0);'''
-          if old not in s:
-            raise SystemExit('home balance loop not found')
-          p.write_text(s.replace(old, new, 1))
+          if old not in text:
+              raise SystemExit("home marker not found")
+          home.write_text(text.replace(old, new, 1))
 
-          # Accounts: fetch transaction date and skip dates after today in the maps used by current balance.
-          p = Path('src/routes/accounts.tsx')
-          s = p.read_text()
-          s2 = s.replace(
-            '.select("bank_account_id, amount, type, is_visible, card")',
-            '.select("bank_account_id, amount, type, is_visible, card, date")',
-            1,
-          )
-          if s2 == s:
-            raise SystemExit('accounts transaction select not found')
-          s = s2
-          old = '''        for (const tx of txData) {
+          accounts = Path("src/routes/accounts.tsx")
+          text = accounts.read_text()
+          old_select = '.select("bank_account_id, amount, type, is_visible, card")'
+          new_select = '.select("bank_account_id, amount, type, is_visible, card, date")'
+          if old_select not in text:
+              raise SystemExit("accounts select marker not found")
+          text = text.replace(old_select, new_select, 1)
+
+          old_loop = '''        for (const tx of txData) {
           if (tx.is_visible === false) continue; // ignora transações ocultas/removidas logicamente
           const id = tx.bank_account_id as string;'''
-          new = '''        const todayKey = new Date().toLocaleDateString("en-CA");
+          new_loop = '''        const todayKey = new Date().toLocaleDateString("en-CA");
         for (const tx of txData) {
           if (tx.is_visible === false) continue; // ignora transações ocultas/removidas logicamente
-          const transactionDateKey = typeof tx.date === "string" ? tx.date.match(/^\\d{4}-\\d{2}-\\d{2}/)?.[0] : undefined;
+          const transactionDateKey = typeof tx.date === "string" ? tx.date.slice(0, 10) : undefined;
           if (transactionDateKey && transactionDateKey > todayKey) continue;
           const id = tx.bank_account_id as string;'''
-          if old not in s:
-            raise SystemExit('accounts balance loop not found')
-          p.write_text(s.replace(old, new, 1))
+          if old_loop not in text:
+              raise SystemExit("accounts loop marker not found")
+          accounts.write_text(text.replace(old_loop, new_loop, 1))
           PY
-      - name: Commit patch and remove one-shot workflow
+      - name: Commit result
+        shell: bash
         run: |
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git rm .github/workflows/hotfix-current-balance-date.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add src/routes/home.tsx src/routes/accounts.tsx
-          git commit -m 'fix: exclude future transactions from current balances'
+          git commit -m "fix: exclude future transactions from current balances"
           git push
