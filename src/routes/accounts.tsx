@@ -199,10 +199,10 @@ function SortableAccountItem({
             search={{ accountId: account.id } as any}
             className="text-left w-full block h-full flex flex-col justify-center"
           >
-            <div className="flex items-center justify-between gap-2 py-3">
-              <div className="flex flex-col min-w-0 gap-0.5">
-                <div className="flex items-center gap-1.5 min-w-0">
-                  <p className="text-[14px] font-semibold text-foreground truncate tracking-tight leading-tight">{account.name}</p>
+            <div className="flex items-start justify-between gap-1.5 py-3">
+              <div className="flex flex-col min-w-0 flex-1 gap-0.5">
+                <div className="flex items-start gap-1 min-w-0">
+                  <p className="text-[12px] sm:text-[14px] font-semibold text-foreground whitespace-normal break-words tracking-tight leading-tight">{account.name}</p>
                   {account.parent_account_id && (
                     <span className="shrink-0 rounded-full bg-primary/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-primary">Subconta</span>
                   )}
@@ -251,7 +251,7 @@ function SortableAccountItem({
                 )}
               </div>
               <p className={cn(
-                "text-[14px] font-bold tabular-nums tracking-tight leading-tight whitespace-nowrap shrink-0",
+                "text-[12px] sm:text-[14px] font-bold tabular-nums tracking-tight leading-tight whitespace-nowrap shrink-0 pt-0.5",
                 currentBalance < 0 ? "text-destructive" : "text-foreground"
               )}>
                 {balanceVisible ? `R$ ${currentBalance.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "R$ ••••"}
