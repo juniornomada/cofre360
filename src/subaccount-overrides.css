@@ -8,3 +8,8 @@
 .animate-page-enter > section.grid.grid-cols-2 > div > div {
   justify-content: center;
 }
+
+/* Contas: a hierarquia visual já identifica subcontas; não exibe o rótulo textual. */
+.ml-5 span[class*="uppercase"][class*="tracking-wide"][class*="text-primary"] {
+  display: none;
+}
