@@ -10,3 +10,10 @@ verify_jwt = true
 
 [functions.run-ai-tests]
 verify_jwt = true
+
+# External integrations authenticate with COFRE360_EXTERNAL_API_TOKEN.
+# JWT verification is disabled here because callers such as ChatGPT do not
+# have the user's Supabase session token. The function itself validates its
+# dedicated bearer token before using the service-role client.
+[functions.external-transactions]
+verify_jwt = false
