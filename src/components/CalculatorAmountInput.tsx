@@ -2,9 +2,13 @@ import { useState, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 
+export type AmountInputTone = "expense" | "income" | "transfer";
+
 interface Props {
   value: number;
   onChange: (value: number) => void;
+  /** Semantic visual tone for the transaction amount. */
+  tone?: AmountInputTone;
   /** Optional className for the input */
   className?: string;
   /** Optional autoFocus to set focus on the input */
@@ -17,7 +21,7 @@ interface Props {
  * Input component for currency (BRL) that uses the system keyboard.
  * Formats the value as "R$ 0,00" and shifts digits from right to left.
  */
-export function CalculatorAmountInput({ value, onChange, className, autoFocus, onEnter }: Props) {
+export function CalculatorAmountInput({ value, onChange, tone, className, autoFocus, onEnter }: Props) {
   // Internal "cents" buffer. e.g. 1234 → R$ 12,34
   const [cents, setCents] = useState<number>(() => Math.round((value || 0) * 100));
   const [inputMode, setInputMode] = useState<"none" | "numeric">("none");
@@ -92,6 +96,14 @@ export function CalculatorAmountInput({ value, onChange, className, autoFocus, o
     target.setSelectionRange(length, length);
   };
 
+  const toneClassName = tone === "expense"
+    ? "!text-red-500 !border-red-500 focus-visible:!ring-red-500"
+    : tone === "income"
+      ? "!text-green-600 dark:!text-green-500 !border-green-600 dark:!border-green-500 focus-visible:!ring-green-600 dark:focus-visible:!ring-green-500"
+      : tone === "transfer"
+        ? "!text-black dark:!text-white !border-black dark:!border-white focus-visible:!ring-black dark:focus-visible:!ring-white"
+        : "";
+
   return (
     <div className="relative w-full">
       <Input
@@ -113,6 +125,7 @@ export function CalculatorAmountInput({ value, onChange, className, autoFocus, o
         className={cn(
           "text-right tabular-nums font-bold text-base text-primary h-[44px] bg-primary/5 border-primary/20 shadow-inner",
           "focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+          toneClassName,
           className
         )}
         aria-label={`Valor: ${formattedValue}`}

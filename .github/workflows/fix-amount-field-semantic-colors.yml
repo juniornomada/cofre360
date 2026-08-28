@@ -1,0 +1,49 @@
+name: Fix amount field semantic colors
+on:
+  push:
+    branches: [feat/debit-credit-installment-date-sync]
+permissions:
+  contents: write
+jobs:
+  patch:
+    if: ${{ !contains(github.event.head_commit.message, '[semantic-colors-applied]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch semantic amount colors
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('src/components/QuickAddTransactionDialog.tsx')
+          s = p.read_text()
+          old_transfer = 'className="!text-black dark:!text-white !border-black dark:!border-white focus-visible:!ring-black dark:focus-visible:!ring-white"'
+          new_transfer = 'tone="transfer"'
+          old_regular = 'className={newTx.type === "expense" ? "!text-red-500 !border-red-500 focus-visible:!ring-red-500" : "!text-green-600 dark:!text-green-500 !border-green-600 dark:!border-green-500 focus-visible:!ring-green-600 dark:focus-visible:!ring-green-500"}'
+          new_regular = 'tone={newTx.type}'
+          assert old_transfer in s
+          assert old_regular in s
+          s = s.replace(old_transfer, new_transfer, 1).replace(old_regular, new_regular, 1)
+          p.write_text(s)
+
+          c = Path('src/components/CalculatorAmountInput.tsx')
+          cs = c.read_text()
+          cs = cs.replace('interface Props {\n', 'export type AmountInputTone = "expense" | "income" | "transfer";\n\ninterface Props {\n')
+          cs = cs.replace('  /** Optional className for the input */\n  className?: string;\n', '  /** Semantic visual tone for the transaction amount. */\n  tone?: AmountInputTone;\n  /** Optional className for the input */\n  className?: string;\n')
+          cs = cs.replace('export function CalculatorAmountInput({ value, onChange, className, autoFocus, onEnter }: Props) {', 'export function CalculatorAmountInput({ value, onChange, tone, className, autoFocus, onEnter }: Props) {')
+          marker = '  return (\n'
+          tone_code = '''  const toneClassName = tone === "expense"\n    ? "!text-red-500 !border-red-500 focus-visible:!ring-red-500"\n    : tone === "income"\n      ? "!text-green-600 dark:!text-green-500 !border-green-600 dark:!border-green-500 focus-visible:!ring-green-600 dark:focus-visible:!ring-green-500"\n      : tone === "transfer"\n        ? "!text-black dark:!text-white !border-black dark:!border-white focus-visible:!ring-black dark:focus-visible:!ring-white"\n        : "";\n\n'''
+          assert marker in cs
+          cs = cs.replace(marker, tone_code + marker, 1)
+          cs = cs.replace('          className\n        )}', '          toneClassName,\n          className\n        )}', 1)
+          c.write_text(cs)
+
+          t = Path('src/tests/quick-add-amount-color.test.ts')
+          t.write_text('''import { describe, expect, it } from "vitest";\nimport fs from "node:fs";\nimport path from "node:path";\n\ndescribe("QuickAdd amount color by transaction type", () => {\n  const dialogSource = fs.readFileSync(path.resolve(process.cwd(), "src/components/QuickAddTransactionDialog.tsx"), "utf8");\n  const inputSource = fs.readFileSync(path.resolve(process.cwd(), "src/components/CalculatorAmountInput.tsx"), "utf8");\n\n  it("passes the active transaction type to the amount field", () => {\n    expect(dialogSource).toContain('tone={newTx.type}');\n  });\n\n  it("uses an explicit transfer tone", () => {\n    expect(dialogSource).toContain('tone="transfer"');\n  });\n\n  it("maps expense, income and transfer to distinct text and border colors", () => {\n    expect(inputSource).toContain('tone === "expense"');\n    expect(inputSource).toContain('!text-red-500 !border-red-500');\n    expect(inputSource).toContain('tone === "income"');\n    expect(inputSource).toContain('!text-green-600 dark:!text-green-500 !border-green-600 dark:!border-green-500');\n    expect(inputSource).toContain('tone === "transfer"');\n    expect(inputSource).toContain('!text-black dark:!text-white !border-black dark:!border-white');\n  });\n});\n''')
+          PY
+      - name: Commit patch
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/components/QuickAddTransactionDialog.tsx src/components/CalculatorAmountInput.tsx src/tests/quick-add-amount-color.test.ts
+          git commit -m "fix: use semantic colors for amount field [semantic-colors-applied]"
+          git push
