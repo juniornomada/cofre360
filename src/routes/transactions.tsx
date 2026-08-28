@@ -35,6 +35,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { mapServerError } from "@/lib/map-server-error";
 import { sanitizeTransactionName } from "@/lib/normalize-transaction-name";
+import { validateEditedExpenseBalance } from "@/lib/transaction-balance-validation";
 
 
 
@@ -618,14 +619,19 @@ export function TransactionsPage() {
         const acc = bankAccounts.find(a => a.id === editTx.bank_account_id);
         if (acc) {
           const originalTx = transactions.find(t => t.id === editTx.id);
-          let availableBalance = acc.balance || 0;
-          
-          // If editing an existing expense from the same account, add back the current amount to check limit
-          if (originalTx && originalTx.bank_account_id === editTx.bank_account_id && originalTx.type === "expense") {
-            availableBalance += originalTx.amount;
-          }
-          
-          if (perInstallment > availableBalance) {
+          const availableBalance = acc.balance || 0;
+
+          const balanceIsValid = !originalTx || validateEditedExpenseBalance({
+            originalAmount: originalTx.amount,
+            newAmount: perInstallment,
+            originalBankAccountId: originalTx.bank_account_id,
+            newBankAccountId: editTx.bank_account_id,
+            originalType: originalTx.type,
+            newType: editTx.type,
+            availableBalance,
+          });
+
+          if (!balanceIsValid) {
             toast.error(`Saldo insuficiente na conta ${acc.name} (Saldo disponível: R$ ${availableBalance.toLocaleString("pt-BR", { minimumFractionDigits: 2 })})`);
             return;
           }
