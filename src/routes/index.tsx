@@ -300,7 +300,7 @@ function Dashboard() {
       paymentsRes,
     ] = await Promise.all([
       supabase.from("transactions").select(TX_FIELDS).eq("user_id", session.user.id).order("created_at", { ascending: false }).limit(20),
-      supabase.from("transactions").select("type, amount, date, card, bank_account_id, category").eq("user_id", session.user.id),
+      supabase.from("transactions").select("id, type, amount, date, card, bank_account_id, category").eq("user_id", session.user.id),
       supabase.from("bank_accounts").select("id, name, icon, color, balance, is_visible, sort_order").eq("user_id", session.user.id).order("sort_order", { ascending: true }).order("created_at", { ascending: true }),
       supabase.from("cards").select("id, name, emoji, color, is_visible, closing_day, due_day").eq("user_id", session.user.id).order("sort_order", { ascending: true }).order("created_at", { ascending: true }),
       supabase.from("reminders").select("id, title, icon, due_date, amount, type, bank_account_id, card_id").eq("user_id", session.user.id).eq("is_completed", false).order("due_date", { ascending: true }).limit(3),
