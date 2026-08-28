@@ -175,6 +175,11 @@ function RecoveredHome() {
     [visibleAccounts],
   );
 
+  const orphanSubaccounts = useMemo(
+    () => visibleAccounts.filter((account) => account.parent_account_id && !mainAccounts.some((parent) => parent.id === account.parent_account_id)),
+    [visibleAccounts, mainAccounts],
+  );
+
   const accountTotal = useMemo(
     () => mainAccounts.reduce((sum, account) => sum + Number(account.balance || 0), 0),
     [mainAccounts],
@@ -259,12 +264,51 @@ function RecoveredHome() {
           <h2 className="flex items-center gap-1.5 text-sm font-semibold uppercase text-foreground"><Landmark className="h-4 w-4 text-primary" />CONTAS</h2>
           <span className="text-lg font-bold tabular-nums text-foreground">{balanceVisible ? `R$ ${fmt(accountTotal)}` : "R$ ••••"}</span>
         </div>
-        <div className="mt-3 flex flex-col gap-1">
-          {visibleAccounts.map((account) => (
-            <Link key={account.id} to="/transactions" search={{ accountId: account.id } as any} className="flex items-center gap-2.5 rounded-xl bg-background/40 px-2.5 py-2">
-              <BankLogo icon={account.icon} color={account.color} name={account.name} size="sm" />
-              <span className="min-w-0 flex-1 text-xs font-medium text-foreground">{account.name}</span>
-              <span className={cn("text-xs font-bold tabular-nums", account.balance < 0 && "text-destructive")}>{balanceVisible ? `R$ ${fmt(account.balance)}` : "R$ ••••"}</span>
+        <div className="mt-3 flex flex-col gap-1.5">
+          {mainAccounts.map((account) => {
+            const subaccounts = visibleAccounts.filter((item) => item.parent_account_id === account.id);
+            return (
+              <div key={account.id} className="flex flex-col gap-1">
+                <Link to="/transactions" search={{ accountId: account.id } as any} className="flex items-center gap-2.5 rounded-xl bg-background/40 px-2.5 py-2">
+                  <BankLogo icon={account.icon} color={account.color} name={account.name} size="sm" />
+                  <span className="min-w-0 flex-1 text-xs font-medium text-foreground">{account.name}</span>
+                  <span className={cn("text-xs font-bold tabular-nums", account.balance < 0 && "text-destructive")}>{balanceVisible ? `R$ ${fmt(account.balance)}` : "R$ ••••"}</span>
+                </Link>
+                {subaccounts.map((subaccount) => (
+                  <Link
+                    key={subaccount.id}
+                    to="/transactions"
+                    search={{ accountId: subaccount.id } as any}
+                    className="ml-5 flex items-center gap-2.5 rounded-xl border-l-2 border-primary/20 bg-primary/[0.025] px-2.5 py-2 sm:ml-8"
+                  >
+                    <BankLogo icon={subaccount.icon} color={subaccount.color} name={subaccount.name} size="sm" />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5">
+                        <span className="truncate text-xs font-medium text-foreground">{subaccount.name}</span>
+                        <span className="shrink-0 rounded-full bg-primary/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-primary">Subconta</span>
+                      </div>
+                    </div>
+                    <span className={cn("text-xs font-bold tabular-nums", subaccount.balance < 0 && "text-destructive")}>{balanceVisible ? `R$ ${fmt(subaccount.balance)}` : "R$ ••••"}</span>
+                  </Link>
+                ))}
+              </div>
+            );
+          })}
+          {orphanSubaccounts.map((subaccount) => (
+            <Link
+              key={subaccount.id}
+              to="/transactions"
+              search={{ accountId: subaccount.id } as any}
+              className="ml-5 flex items-center gap-2.5 rounded-xl border-l-2 border-primary/20 bg-primary/[0.025] px-2.5 py-2 sm:ml-8"
+            >
+              <BankLogo icon={subaccount.icon} color={subaccount.color} name={subaccount.name} size="sm" />
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5">
+                  <span className="truncate text-xs font-medium text-foreground">{subaccount.name}</span>
+                  <span className="shrink-0 rounded-full bg-primary/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-primary">Subconta</span>
+                </div>
+              </div>
+              <span className={cn("text-xs font-bold tabular-nums", subaccount.balance < 0 && "text-destructive")}>{balanceVisible ? `R$ ${fmt(subaccount.balance)}` : "R$ ••••"}</span>
             </Link>
           ))}
           {!loading && visibleAccounts.length === 0 && <p className="py-5 text-center text-xs text-muted-foreground">Nenhuma conta visível.</p>}
