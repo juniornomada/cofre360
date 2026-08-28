@@ -300,7 +300,7 @@ function Dashboard() {
       paymentsRes,
     ] = await Promise.all([
       supabase.from("transactions").select(TX_FIELDS).eq("user_id", session.user.id).order("created_at", { ascending: false }).limit(20),
-      supabase.from("transactions").select("type, amount, date, card, bank_account_id, category").eq("user_id", session.user.id),
+      supabase.from("transactions").select("id, type, amount, date, card, bank_account_id, category").eq("user_id", session.user.id),
       supabase.from("bank_accounts").select("id, name, icon, color, balance, is_visible, sort_order").eq("user_id", session.user.id).order("sort_order", { ascending: true }).order("created_at", { ascending: true }),
       supabase.from("cards").select("id, name, emoji, color, is_visible, closing_day, due_day").eq("user_id", session.user.id).order("sort_order", { ascending: true }).order("created_at", { ascending: true }),
       supabase.from("reminders").select("id, title, icon, due_date, amount, type, bank_account_id, card_id").eq("user_id", session.user.id).eq("is_completed", false).order("due_date", { ascending: true }).limit(3),
@@ -579,15 +579,26 @@ function Dashboard() {
       if (editTx.type === "expense" && editTx.bank_account_id) {
         const acc = accountBalances.find(a => a.id === editTx.bank_account_id);
         if (acc) {
-          const originalTx = allTransactions.find(t => t.id === editTx.id);
+          const originalTx =
+            allTransactions.find((t: any) => t.id === editTx.id) ??
+            (transactions as any[]).find((t: any) => t.id === editTx.id);
           let availableBalance = acc.balance || 0;
-          
+
           // If editing an existing expense from the same account, add back the current amount to check limit
           if (originalTx && originalTx.bank_account_id === editTx.bank_account_id && originalTx.type === "expense") {
-            availableBalance += originalTx.amount;
+            availableBalance += Number(originalTx.amount) || 0;
           }
-          
-          if (perInstallment > availableBalance) {
+
+          // Only block when the edit actually increases the amount charged to the account.
+          const isSameAccountExpenseEdit =
+            !!originalTx &&
+            originalTx.type === "expense" &&
+            originalTx.bank_account_id === editTx.bank_account_id;
+          const delta = isSameAccountExpenseEdit
+            ? Math.max(0, perInstallment - (Number(originalTx.amount) || 0))
+            : perInstallment;
+
+          if (delta > (acc.balance || 0)) {
             toast.error(`Saldo insuficiente na conta ${acc.name} (Saldo disponível: R$ ${availableBalance.toLocaleString("pt-BR", { minimumFractionDigits: 2 })})`);
             return;
           }
