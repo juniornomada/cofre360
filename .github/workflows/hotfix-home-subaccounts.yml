@@ -1,0 +1,37 @@
+name: hotfix-home-subaccounts
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/hotfix-home-subaccounts.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Show visible subaccounts on Home
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('src/routes/home.tsx')
+          s = p.read_text()
+          old = '''          {mainAccounts.map((account) => ('''
+          new = '''          {visibleAccounts.map((account) => ('''
+          if old not in s:
+              raise SystemExit('home account list marker not found')
+          s = s.replace(old, new, 1)
+          s = s.replace('''          {!loading && mainAccounts.length === 0 && <p className="py-5 text-center text-xs text-muted-foreground">Nenhuma conta visível.</p>}''', '''          {!loading && visibleAccounts.length === 0 && <p className="py-5 text-center text-xs text-muted-foreground">Nenhuma conta visível.</p>}''', 1)
+          p.write_text(s)
+          PY
+      - name: Commit patch and remove one-shot workflow
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git rm .github/workflows/hotfix-home-subaccounts.yml
+          git add src/routes/home.tsx
+          git commit -m 'fix: show visible subaccounts on home'
+          git push
