@@ -282,12 +282,7 @@ function RecoveredHome() {
                     className="ml-5 flex items-center gap-2.5 rounded-xl border-l-2 border-primary/20 bg-primary/[0.025] px-2.5 py-2 sm:ml-8"
                   >
                     <BankLogo icon={subaccount.icon} color={subaccount.color} name={subaccount.name} size="sm" />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-1.5">
-                        <span className="truncate text-xs font-medium text-foreground">{subaccount.name}</span>
-                        <span className="shrink-0 rounded-full bg-primary/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-primary">Subconta</span>
-                      </div>
-                    </div>
+                    <span className="min-w-0 flex-1 truncate text-xs font-medium text-foreground">{subaccount.name}</span>
                     <span className={cn("text-xs font-bold tabular-nums", subaccount.balance < 0 && "text-destructive")}>{balanceVisible ? `R$ ${fmt(subaccount.balance)}` : "R$ ••••"}</span>
                   </Link>
                 ))}
@@ -302,12 +297,7 @@ function RecoveredHome() {
               className="ml-5 flex items-center gap-2.5 rounded-xl border-l-2 border-primary/20 bg-primary/[0.025] px-2.5 py-2 sm:ml-8"
             >
               <BankLogo icon={subaccount.icon} color={subaccount.color} name={subaccount.name} size="sm" />
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-1.5">
-                  <span className="truncate text-xs font-medium text-foreground">{subaccount.name}</span>
-                  <span className="shrink-0 rounded-full bg-primary/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-primary">Subconta</span>
-                </div>
-              </div>
+              <span className="min-w-0 flex-1 truncate text-xs font-medium text-foreground">{subaccount.name}</span>
               <span className={cn("text-xs font-bold tabular-nums", subaccount.balance < 0 && "text-destructive")}>{balanceVisible ? `R$ ${fmt(subaccount.balance)}` : "R$ ••••"}</span>
             </Link>
           ))}
