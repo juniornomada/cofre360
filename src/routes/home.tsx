@@ -132,10 +132,14 @@ function RecoveredHome() {
         const rawTx = (txRes.data || []) as Tx[];
         const incomeByAccount: Record<string, number> = {};
         const expenseByAccount: Record<string, number> = {};
+        const today = new Date();
+        today.setHours(23, 59, 59, 999);
 
         for (const tx of rawTx) {
           if (tx.is_visible === false || !tx.bank_account_id) continue;
           if (tx.type === "expense" && tx.card) continue;
+          const transactionDate = safeDate(tx.date);
+          if (transactionDate && transactionDate > today) continue;
           const amount = Number(tx.amount || 0);
           if (tx.type === "income") incomeByAccount[tx.bank_account_id] = (incomeByAccount[tx.bank_account_id] || 0) + amount;
           else expenseByAccount[tx.bank_account_id] = (expenseByAccount[tx.bank_account_id] || 0) + amount;
