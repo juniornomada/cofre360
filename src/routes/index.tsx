@@ -934,9 +934,16 @@ function Dashboard() {
   const [openDivergences, setOpenDivergences] = useState(0);
   useEffect(() => {
     let cancelled = false;
-    countOpenFn()
-      .then((r: any) => { if (!cancelled) setOpenDivergences(Number(r?.count ?? 0)); })
-      .catch(() => {});
+    (async () => {
+      try {
+        const { data } = await supabase.auth.getSession();
+        if (!data.session || cancelled) return;
+        const r: any = await countOpenFn();
+        if (!cancelled) setOpenDivergences(Number(r?.count ?? 0));
+      } catch {
+        // ignora: sem sessão ou sem permissão
+      }
+    })();
     return () => { cancelled = true; };
   }, [countOpenFn]);
 
