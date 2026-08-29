@@ -1189,7 +1189,17 @@ export function TransactionsPage() {
 
       {/* Edit Dialog */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent className="fixed !left-3 !right-3 top-1/2 !w-auto !max-w-none -translate-y-1/2 !translate-x-0 box-border sm:!left-1/2 sm:!right-auto sm:!w-[28rem] sm:!max-w-[28rem] sm:!-translate-x-1/2 rounded-2xl bg-background max-h-[88dvh] overflow-hidden p-0 flex flex-col gap-0">
+        <DialogContent
+          style={{
+            width: "calc(100dvw - 24px)",
+            maxWidth: "calc(100dvw - 24px)",
+            left: "50%",
+            right: "auto",
+            transform: "translate(-50%, -50%)",
+            boxSizing: "border-box",
+          }}
+          className="fixed top-1/2 rounded-2xl bg-background max-h-[88dvh] overflow-hidden p-0 flex min-w-0 flex-col gap-0 sm:!w-[28rem] sm:!max-w-[28rem]"
+        >
           <DialogHeader className="p-4 pb-2 border-b"><DialogTitle className="text-sm">Editar Transação</DialogTitle></DialogHeader>
           <div className="flex-1 min-w-0 overflow-x-hidden overflow-y-auto p-4 flex flex-col gap-4">
           {editTx && (
