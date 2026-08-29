@@ -802,6 +802,47 @@ function AccountsPage() {
 
 
 
+  const handleRecalcAsTransaction = async () => {
+    if (!recalcAccount || isRecalcing) return;
+    const income = incomeByAccount[recalcAccount.id] || 0;
+    const expense = expenseByAccount[recalcAccount.id] || 0;
+    const current = Math.round((Number(recalcAccount.balance || 0) + income - expense) * 100) / 100;
+    const diff = Math.round((recalcRealBalance - current) * 100) / 100;
+
+    if (Math.abs(diff) < 0.005) {
+      toast.info("O saldo já está consistente com o valor informado.");
+      setRecalcAccount(null);
+      return;
+    }
+
+    setIsRecalcing(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Usuário não autenticado");
+      const adjustmentType = diff > 0 ? "income" : "expense";
+      const { error } = await supabase.from("transactions").insert({
+        name: "Ajuste de saldo",
+        category: "Ajustes",
+        date: new Date().toLocaleDateString("en-CA"),
+        amount: Math.abs(diff),
+        type: adjustmentType,
+        bank_account_id: recalcAccount.id,
+        user_id: user.id,
+        is_visible: true,
+        icon: diff > 0 ? "💰" : "💸",
+      });
+      if (error) throw error;
+      toast.success(`${adjustmentType === "income" ? "Receita" : "Despesa"} de ajuste lançada: R$ ${Math.abs(diff).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`);
+      setRecalcAccount(null);
+      fetchAccounts();
+    } catch (error: any) {
+      console.error("Error creating recalc adjustment transaction:", error);
+      toast.error(mapServerError(error, "Erro ao lançar ajuste de saldo"));
+    } finally {
+      setIsRecalcing(false);
+    }
+  };
+
   const handleRecalc = async () => {
     if (!recalcAccount || isRecalcing) return;
     const income = incomeByAccount[recalcAccount.id] || 0;
@@ -1251,7 +1292,7 @@ function AccountsPage() {
             return (
               <div className="flex flex-col gap-4 mt-2">
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  Informe o saldo real da conta <span className="font-semibold text-foreground">{recalcAccount.name}</span> (ex.: do extrato bancário). O saldo de abertura será ajustado para bater com esse valor, preservando as transações visíveis.
+                  Informe o saldo real da conta <span className="font-semibold text-foreground">{recalcAccount.name}</span> (ex.: do extrato bancário). Você pode lançar uma transação de ajuste para preservar o saldo inicial ou alterar o saldo inicial diretamente.
                 </p>
 
                 <div className="rounded-xl bg-muted/40 p-3 space-y-1.5 text-[11px]">
@@ -1279,17 +1320,26 @@ function AccountsPage() {
                   </div>
                 )}
 
-                <div className="flex gap-2">
+                <div className="flex flex-col gap-2">
+                  {Math.abs(diff) >= 0.005 && (
+                    <button
+                      onClick={handleRecalcAsTransaction}
+                      disabled={isRecalcing}
+                      className="w-full interactive-button flex items-center justify-center gap-2 rounded-2xl bg-primary py-3 text-sm font-medium text-primary-foreground disabled:opacity-50"
+                    >
+                      {isRecalcing ? <Loader2 className="h-4 w-4 animate-spin" /> : "Lançar ajuste como transação"}
+                    </button>
+                  )}
                   <button
                     onClick={handleRecalc}
                     disabled={isRecalcing}
-                    className="flex-1 interactive-button flex items-center justify-center gap-2 rounded-2xl bg-primary py-3 text-sm font-medium text-primary-foreground disabled:opacity-50"
+                    className="w-full interactive-button flex items-center justify-center gap-2 rounded-2xl bg-destructive py-3 text-sm font-medium text-white disabled:opacity-50"
                   >
-                    {isRecalcing ? <Loader2 className="h-4 w-4 animate-spin" /> : "Confirmar"}
+                    Alterar saldo inicial
                   </button>
                   <button
                     onClick={() => setRecalcAccount(null)}
-                    className="flex-1 interactive-button flex items-center justify-center gap-2 rounded-2xl bg-accent py-3 text-sm font-medium text-foreground"
+                    className="w-full interactive-button flex items-center justify-center gap-2 rounded-2xl bg-accent py-3 text-sm font-medium text-foreground"
                   >
                     Cancelar
                   </button>
