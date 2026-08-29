@@ -453,8 +453,7 @@ function AccountsPage() {
         .from("transactions")
         .select("bank_account_id, amount, type, is_visible, card, date")
         .eq("user_id", session.user.id)
-        .not("bank_account_id", "is", null)
-        .is("card", null);
+        .not("bank_account_id", "is", null);
       if (txError) throw txError;
 
       if (txData) {
@@ -463,7 +462,11 @@ function AccountsPage() {
         const todayKey = new Date().toLocaleDateString("en-CA");
         for (const tx of txData) {
           if (tx.is_visible === false) continue; // ignora transações ocultas/removidas logicamente
-          const transactionDateKey = typeof tx.date === "string" ? tx.date.slice(0, 10) : undefined;
+          // Mesma regra da Home: despesas de cartão não afetam saldo bancário.
+          if (tx.type === "expense" && tx.card) continue;
+          // Só compara datas ISO. Datas legadas em "dd MMM" continuam válidas e não são descartadas.
+          const rawDate = typeof tx.date === "string" ? tx.date.trim() : "";
+          const transactionDateKey = /^\d{4}-\d{2}-\d{2}/.test(rawDate) ? rawDate.slice(0, 10) : undefined;
           if (transactionDateKey && transactionDateKey > todayKey) continue;
           const id = tx.bank_account_id as string;
           const amt = Number(tx.amount) || 0;
