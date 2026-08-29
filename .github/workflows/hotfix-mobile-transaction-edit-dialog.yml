@@ -1,0 +1,61 @@
+name: Hotfix mobile transaction edit dialog
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/hotfix-mobile-transaction-edit-dialog.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Patch mobile edit dialog
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('src/routes/transactions.tsx')
+          s = p.read_text()
+          replacements = [
+            (
+              'className="fixed top-1/2 rounded-2xl bg-background max-h-[88dvh] overflow-hidden p-0 flex min-w-0 flex-col gap-0 sm:!w-[28rem] sm:!max-w-[28rem]"',
+              'className="fixed top-1/2 rounded-2xl bg-background h-[min(88dvh,calc(100dvh-24px))] max-h-[calc(100dvh-24px)] overflow-hidden p-0 flex min-w-0 flex-col gap-0 sm:h-auto sm:max-h-[88dvh] sm:!w-[28rem] sm:!max-w-[28rem]"'
+            ),
+            (
+              '<DialogHeader className="p-4 pb-2 border-b"><DialogTitle className="text-sm">Editar Transação</DialogTitle></DialogHeader>',
+              '<DialogHeader className="shrink-0 p-4 pb-2 border-b"><DialogTitle className="text-sm">Editar Transação</DialogTitle></DialogHeader>'
+            ),
+            (
+              '<div className="flex-1 min-w-0 overflow-x-hidden overflow-y-auto p-4 flex flex-col gap-4">',
+              '<div className="flex-1 min-h-0 min-w-0 overscroll-contain overflow-x-hidden overflow-y-auto p-4 flex flex-col gap-4">'
+            ),
+            (
+              '<DialogFooter className="p-4 pt-2 border-t mt-0 flex-row gap-2 sm:gap-2">',
+              '<DialogFooter className="shrink-0 p-4 pt-2 border-t mt-0 flex-row gap-2 sm:gap-2">'
+            ),
+          ]
+          for old, new in replacements:
+              if old not in s:
+                  raise SystemExit(f'Expected snippet not found: {old[:100]}')
+              s = s.replace(old, new, 1)
+          p.write_text(s)
+          PY
+      - name: Commit patch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/routes/transactions.tsx
+          git commit -m "fix: contain transaction edit dialog on mobile"
+          git push
+      - name: Remove one-shot workflow
+        run: |
+          git pull --rebase
+          git rm .github/workflows/hotfix-mobile-transaction-edit-dialog.yml
+          git commit -m "chore: remove mobile transaction dialog hotfix workflow"
+          git push
