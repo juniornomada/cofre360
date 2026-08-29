@@ -1,0 +1,54 @@
+name: Apply mobile editor no-x-transform fix
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/hotfix-mobile-edit-no-x-transform.yml
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pin transaction editor to mobile viewport
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('src/routes/transactions.tsx')
+          s = p.read_text()
+          old = '''        <DialogContent
+          style={{
+            width: "calc(100dvw - 24px)",
+            maxWidth: "calc(100dvw - 24px)",
+            left: "50%",
+            right: "auto",
+            transform: "translate(-50%, -50%)",
+            boxSizing: "border-box",
+          }}
+          className="fixed top-1/2 rounded-2xl bg-background max-h-[88dvh] overflow-hidden p-0 flex min-w-0 flex-col gap-0 sm:!w-[28rem] sm:!max-w-[28rem]"
+        >'''
+          new = '''        <DialogContent
+          style={{
+            left: "12px",
+            right: "12px",
+            width: "auto",
+            maxWidth: "none",
+            transform: "translateY(-50%)",
+            boxSizing: "border-box",
+          }}
+          className="fixed top-1/2 rounded-2xl bg-background max-h-[88dvh] overflow-hidden p-0 flex min-w-0 flex-col gap-0 sm:!left-1/2 sm:!right-auto sm:!w-[28rem] sm:!max-w-[28rem] sm:!-translate-x-1/2"
+        >'''
+          if old not in s:
+              raise SystemExit('current edit dialog block not found')
+          s = s.replace(old, new, 1)
+          p.write_text(s)
+          PY
+      - name: Commit fix and remove workflow
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git rm .github/workflows/hotfix-mobile-edit-no-x-transform.yml
+          git add src/routes/transactions.tsx
+          git commit -m "fix: pin transaction editor within mobile viewport"
+          git push
