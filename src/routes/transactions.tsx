@@ -1191,10 +1191,10 @@ export function TransactionsPage() {
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
         <DialogContent className="fixed inset-x-3 left-auto right-auto top-1/2 w-auto max-w-none -translate-y-1/2 translate-x-0 sm:left-1/2 sm:right-auto sm:w-[28rem] sm:max-w-[28rem] sm:-translate-x-1/2 rounded-2xl bg-background max-h-[88dvh] overflow-hidden p-0 flex flex-col gap-0">
           <DialogHeader className="p-4 pb-2 border-b"><DialogTitle className="text-sm">Editar Transação</DialogTitle></DialogHeader>
-          <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
+          <div className="flex-1 min-w-0 overflow-x-hidden overflow-y-auto p-4 flex flex-col gap-4">
           {editTx && (
-            <div className="flex flex-col gap-4">
-              <div className="relative">
+            <div className="flex min-w-0 flex-col gap-4">
+              <div className="relative min-w-0">
                 <label className="text-xs text-muted-foreground mb-1 block">Nome</label>
                 <input
                   autoFocus
@@ -1286,25 +1286,25 @@ export function TransactionsPage() {
               </div>
               <div>
                 <label className="text-xs text-muted-foreground mb-1 block">Tipo</label>
-                <div className="flex gap-2">
-                  <button onClick={() => setEditTx({ ...editTx, type: "expense", category: "Alimentação > Outros", icon: "🍔" })} className={`flex-1 rounded-xl py-2 text-xs font-medium transition-colors ${editTx.type === "expense" ? "bg-destructive text-destructive-foreground" : "bg-card text-muted-foreground"}`}>Despesa</button>
-                  <button onClick={() => setEditTx({ ...editTx, type: "income", category: "Receita > Salário", icon: "💰" })} className={`flex-1 rounded-xl py-2 text-xs font-medium transition-colors ${editTx.type === "income" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground"}`}>Receita</button>
+                <div className="grid min-w-0 grid-cols-2 gap-2">
+                  <button onClick={() => setEditTx({ ...editTx, type: "expense", category: "Alimentação > Outros", icon: "🍔" })} className={`min-w-0 rounded-xl px-2 py-2 text-xs font-medium transition-colors ${editTx.type === "expense" ? "bg-destructive text-destructive-foreground" : "bg-card text-muted-foreground"}`}>Despesa</button>
+                  <button onClick={() => setEditTx({ ...editTx, type: "income", category: "Receita > Salário", icon: "💰" })} className={`min-w-0 rounded-xl px-2 py-2 text-xs font-medium transition-colors ${editTx.type === "income" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground"}`}>Receita</button>
                 </div>
               </div>
               <div>
                 <label className="text-xs text-muted-foreground mb-1 block">Forma de pagamento</label>
-                <div className="flex gap-2">
+                <div className="grid min-w-0 grid-cols-2 gap-2">
                   <button
                     type="button"
                     onClick={() => setEditTx({ ...editTx, bank_account_id: null, card: editTx.card || (cardOptions[0]?.name ?? null) })}
-                    className={`flex-1 rounded-xl py-2 text-xs font-medium transition-colors ${editTx.card ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground"}`}
+                    className={`min-w-0 rounded-xl px-2 py-2 text-[11px] leading-tight font-medium transition-colors ${editTx.card ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground"}`}
                   >
                     💳 Cartão (Crédito)
                   </button>
                   <button
                     type="button"
                     onClick={() => setEditTx({ ...editTx, card: null, bank_account_id: editTx.bank_account_id || (bankAccounts[0]?.id ?? null) })}
-                    className={`flex-1 rounded-xl py-2 text-xs font-medium transition-colors ${editTx.bank_account_id ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground"}`}
+                    className={`min-w-0 rounded-xl px-2 py-2 text-[11px] leading-tight font-medium transition-colors ${editTx.bank_account_id ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground"}`}
                   >
                     🏦 Conta (Débito)
                   </button>
