@@ -202,9 +202,6 @@ function SortableAccountItem({
               <div className="flex flex-col min-w-0 flex-1 gap-0.5">
                 <div className="flex items-start gap-1 min-w-0">
                   <p className="text-[12px] sm:text-[14px] font-semibold text-foreground whitespace-normal break-words tracking-tight leading-tight">{account.name}</p>
-                  {account.parent_account_id && (
-                    <span className="shrink-0 rounded-full bg-primary/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-primary">Subconta</span>
-                  )}
                   {account.is_visible === false && (
                     <EyeOff className="h-3 w-3 text-muted-foreground/60 shrink-0" />
                   )}
@@ -606,6 +603,56 @@ function AccountsPage() {
     setEditIcon(account.icon);
     setEditColor(account.color);
     setConfirmText("");
+  };
+
+  const saveEditAsTransaction = async (id: string) => {
+    const valid = validateAccount(editName, editBalance);
+    if (!valid || isSubmitting) return;
+
+    const originalAccount = accounts.find(a => a.id === id);
+    if (!originalAccount) return;
+
+    const diff = Math.round((valid.balance - Number(originalAccount.balance || 0)) * 100) / 100;
+    if (Math.abs(diff) < 0.005) {
+      setShowConfirmUpdate(false);
+      return saveEdit(id);
+    }
+
+    setIsSubmitting(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Usuário não autenticado");
+
+      const { error: accountError } = await supabase
+        .from("bank_accounts")
+        .update({ name: valid.name, icon: editIcon, color: editColor })
+        .eq("id", id);
+      if (accountError) throw accountError;
+
+      const adjustmentType = diff > 0 ? "income" : "expense";
+      const { error: txError } = await supabase.from("transactions").insert({
+        name: "Ajuste de saldo",
+        category: "Ajustes",
+        date: new Date().toLocaleDateString("en-CA"),
+        amount: Math.abs(diff),
+        type: adjustmentType,
+        bank_account_id: id,
+        user_id: user.id,
+        is_visible: true,
+        icon: diff > 0 ? "💰" : "💸",
+      });
+      if (txError) throw txError;
+
+      setEditingAccount(null);
+      setShowConfirmUpdate(false);
+      toast.success(`${adjustmentType === "income" ? "Receita" : "Despesa"} de ajuste lançada: R$ ${Math.abs(diff).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`);
+      fetchAccounts();
+    } catch (error: any) {
+      console.error("Error creating balance adjustment transaction:", error);
+      toast.error(mapServerError(error, "Erro ao lançar ajuste de saldo"));
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const saveEdit = async (id: string) => {
@@ -1122,7 +1169,7 @@ function AccountsPage() {
                 <div className="mt-2 space-y-2">
                   <div className="bg-destructive/10 p-3 rounded-xl space-y-3">
                     <p className="text-[11px] text-destructive font-semibold text-center leading-tight">
-                      Atenção: Você está alterando o saldo inicial. Isso impactará o saldo histórico da conta.
+                      Como deseja aplicar essa diferença? Você pode lançar uma transação de ajuste para preservar o saldo inicial ou alterar o saldo inicial diretamente.
                     </p>
                     {(() => {
                       const valid = validateAccount(editName, editBalance);
@@ -1152,17 +1199,24 @@ function AccountsPage() {
                       );
                     })()}
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex flex-col gap-2">
+                    <button
+                      onClick={() => editingAccount && saveEditAsTransaction(editingAccount.id)}
+                      disabled={isSubmitting}
+                      className="w-full interactive-button flex items-center justify-center gap-2 rounded-2xl bg-primary py-3 text-sm font-medium text-primary-foreground disabled:opacity-30 transition-opacity"
+                    >
+                      {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Lançar ajuste como transação"}
+                    </button>
                     <button
                       onClick={() => editingAccount && saveEdit(editingAccount.id)}
                       disabled={isSubmitting}
-                      className="flex-1 interactive-button flex items-center justify-center gap-2 rounded-2xl bg-destructive py-3 text-sm font-medium text-white disabled:opacity-30 transition-opacity"
+                      className="w-full interactive-button flex items-center justify-center gap-2 rounded-2xl bg-destructive py-3 text-sm font-medium text-white disabled:opacity-30 transition-opacity"
                     >
-                      {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Confirmar Alteração"}
+                      Alterar saldo inicial
                     </button>
                     <button
                       onClick={() => setShowConfirmUpdate(false)}
-                      className="flex-1 interactive-button flex items-center justify-center gap-2 rounded-2xl bg-accent py-3 text-sm font-medium text-foreground"
+                      className="w-full interactive-button flex items-center justify-center gap-2 rounded-2xl bg-accent py-3 text-sm font-medium text-foreground"
                     >
                       Cancelar
                     </button>
