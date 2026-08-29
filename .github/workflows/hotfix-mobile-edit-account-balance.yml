@@ -1,5 +1,4 @@
 name: Apply mobile edit and account balance hotfix
-# one-shot workflow; removes itself after applying the source changes
 on:
   push:
     branches: [main]
@@ -17,45 +16,27 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
 
-          # 1) Keep the edit transaction dialog centered and constrained to the mobile viewport.
           tx_path = Path('src/routes/transactions.tsx')
           tx = tx_path.read_text()
-          old_dialog = '''        <DialogContent className="w-[94vw] max-w-[94vw] sm:w-[28rem] sm:max-w-[28rem] rounded-2xl bg-background max-h-[92vh] overflow-hidden p-0 flex flex-col gap-0">'''
-          new_dialog = '''        <DialogContent className="left-1/2 right-auto w-[calc(100vw-1.5rem)] max-w-[calc(100vw-1.5rem)] translate-x-[-50%] sm:w-[28rem] sm:max-w-[28rem] rounded-2xl bg-background max-h-[92vh] overflow-x-hidden overflow-y-hidden p-0 flex flex-col gap-0">'''
+          old_dialog = '        <DialogContent className="w-[94vw] max-w-[94vw] sm:w-[28rem] sm:max-w-[28rem] rounded-2xl bg-background max-h-[92vh] overflow-hidden p-0 flex flex-col gap-0">'
+          new_dialog = '        <DialogContent className="left-1/2 right-auto w-[calc(100vw-1.5rem)] max-w-[calc(100vw-1.5rem)] translate-x-[-50%] sm:w-[28rem] sm:max-w-[28rem] rounded-2xl bg-background max-h-[92vh] overflow-x-hidden overflow-y-hidden p-0 flex flex-col gap-0">'
           if old_dialog not in tx:
               raise SystemExit('edit dialog class not found')
-          tx = tx.replace(old_dialog, new_dialog, 1)
-          tx_path.write_text(tx)
+          tx_path.write_text(tx.replace(old_dialog, new_dialog, 1))
 
-          # 2) Match Accounts balance rules with Home.
           accounts_path = Path('src/routes/accounts.tsx')
           accounts = accounts_path.read_text()
-          old_query = '''        .eq("user_id", session.user.id)
-        .not("bank_account_id", "is", null)
-        .is("card", null);'''
-          new_query = '''        .eq("user_id", session.user.id)
-        .not("bank_account_id", "is", null);'''
+          old_query = '        .eq("user_id", session.user.id)\n        .not("bank_account_id", "is", null)\n        .is("card", null);'
+          new_query = '        .eq("user_id", session.user.id)\n        .not("bank_account_id", "is", null);'
           if old_query not in accounts:
               raise SystemExit('accounts transaction query block not found')
           accounts = accounts.replace(old_query, new_query, 1)
 
-          old_loop = '''          if (tx.is_visible === false) continue; // ignora transações ocultas/removidas logicamente
-          const transactionDateKey = typeof tx.date === "string" ? tx.date.slice(0, 10) : undefined;
-          if (transactionDateKey && transactionDateKey > todayKey) continue;
-          const id = tx.bank_account_id as string;'''
-          new_loop = '''          if (tx.is_visible === false) continue; // ignora transações ocultas/removidas logicamente
-          // Mesma regra da Home: despesas de cartão não afetam saldo bancário.
-          if (tx.type === "expense" && tx.card) continue;
-          // Datas legadas em "dd MMM" não podem ser comparadas como ISO, pois isso fazia
-          // lançamentos válidos serem tratados como futuros e o saldo aparecer zerado.
-          const rawDate = typeof tx.date === "string" ? tx.date.trim() : "";
-          const transactionDateKey = /^\\d{4}-\\d{2}-\\d{2}/.test(rawDate) ? rawDate.slice(0, 10) : undefined;
-          if (transactionDateKey && transactionDateKey > todayKey) continue;
-          const id = tx.bank_account_id as string;'''
+          old_loop = '          if (tx.is_visible === false) continue; // ignora transações ocultas/removidas logicamente\n          const transactionDateKey = typeof tx.date === "string" ? tx.date.slice(0, 10) : undefined;\n          if (transactionDateKey && transactionDateKey > todayKey) continue;\n          const id = tx.bank_account_id as string;'
+          new_loop = '          if (tx.is_visible === false) continue; // ignora transações ocultas/removidas logicamente\n          // Mesma regra da Home: despesas de cartão não afetam saldo bancário.\n          if (tx.type === "expense" && tx.card) continue;\n          // Só compara datas ISO. Datas legadas em "dd MMM" continuam válidas e não são descartadas.\n          const rawDate = typeof tx.date === "string" ? tx.date.trim() : "";\n          const transactionDateKey = /^\\d{4}-\\d{2}-\\d{2}/.test(rawDate) ? rawDate.slice(0, 10) : undefined;\n          if (transactionDateKey && transactionDateKey > todayKey) continue;\n          const id = tx.bank_account_id as string;'
           if old_loop not in accounts:
               raise SystemExit('accounts balance loop block not found')
-          accounts = accounts.replace(old_loop, new_loop, 1)
-          accounts_path.write_text(accounts)
+          accounts_path.write_text(accounts.replace(old_loop, new_loop, 1))
           PY
       - name: Commit fixes and remove one-shot workflow
         run: |
