@@ -1,0 +1,41 @@
+name: hotfix-recalc-adjustment-transaction
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/hotfix-recalc-adjustment-transaction.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Patch accounts recalc flow
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path('src/routes/accounts.tsx')
+          s = p.read_text()
+          marker = '''  const handleRecalc = async () => {\n'''
+          insert = '''  const handleRecalcAsTransaction = async () => {\n    if (!recalcAccount || isRecalcing) return;\n    const income = incomeByAccount[recalcAccount.id] || 0;\n    const expense = expenseByAccount[recalcAccount.id] || 0;\n    const current = Math.round((Number(recalcAccount.balance || 0) + income - expense) * 100) / 100;\n    const diff = Math.round((recalcRealBalance - current) * 100) / 100;\n\n    if (Math.abs(diff) < 0.005) {\n      toast.info(\"O saldo já está consistente com o valor informado.\");\n      setRecalcAccount(null);\n      return;\n    }\n\n    setIsRecalcing(true);\n    try {\n      const { data: { user } } = await supabase.auth.getUser();\n      if (!user) throw new Error(\"Usuário não autenticado\");\n      const adjustmentType = diff > 0 ? \"income\" : \"expense\";\n      const { error } = await supabase.from(\"transactions\").insert({\n        name: \"Ajuste de saldo\",\n        category: \"Ajustes\",\n        date: new Date().toLocaleDateString(\"en-CA\"),\n        amount: Math.abs(diff),\n        type: adjustmentType,\n        bank_account_id: recalcAccount.id,\n        user_id: user.id,\n        is_visible: true,\n        icon: diff > 0 ? \"💰\" : \"💸\",\n      });\n      if (error) throw error;\n      toast.success(`${adjustmentType === \"income\" ? \"Receita\" : \"Despesa\"} de ajuste lançada: R$ ${Math.abs(diff).toLocaleString(\"pt-BR\", { minimumFractionDigits: 2 })}`);\n      setRecalcAccount(null);\n      fetchAccounts();\n    } catch (error: any) {\n      console.error(\"Error creating recalc adjustment transaction:\", error);\n      toast.error(mapServerError(error, \"Erro ao lançar ajuste de saldo\"));\n    } finally {\n      setIsRecalcing(false);\n    }\n  };\n\n'''
+          if 'const handleRecalcAsTransaction = async () =>' not in s:
+              s = s.replace(marker, insert + marker, 1)
+          old = '''                <div className=\"flex gap-2\">\n                  <button\n                    onClick={handleRecalc}\n                    disabled={isRecalcing}\n                    className=\"flex-1 interactive-button flex items-center justify-center gap-2 rounded-2xl bg-primary py-3 text-sm font-medium text-primary-foreground disabled:opacity-50\"\n                  >\n                    {isRecalcing ? <Loader2 className=\"h-4 w-4 animate-spin\" /> : \"Confirmar\"}\n                  </button>\n                  <button\n                    onClick={() => setRecalcAccount(null)}\n                    className=\"flex-1 interactive-button flex items-center justify-center gap-2 rounded-2xl bg-accent py-3 text-sm font-medium text-foreground\"\n                  >\n                    Cancelar\n                  </button>\n                </div>'''
+          new = '''                <div className=\"flex flex-col gap-2\">\n                  {Math.abs(diff) >= 0.005 && (\n                    <button\n                      onClick={handleRecalcAsTransaction}\n                      disabled={isRecalcing}\n                      className=\"w-full interactive-button flex items-center justify-center gap-2 rounded-2xl bg-primary py-3 text-sm font-medium text-primary-foreground disabled:opacity-50\"\n                    >\n                      {isRecalcing ? <Loader2 className=\"h-4 w-4 animate-spin\" /> : \"Lançar ajuste como transação\"}\n                    </button>\n                  )}\n                  <button\n                    onClick={handleRecalc}\n                    disabled={isRecalcing}\n                    className=\"w-full interactive-button flex items-center justify-center gap-2 rounded-2xl bg-destructive py-3 text-sm font-medium text-white disabled:opacity-50\"\n                  >\n                    Alterar saldo inicial\n                  </button>\n                  <button\n                    onClick={() => setRecalcAccount(null)}\n                    className=\"w-full interactive-button flex items-center justify-center gap-2 rounded-2xl bg-accent py-3 text-sm font-medium text-foreground\"\n                  >\n                    Cancelar\n                  </button>\n                </div>'''
+          if old not in s:
+              raise SystemExit('target button block not found')
+          s = s.replace(old, new, 1)
+          s = s.replace('O saldo de abertura será ajustado para bater com esse valor, preservando as transações visíveis.', 'Você pode lançar uma transação de ajuste para preservar o saldo inicial ou alterar o saldo inicial diretamente.')
+          p.write_text(s)
+      - name: Commit patch and remove workflow
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/routes/accounts.tsx
+          git commit -m 'fix: offer transaction in recalculate balance flow'
+          git rm .github/workflows/hotfix-recalc-adjustment-transaction.yml
+          git commit -m 'chore: remove recalc adjustment hotfix workflow'
+          git push
