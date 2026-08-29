@@ -1,4 +1,5 @@
 name: Apply mobile edit and account balance hotfix
+# one-shot workflow; removes itself after applying the source changes
 on:
   push:
     branches: [main]
