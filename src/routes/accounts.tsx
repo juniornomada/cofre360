@@ -719,7 +719,7 @@ function AccountsPage() {
     try {
       const { data, error } = await supabase
         .from("transactions")
-        .select("id, date, description, amount, type, is_visible, card")
+        .select("id, date, description:name, amount, type, is_visible, card")
         .eq("bank_account_id", a.id)
         .order("date", { ascending: false });
       if (error) throw error;
