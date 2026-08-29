@@ -1198,10 +1198,10 @@ export function TransactionsPage() {
             transform: "translate(-50%, -50%)",
             boxSizing: "border-box",
           }}
-          className="fixed top-1/2 rounded-2xl bg-background max-h-[88dvh] overflow-hidden p-0 flex min-w-0 flex-col gap-0 sm:!w-[28rem] sm:!max-w-[28rem]"
+          className="fixed top-1/2 rounded-2xl bg-background h-[min(88dvh,calc(100dvh-24px))] max-h-[calc(100dvh-24px)] overflow-hidden p-0 flex min-w-0 flex-col gap-0 sm:h-auto sm:max-h-[88dvh] sm:!w-[28rem] sm:!max-w-[28rem]"
         >
-          <DialogHeader className="p-4 pb-2 border-b"><DialogTitle className="text-sm">Editar Transação</DialogTitle></DialogHeader>
-          <div className="flex-1 min-w-0 overflow-x-hidden overflow-y-auto p-4 flex flex-col gap-4">
+          <DialogHeader className="shrink-0 p-4 pb-2 border-b"><DialogTitle className="text-sm">Editar Transação</DialogTitle></DialogHeader>
+          <div className="flex-1 min-h-0 min-w-0 overscroll-contain overflow-x-hidden overflow-y-auto p-4 flex flex-col gap-4">
           {editTx && (
             <div className="flex min-w-0 flex-col gap-4">
               <div className="relative min-w-0">
@@ -1530,7 +1530,7 @@ export function TransactionsPage() {
             </div>
           )}
           </div>
-          <DialogFooter className="p-4 pt-2 border-t mt-0 flex-row gap-2 sm:gap-2">
+          <DialogFooter className="shrink-0 p-4 pt-2 border-t mt-0 flex-row gap-2 sm:gap-2">
             <Button variant="outline" size="sm" className="flex-1 h-10 text-xs rounded-xl" onClick={() => { (document.activeElement as HTMLElement)?.blur(); setShowEditDialog(false); }}>Cancelar</Button>
             <Button size="sm" className="flex-1 h-10 text-xs rounded-xl font-bold" onClick={handleSaveEdit}>Salvar alterações</Button>
           </DialogFooter>
