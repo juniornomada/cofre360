@@ -1,0 +1,34 @@
+name: Apply hard mobile viewport containment
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/hotfix-mobile-edit-hard-viewport.yml
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Force transaction editor inside mobile viewport
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('src/routes/transactions.tsx')
+          s = p.read_text()
+          old = 'fixed inset-x-3 left-auto right-auto top-1/2 w-auto max-w-none -translate-y-1/2 translate-x-0 sm:left-1/2 sm:right-auto sm:w-[28rem] sm:max-w-[28rem] sm:-translate-x-1/2 rounded-2xl bg-background max-h-[88dvh] overflow-hidden p-0 flex flex-col gap-0'
+          new = 'fixed !left-3 !right-3 top-1/2 !w-auto !max-w-none -translate-y-1/2 !translate-x-0 box-border sm:!left-1/2 sm:!right-auto sm:!w-[28rem] sm:!max-w-[28rem] sm:!-translate-x-1/2 rounded-2xl bg-background max-h-[88dvh] overflow-hidden p-0 flex flex-col gap-0'
+          if old not in s:
+              raise SystemExit('current edit dialog class not found')
+          s = s.replace(old, new, 1)
+          p.write_text(s)
+          PY
+      - name: Commit fix and remove workflow
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git rm .github/workflows/hotfix-mobile-edit-hard-viewport.yml
+          git add src/routes/transactions.tsx
+          git commit -m "fix: force transaction editor inside mobile viewport"
+          git push
