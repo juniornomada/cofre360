@@ -13,3 +13,22 @@
 .ml-5 span[class*="uppercase"][class*="tracking-wide"][class*="text-primary"] {
   display: none;
 }
+
+/*
+ * Editor de transação no mobile.
+ * O Dialog base já aplica left:50% + translateX(-50%). A tela de transações
+ * também aplica posicionamento inline; em alguns navegadores Android essa
+ * combinação desloca o modal para fora da viewport. Fixamos pelas duas bordas
+ * e mantemos apenas a centralização vertical. !important é intencional para
+ * vencer o style inline específico desse editor sem alterar os outros dialogs.
+ */
+@media (max-width: 639px) {
+  [role="dialog"][style*="100dvw"] {
+    left: 12px !important;
+    right: 12px !important;
+    width: auto !important;
+    max-width: none !important;
+    transform: translateY(-50%) !important;
+    box-sizing: border-box !important;
+  }
+}
