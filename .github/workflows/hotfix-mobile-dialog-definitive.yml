@@ -1,0 +1,70 @@
+name: hotfix-mobile-dialog-definitive
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/hotfix-mobile-dialog-definitive.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Patch mobile transaction dialog
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('src/routes/transactions.tsx')
+          s = p.read_text()
+          old = '''        <DialogContent
+          style={{
+            width: "calc(100dvw - 24px)",
+            maxWidth: "calc(100dvw - 24px)",
+            left: "50%",
+            right: "auto",
+            transform: "translate(-50%, -50%)",
+            boxSizing: "border-box",
+          }}
+          className="fixed top-1/2 rounded-2xl bg-background h-[min(88dvh,calc(100dvh-24px))] max-h-[calc(100dvh-24px)] overflow-hidden p-0 flex min-w-0 flex-col gap-0 sm:h-auto sm:max-h-[88dvh] sm:!w-[28rem] sm:!max-w-[28rem]"
+        >'''
+          new = '''        <DialogContent
+          className="transaction-edit-dialog fixed top-1/2 rounded-2xl bg-background h-[min(88dvh,calc(100dvh-24px))] max-h-[calc(100dvh-24px)] overflow-hidden p-0 flex min-w-0 flex-col gap-0 sm:h-auto sm:max-h-[88dvh] sm:!w-[28rem] sm:!max-w-[28rem]"
+        >'''
+          if old not in s:
+              raise SystemExit('target DialogContent block not found')
+          p.write_text(s.replace(old, new, 1))
+
+          cssp = Path('src/subaccount-overrides.css')
+          css = cssp.read_text() if cssp.exists() else ''
+          marker = '/* definitive mobile transaction edit dialog */'
+          block = '''\n/* definitive mobile transaction edit dialog */
+@media (max-width: 639px) {
+  .transaction-edit-dialog {
+    left: 12px !important;
+    right: 12px !important;
+    width: auto !important;
+    max-width: none !important;
+    transform: translateY(-50%) !important;
+    box-sizing: border-box !important;
+  }
+}
+'''
+          if marker not in css:
+              cssp.write_text(css.rstrip() + block)
+          PY
+      - name: Commit fix
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/routes/transactions.tsx src/subaccount-overrides.css
+          git commit -m "fix: center transaction editor definitively on mobile"
+          git push origin main
+      - name: Remove workflow
+        run: |
+          git pull --rebase origin main
+          git rm .github/workflows/hotfix-mobile-dialog-definitive.yml
+          git commit -m "chore: remove definitive mobile dialog hotfix workflow"
+          git push origin main
