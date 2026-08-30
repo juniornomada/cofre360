@@ -1,4 +1,4 @@
-name: Apply visual card picker
+name: Apply installment stepper
 on:
   push:
     branches: [main]
@@ -13,17 +13,19 @@ jobs:
         with:
           ref: main
           fetch-depth: 0
-      - name: Apply patch
-        run: python3 scripts/patch_visual_card_picker.py
+      - name: Apply installment stepper
+        run: python3 scripts/patch_installment_stepper.py
+      - name: Verify
+        run: |
+          grep -q 'aria-label="Diminuir quantidade de parcelas"' src/routes/transactions.tsx
+          grep -q 'aria-label="Aumentar quantidade de parcelas"' src/routes/transactions.tsx
+          ! grep -q 'Ou digite outro valor' src/routes/transactions.tsx
       - name: Commit patch and cleanup
         run: |
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add src/routes/transactions.tsx
-          git rm scripts/patch_visual_card_picker.py
-          git rm visual-card-picker.trigger
-          git rm .github/workflows/apply-visual-card-picker.yml
-          git rm .github/workflows/hotfix-subaccount-eye-event-v2.yml
+          git rm scripts/patch_installment_stepper.py
           git rm .github/workflows/hotfix-home-safe-fallback.yml
-          git commit -m "feat: use visual card picker in transaction editor"
+          git commit -m "feat: simplify installment quantity control"
           git push origin main
