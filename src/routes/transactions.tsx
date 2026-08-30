@@ -1432,73 +1432,65 @@ export function TransactionsPage() {
                   <span className="text-xs font-medium text-foreground">Parcelamento</span>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="text-[10px] text-muted-foreground mb-1 block">Parcela atual</label>
-                    <input
-                      type="number"
-                      min={1}
-                      value={editTx.installment_number ?? 1}
-                      onChange={e => {
-                        const val = e.target.value;
-                        setEditTx({ ...editTx, installment_number: val === "" ? null : Math.max(1, parseInt(val) || 1) });
+                <div className="space-y-1.5">
+                  <label className="text-[10px] text-muted-foreground block">Quantidade de parcelas</label>
+                  <div className="grid grid-cols-[48px_1fr_48px] items-center gap-2">
+                    <button
+                      type="button"
+                      aria-label="Diminuir quantidade de parcelas"
+                      onClick={() => {
+                        const currentCount = Number(editTx.total_installments) || 1;
+                        if (currentCount <= 1) return;
+                        const newCount = currentCount === 2 ? 1 : currentCount - 1;
+                        const next = changeInstallmentCount({
+                          mode: editInstallmentMode,
+                          amount: editTx.amount,
+                          prevCount: currentCount,
+                          newCount,
+                        });
+                        setEditTx({
+                          ...editTx,
+                          total_installments: newCount > 1 ? newCount : null,
+                          installment_number: newCount > 1
+                            ? Math.min(Number(editTx.installment_number) || 1, newCount)
+                            : null,
+                          amount: next.amount,
+                        });
                       }}
-                      className="w-full rounded-lg bg-background px-2 py-1.5 text-sm text-foreground outline-none border border-border focus:border-primary/50"
-                    />
-                  </div>
-                  <div className="col-span-2 space-y-2">
-                    <label className="text-[10px] text-muted-foreground mb-1 block">Total de parcelas</label>
-                    <div className="flex flex-wrap gap-1 mb-2">
-                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 24].map((n) => (
-                        <button
-                          key={n}
-                          type="button"
-                          onClick={() => {
-                            const prevCount = Math.max(1, Number(editTx.total_installments) || 1);
-                            const next = changeInstallmentCount({
-                              mode: editInstallmentMode,
-                              amount: editTx.amount,
-                              prevCount,
-                              newCount: n,
-                            });
-                            setEditTx({ ...editTx, total_installments: n, amount: next.amount });
-                          }}
-                          className={cn(
-                            "px-2 py-1 rounded text-[10px] font-medium transition-colors border",
-                            Number(editTx.total_installments) === n 
-                              ? "bg-primary text-primary-foreground border-primary" 
-                              : "bg-background text-muted-foreground border-border hover:border-primary/50"
-                          )}
-                        >
-                          {n}x
-                        </button>
-                      ))}
+                      disabled={(Number(editTx.total_installments) || 1) <= 1}
+                      className="h-10 rounded-xl border border-border bg-background text-lg font-bold text-foreground transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-35"
+                    >
+                      −
+                    </button>
+                    <div
+                      aria-live="polite"
+                      className="flex h-10 items-center justify-center rounded-xl border border-border bg-background px-3 text-sm font-bold tabular-nums text-foreground"
+                    >
+                      {(Number(editTx.total_installments) || 1) > 1 ? Number(editTx.total_installments) : "—"}
                     </div>
-                    <div className="flex-1">
-                      <label className="text-[9px] text-muted-foreground mb-0.5 block italic">Ou digite outro valor</label>
-                      <input
-                        type="number"
-                        min={1}
-                        value={editTx.total_installments ?? 1}
-                        onChange={e => {
-                          const val = e.target.value;
-                          if (val === "") {
-                            setEditTx({ ...editTx, total_installments: null });
-                            return;
-                          }
-                          const newCount = Math.max(1, parseInt(val) || 1);
-                          const prevCount = Math.max(1, Number(editTx.total_installments) || 1);
-                          const next = changeInstallmentCount({
-                            mode: editInstallmentMode,
-                            amount: editTx.amount,
-                            prevCount,
-                            newCount,
-                          });
-                          setEditTx({ ...editTx, total_installments: newCount, amount: next.amount });
-                        }}
-                        className="w-full rounded-lg bg-background px-2 py-1.5 text-sm text-foreground outline-none border border-border focus:border-primary/50"
-                      />
-                    </div>
+                    <button
+                      type="button"
+                      aria-label="Aumentar quantidade de parcelas"
+                      onClick={() => {
+                        const currentCount = Number(editTx.total_installments) || 1;
+                        const newCount = currentCount > 1 ? currentCount + 1 : 2;
+                        const next = changeInstallmentCount({
+                          mode: editInstallmentMode,
+                          amount: editTx.amount,
+                          prevCount: currentCount,
+                          newCount,
+                        });
+                        setEditTx({
+                          ...editTx,
+                          total_installments: newCount,
+                          installment_number: Math.min(Number(editTx.installment_number) || 1, newCount),
+                          amount: next.amount,
+                        });
+                      }}
+                      className="h-10 rounded-xl border border-primary/40 bg-primary/10 text-lg font-bold text-primary transition-colors hover:bg-primary/20"
+                    >
+                      +
+                    </button>
                   </div>
                 </div>
 
@@ -1569,7 +1561,7 @@ export function TransactionsPage() {
                 )}
 
                 <p className="text-[10px] text-muted-foreground leading-relaxed">
-                  Defina o total maior que 1 para parcelar. As parcelas futuras serão criadas nos meses seguintes. Use total = 1 para remover o parcelamento.
+                  Use + para adicionar parcelas e − para reduzir. Ao voltar abaixo de 2, o parcelamento é removido.
                 </p>
               </div>
               )}
