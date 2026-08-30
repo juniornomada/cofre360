@@ -1,4 +1,4 @@
-name: Hotfix home safe fallback
+name: Apply visual card picker
 on:
   push:
     branches: [main]
@@ -10,91 +10,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Patch Home with route-level safe fallback
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Apply patch
+        run: python3 scripts/patch_visual_card_picker.py
+      - name: Commit patch and cleanup
         run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          p = Path('src/routes/index.tsx')
-          s = p.read_text()
-          old_import = 'import { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense } from "react";'
-          new_import = 'import { Component, useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense } from "react";'
-          if old_import in s:
-              s = s.replace(old_import, new_import, 1)
-          marker = 'export const Route = createFileRoute("/")({'
-          if marker not in s:
-              raise SystemExit('route marker not found')
-          fallback = r'''
-function HomeSafeFallback() {
-  const [balance, setBalance] = useState<number | null>(null);
-  const [loadingSafe, setLoadingSafe] = useState(true);
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session || cancelled) return;
-        const [{ data: accounts }, { data: txs }] = await Promise.all([
-          supabase.from("bank_accounts").select("id,balance,is_visible").eq("user_id", session.user.id),
-          supabase.from("transactions").select("bank_account_id,amount,type,card,is_visible").eq("user_id", session.user.id),
-        ]);
-        const visible = (accounts || []).filter((a: any) => a.is_visible !== false);
-        const byId: Record<string, number> = {};
-        for (const a of visible as any[]) byId[a.id] = Number(a.balance || 0);
-        for (const t of (txs || []) as any[]) {
-          if (t.is_visible === false || !t.bank_account_id || !(t.bank_account_id in byId)) continue;
-          if (t.type === "expense" && t.card) continue;
-          const amount = Number(t.amount || 0);
-          byId[t.bank_account_id] += t.type === "income" ? amount : -amount;
-        }
-        if (!cancelled) setBalance(Object.values(byId).reduce((sum, v) => sum + v, 0));
-      } catch (error) {
-        console.error("Safe Home fallback load failed:", error);
-      } finally {
-        if (!cancelled) setLoadingSafe(false);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, []);
-
-  return (
-    <div className="flex flex-col gap-5 px-4 pt-6 pb-24">
-      <div className="rounded-2xl border border-border bg-card p-5">
-        <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Saldo total</p>
-        <p className="mt-2 text-3xl font-bold tabular-nums text-foreground">
-          {loadingSafe ? "Carregando..." : balance === null ? "R$ —" : `R$ ${balance.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-        </p>
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        <Link to="/transactions" className="rounded-2xl border border-border bg-card p-4 text-center text-sm font-semibold text-foreground">Transações</Link>
-        <Link to="/accounts" className="rounded-2xl border border-border bg-card p-4 text-center text-sm font-semibold text-foreground">Contas</Link>
-        <Link to="/cards" className="rounded-2xl border border-border bg-card p-4 text-center text-sm font-semibold text-foreground">Cartões</Link>
-        <Link to="/insights" className="rounded-2xl border border-border bg-card p-4 text-center text-sm font-semibold text-foreground">Insights</Link>
-      </div>
-      <p className="text-center text-xs text-muted-foreground">A Home está em modo seguro enquanto um bloco avançado é recuperado.</p>
-    </div>
-  );
-}
-
-class HomeRouteErrorBoundary extends Component<{ children: React.ReactNode }, { failed: boolean }> {
-  state = { failed: false };
-  static getDerivedStateFromError() { return { failed: true }; }
-  componentDidCatch(error: unknown) { console.error("Home route runtime error:", error); }
-  render() { return this.state.failed ? <HomeSafeFallback /> : this.props.children; }
-}
-
-function SafeDashboardRoute() {
-  return <HomeRouteErrorBoundary><Dashboard /></HomeRouteErrorBoundary>;
-}
-
-'''
-          if 'function SafeDashboardRoute()' not in s:
-              s = s.replace(marker, fallback + marker, 1)
-          s = s.replace('   component: Dashboard,', '   component: SafeDashboardRoute,', 1)
-          p.write_text(s)
-          PY
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add src/routes/index.tsx
-          git commit -m "fix: add safe fallback for home runtime errors"
-          git push
+          git add src/routes/transactions.tsx
+          git rm scripts/patch_visual_card_picker.py
+          git rm visual-card-picker.trigger
+          git rm .github/workflows/apply-visual-card-picker.yml
+          git rm .github/workflows/hotfix-subaccount-eye-event-v2.yml
+          git rm .github/workflows/hotfix-home-safe-fallback.yml
+          git commit -m "feat: use visual card picker in transaction editor"
+          git push origin main
