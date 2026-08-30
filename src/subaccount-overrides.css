@@ -64,10 +64,16 @@
 }
 
 [role="dialog"] div:has(> select option[value="Nenhum"]:checked)::after {
-  content: "Selecione um cartão antes de salvar.";
+  content: "Selecione um cartão para habilitar Salvar alterações.";
   display: block;
   margin-top: 0.375rem;
   font-size: 0.7rem;
   line-height: 1rem;
   color: hsl(var(--destructive));
+}
+
+[role="dialog"]:has(select option[value="Nenhum"]:checked) div.border-t > button:last-child {
+  pointer-events: none !important;
+  opacity: 0.45 !important;
+  cursor: not-allowed !important;
 }
