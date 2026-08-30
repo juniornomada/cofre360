@@ -1,1 +1,1 @@
-apply visual card picker 3
+apply visual card picker final
