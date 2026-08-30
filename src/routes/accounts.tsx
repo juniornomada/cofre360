@@ -6,6 +6,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 
 import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 const CsvImportDialog = lazy(() => import("@/components/CsvImportDialog").then(m => ({ default: m.CsvImportDialog })));
 const PdfStatementImportDialog = lazy(() => import("@/components/PdfStatementImportDialog").then(m => ({ default: m.PdfStatementImportDialog })));
@@ -636,7 +638,7 @@ function AccountsPage() {
       const { error: txError } = await supabase.from("transactions").insert({
         name: "Ajuste de saldo",
         category: "Ajustes",
-        date: new Date().toLocaleDateString("en-CA"),
+        date: format(new Date(), "dd MMM", { locale: ptBR }),
         amount: Math.abs(diff),
         type: adjustmentType,
         bank_account_id: id,
@@ -826,7 +828,7 @@ function AccountsPage() {
       const { error } = await supabase.from("transactions").insert({
         name: "Ajuste de saldo",
         category: "Ajustes",
-        date: new Date().toLocaleDateString("en-CA"),
+        date: format(new Date(), "dd MMM", { locale: ptBR }),
         amount: Math.abs(diff),
         type: adjustmentType,
         bank_account_id: recalcAccount.id,
