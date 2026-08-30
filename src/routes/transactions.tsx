@@ -556,6 +556,13 @@ export function TransactionsPage() {
 
    const handleSaveEdit = async () => {
      if (!editTx) return;
+
+     const isCreditExpense = editTx.type === "expense" && editTx.bank_account_id === null;
+     const hasValidCard = !!editTx.card && editTx.card !== "Nenhum";
+     if (isCreditExpense && !hasValidCard) {
+       toast.error("Selecione o cartão de crédito antes de salvar a transação.");
+       return;
+     }
  
      // If it's part of an installment group and we haven't asked for scope yet
      if (editTx.installment_group_id && !scopeConfirmed) {
@@ -1306,8 +1313,8 @@ export function TransactionsPage() {
                 <div className="grid min-w-0 grid-cols-2 gap-2">
                   <button
                     type="button"
-                    onClick={() => setEditTx({ ...editTx, bank_account_id: null, card: editTx.card || (cardOptions[0]?.name ?? null) })}
-                    className={`min-w-0 rounded-xl px-2 py-2 text-[11px] leading-tight font-medium transition-colors ${editTx.card ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground"}`}
+                    onClick={() => setEditTx({ ...editTx, bank_account_id: null, card: editTx.card && editTx.card !== "Nenhum" ? editTx.card : "" })}
+                    className={`min-w-0 rounded-xl px-2 py-2 text-[11px] leading-tight font-medium transition-colors ${editTx.bank_account_id === null ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground"}`}
                   >
                     💳 Cartão (Crédito)
                   </button>
@@ -1322,15 +1329,55 @@ export function TransactionsPage() {
                 <p className="text-[10px] text-muted-foreground mt-1">Alterne entre crédito e débito sem precisar excluir a transação.</p>
               </div>
               {editTx.card !== null && (
-                <div>
-                  <label className="text-xs text-muted-foreground mb-1 block">Cartão de Crédito</label>
-                  <select 
-                    value={editTx.card || ""} 
-                    onChange={e => setEditTx({ ...editTx, card: e.target.value || null, bank_account_id: null })} 
-                    className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground outline-none focus:ring-1 focus:ring-primary/30"
-                  >
-                    {cardOptions.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
-                  </select>
+                <div className="min-w-0">
+                  <label className="text-xs text-muted-foreground mb-2 block">Cartão de Crédito</label>
+                  {cardOptions.filter(c => c.name !== "Nenhum").length > 0 ? (
+                    <div className="grid min-w-0 grid-cols-2 gap-2">
+                      {cardOptions.filter(c => c.name !== "Nenhum").map((c) => {
+                        const selected = editTx.card === c.name;
+                        const brandLabel = c.brand?.trim()
+                          ? c.brand.trim().slice(0, 4).toUpperCase()
+                          : "💳";
+                        return (
+                          <button
+                            key={c.name}
+                            type="button"
+                            aria-pressed={selected}
+                            onClick={() => setEditTx({ ...editTx, card: c.name, bank_account_id: null })}
+                            className={cn(
+                              "flex min-w-0 items-center gap-2 rounded-xl border p-2.5 text-left transition-all",
+                              selected
+                                ? "border-primary bg-primary/10 ring-1 ring-primary/30"
+                                : "border-border bg-card hover:bg-accent/60"
+                            )}
+                          >
+                            <span className={cn(
+                              "flex h-9 w-11 shrink-0 items-center justify-center rounded-lg border text-[9px] font-black tracking-tight",
+                              selected
+                                ? "border-primary/40 bg-primary text-primary-foreground"
+                                : "border-border bg-background text-foreground"
+                            )}>
+                              {brandLabel}
+                            </span>
+                            <span className="min-w-0 flex-1">
+                              <span className="block truncate text-xs font-semibold text-foreground">{c.name}</span>
+                              {c.brand && (
+                                <span className="block truncate text-[9px] text-muted-foreground">{c.brand}</span>
+                              )}
+                            </span>
+                            {selected && <CheckSquare className="h-4 w-4 shrink-0 text-primary" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="rounded-xl border border-dashed border-border bg-card p-3 text-center text-xs text-muted-foreground">
+                      Nenhum cartão cadastrado.
+                    </div>
+                  )}
+                  {!editTx.card || editTx.card === "Nenhum" ? (
+                    <p className="mt-2 text-[10px] font-medium text-destructive">Selecione um cartão para habilitar Salvar alterações.</p>
+                  ) : null}
                 </div>
               )}
               {editTx.bank_account_id !== null && (
@@ -1532,7 +1579,14 @@ export function TransactionsPage() {
           </div>
           <DialogFooter className="shrink-0 p-4 pt-2 border-t mt-0 flex-row gap-2 sm:gap-2">
             <Button variant="outline" size="sm" className="flex-1 h-10 text-xs rounded-xl" onClick={() => { (document.activeElement as HTMLElement)?.blur(); setShowEditDialog(false); }}>Cancelar</Button>
-            <Button size="sm" className="flex-1 h-10 text-xs rounded-xl font-bold" onClick={handleSaveEdit}>Salvar alterações</Button>
+            <Button
+              size="sm"
+              className="flex-1 h-10 text-xs rounded-xl font-bold"
+              onClick={handleSaveEdit}
+              disabled={!!editTx && editTx.type === "expense" && editTx.bank_account_id === null && (!editTx.card || editTx.card === "Nenhum")}
+            >
+              Salvar alterações
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
