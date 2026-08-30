@@ -1,4 +1,4 @@
-name: Apply mobile editor no-x-transform fix
+name: Apply visual bank picker
 on:
   push:
     branches: [main]
@@ -11,44 +11,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Pin transaction editor to mobile viewport
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Apply visual bank picker patch
+        run: python3 scripts/patch_visual_bank_picker.py
+      - name: Verify, commit and cleanup
         run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          p = Path('src/routes/transactions.tsx')
-          s = p.read_text()
-          old = '''        <DialogContent
-          style={{
-            width: "calc(100dvw - 24px)",
-            maxWidth: "calc(100dvw - 24px)",
-            left: "50%",
-            right: "auto",
-            transform: "translate(-50%, -50%)",
-            boxSizing: "border-box",
-          }}
-          className="fixed top-1/2 rounded-2xl bg-background max-h-[88dvh] overflow-hidden p-0 flex min-w-0 flex-col gap-0 sm:!w-[28rem] sm:!max-w-[28rem]"
-        >'''
-          new = '''        <DialogContent
-          style={{
-            left: "12px",
-            right: "12px",
-            width: "auto",
-            maxWidth: "none",
-            transform: "translateY(-50%)",
-            boxSizing: "border-box",
-          }}
-          className="fixed top-1/2 rounded-2xl bg-background max-h-[88dvh] overflow-hidden p-0 flex min-w-0 flex-col gap-0 sm:!left-1/2 sm:!right-auto sm:!w-[28rem] sm:!max-w-[28rem] sm:!-translate-x-1/2"
-        >'''
-          if old not in s:
-              raise SystemExit('current edit dialog block not found')
-          s = s.replace(old, new, 1)
-          p.write_text(s)
-          PY
-      - name: Commit fix and remove workflow
-        run: |
+          grep -q 'Selecione a conta bancária antes de salvar a transação.' src/routes/transactions.tsx
+          grep -q 'Nenhuma conta cadastrada.' src/routes/transactions.tsx
+          grep -q 'select("id, name, balance, icon, color")' src/routes/transactions.tsx
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git rm .github/workflows/hotfix-mobile-edit-no-x-transform.yml
           git add src/routes/transactions.tsx
-          git commit -m "fix: pin transaction editor within mobile viewport"
-          git push
+          git rm scripts/patch_visual_bank_picker.py
+          git rm .github/workflows/hotfix-mobile-edit-no-x-transform.yml
+          git commit -m "feat: use visual bank picker in transaction editor"
+          git push origin main
