@@ -1,4 +1,4 @@
-name: hotfix-balance-date-v2
+name: Apply adjustment date format
 on:
   push:
     branches: [main]
@@ -12,54 +12,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Exclude future transactions from balances
+          ref: main
+          fetch-depth: 0
+      - name: Apply date format patch
+        run: python3 scripts/patch_adjustment_date_format.py
+      - name: Verify automatic transaction date formats
         run: |
-          python - <<'PY'
-          from pathlib import Path
-          p = Path('src/routes/home.tsx')
-          s = p.read_text()
-          old = '''        for (const tx of rawTx) {
-          if (tx.is_visible === false || !tx.bank_account_id) continue;
-          if (tx.type === "expense" && tx.card) continue;
-          const amount = Number(tx.amount || 0);'''
-          new = '''        const today = new Date();
-        today.setHours(23, 59, 59, 999);
-        for (const tx of rawTx) {
-          if (tx.is_visible === false || !tx.bank_account_id) continue;
-          if (tx.type === "expense" && tx.card) continue;
-          const transactionDate = safeDate(tx.date);
-          if (transactionDate && transactionDate > today) continue;
-          const amount = Number(tx.amount || 0);'''
-          if old not in s:
-              raise SystemExit('home balance marker not found')
-          p.write_text(s.replace(old, new, 1))
-
-          p = Path('src/routes/accounts.tsx')
-          s = p.read_text()
-          old = '''        .select("bank_account_id, amount, type, is_visible, card")'''
-          new = '''        .select("bank_account_id, amount, type, is_visible, card, date")'''
-          if old not in s:
-              raise SystemExit('accounts select marker not found')
-          s = s.replace(old, new, 1)
-          old = '''        for (const tx of txData) {
-          if (tx.is_visible === false) continue; // ignora transações ocultas/removidas logicamente
-          const id = tx.bank_account_id as string;'''
-          new = '''        const todayKey = new Date().toLocaleDateString("en-CA");
-        for (const tx of txData) {
-          if (tx.is_visible === false) continue; // ignora transações ocultas/removidas logicamente
-          const transactionDateKey = typeof tx.date === "string" ? tx.date.slice(0, 10) : undefined;
-          if (transactionDateKey && transactionDateKey > todayKey) continue;
-          const id = tx.bank_account_id as string;'''
-          if old not in s:
-              raise SystemExit('accounts balance marker not found')
-          p.write_text(s.replace(old, new, 1))
-          PY
-      - name: Commit patch and remove one-shot workflow
+          ! grep -R 'date: new Date().toLocaleDateString("en-CA")' src/routes src/components src/lib
+          grep -q 'date: format(new Date(), "dd MMM", { locale: ptBR })' src/routes/accounts.tsx
+      - name: Commit patch and cleanup
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/routes/accounts.tsx
+          git rm scripts/patch_adjustment_date_format.py
           git rm .github/workflows/hotfix-balance-date-v2.yml
-          git add src/routes/home.tsx src/routes/accounts.tsx
-          git commit -m 'fix: exclude future transactions from current balances'
-          git push
+          git commit -m 'fix: standardize automatic transaction date format'
+          git push origin main
