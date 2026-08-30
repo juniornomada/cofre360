@@ -16,19 +16,40 @@
 
 /*
  * Editor de transação no mobile.
- * O Dialog base já aplica left:50% + translateX(-50%). A tela de transações
- * também aplica posicionamento inline; em alguns navegadores Android essa
- * combinação desloca o modal para fora da viewport. Fixamos pelas duas bordas
- * e mantemos apenas a centralização vertical. !important é intencional para
- * vencer o style inline específico desse editor sem alterar os outros dialogs.
+ * Força a janela inteira a caber na viewport e impede que filhos internos
+ * aumentem a largura do dialog em navegadores Android.
  */
 @media (max-width: 639px) {
   [role="dialog"][style*="100dvw"] {
     left: 12px !important;
-    right: 12px !important;
-    width: auto !important;
-    max-width: none !important;
+    right: auto !important;
+    width: calc(100vw - 24px) !important;
+    max-width: calc(100vw - 24px) !important;
+    min-width: 0 !important;
     transform: translateY(-50%) !important;
     box-sizing: border-box !important;
+    overflow-x: hidden !important;
+    contain: inline-size;
+  }
+
+  [role="dialog"][style*="100dvw"] > *,
+  [role="dialog"][style*="100dvw"] > * > *,
+  [role="dialog"][style*="100dvw"] [class*="grid"],
+  [role="dialog"][style*="100dvw"] [class*="flex"] {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  [role="dialog"][style*="100dvw"] input,
+  [role="dialog"][style*="100dvw"] select,
+  [role="dialog"][style*="100dvw"] button {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  [role="dialog"][style*="100dvw"] [class*="grid-cols-2"] {
+    width: 100% !important;
   }
 }
