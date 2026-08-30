@@ -339,16 +339,51 @@ export function TransactionsPage() {
     }
   }, [searchParams.action, searchParams.type]);
 
-  // Parse "dd MMM" using created_at as the reference year (UTC) to avoid timezone/year drift.
+  // Accept legacy ISO dates and the app's compact date format.
+  // Sorting uses UTC to avoid timezone drift; the editor uses a local date for the calendar.
   const parseTxDate = (s: string, refIso?: string): Date | null => {
     if (!s) return null;
     const refYear = refIso ? new Date(refIso).getUTCFullYear() : new Date().getUTCFullYear();
+    const reference = new Date(refYear, 0, 1);
+    const patterns = /^\d{4}-\d{2}-\d{2}$/.test(s)
+      ? ["yyyy-MM-dd"]
+      : /^\d{2}-\d{2}-\d{4}$/.test(s)
+        ? ["dd-MM-yyyy"]
+        : ["dd MMM"];
+
+    for (const pattern of patterns) {
+      try {
+        const parsed = parse(s, pattern, reference, { locale: ptBR });
+        if (!isNaN(parsed.getTime())) {
+          return new Date(Date.UTC(parsed.getFullYear(), parsed.getMonth(), parsed.getDate()));
+        }
+      } catch {
+        // Try the next supported format.
+      }
+    }
+    return null;
+  };
+
+  const parseEditorTxDate = (s: string, refIso?: string): Date | undefined => {
+    if (!s) return undefined;
+    const refYear = refIso ? new Date(refIso).getFullYear() : new Date().getFullYear();
+    const reference = new Date(refYear, 0, 1);
+    const pattern = /^\d{4}-\d{2}-\d{2}$/.test(s)
+      ? "yyyy-MM-dd"
+      : /^\d{2}-\d{2}-\d{4}$/.test(s)
+        ? "dd-MM-yyyy"
+        : "dd MMM";
     try {
-      const parsed = parse(s, "dd MMM", new Date(Date.UTC(refYear, 0, 1)), { locale: ptBR });
-      if (isNaN(parsed.getTime())) return null;
-      // Reconstruct in UTC to neutralize local timezone offset.
-      return new Date(Date.UTC(refYear, parsed.getMonth(), parsed.getDate()));
-    } catch { return null; }
+      const parsed = parse(s, pattern, reference, { locale: ptBR });
+      return isNaN(parsed.getTime()) ? undefined : parsed;
+    } catch {
+      return undefined;
+    }
+  };
+
+  const formatEditorTxDate = (s: string, refIso?: string) => {
+    const parsed = parseEditorTxDate(s, refIso);
+    return parsed ? format(parsed, "dd-MM-yyyy") : s;
   };
 
   const toUtcDay = (d: Date, endOfDay = false) =>
@@ -1286,12 +1321,12 @@ export function TransactionsPage() {
                   <PopoverTrigger asChild>
                     <Button variant="outline" className={cn("w-full justify-start text-left font-normal rounded-xl bg-card border-none", !editTx.date && "text-muted-foreground")}>
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {editTx.date || "Selecionar data"}
+                      {editTx.date ? formatEditorTxDate(editTx.date, editTx.created_at) : "Selecionar data"}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0 z-[60]" align="start" sideOffset={4}>
 
-                    <Calendar mode="single" selected={(() => { try { return parse(editTx.date, "dd MMM", new Date(), { locale: ptBR }); } catch { return undefined; } })()} onSelect={(date) => { if (date) setEditTx({ ...editTx, date: format(date, "dd MMM", { locale: ptBR }) }); }} initialFocus className={cn("p-3 pointer-events-auto")} />
+                    <Calendar mode="single" selected={parseEditorTxDate(editTx.date, editTx.created_at)} onSelect={(date) => { if (date) setEditTx({ ...editTx, date: format(date, "dd MMM", { locale: ptBR }) }); }} initialFocus className={cn("p-3 pointer-events-auto")} />
                   </PopoverContent>
                 </Popover>
               </div>
