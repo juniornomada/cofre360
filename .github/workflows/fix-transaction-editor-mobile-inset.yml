@@ -1,0 +1,84 @@
+name: Fix transaction editor mobile inset
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/fix-transaction-editor-mobile-inset.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Patch transaction edit dialog
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('src/routes/transactions.tsx')
+          s = p.read_text()
+          old = '''        <DialogContent
+          style={{
+            width: "calc(100dvw - 24px)",
+            maxWidth: "calc(100dvw - 24px)",
+            left: "50%",
+            right: "auto",
+            transform: "translate(-50%, -50%)",
+            boxSizing: "border-box",
+          }}
+          className="fixed top-1/2 rounded-2xl bg-background h-[min(88dvh,calc(100dvh-24px))] max-h-[calc(100dvh-24px)] overflow-hidden p-0 flex min-w-0 flex-col gap-0 sm:h-auto sm:max-h-[88dvh] sm:!w-[28rem] sm:!max-w-[28rem]"
+        >'''
+          new = '''        <DialogContent
+          data-transaction-editor="true"
+          className="fixed !left-3 !right-3 !top-1/2 !w-auto !max-w-none !translate-x-0 -translate-y-1/2 rounded-2xl bg-background h-[min(88dvh,calc(100dvh-24px))] max-h-[calc(100dvh-24px)] overflow-x-hidden overflow-y-hidden p-0 flex min-w-0 flex-col gap-0 sm:!left-1/2 sm:!right-auto sm:h-auto sm:max-h-[88dvh] sm:!w-[28rem] sm:!max-w-[28rem] sm:!-translate-x-1/2"
+        >'''
+          if old not in s:
+              raise SystemExit('Expected dialog block not found; refusing unsafe patch')
+          s = s.replace(old, new, 1)
+          p.write_text(s)
+          PY
+      - name: Add mobile containment rules
+        run: |
+          cat >> src/subaccount-overrides.css <<'CSS'
+
+/* Transaction editor: hard containment for narrow mobile viewports. */
+@media (max-width: 639px) {
+  [data-transaction-editor="true"] {
+    box-sizing: border-box !important;
+    contain: inline-size;
+    overflow-x: hidden !important;
+  }
+
+  [data-transaction-editor="true"] > * {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  [data-transaction-editor="true"] [class*="grid-cols-2"] > *,
+  [data-transaction-editor="true"] [class*="flex-1"] {
+    min-width: 0;
+  }
+
+  [data-transaction-editor="true"] input,
+  [data-transaction-editor="true"] select,
+  [data-transaction-editor="true"] button {
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+}
+CSS
+      - name: Commit fix and cleanup workflow
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/routes/transactions.tsx src/subaccount-overrides.css
+          git commit -m "fix: keep transaction editor inside mobile viewport"
+          git rm .github/workflows/fix-transaction-editor-mobile-inset.yml
+          git commit -m "chore: remove mobile editor inset workflow"
+          git push origin main
