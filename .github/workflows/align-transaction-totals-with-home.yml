@@ -79,3 +79,5 @@ jobs:
           git rm .github/workflows/align-transaction-totals-with-home.yml
           git commit -m "chore: remove transaction totals alignment workflow"
           git push origin main
+
+# retrigger
