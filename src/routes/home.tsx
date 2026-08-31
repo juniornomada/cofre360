@@ -6,6 +6,8 @@ import {
   ArrowUpRight,
   Bell,
   CreditCard,
+  ChevronLeft,
+  ChevronRight,
   Eye,
   EyeOff,
   Landmark,
@@ -107,6 +109,10 @@ function RecoveredHome() {
   const [transactions, setTransactions] = useState<Tx[]>([]);
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedMonth, setSelectedMonth] = useState<Date>(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1);
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -146,28 +152,11 @@ function RecoveredHome() {
 
         const rawAccounts = (accountsRes.data || []) as Account[];
         const rawTx = (txRes.data || []) as Tx[];
-        const incomeByAccount: Record<string, number> = {};
-        const expenseByAccount: Record<string, number> = {};
-        const today = new Date();
-        today.setHours(23, 59, 59, 999);
-
-        for (const tx of rawTx) {
-          if (tx.is_visible === false || !tx.bank_account_id) continue;
-          if (tx.type === "expense" && tx.card) continue;
-          const transactionDate = safeDate(tx.date, tx.created_at);
-          if (transactionDate && transactionDate > today) continue;
-          const amount = Number(tx.amount || 0);
-          if (tx.type === "income") incomeByAccount[tx.bank_account_id] = (incomeByAccount[tx.bank_account_id] || 0) + amount;
-          else expenseByAccount[tx.bank_account_id] = (expenseByAccount[tx.bank_account_id] || 0) + amount;
-        }
-
-        const calculated = rawAccounts.map((account) => ({
-          ...account,
-          balance: Math.round((Number(account.balance || 0) + (incomeByAccount[account.id] || 0) - (expenseByAccount[account.id] || 0)) * 100) / 100,
-        }));
 
         if (!cancelled) {
-          setAccounts(calculated);
+          // Keep the opening balance untouched. Monthly balances are derived below
+          // from the selected month so Home can navigate historically.
+          setAccounts(rawAccounts);
           setCards((cardsRes.data || []) as Card[]);
           setTransactions(rawTx);
           setReminders((remindersRes.data || []) as Reminder[]);
@@ -181,9 +170,50 @@ function RecoveredHome() {
     return () => { cancelled = true; };
   }, []);
 
+  const selectedMonthKey = `${selectedMonth.getFullYear()}-${String(selectedMonth.getMonth() + 1).padStart(2, "0")}`;
+  const selectedMonthLabel = new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric" })
+    .format(selectedMonth)
+    .replace(/^./, (c) => c.toUpperCase());
+  const now = new Date();
+  const isCurrentSelectedMonth = now.getFullYear() === selectedMonth.getFullYear() && now.getMonth() === selectedMonth.getMonth();
+  const isFutureSelectedMonth = selectedMonth.getFullYear() > now.getFullYear() ||
+    (selectedMonth.getFullYear() === now.getFullYear() && selectedMonth.getMonth() > now.getMonth());
+  const selectedCutoff = useMemo(() => {
+    if (isCurrentSelectedMonth) {
+      const today = new Date();
+      today.setHours(23, 59, 59, 999);
+      return today;
+    }
+    return new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0, 23, 59, 59, 999);
+  }, [selectedMonth, isCurrentSelectedMonth]);
+
+  const shiftSelectedMonth = (delta: number) => {
+    setSelectedMonth((current) => new Date(current.getFullYear(), current.getMonth() + delta, 1));
+  };
+
+  const displayAccounts = useMemo(() => {
+    const incomeByAccount: Record<string, number> = {};
+    const expenseByAccount: Record<string, number> = {};
+
+    for (const tx of transactions) {
+      if (tx.is_visible === false || !tx.bank_account_id) continue;
+      if (tx.type === "expense" && tx.card) continue;
+      const transactionDate = safeDate(tx.date, tx.created_at);
+      if (transactionDate && transactionDate > selectedCutoff) continue;
+      const amount = Number(tx.amount || 0);
+      if (tx.type === "income") incomeByAccount[tx.bank_account_id] = (incomeByAccount[tx.bank_account_id] || 0) + amount;
+      else expenseByAccount[tx.bank_account_id] = (expenseByAccount[tx.bank_account_id] || 0) + amount;
+    }
+
+    return accounts.map((account) => ({
+      ...account,
+      balance: Math.round((Number(account.balance || 0) + (incomeByAccount[account.id] || 0) - (expenseByAccount[account.id] || 0)) * 100) / 100,
+    }));
+  }, [accounts, transactions, selectedCutoff]);
+
   const visibleAccounts = useMemo(
-    () => accounts.filter((account) => account.is_visible !== false),
-    [accounts],
+    () => displayAccounts.filter((account) => account.is_visible !== false),
+    [displayAccounts],
   );
 
   const mainAccounts = useMemo(
@@ -201,42 +231,50 @@ function RecoveredHome() {
     [mainAccounts],
   );
 
+  const selectedMonthTransactions = useMemo(() => {
+    return transactions.filter((tx) => {
+      if (tx.is_visible === false) return false;
+      const d = safeDate(tx.date, tx.created_at);
+      if (!d) return false;
+      return d.getFullYear() === selectedMonth.getFullYear() && d.getMonth() === selectedMonth.getMonth();
+    });
+  }, [transactions, selectedMonth]);
+
   const monthly = useMemo(() => {
-    const now = new Date();
     let income = 0;
     let expense = 0;
-    for (const tx of transactions) {
-      if (tx.is_visible === false) continue;
-      const d = safeDate(tx.date, tx.created_at);
-      if (!d || d.getMonth() !== now.getMonth() || d.getFullYear() !== now.getFullYear()) continue;
+    for (const tx of selectedMonthTransactions) {
       if (tx.type === "income") income += Number(tx.amount || 0);
       else expense += Number(tx.amount || 0);
     }
     return { income, expense };
-  }, [transactions]);
+  }, [selectedMonthTransactions]);
 
   const recent = useMemo(() => {
-    const today = new Date();
-    today.setHours(23, 59, 59, 999);
-    return transactions
+    return [...selectedMonthTransactions]
       .filter((tx) => {
-        if (tx.is_visible === false) return false;
-        const transactionDate = safeDate(tx.date, tx.created_at);
-        return !transactionDate || transactionDate <= today;
+        const d = safeDate(tx.date, tx.created_at);
+        return !isCurrentSelectedMonth || !d || d <= selectedCutoff;
+      })
+      .sort((a, b) => {
+        const da = safeDate(a.date, a.created_at)?.getTime() ?? 0;
+        const db = safeDate(b.date, b.created_at)?.getTime() ?? 0;
+        if (db !== da) return db - da;
+        return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
       })
       .slice(0, 8);
-  }, [transactions]);
+  }, [selectedMonthTransactions, isCurrentSelectedMonth, selectedCutoff]);
 
   const cardTotals = useMemo(() => {
     const result: Record<string, number> = {};
     for (const card of cards) result[card.name] = 0;
-    for (const tx of transactions) {
-      if (tx.is_visible === false || !tx.card) continue;
+    for (const tx of selectedMonthTransactions) {
+      if (!tx.card) continue;
       const amount = Number(tx.amount || 0);
       result[tx.card] = (result[tx.card] || 0) + (tx.type === "income" ? -amount : amount);
     }
     return result;
-  }, [cards, transactions]);
+  }, [cards, selectedMonthTransactions]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -282,6 +320,32 @@ function RecoveredHome() {
         </div>
       </div>
 
+      <section className="flex items-center justify-between rounded-2xl border border-border/50 bg-card px-2 py-2">
+        <button
+          type="button"
+          onClick={() => shiftSelectedMonth(-1)}
+          className="flex h-10 w-10 items-center justify-center rounded-xl text-muted-foreground hover:bg-accent"
+          aria-label="Mês anterior"
+          title="Mês anterior"
+        >
+          <ChevronLeft className="h-5 w-5" />
+        </button>
+        <div className="min-w-0 text-center">
+          <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground">Visão mensal</p>
+          <p className="truncate text-sm font-bold text-foreground">{selectedMonthLabel}</p>
+          <p className="text-[10px] text-muted-foreground">{isCurrentSelectedMonth ? "Até hoje" : isFutureSelectedMonth ? "Previsto até o fim do mês" : "Fechamento do mês"}</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => shiftSelectedMonth(1)}
+          className="flex h-10 w-10 items-center justify-center rounded-xl text-muted-foreground hover:bg-accent"
+          aria-label="Próximo mês"
+          title="Próximo mês"
+        >
+          <ChevronRight className="h-5 w-5" />
+        </button>
+      </section>
+
       <section className="rounded-2xl border border-border/40 bg-gradient-to-br from-primary/15 via-card to-card p-5">
         <div className="flex items-center justify-between">
           <h2 className="flex items-center gap-1.5 text-sm font-semibold uppercase text-foreground"><Landmark className="h-4 w-4 text-primary" />CONTAS</h2>
@@ -292,7 +356,7 @@ function RecoveredHome() {
             const subaccounts = visibleAccounts.filter((item) => item.parent_account_id === account.id);
             return (
               <div key={account.id} className="flex flex-col gap-1">
-                <Link to="/transactions" search={{ accountId: account.id } as any} className="flex items-center gap-2.5 rounded-xl bg-background/40 px-2.5 py-2">
+                <Link to="/transactions" search={{ accountId: account.id, month: selectedMonthKey } as any} className="flex items-center gap-2.5 rounded-xl bg-background/40 px-2.5 py-2">
                   <BankLogo icon={account.icon} color={account.color} name={account.name} size="sm" />
                   <span className="min-w-0 flex-1 text-xs font-medium text-foreground">{account.name}</span>
                   <span className={cn("text-xs font-bold tabular-nums", account.balance < 0 && "text-destructive")}>{balanceVisible ? `R$ ${fmt(account.balance)}` : "R$ ••••"}</span>
@@ -301,7 +365,7 @@ function RecoveredHome() {
                   <Link
                     key={subaccount.id}
                     to="/transactions"
-                    search={{ accountId: subaccount.id } as any}
+                    search={{ accountId: subaccount.id, month: selectedMonthKey } as any}
                     className="ml-5 flex items-center gap-2.5 rounded-xl border-l-2 border-primary/20 bg-primary/[0.025] px-2.5 py-2 sm:ml-8"
                   >
                     <BankLogo icon={subaccount.icon} color={subaccount.color} name={subaccount.name} size="sm" />
@@ -316,7 +380,7 @@ function RecoveredHome() {
             <Link
               key={subaccount.id}
               to="/transactions"
-              search={{ accountId: subaccount.id } as any}
+              search={{ accountId: subaccount.id, month: selectedMonthKey } as any}
               className="ml-5 flex items-center gap-2.5 rounded-xl border-l-2 border-primary/20 bg-primary/[0.025] px-2.5 py-2 sm:ml-8"
             >
               <BankLogo icon={subaccount.icon} color={subaccount.color} name={subaccount.name} size="sm" />
@@ -347,23 +411,23 @@ function RecoveredHome() {
 
       <section className="grid grid-cols-2 gap-2">
         <div className="rounded-xl border border-border/30 bg-card p-3">
-          <div className="flex items-center gap-1 text-[10px] font-semibold uppercase text-muted-foreground"><ArrowUpRight className="h-3.5 w-3.5 text-primary" />Receitas do mês</div>
+          <div className="flex items-center gap-1 text-[10px] font-semibold uppercase text-muted-foreground"><ArrowUpRight className="h-3.5 w-3.5 text-primary" />Receitas · {selectedMonthLabel.split(" ")[0]}</div>
           <p className="mt-1 text-base font-bold text-primary">{balanceVisible ? `R$ ${fmt(monthly.income)}` : "R$ ••••"}</p>
         </div>
         <div className="rounded-xl border border-border/30 bg-card p-3">
-          <div className="flex items-center gap-1 text-[10px] font-semibold uppercase text-muted-foreground"><ArrowDownRight className="h-3.5 w-3.5 text-destructive" />Despesas do mês</div>
+          <div className="flex items-center gap-1 text-[10px] font-semibold uppercase text-muted-foreground"><ArrowDownRight className="h-3.5 w-3.5 text-destructive" />Despesas · {selectedMonthLabel.split(" ")[0]}</div>
           <p className="mt-1 text-base font-bold text-destructive">{balanceVisible ? `R$ ${fmt(monthly.expense)}` : "R$ ••••"}</p>
         </div>
       </section>
 
       <section>
         <div className="mb-2 flex items-center justify-between">
-          <h2 className="flex items-center gap-1.5 text-sm font-semibold text-foreground"><ArrowLeftRight className="h-4 w-4 text-primary" />Transações recentes</h2>
-          <Link to="/transactions" className="text-[10px] font-semibold text-primary">Ver todas</Link>
+          <h2 className="flex items-center gap-1.5 text-sm font-semibold text-foreground"><ArrowLeftRight className="h-4 w-4 text-primary" />Transações · {selectedMonthLabel.split(" ")[0]}</h2>
+          <Link to="/transactions" search={{ month: selectedMonthKey } as any} className="text-[10px] font-semibold text-primary">Ver todas</Link>
         </div>
         <div className="flex flex-col gap-1.5">
           {recent.map((tx) => (
-            <Link key={tx.id} to="/transactions" className="flex items-center gap-3 rounded-xl border border-border/20 bg-card px-3 py-2.5">
+            <Link key={tx.id} to="/transactions" search={{ month: selectedMonthKey } as any} className="flex items-center gap-3 rounded-xl border border-border/20 bg-card px-3 py-2.5">
               <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent text-base">{tx.icon || (tx.type === "income" ? "💰" : "💸")}</span>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium text-foreground">{tx.name || "Transação"}</p>
