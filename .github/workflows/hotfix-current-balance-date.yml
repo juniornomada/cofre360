@@ -1,4 +1,4 @@
-name: hotfix-current-balance-date
+name: Apply monthly navigation
 on:
   push:
     branches:
@@ -13,57 +13,27 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: main
+          fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Patch current balances
-        shell: bash
+      - name: Apply month navigation patch
+        run: python3 scripts/patch_month_navigation.py
+      - name: Verify generated source
         run: |
-          python3 <<'PY'
-          from pathlib import Path
-
-          home = Path("src/routes/home.tsx")
-          text = home.read_text()
-          old = '''        for (const tx of rawTx) {
-          if (tx.is_visible === false || !tx.bank_account_id) continue;
-          if (tx.type === "expense" && tx.card) continue;
-          const amount = Number(tx.amount || 0);'''
-          new = '''        const today = new Date();
-        today.setHours(23, 59, 59, 999);
-        for (const tx of rawTx) {
-          if (tx.is_visible === false || !tx.bank_account_id) continue;
-          if (tx.type === "expense" && tx.card) continue;
-          const transactionDate = safeDate(tx.date);
-          if (transactionDate && transactionDate > today) continue;
-          const amount = Number(tx.amount || 0);'''
-          if old not in text:
-              raise SystemExit("home marker not found")
-          home.write_text(text.replace(old, new, 1))
-
-          accounts = Path("src/routes/accounts.tsx")
-          text = accounts.read_text()
-          old_select = '.select("bank_account_id, amount, type, is_visible, card")'
-          new_select = '.select("bank_account_id, amount, type, is_visible, card, date")'
-          if old_select not in text:
-              raise SystemExit("accounts select marker not found")
-          text = text.replace(old_select, new_select, 1)
-
-          old_loop = '''        for (const tx of txData) {
-          if (tx.is_visible === false) continue; // ignora transações ocultas/removidas logicamente
-          const id = tx.bank_account_id as string;'''
-          new_loop = '''        const todayKey = new Date().toLocaleDateString("en-CA");
-        for (const tx of txData) {
-          if (tx.is_visible === false) continue; // ignora transações ocultas/removidas logicamente
-          const transactionDateKey = typeof tx.date === "string" ? tx.date.slice(0, 10) : undefined;
-          if (transactionDateKey && transactionDateKey > todayKey) continue;
-          const id = tx.bank_account_id as string;'''
-          if old_loop not in text:
-              raise SystemExit("accounts loop marker not found")
-          accounts.write_text(text.replace(old_loop, new_loop, 1))
-          PY
-      - name: Commit result
-        shell: bash
+          python3 -m py_compile scripts/patch_month_navigation.py
+          grep -q 'selectedMonthLabel' src/routes/transactions.tsx
+          grep -q 'matchesMonth' src/routes/transactions.tsx
+          grep -q 'monthIncomeByAccount' src/routes/accounts.tsx
+          grep -q 'Saldo por mês' src/routes/accounts.tsx
+          grep -q 'month: selectedMonthKey' src/routes/accounts.tsx
+          git diff --check
+      - name: Commit functional changes and cleanup
         run: |
-          git config user.name github-actions[bot]
-          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add src/routes/home.tsx src/routes/accounts.tsx
-          git commit -m "fix: exclude future transactions from current balances"
-          git push
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/routes/transactions.tsx src/routes/accounts.tsx
+          git commit -m "feat: add monthly navigation for balances and transactions"
+          git rm scripts/patch_month_navigation.py
+          git rm .github/workflows/hotfix-current-balance-date.yml
+          git commit -m "chore: remove monthly navigation patch workflow"
+          git push origin main
