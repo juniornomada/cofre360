@@ -331,9 +331,7 @@ function RecoveredHome() {
           <ChevronLeft className="h-5 w-5" />
         </button>
         <div className="min-w-0 text-center">
-          <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground">Visão mensal</p>
-          <p className="truncate text-sm font-bold text-foreground">{selectedMonthLabel}</p>
-          <p className="text-[10px] text-muted-foreground">{isCurrentSelectedMonth ? "Até hoje" : isFutureSelectedMonth ? "Previsto até o fim do mês" : "Fechamento do mês"}</p>
+          <p className="truncate text-base font-bold text-foreground">{selectedMonthLabel}</p>
         </div>
         <button
           type="button"
