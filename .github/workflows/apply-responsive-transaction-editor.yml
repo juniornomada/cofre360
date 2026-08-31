@@ -1,4 +1,4 @@
-name: Apply responsive transaction editor
+name: Apply transaction date format patch
 
 on:
   push:
@@ -17,38 +17,13 @@ jobs:
         with:
           ref: main
           fetch-depth: 0
-      - name: Patch transaction editor dialog
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          p = Path('src/routes/transactions.tsx')
-          s = p.read_text()
-          old = '''        <DialogContent
-          style={{
-            width: "calc(100dvw - 24px)",
-            maxWidth: "calc(100dvw - 24px)",
-            left: "50%",
-            right: "auto",
-            transform: "translate(-50%, -50%)",
-            boxSizing: "border-box",
-          }}
-          className="fixed top-1/2 rounded-2xl bg-background h-[min(88dvh,calc(100dvh-24px))] max-h-[calc(100dvh-24px)] overflow-hidden p-0 flex min-w-0 flex-col gap-0 sm:h-auto sm:max-h-[88dvh] sm:!w-[28rem] sm:!max-w-[28rem]"
-        >'''
-          new = '''        <DialogContent
-          mobileSheet
-          className="h-[92dvh] max-h-[92dvh] overflow-hidden rounded-t-2xl p-0 flex min-w-0 flex-col gap-0 sm:h-auto sm:max-h-[88dvh] sm:!w-[28rem] sm:!max-w-[28rem] sm:rounded-2xl"
-        >'''
-          if old not in s:
-              raise SystemExit('Expected edit dialog block not found; refusing unsafe patch')
-          s = s.replace(old, new, 1)
-          p.write_text(s)
-          PY
-      - name: Commit patch and remove workflow
+      - name: Apply date format patch
+        run: python3 scripts/patch_date_display_ddmmyyyy.py
+      - name: Commit patch
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/routes/transactions.tsx
-          git commit -m "fix: make transaction editor responsive on mobile and desktop"
-          git rm .github/workflows/apply-responsive-transaction-editor.yml
-          git commit -m "chore: remove responsive transaction editor migration"
+          git add src/routes/accounts.tsx src/routes/home.tsx src/routes/transactions.tsx src/components/TransactionItem.tsx
+          git rm scripts/patch_date_display_ddmmyyyy.py
+          git commit -m "fix: standardize transaction dates as dd-MM-yyyy"
           git push origin main
