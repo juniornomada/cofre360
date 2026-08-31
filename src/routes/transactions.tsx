@@ -12,6 +12,7 @@ const CategoryPicker = lazy(() => import("@/components/CategoryPicker").then(m =
 const QuickAddTransactionDialog = lazy(() => import("@/components/QuickAddTransactionDialog").then(m => ({ default: m.QuickAddTransactionDialog })));
 import { CalculatorAmountInput } from "@/components/CalculatorAmountInput";
 import { BankLogo } from "@/components/BankLogo";
+import { CardIcon } from "@/components/CardIcon";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
@@ -72,6 +73,7 @@ interface BankAccountOption {
 interface CardOption {
   name: string;
   brand: string;
+  color?: string | null;
 }
 
 const filterCategories = ["Todas", ...mainCategories];
@@ -210,12 +212,12 @@ export function TransactionsPage() {
 
   const fetchCards = useCallback(async () => {
     try {
-      const { data, error } = await supabase.from("cards").select("name, brand").order("created_at", { ascending: true });
+      const { data, error } = await supabase.from("cards").select("name, brand, color").order("created_at", { ascending: true });
       if (error) throw error;
       
       if (data) {
-        const options = data.map(c => ({ name: c.name, brand: c.brand }));
-        setCardOptions([{ name: "Nenhum", brand: "" }, ...options]);
+        const options = data.map(c => ({ name: c.name, brand: c.brand, color: c.color }));
+        setCardOptions([{ name: "Nenhum", brand: "", color: null }, ...options]);
         const brandMap: Record<string, string> = {};
         data.forEach(c => { brandMap[c.name] = c.brand; });
         setCardNameToBrand(brandMap);
@@ -1376,9 +1378,6 @@ export function TransactionsPage() {
                     <div className="grid min-w-0 grid-cols-2 gap-2">
                       {cardOptions.filter(c => c.name !== "Nenhum").map((c) => {
                         const selected = editTx.card === c.name;
-                        const brandLabel = c.brand?.trim()
-                          ? c.brand.trim().slice(0, 4).toUpperCase()
-                          : "💳";
                         return (
                           <button
                             key={c.name}
@@ -1392,14 +1391,7 @@ export function TransactionsPage() {
                                 : "border-border bg-card hover:bg-accent/60"
                             )}
                           >
-                            <span className={cn(
-                              "flex h-9 w-11 shrink-0 items-center justify-center rounded-lg border text-[9px] font-black tracking-tight",
-                              selected
-                                ? "border-primary/40 bg-primary text-primary-foreground"
-                                : "border-border bg-background text-foreground"
-                            )}>
-                              {brandLabel}
-                            </span>
+                            <CardIcon color={c.color} name={c.name} size="lg" />
                             <span className="min-w-0 flex-1">
                               <span className="block truncate text-xs font-semibold text-foreground">{c.name}</span>
                               {c.brand && (

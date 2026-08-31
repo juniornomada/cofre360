@@ -7,6 +7,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { CategoryPicker } from "@/components/CategoryPicker";
 import { CalendarIcon, ArrowLeftRight, ArrowRight, CreditCard, Landmark, Loader2, RotateCcw } from "lucide-react";
 import { BankLogo } from "@/components/BankLogo";
+import { CardIcon } from "@/components/CardIcon";
 import { CalculatorAmountInput } from "@/components/CalculatorAmountInput";
 import { format, parse } from "date-fns";
 import { calculateInstallmentDetails } from "@/lib/installment-utils";
@@ -798,14 +799,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                           selected ? "bg-primary/15 ring-1 ring-primary" : "bg-card hover:bg-accent"
                         }`}
                       >
-                        <div
-                          className={`h-7 w-10 rounded-[4px] flex items-end justify-start p-0.5 shadow-sm relative overflow-hidden bg-gradient-to-br ${c.color || "from-gray-600 to-gray-800"}`}
-                        >
-                          <div className="absolute top-1 left-1 h-1 w-1.5 rounded-[1px] bg-white/40" />
-                          <span className="text-[6px] font-bold text-white leading-none truncate max-w-full tracking-tight relative">
-                            {c.name}
-                          </span>
-                        </div>
+                        <CardIcon color={c.color} name={c.name} size="md" />
                         <span className="text-[9px] text-foreground truncate w-full text-center leading-tight">{c.name}</span>
                       </button>
                     );
