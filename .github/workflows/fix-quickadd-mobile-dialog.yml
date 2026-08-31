@@ -43,19 +43,19 @@ jobs:
               '<DialogFooter className="shrink-0 border-t border-border/50 bg-background p-4 pt-3 flex-row gap-2 sm:gap-2">'
             ),
             (
-              'className="flex-1 h-8 text-xs" onClick={() => { (document.activeElement as HTMLElement)?.blur(); onOpenChange(false); }}',
-              'className="flex-1 h-10 text-xs rounded-xl" onClick={() => { (document.activeElement as HTMLElement)?.blur(); onOpenChange(false); }}'
+              '<Button variant="outline" size="sm" className="flex-1 h-8 text-xs" onClick={() => { (document.activeElement as HTMLElement)?.blur(); onOpenChange(false); }}>Cancelar</Button>',
+              '<Button variant="outline" size="sm" className="flex-1 h-10 text-xs rounded-xl" onClick={() => { (document.activeElement as HTMLElement)?.blur(); onOpenChange(false); }}>Cancelar</Button>'
             ),
             (
-              'className="flex-1 h-8 text-xs"\n            disabled=',
-              'className="flex-1 h-10 text-xs rounded-xl"\n            disabled='
+              '            size="sm"\n            className="flex-1 h-8 text-xs"\n            onClick={handleAdd}',
+              '            size="sm"\n            className="flex-1 h-10 text-xs rounded-xl"\n            onClick={handleAdd}'
             ),
           ]
 
           for old, new in replacements:
               count = text.count(old)
               if count != 1:
-                  raise SystemExit(f'Expected exactly one match, found {count}: {old[:90]}')
+                  raise SystemExit(f'Expected exactly one match, found {count}: {old[:110]}')
               text = text.replace(old, new, 1)
 
           path.write_text(text)
