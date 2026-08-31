@@ -884,7 +884,7 @@ export function TransactionsPage() {
 
   return (
     <div className="animate-page-enter flex flex-col gap-4 px-4 pt-6 pb-24">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-3">
             <Link to="/" className="interactive-button flex h-10 w-10 items-center justify-center rounded-full bg-card border border-border shadow-sm hover:bg-accent transition-all">
@@ -927,8 +927,8 @@ export function TransactionsPage() {
             </div>
           )}
         </div>
-        <div className="flex items-center gap-2">
-          <div className="flex gap-2">
+        <div className="flex items-center justify-end gap-1 sm:gap-2">
+          <div className="flex gap-1 sm:gap-2">
           {selectionMode ? (
             <>
               <button onClick={toggleSelectAll} className="flex h-8 items-center gap-1.5 rounded-full bg-card px-3 text-xs font-medium text-muted-foreground border border-border">
@@ -1077,24 +1077,6 @@ export function TransactionsPage() {
                   </Button>
                 </PopoverContent>
               </Popover>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button className="flex h-10 w-10 items-center justify-center rounded-full bg-card text-muted-foreground border border-border shadow-sm hover:bg-accent transition-all" aria-label="Mais ações" title="Mais ações">
-                    <MoreVertical className="h-5 w-5" />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="rounded-xl">
-                  <DropdownMenuItem onClick={generatePDF} className="cursor-pointer">
-                    <FileText className="h-4 w-4 mr-2" />
-                    Gerar relatório PDF
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setShowCsvImport(true)} className="cursor-pointer">
-                    <Upload className="h-4 w-4 mr-2" />
-                    Importar CSV
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-              
               <button 
                 onClick={() => updateBalanceVisible(!balanceVisible)} 
                 className="interactive-button flex h-10 w-10 items-center justify-center rounded-full bg-card border border-border shadow-sm hover:bg-accent transition-all"
