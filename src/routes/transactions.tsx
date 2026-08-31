@@ -1135,8 +1135,7 @@ export function TransactionsPage() {
           <ArrowLeft className="h-5 w-5" />
         </button>
         <div className="min-w-0 text-center">
-          <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground">Período</p>
-          <p className="truncate text-sm font-bold text-foreground">{selectedMonthLabel}</p>
+          <p className="truncate text-base font-bold text-foreground">{selectedMonthLabel}</p>
         </div>
         <button
           type="button"
