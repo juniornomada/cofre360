@@ -17,7 +17,7 @@ jobs:
         with:
           ref: main
           fetch-depth: 0
-      - name: Apply short-date list patch
+      - name: Apply short-date list patch (retry)
         run: python3 scripts/patch_short_date_lists.py
       - name: Commit patch and clean temporary files
         run: |
