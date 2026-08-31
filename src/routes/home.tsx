@@ -320,7 +320,7 @@ function RecoveredHome() {
         </div>
       </div>
 
-      <section className="flex items-center justify-between rounded-2xl border border-border/50 bg-card px-2 py-2">
+      <section className="sticky top-0 z-30 -mx-1 flex items-center justify-between rounded-2xl border border-border/50 bg-card/95 px-2 py-2 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-card/85">
         <button
           type="button"
           onClick={() => shiftSelectedMonth(-1)}
