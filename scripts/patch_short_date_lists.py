@@ -14,7 +14,7 @@ replacement = '''function formatDisplayDate(value: string | null, refIso?: strin
 }
 
 function RecoveredHome'''
-s, count = pattern.subn(replacement, s, count=1)
+s, count = pattern.subn(lambda _: replacement, s, count=1)
 if count != 1:
     raise SystemExit(f'home formatDisplayDate replacement count={count}')
 p.write_text(s)
@@ -47,7 +47,7 @@ replacement = '''function formatTxDate(date: string, _refIso?: string): string {
 }
 
 interface TransactionItemProps'''
-s, count = pattern.subn(replacement, s, count=1)
+s, count = pattern.subn(lambda _: replacement, s, count=1)
 if count != 1:
     raise SystemExit(f'TransactionItem formatTxDate replacement count={count}')
 p.write_text(s)
