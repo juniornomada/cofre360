@@ -1,4 +1,4 @@
-name: hotfix-hide-subaccount-eye
+name: align-transaction-totals-with-home
 on:
   push:
     branches: [main]
@@ -13,47 +13,47 @@ jobs:
       - uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Hide individual visibility control on subaccounts
+      - name: Match transaction totals to home
         run: |
           python - <<'PY'
           from pathlib import Path
-          p = Path('src/routes/accounts.tsx')
+          p = Path('src/routes/transactions.tsx')
           s = p.read_text()
-          old = '''              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  handleToggleVisibility(account.id, account.is_visible);
-                }}
-                className="interactive-button h-9 w-9 flex items-center justify-center rounded-full hover:bg-accent transition-colors"
-                title={account.is_visible ? "Ocultar do Início" : "Mostrar no Início"}
-              >
-                {account.is_visible ? <Eye className="h-4 w-4 text-muted-foreground" /> : <EyeOff className="h-4 w-4 text-muted-foreground/60" />}
-              </button>
-'''
-          new = '''              {!account.parent_account_id && (
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    handleToggleVisibility(account.id, account.is_visible);
-                  }}
-                  className="interactive-button h-9 w-9 flex items-center justify-center rounded-full hover:bg-accent transition-colors"
-                  title={account.is_visible ? "Ocultar do Início" : "Mostrar no Início"}
-                >
-                  {account.is_visible ? <Eye className="h-4 w-4 text-muted-foreground" /> : <EyeOff className="h-4 w-4 text-muted-foreground/60" />}
-                </button>
-              )}
-'''
+          old_import = 'ArrowLeftRight, ArrowRight, Eye, EyeOff'
+          new_import = 'ArrowLeftRight, ArrowRight, ArrowUpRight, ArrowDownRight, Eye, EyeOff'
+          if old_import not in s:
+              raise SystemExit('expected lucide import segment not found')
+          s = s.replace(old_import, new_import, 1)
+          old = '''      <div className="grid grid-cols-2 gap-3">
+        <div className="rounded-xl bg-card p-3 text-left">
+          <p className="text-[10px] text-muted-foreground">Total receitas</p>
+          <p className="text-lg font-bold text-primary tabular-nums">R$ {formatCurrency(totalIncome)}</p>
+        </div>
+        <div className="rounded-xl bg-card p-3 text-right">
+          <p className="text-[10px] text-muted-foreground">Total despesas</p>
+          <p className="text-lg font-bold text-destructive tabular-nums">R$ {formatCurrency(totalExpense)}</p>
+        </div>
+      </div>'''
+          new = '''      <div className="grid grid-cols-2 gap-2">
+        <div className="rounded-xl border border-border/30 bg-card p-3">
+          <div className="flex items-center gap-1 text-[10px] font-semibold uppercase text-muted-foreground"><ArrowUpRight className="h-3.5 w-3.5 text-primary" />Receitas · {selectedMonthLabel.split(" ")[0]}</div>
+          <p className="mt-1 text-base font-bold tabular-nums text-primary">R$ {formatCurrency(totalIncome)}</p>
+        </div>
+        <div className="rounded-xl border border-border/30 bg-card p-3">
+          <div className="flex items-center gap-1 text-[10px] font-semibold uppercase text-muted-foreground"><ArrowDownRight className="h-3.5 w-3.5 text-destructive" />Despesas · {selectedMonthLabel.split(" ")[0]}</div>
+          <p className="mt-1 text-base font-bold tabular-nums text-destructive">R$ {formatCurrency(totalExpense)}</p>
+        </div>
+      </div>'''
           if old not in s:
-              raise SystemExit('visibility button block not found')
+              raise SystemExit('expected totals block not found')
           p.write_text(s.replace(old, new, 1))
           PY
-      - name: Commit patch and remove one-shot workflow
+      - name: Commit patch and cleanup one-shot workflows
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git rm .github/workflows/hotfix-hide-subaccount-eye.yml
-          git add src/routes/accounts.tsx
-          git commit -m 'fix: remove visibility eye from subaccounts'
+          if [ -f .github/workflows/align-transaction-totals-with-home.yml ]; then git rm .github/workflows/align-transaction-totals-with-home.yml; fi
+          git add src/routes/transactions.tsx
+          git commit -m 'style: match transaction totals to home'
           git push
