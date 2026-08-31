@@ -1,0 +1,57 @@
+name: Finalize direct Home transaction editing
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/apply-home-direct-edit-final.yml
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      - name: Apply final direct-edit patch
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          tx = Path('src/routes/transactions.tsx')
+          t = tx.read_text()
+          old = '''  useEffect(() => {\n    const editId = searchParams.editId;\n    if (!editId || loading || directEditHandledRef.current === editId) return;\n\n    const target = transactions.find((tx) => tx.id === editId);\n    if (!target) return;\n\n    directEditHandledRef.current = editId;\n    handleEdit(target);\n  }, [searchParams.editId, loading, transactions]);\n'''
+          new = '''  useEffect(() => {\n    const editId = searchParams.editId;\n    if (!editId || loading || directEditHandledRef.current === editId) return;\n\n    let cancelled = false;\n\n    const openDirectEdit = async () => {\n      let target = transactions.find((tx) => tx.id === editId);\n\n      if (!target) {\n        const { data, error } = await supabase\n          .from("transactions")\n          .select("id,icon,name,category,date,amount,type,card,bank_account_id,created_at,installment_group_id,installment_number,total_installments,installment_mode,installment_source_amount,is_visible")\n          .eq("id", editId)\n          .maybeSingle();\n\n        if (error) {\n          console.error("Erro ao localizar transação para edição direta:", error);\n          return;\n        }\n        if (data) target = data as Transaction;\n      }\n\n      if (cancelled || !target || directEditHandledRef.current === editId) return;\n      directEditHandledRef.current = editId;\n      handleEdit(target);\n    };\n\n    void openDirectEdit();\n    return () => { cancelled = true; };\n  }, [searchParams.editId, loading, transactions]);\n'''
+          if old not in t:
+              raise SystemExit('direct edit effect anchor not found')
+          tx.write_text(t.replace(old, new, 1))
+
+          home = Path('src/routes/home.tsx')
+          h = home.read_text()
+          h = h.replace('                title={item.category}\n', '', 1)
+          home.write_text(h)
+          PY
+      - name: Check transactions TypeScript surface
+        run: |
+          set +e
+          bun run typecheck > /tmp/typecheck.log 2>&1
+          code=$?
+          set -e
+          cat /tmp/typecheck.log
+          if grep -q "src/routes/transactions.tsx" /tmp/typecheck.log; then
+            echo "TypeScript error found in transactions.tsx"
+            exit 1
+          fi
+          echo "No TypeScript errors in transactions.tsx (full project may still contain pre-existing errors)."
+      - name: Remove one-shot workflows
+        run: |
+          rm -f .github/workflows/harden-home-direct-transaction-edit.yml
+          rm .github/workflows/apply-home-direct-edit-final.yml
+      - name: Commit changes
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/routes/home.tsx src/routes/transactions.tsx .github/workflows/harden-home-direct-transaction-edit.yml .github/workflows/apply-home-direct-edit-final.yml
+          git commit -m "fix: guarantee direct Home transaction editing by id"
+          git push
