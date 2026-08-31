@@ -1,3 +1,5 @@
+import { Banknote } from "lucide-react";
+
 type BankPreset = {
   id: string;
   label: string;
@@ -39,7 +41,7 @@ export const bankPresets: BankPreset[] = [
   { id: "revolut", label: "Revolut", abbr: "Re", color: "from-blue-500 to-blue-700", textColor: "text-white", bgHex: "#000000", logoUrl: `${BANK_ICON_BASE}/revolut.svg` },
   { id: "modal", label: "Modalmais", abbr: "Md", color: "from-blue-600 to-blue-800", textColor: "text-white", bgHex: "#0057B8" },
   { id: "banrisul", label: "Banrisul", abbr: "Ba", color: "from-blue-700 to-blue-900", textColor: "text-white", bgHex: "#004A99", logoUrl: `${BANK_ICON_BASE}/banrisul.svg` },
-  { id: "cash", label: "Dinheiro", abbr: "💵", color: "from-slate-300 to-slate-500", textColor: "text-gray-900", bgHex: "#CBD5E1", aliases: ["dinheiro", "cash"] },
+  { id: "cash", label: "Dinheiro", abbr: "💵", color: "from-emerald-500 to-emerald-700", textColor: "text-white", bgHex: "#059669", aliases: ["dinheiro", "cash"] },
   { id: "custom", label: "Outro", abbr: "🏦", color: "from-gray-500 to-gray-700", textColor: "text-white", bgHex: "#6B7280" },
 ];
 
@@ -73,6 +75,19 @@ export function BankLogo({ icon, color, name, size = "md" }: { icon?: string | n
   const preset = bankPresets.find(b => b.id === safeIcon) || findPresetByName(name);
   const sizeClasses = size === "xs" ? "h-5 w-5 text-[8px]" : size === "sm" ? "h-8 w-8 text-[10px]" : size === "lg" ? "h-14 w-14 text-base" : "h-12 w-12 text-sm";
   const radiusClasses = size === "xs" ? "rounded-md" : "rounded-xl";
+
+  if (preset?.id === "cash") {
+    const banknoteSize = size === "xs" ? "h-3.5 w-3.5" : size === "sm" ? "h-5 w-5" : size === "lg" ? "h-8 w-8" : "h-7 w-7";
+    return (
+      <div
+        className={`flex items-center justify-center ${radiusClasses} ${sizeClasses} bg-gradient-to-br from-emerald-500 to-emerald-700 text-white shadow-sm ring-1 ring-emerald-400/30`}
+        title="Dinheiro em espécie"
+        aria-label="Dinheiro em espécie"
+      >
+        <Banknote className={banknoteSize} strokeWidth={2.2} />
+      </div>
+    );
+  }
 
   if (preset && preset.id !== "custom") {
     return (
