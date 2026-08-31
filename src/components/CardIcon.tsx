@@ -25,16 +25,17 @@ const SIZE_MAP: Record<Size, { box: string; chip: string }> = {
  * Credit-card icon with optional institution branding.
  * Branded logos use `cards.logo_url`; known institutions also have a name
  * fallback so legacy call sites stay branded when they do not pass logoUrl.
- * Porto Bank intentionally renders its compact symbol without the generic
- * white credit-card background so the brand icon is fully replaced.
+ * Branded cards share the same visual frame and logo bounds so different
+ * source SVG proportions do not make one institution look larger than another.
  */
 export function CardIcon({ color, name, logoUrl, size = "md", className }: CardIconProps) {
   const [logoFailed, setLogoFailed] = useState(false);
   const s = SIZE_MAP[size];
   const normalizedName = name?.trim().toLowerCase();
+  const isMercadoPago = normalizedName === "mercado pago";
   const isPortoBank = normalizedName === "porto bank";
   const namedFallbackLogo =
-    normalizedName === "mercado pago"
+    isMercadoPago
       ? MERCADO_PAGO_LOGO_URL
       : isPortoBank
         ? PORTO_BANK_SYMBOL_URL
@@ -51,12 +52,10 @@ export function CardIcon({ color, name, logoUrl, size = "md", className }: CardI
         "relative shrink-0 overflow-hidden",
         "transition-[box-shadow,opacity,filter] duration-200 ease-out",
         s.box,
-        showLogo && isPortoBank
-          ? "bg-transparent shadow-none ring-0"
-          : "shadow-sm ring-1 ring-inset ring-black/10",
-        showLogo && !isPortoBank ? "bg-white" : !showLogo ? "bg-gradient-to-br" : null,
+        "shadow-sm ring-1 ring-inset ring-black/10",
+        showLogo ? "bg-white" : "bg-gradient-to-br",
         !showLogo && (color || "from-primary/30 to-primary/10"),
-        !isPortoBank && "group-hover:shadow-md group-hover:ring-white/40",
+        "group-hover:shadow-md group-hover:ring-white/40",
         "group-focus-visible:ring-2 group-focus-visible:ring-white",
         "group-focus-visible:shadow-[inset_0_0_0_1px_rgba(0,0,0,0.85),inset_0_0_0_4px_rgba(0,0,0,0.85)]",
         "group-disabled:opacity-40 group-disabled:saturate-50 group-disabled:shadow-none",
@@ -65,16 +64,19 @@ export function CardIcon({ color, name, logoUrl, size = "md", className }: CardI
       )}
     >
       {showLogo ? (
-        <img
-          src={effectiveLogoUrl!}
-          alt=""
-          aria-hidden="true"
-          className={cn(
-            "h-full w-full object-contain",
-            isPortoBank ? "p-0" : "p-0.5"
-          )}
-          onError={() => setLogoFailed(true)}
-        />
+        <div className="flex h-full w-full items-center justify-center p-0.5">
+          <img
+            src={effectiveLogoUrl!}
+            alt=""
+            aria-hidden="true"
+            className={cn(
+              "max-h-[78%] max-w-[78%] object-contain",
+              isMercadoPago && "scale-[0.94]",
+              isPortoBank && "scale-100"
+            )}
+            onError={() => setLogoFailed(true)}
+          />
+        </div>
       ) : (
         <span
           aria-hidden
