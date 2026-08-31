@@ -95,8 +95,8 @@ function formatDisplayDate(value: string | null, refIso?: string | null) {
   const parsed = safeDate(value, refIso);
   if (!parsed) return value || "";
   const dd = String(parsed.getDate()).padStart(2, "0");
-  const mm = String(parsed.getMonth() + 1).padStart(2, "0");
-  return `${dd}-${mm}-${parsed.getFullYear()}`;
+  const months = ["JAN", "FEV", "MAR", "ABR", "MAI", "JUN", "JUL", "AGO", "SET", "OUT", "NOV", "DEZ"];
+  return `${dd} ${months[parsed.getMonth()]}`;
 }
 
 function RecoveredHome() {

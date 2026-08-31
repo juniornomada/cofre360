@@ -29,7 +29,7 @@ interface Props {
   initialType?: QuickAddInitialType;
   /** Pré-seleciona o cartão de crédito pelo nome (fluxo "Adicionar transação" a partir da fatura). */
   initialCardName?: string;
-  /** Pré-seleciona a data em formato "dd MMM" (pt-BR). Fallback: hoje. */
+  /** Pré-seleciona a data. Exibição canônica: "dd-MM-yyyy"; formatos legados também são aceitos. */
   initialDate?: string;
   onSuccess?: () => void;
   copyData?: {
@@ -53,8 +53,34 @@ interface NewTx {
   bank_account_id: string | null;
 }
 
+const parseQuickAddDate = (value: string): Date | undefined => {
+  if (!value) return undefined;
+  const reference = new Date();
+  const patterns = /^\d{4}-\d{2}-\d{2}$/.test(value)
+    ? ["yyyy-MM-dd"]
+    : /^\d{1,2}-\d{1,2}-\d{4}$/.test(value)
+      ? ["dd-MM-yyyy"]
+      : ["dd MMM"];
+  for (const pattern of patterns) {
+    try {
+      const parsed = parse(value, pattern, reference, { locale: ptBR });
+      if (!isNaN(parsed.getTime())) return parsed;
+    } catch {
+      // Accept legacy date formats while keeping the canonical display below.
+    }
+  }
+  return undefined;
+};
+
+const formatQuickAddDate = (date: Date) => format(date, "dd-MM-yyyy");
+const normalizeQuickAddDate = (value?: string) => {
+  if (!value) return formatQuickAddDate(new Date());
+  const parsed = parseQuickAddDate(value);
+  return parsed ? formatQuickAddDate(parsed) : value;
+};
+
 export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "expense", initialCardName, initialDate, onSuccess, copyData }: Props) {
-  const todayFormatted = format(new Date(), "dd MMM", { locale: ptBR });
+  const todayFormatted = formatQuickAddDate(new Date());
 
   const [bankAccounts, setBankAccounts] = useState<BankAccountOption[]>([]);
   const [cardOptions, setCardOptions] = useState<CardOption[]>([]);
@@ -68,7 +94,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
     icon: "🍔",
     name: "",
     category: "Alimentação > Outros",
-    date: initialDate || todayFormatted,
+    date: normalizeQuickAddDate(initialDate) || todayFormatted,
     amount: 0,
     type: initialType === "income" ? "income" : "expense",
     card: initialCardName || null,
@@ -250,7 +276,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
       icon: copyData ? copyData.icon : (initialType === "income" ? "💰" : "🍔"),
       name: copyData ? copyData.name : "",
       category: copyData ? copyData.category : (initialType === "income" ? "Renda > Salário" : "Alimentação > Outros"),
-      date: format(new Date(), "dd MMM", { locale: ptBR }),
+      date: normalizeQuickAddDate(initialDate),
       amount: copyData ? copyData.amount : (prefs?.amount ?? 0),
       type: copyData ? (copyData.category.startsWith("Receita") || (copyData.category !== "Transferência" && !copyData.category.startsWith("Transferências") && !copyData.category.startsWith("Alimentação") && initialType === "income") ? "income" : "expense") : (initialType === "income" ? "income" : "expense"),
       card: copyData ? copyData.card : null,
@@ -262,7 +288,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
       const isInc = copyData.category.startsWith("Receita") || (initialType === "income" && !copyData.category.startsWith("Transferência"));
       setNewTx(prev => ({ ...prev, type: isInc ? "income" : "expense" }));
     }
-  }, [open, initialType, fetchData, fetchHistory]);
+  }, [open, initialType, initialDate, fetchData, fetchHistory]);
 
   // Persistir preferências de parcelamento ao alterar.
   useEffect(() => {
@@ -412,7 +438,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
         categoryRoot === "receita" || categoryRoot === "receitas" ? "income" : newTx.type;
     let baseDate: Date;
     try {
-      baseDate = parse(newTx.date, "dd MMM", new Date(), { locale: ptBR });
+      baseDate = parseQuickAddDate(newTx.date) || new Date();
     } catch {
       baseDate = new Date();
     }
@@ -435,7 +461,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
          );
         rows.push({
           icon: newTx.icon, name: newTx.name, category: newTx.category,
-          date: format(installDate, "dd MMM", { locale: ptBR }),
+          date: formatQuickAddDate(installDate),
           amount: parcela, type: finalType,
           card: cardValue, bank_account_id: newTx.bank_account_id || null,
           installment_number: i,
@@ -569,7 +595,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar mode="single" selected={(() => { try { return parse(newTx.date, "dd MMM", new Date(), { locale: ptBR }); } catch { return undefined; } })()} onSelect={(date) => { if (date) setNewTx({ ...newTx, date: format(date, "dd MMM", { locale: ptBR }) }); }} initialFocus className={cn("p-3 pointer-events-auto")} />
+                      <Calendar mode="single" selected={(() => { try { return parseQuickAddDate(newTx.date); } catch { return undefined; } })()} onSelect={(date) => { if (date) setNewTx({ ...newTx, date: formatQuickAddDate(date) }); }} initialFocus className={cn("p-3 pointer-events-auto")} />
                     </PopoverContent>
                   </Popover>
                 </div>
@@ -649,7 +675,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0 z-[60]" align="start" sideOffset={4}>
 
-                      <Calendar mode="single" selected={(() => { try { return parse(newTx.date, "dd MMM", new Date(), { locale: ptBR }); } catch { return undefined; } })()} onSelect={(date) => { if (date) setNewTx({ ...newTx, date: format(date, "dd MMM", { locale: ptBR }) }); }} initialFocus className={cn("p-3 pointer-events-auto")} />
+                      <Calendar mode="single" selected={(() => { try { return parseQuickAddDate(newTx.date); } catch { return undefined; } })()} onSelect={(date) => { if (date) setNewTx({ ...newTx, date: formatQuickAddDate(date) }); }} initialFocus className={cn("p-3 pointer-events-auto")} />
                     </PopoverContent>
                   </Popover>
                 </div>

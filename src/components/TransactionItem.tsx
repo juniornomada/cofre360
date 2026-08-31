@@ -9,28 +9,25 @@ import { normalizeCardPaymentLabel } from "@/lib/card-payment-label";
 
 const MONTHS_PT_ABBR = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
 
-function formatTxDate(date: string, refIso?: string): string {
+function formatTxDate(date: string, _refIso?: string): string {
   const trimmed = date.trim().toLowerCase();
-  const refYear = refIso ? new Date(refIso).getFullYear() : new Date().getFullYear();
 
   const iso = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})/);
-  if (iso) return `${iso[3]}-${iso[2]}-${iso[1]}`;
+  if (iso) {
+    const month = Number(iso[2]) - 1;
+    if (month >= 0 && month < 12) return `${iso[3]} ${MONTHS_PT_ABBR[month].toUpperCase()}`;
+  }
 
   const dmy = trimmed.match(/^(\d{1,2})[-/](\d{1,2})(?:[-/](\d{4}))?$/);
   if (dmy) {
-    const dd = dmy[1].padStart(2, "0");
-    const mm = dmy[2].padStart(2, "0");
-    return `${dd}-${mm}-${dmy[3] || refYear}`;
+    const month = Number(dmy[2]) - 1;
+    if (month >= 0 && month < 12) return `${dmy[1].padStart(2, "0")} ${MONTHS_PT_ABBR[month].toUpperCase()}`;
   }
 
   const compact = trimmed.match(/^(\d{1,2})\s+([a-zç]{3})(?:\s+(\d{4}))?$/i);
   if (compact) {
     const month = MONTHS_PT_ABBR.indexOf(compact[2]);
-    if (month >= 0) {
-      const dd = compact[1].padStart(2, "0");
-      const mm = String(month + 1).padStart(2, "0");
-      return `${dd}-${mm}-${compact[3] || refYear}`;
-    }
+    if (month >= 0) return `${compact[1].padStart(2, "0")} ${MONTHS_PT_ABBR[month].toUpperCase()}`;
   }
   return date;
 }
