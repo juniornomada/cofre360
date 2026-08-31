@@ -70,6 +70,16 @@ function fmt(value: number) {
   });
 }
 
+function fmtCompact(value: number) {
+  const amount = Number(value || 0);
+  if (Math.abs(amount) < 1000) return `R$ ${fmt(amount)}`;
+  const compact = new Intl.NumberFormat("pt-BR", {
+    notation: "compact",
+    maximumFractionDigits: 1,
+  }).format(amount).replace(/\s*mil/i, " mil");
+  return `R$ ${compact}`;
+}
+
 function safeDate(value: string | null, refIso?: string | null) {
   if (!value) return null;
   const trimmed = value.trim().toLowerCase();
@@ -250,6 +260,20 @@ function RecoveredHome() {
     return { income, expense };
   }, [selectedMonthTransactions]);
 
+  const categorySpending = useMemo(() => {
+    const totals: Record<string, number> = {};
+    for (const tx of selectedMonthTransactions) {
+      if (tx.type !== "expense") continue;
+      const rawCategory = (tx.category || "Sem categoria").trim();
+      const mainCategory = rawCategory.split(" > ")[0]?.trim() || "Sem categoria";
+      totals[mainCategory] = (totals[mainCategory] || 0) + Number(tx.amount || 0);
+    }
+    return Object.entries(totals)
+      .map(([category, amount]) => ({ category, amount }))
+      .filter((item) => item.amount > 0)
+      .sort((a, b) => b.amount - a.amount);
+  }, [selectedMonthTransactions]);
+
   const recent = useMemo(() => {
     return [...selectedMonthTransactions]
       .filter((tx) => {
@@ -416,6 +440,42 @@ function RecoveredHome() {
           <div className="flex items-center gap-1 text-[10px] font-semibold uppercase text-muted-foreground"><ArrowDownRight className="h-3.5 w-3.5 text-destructive" />Despesas · {selectedMonthLabel.split(" ")[0]}</div>
           <p className="mt-1 text-base font-bold text-destructive">{balanceVisible ? `R$ ${fmt(monthly.expense)}` : "R$ ••••"}</p>
         </div>
+      </section>
+
+      <section className="rounded-2xl border border-border/30 bg-card p-3">
+        <div className="mb-2 flex items-center justify-between">
+          <h2 className="text-xs font-semibold uppercase text-muted-foreground">Gastos por categoria · {selectedMonthLabel.split(" ")[0]}</h2>
+          <span className="text-[10px] text-muted-foreground">{categorySpending.length} categorias</span>
+        </div>
+        {categorySpending.length > 0 ? (
+          <div className="flex flex-col divide-y divide-border/20">
+            {categorySpending.map((item) => {
+              const share = monthly.expense > 0 ? Math.min(100, (item.amount / monthly.expense) * 100) : 0;
+              return (
+                <Link
+                  key={item.category}
+                  to="/transactions"
+                  search={{ month: selectedMonthKey, category: item.category } as any}
+                  className="flex items-center gap-3 py-2.5 first:pt-1 last:pb-1"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="truncate text-xs font-medium text-foreground">{item.category}</span>
+                      <span className="shrink-0 text-xs font-bold tabular-nums text-foreground">
+                        {balanceVisible ? fmtCompact(item.amount) : "R$ ••••"}
+                      </span>
+                    </div>
+                    <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-accent">
+                      <div className="h-full rounded-full bg-destructive/70" style={{ width: `${share}%` }} />
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="py-3 text-center text-xs text-muted-foreground">Nenhuma despesa neste mês.</p>
+        )}
       </section>
 
       <section>
