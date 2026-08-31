@@ -37,8 +37,14 @@ const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   DialogContentProps
 >(({ className, children, mobileSheet = false, style, ...props }, ref) => {
+  // O editor de transação usa `style.width` com 100dvw para ativar o shell
+  // mobile de tela cheia. O QuickAdd é identificado pela min-height exclusiva
+  // dele para receber exatamente o mesmo shell, sem alterar outros diálogos.
+  const quickAddTransactionDialog =
+    typeof className === "string" && className.includes("sm:min-h-[640px]")
   const legacyMobileEditor =
-    typeof style?.width === "string" && style.width.includes("100dvw")
+    (typeof style?.width === "string" && style.width.includes("100dvw")) ||
+    quickAddTransactionDialog
   const responsiveMobileSheet = mobileSheet || legacyMobileEditor
 
   return (
