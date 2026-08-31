@@ -1,4 +1,4 @@
-name: Apply transaction date format patch
+name: Apply short transaction date display
 
 on:
   push:
@@ -17,13 +17,13 @@ jobs:
         with:
           ref: main
           fetch-depth: 0
-      - name: Apply date format patch
-        run: python3 scripts/patch_date_display_ddmmyyyy.py
-      - name: Commit patch
+      - name: Apply short-date list patch
+        run: python3 scripts/patch_short_date_lists.py
+      - name: Commit patch and clean temporary files
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/routes/accounts.tsx src/routes/home.tsx src/routes/transactions.tsx src/components/TransactionItem.tsx
-          git rm scripts/patch_date_display_ddmmyyyy.py
-          git commit -m "fix: standardize transaction dates as dd-MM-yyyy"
+          git add src/routes/home.tsx src/components/TransactionItem.tsx src/components/QuickAddTransactionDialog.tsx
+          git rm scripts/patch_short_date_lists.py .github/workflows/apply-responsive-transaction-editor.yml
+          git commit -m "fix: use short dates in lists and full dates in forms"
           git push origin main
