@@ -1,0 +1,42 @@
+name: Sticky home month navigation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/sticky-home-month-nav.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Make home month navigation sticky
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('src/routes/home.tsx')
+          s = p.read_text()
+          old = '<section className="flex items-center justify-between rounded-2xl border border-border/50 bg-card px-2 py-2">'
+          new = '<section className="sticky top-0 z-30 -mx-1 flex items-center justify-between rounded-2xl border border-border/50 bg-card/95 px-2 py-2 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-card/85">'
+          if old not in s:
+              raise SystemExit('Home month navigator target not found')
+          s = s.replace(old, new, 1)
+          p.write_text(s)
+          PY
+          grep -q 'sticky top-0 z-30' src/routes/home.tsx
+      - name: Commit change and cleanup workflow
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/routes/home.tsx
+          git commit -m "feat: keep home month navigation visible while scrolling"
+          git rm .github/workflows/sticky-home-month-nav.yml
+          git commit -m "chore: remove sticky home month navigation workflow"
+          git push origin main
