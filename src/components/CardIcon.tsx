@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { inferCardInstitutionLogoUrl } from "@/lib/card-institution-logo";
 
 type Size = "xs" | "sm" | "md" | "lg";
 
@@ -11,9 +12,6 @@ interface CardIconProps {
   className?: string;
 }
 
-const MERCADO_PAGO_LOGO_URL = "https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/mercado-pago/default.svg";
-const PORTO_BANK_SYMBOL_URL = "https://companieslogo.com/img/orig/PSSA3.SA-0314a40c.svg";
-
 const SIZE_MAP: Record<Size, { box: string; chip: string }> = {
   xs: { box: "h-5 w-7 rounded-sm", chip: "left-[3px] top-[3px] h-1 w-1.5 rounded-[1px]" },
   sm: { box: "h-6 w-9 rounded-md", chip: "left-1 top-1 h-1.5 w-2 rounded-[2px]" },
@@ -23,10 +21,8 @@ const SIZE_MAP: Record<Size, { box: string; chip: string }> = {
 
 /**
  * Credit-card icon with optional institution branding.
- * Branded logos use `cards.logo_url`; known institutions also have a name
- * fallback so legacy call sites stay branded when they do not pass logoUrl.
- * Branded cards share the same visual frame and logo bounds so different
- * source SVG proportions do not make one institution look larger than another.
+ * `cards.logo_url` remains the primary source; the institution catalog is a
+ * fallback for legacy call sites and newly supported banks.
  */
 export function CardIcon({ color, name, logoUrl, size = "md", className }: CardIconProps) {
   const [logoFailed, setLogoFailed] = useState(false);
@@ -34,12 +30,7 @@ export function CardIcon({ color, name, logoUrl, size = "md", className }: CardI
   const normalizedName = name?.trim().toLowerCase();
   const isMercadoPago = normalizedName === "mercado pago";
   const isPortoBank = normalizedName === "porto bank";
-  const namedFallbackLogo =
-    isMercadoPago
-      ? MERCADO_PAGO_LOGO_URL
-      : isPortoBank
-        ? PORTO_BANK_SYMBOL_URL
-        : null;
+  const namedFallbackLogo = inferCardInstitutionLogoUrl(name);
   const effectiveLogoUrl = logoUrl || namedFallbackLogo;
   const showLogo = Boolean(effectiveLogoUrl && !logoFailed);
 
