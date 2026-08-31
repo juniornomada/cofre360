@@ -21,6 +21,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserPreferences } from "@/hooks/use-user-preferences";
 import { cn } from "@/lib/utils";
+import { getCategoryIcon } from "@/lib/categories";
 
 type Account = {
   id: string;
@@ -442,41 +443,27 @@ function RecoveredHome() {
         </div>
       </section>
 
-      <section className="rounded-2xl border border-border/30 bg-card p-3">
-        <div className="mb-2 flex items-center justify-between">
-          <h2 className="text-xs font-semibold uppercase text-muted-foreground">Gastos por categoria · {selectedMonthLabel.split(" ")[0]}</h2>
-          <span className="text-[10px] text-muted-foreground">{categorySpending.length} categorias</span>
-        </div>
-        {categorySpending.length > 0 ? (
-          <div className="flex flex-col divide-y divide-border/20">
-            {categorySpending.map((item) => {
-              const share = monthly.expense > 0 ? Math.min(100, (item.amount / monthly.expense) * 100) : 0;
-              return (
-                <Link
-                  key={item.category}
-                  to="/transactions"
-                  search={{ month: selectedMonthKey, category: item.category } as any}
-                  className="flex items-center gap-3 py-2.5 first:pt-1 last:pb-1"
-                >
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="truncate text-xs font-medium text-foreground">{item.category}</span>
-                      <span className="shrink-0 text-xs font-bold tabular-nums text-foreground">
-                        {balanceVisible ? fmtCompact(item.amount) : "R$ ••••"}
-                      </span>
-                    </div>
-                    <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-accent">
-                      <div className="h-full rounded-full bg-destructive/70" style={{ width: `${share}%` }} />
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
+      {categorySpending.length > 0 && (
+        <section className="rounded-2xl border border-border/30 bg-card p-3">
+          <div className="grid grid-cols-4 gap-2">
+            {categorySpending.slice(0, 4).map((item) => (
+              <Link
+                key={item.category}
+                to="/transactions"
+                search={{ month: selectedMonthKey, category: item.category } as any}
+                aria-label={`${item.category}: R$ ${fmt(item.amount)}`}
+                title={item.category}
+                className="flex min-w-0 flex-col items-center justify-center gap-1 rounded-xl px-1 py-2 transition-colors hover:bg-accent/60"
+              >
+                <span className="text-2xl leading-none" aria-hidden="true">{getCategoryIcon(item.category)}</span>
+                <span className="max-w-full truncate text-[11px] font-bold tabular-nums text-foreground">
+                  {balanceVisible ? fmtCompact(item.amount) : "R$ ••••"}
+                </span>
+              </Link>
+            ))}
           </div>
-        ) : (
-          <p className="py-3 text-center text-xs text-muted-foreground">Nenhuma despesa neste mês.</p>
-        )}
-      </section>
+        </section>
+      )}
 
       <section>
         <div className="mb-2 flex items-center justify-between">

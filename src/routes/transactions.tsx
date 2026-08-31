@@ -503,6 +503,32 @@ export function TransactionsPage() {
   const totalIncome = filtered.filter(t => t.type === "income" && t.is_visible !== false).reduce((s, t) => s + t.amount, 0);
   const totalExpense = filtered.filter(t => t.type === "expense" && t.is_visible !== false).reduce((s, t) => s + t.amount, 0);
 
+  const categorySpending = Object.entries(
+    transactions.reduce<Record<string, number>>((totals, tx) => {
+      if (tx.type !== "expense" || tx.is_visible === false) return totals;
+      const d = parseTxDate(tx.date, tx.created_at);
+      const timestamp = d?.getTime() ?? NaN;
+      if (!Number.isFinite(timestamp) || timestamp < selectedMonthStartUtc || timestamp > selectedMonthEndUtc) return totals;
+      const mainCategory = parseCategoryValue(tx.category).group || "Outros";
+      totals[mainCategory] = (totals[mainCategory] || 0) + Number(tx.amount || 0);
+      return totals;
+    }, {}),
+  )
+    .map(([category, amount]) => ({ category, amount }))
+    .filter((item) => item.amount > 0)
+    .sort((a, b) => b.amount - a.amount);
+
+  const categoryExpenseTotal = categorySpending.reduce((sum, item) => sum + item.amount, 0);
+
+  const formatCompactCurrency = (value: number) => {
+    if (Math.abs(value) < 1000) return `R$ ${formatCurrency(value)}`;
+    const compact = new Intl.NumberFormat("pt-BR", {
+      notation: "compact",
+      maximumFractionDigits: 1,
+    }).format(value).replace(/\s*mil/i, " mil");
+    return `R$ ${compact}`;
+  };
+
   const generatePDF = () => {
     try {
       const doc = new jsPDF();
@@ -1270,6 +1296,45 @@ export function TransactionsPage() {
           }}
         />
       </div>
+
+      <section className="rounded-2xl border border-border/30 bg-card p-3">
+        <div className="mb-2 flex items-center justify-between">
+          <h2 className="text-xs font-semibold uppercase text-muted-foreground">Gastos por categoria · {selectedMonthLabel.split(" ")[0]}</h2>
+          <span className="text-[10px] text-muted-foreground">{categorySpending.length} categorias</span>
+        </div>
+        {categorySpending.length > 0 ? (
+          <div className="flex flex-col divide-y divide-border/20">
+            {categorySpending.map((item) => {
+              const share = categoryExpenseTotal > 0 ? Math.min(100, (item.amount / categoryExpenseTotal) * 100) : 0;
+              return (
+                <button
+                  key={item.category}
+                  type="button"
+                  onClick={() => {
+                    setActiveCategory(item.category);
+                    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+                  }}
+                  className="flex w-full items-center gap-3 py-2.5 text-left first:pt-1 last:pb-1"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="truncate text-xs font-medium text-foreground">{item.category}</span>
+                      <span className="shrink-0 text-xs font-bold tabular-nums text-foreground">
+                        {balanceVisible ? formatCompactCurrency(item.amount) : "R$ ••••"}
+                      </span>
+                    </div>
+                    <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-accent">
+                      <div className="h-full rounded-full bg-destructive/70" style={{ width: `${share}%` }} />
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="py-3 text-center text-xs text-muted-foreground">Nenhuma despesa neste mês.</p>
+        )}
+      </section>
 
       {/* Edit Dialog */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
