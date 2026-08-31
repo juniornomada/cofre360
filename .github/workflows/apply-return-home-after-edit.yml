@@ -1,0 +1,108 @@
+name: Apply return to Home after direct edit
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/apply-return-home-after-edit.yml
+permissions:
+  contents: write
+jobs:
+  patch:
+    if: ${{ !contains(github.event.head_commit.message, '[return-home-applied]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      - name: Apply return-to-Home flow
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          home = Path('src/routes/home.tsx')
+          s = home.read_text()
+          old = 'search={{ month: selectedMonthKey, editId: tx.id } as any}'
+          new = 'search={{ month: selectedMonthKey, editId: tx.id, from: "home" } as any}'
+          if old not in s:
+              raise SystemExit('Home direct-edit link anchor not found')
+          s = s.replace(old, new, 1)
+          home.write_text(s)
+
+          tx = Path('src/routes/transactions.tsx')
+          t = tx.read_text()
+
+          search_anchor = '  const searchParams = Route.useSearch();\n  const { balanceVisible, updateBalanceVisible } = useUserPreferences();\n'
+          search_repl = '  const searchParams = Route.useSearch();\n  const shouldReturnHome = searchParams.from === "home";\n  const { balanceVisible, updateBalanceVisible } = useUserPreferences();\n'
+          if 'const shouldReturnHome = searchParams.from === "home";' not in t:
+              if search_anchor not in t:
+                  raise SystemExit('transactions search anchor not found')
+              t = t.replace(search_anchor, search_repl, 1)
+
+          try_anchor = '    try {\n      // Balance check for expenses from bank accounts\n'
+          try_repl = '    let savedSuccessfully = false;\n\n    try {\n      // Balance check for expenses from bank accounts\n'
+          if 'let savedSuccessfully = false;' not in t:
+              if try_anchor not in t:
+                  raise SystemExit('save try anchor not found')
+              t = t.replace(try_anchor, try_repl, 1)
+
+          clear_anchor = '      if (editTx?.id) clearEditDraft(editTx.id);\n    } catch (e) {'
+          clear_repl = '      if (editTx?.id) clearEditDraft(editTx.id);\n      savedSuccessfully = true;\n    } catch (e) {'
+          if 'savedSuccessfully = true;' not in t:
+              if clear_anchor not in t:
+                  raise SystemExit('save success anchor not found')
+              t = t.replace(clear_anchor, clear_repl, 1)
+
+          finally_anchor = '''      setEditTx(null);\n      fetchTransactions();\n      fetchBankAccounts(); // Refresh balances\n'''
+          finally_repl = '''      setEditTx(null);\n      if (savedSuccessfully && shouldReturnHome) {\n        window.location.assign("/home");\n        return;\n      }\n      fetchTransactions();\n      fetchBankAccounts(); // Refresh balances\n'''
+          if 'savedSuccessfully && shouldReturnHome' not in t:
+              if finally_anchor not in t:
+                  raise SystemExit('save finally anchor not found')
+              t = t.replace(finally_anchor, finally_repl, 1)
+
+          cancel_old = '<Button variant="outline" size="sm" className="flex-1 h-10 text-xs rounded-xl" onClick={() => { (document.activeElement as HTMLElement)?.blur(); setShowEditDialog(false); }}>Cancelar</Button>'
+          cancel_new = '<Button variant="outline" size="sm" className="flex-1 h-10 text-xs rounded-xl" onClick={() => { (document.activeElement as HTMLElement)?.blur(); setShowEditDialog(false); if (shouldReturnHome) window.location.assign("/home"); }}>Cancelar</Button>'
+          if cancel_old not in t:
+              raise SystemExit('edit cancel button anchor not found')
+          t = t.replace(cancel_old, cancel_new, 1)
+
+          validate_anchor = '     editId: (search.editId as string) || undefined,\n'
+          validate_repl = '     editId: (search.editId as string) || undefined,\n     from: (search.from as string) || undefined,\n'
+          if 'from: (search.from as string) || undefined' not in t:
+              if validate_anchor not in t:
+                  raise SystemExit('validateSearch editId anchor not found')
+              t = t.replace(validate_anchor, validate_repl, 1)
+
+          tx.write_text(t)
+          PY
+      - name: Check touched TypeScript surfaces
+        run: |
+          set +e
+          bunx tsc --noEmit > /tmp/tsc.log 2>&1
+          code=$?
+          set -e
+          if [ "$code" -ne 0 ]; then
+            python3 - <<'PY'
+          from pathlib import Path
+          lines = Path('/tmp/tsc.log').read_text().splitlines()
+          bad = []
+          for line in lines:
+              if 'src/routes/transactions.tsx' in line:
+                  bad.append(line)
+              elif 'src/routes/home.tsx' in line and 'TS2345' not in line:
+                  bad.append(line)
+          if bad:
+              print('\n'.join(bad))
+              raise SystemExit(1)
+          print('Only pre-existing TypeScript diagnostics remain outside the touched transaction flow.')
+          PY
+          fi
+      - name: Remove one-shot workflow
+        run: rm .github/workflows/apply-return-home-after-edit.yml
+      - name: Commit changes
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/routes/home.tsx src/routes/transactions.tsx .github/workflows/apply-return-home-after-edit.yml
+          git commit -m "feat: return to Home after direct transaction edit [return-home-applied]"
+          git push
