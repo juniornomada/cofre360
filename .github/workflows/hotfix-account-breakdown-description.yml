@@ -1,4 +1,4 @@
-name: Hotfix account breakdown description
+name: Simplify home month navigator
 on:
   push:
     branches: [main]
@@ -7,28 +7,40 @@ on:
 permissions:
   contents: write
 jobs:
-  fix:
+  patch:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Fix invalid transaction column
+      - name: Simplify month navigator
         run: |
           python - <<'PY'
           from pathlib import Path
-          p = Path('src/routes/accounts.tsx')
+          p = Path('src/routes/home.tsx')
           s = p.read_text()
-          old = '.select("id, date, description, amount, type, is_visible, card")'
-          new = '.select("id, date, description:name, amount, type, is_visible, card")'
+          old = '''        <div className="min-w-0 text-center">
+          <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground">Visão mensal</p>
+          <p className="truncate text-sm font-bold text-foreground">{selectedMonthLabel}</p>
+          <p className="text-[10px] text-muted-foreground">{isCurrentSelectedMonth ? "Até hoje" : isFutureSelectedMonth ? "Previsto até o fim do mês" : "Fechamento do mês"}</p>
+        </div>'''
+          new = '''        <div className="min-w-0 text-center">
+          <p className="truncate text-base font-bold text-foreground">{selectedMonthLabel}</p>
+        </div>'''
           if old not in s:
-              raise SystemExit('target select not found')
-          p.write_text(s.replace(old, new, 1))
+              raise SystemExit('month navigator target not found')
+          s = s.replace(old, new, 1)
+          p.write_text(s)
           PY
-      - name: Commit fix
+          grep -q 'truncate text-base font-bold text-foreground' src/routes/home.tsx
+          ! grep -q '>Visão mensal<' src/routes/home.tsx
+          ! grep -q 'Previsto até o fim do mês' src/routes/home.tsx
+      - name: Commit and remove workflow
         run: |
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add src/routes/accounts.tsx
-          git commit -m "fix: use transaction name in account balance breakdown"
+          git add src/routes/home.tsx
+          git commit -m "style: simplify home month navigation"
+          git rm .github/workflows/hotfix-account-breakdown-description.yml
+          git commit -m "chore: remove home month navigator workflow"
           git push
