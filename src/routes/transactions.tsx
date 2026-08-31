@@ -633,11 +633,32 @@ export function TransactionsPage() {
     const editId = searchParams.editId;
     if (!editId || loading || directEditHandledRef.current === editId) return;
 
-    const target = transactions.find((tx) => tx.id === editId);
-    if (!target) return;
+    let cancelled = false;
 
-    directEditHandledRef.current = editId;
-    handleEdit(target);
+    const openDirectEdit = async () => {
+      let target = transactions.find((tx) => tx.id === editId);
+
+      if (!target) {
+        const { data, error } = await supabase
+          .from("transactions")
+          .select("id,icon,name,category,date,amount,type,card,bank_account_id,created_at,installment_group_id,installment_number,total_installments,installment_mode,installment_source_amount,is_visible")
+          .eq("id", editId)
+          .maybeSingle();
+
+        if (error) {
+          console.error("Erro ao localizar transação para edição direta:", error);
+          return;
+        }
+        if (data) target = data as Transaction;
+      }
+
+      if (cancelled || !target || directEditHandledRef.current === editId) return;
+      directEditHandledRef.current = editId;
+      handleEdit(target);
+    };
+
+    void openDirectEdit();
+    return () => { cancelled = true; };
   }, [searchParams.editId, loading, transactions]);
 
   const handleCopy = (tx: Transaction) => {

@@ -452,7 +452,6 @@ function RecoveredHome() {
                 to="/transactions"
                 search={{ month: selectedMonthKey, category: item.category } as any}
                 aria-label={`${item.category}: R$ ${fmt(item.amount)}`}
-                title={item.category}
                 className="flex min-w-0 flex-col items-center justify-center gap-1 rounded-xl px-1 py-2 transition-colors hover:bg-accent/60"
               >
                 <span className="text-2xl leading-none" aria-hidden="true">{getCategoryIcon(item.category)}</span>
