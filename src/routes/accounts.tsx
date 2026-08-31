@@ -6,7 +6,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 
 import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react";
-import { format } from "date-fns";
+import { format, parse } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 const CsvImportDialog = lazy(() => import("@/components/CsvImportDialog").then(m => ({ default: m.CsvImportDialog })));
@@ -52,6 +52,23 @@ type BankAccount = {
   is_visible: boolean | null;
   parent_account_id: string | null;
 };
+
+function parseAccountTxDate(value: string, refIso?: string): Date | null {
+  if (!value) return null;
+  const refYear = refIso ? new Date(refIso).getFullYear() : new Date().getFullYear();
+  const reference = new Date(refYear, 0, 1);
+  const pattern = /^\d{4}-\d{2}-\d{2}$/.test(value)
+    ? "yyyy-MM-dd"
+    : /^\d{2}-\d{2}-\d{4}$/.test(value)
+      ? "dd-MM-yyyy"
+      : "dd MMM";
+  try {
+    const parsed = parse(value.trim(), pattern, reference, { locale: ptBR });
+    return isNaN(parsed.getTime()) ? null : parsed;
+  } catch {
+    return null;
+  }
+}
 
 const bankColorOptions = [
   { label: "Azul", value: "from-blue-500 to-blue-800", emoji: "🔵" },
@@ -99,6 +116,7 @@ type SortableAccountItemProps = {
   onToggleSelect: (id: string) => void;
   balanceVisible: boolean;
   onAddSubaccount: (account: BankAccount) => void;
+  selectedMonthKey: string;
 };
 
 function SortableAccountItem({
@@ -129,6 +147,7 @@ function SortableAccountItem({
   onToggleSelect,
   balanceVisible,
   onAddSubaccount,
+  selectedMonthKey,
 }: SortableAccountItemProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: account.id });
   const style: React.CSSProperties = {
@@ -197,7 +216,7 @@ function SortableAccountItem({
           ) : (
           <Link
             to="/transactions"
-            search={{ accountId: account.id } as any}
+            search={{ accountId: account.id, month: selectedMonthKey } as any}
             className="text-left w-full block h-full flex flex-col justify-center"
           >
             <div className="flex items-start justify-between gap-1.5 py-3">
@@ -353,6 +372,12 @@ function AccountsPage() {
   const [accounts, setAccounts] = useState<BankAccount[]>([]);
   const [incomeByAccount, setIncomeByAccount] = useState<Record<string, number>>({});
   const [expenseByAccount, setExpenseByAccount] = useState<Record<string, number>>({});
+  const [monthIncomeByAccount, setMonthIncomeByAccount] = useState<Record<string, number>>({});
+  const [monthExpenseByAccount, setMonthExpenseByAccount] = useState<Record<string, number>>({});
+  const [selectedMonth, setSelectedMonth] = useState<Date>(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1);
+  });
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false); 
   const listRef = useRef<HTMLDivElement>(null);
@@ -404,6 +429,17 @@ function AccountsPage() {
     setSelectedIds(newSelected);
   };
 
+  const selectedMonthKey = format(selectedMonth, "yyyy-MM");
+  const selectedMonthLabelRaw = format(selectedMonth, "MMMM yyyy", { locale: ptBR });
+  const selectedMonthLabel = selectedMonthLabelRaw.charAt(0).toUpperCase() + selectedMonthLabelRaw.slice(1);
+  const isCurrentSelectedMonth = (() => {
+    const now = new Date();
+    return now.getFullYear() === selectedMonth.getFullYear() && now.getMonth() === selectedMonth.getMonth();
+  })();
+  const shiftSelectedMonth = (delta: number) => {
+    setSelectedMonth((current) => new Date(current.getFullYear(), current.getMonth() + delta, 1));
+  };
+
   const handleBulkVisibility = async (visible: boolean) => {
     const count = selectedIds.size;
     if (count === 0) return;
@@ -453,7 +489,7 @@ function AccountsPage() {
       // Buscar transações visíveis vinculadas a contas bancárias (exclui card e ocultas/soft-deleted).
       const { data: txData, error: txError } = await supabase
         .from("transactions")
-        .select("bank_account_id, amount, type, is_visible, card, date")
+        .select("bank_account_id, amount, type, is_visible, card, date, created_at")
         .eq("user_id", session.user.id)
         .not("bank_account_id", "is", null);
       if (txError) throw txError;
@@ -461,25 +497,38 @@ function AccountsPage() {
       if (txData) {
         const incMap: Record<string, number> = {};
         const expMap: Record<string, number> = {};
-        const todayKey = new Date().toLocaleDateString("en-CA");
+        const monthIncMap: Record<string, number> = {};
+        const monthExpMap: Record<string, number> = {};
+        const today = new Date();
+        today.setHours(23, 59, 59, 999);
+        const selectedMonthEnd = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0, 23, 59, 59, 999);
+        const selectedCutoff = isCurrentSelectedMonth ? today : selectedMonthEnd;
+
         for (const tx of txData) {
           if (tx.is_visible === false) continue; // ignora transações ocultas/removidas logicamente
           // Mesma regra da Home: despesas de cartão não afetam saldo bancário.
           if (tx.type === "expense" && tx.card) continue;
-          // Só compara datas ISO. Datas legadas em "dd MMM" continuam válidas e não são descartadas.
-          const rawDate = typeof tx.date === "string" ? tx.date.trim() : "";
-          const transactionDateKey = /^\d{4}-\d{2}-\d{2}/.test(rawDate) ? rawDate.slice(0, 10) : undefined;
-          if (transactionDateKey && transactionDateKey > todayKey) continue;
+
+          const transactionDate = parseAccountTxDate(typeof tx.date === "string" ? tx.date.trim() : "", tx.created_at || undefined);
           const id = tx.bank_account_id as string;
           const amt = Number(tx.amount) || 0;
-          if (tx.type === "income") {
-            incMap[id] = (incMap[id] || 0) + amt;
-          } else {
-            expMap[id] = (expMap[id] || 0) + amt;
+
+          // Mapas atuais continuam alimentando ações administrativas (recalcular/ajustar saldo).
+          if (!transactionDate || transactionDate <= today) {
+            if (tx.type === "income") incMap[id] = (incMap[id] || 0) + amt;
+            else expMap[id] = (expMap[id] || 0) + amt;
+          }
+
+          // Mapas do mês servem apenas para exibição do saldo histórico selecionado.
+          if (!transactionDate || transactionDate <= selectedCutoff) {
+            if (tx.type === "income") monthIncMap[id] = (monthIncMap[id] || 0) + amt;
+            else monthExpMap[id] = (monthExpMap[id] || 0) + amt;
           }
         }
         setIncomeByAccount(incMap);
         setExpenseByAccount(expMap);
+        setMonthIncomeByAccount(monthIncMap);
+        setMonthExpenseByAccount(monthExpMap);
       }
     } catch (error: any) {
       console.error("Error fetching accounts:", error);
@@ -487,7 +536,7 @@ function AccountsPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [selectedMonth, isCurrentSelectedMonth]);
 
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { delay: 1000, tolerance: 10 } }),
@@ -953,7 +1002,7 @@ function AccountsPage() {
     );
   }
 
-  const totalCurrent = accounts.reduce((sum, a) => sum + a.balance + (incomeByAccount[a.id] || 0) - (expenseByAccount[a.id] || 0), 0);
+  const totalCurrent = accounts.reduce((sum, a) => sum + a.balance + (monthIncomeByAccount[a.id] || 0) - (monthExpenseByAccount[a.id] || 0), 0);
 
   return (
     <div className="a11y-focus-scope animate-page-enter flex flex-col gap-8 px-2 sm:px-4 pt-6 pb-28">
@@ -987,6 +1036,31 @@ function AccountsPage() {
             <Plus className="h-5 w-5" />
           </button>
         </div>
+      </div>
+      <div className="flex items-center justify-between rounded-2xl border border-border/60 bg-card px-2 py-2 shadow-sm">
+        <button
+          type="button"
+          onClick={() => shiftSelectedMonth(-1)}
+          className="interactive-button flex h-10 w-10 items-center justify-center rounded-xl text-muted-foreground hover:bg-accent"
+          aria-label="Mês anterior"
+          title="Mês anterior"
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </button>
+        <div className="min-w-0 text-center">
+          <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground">Saldo por mês</p>
+          <p className="truncate text-sm font-bold text-foreground">{selectedMonthLabel}</p>
+          <p className="text-[10px] text-muted-foreground">{isCurrentSelectedMonth ? "Saldo até hoje" : "Saldo no fechamento do mês"}</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => shiftSelectedMonth(1)}
+          className="interactive-button flex h-10 w-10 items-center justify-center rounded-xl text-muted-foreground hover:bg-accent"
+          aria-label="Próximo mês"
+          title="Próximo mês"
+        >
+          <ArrowLeft className="h-5 w-5 rotate-180" />
+        </button>
       </div>
       {accounts.length === 0 && (
         <div className="flex flex-col items-center justify-center py-20 text-center">
@@ -1058,8 +1132,8 @@ function AccountsPage() {
                     editBalance={editBalance}
                     setEditName={setEditName}
                     setEditBalance={setEditBalance}
-                    income={incomeByAccount[account.id] || 0}
-                    expense={expenseByAccount[account.id] || 0}
+                    income={monthIncomeByAccount[account.id] || 0}
+                    expense={monthExpenseByAccount[account.id] || 0}
                     deleteConfirm={deleteConfirm}
                     setDeleteConfirm={setDeleteConfirm}
                     startEdit={startEdit}
@@ -1077,6 +1151,7 @@ function AccountsPage() {
                     onToggleSelect={toggleSelect}
                     balanceVisible={balanceVisible}
                     onAddSubaccount={openAddDialog}
+                    selectedMonthKey={selectedMonthKey}
                   />
                 ))}
               </div>

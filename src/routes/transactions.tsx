@@ -89,6 +89,23 @@ export function TransactionsPage() {
   const [cardNameToBrand, setCardNameToBrand] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState(searchParams.category || "Todas");
+  const initialMonthParam = typeof searchParams.month === "string" && /^\d{4}-\d{2}$/.test(searchParams.month)
+    ? searchParams.month
+    : null;
+  const [selectedMonth, setSelectedMonth] = useState<Date>(() => {
+    if (initialMonthParam) {
+      const [year, month] = initialMonthParam.split("-").map(Number);
+      return new Date(year, month - 1, 1);
+    }
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1);
+  });
+
+  useEffect(() => {
+    if (typeof searchParams.month !== "string" || !/^\d{4}-\d{2}$/.test(searchParams.month)) return;
+    const [year, month] = searchParams.month.split("-").map(Number);
+    setSelectedMonth(new Date(year, month - 1, 1));
+  }, [searchParams.month]);
 
   // Sync category from URL search param when it changes
   useEffect(() => {
@@ -274,7 +291,7 @@ export function TransactionsPage() {
     }
   }, []);
 
-  const PAGE_SIZE = 50;
+  const PAGE_SIZE = 1000;
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const offsetRef = useRef(0);
@@ -391,6 +408,14 @@ export function TransactionsPage() {
   const toUtcDay = (d: Date, endOfDay = false) =>
     new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate(), endOfDay ? 23 : 0, endOfDay ? 59 : 0, endOfDay ? 59 : 0));
 
+  const selectedMonthStartUtc = Date.UTC(selectedMonth.getFullYear(), selectedMonth.getMonth(), 1);
+  const selectedMonthEndUtc = Date.UTC(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 1) - 1;
+  const selectedMonthLabelRaw = format(selectedMonth, "MMMM yyyy", { locale: ptBR });
+  const selectedMonthLabel = selectedMonthLabelRaw.charAt(0).toUpperCase() + selectedMonthLabelRaw.slice(1);
+  const shiftSelectedMonth = (delta: number) => {
+    setSelectedMonth((current) => new Date(current.getFullYear(), current.getMonth() + delta, 1));
+  };
+
   const minAmt = filterMinAmount ? parseFloat(filterMinAmount) : null;
   const maxAmt = filterMaxAmount ? parseFloat(filterMaxAmount) : null;
 
@@ -405,16 +430,18 @@ export function TransactionsPage() {
     const matchesType = filterType === "all" ? true : tx.type === filterType;
     const matchesMin = minAmt === null || Number(tx.amount) >= minAmt;
     const matchesMax = maxAmt === null || Number(tx.amount) <= maxAmt;
+    const d = parseTxDate(tx.date, tx.created_at);
+    const timestamp = d?.getTime() ?? NaN;
+    const matchesMonth = Number.isFinite(timestamp) && timestamp >= selectedMonthStartUtc && timestamp <= selectedMonthEndUtc;
     let matchesDate = true;
     if (filterStartDate || filterEndDate) {
-      const d = parseTxDate(tx.date, tx.created_at);
       if (!d) matchesDate = false;
       else {
         if (filterStartDate && d.getTime() < toUtcDay(filterStartDate).getTime()) matchesDate = false;
         if (filterEndDate && d.getTime() > toUtcDay(filterEndDate, true).getTime()) matchesDate = false;
       }
     }
-    return matchesCategory && matchesSource && matchesAccount && matchesType && matchesMin && matchesMax && matchesDate;
+    return matchesCategory && matchesSource && matchesAccount && matchesType && matchesMin && matchesMax && matchesMonth && matchesDate;
   });
 
   const activeFilterCount = (filterStartDate || filterEndDate ? 1 : 0) + (minAmt !== null || maxAmt !== null ? 1 : 0) + (filterType !== "all" ? 1 : 0) + (sortBy !== "date-desc" ? 1 : 0) + (filterAccountId ? 1 : 0);
@@ -1095,6 +1122,32 @@ export function TransactionsPage() {
     </div>
 
 
+
+      {/* Navegação mensal principal */}
+      <div className="flex items-center justify-between rounded-2xl border border-border/60 bg-card px-2 py-2 shadow-sm">
+        <button
+          type="button"
+          onClick={() => shiftSelectedMonth(-1)}
+          className="interactive-button flex h-10 w-10 items-center justify-center rounded-xl text-muted-foreground hover:bg-accent"
+          aria-label="Mês anterior"
+          title="Mês anterior"
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </button>
+        <div className="min-w-0 text-center">
+          <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground">Período</p>
+          <p className="truncate text-sm font-bold text-foreground">{selectedMonthLabel}</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => shiftSelectedMonth(1)}
+          className="interactive-button flex h-10 w-10 items-center justify-center rounded-xl text-muted-foreground hover:bg-accent"
+          aria-label="Próximo mês"
+          title="Próximo mês"
+        >
+          <ArrowRight className="h-5 w-5" />
+        </button>
+      </div>
 
       {/* Source filter (default: todas) */}
       <div className="flex gap-2">
@@ -1873,6 +1926,7 @@ export function TransactionsPage() {
      accountId: (search.accountId as string) || undefined,
      card: (search.card as string) || undefined,
      date: (search.date as string) || undefined,
+     month: (search.month as string) || undefined,
    }),
    component: TransactionsPage,
  });
