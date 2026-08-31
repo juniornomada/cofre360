@@ -81,6 +81,7 @@ const iconOptions = ["🛵", "🏠", "💰", "🎬", "⛽", "🛒", "💊", "�
 
 export function TransactionsPage() {
   const searchParams = Route.useSearch();
+  const shouldReturnHome = searchParams.from === "home";
   const { balanceVisible, updateBalanceVisible } = useUserPreferences();
 
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -765,6 +766,8 @@ export function TransactionsPage() {
         editInstallmentMode === "fixed" ? editTx.amount : 0
       );
 
+    let savedSuccessfully = false;
+
     try {
       // Balance check for expenses from bank accounts
       if (editTx.type === "expense" && editTx.bank_account_id) {
@@ -866,6 +869,7 @@ export function TransactionsPage() {
         toast.success("Transação atualizada");
       }
       if (editTx?.id) clearEditDraft(editTx.id);
+      savedSuccessfully = true;
     } catch (e) {
       console.error(e);
       toast.error("Erro ao salvar transação");
@@ -877,6 +881,10 @@ export function TransactionsPage() {
       // Reload preference (in case another tab/instance changed it) but keep the current session's choice
       setUpdateScope(readSavedScope());
       setEditTx(null);
+      if (savedSuccessfully && shouldReturnHome) {
+        window.location.assign("/home");
+        return;
+      }
       fetchTransactions();
       fetchBankAccounts(); // Refresh balances
     }
@@ -1748,7 +1756,7 @@ export function TransactionsPage() {
           )}
           </div>
           <DialogFooter className="shrink-0 p-4 pt-2 border-t mt-0 flex-row gap-2 sm:gap-2">
-            <Button variant="outline" size="sm" className="flex-1 h-10 text-xs rounded-xl" onClick={() => { (document.activeElement as HTMLElement)?.blur(); setShowEditDialog(false); }}>Cancelar</Button>
+            <Button variant="outline" size="sm" className="flex-1 h-10 text-xs rounded-xl" onClick={() => { (document.activeElement as HTMLElement)?.blur(); setShowEditDialog(false); if (shouldReturnHome) window.location.assign("/home"); }}>Cancelar</Button>
             <Button
               size="sm"
               className="flex-1 h-10 text-xs rounded-xl font-bold"
@@ -2025,6 +2033,7 @@ export function TransactionsPage() {
      date: (search.date as string) || undefined,
      month: (search.month as string) || undefined,
      editId: (search.editId as string) || undefined,
+     from: (search.from as string) || undefined,
    }),
    component: TransactionsPage,
  });
