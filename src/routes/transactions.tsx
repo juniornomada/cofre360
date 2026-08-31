@@ -3,7 +3,7 @@ import { SmartLink as Link } from "@/components/SmartLink";
 import { TransactionItem } from "@/components/TransactionItem";
 import { EmptyState } from "@/components/EmptyState";
 import { mainCategories, parseCategoryValue } from "@/lib/categories";
-import { Search, Pencil, Trash2, Plus, CalendarIcon, Loader2, Upload, CheckSquare, Square, X, SlidersHorizontal, ArrowLeftRight, ArrowRight, Eye, EyeOff, FileText, MoreVertical, GripVertical, ArrowLeft, Landmark } from "lucide-react";
+import { Search, Pencil, Trash2, Plus, CalendarIcon, Loader2, Upload, CheckSquare, Square, X, SlidersHorizontal, ArrowLeftRight, ArrowRight, Eye, EyeOff, FileText, MoreVertical, GripVertical, ArrowLeft, Landmark, ArrowUpRight, ArrowDownRight } from "lucide-react";
 import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react";
 
 const CsvImportDialog = lazy(() => import("@/components/CsvImportDialog").then(m => ({ default: m.CsvImportDialog })));
@@ -1176,14 +1176,14 @@ export function TransactionsPage() {
         ))}
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div className="rounded-xl bg-card p-3 text-left">
-          <p className="text-[10px] text-muted-foreground">Total receitas</p>
-          <p className="text-lg font-bold text-primary tabular-nums">R$ {formatCurrency(totalIncome)}</p>
+      <div className="grid grid-cols-2 gap-2">
+        <div className="rounded-xl border border-border/30 bg-card p-3">
+          <div className="flex items-center gap-1 text-[10px] font-semibold uppercase text-muted-foreground"><ArrowUpRight className="h-3.5 w-3.5 text-primary" />Receitas · {selectedMonthLabel.split(" ")[0]}</div>
+          <p className="mt-1 text-base font-bold tabular-nums text-primary">R$ {formatCurrency(totalIncome)}</p>
         </div>
-        <div className="rounded-xl bg-card p-3 text-right">
-          <p className="text-[10px] text-muted-foreground">Total despesas</p>
-          <p className="text-lg font-bold text-destructive tabular-nums">R$ {formatCurrency(totalExpense)}</p>
+        <div className="rounded-xl border border-border/30 bg-card p-3">
+          <div className="flex items-center gap-1 text-[10px] font-semibold uppercase text-muted-foreground"><ArrowDownRight className="h-3.5 w-3.5 text-destructive" />Despesas · {selectedMonthLabel.split(" ")[0]}</div>
+          <p className="mt-1 text-base font-bold tabular-nums text-destructive">R$ {formatCurrency(totalExpense)}</p>
         </div>
       </div>
 
