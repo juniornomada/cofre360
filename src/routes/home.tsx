@@ -68,19 +68,35 @@ function fmt(value: number) {
   });
 }
 
-function safeDate(value: string | null) {
+function safeDate(value: string | null, refIso?: string | null) {
   if (!value) return null;
-  const iso = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  const trimmed = value.trim().toLowerCase();
+  const refYear = refIso ? new Date(refIso).getFullYear() : new Date().getFullYear();
+
+  const iso = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (iso) return new Date(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3]));
-  const parts = value.trim().toLowerCase().split(/\s+/);
+
+  const dmy = trimmed.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
+  if (dmy) return new Date(Number(dmy[3]), Number(dmy[2]) - 1, Number(dmy[1]));
+
+  const parts = trimmed.split(/\s+/);
   const months: Record<string, number> = {
     jan: 0, fev: 1, mar: 2, abr: 3, mai: 4, jun: 5,
     jul: 6, ago: 7, set: 8, out: 9, nov: 10, dez: 11,
   };
   if (parts.length >= 2 && months[parts[1]] !== undefined) {
-    return new Date(new Date().getFullYear(), months[parts[1]], Number(parts[0]));
+    const year = parts[2] ? Number(parts[2]) : refYear;
+    return new Date(year, months[parts[1]], Number(parts[0]));
   }
   return null;
+}
+
+function formatDisplayDate(value: string | null, refIso?: string | null) {
+  const parsed = safeDate(value, refIso);
+  if (!parsed) return value || "";
+  const dd = String(parsed.getDate()).padStart(2, "0");
+  const mm = String(parsed.getMonth() + 1).padStart(2, "0");
+  return `${dd}-${mm}-${parsed.getFullYear()}`;
 }
 
 function RecoveredHome() {
@@ -138,7 +154,7 @@ function RecoveredHome() {
         for (const tx of rawTx) {
           if (tx.is_visible === false || !tx.bank_account_id) continue;
           if (tx.type === "expense" && tx.card) continue;
-          const transactionDate = safeDate(tx.date);
+          const transactionDate = safeDate(tx.date, tx.created_at);
           if (transactionDate && transactionDate > today) continue;
           const amount = Number(tx.amount || 0);
           if (tx.type === "income") incomeByAccount[tx.bank_account_id] = (incomeByAccount[tx.bank_account_id] || 0) + amount;
@@ -191,7 +207,7 @@ function RecoveredHome() {
     let expense = 0;
     for (const tx of transactions) {
       if (tx.is_visible === false) continue;
-      const d = safeDate(tx.date);
+      const d = safeDate(tx.date, tx.created_at);
       if (!d || d.getMonth() !== now.getMonth() || d.getFullYear() !== now.getFullYear()) continue;
       if (tx.type === "income") income += Number(tx.amount || 0);
       else expense += Number(tx.amount || 0);
@@ -205,7 +221,7 @@ function RecoveredHome() {
     return transactions
       .filter((tx) => {
         if (tx.is_visible === false) return false;
-        const transactionDate = safeDate(tx.date);
+        const transactionDate = safeDate(tx.date, tx.created_at);
         return !transactionDate || transactionDate <= today;
       })
       .slice(0, 8);
@@ -351,7 +367,7 @@ function RecoveredHome() {
               <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent text-base">{tx.icon || (tx.type === "income" ? "💰" : "💸")}</span>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium text-foreground">{tx.name || "Transação"}</p>
-                <p className="truncate text-[10px] text-muted-foreground">{tx.category || "Sem categoria"} · {tx.date || ""}</p>
+                <p className="truncate text-[10px] text-muted-foreground">{tx.category || "Sem categoria"} · {formatDisplayDate(tx.date, tx.created_at)}</p>
               </div>
               <span className={cn("text-sm font-semibold tabular-nums", tx.type === "income" ? "text-primary" : "text-destructive")}>{tx.type === "income" ? "+" : "-"} R$ {fmt(tx.amount)}</span>
             </Link>

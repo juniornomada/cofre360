@@ -9,20 +9,28 @@ import { normalizeCardPaymentLabel } from "@/lib/card-payment-label";
 
 const MONTHS_PT_ABBR = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
 
-function formatTxDate(date: string): string {
-  // Match YYYY-MM-DD (ISO) — convert to "DD mmm" in pt-BR
-  const iso = date.match(/^(\d{4})-(\d{2})-(\d{2})/);
-  if (iso) {
-    const day = parseInt(iso[3], 10);
-    const month = parseInt(iso[2], 10) - 1;
-    if (month >= 0 && month < 12) return `${day} ${MONTHS_PT_ABBR[month]}`;
+function formatTxDate(date: string, refIso?: string): string {
+  const trimmed = date.trim().toLowerCase();
+  const refYear = refIso ? new Date(refIso).getFullYear() : new Date().getFullYear();
+
+  const iso = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) return `${iso[3]}-${iso[2]}-${iso[1]}`;
+
+  const dmy = trimmed.match(/^(\d{1,2})[-/](\d{1,2})(?:[-/](\d{4}))?$/);
+  if (dmy) {
+    const dd = dmy[1].padStart(2, "0");
+    const mm = dmy[2].padStart(2, "0");
+    return `${dd}-${mm}-${dmy[3] || refYear}`;
   }
-  // Match DD/MM or DD/MM/YYYY
-  const br = date.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?/);
-  if (br) {
-    const day = parseInt(br[1], 10);
-    const month = parseInt(br[2], 10) - 1;
-    if (month >= 0 && month < 12) return `${day} ${MONTHS_PT_ABBR[month]}`;
+
+  const compact = trimmed.match(/^(\d{1,2})\s+([a-zç]{3})(?:\s+(\d{4}))?$/i);
+  if (compact) {
+    const month = MONTHS_PT_ABBR.indexOf(compact[2]);
+    if (month >= 0) {
+      const dd = compact[1].padStart(2, "0");
+      const mm = String(month + 1).padStart(2, "0");
+      return `${dd}-${mm}-${compact[3] || refYear}`;
+    }
   }
   return date;
 }
@@ -32,6 +40,7 @@ interface TransactionItemProps {
   name: string;
   category: string;
   date: string;
+  created_at?: string;
   amount: number;
   type: "income" | "expense";
   card?: string;
@@ -51,7 +60,7 @@ interface TransactionItemProps {
 }
 
 export function TransactionItem({ 
-  icon, name, category, date, amount, type, card, cardBrand, 
+  icon, name, category, date, created_at, amount, type, card, cardBrand, 
   bank_account_id, isTransferPair, transferFromName, transferToName, 
   installment_number, total_installments, style, onEdit, onDelete, amountVisible = true
 }: TransactionItemProps) {
@@ -193,8 +202,8 @@ export function TransactionItem({
               </span>
             )}
           </div>
-          <span className="text-[10px] text-muted-foreground font-medium shrink-0 tabular-nums text-right w-[42px]">
-            {formatTxDate(date)}
+          <span className="text-[10px] text-muted-foreground font-medium shrink-0 tabular-nums text-right w-[72px]">
+            {formatTxDate(date, created_at)}
           </span>
         </div>
 

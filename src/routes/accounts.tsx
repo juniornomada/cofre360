@@ -638,7 +638,7 @@ function AccountsPage() {
       const { error: txError } = await supabase.from("transactions").insert({
         name: "Ajuste de saldo",
         category: "Ajustes",
-        date: format(new Date(), "dd MMM", { locale: ptBR }),
+        date: format(new Date(), "dd-MM-yyyy"),
         amount: Math.abs(diff),
         type: adjustmentType,
         bank_account_id: id,
@@ -828,7 +828,7 @@ function AccountsPage() {
       const { error } = await supabase.from("transactions").insert({
         name: "Ajuste de saldo",
         category: "Ajustes",
-        date: format(new Date(), "dd MMM", { locale: ptBR }),
+        date: format(new Date(), "dd-MM-yyyy"),
         amount: Math.abs(diff),
         type: adjustmentType,
         bank_account_id: recalcAccount.id,
