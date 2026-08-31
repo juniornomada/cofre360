@@ -70,3 +70,5 @@ jobs:
           git diff --cached --check
           git commit -m "fix: match quick-add dialog to edit transaction layout"
           git push origin main
+
+# trigger: registered workflow
