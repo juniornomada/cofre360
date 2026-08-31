@@ -1,0 +1,88 @@
+name: Apply credit card brand icons
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/apply-card-brand-icons.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Patch card selectors
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path, old, new):
+              p = Path(path)
+              text = p.read_text()
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f"{path}: expected one match, found {count}")
+              p.write_text(text.replace(old, new, 1))
+
+          replace_once(
+              "src/components/QuickAddTransactionDialog.tsx",
+              'import { BankLogo } from "@/components/BankLogo";\nimport { CalculatorAmountInput } from "@/components/CalculatorAmountInput";',
+              'import { BankLogo } from "@/components/BankLogo";\nimport { CardIcon } from "@/components/CardIcon";\nimport { CalculatorAmountInput } from "@/components/CalculatorAmountInput";'
+          )
+
+          replace_once(
+              "src/components/QuickAddTransactionDialog.tsx",
+              '''                        <div\n                          className={`h-7 w-10 rounded-[4px] flex items-end justify-start p-0.5 shadow-sm relative overflow-hidden bg-gradient-to-br ${c.color || "from-gray-600 to-gray-800"}`}\n                        >\n                          <div className="absolute top-1 left-1 h-1 w-1.5 rounded-[1px] bg-white/40" />\n                          <span className="text-[6px] font-bold text-white leading-none truncate max-w-full tracking-tight relative">\n                            {c.name}\n                          </span>\n                        </div>''',
+              '''                        <CardIcon color={c.color} name={c.name} size="md" />'''
+          )
+
+          replace_once(
+              "src/routes/transactions.tsx",
+              'import { BankLogo } from "@/components/BankLogo";\nimport { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";',
+              'import { BankLogo } from "@/components/BankLogo";\nimport { CardIcon } from "@/components/CardIcon";\nimport { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";'
+          )
+
+          replace_once(
+              "src/routes/transactions.tsx",
+              '''interface CardOption {\n  name: string;\n  brand: string;\n}''',
+              '''interface CardOption {\n  name: string;\n  brand: string;\n  color?: string | null;\n}'''
+          )
+
+          replace_once(
+              "src/routes/transactions.tsx",
+              'const { data, error } = await supabase.from("cards").select("name, brand").order("created_at", { ascending: true });',
+              'const { data, error } = await supabase.from("cards").select("name, brand, color").order("created_at", { ascending: true });'
+          )
+
+          replace_once(
+              "src/routes/transactions.tsx",
+              'const options = data.map(c => ({ name: c.name, brand: c.brand }));\n        setCardOptions([{ name: "Nenhum", brand: "" }, ...options]);',
+              'const options = data.map(c => ({ name: c.name, brand: c.brand, color: c.color }));\n        setCardOptions([{ name: "Nenhum", brand: "", color: null }, ...options]);'
+          )
+
+          replace_once(
+              "src/routes/transactions.tsx",
+              '''                        const brandLabel = c.brand?.trim()\n                          ? c.brand.trim().slice(0, 4).toUpperCase()\n                          : "💳";\n                        return (''',
+              '''                        return ('''
+          )
+
+          replace_once(
+              "src/routes/transactions.tsx",
+              '''                            <span className={cn(\n                              "flex h-9 w-11 shrink-0 items-center justify-center rounded-lg border text-[9px] font-black tracking-tight",\n                              selected\n                                ? "border-primary/40 bg-primary text-primary-foreground"\n                                : "border-border bg-background text-foreground"\n                            )}>\n                              {brandLabel}\n                            </span>''',
+              '''                            <CardIcon color={c.color} name={c.name} size="lg" />'''
+          )
+          PY
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/components/QuickAddTransactionDialog.tsx src/routes/transactions.tsx
+          git diff --cached --check
+          git commit -m "fix: show card brand icons in transaction flows"
+          git push origin main
