@@ -147,6 +147,7 @@ export function TransactionsPage() {
    const [quickAddType, setQuickAddType] = useState<"expense" | "income" | "transfer">("expense");
    const [copyTxData, setCopyTxData] = useState<{ name: string; amount: number; category: string; icon: string; card: string | null; bank_account_id: string | null } | null>(null);
    const emptyStateRef = useRef<HTMLDivElement>(null); const listRef = useRef<HTMLDivElement>(null);
+   const directEditHandledRef = useRef<string | null>(null);
    
    
   const [showCsvImport, setShowCsvImport] = useState(false);
@@ -627,6 +628,17 @@ export function TransactionsPage() {
     }, 300);
     return () => window.clearTimeout(handle);
   }, [showEditDialog, editTx, editInstallmentMode]);
+
+  useEffect(() => {
+    const editId = searchParams.editId;
+    if (!editId || loading || directEditHandledRef.current === editId) return;
+
+    const target = transactions.find((tx) => tx.id === editId);
+    if (!target) return;
+
+    directEditHandledRef.current = editId;
+    handleEdit(target);
+  }, [searchParams.editId, loading, transactions]);
 
   const handleCopy = (tx: Transaction) => {
     // Strip installment suffix for the copy
@@ -1991,6 +2003,7 @@ export function TransactionsPage() {
      card: (search.card as string) || undefined,
      date: (search.date as string) || undefined,
      month: (search.month as string) || undefined,
+     editId: (search.editId as string) || undefined,
    }),
    component: TransactionsPage,
  });
