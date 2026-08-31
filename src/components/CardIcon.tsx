@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 
 type Size = "xs" | "sm" | "md" | "lg";
@@ -5,9 +6,12 @@ type Size = "xs" | "sm" | "md" | "lg";
 interface CardIconProps {
   color?: string | null;
   name?: string;
+  logoUrl?: string | null;
   size?: Size;
   className?: string;
 }
+
+const MERCADO_PAGO_LOGO_URL = "https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/mercado-pago/default.svg";
 
 const SIZE_MAP: Record<Size, { box: string; chip: string }> = {
   xs: { box: "h-5 w-7 rounded-sm",  chip: "left-[3px] top-[3px] h-1 w-1.5 rounded-[1px]" },
@@ -17,20 +21,21 @@ const SIZE_MAP: Record<Size, { box: string; chip: string }> = {
 };
 
 /**
- * Rectangular credit-card icon (gradient body + chip).
- * Standardized across all screens — no emoji, no circular container.
+ * Rectangular credit-card icon.
+ * When a branded logo is available it is rendered inside the same fixed
+ * footprint; otherwise the component falls back to the gradient card + chip.
  *
- * Interactive states (driven by an ancestor with the `group` class):
- * - hover:   subtle shadow + brighter inset ring
- * - focus:   primary inset ring (no outer outline → no layout shift)
- * - disabled/aria-disabled: dimmed + desaturated
- *
- * All state changes use ring/opacity/filter only — box size stays fixed,
- * so the icon never shifts neighboring content when a card is hovered,
- * focused, or disabled.
+ * `logoUrl` is intended to come from `cards.logo_url`. The Mercado Pago name
+ * fallback keeps legacy call sites branded while they do not yet pass the new
+ * database field explicitly.
  */
-export function CardIcon({ color, name, size = "md", className }: CardIconProps) {
+export function CardIcon({ color, name, logoUrl, size = "md", className }: CardIconProps) {
+  const [logoFailed, setLogoFailed] = useState(false);
   const s = SIZE_MAP[size];
+  const namedFallbackLogo = name?.trim().toLowerCase() === "mercado pago" ? MERCADO_PAGO_LOGO_URL : null;
+  const effectiveLogoUrl = logoUrl || namedFallbackLogo;
+  const showLogo = Boolean(effectiveLogoUrl && !logoFailed);
+
   return (
     <div
       role="img"
@@ -38,11 +43,12 @@ export function CardIcon({ color, name, size = "md", className }: CardIconProps)
       title={name}
       className={cn(
         // Base — fixed footprint, inset ring so state changes never resize the box
-        "relative shrink-0 bg-gradient-to-br overflow-hidden",
+        "relative shrink-0 overflow-hidden",
         "shadow-sm ring-1 ring-inset ring-black/10",
         "transition-[box-shadow,opacity,filter] duration-200 ease-out",
         s.box,
-        color || "from-primary/30 to-primary/10",
+        showLogo ? "bg-white" : "bg-gradient-to-br",
+        !showLogo && (color || "from-primary/30 to-primary/10"),
         // Hover (from ancestor `.group`)
         "group-hover:shadow-md group-hover:ring-white/40",
         // Keyboard focus — two-tone inset ring (white core between dark halos)
@@ -56,14 +62,24 @@ export function CardIcon({ color, name, size = "md", className }: CardIconProps)
         className
       )}
     >
-      <span
-        aria-hidden
-        className={cn(
-          "absolute bg-white/70 transition-opacity duration-200",
-          "group-disabled:opacity-60 group-aria-disabled:opacity-60",
-          s.chip
-        )}
-      />
+      {showLogo ? (
+        <img
+          src={effectiveLogoUrl!}
+          alt=""
+          aria-hidden="true"
+          className="h-full w-full object-contain p-0.5"
+          onError={() => setLogoFailed(true)}
+        />
+      ) : (
+        <span
+          aria-hidden
+          className={cn(
+            "absolute bg-white/70 transition-opacity duration-200",
+            "group-disabled:opacity-60 group-aria-disabled:opacity-60",
+            s.chip
+          )}
+        />
+      )}
     </div>
   );
 }
