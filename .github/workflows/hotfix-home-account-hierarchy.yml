@@ -1,4 +1,4 @@
-name: hotfix-home-account-hierarchy
+name: Apply Home monthly navigation
 on:
   push:
     branches: [main]
@@ -12,48 +12,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: main
+          fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Group subaccounts under parent accounts on Home
+      - name: Apply Home monthly navigation patch
         run: |
-          python - <<'PY'
-          from pathlib import Path
-          p = Path('src/routes/home.tsx')
-          s = p.read_text()
-          start = s.index('          {visibleAccounts.map((account) => (')
-          end_marker = '          ))}\n          {!loading && visibleAccounts.length === 0'
-          end = s.index(end_marker, start) + len('          ))}\n')
-          replacement = '''          {mainAccounts.map((account) => {
-            const subaccounts = visibleAccounts.filter((item) => item.parent_account_id === account.id);
-            return (
-              <div key={account.id} className="flex flex-col gap-1">
-                <Link to="/transactions" search={{ accountId: account.id } as any} className="flex items-center gap-2.5 rounded-xl bg-background/40 px-2.5 py-2">
-                  <BankLogo icon={account.icon} color={account.color} name={account.name} size="sm" />
-                  <span className="min-w-0 flex-1 text-xs font-medium text-foreground">{account.name}</span>
-                  <span className={cn("text-xs font-bold tabular-nums", account.balance < 0 && "text-destructive")}>{balanceVisible ? `R$ ${fmt(account.balance)}` : "R$ ••••"}</span>
-                </Link>
-                {subaccounts.map((subaccount) => (
-                  <Link
-                    key={subaccount.id}
-                    to="/transactions"
-                    search={{ accountId: subaccount.id } as any}
-                    className="ml-5 flex items-center gap-2.5 rounded-xl border-l-2 border-primary/20 bg-primary/[0.025] px-2.5 py-2 sm:ml-8"
-                  >
-                    <BankLogo icon={subaccount.icon} color={subaccount.color} name={subaccount.name} size="sm" />
-                    <span className="min-w-0 flex-1 text-xs font-medium text-foreground">{subaccount.name}</span>
-                    <span className={cn("text-xs font-bold tabular-nums", subaccount.balance < 0 && "text-destructive")}>{balanceVisible ? `R$ ${fmt(subaccount.balance)}` : "R$ ••••"}</span>
-                  </Link>
-                ))}
-              </div>
-            );
-          })}
-'''
-          p.write_text(s[:start] + replacement + s[end:])
-          PY
-      - name: Commit patch and remove workflow
+          python3 scripts/patch_home_monthly_navigation.py
+          grep -q 'Visão mensal' src/routes/home.tsx
+          grep -q 'selectedMonthTransactions' src/routes/home.tsx
+          grep -q 'month: selectedMonthKey' src/routes/home.tsx
+      - name: Commit feature and cleanup
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git rm .github/workflows/hotfix-home-account-hierarchy.yml
           git add src/routes/home.tsx
-          git commit -m 'fix: show subaccounts under parent accounts on home'
-          git push
+          git commit -m 'feat: add monthly navigation to home dashboard'
+          git rm scripts/patch_home_monthly_navigation.py
+          git rm .github/workflows/hotfix-home-account-hierarchy.yml
+          git commit -m 'chore: remove home monthly navigation patch files'
+          git push origin main
