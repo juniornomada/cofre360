@@ -9,6 +9,51 @@
   justify-content: center;
 }
 
+/*
+ * Transações: usa a mesma linguagem visual dos totais mensais da Home.
+ * O seletor é restrito ao par antigo text-left/text-right para não afetar
+ * outros grids de duas colunas da aplicação.
+ */
+.animate-page-enter > div.grid.grid-cols-2.gap-3:has(> div.text-left):has(> div.text-right) {
+  gap: 0.5rem;
+}
+
+.animate-page-enter > div.grid.grid-cols-2.gap-3:has(> div.text-left):has(> div.text-right) > div {
+  border: 1px solid hsl(var(--border) / 0.3);
+  text-align: center !important;
+}
+
+.animate-page-enter > div.grid.grid-cols-2.gap-3:has(> div.text-left):has(> div.text-right) > div > p:first-child {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  font-size: 0.625rem;
+  line-height: 1rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.animate-page-enter > div.grid.grid-cols-2.gap-3:has(> div.text-left):has(> div.text-right) > div.text-left > p:first-child::before {
+  content: "↗";
+  color: hsl(var(--primary));
+  font-size: 0.875rem;
+  line-height: 1;
+}
+
+.animate-page-enter > div.grid.grid-cols-2.gap-3:has(> div.text-left):has(> div.text-right) > div.text-right > p:first-child::before {
+  content: "↘";
+  color: hsl(var(--destructive));
+  font-size: 0.875rem;
+  line-height: 1;
+}
+
+.animate-page-enter > div.grid.grid-cols-2.gap-3:has(> div.text-left):has(> div.text-right) > div > p:last-child {
+  margin-top: 0.25rem;
+  font-size: 1rem;
+  line-height: 1.5rem;
+}
+
 /* Contas: a hierarquia visual já identifica subcontas; não exibe o rótulo textual. */
 .ml-5 span[class*="uppercase"][class*="tracking-wide"][class*="text-primary"] {
   display: none;
