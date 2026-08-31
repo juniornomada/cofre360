@@ -1,0 +1,81 @@
+name: Align transaction totals with home
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/align-transaction-totals-with-home.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Align monthly totals cards
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('src/routes/transactions.tsx')
+          s = p.read_text()
+
+          old_import = 'ArrowLeftRight, ArrowRight, Eye, EyeOff'
+          new_import = 'ArrowLeftRight, ArrowRight, ArrowUpRight, ArrowDownRight, Eye, EyeOff'
+          if old_import not in s:
+              raise SystemExit('Expected lucide import segment not found')
+          s = s.replace(old_import, new_import, 1)
+
+          old = '''      <div className="grid grid-cols-2 gap-3">
+        <div className="rounded-xl bg-card p-3 text-left">
+          <p className="text-[10px] text-muted-foreground">Total receitas</p>
+          <p className="text-lg font-bold text-primary tabular-nums">R$ {formatCurrency(totalIncome)}</p>
+        </div>
+        <div className="rounded-xl bg-card p-3 text-right">
+          <p className="text-[10px] text-muted-foreground">Total despesas</p>
+          <p className="text-lg font-bold text-destructive tabular-nums">R$ {formatCurrency(totalExpense)}</p>
+        </div>
+      </div>'''
+
+          new = '''      <div className="grid grid-cols-2 gap-2">
+        <div className="rounded-xl border border-border/30 bg-card p-3">
+          <div className="flex items-center gap-1 text-[10px] font-semibold uppercase text-muted-foreground">
+            <ArrowUpRight className="h-3.5 w-3.5 text-primary" />
+            Receitas · {selectedMonthLabel.split(" ")[0]}
+          </div>
+          <p className="mt-1 text-base font-bold tabular-nums text-primary">R$ {formatCurrency(totalIncome)}</p>
+        </div>
+        <div className="rounded-xl border border-border/30 bg-card p-3">
+          <div className="flex items-center gap-1 text-[10px] font-semibold uppercase text-muted-foreground">
+            <ArrowDownRight className="h-3.5 w-3.5 text-destructive" />
+            Despesas · {selectedMonthLabel.split(" ")[0]}
+          </div>
+          <p className="mt-1 text-base font-bold tabular-nums text-destructive">R$ {formatCurrency(totalExpense)}</p>
+        </div>
+      </div>'''
+
+          if old not in s:
+              raise SystemExit('Expected totals block not found')
+          s = s.replace(old, new, 1)
+          p.write_text(s)
+          PY
+
+      - name: Commit functional change
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/routes/transactions.tsx
+          git commit -m "style: match transaction totals to home"
+          git push origin main
+
+      - name: Cleanup workflow
+        run: |
+          git pull --rebase origin main
+          git rm .github/workflows/align-transaction-totals-with-home.yml
+          git commit -m "chore: remove transaction totals alignment workflow"
+          git push origin main
