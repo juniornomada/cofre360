@@ -499,8 +499,8 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
   return (
     <>
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[94vw] max-w-[94vw] sm:w-[28rem] sm:max-w-[28rem] rounded-2xl bg-background max-h-[92vh] min-h-[600px] sm:min-h-[640px] overflow-y-auto p-4 gap-2 flex flex-col">
-        <DialogHeader className="space-y-0 pr-6">
+      <DialogContent className="w-[calc(100dvw-24px)] max-w-[calc(100dvw-24px)] h-[calc(100dvh-24px)] max-h-[calc(100dvh-24px)] min-h-0 rounded-2xl bg-background overflow-hidden p-0 gap-0 flex flex-col sm:h-auto sm:max-h-[88dvh] sm:min-h-[640px] sm:w-[28rem] sm:max-w-[28rem]">
+        <DialogHeader className="shrink-0 space-y-0 border-b border-border/50 p-4 pb-3 pr-10">
           <div className="flex items-center gap-1.5">
             <DialogTitle className="text-sm whitespace-nowrap shrink-0">Nova</DialogTitle>
             <div className="flex flex-1 gap-1 min-w-0">
@@ -529,7 +529,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
             </div>
           </div>
         </DialogHeader>
-        <div className="flex flex-col gap-2.5">
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-4 flex flex-col gap-2.5">
 
           {isTransfer ? (
             <>
@@ -1031,12 +1031,12 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
             </>
           )}
         </div>
-        <DialogFooter className="mt-2 flex-row gap-2 sm:gap-2">
-          <Button variant="outline" size="sm" className="flex-1 h-8 text-xs" onClick={() => { (document.activeElement as HTMLElement)?.blur(); onOpenChange(false); }}>Cancelar</Button>
+        <DialogFooter className="shrink-0 border-t border-border/50 bg-background p-4 pt-3 flex-row gap-2 sm:gap-2">
+          <Button variant="outline" size="sm" className="flex-1 h-10 text-xs rounded-xl" onClick={() => { (document.activeElement as HTMLElement)?.blur(); onOpenChange(false); }}>Cancelar</Button>
           <Button
 
             size="sm"
-            className="flex-1 h-8 text-xs"
+            className="flex-1 h-10 text-xs rounded-xl"
             onClick={handleAdd}
             disabled={
               isSubmitting || !!installmentStartError || (isTransfer
