@@ -193,17 +193,27 @@ export function CategoryPieCharts({ transactions, formatCurrency, onCategoryClic
   const onlyIncome = hasUsefulIncomeBreakdown && !hasUsefulExpenseBreakdown;
 
   return (
-    <div className="grid grid-cols-2 items-stretch gap-2 sm:gap-4">
-      {hasUsefulExpenseBreakdown && (
-        <div className={onlyExpense ? "col-span-2 min-w-0" : "min-w-0"}>
-          {renderChart(expenseData, "expense")}
-        </div>
-      )}
-      {hasUsefulIncomeBreakdown && (
-        <div className={onlyIncome ? "col-span-2 min-w-0" : "min-w-0"}>
-          {renderChart(incomeData, "income")}
-        </div>
-      )}
-    </div>
+    <>
+      <style>{`
+        div:has(> .category-summary-donuts) {
+          margin-bottom: 0.5rem !important;
+        }
+        div:has(> .category-summary-donuts) + section {
+          display: none !important;
+        }
+      `}</style>
+      <div className="category-summary-donuts grid grid-cols-2 items-stretch gap-2 sm:gap-4">
+        {hasUsefulExpenseBreakdown && (
+          <div className={onlyExpense ? "col-span-2 min-w-0" : "min-w-0"}>
+            {renderChart(expenseData, "expense")}
+          </div>
+        )}
+        {hasUsefulIncomeBreakdown && (
+          <div className={onlyIncome ? "col-span-2 min-w-0" : "min-w-0"}>
+            {renderChart(incomeData, "income")}
+          </div>
+        )}
+      </div>
+    </>
   );
 }
