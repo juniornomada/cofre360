@@ -2,8 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { SmartLink as Link } from "@/components/SmartLink";
 import { TransactionItem } from "@/components/TransactionItem";
 import { EmptyState } from "@/components/EmptyState";
-import { mainCategories, parseCategoryValue } from "@/lib/categories";
-import { addCurrencyCents, fetchAllCategoryLedgerTransactions, type CategoryLedgerTransaction } from "@/lib/category-spending-ledger";
+import { parseCategoryValue } from "@/lib/categories";
+import { fetchAllCategoryLedgerTransactions, type CategoryLedgerTransaction } from "@/lib/category-spending-ledger";
 import { Search, Pencil, Trash2, Plus, CalendarIcon, Loader2, Upload, CheckSquare, Square, X, SlidersHorizontal, ArrowLeftRight, ArrowRight, Eye, EyeOff, FileText, MoreVertical, GripVertical, ArrowLeft, Landmark, CreditCard, ArrowUpRight, ArrowDownRight } from "lucide-react";
 import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react";
 
@@ -77,7 +77,6 @@ interface CardOption {
   color?: string | null;
 }
 
-const filterCategories = ["Todas", ...mainCategories];
 const iconOptions = ["🛵", "🏠", "💰", "🎬", "⛽", "🛒", "💊", "🎮", "💸", "🍕", "🚗", "👕", "📱", "🎵", "✈️", "🏥", "📚", "🐾"];
 
 export function TransactionsPage() {
@@ -441,11 +440,33 @@ export function TransactionsPage() {
   const selectedMonthLabelRaw = format(selectedMonth, "MMMM yyyy", { locale: ptBR });
   const selectedMonthLabel = selectedMonthLabelRaw.charAt(0).toUpperCase() + selectedMonthLabelRaw.slice(1);
   const shiftSelectedMonth = (delta: number) => {
+    setActiveCategory("Todas");
     setSelectedMonth((current) => new Date(current.getFullYear(), current.getMonth() + delta, 1));
   };
 
   const minAmt = filterMinAmount ? parseFloat(filterMinAmount) : null;
   const maxAmt = filterMaxAmount ? parseFloat(filterMaxAmount) : null;
+
+  // Keep category navigation stable for the selected month. Rank by number of
+  // real, visible launches, not by amount, using the full paginated ledger.
+  const monthCategoryRanking = Object.entries(
+    categoryLedgerTransactions.reduce<Record<string, number>>((counts, tx) => {
+      if (tx.is_visible === false) return counts;
+      const d = parseTxDate(tx.date || "", tx.created_at || undefined);
+      const timestamp = d?.getTime() ?? NaN;
+      if (!Number.isFinite(timestamp) || timestamp < selectedMonthStartUtc || timestamp > selectedMonthEndUtc) return counts;
+      const category = parseCategoryValue(tx.category || "").group || "Outros";
+      counts[category] = (counts[category] || 0) + 1;
+      return counts;
+    }, {}),
+  )
+    .map(([category, count]) => ({ category, count }))
+    .filter((item) => item.count > 0)
+    .sort((a, b) => b.count - a.count || a.category.localeCompare(b.category, "pt-BR"));
+
+  const quickCategories = monthCategoryRanking.slice(0, 4);
+  const moreCategories = monthCategoryRanking.slice(4);
+  const activeCategoryInMore = activeCategory !== "Todas" && moreCategories.some((item) => item.category === activeCategory);
 
   const filtered = transactions.filter((tx) => {
     const matchesCategory = activeCategory === "Todas" || tx.category === activeCategory || parseCategoryValue(tx.category).group === activeCategory || (activeCategory === "Transferências" && (tx.category === "Transferência" || tx.category === "Transferências"));
@@ -473,8 +494,6 @@ export function TransactionsPage() {
   });
 
   const activeFilterCount = (filterStartDate || filterEndDate ? 1 : 0) + (minAmt !== null || maxAmt !== null ? 1 : 0) + (filterType !== "all" ? 1 : 0) + (sortBy !== "date-desc" ? 1 : 0) + (filterAccountId ? 1 : 0);
-
-  const hasTransactionFilters = activeCategory !== "Todas" || activeSource !== "all" || !!filterAccountId || !!filterStartDate || !!filterEndDate || minAmt !== null || maxAmt !== null || filterType !== "all";
 
   const sortedTransactions = [...filtered].sort((a, b) => {
     if (sortBy === "date-desc") {
@@ -532,23 +551,6 @@ export function TransactionsPage() {
 
   const totalIncome = filtered.filter(t => t.type === "income" && t.is_visible !== false).reduce((s, t) => s + t.amount, 0);
   const totalExpense = filtered.filter(t => t.type === "expense" && t.is_visible !== false).reduce((s, t) => s + t.amount, 0);
-
-  const categorySpending = Object.entries(
-    categoryLedgerTransactions.reduce<Record<string, number>>((totalsInCents, tx) => {
-      if (tx.type !== "expense" || tx.is_visible === false) return totalsInCents;
-      const d = parseTxDate(tx.date || "", tx.created_at || undefined);
-      const timestamp = d?.getTime() ?? NaN;
-      if (!Number.isFinite(timestamp) || timestamp < selectedMonthStartUtc || timestamp > selectedMonthEndUtc) return totalsInCents;
-      const mainCategory = parseCategoryValue(tx.category || "").group || "Outros";
-      totalsInCents[mainCategory] = addCurrencyCents(totalsInCents[mainCategory] || 0, tx.amount);
-      return totalsInCents;
-    }, {}),
-  )
-    .map(([category, amountInCents]) => ({ category, amount: amountInCents / 100 }))
-    .filter((item) => item.amount > 0)
-    .sort((a, b) => b.amount - a.amount);
-
-  const categoryExpenseTotal = categorySpending.reduce((sum, item) => sum + item.amount, 0);
 
   const generatePDF = () => {
     try {
@@ -1234,8 +1236,69 @@ export function TransactionsPage() {
         </button>
       </div>
 
-      {/* Source filter (default: todas) */}
-      <div className="flex gap-2">
+      {/* 2. Categorias: Todas + 4 mais usadas no mês + Mais */}
+      <div className="grid grid-cols-[auto_repeat(4,minmax(0,1fr))_auto] items-center gap-1">
+        <button
+          type="button"
+          onClick={() => setActiveCategory("Todas")}
+          className={`interactive-button h-8 whitespace-nowrap rounded-full px-2.5 text-[10px] font-semibold transition-colors sm:text-xs ${
+            activeCategory === "Todas" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground"
+          }`}
+        >
+          Todas
+        </button>
+
+        {quickCategories.map(({ category }) => (
+          <button
+            key={category}
+            type="button"
+            title={category}
+            onClick={() => setActiveCategory(category)}
+            className={`interactive-button h-8 min-w-0 truncate rounded-full px-2 text-[10px] font-medium transition-colors sm:text-xs ${
+              activeCategory === category ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground"
+            }`}
+          >
+            {category}
+          </button>
+        ))}
+
+        {Array.from({ length: Math.max(0, 4 - quickCategories.length) }).map((_, index) => (
+          <span key={`category-placeholder-${index}`} className="h-8 min-w-0" aria-hidden="true" />
+        ))}
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              disabled={moreCategories.length === 0}
+              className={`interactive-button h-8 whitespace-nowrap rounded-full px-2.5 text-[10px] font-semibold transition-colors sm:text-xs ${
+                activeCategoryInMore
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-card text-muted-foreground"
+              } disabled:cursor-default disabled:opacity-40`}
+              aria-label="Mais categorias"
+              title={activeCategoryInMore ? `Categoria selecionada: ${activeCategory}` : "Mais categorias"}
+            >
+              Mais
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="max-h-[60vh] w-52 overflow-y-auto">
+            {moreCategories.map(({ category, count }) => (
+              <DropdownMenuItem
+                key={category}
+                onClick={() => setActiveCategory(category)}
+                className="flex items-center justify-between gap-3"
+              >
+                <span className="truncate">{category}</span>
+                <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground">{count}</span>
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      {/* 3. Origem: Conta / Cartão */}
+      <div className="grid grid-cols-2 gap-2">
         {([
           { key: "account" as const, label: "Conta", icon: "🏦" },
           { key: "card" as const, label: "Cartão", icon: "💳" },
@@ -1244,8 +1307,11 @@ export function TransactionsPage() {
           return (
             <button
               key={src.key}
+              type="button"
               onClick={() => setActiveSource(isActive ? "all" : src.key)}
-              className={`interactive-button flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2.5 text-xs font-medium transition-colors duration-200 ${isActive ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground border border-border"}`}
+              className={`interactive-button flex h-9 items-center justify-center gap-1.5 rounded-xl text-xs font-medium transition-colors duration-200 ${
+                isActive ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground border border-border"
+              }`}
             >
               <span>{src.icon}</span>
               {src.label}
@@ -1254,26 +1320,33 @@ export function TransactionsPage() {
         })}
       </div>
 
-      <div className="flex gap-2 overflow-x-auto no-scrollbar">
-        {filterCategories.map((cat) => (
-          <button key={cat} onClick={() => setActiveCategory(cat)} className={`interactive-button whitespace-nowrap rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors duration-200 ${activeCategory === cat ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground"}`}>
-            {cat}
-          </button>
-        ))}
+      {/* 4. Tipo: Receitas / Despesas */}
+      <div className="grid grid-cols-2 gap-2">
+        <button
+          type="button"
+          onClick={() => setFilterType(filterType === "income" ? "all" : "income")}
+          className={`interactive-button flex h-9 items-center justify-center gap-1.5 rounded-xl text-xs font-medium transition-colors ${
+            filterType === "income"
+              ? "bg-primary text-primary-foreground"
+              : "border border-border bg-card text-muted-foreground"
+          }`}
+        >
+          <ArrowUpRight className="h-3.5 w-3.5" />
+          Receitas
+        </button>
+        <button
+          type="button"
+          onClick={() => setFilterType(filterType === "expense" ? "all" : "expense")}
+          className={`interactive-button flex h-9 items-center justify-center gap-1.5 rounded-xl text-xs font-medium transition-colors ${
+            filterType === "expense"
+              ? "bg-destructive text-destructive-foreground"
+              : "border border-border bg-card text-muted-foreground"
+          }`}
+        >
+          <ArrowDownRight className="h-3.5 w-3.5" />
+          Despesas
+        </button>
       </div>
-
-      {!hasTransactionFilters && (
-        <section className="-mx-1 grid grid-cols-2 gap-2">
-          <div className="rounded-xl border border-border/30 bg-card p-3">
-            <div className="flex items-center gap-1 text-[10px] font-semibold uppercase text-muted-foreground"><ArrowUpRight className="h-3.5 w-3.5 text-primary" />Receitas</div>
-            <p className="mt-1 text-base font-bold text-primary">{balanceVisible ? `R$ ${formatCurrency(totalIncome)}` : "R$ ••••"}</p>
-          </div>
-          <div className="rounded-xl border border-border/30 bg-card p-3">
-            <div className="flex items-center gap-1 text-[10px] font-semibold uppercase text-muted-foreground"><ArrowDownRight className="h-3.5 w-3.5 text-destructive" />Despesas</div>
-            <p className="mt-1 text-base font-bold text-destructive">{balanceVisible ? `R$ ${formatCurrency(totalExpense)}` : "R$ ••••"}</p>
-          </div>
-        </section>
-      )}
 
 
        <div ref={listRef} tabIndex={-1} className="flex flex-col gap-2 focus:outline-none">
@@ -1358,46 +1431,6 @@ export function TransactionsPage() {
           }}
         />
       </div>
-
-      <section className="rounded-2xl border border-border/30 bg-card p-3">
-        <div className="mb-2 flex items-center justify-between">
-          <h2 className="text-xs font-semibold uppercase text-muted-foreground">Gastos por categoria · {selectedMonthLabel.split(" ")[0]}</h2>
-          <span className="text-[10px] text-muted-foreground">{categorySpending.length} categorias</span>
-        </div>
-        {categorySpending.length > 0 ? (
-          <div className="flex flex-col divide-y divide-border/20">
-            {categorySpending.map((item) => {
-              const share = categoryExpenseTotal > 0 ? Math.min(100, (item.amount / categoryExpenseTotal) * 100) : 0;
-              return (
-                <button
-                  key={item.category}
-                  type="button"
-                  onClick={() => {
-                    clearAdvancedFilters();
-                    setActiveCategory(item.category);
-                    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
-                  }}
-                  className="flex w-full items-center gap-3 py-2.5 text-left first:pt-1 last:pb-1"
-                >
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="truncate text-xs font-medium text-foreground">{item.category}</span>
-                      <span className="shrink-0 text-xs font-bold tabular-nums text-foreground">
-                        {balanceVisible ? `R$ ${formatCurrency(item.amount)}` : "R$ ••••"}
-                      </span>
-                    </div>
-                    <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-accent">
-                      <div className="h-full rounded-full bg-destructive/70" style={{ width: `${share}%` }} />
-                    </div>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        ) : (
-          <p className="py-3 text-center text-xs text-muted-foreground">Nenhuma despesa neste mês.</p>
-        )}
-      </section>
 
       {/* Edit Dialog */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
