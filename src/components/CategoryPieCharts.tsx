@@ -17,16 +17,16 @@ interface CategoryPieChartsProps {
 }
 
 const COLORS = [
-  "hsl(217, 91%, 60%)",  // blue
-  "hsl(280, 67%, 55%)",  // purple
-  "hsl(47, 96%, 53%)",   // yellow
-  "hsl(12, 76%, 61%)",   // coral/orange
-  "hsl(340, 82%, 52%)",  // pink
-  "hsl(186, 72%, 48%)",  // teal
-  "hsl(24, 95%, 53%)",   // amber
-  "hsl(250, 60%, 60%)",  // indigo
-  "hsl(0, 72%, 51%)",    // red
-  "hsl(198, 80%, 50%)",  // sky blue
+  "hsl(210, 100%, 64%)", // vivid blue
+  "hsl(275, 92%, 68%)",  // vivid purple
+  "hsl(48, 100%, 60%)",  // vivid yellow
+  "hsl(16, 100%, 63%)",  // vivid orange
+  "hsl(337, 92%, 65%)",  // vivid pink
+  "hsl(174, 88%, 52%)",  // vivid teal
+  "hsl(31, 100%, 58%)",  // vivid amber
+  "hsl(248, 94%, 70%)",  // vivid indigo
+  "hsl(0, 94%, 64%)",    // vivid red
+  "hsl(191, 96%, 58%)",  // vivid cyan
 ];
 
 function aggregateByLevel(txs: Transaction[], level: "group" | "sub") {
