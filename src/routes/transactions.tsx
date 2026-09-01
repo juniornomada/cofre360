@@ -450,7 +450,7 @@ export function TransactionsPage() {
   // real, visible launches, not by amount, using the full paginated ledger.
   const monthCategoryRanking = Object.entries(
     categoryLedgerTransactions.reduce<Record<string, number>>((counts, tx) => {
-      if (tx.is_visible === false) return counts;
+      if (tx.is_visible === false || tx.type !== "expense") return counts;
       const d = parseTxDate(tx.date || "", tx.created_at || undefined);
       const timestamp = d?.getTime() ?? NaN;
       if (!Number.isFinite(timestamp) || timestamp < selectedMonthStartUtc || timestamp > selectedMonthEndUtc) return counts;
