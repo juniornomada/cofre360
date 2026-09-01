@@ -1,0 +1,40 @@
+name: Expense category icons only
+on:
+  push:
+    paths:
+      - '.github/workflows/expense-category-icons-only.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply expense-only category icon filter
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('src/routes/transactions.tsx')
+          text = path.read_text()
+          old = '''    categoryLedgerTransactions.reduce<Record<string, number>>((counts, tx) => {
+      if (tx.is_visible === false) return counts;
+      const d = parseTxDate(tx.date || "", tx.created_at || undefined);'''
+          new = '''    categoryLedgerTransactions.reduce<Record<string, number>>((counts, tx) => {
+      if (tx.is_visible === false || tx.type !== "expense") return counts;
+      const d = parseTxDate(tx.date || "", tx.created_at || undefined);'''
+          if old not in text:
+              raise SystemExit('target snippet not found')
+          path.write_text(text.replace(old, new, 1))
+          PY
+          rm .github/workflows/expense-category-icons-only.yml
+      - name: Verify
+        run: |
+          grep -F 'tx.is_visible === false || tx.type !== "expense"' src/routes/transactions.tsx
+          git diff --check
+      - name: Commit
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/routes/transactions.tsx .github/workflows/expense-category-icons-only.yml
+          git commit -m 'fix: show only expense category icons'
+          git push
