@@ -32,15 +32,19 @@ const COLORS = [
 
 function aggregateByLevel(txs: Transaction[], level: "group" | "sub") {
   const map = new Map<string, number>();
-  let total = 0;
+
   txs.forEach((tx) => {
     const val = Number(tx.amount);
+    if (!Number.isFinite(val)) return;
     const parsed = parseCategoryValue(tx.category);
     const name = level === "sub" ? (parsed.sub || "Outros") : parsed.group;
     map.set(name, (map.get(name) || 0) + val);
-    total += val;
   });
-  return Array.from(map.entries())
+
+  const positiveEntries = Array.from(map.entries()).filter(([, value]) => value > 0);
+  const total = positiveEntries.reduce((sum, [, value]) => sum + value, 0);
+
+  return positiveEntries
     .map(([name, value]) => ({
       name,
       value,
