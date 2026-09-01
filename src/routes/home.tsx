@@ -188,6 +188,7 @@ function RecoveredHome() {
   const selectedMonthKey = `${selectedMonth.getFullYear()}-${String(selectedMonth.getMonth() + 1).padStart(2, "0")}`;
   const selectedMonthLabel = new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric" })
     .format(selectedMonth)
+    .replace(" de ", " ")
     .replace(/^./, (c) => c.toUpperCase());
   const now = new Date();
   const isCurrentSelectedMonth = now.getFullYear() === selectedMonth.getFullYear() && now.getMonth() === selectedMonth.getMonth();
