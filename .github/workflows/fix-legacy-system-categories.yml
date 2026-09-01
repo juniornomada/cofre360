@@ -1,0 +1,54 @@
+name: Fix legacy system categories
+on:
+  push:
+    paths:
+      - '.github/workflows/fix-legacy-system-categories.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply category handling fix
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          categories = Path('src/lib/categories.ts')
+          text = categories.read_text()
+          old = '''  // Normalize singular/plural transfers\n  if (value === "Transferência" || value === "Transferências") {\n    return { group: "Transferências", sub: "Outros" };\n  }\n\n  // Legacy: try to match old flat category to a group\n'''
+          new = '''  // Normalize singular/plural transfers\n  if (value === "Transferência" || value === "Transferências") {\n    return { group: "Transferências", sub: "Outros" };\n  }\n\n  // Legacy/system-generated values must not fall back into the expense\n  // category "Outros". Rendimentos belongs to income; Ajustes is a\n  // technical balance category and is intentionally kept separate.\n  if (value === "Rendimentos" || value === "Rendimento") {\n    return { group: "Receita", sub: "Juros" };\n  }\n  if (value === "Ajustes" || value === "Ajuste de saldo") {\n    return { group: "Ajustes", sub: "Outros" };\n  }\n\n  // Legacy: try to match old flat category to a group\n'''
+          if old not in text:
+              raise SystemExit('categories target not found')
+          categories.write_text(text.replace(old, new, 1))
+
+          transactions = Path('src/routes/transactions.tsx')
+          text = transactions.read_text()
+          old_import = 'import { parseCategoryValue, getCategoryIcon } from "@/lib/categories";'
+          new_import = 'import { parseCategoryValue, getCategoryIcon, categoryTree } from "@/lib/categories";'
+          if old_import not in text:
+              raise SystemExit('transactions import target not found')
+          text = text.replace(old_import, new_import, 1)
+
+          old_rank = '''      const category = parseCategoryValue(tx.category || "").group || "Outros";\n      counts[category] = (counts[category] || 0) + 1;'''
+          new_rank = '''      const category = parseCategoryValue(tx.category || "").group || "Outros";\n      const categoryGroup = categoryTree.find((group) => group.label === category);\n      if (!categoryGroup || categoryGroup.type !== "expense") return counts;\n      counts[category] = (counts[category] || 0) + 1;'''
+          if old_rank not in text:
+              raise SystemExit('transactions ranking target not found')
+          transactions.write_text(text.replace(old_rank, new_rank, 1))
+          PY
+          rm .github/workflows/fix-legacy-system-categories.yml
+      - name: Verify
+        run: |
+          grep -F 'return { group: "Receita", sub: "Juros" };' src/lib/categories.ts
+          grep -F 'return { group: "Ajustes", sub: "Outros" };' src/lib/categories.ts
+          grep -F 'categoryGroup.type !== "expense"' src/routes/transactions.tsx
+          grep -F 'getCategoryIcon, categoryTree' src/routes/transactions.tsx
+          git diff --check
+      - name: Commit
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/lib/categories.ts src/routes/transactions.tsx .github/workflows/fix-legacy-system-categories.yml
+          git commit -m 'fix: keep system entries out of expense categories'
+          git push
