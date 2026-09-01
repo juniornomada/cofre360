@@ -1242,7 +1242,7 @@ export function TransactionsPage() {
 
       {/* 2. Categorias: todas as categorias do mês visíveis por ícone */}
       {monthCategoryRanking.length > 0 && (
-        <div className="grid grid-cols-6 gap-1.5 sm:grid-cols-8">
+        <div className="flex flex-wrap justify-center gap-1.5">
           {monthCategoryRanking.map(({ category }) => {
             const isActive = activeCategory === category;
             return (
@@ -1253,7 +1253,7 @@ export function TransactionsPage() {
                 aria-pressed={isActive}
                 title={category}
                 onClick={() => setActiveCategory(isActive ? "Todas" : category)}
-                className={`interactive-button flex h-9 min-w-0 items-center justify-center rounded-xl border text-base transition-all ${
+                className={`interactive-button flex h-9 w-12 shrink-0 items-center justify-center rounded-xl border text-base transition-all ${
                   isActive
                     ? "border-primary bg-primary text-primary-foreground shadow-sm ring-1 ring-primary/30"
                     : "border-border/60 bg-card text-foreground hover:bg-accent"
