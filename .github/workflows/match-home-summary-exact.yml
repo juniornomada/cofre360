@@ -1,4 +1,4 @@
-name: Match transaction summary exactly to Home
+name: Match Home transaction totals
 
 on:
   push:
@@ -16,75 +16,12 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - name: Match Home cards exactly
+      - name: Align card container
         shell: bash
         run: |
-          python3 - <<'PY'
-          from pathlib import Path
-
-          p = Path('src/routes/transactions.tsx')
-          s = p.read_text()
-
-          marker = '{/* 4. Receitas / Despesas:'
-          marker_pos = s.find(marker)
-          if marker_pos < 0:
-              raise SystemExit('Receitas/Despesas marker not found')
-          start = s.rfind('\n', 0, marker_pos) + 1
-          end_marker = '<div ref={listRef}'
-          end = s.find(end_marker, marker_pos)
-          if end < 0:
-              raise SystemExit('transaction list marker not found')
-          end = s.rfind('\n', 0, end)
-
-          new = '''      {/* 4. Receitas / Despesas: visual idêntico à Home + filtro ao tocar */}
-      <section className="grid grid-cols-2 gap-2">
-        <div
-          role="button"
-          tabIndex={0}
-          aria-pressed={filterType === "income"}
-          onClick={() => setFilterType(filterType === "income" ? "all" : "income")}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" || event.key === " ") {
-              event.preventDefault();
-              setFilterType(filterType === "income" ? "all" : "income");
-            }
-          }}
-          className="rounded-xl border border-border/30 bg-card p-3"
-        >
-          <div className="flex items-center gap-1 text-[10px] font-semibold uppercase text-muted-foreground"><ArrowUpRight className="h-3.5 w-3.5 text-primary" />Receitas</div>
-          <p className="mt-1 text-base font-bold text-primary">{balanceVisible ? `R$ ${formatCurrency(totalIncome)}` : "R$ ••••"}</p>
-        </div>
-        <div
-          role="button"
-          tabIndex={0}
-          aria-pressed={filterType === "expense"}
-          onClick={() => setFilterType(filterType === "expense" ? "all" : "expense")}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" || event.key === " ") {
-              event.preventDefault();
-              setFilterType(filterType === "expense" ? "all" : "expense");
-            }
-          }}
-          className="rounded-xl border border-border/30 bg-card p-3"
-        >
-          <div className="flex items-center gap-1 text-[10px] font-semibold uppercase text-muted-foreground"><ArrowDownRight className="h-3.5 w-3.5 text-destructive" />Despesas</div>
-          <p className="mt-1 text-base font-bold text-destructive">{balanceVisible ? `R$ ${formatCurrency(totalExpense)}` : "R$ ••••"}</p>
-        </div>
-      </section>
-
-'''
-          p.write_text(s[:start] + new + s[end:])
-          PY
-
-      - name: Verify exact Home visual classes
-        shell: bash
-        run: |
-          grep -q 'visual idêntico à Home + filtro ao tocar' src/routes/transactions.tsx
-          grep -q 'className="rounded-xl border border-border/30 bg-card p-3"' src/routes/transactions.tsx
-          ! grep -q 'ring-primary/30' src/routes/transactions.tsx
+          sed -i '/Receitas \/ Despesas: resumo original + filtro ao tocar/{n;s/className="grid grid-cols-2 gap-2"/className="-mx-1 grid grid-cols-2 gap-2"/;}' src/routes/transactions.tsx
+          grep -A1 'Receitas / Despesas: resumo original + filtro ao tocar' src/routes/transactions.tsx | grep -q 'className="-mx-1 grid grid-cols-2 gap-2"'
           git diff --check
-
       - name: Commit patch
         shell: bash
         run: |
@@ -92,5 +29,5 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add src/routes/transactions.tsx .github/workflows/match-home-summary-exact.yml
-          git commit -m 'style: match transaction totals exactly to Home'
+          git commit -m 'style: center transaction totals like Home'
           git push
