@@ -43,7 +43,7 @@ function aggregateByLevel(txs: Transaction[], level: "group" | "sub") {
     .map(([name, value]) => ({
       name,
       value,
-      percentage: total > 0 ? (value / total) * 100 : 0
+      percentage: total > 0 ? (value / total) * 100 : 0,
     }))
     .sort((a, b) => b.value - a.value);
 }
@@ -54,7 +54,7 @@ const CustomTooltip = ({ active, payload, formatCurrency }: any) => {
   return (
     <div className="rounded-lg border border-border/50 bg-background px-3 py-2 text-xs shadow-xl">
       <p className="font-medium text-foreground">{name}</p>
-      <div className="flex justify-between gap-4 mt-1">
+      <div className="mt-1 flex justify-between gap-4">
         <span className="text-muted-foreground">R$ {formatCurrency(value)}</span>
         <span className="font-bold text-primary">{percentage.toFixed(1)}%</span>
       </div>
@@ -67,11 +67,11 @@ export function CategoryPieCharts({ transactions, formatCurrency, onCategoryClic
   const level: "group" | "sub" = isDrilldown ? "sub" : "group";
   const expenseData = useMemo(
     () => aggregateByLevel(transactions.filter((t) => t.type === "expense"), level),
-    [transactions, level]
+    [transactions, level],
   );
   const incomeData = useMemo(
     () => aggregateByLevel(transactions.filter((t) => t.type === "income"), level),
-    [transactions, level]
+    [transactions, level],
   );
 
   const hasUsefulExpenseBreakdown = expenseData.length > (isDrilldown ? 1 : 0);
@@ -88,67 +88,75 @@ export function CategoryPieCharts({ transactions, formatCurrency, onCategoryClic
     data: ReturnType<typeof aggregateByLevel>,
     title: string,
   ) => (
-    <div className="min-w-0 rounded-xl bg-card p-2.5 sm:p-3">
-      <h3 className="mb-1 truncate whitespace-nowrap text-[10px] font-semibold text-foreground sm:text-sm">{title}</h3>
-      <div className="h-36 w-full sm:h-40">
-        <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
-            <Pie
-              data={data}
-              cx="50%"
-              cy="50%"
-              innerRadius={26}
-              outerRadius={50}
-              paddingAngle={3}
-              dataKey="value"
-              animationBegin={0}
-              animationDuration={600}
-              onClick={(payload: { name?: string } | undefined) => {
-                if (payload?.name) handleSliceClick(payload.name);
-              }}
-            >
-              {data.map((item, i) => {
-                const isDimmed = !isDrilldown && !!activeCategory && activeCategory !== "Todas" && activeCategory !== item.name;
-                const isActive = !isDrilldown && activeCategory === item.name;
-                return (
-                  <Cell
-                    key={i}
-                    fill={COLORS[i % COLORS.length]}
-                    className={`outline-none ${!isDrilldown && onCategoryClick ? "cursor-pointer" : ""}`}
-                    fillOpacity={isDimmed ? 0.35 : 1}
-                    stroke={isActive ? "hsl(var(--foreground))" : "none"}
-                    strokeWidth={isActive ? 2 : 0}
-                  />
-                );
-              })}
-            </Pie>
-            <Tooltip content={<CustomTooltip formatCurrency={formatCurrency} />} />
-          </PieChart>
-        </ResponsiveContainer>
-      </div>
-      <div className="mt-1 flex flex-wrap justify-center gap-1">
-        {data.map((item, i) => {
-          const isActive = !isDrilldown && activeCategory === item.name;
-          return (
-            <button
-              key={item.name}
-              type="button"
-              onClick={() => handleSliceClick(item.name)}
-              disabled={isDrilldown || !onCategoryClick}
-              aria-pressed={isActive}
-              aria-label={isDrilldown ? `${item.name}: ${item.percentage.toFixed(0)}%` : `Filtrar por categoria ${item.name}`}
-              className={`flex min-w-0 items-center gap-1 rounded-full border px-1.5 py-0.5 text-[8px] transition-colors sm:text-[9px] ${
-                isActive
-                  ? "bg-primary/20 border-primary/40 text-foreground"
-                  : "bg-accent/20 border-border/10"
-              } ${!isDrilldown && onCategoryClick ? "cursor-pointer hover:bg-accent/40" : "cursor-default"}`}
-            >
-              <div className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
-              <span className="max-w-[64px] truncate text-muted-foreground sm:max-w-[88px]">{item.name}</span>
-              <span className="shrink-0 font-bold tabular-nums text-foreground">{item.percentage.toFixed(0)}%</span>
-            </button>
-          );
-        })}
+    <div className="flex h-[184px] min-w-0 flex-col rounded-xl bg-card p-2.5 sm:h-[196px] sm:p-3">
+      <h3 className="h-4 shrink-0 truncate whitespace-nowrap text-[10px] font-semibold leading-4 text-foreground sm:text-xs">
+        {title}
+      </h3>
+
+      <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_72px] items-stretch gap-1.5 sm:grid-cols-[minmax(0,1fr)_104px] sm:gap-2">
+        <div className="min-h-0 min-w-0">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={data}
+                cx="50%"
+                cy="50%"
+                innerRadius={22}
+                outerRadius={44}
+                paddingAngle={3}
+                dataKey="value"
+                animationBegin={0}
+                animationDuration={600}
+                onClick={(payload: { name?: string } | undefined) => {
+                  if (payload?.name) handleSliceClick(payload.name);
+                }}
+              >
+                {data.map((item, i) => {
+                  const isDimmed = !isDrilldown && !!activeCategory && activeCategory !== "Todas" && activeCategory !== item.name;
+                  const isActive = !isDrilldown && activeCategory === item.name;
+                  return (
+                    <Cell
+                      key={i}
+                      fill={COLORS[i % COLORS.length]}
+                      className={`outline-none ${!isDrilldown && onCategoryClick ? "cursor-pointer" : ""}`}
+                      fillOpacity={isDimmed ? 0.35 : 1}
+                      stroke={isActive ? "hsl(var(--foreground))" : "none"}
+                      strokeWidth={isActive ? 2 : 0}
+                    />
+                  );
+                })}
+              </Pie>
+              <Tooltip content={<CustomTooltip formatCurrency={formatCurrency} />} />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+
+        <div className="min-h-0 min-w-0 overflow-y-auto overscroll-contain pr-0.5 [scrollbar-width:thin]">
+          <div className="flex flex-col gap-1 py-1">
+            {data.map((item, i) => {
+              const isActive = !isDrilldown && activeCategory === item.name;
+              return (
+                <button
+                  key={item.name}
+                  type="button"
+                  onClick={() => handleSliceClick(item.name)}
+                  disabled={isDrilldown || !onCategoryClick}
+                  aria-pressed={isActive}
+                  aria-label={isDrilldown ? `${item.name}: ${item.percentage.toFixed(0)}%` : `Filtrar por categoria ${item.name}`}
+                  className={`flex w-full min-w-0 items-center gap-1 rounded-md border px-1 py-1 text-[8px] transition-colors sm:px-1.5 sm:text-[9px] ${
+                    isActive
+                      ? "border-primary/40 bg-primary/20 text-foreground"
+                      : "border-border/10 bg-accent/20"
+                  } ${!isDrilldown && onCategoryClick ? "cursor-pointer hover:bg-accent/40" : "cursor-default"}`}
+                >
+                  <div className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
+                  <span className="min-w-0 flex-1 truncate text-left text-muted-foreground">{item.name}</span>
+                  <span className="shrink-0 font-bold tabular-nums text-foreground">{item.percentage.toFixed(0)}%</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -157,7 +165,7 @@ export function CategoryPieCharts({ transactions, formatCurrency, onCategoryClic
   const incomeTitle = isDrilldown ? "Receitas por subcategoria" : "Receitas por categoria";
 
   return (
-    <div className="grid grid-cols-2 gap-2 sm:gap-4">
+    <div className="grid grid-cols-2 items-stretch gap-2 sm:gap-4">
       {hasUsefulExpenseBreakdown && renderChart(expenseData, expenseTitle)}
       {hasUsefulIncomeBreakdown && renderChart(incomeData, incomeTitle)}
     </div>
