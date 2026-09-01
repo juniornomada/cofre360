@@ -1327,7 +1327,7 @@ export function TransactionsPage() {
       </div>
 
       {/* 4. Receitas / Despesas: resumo original + filtro ao tocar */}
-      <section className="grid grid-cols-2 gap-2">
+      <section className="-mx-1 grid grid-cols-2 gap-2">
         <button
           type="button"
           onClick={() => setFilterType(filterType === "income" ? "all" : "income")}
