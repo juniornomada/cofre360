@@ -1243,16 +1243,16 @@ export function TransactionsPage() {
         ))}
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
+      <section className="-mx-1 grid grid-cols-2 gap-2">
         <div className="rounded-xl border border-border/30 bg-card p-3">
           <div className="flex items-center gap-1 text-[10px] font-semibold uppercase text-muted-foreground"><ArrowUpRight className="h-3.5 w-3.5 text-primary" />Receitas · {selectedMonthLabel.split(" ")[0]}</div>
-          <p className="mt-1 text-base font-bold text-primary">R$ {formatCurrency(totalIncome)}</p>
+          <p className="mt-1 text-base font-bold text-primary">{balanceVisible ? `R$ ${formatCurrency(totalIncome)}` : "R$ ••••"}</p>
         </div>
         <div className="rounded-xl border border-border/30 bg-card p-3">
           <div className="flex items-center gap-1 text-[10px] font-semibold uppercase text-muted-foreground"><ArrowDownRight className="h-3.5 w-3.5 text-destructive" />Despesas · {selectedMonthLabel.split(" ")[0]}</div>
-          <p className="mt-1 text-base font-bold text-destructive">R$ {formatCurrency(totalExpense)}</p>
+          <p className="mt-1 text-base font-bold text-destructive">{balanceVisible ? `R$ ${formatCurrency(totalExpense)}` : "R$ ••••"}</p>
         </div>
-      </div>
+      </section>
 
 
        <div ref={listRef} tabIndex={-1} className="flex flex-col gap-2 focus:outline-none">
