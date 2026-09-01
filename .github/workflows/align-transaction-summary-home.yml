@@ -1,0 +1,99 @@
+name: Align transaction summary cards with Home
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/align-transaction-summary-home.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Align summary cards
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('src/routes/transactions.tsx')
+          s = p.read_text()
+          old = '''      <section className="-mx-1 grid grid-cols-2 gap-2">
+        <button
+          type="button"
+          onClick={() => setFilterType(filterType === "income" ? "all" : "income")}
+          aria-pressed={filterType === "income"}
+          className={`interactive-button rounded-xl border bg-card p-3 text-left transition-all ${
+            filterType === "income"
+              ? "border-primary/60 ring-1 ring-primary/30"
+              : "border-border/30"
+          }`}
+        >
+          <div className="flex items-center gap-1 text-[10px] font-semibold uppercase text-muted-foreground">
+            <ArrowUpRight className="h-3.5 w-3.5 text-primary" />
+            Receitas
+          </div>
+          <p className="mt-1 text-base font-bold text-primary">
+            {balanceVisible ? `R$ ${formatCurrency(totalIncome)}` : "R$ ••••"}
+          </p>
+        </button>
+        <button
+          type="button"
+          onClick={() => setFilterType(filterType === "expense" ? "all" : "expense")}
+          aria-pressed={filterType === "expense"}
+          className={`interactive-button rounded-xl border bg-card p-3 text-left transition-all ${
+            filterType === "expense"
+              ? "border-destructive/60 ring-1 ring-destructive/30"
+              : "border-border/30"
+          }`}
+        >
+          <div className="flex items-center gap-1 text-[10px] font-semibold uppercase text-muted-foreground">
+            <ArrowDownRight className="h-3.5 w-3.5 text-destructive" />
+            Despesas
+          </div>
+          <p className="mt-1 text-base font-bold text-destructive">
+            {balanceVisible ? `R$ ${formatCurrency(totalExpense)}` : "R$ ••••"}
+          </p>
+        </button>
+      </section>'''
+          new = '''      <section className="grid grid-cols-2 gap-2">
+        <button
+          type="button"
+          onClick={() => setFilterType(filterType === "income" ? "all" : "income")}
+          aria-pressed={filterType === "income"}
+          className={`rounded-xl border border-border/30 bg-card p-3 text-left ${filterType === "income" ? "ring-1 ring-primary/30" : ""}`}
+        >
+          <div className="flex items-center gap-1 text-[10px] font-semibold uppercase text-muted-foreground"><ArrowUpRight className="h-3.5 w-3.5 text-primary" />Receitas</div>
+          <p className="mt-1 text-base font-bold text-primary">{balanceVisible ? `R$ ${formatCurrency(totalIncome)}` : "R$ ••••"}</p>
+        </button>
+        <button
+          type="button"
+          onClick={() => setFilterType(filterType === "expense" ? "all" : "expense")}
+          aria-pressed={filterType === "expense"}
+          className={`rounded-xl border border-border/30 bg-card p-3 text-left ${filterType === "expense" ? "ring-1 ring-destructive/30" : ""}`}
+        >
+          <div className="flex items-center gap-1 text-[10px] font-semibold uppercase text-muted-foreground"><ArrowDownRight className="h-3.5 w-3.5 text-destructive" />Despesas</div>
+          <p className="mt-1 text-base font-bold text-destructive">{balanceVisible ? `R$ ${formatCurrency(totalExpense)}` : "R$ ••••"}</p>
+        </button>
+      </section>'''
+          if old not in s:
+              raise SystemExit('summary card block not found')
+          p.write_text(s.replace(old, new, 1))
+          PY
+      - name: Verify
+        run: |
+          grep -q '<section className="grid grid-cols-2 gap-2">' src/routes/transactions.tsx
+          grep -q 'rounded-xl border border-border/30 bg-card p-3 text-left' src/routes/transactions.tsx
+          git diff --check
+      - name: Commit changes
+        run: |
+          rm .github/workflows/align-transaction-summary-home.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/routes/transactions.tsx .github/workflows/align-transaction-summary-home.yml
+          git commit -m 'style: match transaction summary cards to Home'
+          git push
