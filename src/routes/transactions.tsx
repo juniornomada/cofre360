@@ -468,7 +468,10 @@ export function TransactionsPage() {
   const moreCategories = monthCategoryRanking.slice(4);
   const activeCategoryInMore = activeCategory !== "Todas" && moreCategories.some((item) => item.category === activeCategory);
 
-  const filtered = transactions.filter((tx) => {
+  // Apply every filter except transaction type first. The Receitas/Despesas
+  // summary cards use this base so both totals stay visible while either card
+  // is acting as the type filter.
+  const filteredWithoutType = transactions.filter((tx) => {
     const matchesCategory = activeCategory === "Todas" || tx.category === activeCategory || parseCategoryValue(tx.category).group === activeCategory || (activeCategory === "Transferências" && (tx.category === "Transferência" || tx.category === "Transferências"));
     const matchesSource = activeSource === "all"
       ? true
@@ -476,7 +479,6 @@ export function TransactionsPage() {
         ? !!tx.card
         : !!tx.bank_account_id && !tx.card;
     const matchesAccount = !filterAccountId || tx.bank_account_id === filterAccountId;
-    const matchesType = filterType === "all" ? true : tx.type === filterType;
     const matchesMin = minAmt === null || Number(tx.amount) >= minAmt;
     const matchesMax = maxAmt === null || Number(tx.amount) <= maxAmt;
     const d = parseTxDate(tx.date, tx.created_at);
@@ -490,8 +492,12 @@ export function TransactionsPage() {
         if (filterEndDate && d.getTime() > toUtcDay(filterEndDate, true).getTime()) matchesDate = false;
       }
     }
-    return matchesCategory && matchesSource && matchesAccount && matchesType && matchesMin && matchesMax && matchesMonth && matchesDate;
+    return matchesCategory && matchesSource && matchesAccount && matchesMin && matchesMax && matchesMonth && matchesDate;
   });
+
+  const filtered = filterType === "all"
+    ? filteredWithoutType
+    : filteredWithoutType.filter((tx) => tx.type === filterType);
 
   const activeFilterCount = (filterStartDate || filterEndDate ? 1 : 0) + (minAmt !== null || maxAmt !== null ? 1 : 0) + (filterType !== "all" ? 1 : 0) + (sortBy !== "date-desc" ? 1 : 0) + (filterAccountId ? 1 : 0);
 
@@ -549,8 +555,8 @@ export function TransactionsPage() {
     localStorage.setItem("transactions_filter_source", "all");
   };
 
-  const totalIncome = filtered.filter(t => t.type === "income" && t.is_visible !== false).reduce((s, t) => s + t.amount, 0);
-  const totalExpense = filtered.filter(t => t.type === "expense" && t.is_visible !== false).reduce((s, t) => s + t.amount, 0);
+  const totalIncome = filteredWithoutType.filter(t => t.type === "income" && t.is_visible !== false).reduce((s, t) => s + t.amount, 0);
+  const totalExpense = filteredWithoutType.filter(t => t.type === "expense" && t.is_visible !== false).reduce((s, t) => s + t.amount, 0);
 
   const generatePDF = () => {
     try {
@@ -1320,33 +1326,45 @@ export function TransactionsPage() {
         })}
       </div>
 
-      {/* 4. Tipo: Receitas / Despesas */}
-      <div className="grid grid-cols-2 gap-2">
+      {/* 4. Receitas / Despesas: resumo original + filtro ao tocar */}
+      <section className="-mx-1 grid grid-cols-2 gap-2">
         <button
           type="button"
           onClick={() => setFilterType(filterType === "income" ? "all" : "income")}
-          className={`interactive-button flex h-9 items-center justify-center gap-1.5 rounded-xl text-xs font-medium transition-colors ${
+          aria-pressed={filterType === "income"}
+          className={`interactive-button rounded-xl border bg-card p-3 text-left transition-all ${
             filterType === "income"
-              ? "bg-primary text-primary-foreground"
-              : "border border-border bg-card text-muted-foreground"
+              ? "border-primary/60 ring-1 ring-primary/30"
+              : "border-border/30"
           }`}
         >
-          <ArrowUpRight className="h-3.5 w-3.5" />
-          Receitas
+          <div className="flex items-center gap-1 text-[10px] font-semibold uppercase text-muted-foreground">
+            <ArrowUpRight className="h-3.5 w-3.5 text-primary" />
+            Receitas
+          </div>
+          <p className="mt-1 text-base font-bold text-primary">
+            {balanceVisible ? `R$ ${formatCurrency(totalIncome)}` : "R$ ••••"}
+          </p>
         </button>
         <button
           type="button"
           onClick={() => setFilterType(filterType === "expense" ? "all" : "expense")}
-          className={`interactive-button flex h-9 items-center justify-center gap-1.5 rounded-xl text-xs font-medium transition-colors ${
+          aria-pressed={filterType === "expense"}
+          className={`interactive-button rounded-xl border bg-card p-3 text-left transition-all ${
             filterType === "expense"
-              ? "bg-destructive text-destructive-foreground"
-              : "border border-border bg-card text-muted-foreground"
+              ? "border-destructive/60 ring-1 ring-destructive/30"
+              : "border-border/30"
           }`}
         >
-          <ArrowDownRight className="h-3.5 w-3.5" />
-          Despesas
+          <div className="flex items-center gap-1 text-[10px] font-semibold uppercase text-muted-foreground">
+            <ArrowDownRight className="h-3.5 w-3.5 text-destructive" />
+            Despesas
+          </div>
+          <p className="mt-1 text-base font-bold text-destructive">
+            {balanceVisible ? `R$ ${formatCurrency(totalExpense)}` : "R$ ••••"}
+          </p>
         </button>
-      </div>
+      </section>
 
 
        <div ref={listRef} tabIndex={-1} className="flex flex-col gap-2 focus:outline-none">
