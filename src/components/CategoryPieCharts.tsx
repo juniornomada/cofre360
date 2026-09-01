@@ -29,21 +29,21 @@ const COLORS = [
   "hsl(198, 80%, 50%)",  // sky blue
 ];
 
-function aggregateByCategory(txs: Transaction[]) {
+function aggregateByLevel(txs: Transaction[], level: "group" | "sub") {
   const map = new Map<string, number>();
   let total = 0;
   txs.forEach((tx) => {
     const val = Number(tx.amount);
-    // Aggregate by group name for clearer high-level charts
-    const { group } = parseCategoryValue(tx.category);
-    map.set(group, (map.get(group) || 0) + val);
+    const parsed = parseCategoryValue(tx.category);
+    const name = level === "sub" ? (parsed.sub || "Outros") : parsed.group;
+    map.set(name, (map.get(name) || 0) + val);
     total += val;
   });
   return Array.from(map.entries())
-    .map(([name, value]) => ({ 
-      name, 
-      value, 
-      percentage: total > 0 ? (value / total) * 100 : 0 
+    .map(([name, value]) => ({
+      name,
+      value,
+      percentage: total > 0 ? (value / total) * 100 : 0
     }))
     .sort((a, b) => b.value - a.value);
 }
@@ -63,26 +63,30 @@ const CustomTooltip = ({ active, payload, formatCurrency }: any) => {
 };
 
 export function CategoryPieCharts({ transactions, formatCurrency, onCategoryClick, activeCategory }: CategoryPieChartsProps) {
+  const isDrilldown = !!activeCategory && activeCategory !== "Todas";
+  const level: "group" | "sub" = isDrilldown ? "sub" : "group";
   const expenseData = useMemo(
-    () => aggregateByCategory(transactions.filter((t) => t.type === "expense")),
-    [transactions]
+    () => aggregateByLevel(transactions.filter((t) => t.type === "expense"), level),
+    [transactions, level]
   );
   const incomeData = useMemo(
-    () => aggregateByCategory(transactions.filter((t) => t.type === "income")),
-    [transactions]
+    () => aggregateByLevel(transactions.filter((t) => t.type === "income"), level),
+    [transactions, level]
   );
 
-  if (expenseData.length === 0 && incomeData.length === 0) return null;
+  const hasUsefulExpenseBreakdown = expenseData.length > (isDrilldown ? 1 : 0);
+  const hasUsefulIncomeBreakdown = incomeData.length > (isDrilldown ? 1 : 0);
+  if (!hasUsefulExpenseBreakdown && !hasUsefulIncomeBreakdown) return null;
 
   const handleSliceClick = (name: string) => {
-    if (!onCategoryClick) return;
-    // Toggle: se já filtrado por essa categoria, volta para "Todas".
+    if (isDrilldown || !onCategoryClick) return;
+    // Top-level slices can filter the main category. Drilldown slices are informational.
     if (activeCategory === name) onCategoryClick("Todas");
     else onCategoryClick(name);
   };
 
   const renderChart = (
-    data: ReturnType<typeof aggregateByCategory>,
+    data: ReturnType<typeof aggregateByLevel>,
     title: string,
   ) => (
     <div className="rounded-xl bg-card p-4">
@@ -110,7 +114,7 @@ export function CategoryPieCharts({ transactions, formatCurrency, onCategoryClic
                   <Cell
                     key={i}
                     fill={COLORS[i % COLORS.length]}
-                    className={`outline-none ${onCategoryClick ? "cursor-pointer" : ""}`}
+                    className={`outline-none ${!isDrilldown && onCategoryClick ? "cursor-pointer" : ""}`}
                     fillOpacity={isDimmed ? 0.35 : 1}
                     stroke={activeCategory === item.name ? "hsl(var(--foreground))" : "none"}
                     strokeWidth={activeCategory === item.name ? 2 : 0}
@@ -130,14 +134,14 @@ export function CategoryPieCharts({ transactions, formatCurrency, onCategoryClic
               key={item.name}
               type="button"
               onClick={() => handleSliceClick(item.name)}
-              disabled={!onCategoryClick}
+              disabled={isDrilldown || !onCategoryClick}
               aria-pressed={isActive}
               aria-label={`Filtrar por categoria ${item.name}`}
               className={`flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded-full border transition-colors ${
                 isActive
                   ? "bg-primary/20 border-primary/40 text-foreground"
                   : "bg-accent/20 border-border/10"
-              } ${onCategoryClick ? "cursor-pointer hover:bg-accent/40" : "cursor-default"}`}
+              } ${!isDrilldown && onCategoryClick ? "cursor-pointer hover:bg-accent/40" : "cursor-default"}`}
             >
               <div className="h-1 w-1 shrink-0 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
               <span className="text-muted-foreground truncate max-w-[60px]">{item.name}</span>
@@ -151,8 +155,8 @@ export function CategoryPieCharts({ transactions, formatCurrency, onCategoryClic
 
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-      {expenseData.length > 0 && renderChart(expenseData, "Despesas por categoria")}
-      {incomeData.length > 0 && renderChart(incomeData, "Receitas por categoria")}
+      {hasUsefulExpenseBreakdown && renderChart(expenseData, isDrilldown ? `Despesas de ${activeCategory} por subcategoria` : "Despesas por categoria")}
+      {hasUsefulIncomeBreakdown && renderChart(incomeData, isDrilldown ? `Receitas de ${activeCategory} por subcategoria` : "Receitas por categoria")}
     </div>
   );
 }

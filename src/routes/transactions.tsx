@@ -474,6 +474,8 @@ export function TransactionsPage() {
 
   const activeFilterCount = (filterStartDate || filterEndDate ? 1 : 0) + (minAmt !== null || maxAmt !== null ? 1 : 0) + (filterType !== "all" ? 1 : 0) + (sortBy !== "date-desc" ? 1 : 0) + (filterAccountId ? 1 : 0);
 
+  const hasTransactionFilters = activeCategory !== "Todas" || activeSource !== "all" || !!filterAccountId || !!filterStartDate || !!filterEndDate || minAmt !== null || maxAmt !== null || filterType !== "all";
+
   const sortedTransactions = [...filtered].sort((a, b) => {
     if (sortBy === "date-desc") {
       const dateA = parseTxDate(a.date, a.created_at)?.getTime() ?? 0;
@@ -1260,16 +1262,18 @@ export function TransactionsPage() {
         ))}
       </div>
 
-      <section className="-mx-1 grid grid-cols-2 gap-2">
-        <div className="rounded-xl border border-border/30 bg-card p-3">
-          <div className="flex items-center gap-1 text-[10px] font-semibold uppercase text-muted-foreground"><ArrowUpRight className="h-3.5 w-3.5 text-primary" />Receitas</div>
-          <p className="mt-1 text-base font-bold text-primary">{balanceVisible ? `R$ ${formatCurrency(totalIncome)}` : "R$ ••••"}</p>
-        </div>
-        <div className="rounded-xl border border-border/30 bg-card p-3">
-          <div className="flex items-center gap-1 text-[10px] font-semibold uppercase text-muted-foreground"><ArrowDownRight className="h-3.5 w-3.5 text-destructive" />Despesas</div>
-          <p className="mt-1 text-base font-bold text-destructive">{balanceVisible ? `R$ ${formatCurrency(totalExpense)}` : "R$ ••••"}</p>
-        </div>
-      </section>
+      {!hasTransactionFilters && (
+        <section className="-mx-1 grid grid-cols-2 gap-2">
+          <div className="rounded-xl border border-border/30 bg-card p-3">
+            <div className="flex items-center gap-1 text-[10px] font-semibold uppercase text-muted-foreground"><ArrowUpRight className="h-3.5 w-3.5 text-primary" />Receitas</div>
+            <p className="mt-1 text-base font-bold text-primary">{balanceVisible ? `R$ ${formatCurrency(totalIncome)}` : "R$ ••••"}</p>
+          </div>
+          <div className="rounded-xl border border-border/30 bg-card p-3">
+            <div className="flex items-center gap-1 text-[10px] font-semibold uppercase text-muted-foreground"><ArrowDownRight className="h-3.5 w-3.5 text-destructive" />Despesas</div>
+            <p className="mt-1 text-base font-bold text-destructive">{balanceVisible ? `R$ ${formatCurrency(totalExpense)}` : "R$ ••••"}</p>
+          </div>
+        </section>
+      )}
 
 
        <div ref={listRef} tabIndex={-1} className="flex flex-col gap-2 focus:outline-none">
