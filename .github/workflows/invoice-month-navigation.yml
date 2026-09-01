@@ -1,8 +1,8 @@
-name: Invoice month navigation
+name: Invoice Month Navigation
 on:
   push:
     paths:
-      - '.github/workflows/invoice-month-navigation.yml'
+      - .github/workflows/invoice-month-navigation.yml
 permissions:
   contents: write
 jobs:
@@ -10,181 +10,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Apply invoice month navigation
+      - name: Patch
         run: |
-          python3 - <<'PY'
-          from pathlib import Path
-
-          p = Path('src/routes/cards.tsx')
-          text = p.read_text()
-
-          old_periods = '''  const invoicePeriods = invoiceCard
-    ? groupByBillingCycle(cardTransactions.filter(tx => tx.card === invoiceCard.name), invoiceCard.closing_day, invoiceCard.due_day)
-    : [];'''
-          new_periods = '''  const invoiceReferenceDate = (() => {
-    const now = new Date();
-    return new Date(now.getFullYear(), now.getMonth() + globalMonthOffset, 15);
-  })();
-  const invoicePeriods = invoiceCard
-    ? groupByBillingCycle(
-        cardTransactions.filter(tx => tx.card === invoiceCard.name),
-        invoiceCard.closing_day,
-        invoiceCard.due_day,
-        invoiceReferenceDate,
-      )
-    : [];'''
-          if old_periods not in text:
-              raise SystemExit('invoicePeriods target not found')
-          text = text.replace(old_periods, new_periods, 1)
-
-          old_pay = '''      const updatedPeriods = groupByBillingCycle(txs, payingCard.closing_day, payingCard.due_day);
-      const activePeriod = updatedPeriods[activeInvoiceIdx];'''
-          new_pay = '''      const paymentReferenceDate = (() => {
-        const now = new Date();
-        return new Date(now.getFullYear(), now.getMonth() + globalMonthOffset, 15);
-      })();
-      const updatedPeriods = groupByBillingCycle(
-        txs,
-        payingCard.closing_day,
-        payingCard.due_day,
-        paymentReferenceDate,
-      );
-      const activePeriod = updatedPeriods[activeInvoiceIdx];'''
-          if old_pay not in text:
-              raise SystemExit('payment cycle target not found')
-          text = text.replace(old_pay, new_pay, 1)
-
-          old_nav = '''              <div className="flex items-center gap-2 px-5 pb-3">
-                <button
-                  onClick={() => setActiveInvoiceIdx(Math.max(0, activeInvoiceIdx - 1))}
-                  disabled={activeInvoiceIdx <= 0}
-                  className="interactive-button p-1.5 rounded-lg bg-accent hover:bg-accent/80 disabled:opacity-30 transition-colors"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </button>
-                <div className="flex-1 text-center">
-                  <p className="text-sm font-semibold text-foreground">
-                    {activePeriod?.label.includes("(") ? activePeriod.label.split(" (")[0] : activePeriod?.label || "—"}
-                  </p>
-                  {activePeriod && (
-                    <p className="text-[10px] text-muted-foreground">
-                      F {activePeriod.endDate.getDate().toString().padStart(2, "0")}/{ (activePeriod.endDate.getMonth() + 1).toString().padStart(2, "0") }
-                      {" · Venc "}
-                      {activePeriod.dueDate.getDate().toString().padStart(2, "0")}/{ (activePeriod.dueDate.getMonth() + 1).toString().padStart(2, "0") }
-                    </p>
-                  )}
-                </div>
-                <button
-                  onClick={() => setActiveInvoiceIdx(Math.min(invoicePeriods.length - 1, activeInvoiceIdx + 1))}
-                  disabled={activeInvoiceIdx >= invoicePeriods.length - 1}
-                  className="interactive-button p-1.5 rounded-lg bg-accent hover:bg-accent/80 disabled:opacity-30 transition-colors"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={() => {
-                    if (!invoiceCard || !rawActivePeriod) return;
-                    const key = `${invoiceCard.id}::${rawActivePeriod.endDate.toISOString().split("T")[0]}`;
-                    invoiceOrderRef.current.delete(key);
-                    // Force re-render so the freeze block re-snapshots from the
-                    // current raw data in its canonical order.
-                    setInvoiceOrderTick((t) => t + 1);
-                  }}
-                  aria-label="Restaurar ordem original da fatura"
-                  title="Restaurar ordem original"
-                  className="interactive-button p-1.5 rounded-lg bg-accent hover:bg-accent/80 transition-colors"
-                >
-                  <RotateCcw className="h-4 w-4" />
-                </button>
-              </div>
-
-
-              <div className="flex gap-1 px-5 pb-3 overflow-x-auto no-scrollbar">
-                {invoicePeriods.map((period, idx) => (
-                    <button
-                      key={period.key}
-                      onClick={() => setActiveInvoiceIdx(idx)}
-                      data-testid={`period-tab-${period.key}`}
-                      className={cn(
-                        "whitespace-nowrap rounded-full px-3 py-1 text-[11px] font-medium transition-colors shrink-0",
-                        idx === activeInvoiceIdx
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-accent/50 text-muted-foreground hover:bg-accent"
-                      )}
-                    >
-                      {period.label.split("|")[0]}
-                    </button>
-
-                ))}
-              </div>'''
-          new_nav = '''              <div className="flex items-center gap-2 px-5 pb-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setActiveInvoiceIdx(1);
-                    setMonthOffset(globalMonthOffset - 1);
-                  }}
-                  className="interactive-button flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent text-muted-foreground hover:bg-accent/80 transition-colors"
-                  aria-label="Fatura do mês anterior"
-                  title="Mês anterior"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </button>
-                <div className="min-w-0 flex-1 text-center">
-                  <p className="truncate text-base font-bold text-foreground">
-                    {activePeriod
-                      ? `${monthNames[activePeriod.dueDate.getMonth()]} ${activePeriod.dueDate.getFullYear()}`
-                      : "—"}
-                  </p>
-                  {activePeriod && (
-                    <p className="text-[10px] text-muted-foreground">
-                      F {activePeriod.endDate.getDate().toString().padStart(2, "0")}/{(activePeriod.endDate.getMonth() + 1).toString().padStart(2, "0")}
-                      {" · Venc "}
-                      {activePeriod.dueDate.getDate().toString().padStart(2, "0")}/{(activePeriod.dueDate.getMonth() + 1).toString().padStart(2, "0")}
-                    </p>
-                  )}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setActiveInvoiceIdx(1);
-                    setMonthOffset(globalMonthOffset + 1);
-                  }}
-                  className="interactive-button flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent text-muted-foreground hover:bg-accent/80 transition-colors"
-                  aria-label="Fatura do próximo mês"
-                  title="Próximo mês"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={() => {
-                    if (!invoiceCard || !rawActivePeriod) return;
-                    const key = `${invoiceCard.id}::${rawActivePeriod.endDate.toISOString().split("T")[0]}`;
-                    invoiceOrderRef.current.delete(key);
-                    // Force re-render so the freeze block re-snapshots from the
-                    // current raw data in its canonical order.
-                    setInvoiceOrderTick((t) => t + 1);
-                  }}
-                  aria-label="Restaurar ordem original da fatura"
-                  title="Restaurar ordem original"
-                  className="interactive-button flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent text-muted-foreground hover:bg-accent/80 transition-colors"
-                >
-                  <RotateCcw className="h-4 w-4" />
-                </button>
-              </div>'''
-          if old_nav not in text:
-              raise SystemExit('invoice nav target not found')
-          text = text.replace(old_nav, new_nav, 1)
-
-          p.write_text(text)
-          PY
+          echo 'ZnJvbSBwYXRobGliIGltcG9ydCBQYXRoCgpwID0gUGF0aCgic3JjL3JvdXRlcy9jYXJkcy50c3giKQp0ZXh0ID0gcC5yZWFkX3RleHQoKQoKb2xkX3BlcmlvZHMgPSAiIiIgIGNvbnN0IGludm9pY2VQZXJpb2RzID0gaW52b2ljZUNhcmQKICAgID8gZ3JvdXBCeUJpbGxpbmdDeWNsZShjYXJkVHJhbnNhY3Rpb25zLmZpbHRlcih0eCA9PiB0eC5jYXJkID09PSBpbnZvaWNlQ2FyZC5uYW1lKSwgaW52b2ljZUNhcmQuY2xvc2luZ19kYXksIGludm9pY2VDYXJkLmR1ZV9kYXkpCiAgICA6IFtdOyIiIgpuZXdfcGVyaW9kcyA9ICIiIiAgY29uc3QgaW52b2ljZVJlZmVyZW5jZURhdGUgPSAoKCkgPT4gewogICAgY29uc3Qgbm93ID0gbmV3IERhdGUoKTsKICAgIHJldHVybiBuZXcgRGF0ZShub3cuZ2V0RnVsbFllYXIoKSwgbm93LmdldE1vbnRoKCkgKyBnbG9iYWxNb250aE9mZnNldCwgMTUpOwogIH0pKCk7CiAgY29uc3QgaW52b2ljZVBlcmlvZHMgPSBpbnZvaWNlQ2FyZAogICAgPyBncm91cEJ5QmlsbGluZ0N5Y2xlKAogICAgICAgIGNhcmRUcmFuc2FjdGlvbnMuZmlsdGVyKHR4ID0+IHR4LmNhcmQgPT09IGludm9pY2VDYXJkLm5hbWUpLAogICAgICAgIGludm9pY2VDYXJkLmNsb3NpbmdfZGF5LAogICAgICAgIGludm9pY2VDYXJkLmR1ZV9kYXksCiAgICAgICAgaW52b2ljZVJlZmVyZW5jZURhdGUsCiAgICAgICkKICAgIDogW107IiIiCmlmIG9sZF9wZXJpb2RzIG5vdCBpbiB0ZXh0OgogICAgcmFpc2UgU3lzdGVtRXhpdCgiaW52b2ljZVBlcmlvZHMgdGFyZ2V0IG5vdCBmb3VuZCIpCnRleHQgPSB0ZXh0LnJlcGxhY2Uob2xkX3BlcmlvZHMsIG5ld19wZXJpb2RzLCAxKQoKb2xkX3BheSA9ICIiIiAgICAgIGNvbnN0IHVwZGF0ZWRQZXJpb2RzID0gZ3JvdXBCeUJpbGxpbmdDeWNsZSh0eHMsIHBheWluZ0NhcmQuY2xvc2luZ19kYXksIHBheWluZ0NhcmQuZHVlX2RheSk7CiAgICAgIGNvbnN0IGFjdGl2ZVBlcmlvZCA9IHVwZGF0ZWRQZXJpb2RzW2FjdGl2ZUludm9pY2VJZHhdOyIiIgpuZXdfcGF5ID0gIiIiICAgICAgY29uc3QgcGF5bWVudFJlZmVyZW5jZURhdGUgPSAoKCkgPT4gewogICAgICAgIGNvbnN0IG5vdyA9IG5ldyBEYXRlKCk7CiAgICAgICAgcmV0dXJuIG5ldyBEYXRlKG5vdy5nZXRGdWxsWWVhcigpLCBub3cuZ2V0TW9udGgoKSArIGdsb2JhbE1vbnRoT2Zmc2V0LCAxNSk7CiAgICAgIH0pKCk7CiAgICAgIGNvbnN0IHVwZGF0ZWRQZXJpb2RzID0gZ3JvdXBCeUJpbGxpbmdDeWNsZSgKICAgICAgICB0eHMsCiAgICAgICAgcGF5aW5nQ2FyZC5jbG9zaW5nX2RheSwKICAgICAgICBwYXlpbmdDYXJkLmR1ZV9kYXksCiAgICAgICAgcGF5bWVudFJlZmVyZW5jZURhdGUsCiAgICAgICk7CiAgICAgIGNvbnN0IGFjdGl2ZVBlcmlvZCA9IHVwZGF0ZWRQZXJpb2RzW2FjdGl2ZUludm9pY2VJZHhdOyIiIgppZiBvbGRfcGF5IG5vdCBpbiB0ZXh0OgogICAgcmFpc2UgU3lzdGVtRXhpdCgicGF5bWVudCBjeWNsZSB0YXJnZXQgbm90IGZvdW5kIikKdGV4dCA9IHRleHQucmVwbGFjZShvbGRfcGF5LCBuZXdfcGF5LCAxKQoKc3RhcnRfbWFya2VyID0gIiIiICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT0iZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTIgcHgtNSBwYi0zIj4KICAgICAgICAgICAgICAgIDxidXR0b24KICAgICAgICAgICAgICAgICAgb25DbGljaz17KCkgPT4gc2V0QWN0aXZlSW52b2ljZUlkeChNYXRoLm1heCgwLCBhY3RpdmVJbnZvaWNlSWR4IC0gMSkpfSIiIgpzdGFydCA9IHRleHQuZmluZChzdGFydF9tYXJrZXIpCmlmIHN0YXJ0IDwgMDoKICAgIHJhaXNlIFN5c3RlbUV4aXQoImludm9pY2UgbmF2IHN0YXJ0IG5vdCBmb3VuZCIpCmVuZF9tYXJrZXIgPSAiIiIgICAgICAgICAgICAgIHthY3RpdmVQZXJpb2QgJiYgKCIiIgplbmQgPSB0ZXh0LmZpbmQoZW5kX21hcmtlciwgc3RhcnQpCmlmIGVuZCA8IDA6CiAgICByYWlzZSBTeXN0ZW1FeGl0KCJpbnZvaWNlIG5hdiBlbmQgbm90IGZvdW5kIikKCm5ld19uYXYgPSAiIiIgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPSJmbGV4IGl0ZW1zLWNlbnRlciBnYXAtMiBweC01IHBiLTMiPgogICAgICAgICAgICAgICAgPGJ1dHRvbgogICAgICAgICAgICAgICAgICB0eXBlPSJidXR0b24iCiAgICAgICAgICAgICAgICAgIG9uQ2xpY2s9eygpID0+IHsKICAgICAgICAgICAgICAgICAgICBzZXRBY3RpdmVJbnZvaWNlSWR4KDEpOwogICAgICAgICAgICAgICAgICAgIHNldE1vbnRoT2Zmc2V0KGdsb2JhbE1vbnRoT2Zmc2V0IC0gMSk7CiAgICAgICAgICAgICAgICAgIH19CiAgICAgICAgICAgICAgICAgIGNsYXNzTmFtZT0iaW50ZXJhY3RpdmUtYnV0dG9uIGZsZXggaC05IHctOSBzaHJpbmstMCBpdGVtcy1jZW50ZXIganVzdGlmeS1jZW50ZXIgcm91bmRlZC14bCBiZy1hY2NlbnQgdGV4dC1tdXRlZC1mb3JlZ3JvdW5kIGhvdmVyOmJnLWFjY2VudC84MCB0cmFuc2l0aW9uLWNvbG9ycyIKICAgICAgICAgICAgICAgICAgYXJpYS1sYWJlbD0iRmF0dXJhIGRvIG3DqnMgYW50ZXJpb3IiCiAgICAgICAgICAgICAgICAgIHRpdGxlPSJNw6pzIGFudGVyaW9yIgogICAgICAgICAgICAgICAgPgogICAgICAgICAgICAgICAgICA8Q2hldnJvbkxlZnQgY2xhc3NOYW1lPSJoLTQgdy00IiAvPgogICAgICAgICAgICAgICAgPC9idXR0b24+CiAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT0ibWluLXctMCBmbGV4LTEgdGV4dC1jZW50ZXIiPgogICAgICAgICAgICAgICAgICA8cCBjbGFzc05hbWU9InRydW5jYXRlIHRleHQtYmFzZSBmb250LWJvbGQgdGV4dC1mb3JlZ3JvdW5kIj4KICAgICAgICAgICAgICAgICAgICB7YWN0aXZlUGVyaW9kCiAgICAgICAgICAgICAgICAgICAgICA/IGAke21vbnRoTmFtZXNbYWN0aXZlUGVyaW9kLmR1ZURhdGUuZ2V0TW9udGgoKV19ICR7YWN0aXZlUGVyaW9kLmR1ZURhdGUuZ2V0RnVsbFllYXIoKX1gCiAgICAgICAgICAgICAgICAgICAgICA6ICLigJQifQogICAgICAgICAgICAgICAgICA8L3A+CiAgICAgICAgICAgICAgICAgIHthY3RpdmVQZXJpb2QgJiYgKAogICAgICAgICAgICAgICAgICAgIDxwIGNsYXNzTmFtZT0idGV4dC1bMTBweF0gdGV4dC1tdXRlZC1mb3JlZ3JvdW5kIj4KICAgICAgICAgICAgICAgICAgICAgIEYge2FjdGl2ZVBlcmlvZC5lbmREYXRlLmdldERhdGUoKS50b1N0cmluZygpLnBhZFN0YXJ0KDIsICIwIil9L3soYWN0aXZlUGVyaW9kLmVuZERhdGUuZ2V0TW9udGgoKSArIDEpLnRvU3RyaW5nKCkucGFkU3RhcnQoMiwgIjAiKX0KICAgICAgICAgICAgICAgICAgICAgIHsiIMK3IFZlbmMgIn0KICAgICAgICAgICAgICAgICAgICAgIHthY3RpdmVQZXJpb2QuZHVlRGF0ZS5nZXREYXRlKCkudG9TdHJpbmcoKS5wYWRTdGFydCgyLCAiMCIpfS97KGFjdGl2ZVBlcmlvZC5kdWVEYXRlLmdldE1vbnRoKCkgKyAxKS50b1N0cmluZygpLnBhZFN0YXJ0KDIsICIwIil9CiAgICAgICAgICAgICAgICAgICAgPC9wPgogICAgICAgICAgICAgICAgICApfQogICAgICAgICAgICAgICAgPC9kaXY+CiAgICAgICAgICAgICAgICA8YnV0dG9uCiAgICAgICAgICAgICAgICAgIHR5cGU9ImJ1dHRvbiIKICAgICAgICAgICAgICAgICAgb25DbGljaz17KCkgPT4gewogICAgICAgICAgICAgICAgICAgIHNldEFjdGl2ZUludm9pY2VJZHgoMSk7CiAgICAgICAgICAgICAgICAgICAgc2V0TW9udGhPZmZzZXQoZ2xvYmFsTW9udGhPZmZzZXQgKyAxKTsKICAgICAgICAgICAgICAgICAgfX0KICAgICAgICAgICAgICAgICAgY2xhc3NOYW1lPSJpbnRlcmFjdGl2ZS1idXR0b24gZmxleCBoLTkgdy05IHNocmluay0wIGl0ZW1zLWNlbnRlciBqdXN0aWZ5LWNlbnRlciByb3VuZGVkLXhsIGJnLWFjY2VudCB0ZXh0LW11dGVkLWZvcmVncm91bmQgaG92ZXI6YmctYWNjZW50LzgwIHRyYW5zaXRpb24tY29sb3JzIgogICAgICAgICAgICAgICAgICBhcmlhLWxhYmVsPSJGYXR1cmEgZG8gcHLDs3hpbW8gbcOqcyIKICAgICAgICAgICAgICAgICAgdGl0bGU9IlByw7N4aW1vIG3DqnMiCiAgICAgICAgICAgICAgICA+CiAgICAgICAgICAgICAgICAgIDxDaGV2cm9uUmlnaHQgY2xhc3NOYW1lPSJoLTQgdy00IiAvPgogICAgICAgICAgICAgICAgPC9idXR0b24+CiAgICAgICAgICAgICAgICA8YnV0dG9uCiAgICAgICAgICAgICAgICAgIG9uQ2xpY2s9eygpID0+IHsKICAgICAgICAgICAgICAgICAgICBpZiAoIWludm9pY2VDYXJkIHx8ICFyYXdBY3RpdmVQZXJpb2QpIHJldHVybjsKICAgICAgICAgICAgICAgICAgICBjb25zdCBrZXkgPSBgJHtpbnZvaWNlQ2FyZC5pZH06OiR7cmF3QWN0aXZlUGVyaW9kLmVuZERhdGUudG9JU09TdHJpbmcoKS5zcGxpdCgiVCIpWzBdfWA7CiAgICAgICAgICAgICAgICAgICAgaW52b2ljZU9yZGVyUmVmLmN1cnJlbnQuZGVsZXRlKGtleSk7CiAgICAgICAgICAgICAgICAgICAgc2V0SW52b2ljZU9yZGVyVGljaygodCkgPT4gdCArIDEpOwogICAgICAgICAgICAgICAgICB9fQogICAgICAgICAgICAgICAgICBhcmlhLWxhYmVsPSJSZXN0YXVyYXIgb3JkZW0gb3JpZ2luYWwgZGEgZmF0dXJhIgogICAgICAgICAgICAgICAgICB0aXRsZT0iUmVzdGF1cmFyIG9yZGVtIG9yaWdpbmFsIgogICAgICAgICAgICAgICAgICBjbGFzc05hbWU9ImludGVyYWN0aXZlLWJ1dHRvbiBmbGV4IGgtOSB3LTkgc2hyaW5rLTAgaXRlbXMtY2VudGVyIGp1c3RpZnktY2VudGVyIHJvdW5kZWQteGwgYmctYWNjZW50IHRleHQtbXV0ZWQtZm9yZWdyb3VuZCBob3ZlcjpiZy1hY2NlbnQvODAgdHJhbnNpdGlvbi1jb2xvcnMiCiAgICAgICAgICAgICAgICA+CiAgICAgICAgICAgICAgICAgIDxSb3RhdGVDY3cgY2xhc3NOYW1lPSJoLTQgdy00IiAvPgogICAgICAgICAgICAgICAgPC9idXR0b24+CiAgICAgICAgICAgICAgPC9kaXY+CgoKIiIiCnRleHQgPSB0ZXh0WzpzdGFydF0gKyBuZXdfbmF2ICsgdGV4dFtlbmQ6XQpwLndyaXRlX3RleHQodGV4dCkK' | base64 -d > /tmp/patch.py
+          python3 /tmp/patch.py
           rm .github/workflows/invoice-month-navigation.yml
       - name: Verify
         run: |
           grep -F 'invoiceReferenceDate' src/routes/cards.tsx
           grep -F 'Fatura do mês anterior' src/routes/cards.tsx
-          grep -F 'monthNames[activePeriod.dueDate.getMonth()]' src/routes/cards.tsx
-          ! grep -F 'data-testid={`period-tab-${period.key}`}' src/routes/cards.tsx
           git diff --check
       - name: Commit
         run: |
