@@ -42,13 +42,22 @@ function aggregateByLevel(txs: Transaction[], level: "group" | "sub") {
   });
 
   const positiveEntries = Array.from(map.entries()).filter(([, value]) => value > 0);
-  const total = positiveEntries.reduce((sum, [, value]) => sum + value, 0);
+  const rawTotal = positiveEntries.reduce((sum, [, value]) => sum + value, 0);
+  if (rawTotal <= 0) return [];
 
-  return positiveEntries
+  // Do not show categories that would be displayed as 0% after rounding.
+  // The donut and legend must use the same visible dataset, so percentages are
+  // recalculated after this filter.
+  const visibleEntries = positiveEntries.filter(([, value]) =>
+    Math.round((value / rawTotal) * 100) > 0
+  );
+  const visibleTotal = visibleEntries.reduce((sum, [, value]) => sum + value, 0);
+
+  return visibleEntries
     .map(([name, value]) => ({
       name,
       value,
-      percentage: total > 0 ? (value / total) * 100 : 0,
+      percentage: visibleTotal > 0 ? (value / visibleTotal) * 100 : 0,
     }))
     .sort((a, b) => b.value - a.value);
 }
