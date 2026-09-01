@@ -1,0 +1,24 @@
+name: Align summary cards
+on:
+  push:
+    paths:
+      - .github/workflows/center-summary-cards.yml
+permissions:
+  contents: write
+jobs:
+  align:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Align cards
+        run: |
+          sed -i 's/p-3 text-left/p-3 text-center/g' src/routes/transactions.tsx
+          sed -i 's/flex items-center gap-1 text-\[10px\] font-semibold uppercase text-muted-foreground/flex items-center justify-center gap-1 text-[10px] font-semibold uppercase text-muted-foreground/g' src/routes/transactions.tsx
+      - name: Commit
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          rm .github/workflows/center-summary-cards.yml
+          git add -A
+          git commit -m 'style: center transaction summary cards'
+          git push
