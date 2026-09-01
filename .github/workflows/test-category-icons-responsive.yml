@@ -1,0 +1,70 @@
+name: Test responsive category icons
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/test-category-icons-responsive.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Apply responsive category icon test
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          p = Path('src/routes/transactions.tsx')
+          s = p.read_text()
+
+          s = s.replace(
+            'import { parseCategoryValue } from "@/lib/categories";',
+            'import { parseCategoryValue, getCategoryIcon } from "@/lib/categories";'
+          )
+
+          old_rank = '''  const quickCategories = monthCategoryRanking.slice(0, 4);\n  const moreCategories = monthCategoryRanking.slice(4);\n  const activeCategoryInMore = activeCategory !== "Todas" && moreCategories.some((item) => item.category === activeCategory);'''
+          new_rank = '''  const quickCategories4 = monthCategoryRanking.slice(0, 4);\n  const quickCategories5 = monthCategoryRanking.slice(0, 5);\n  const moreCategories4 = monthCategoryRanking.slice(4);\n  const moreCategories5 = monthCategoryRanking.slice(5);\n  const activeCategoryInMore4 = activeCategory !== "Todas" && moreCategories4.some((item) => item.category === activeCategory);\n  const activeCategoryInMore5 = activeCategory !== "Todas" && moreCategories5.some((item) => item.category === activeCategory);'''
+          if old_rank not in s:
+              raise SystemExit('ranking block not found')
+          s = s.replace(old_rank, new_rank, 1)
+
+          start_marker = '      {/* 2. Categorias: Todas + 4 mais usadas no mês + Mais */}'
+          end_marker = '      {/* 3. Origem: Conta / Cartão */}'
+          start = s.find(start_marker)
+          end = s.find(end_marker, start)
+          if start < 0 or end < 0:
+              raise SystemExit('category UI block not found')
+
+          new_ui = '''      {/* 2. Categorias: ícones rápidos; sem filtro ativo = todas */}\n      <div className="grid grid-cols-5 gap-2 min-[390px]:hidden">\n        {quickCategories4.map(({ category }) => {\n          const isActive = activeCategory === category;\n          return (\n            <button\n              key={category}\n              type="button"\n              aria-label={`Filtrar por ${category}`}\n              aria-pressed={isActive}\n              title={category}\n              onClick={() => setActiveCategory(isActive ? "Todas" : category)}\n              className={`interactive-button flex h-9 min-w-0 items-center justify-center rounded-xl border text-base transition-all ${\n                isActive\n                  ? "border-primary bg-primary text-primary-foreground shadow-sm"\n                  : "border-border/60 bg-card text-foreground hover:bg-accent"\n              }`}\n            >\n              <span aria-hidden="true">{getCategoryIcon(category)}</span>\n            </button>\n          );\n        })}\n        <DropdownMenu>\n          <DropdownMenuTrigger asChild>\n            <button\n              type="button"\n              disabled={moreCategories4.length === 0}\n              aria-label="Mais categorias"\n              title={activeCategoryInMore4 ? `Categoria selecionada: ${activeCategory}` : "Mais categorias"}\n              className={`interactive-button flex h-9 min-w-0 items-center justify-center rounded-xl border transition-all ${\n                activeCategoryInMore4\n                  ? "border-primary bg-primary text-primary-foreground shadow-sm"\n                  : "border-border/60 bg-card text-muted-foreground hover:bg-accent"\n              } disabled:cursor-default disabled:opacity-40`}\n            >\n              <MoreVertical className="h-4 w-4" />\n            </button>\n          </DropdownMenuTrigger>\n          <DropdownMenuContent align="end" className="max-h-[60vh] w-52 overflow-y-auto">\n            {moreCategories4.map(({ category, count }) => (\n              <DropdownMenuItem\n                key={category}\n                onClick={() => setActiveCategory(activeCategory === category ? "Todas" : category)}\n                className="flex items-center justify-between gap-3"\n              >\n                <span className="flex min-w-0 items-center gap-2">\n                  <span aria-hidden="true">{getCategoryIcon(category)}</span>\n                  <span className="truncate">{category}</span>\n                </span>\n                <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground">{count}</span>\n              </DropdownMenuItem>\n            ))}\n          </DropdownMenuContent>\n        </DropdownMenu>\n      </div>\n\n      <div className="hidden grid-cols-6 gap-2 min-[390px]:grid">\n        {quickCategories5.map(({ category }) => {\n          const isActive = activeCategory === category;\n          return (\n            <button\n              key={category}\n              type="button"\n              aria-label={`Filtrar por ${category}`}\n              aria-pressed={isActive}\n              title={category}\n              onClick={() => setActiveCategory(isActive ? "Todas" : category)}\n              className={`interactive-button flex h-9 min-w-0 items-center justify-center rounded-xl border text-base transition-all ${\n                isActive\n                  ? "border-primary bg-primary text-primary-foreground shadow-sm"\n                  : "border-border/60 bg-card text-foreground hover:bg-accent"\n              }`}\n            >\n              <span aria-hidden="true">{getCategoryIcon(category)}</span>\n            </button>\n          );\n        })}\n        <DropdownMenu>\n          <DropdownMenuTrigger asChild>\n            <button\n              type="button"\n              disabled={moreCategories5.length === 0}\n              aria-label="Mais categorias"\n              title={activeCategoryInMore5 ? `Categoria selecionada: ${activeCategory}` : "Mais categorias"}\n              className={`interactive-button flex h-9 min-w-0 items-center justify-center rounded-xl border transition-all ${\n                activeCategoryInMore5\n                  ? "border-primary bg-primary text-primary-foreground shadow-sm"\n                  : "border-border/60 bg-card text-muted-foreground hover:bg-accent"\n              } disabled:cursor-default disabled:opacity-40`}\n            >\n              <MoreVertical className="h-4 w-4" />\n            </button>\n          </DropdownMenuTrigger>\n          <DropdownMenuContent align="end" className="max-h-[60vh] w-52 overflow-y-auto">\n            {moreCategories5.map(({ category, count }) => (\n              <DropdownMenuItem\n                key={category}\n                onClick={() => setActiveCategory(activeCategory === category ? "Todas" : category)}\n                className="flex items-center justify-between gap-3"\n              >\n                <span className="flex min-w-0 items-center gap-2">\n                  <span aria-hidden="true">{getCategoryIcon(category)}</span>\n                  <span className="truncate">{category}</span>\n                </span>\n                <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground">{count}</span>\n              </DropdownMenuItem>\n            ))}\n          </DropdownMenuContent>\n        </DropdownMenu>\n      </div>\n\n'''
+          s = s[:start] + new_ui + s[end:]
+          p.write_text(s)
+          PY
+
+      - name: Verify patch
+        shell: bash
+        run: |
+          grep -q 'quickCategories4' src/routes/transactions.tsx
+          grep -q 'quickCategories5' src/routes/transactions.tsx
+          grep -q 'getCategoryIcon(category)' src/routes/transactions.tsx
+          grep -q 'min-\[390px\]:grid' src/routes/transactions.tsx
+          ! grep -q 'Categorias: Todas + 4' src/routes/transactions.tsx
+          git diff --check
+
+      - name: Commit
+        shell: bash
+        run: |
+          rm .github/workflows/test-category-icons-responsive.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/routes/transactions.tsx .github/workflows/test-category-icons-responsive.yml
+          git commit -m 'feat: test responsive category icon filters'
+          git push
