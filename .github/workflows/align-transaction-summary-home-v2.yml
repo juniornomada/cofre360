@@ -20,14 +20,14 @@ jobs:
       - name: Apply Home card alignment
         shell: bash
         run: |
-          echo 'H4sIAFA/lmoC/81VXW/TMBR9z6+4iiat3UjDNnipmiC0geAFoQp4GdPqJDeZNce2bHftVFXit/DT+CXcOG3nSXwNBKKp4uTG99zj45ObqDaqBc3cleAF8FYr4+At3UaRhsxfDWJrytSouUObOsOkZaXjStqRs8t4GFmap0cGWXXpcOkGFHHMuMuWmWs09HAf/G+VHsCTEUyxRO6YhRTO0Gq0zI7BoJ23CpThDZdMwCHUXDijgClwqmQGDtL1fg9MiHbEZYXLQVhoGKGsgqIfZXf0pWFS8RsqUmcrwa2bYk1gND2Aukt+BB52GElcdED7v8C/RUv0b7idE/mKwSvV4rcXEW0IWfQiQimYtW9Yi1ncGF5Bd0pKJWxyDA3TyXGcb1IoqZg7p+TuHsDdakrsw3EQV/JU8PI6Ww2GkOVg0b0kKmje0fxBvbuELMsg5rIkujE8g5gJEcN4FxquA0xmOEs07ZTFKlt9ByRMuFvaakb2IZmrZCmgUKaiLeqHpB/Sk8dQNAlpVIFOTqAzUiKwdrC3+gFdw2WTHIEftOG0f7eE5FcQr2d3XPKAlbdCoHotcAncYWuTEiVV8rIf9RTOjx7r5QXUSrrEYssLJSqYa42mZBb7OS29GFVSK4ONX2WcT54boxbv9ZQ3Vy6sdZWcjJ7Cwp997oZ0DGm+9dUkJYL3COsQonVbbkXHwDPzrO7h5auCCSZL/MAtLwSSWLPpXiemMi1zp3NjUJa3A6ccE6+9oMP1rNONZn359Hn3j9eTVAcOTHuv/XVP4lKjtPdNuY09wJXblH9gy5Bx6MsKrTNzetlv8P/x5pubyJ+7M6DeOXTb7v7IoSHmg1z6otf3t2w6STftNqduHunRwpCo/dfKno99u7+gdt01/EOw5/QtGF8Mo6+mwUR3HAcAAA==' | base64 -d | gzip -d | python3
+          python3 -c "from pathlib import Path; p=Path('src/routes/transactions.tsx'); s=p.read_text(); s=s.replace('      <section className=\"-mx-1 grid grid-cols-2 gap-2\">','      <section className=\"grid grid-cols-2 gap-2\">',1); s=s.replace('interactive-button rounded-xl border bg-card p-3 text-left transition-all','rounded-xl border bg-card p-3 text-left',2); s=s.replace('border-primary/60 ring-1 ring-primary/30','border-border/30 ring-1 ring-primary/30',1); s=s.replace('border-destructive/60 ring-1 ring-destructive/30','border-border/30 ring-1 ring-destructive/30',1); p.write_text(s)"
 
       - name: Verify changes
         shell: bash
         run: |
-          grep -q 'mesmo visual da Home + filtro ao tocar' src/routes/transactions.tsx
           grep -q '<section className="grid grid-cols-2 gap-2">' src/routes/transactions.tsx
-          grep -q 'rounded-xl border border-border/30 bg-card p-3 text-left' src/routes/transactions.tsx
+          grep -q 'border-border/30 ring-1 ring-primary/30' src/routes/transactions.tsx
+          grep -q 'border-border/30 ring-1 ring-destructive/30' src/routes/transactions.tsx
           git diff --check
 
       - name: Commit patch
