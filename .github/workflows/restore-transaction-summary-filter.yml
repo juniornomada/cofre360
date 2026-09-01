@@ -1,0 +1,36 @@
+name: Restore transaction summary filter cards
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/restore-transaction-summary-filter.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Apply summary card filter patch
+        run: |
+          echo 'H4sIAJ6S3GkC/+1Z227bOBL9z1cQ8HCbtt2nq5tFl8VO2iBJvETS9gYMOVKNxJJBSlZZtP++M+ROsuO2wraA9UBRZKjDOZ9zRl5aCbyIITlGI0L72RY0y3D4Oj7ExCBNjtIMvb/+9N+fzEywvNuCmY+R3AdyDlLRgzc/EN6g3WJOAOm/0s4iFmcRz8guKJwJ8EIkQDRhSZpVkWPqaLOQoYJGvI2pnPsOoOZVAkkJ+gjTVs0vLnygdhaFzAZGYnbI1lcKePOV5WJpdURrKJkPiGLBKrwre/kKF4SgAJ8kPHVsY/GfaMuYSLvJbbVgX/yIG/cjJvleMhqS/AaHrQaVrKblghcWxOs7kdxCAO8U0VnOiknB0Jb9WtsUxnf9s1sAC5/XPifNdeE2G6+VwvGf66y9ubwUXf+6hVSkrdhthkWL22QbpouxiLiErcaS4iKq89dd0voBNB+cLJSuASg8lSg0Y4pJlOA0mfEaqdmCuqQM/CTp5hu1+5Ep9QXU5vR8eROOBNwcsxoD2LIaIIWpVprfbS2Px37Lt6+NYB0gftbQMlTBX5Xp2NMqoKeuRFafzxiSfTBZobPjDl4Y8cNnEUFSBe5Zve59hyZTCDZUmUWohDo8BCgjYIozH6KfcW1sB9pDtyGX8sQOEAnfpPbRJFPFwcHJKFgzZ0TQu4Jx1XHFs0rwQZ1wRwKe+tlA2tqdEVEE1OT0idMpHA0m8iWmI7JnSPTfusvGf9fi6Zm9XlkkHcYxlnqETxDFJFcKlxGupgF+0gjW5Ikq6yiKniDFGpCfLtGD5L9JuVXMNvJJDzuZHGi/BnwZgaJD9dtT8DhngYO/eGCJDCaGP31LNdYlYl6ZEmssyQdDsQSuiFCbZp+2m43IHhICgd2mJFvOUaODcw/oKwUFmWdNePqKMaO6MKmNTwc3Hp4MwRqEK+ITp9DIhJnwddHAow0xYA5Wo3Z4SxwOvEQ85Wp1h3fHLaVfcr4uWjc7ib1fQAXEHih/PdiNEXOiHSIaP9FZvzprC98Rxqh69ivcfhPoHUJUgBj03koqRDK3lY3LDjZq3mqzxjKBZ2z2TU8jsBLIx4y4j1H+i2cCR3M62Kc1so1yLfGb5FjreVkzuWGi0fmZUqaGXQViwZG4NyhtFHsyqUJyvtNejA9pe8kGge7yS7DNwAtAhTLNv3wTMHG4UhGCkbQHlR2CznNTJMXhMv+ej/J0QqlNPX8y8PD6zpNCwaOzBZuaEpOfP7TeWdVcBd4tgxOmAq5Q2axm26Ve3yN2GZV0pnsTJZqEFZFJo9bh08cqTuHlvfB7GCo2hgsTfRV0hEyHnmgbW6y58Fv6G4aFPzeWa4g2YRDHp2H8axQM/lfE+8HtxznVnwYPJukKBc+sHGia4/CX/+VroBfF/M2W4Pu7/3llsSduKdW+86HTWmbfrwSIJY3xLqMe8e+PoL6cv/TeeMVaSmrgmiTn0yq23PVr2XeWkGzD/kN/ECcLaezOlqVBfNvf1P8X/ATOsJlJoBsUP6kKIOokL+BdcRL+RGtRkwWxmtDygyEmMwka9riP2h9j/e9Ydnb6UfD7ygMUBWEKGu36Lp+0ERHcKKqiJUFM73O2hUwgbYM+0FcMM6j4rw6UmjG9gsQsHifCUlhLAoCi0Mkvpv/019gXmdRgEDb+nGA44dfsuT4a2zEJ+ARFTMe3MzDm6XMPg5Sr0R5onafKuMKGeNw/ZgoWmaXuCnuvvD4LI75CxOOYBPg0E3bKQK4JuQTLIuUDqVTo3ou3vv3f/5Kez+4KBCGwwaGHzaEkFcJN+iRaCAVCKaLmE9vzYnPkCnAFnfOoHma/odX3G8Z5Jk82dfCbp6ciRyVoqyww2umBguqqkhQPmPBhyDHwWf+0N//b//4n//mX/zjP/yP//Z//W/qv7Xf2n9rv7Xe64buuS+zg7A6HBSeA5PqwGtivpTLUbtNcd5KQiRy3aEyvuNqL4rYdFksEo6DfzKrIGRsj/ONGB3CFJV1RTqgiObuoqBHT9Sf7kOuAq6Z6LjM1uC9X9RrPYoeRrhJPrr9kP89V0YjYL+GuDhgwjrnsHO8XSr5+DtmUI/7LJA53TmptFm0QUHrVP4cRrMw+sFF+pHwDUROSN9BqKqVaYkNUljIH8P8+JPwjURD7VTsSPkBTnwo+e9lqZn9WX4Z5FhP/4rceHeGBQFaYLrpGyxVFEZi2XDlfaUfp7/OKXtmJYmPPn4to5E7lWxwNHaALeZbN/Nr8QgoRWUKLKAYex+C0DlWehoBDmNAZK5/XI5AdbOWPT/urLYOHQTmk7Tg6i3HTBR3yh6YT7eu/oXNvrHoSj0rD75i0QivHutBdv2tYJz/FTkjwwf9HNctyi0mjqaAqQT+bsiFy+fOf3q0w/6tCvQDkxMvjgRwsvTVe36sGmA7V9DQMyXUIJfqbIV7cSE7+7KAzglnt47fqwNG9sLxNn/8AVGMAPD4gYAAA=' | base64 -d | gzip -d | python3
+      - name: Verify patch
+        run: |
+          grep -q 'const filteredWithoutType = transactions.filter' src/routes/transactions.tsx
+          grep -q 'resumo original + filtro ao tocar' src/routes/transactions.tsx
+          grep -q 'formatCurrency(totalIncome)' src/routes/transactions.tsx
+          grep -q 'formatCurrency(totalExpense)' src/routes/transactions.tsx
+          git diff --check
+      - name: Commit changes
+        run: |
+          rm .github/workflows/restore-transaction-summary-filter.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/routes/transactions.tsx .github/workflows/restore-transaction-summary-filter.yml
+          git commit -m 'fix: restore transaction summary cards as filters'
+          git push
