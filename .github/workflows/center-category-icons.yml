@@ -1,0 +1,29 @@
+name: Center category icons
+on:
+  push:
+    paths:
+      - '.github/workflows/center-category-icons.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Center icon group
+        run: |
+          sed -i 's/className="grid grid-cols-6 gap-1.5 sm:grid-cols-8"/className="flex flex-wrap justify-center gap-1.5"/' src/routes/transactions.tsx
+          sed -i 's/interactive-button flex h-9 min-w-0 items-center justify-center/interactive-button flex h-9 w-12 shrink-0 items-center justify-center/' src/routes/transactions.tsx
+      - name: Verify
+        run: |
+          grep -F 'className="flex flex-wrap justify-center gap-1.5"' src/routes/transactions.tsx
+          grep -F 'interactive-button flex h-9 w-12 shrink-0 items-center justify-center' src/routes/transactions.tsx
+          git diff --check
+      - name: Commit
+        run: |
+          rm .github/workflows/center-category-icons.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/routes/transactions.tsx .github/workflows/center-category-icons.yml
+          git commit -m 'style: center transaction category icons'
+          git push
