@@ -4,7 +4,7 @@ import { TransactionItem } from "@/components/TransactionItem";
 import { EmptyState } from "@/components/EmptyState";
 import { mainCategories, parseCategoryValue } from "@/lib/categories";
 import { addCurrencyCents, fetchAllCategoryLedgerTransactions, type CategoryLedgerTransaction } from "@/lib/category-spending-ledger";
-import { Search, Pencil, Trash2, Plus, CalendarIcon, Loader2, Upload, CheckSquare, Square, X, SlidersHorizontal, ArrowLeftRight, ArrowRight, Eye, EyeOff, FileText, MoreVertical, GripVertical, ArrowLeft, Landmark, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { Search, Pencil, Trash2, Plus, CalendarIcon, Loader2, Upload, CheckSquare, Square, X, SlidersHorizontal, ArrowLeftRight, ArrowRight, Eye, EyeOff, FileText, MoreVertical, GripVertical, ArrowLeft, Landmark, CreditCard, ArrowUpRight, ArrowDownRight } from "lucide-react";
 import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react";
 
 const CsvImportDialog = lazy(() => import("@/components/CsvImportDialog").then(m => ({ default: m.CsvImportDialog })));
@@ -1401,23 +1401,43 @@ export function TransactionsPage() {
 
       {/* Edit Dialog */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent
-          style={{
-            width: "calc(100dvw - 24px)",
-            maxWidth: "calc(100dvw - 24px)",
-            left: "50%",
-            right: "auto",
-            transform: "translate(-50%, -50%)",
-            boxSizing: "border-box",
-          }}
-          className="fixed top-1/2 rounded-2xl bg-background h-[min(88dvh,calc(100dvh-24px))] max-h-[calc(100dvh-24px)] overflow-hidden p-0 flex min-w-0 flex-col gap-0 sm:h-auto sm:max-h-[88dvh] sm:!w-[28rem] sm:!max-w-[28rem]"
-        >
-          <DialogHeader className="shrink-0 p-4 pb-2 border-b"><DialogTitle className="text-sm">Editar Transação</DialogTitle></DialogHeader>
-          <div className="flex-1 min-h-0 min-w-0 overscroll-contain overflow-x-hidden overflow-y-auto p-4 flex flex-col gap-4">
+        <DialogContent className="w-[calc(100dvw-24px)] max-w-[calc(100dvw-24px)] h-[calc(100dvh-24px)] max-h-[calc(100dvh-24px)] min-h-0 rounded-2xl bg-background overflow-hidden p-0 gap-0 flex flex-col sm:h-auto sm:max-h-[88dvh] sm:min-h-[640px] sm:!w-[28rem] sm:!max-w-[28rem]">
+          <DialogHeader className="shrink-0 space-y-0 border-b border-border/50 p-4 pb-3 pr-10">
+            <div className="flex items-center gap-1.5">
+              <DialogTitle className="shrink-0 whitespace-nowrap text-sm">Editar</DialogTitle>
+              {editTx && (
+                <div className="flex min-w-0 flex-1 gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setEditTx({ ...editTx, type: "expense", category: "Alimentação > Outros", icon: "🍔" })}
+                    className={`min-w-0 flex-1 rounded-lg py-1 text-[10px] font-medium transition-colors ${
+                      editTx.type === "expense"
+                        ? "bg-destructive text-destructive-foreground"
+                        : "bg-card text-muted-foreground"
+                    }`}
+                  >
+                    Despesa
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditTx({ ...editTx, type: "income", category: "Renda > Salário", icon: "💰" })}
+                    className={`min-w-0 flex-1 rounded-lg py-1 text-[10px] font-medium transition-colors ${
+                      editTx.type === "income"
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-card text-muted-foreground"
+                    }`}
+                  >
+                    Receita
+                  </button>
+                </div>
+              )}
+            </div>
+          </DialogHeader>
+          <div className="flex min-h-0 flex-1 flex-col gap-2.5 overflow-x-hidden overflow-y-auto overscroll-contain p-4">
           {editTx && (
-            <div className="flex min-w-0 flex-col gap-4">
+            <div className="flex min-w-0 flex-col gap-2.5">
               <div className="relative min-w-0">
-                <label className="text-xs text-muted-foreground mb-1 block">Nome</label>
+                <label className="mb-0.5 block text-[11px] font-semibold text-foreground">Nome</label>
                 <input
                   autoFocus
                   inputMode={editNameMode}
@@ -1434,9 +1454,7 @@ export function TransactionsPage() {
                     if (e.key === "Enter") {
                       e.preventDefault();
                       const categoryButton = document.querySelector('button[aria-label="Selecionar categoria"]') as HTMLButtonElement;
-                      if (categoryButton) {
-                        categoryButton.focus();
-                      }
+                      if (categoryButton) categoryButton.focus();
                     }
                   }}
                   onBlur={() => {
@@ -1449,10 +1467,11 @@ export function TransactionsPage() {
                     setTimeout(() => target.focus(), 0);
                   }}
                   onFocus={() => setShowEditSuggestions(editTx.name.length >= 2)}
-                  className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground outline-none focus:ring-1 focus:ring-primary/30"
+                  placeholder="Ex: Supermercado"
+                  className="w-full rounded-lg bg-card px-2.5 py-1.5 text-xs text-foreground outline-none placeholder:text-muted-foreground focus:ring-1 focus:ring-primary/30"
                 />
                 {showEditSuggestions && getAutocompleteSuggestions(editTx.name).length > 0 && (
-                  <div className="absolute z-50 left-0 right-0 top-full mt-1 rounded-xl bg-popover border border-border shadow-lg max-h-48 overflow-y-auto">
+                  <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-48 overflow-y-auto rounded-xl border border-border bg-popover shadow-lg">
                     {getAutocompleteSuggestions(editTx.name).map((s, i) => (
                       <button
                         key={i}
@@ -1462,178 +1481,149 @@ export function TransactionsPage() {
                           setEditTx({ ...editTx, name: s.name, icon: s.icon, category: s.category });
                           setShowEditSuggestions(false);
                         }}
-                        className="flex w-full items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-accent transition-colors first:rounded-t-xl last:rounded-b-xl"
+                        className="flex w-full items-center gap-2 px-3 py-2 text-sm text-foreground transition-colors first:rounded-t-xl last:rounded-b-xl hover:bg-accent"
                       >
                         <span className="text-base">{s.icon}</span>
-                        <span className="flex-1 text-left truncate">{s.name}</span>
+                        <span className="flex-1 truncate text-left">{s.name}</span>
                         <span className="text-[10px] text-muted-foreground">{s.category}</span>
                       </button>
                     ))}
                   </div>
                 )}
               </div>
-              <Suspense fallback={<div className="h-20 flex items-center justify-center"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>}>
+
+              <Suspense fallback={<div className="flex h-20 items-center justify-center"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>}>
                 <CategoryPicker
                   value={editTx.category}
                   onChange={(val, icon) => setEditTx({ ...editTx, category: val, icon })}
+                  defaultExpanded={true}
                   type={editTx.type}
                 />
               </Suspense>
-              <div>
-                <label className="text-xs text-muted-foreground mb-1 block">Data</label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" className={cn("w-full justify-start text-left font-normal rounded-xl bg-card border-none", !editTx.date && "text-muted-foreground")}>
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {editTx.date ? formatEditorTxDate(editTx.date, editTx.created_at) : "Selecionar data"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0 z-[60]" align="start" sideOffset={4}>
 
-                    <Calendar mode="single" selected={parseEditorTxDate(editTx.date, editTx.created_at)} onSelect={(date) => { if (date) setEditTx({ ...editTx, date: format(date, "dd-MM-yyyy") }); }} initialFocus className={cn("p-3 pointer-events-auto")} />
-                  </PopoverContent>
-                </Popover>
-              </div>
-              <div>
-                <label className="text-xs text-muted-foreground mb-1 block">Valor (R$)</label>
-                <CalculatorAmountInput 
-                  value={editTx.amount} 
-                  onChange={(v) => {
-                    setEditTx({ ...editTx, amount: v });
-                  }}  
-                  autoFocus={false}
-                  className={editTx.type === "expense" && !(editTx.category === "Transferência" || editTx.category === "Transferências" || editTx.category?.startsWith("Transferências >")) ? "text-destructive" : editTx.type === "income" && !(editTx.category === "Transferência" || editTx.category === "Transferências" || editTx.category?.startsWith("Transferências >")) ? "text-primary" : "text-foreground"}
-
-                />
-              </div>
-              <div>
-                <label className="text-xs text-muted-foreground mb-1 block">Tipo</label>
-                <div className="grid min-w-0 grid-cols-2 gap-2">
-                  <button onClick={() => setEditTx({ ...editTx, type: "expense", category: "Alimentação > Outros", icon: "🍔" })} className={`min-w-0 rounded-xl px-2 py-2 text-xs font-medium transition-colors ${editTx.type === "expense" ? "bg-destructive text-destructive-foreground" : "bg-card text-muted-foreground"}`}>Despesa</button>
-                  <button onClick={() => setEditTx({ ...editTx, type: "income", category: "Receita > Salário", icon: "💰" })} className={`min-w-0 rounded-xl px-2 py-2 text-xs font-medium transition-colors ${editTx.type === "income" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground"}`}>Receita</button>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="mb-0.5 block text-[11px] font-semibold text-foreground">Data</label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "h-8 w-full justify-start rounded-lg border-none bg-card px-2.5 text-left text-xs font-normal",
+                          !editTx.date && "text-muted-foreground",
+                        )}
+                      >
+                        <CalendarIcon className="mr-1.5 h-3.5 w-3.5" />
+                        {editTx.date ? formatEditorTxDate(editTx.date, editTx.created_at) : "Data"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="z-[60] w-auto p-0" align="start" sideOffset={4}>
+                      <Calendar
+                        mode="single"
+                        selected={parseEditorTxDate(editTx.date, editTx.created_at)}
+                        onSelect={(date) => { if (date) setEditTx({ ...editTx, date: format(date, "dd-MM-yyyy") }); }}
+                        initialFocus
+                        className={cn("p-3 pointer-events-auto")}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                <div>
+                  <label className="mb-0.5 block text-[11px] font-semibold text-foreground">Valor (R$)</label>
+                  <CalculatorAmountInput
+                    value={editTx.amount}
+                    onChange={(v) => setEditTx({ ...editTx, amount: v })}
+                    autoFocus={false}
+                    tone={editTx.type}
+                  />
                 </div>
               </div>
+
               <div>
-                <label className="text-xs text-muted-foreground mb-1 block">Forma de pagamento</label>
-                <div className="grid min-w-0 grid-cols-2 gap-2">
+                <label className="mb-1 flex items-center gap-1 text-[11px] font-semibold text-foreground">
+                  <Landmark className="h-3 w-3" />
+                  Conta Débito/Pix
+                </label>
+                <div className="grid grid-cols-5 gap-1.5">
                   <button
                     type="button"
-                    onClick={() => setEditTx({ ...editTx, bank_account_id: null, card: editTx.card && editTx.card !== "Nenhum" ? editTx.card : "" })}
-                    className={`min-w-0 rounded-xl px-2 py-2 text-[11px] leading-tight font-medium transition-colors ${editTx.bank_account_id === null ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground"}`}
+                    onClick={() => setEditTx({ ...editTx, bank_account_id: null })}
+                    className={`flex flex-col items-center gap-0.5 rounded-lg p-1.5 transition-all ${
+                      !editTx.bank_account_id ? "bg-primary/15 ring-1 ring-primary" : "bg-card hover:bg-accent"
+                    }`}
                   >
-                    💳 Cartão (Crédito)
+                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-muted text-[10px] text-muted-foreground">—</div>
+                    <span className="w-full truncate text-center text-[9px] leading-tight text-muted-foreground">Nenhuma</span>
                   </button>
+                  {bankAccounts.map((a) => (
+                    <button
+                      key={a.id}
+                      type="button"
+                      aria-pressed={editTx.bank_account_id === a.id}
+                      onClick={() => {
+                        const nextId = editTx.bank_account_id === a.id ? null : a.id;
+                        setEditTx({ ...editTx, bank_account_id: nextId, card: nextId ? null : editTx.card });
+                      }}
+                      className={`flex flex-col items-center gap-0.5 rounded-lg p-1.5 transition-all ${
+                        editTx.bank_account_id === a.id ? "bg-primary/15 ring-1 ring-primary" : "bg-card hover:bg-accent"
+                      }`}
+                    >
+                      <BankLogo
+                        icon={a.icon || "custom"}
+                        color={a.color || "from-gray-500 to-gray-700"}
+                        name={a.name}
+                        size="sm"
+                      />
+                      <span className="w-full truncate text-center text-[9px] leading-tight text-foreground">{a.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-1 flex items-center gap-1 text-[11px] font-semibold text-foreground">
+                  <CreditCard className="h-3 w-3" />
+                  Cartão de crédito
+                </label>
+                <div className="grid grid-cols-5 gap-1.5">
                   <button
                     type="button"
-                    onClick={() => setEditTx({ ...editTx, card: null, bank_account_id: editTx.bank_account_id || "" })}
-                    className={`min-w-0 rounded-xl px-2 py-2 text-[11px] leading-tight font-medium transition-colors ${editTx.card === null ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground"}`}
+                    onClick={() => setEditTx({ ...editTx, card: null })}
+                    className={`flex flex-col items-center gap-0.5 rounded-lg p-1.5 transition-all ${
+                      !editTx.card ? "bg-primary/15 ring-1 ring-primary" : "bg-card hover:bg-accent"
+                    }`}
                   >
-                    🏦 Conta (Débito)
+                    <div className="flex h-7 w-7 items-center justify-center rounded-md bg-muted text-[10px] text-muted-foreground">—</div>
+                    <span className="w-full truncate text-center text-[9px] leading-tight text-muted-foreground">Nenhum</span>
                   </button>
+                  {cardOptions.filter(c => c.name !== "Nenhum").map((c) => {
+                    const selected = editTx.card === c.name;
+                    return (
+                      <button
+                        key={c.name}
+                        type="button"
+                        aria-pressed={selected}
+                        onClick={() => {
+                          if (selected) {
+                            setEditTx({ ...editTx, card: null });
+                          } else {
+                            setEditTx({ ...editTx, card: c.name, bank_account_id: null });
+                          }
+                        }}
+                        className={`flex flex-col items-center gap-1 rounded-lg p-1.5 transition-all ${
+                          selected ? "bg-primary/15 ring-1 ring-primary" : "bg-card hover:bg-accent"
+                        }`}
+                      >
+                        <CardIcon color={c.color} name={c.name} size="md" />
+                        <span className="w-full truncate text-center text-[9px] leading-tight text-foreground">{c.name}</span>
+                      </button>
+                    );
+                  })}
                 </div>
-                <p className="text-[10px] text-muted-foreground mt-1">Alterne entre crédito e débito sem precisar excluir a transação.</p>
               </div>
-              {editTx.card !== null && (
-                <div className="min-w-0">
-                  <label className="text-xs text-muted-foreground mb-2 block">Cartão de Crédito</label>
-                  {cardOptions.filter(c => c.name !== "Nenhum").length > 0 ? (
-                    <div className="grid min-w-0 grid-cols-2 gap-2">
-                      {cardOptions.filter(c => c.name !== "Nenhum").map((c) => {
-                        const selected = editTx.card === c.name;
-                        return (
-                          <button
-                            key={c.name}
-                            type="button"
-                            aria-pressed={selected}
-                            onClick={() => setEditTx({ ...editTx, card: c.name, bank_account_id: null })}
-                            className={cn(
-                              "flex min-w-0 items-center gap-1.5 rounded-xl border p-2 text-left transition-all",
-                              selected
-                                ? "border-primary bg-primary/10 ring-1 ring-primary/30"
-                                : "border-border bg-card hover:bg-accent/60"
-                            )}
-                          >
-                            <CardIcon color={c.color} name={c.name} size="xs" />
-                            <span className="min-w-0 flex-1">
-                              <span className="block truncate text-xs font-semibold text-foreground">{c.name}</span>
-                              {c.brand && (
-                                <span className="block truncate text-[9px] text-muted-foreground">{c.brand}</span>
-                              )}
-                            </span>
-                            {selected && <CheckSquare className="h-4 w-4 shrink-0 text-primary" />}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <div className="rounded-xl border border-dashed border-border bg-card p-3 text-center text-xs text-muted-foreground">
-                      Nenhum cartão cadastrado.
-                    </div>
-                  )}
-                  {!editTx.card || editTx.card === "Nenhum" ? (
-                    <p className="mt-2 text-[10px] font-medium text-destructive">Selecione um cartão para habilitar Salvar alterações.</p>
-                  ) : null}
-                </div>
-              )}
-              {editTx.card === null && (
-                <div className="min-w-0">
-                  <label className="text-xs text-muted-foreground mb-2 block">Conta Bancária</label>
-                  {bankAccounts.length > 0 ? (
-                    <div className="grid min-w-0 grid-cols-2 gap-2">
-                      {bankAccounts.map((a) => {
-                        const selected = editTx.bank_account_id === a.id;
-                        return (
-                          <button
-                            key={a.id}
-                            type="button"
-                            aria-pressed={selected}
-                            onClick={() => setEditTx({ ...editTx, bank_account_id: a.id, card: null })}
-                            className={cn(
-                              "flex min-w-0 items-center gap-1.5 rounded-xl border p-2 text-left transition-all",
-                              selected
-                                ? "border-primary bg-primary/10 ring-1 ring-primary/30"
-                                : "border-border bg-card hover:bg-accent/60"
-                            )}
-                          >
-                            <BankLogo
-                              icon={a.icon || "custom"}
-                              color={a.color || "from-gray-500 to-gray-700"}
-                              name={a.name}
-                              size="xs"
-                            />
-                            <span className="min-w-0 flex-1">
-                              <span className="block truncate text-xs font-semibold text-foreground">{a.name}</span>
-                            </span>
-                            {selected && <CheckSquare className="h-4 w-4 shrink-0 text-primary" />}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <div className="rounded-xl border border-dashed border-border bg-card p-3 text-center text-xs text-muted-foreground">
-                      Nenhuma conta cadastrada.
-                    </div>
-                  )}
-                  {!editTx.bank_account_id ? (
-                    <p className="mt-2 text-[10px] font-medium text-destructive">Selecione uma conta para habilitar Salvar alterações.</p>
-                  ) : null}
-                </div>
-              )}
-
-
 
               {/* Parcelamento — apenas para despesas no cartão de crédito */}
-              {!editTx.card ? (
-                <div className="rounded-xl bg-card p-3 space-y-1">
-                  <div className="flex items-center gap-2">
-                    <Layers className="h-3.5 w-3.5 text-muted-foreground" />
-                    <span className="text-xs font-medium text-muted-foreground">Parcelamento indisponível</span>
-                  </div>
-                  <p className="text-[10px] text-muted-foreground leading-relaxed">
-                    Esta transação foi lançada em conta (débito). O parcelamento está disponível apenas para despesas no cartão de crédito.
-                  </p>
-                </div>
-              ) : (
+              {editTx.card && (
               <div className="rounded-xl bg-card p-3 space-y-2">
                 <div className="flex items-center gap-2">
                   <Layers className="h-3.5 w-3.5 text-primary" />
@@ -1777,11 +1767,11 @@ export function TransactionsPage() {
             </div>
           )}
           </div>
-          <DialogFooter className="shrink-0 p-4 pt-2 border-t mt-0 flex-row gap-2 sm:gap-2">
+          <DialogFooter className="shrink-0 border-t border-border/50 bg-background p-4 pt-3 flex-row gap-2 sm:gap-2">
             <Button variant="outline" size="sm" className="flex-1 h-10 text-xs rounded-xl" onClick={() => { (document.activeElement as HTMLElement)?.blur(); setShowEditDialog(false); if (shouldReturnHome) window.location.assign("/home"); }}>Cancelar</Button>
             <Button
               size="sm"
-              className="flex-1 h-10 text-xs rounded-xl font-bold"
+              className="flex-1 h-10 text-xs rounded-xl"
               onClick={handleSaveEdit}
               disabled={!!editTx && editTx.type === "expense" && (
                 (editTx.bank_account_id === null && (!editTx.card || editTx.card === "Nenhum")) ||
