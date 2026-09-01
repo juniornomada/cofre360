@@ -1,151 +1,17 @@
 name: Hide transaction summary when filtered
-on: [push]
+
+on:
+  push:
+    branches:
+      - main
+
 permissions:
   contents: write
+
 jobs:
   patch:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Patch transaction summaries and category drilldown charts
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-
-          # Transactions page: totals only with no filters; chart stays available for category drilldown.
-          p = Path('src/routes/transactions.tsx')
-          s = p.read_text()
-          anchor = '  const activeFilterCount = (filterStartDate || filterEndDate ? 1 : 0) + (minAmt !== null || maxAmt !== null ? 1 : 0) + (filterType !== "all" ? 1 : 0) + (sortBy !== "date-desc" ? 1 : 0) + (filterAccountId ? 1 : 0);'
-          if 'const hasTransactionFilters =' not in s:
-              if anchor not in s:
-                  raise SystemExit('activeFilterCount anchor not found')
-              s = s.replace(anchor, anchor + '\n\n  const hasTransactionFilters = activeCategory !== "Todas" || activeSource !== "all" || !!filterAccountId || !!filterStartDate || !!filterEndDate || minAmt !== null || maxAmt !== null || filterType !== "all";', 1)
-
-          old_totals = '''      <section className="-mx-1 grid grid-cols-2 gap-2">
-        <div className="rounded-xl border border-border/30 bg-card p-3">
-          <div className="flex items-center gap-1 text-[10px] font-semibold uppercase text-muted-foreground"><ArrowUpRight className="h-3.5 w-3.5 text-primary" />Receitas</div>
-          <p className="mt-1 text-base font-bold text-primary">{balanceVisible ? `R$ ${formatCurrency(totalIncome)}` : "R$ ••••"}</p>
-        </div>
-        <div className="rounded-xl border border-border/30 bg-card p-3">
-          <div className="flex items-center gap-1 text-[10px] font-semibold uppercase text-muted-foreground"><ArrowDownRight className="h-3.5 w-3.5 text-destructive" />Despesas</div>
-          <p className="mt-1 text-base font-bold text-destructive">{balanceVisible ? `R$ ${formatCurrency(totalExpense)}` : "R$ ••••"}</p>
-        </div>
-      </section>'''
-          if old_totals in s:
-              s = s.replace(old_totals, '''      {!hasTransactionFilters && (
-        <section className="-mx-1 grid grid-cols-2 gap-2">
-          <div className="rounded-xl border border-border/30 bg-card p-3">
-            <div className="flex items-center gap-1 text-[10px] font-semibold uppercase text-muted-foreground"><ArrowUpRight className="h-3.5 w-3.5 text-primary" />Receitas</div>
-            <p className="mt-1 text-base font-bold text-primary">{balanceVisible ? `R$ ${formatCurrency(totalIncome)}` : "R$ ••••"}</p>
-          </div>
-          <div className="rounded-xl border border-border/30 bg-card p-3">
-            <div className="flex items-center gap-1 text-[10px] font-semibold uppercase text-muted-foreground"><ArrowDownRight className="h-3.5 w-3.5 text-destructive" />Despesas</div>
-            <p className="mt-1 text-base font-bold text-destructive">{balanceVisible ? `R$ ${formatCurrency(totalExpense)}` : "R$ ••••"}</p>
-          </div>
-        </section>
-      )}''', 1)
-          p.write_text(s)
-
-          # Chart component: main categories at top level, subcategories when drilled in.
-          p = Path('src/components/CategoryPieCharts.tsx')
-          s = p.read_text()
-          old_fn = '''function aggregateByCategory(txs: Transaction[]) {
-  const map = new Map<string, number>();
-  let total = 0;
-  txs.forEach((tx) => {
-    const val = Number(tx.amount);
-    // Aggregate by group name for clearer high-level charts
-    const { group } = parseCategoryValue(tx.category);
-    map.set(group, (map.get(group) || 0) + val);
-    total += val;
-  });
-  return Array.from(map.entries())
-    .map(([name, value]) => ({ 
-      name, 
-      value, 
-      percentage: total > 0 ? (value / total) * 100 : 0 
-    }))
-    .sort((a, b) => b.value - a.value);
-}'''
-          new_fn = '''function aggregateByLevel(txs: Transaction[], level: "group" | "sub") {
-  const map = new Map<string, number>();
-  let total = 0;
-  txs.forEach((tx) => {
-    const val = Number(tx.amount);
-    const parsed = parseCategoryValue(tx.category);
-    const name = level === "sub" ? (parsed.sub || "Outros") : parsed.group;
-    map.set(name, (map.get(name) || 0) + val);
-    total += val;
-  });
-  return Array.from(map.entries())
-    .map(([name, value]) => ({
-      name,
-      value,
-      percentage: total > 0 ? (value / total) * 100 : 0
-    }))
-    .sort((a, b) => b.value - a.value);
-}'''
-          if old_fn not in s:
-              raise SystemExit('aggregate function anchor not found')
-          s = s.replace(old_fn, new_fn, 1)
-
-          old_data = '''  const expenseData = useMemo(
-    () => aggregateByCategory(transactions.filter((t) => t.type === "expense")),
-    [transactions]
-  );
-  const incomeData = useMemo(
-    () => aggregateByCategory(transactions.filter((t) => t.type === "income")),
-    [transactions]
-  );
-
-  if (expenseData.length === 0 && incomeData.length === 0) return null;'''
-          new_data = '''  const isDrilldown = !!activeCategory && activeCategory !== "Todas";
-  const level = isDrilldown ? "sub" : "group";
-  const expenseData = useMemo(
-    () => aggregateByLevel(transactions.filter((t) => t.type === "expense"), level),
-    [transactions, level]
-  );
-  const incomeData = useMemo(
-    () => aggregateByLevel(transactions.filter((t) => t.type === "income"), level),
-    [transactions, level]
-  );
-
-  const hasUsefulExpenseBreakdown = expenseData.length > (isDrilldown ? 1 : 0);
-  const hasUsefulIncomeBreakdown = incomeData.length > (isDrilldown ? 1 : 0);
-  if (!hasUsefulExpenseBreakdown && !hasUsefulIncomeBreakdown) return null;'''
-          if old_data not in s:
-              raise SystemExit('chart data anchor not found')
-          s = s.replace(old_data, new_data, 1)
-          s = s.replace('data: ReturnType<typeof aggregateByCategory>,', 'data: ReturnType<typeof aggregateByLevel>,', 1)
-
-          old_return = '''      {expenseData.length > 0 && renderChart(expenseData, "Despesas por categoria")}
-      {incomeData.length > 0 && renderChart(incomeData, "Receitas por categoria")}'''
-          new_return = '''      {hasUsefulExpenseBreakdown && renderChart(expenseData, isDrilldown ? `Despesas de ${activeCategory} por subcategoria` : "Despesas por categoria")}
-      {hasUsefulIncomeBreakdown && renderChart(incomeData, isDrilldown ? `Receitas de ${activeCategory} por subcategoria` : "Receitas por categoria")}'''
-          if old_return not in s:
-              raise SystemExit('chart return anchor not found')
-          s = s.replace(old_return, new_return, 1)
-
-          # Subcategory slices are informational; only top-level category slices change the main filter.
-          s = s.replace('''  const handleSliceClick = (name: string) => {
-    if (!onCategoryClick) return;''', '''  const handleSliceClick = (name: string) => {
-    if (isDrilldown || !onCategoryClick) return;''', 1)
-          s = s.replace('${onCategoryClick ? "cursor-pointer" : ""}', '${!isDrilldown && onCategoryClick ? "cursor-pointer" : ""}', 1)
-          s = s.replace('disabled={!onCategoryClick}', 'disabled={isDrilldown || !onCategoryClick}', 1)
-          s = s.replace('${onCategoryClick ? "cursor-pointer hover:bg-accent/40" : "cursor-default"}', '${!isDrilldown && onCategoryClick ? "cursor-pointer hover:bg-accent/40" : "cursor-default"}', 1)
-          p.write_text(s)
-          PY
-      - name: Verify changes
-        run: |
-          grep -q 'const hasTransactionFilters =' src/routes/transactions.tsx
-          grep -q '!hasTransactionFilters &&' src/routes/transactions.tsx
-          grep -q 'aggregateByLevel' src/components/CategoryPieCharts.tsx
-          grep -q 'por subcategoria' src/components/CategoryPieCharts.tsx
-      - name: Remove workflow and commit
-        run: |
-          rm .github/workflows/hide-summary-when-filtered.yml
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add src/routes/transactions.tsx src/components/CategoryPieCharts.tsx .github/workflows/hide-summary-when-filtered.yml
-          git commit -m 'feat: show category drilldown by subcategory'
-          git push
+      - name: Smoke test
+        run: echo workflow-ok
