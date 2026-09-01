@@ -2,9 +2,8 @@ name: Apply transaction totals Home style
 
 on:
   push:
-    branches: [main]
-    paths:
-      - '.github/workflows/apply-transaction-totals-home-style.yml'
+    branches:
+      - main
 
 permissions:
   contents: write
@@ -15,57 +14,47 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
-      - name: Match Home totals cards
+      - run: bun install --frozen-lockfile
+      - name: Patch transaction totals cards
         run: |
           python3 - <<'PY'
           from pathlib import Path
-          p = Path('src/routes/transactions.tsx')
-          s = p.read_text()
-          old = '''      <div className="grid grid-cols-2 gap-2">
-        <div className="rounded-xl border border-border/30 bg-card p-3">
-          <div className="flex items-center gap-1 text-[10px] font-semibold uppercase text-muted-foreground"><ArrowUpRight className="h-3.5 w-3.5 text-primary" />Receitas · {selectedMonthLabel.split(" ")[0]}</div>
-          <p className="mt-1 text-base font-bold text-primary">R$ {formatCurrency(totalIncome)}</p>
-        </div>
-        <div className="rounded-xl border border-border/30 bg-card p-3">
-          <div className="flex items-center gap-1 text-[10px] font-semibold uppercase text-muted-foreground"><ArrowDownRight className="h-3.5 w-3.5 text-destructive" />Despesas · {selectedMonthLabel.split(" ")[0]}</div>
-          <p className="mt-1 text-base font-bold text-destructive">R$ {formatCurrency(totalExpense)}</p>
-        </div>
-      </div>'''
-          new = '''      <section className="-mx-1 grid grid-cols-2 gap-2">
-        <div className="rounded-xl border border-border/30 bg-card p-3">
-          <div className="flex items-center gap-1 text-[10px] font-semibold uppercase text-muted-foreground"><ArrowUpRight className="h-3.5 w-3.5 text-primary" />Receitas · {selectedMonthLabel.split(" ")[0]}</div>
-          <p className="mt-1 text-base font-bold text-primary">{balanceVisible ? `R$ ${formatCurrency(totalIncome)}` : "R$ ••••"}</p>
-        </div>
-        <div className="rounded-xl border border-border/30 bg-card p-3">
-          <div className="flex items-center gap-1 text-[10px] font-semibold uppercase text-muted-foreground"><ArrowDownRight className="h-3.5 w-3.5 text-destructive" />Despesas · {selectedMonthLabel.split(" ")[0]}</div>
-          <p className="mt-1 text-base font-bold text-destructive">{balanceVisible ? `R$ ${formatCurrency(totalExpense)}` : "R$ ••••"}</p>
-        </div>
-      </section>'''
-          if old not in s:
-              raise SystemExit('totals block anchor not found')
-          p.write_text(s.replace(old, new, 1))
+
+          p = Path("src/routes/transactions.tsx")
+          lines = p.read_text().splitlines()
+
+          income_idx = next(i for i, line in enumerate(lines) if "Receitas · {selectedMonthLabel.split" in line)
+          expense_idx = next(i for i, line in enumerate(lines) if "Despesas · {selectedMonthLabel.split" in line and i > income_idx)
+
+          wrapper_idx = next(i for i in range(income_idx, -1, -1) if lines[i].strip() == '<div className="grid grid-cols-2 gap-2">')
+          lines[wrapper_idx] = '      <section className="-mx-1 grid grid-cols-2 gap-2">'
+
+          income_value_idx = next(i for i in range(income_idx, expense_idx) if "formatCurrency(totalIncome)" in lines[i])
+          lines[income_value_idx] = '          <p className="mt-1 text-base font-bold text-primary">{balanceVisible ? `R$ ${formatCurrency(totalIncome)}` : "R$ ••••"}</p>'
+
+          expense_value_idx = next(i for i in range(expense_idx, len(lines)) if "formatCurrency(totalExpense)" in lines[i])
+          lines[expense_value_idx] = '          <p className="mt-1 text-base font-bold text-destructive">{balanceVisible ? `R$ ${formatCurrency(totalExpense)}` : "R$ ••••"}</p>'
+
+          wrapper_close_idx = next(i for i in range(expense_value_idx + 1, len(lines)) if lines[i] == "      </div>")
+          lines[wrapper_close_idx] = "      </section>"
+
+          p.write_text("\n".join(lines) + "\n")
           PY
-      - name: Check touched TypeScript surface
+      - name: Validate touched file
         run: |
           set +e
-          bun run typecheck 2>&1 | tee /tmp/typecheck.log
-          status=${PIPESTATUS[0]}
-          if grep -q 'src/routes/transactions.tsx' /tmp/typecheck.log; then
-            echo 'TypeScript error detected in transactions.tsx'
+          bun run typecheck > /tmp/typecheck.log 2>&1
+          if grep -q "src/routes/transactions.tsx" /tmp/typecheck.log; then
+            cat /tmp/typecheck.log
             exit 1
-          fi
-          if [ "$status" -ne 0 ]; then
-            echo 'Existing TypeScript errors remain outside transactions.tsx; touched surface is clean.'
           fi
           exit 0
       - name: Remove one-shot workflow
         run: rm .github/workflows/apply-transaction-totals-home-style.yml
       - name: Commit changes
         run: |
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add src/routes/transactions.tsx .github/workflows/apply-transaction-totals-home-style.yml
-          git commit -m 'style: match transaction totals cards to Home'
+          git commit -m "style: match transaction totals cards to Home"
           git push
