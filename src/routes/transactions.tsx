@@ -1332,13 +1332,13 @@ export function TransactionsPage() {
           type="button"
           onClick={() => setFilterType(filterType === "income" ? "all" : "income")}
           aria-pressed={filterType === "income"}
-          className={`rounded-xl border bg-card p-3 text-left ${
+          className={`rounded-xl border bg-card p-3 text-center ${
             filterType === "income"
               ? "border-border/30 ring-1 ring-primary/30"
               : "border-border/30"
           }`}
         >
-          <div className="flex items-center gap-1 text-[10px] font-semibold uppercase text-muted-foreground">
+          <div className="flex items-center justify-center gap-1 text-[10px] font-semibold uppercase text-muted-foreground">
             <ArrowUpRight className="h-3.5 w-3.5 text-primary" />
             Receitas
           </div>
@@ -1350,13 +1350,13 @@ export function TransactionsPage() {
           type="button"
           onClick={() => setFilterType(filterType === "expense" ? "all" : "expense")}
           aria-pressed={filterType === "expense"}
-          className={`rounded-xl border bg-card p-3 text-left ${
+          className={`rounded-xl border bg-card p-3 text-center ${
             filterType === "expense"
               ? "border-border/30 ring-1 ring-destructive/30"
               : "border-border/30"
           }`}
         >
-          <div className="flex items-center gap-1 text-[10px] font-semibold uppercase text-muted-foreground">
+          <div className="flex items-center justify-center gap-1 text-[10px] font-semibold uppercase text-muted-foreground">
             <ArrowDownRight className="h-3.5 w-3.5 text-destructive" />
             Despesas
           </div>
