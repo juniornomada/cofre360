@@ -22,6 +22,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useUserPreferences } from "@/hooks/use-user-preferences";
 import { cn } from "@/lib/utils";
 import { getCategoryIcon } from "@/lib/categories";
+import { addCurrencyCents, fetchAllCategoryLedgerTransactions, type CategoryLedgerTransaction } from "@/lib/category-spending-ledger";
 
 type Account = {
   id: string;
@@ -118,6 +119,7 @@ function RecoveredHome() {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [cards, setCards] = useState<Card[]>([]);
   const [transactions, setTransactions] = useState<Tx[]>([]);
+  const [categoryLedgerTransactions, setCategoryLedgerTransactions] = useState<CategoryLedgerTransaction[]>([]);
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedMonth, setSelectedMonth] = useState<Date>(() => {
@@ -133,7 +135,7 @@ function RecoveredHome() {
         if (!session || cancelled) return;
         setUserEmail(session.user.email || null);
 
-        const [accountsRes, cardsRes, txRes, remindersRes] = await Promise.all([
+        const [accountsRes, cardsRes, txRes, remindersRes, exactCategoryLedger] = await Promise.all([
           supabase
             .from("bank_accounts")
             .select("id,name,icon,color,balance,is_visible,parent_account_id")
@@ -154,6 +156,7 @@ function RecoveredHome() {
             .eq("is_completed", false)
             .order("due_date", { ascending: true })
             .limit(3),
+          fetchAllCategoryLedgerTransactions(session.user.id),
         ]);
 
         if (accountsRes.error) throw accountsRes.error;
@@ -170,6 +173,7 @@ function RecoveredHome() {
           setAccounts(rawAccounts);
           setCards((cardsRes.data || []) as Card[]);
           setTransactions(rawTx);
+          setCategoryLedgerTransactions(exactCategoryLedger);
           setReminders((remindersRes.data || []) as Reminder[]);
         }
       } catch (error) {
@@ -262,18 +266,20 @@ function RecoveredHome() {
   }, [selectedMonthTransactions]);
 
   const categorySpending = useMemo(() => {
-    const totals: Record<string, number> = {};
-    for (const tx of selectedMonthTransactions) {
-      if (tx.type !== "expense") continue;
+    const totalsInCents: Record<string, number> = {};
+    for (const tx of categoryLedgerTransactions) {
+      if (tx.type !== "expense" || tx.is_visible === false) continue;
+      const d = safeDate(tx.date, tx.created_at);
+      if (!d || d.getFullYear() !== selectedMonth.getFullYear() || d.getMonth() !== selectedMonth.getMonth()) continue;
       const rawCategory = (tx.category || "Sem categoria").trim();
       const mainCategory = rawCategory.split(" > ")[0]?.trim() || "Sem categoria";
-      totals[mainCategory] = (totals[mainCategory] || 0) + Number(tx.amount || 0);
+      totalsInCents[mainCategory] = addCurrencyCents(totalsInCents[mainCategory] || 0, tx.amount);
     }
-    return Object.entries(totals)
-      .map(([category, amount]) => ({ category, amount }))
+    return Object.entries(totalsInCents)
+      .map(([category, amountInCents]) => ({ category, amount: amountInCents / 100 }))
       .filter((item) => item.amount > 0)
       .sort((a, b) => b.amount - a.amount);
-  }, [selectedMonthTransactions]);
+  }, [categoryLedgerTransactions, selectedMonth]);
 
   const recent = useMemo(() => {
     return [...selectedMonthTransactions]
@@ -456,7 +462,7 @@ function RecoveredHome() {
               >
                 <span className="text-2xl leading-none" aria-hidden="true">{getCategoryIcon(item.category)}</span>
                 <span className="max-w-full truncate text-[11px] font-bold tabular-nums text-foreground">
-                  {balanceVisible ? fmtCompact(item.amount) : "R$ ••••"}
+                  {balanceVisible ? `R$ ${fmt(item.amount)}` : "R$ ••••"}
                 </span>
               </Link>
             ))}

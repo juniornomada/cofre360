@@ -3,6 +3,7 @@ import { SmartLink as Link } from "@/components/SmartLink";
 import { TransactionItem } from "@/components/TransactionItem";
 import { EmptyState } from "@/components/EmptyState";
 import { mainCategories, parseCategoryValue } from "@/lib/categories";
+import { addCurrencyCents, fetchAllCategoryLedgerTransactions, type CategoryLedgerTransaction } from "@/lib/category-spending-ledger";
 import { Search, Pencil, Trash2, Plus, CalendarIcon, Loader2, Upload, CheckSquare, Square, X, SlidersHorizontal, ArrowLeftRight, ArrowRight, Eye, EyeOff, FileText, MoreVertical, GripVertical, ArrowLeft, Landmark, ArrowUpRight, ArrowDownRight } from "lucide-react";
 import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react";
 
@@ -85,6 +86,7 @@ export function TransactionsPage() {
   const { balanceVisible, updateBalanceVisible } = useUserPreferences();
 
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [categoryLedgerTransactions, setCategoryLedgerTransactions] = useState<CategoryLedgerTransaction[]>([]);
   const [cardOptions, setCardOptions] = useState<CardOption[]>([]);
   const [bankAccounts, setBankAccounts] = useState<BankAccountOption[]>([]);
   const [cardNameToBrand, setCardNameToBrand] = useState<Record<string, string>>({});
@@ -340,10 +342,23 @@ export function TransactionsPage() {
     }
   }, []);
 
-  const fetchTransactions = useCallback(() => fetchTransactionsPage(true), [fetchTransactionsPage]);
+  const fetchCategoryLedger = useCallback(async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+    try {
+      setCategoryLedgerTransactions(await fetchAllCategoryLedgerTransactions(session.user.id));
+    } catch (error: any) {
+      console.error("Error fetching exact category ledger:", error);
+      toast.error(mapServerError(error, "Erro ao calcular gastos por categoria"));
+    }
+  }, []);
+
+  const fetchTransactions = useCallback(async () => {
+    await Promise.all([fetchTransactionsPage(true), fetchCategoryLedger()]);
+  }, [fetchTransactionsPage, fetchCategoryLedger]);
 
   useEffect(() => {
-    fetchTransactions();
+    void fetchTransactions();
     fetchCards();
     fetchBankAccounts();
   }, [fetchTransactions, fetchCards, fetchBankAccounts]);
@@ -506,30 +521,21 @@ export function TransactionsPage() {
   const totalExpense = filtered.filter(t => t.type === "expense" && t.is_visible !== false).reduce((s, t) => s + t.amount, 0);
 
   const categorySpending = Object.entries(
-    transactions.reduce<Record<string, number>>((totals, tx) => {
-      if (tx.type !== "expense" || tx.is_visible === false) return totals;
-      const d = parseTxDate(tx.date, tx.created_at);
+    categoryLedgerTransactions.reduce<Record<string, number>>((totalsInCents, tx) => {
+      if (tx.type !== "expense" || tx.is_visible === false) return totalsInCents;
+      const d = parseTxDate(tx.date || "", tx.created_at || undefined);
       const timestamp = d?.getTime() ?? NaN;
-      if (!Number.isFinite(timestamp) || timestamp < selectedMonthStartUtc || timestamp > selectedMonthEndUtc) return totals;
-      const mainCategory = parseCategoryValue(tx.category).group || "Outros";
-      totals[mainCategory] = (totals[mainCategory] || 0) + Number(tx.amount || 0);
-      return totals;
+      if (!Number.isFinite(timestamp) || timestamp < selectedMonthStartUtc || timestamp > selectedMonthEndUtc) return totalsInCents;
+      const mainCategory = parseCategoryValue(tx.category || "").group || "Outros";
+      totalsInCents[mainCategory] = addCurrencyCents(totalsInCents[mainCategory] || 0, tx.amount);
+      return totalsInCents;
     }, {}),
   )
-    .map(([category, amount]) => ({ category, amount }))
+    .map(([category, amountInCents]) => ({ category, amount: amountInCents / 100 }))
     .filter((item) => item.amount > 0)
     .sort((a, b) => b.amount - a.amount);
 
   const categoryExpenseTotal = categorySpending.reduce((sum, item) => sum + item.amount, 0);
-
-  const formatCompactCurrency = (value: number) => {
-    if (Math.abs(value) < 1000) return `R$ ${formatCurrency(value)}`;
-    const compact = new Intl.NumberFormat("pt-BR", {
-      notation: "compact",
-      maximumFractionDigits: 1,
-    }).format(value).replace(/\s*mil/i, " mil");
-    return `R$ ${compact}`;
-  };
 
   const generatePDF = () => {
     try {
@@ -1361,7 +1367,7 @@ export function TransactionsPage() {
                     <div className="flex items-center justify-between gap-3">
                       <span className="truncate text-xs font-medium text-foreground">{item.category}</span>
                       <span className="shrink-0 text-xs font-bold tabular-nums text-foreground">
-                        {balanceVisible ? formatCompactCurrency(item.amount) : "R$ ••••"}
+                        {balanceVisible ? `R$ ${formatCurrency(item.amount)}` : "R$ ••••"}
                       </span>
                     </div>
                     <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-accent">
