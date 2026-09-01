@@ -90,9 +90,11 @@ export function CategoryPieCharts({ transactions, formatCurrency, onCategoryClic
   ) => {
     const kindLabel = kind === "expense" ? "Despesas" : "Receitas";
     const title = isDrilldown ? (activeCategory || kindLabel) : `${kindLabel} por categoria`;
+    const visibleLegendData = isDrilldown ? data : data.slice(0, 5);
+    const hiddenCategoryCount = isDrilldown ? 0 : Math.max(0, data.length - visibleLegendData.length);
 
     return (
-      <div className="flex h-[176px] min-w-0 flex-col rounded-xl bg-card p-2.5 sm:h-[188px] sm:p-3">
+      <div className="flex h-[164px] min-w-0 flex-col rounded-xl border border-border/20 bg-card p-2.5 sm:h-[176px] sm:p-3">
         <div className="flex h-5 shrink-0 items-center justify-between gap-2">
           <h3
             className="min-w-0 truncate whitespace-nowrap text-[11px] font-semibold leading-5 text-foreground sm:text-xs"
@@ -107,47 +109,49 @@ export function CategoryPieCharts({ transactions, formatCurrency, onCategoryClic
           )}
         </div>
 
-        <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_78px] items-stretch gap-1.5 sm:grid-cols-[minmax(0,1fr)_112px] sm:gap-2">
-          <div className="min-h-0 min-w-0">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={data}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={24}
-                  outerRadius={46}
-                  paddingAngle={3}
-                  dataKey="value"
-                  animationBegin={0}
-                  animationDuration={600}
-                  onClick={(payload: { name?: string } | undefined) => {
-                    if (payload?.name) handleSliceClick(payload.name);
-                  }}
-                >
-                  {data.map((item, i) => {
-                    const isDimmed = !isDrilldown && !!activeCategory && activeCategory !== "Todas" && activeCategory !== item.name;
-                    const isActive = !isDrilldown && activeCategory === item.name;
-                    return (
-                      <Cell
-                        key={i}
-                        fill={COLORS[i % COLORS.length]}
-                        className={`outline-none ${!isDrilldown && onCategoryClick ? "cursor-pointer" : ""}`}
-                        fillOpacity={isDimmed ? 0.35 : 1}
-                        stroke={isActive ? "hsl(var(--foreground))" : "none"}
-                        strokeWidth={isActive ? 2 : 0}
-                      />
-                    );
-                  })}
-                </Pie>
-                <Tooltip content={<CustomTooltip formatCurrency={formatCurrency} />} />
-              </PieChart>
-            </ResponsiveContainer>
+        <div className="grid min-h-0 flex-1 grid-cols-[minmax(72px,0.85fr)_minmax(92px,1.15fr)] items-center gap-1.5 sm:grid-cols-[minmax(90px,0.9fr)_minmax(118px,1.1fr)] sm:gap-2">
+          <div className="flex min-h-0 min-w-0 items-center justify-center overflow-hidden">
+            <div className="h-[92px] w-full sm:h-[104px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={data}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={20}
+                    outerRadius={38}
+                    paddingAngle={3}
+                    dataKey="value"
+                    animationBegin={0}
+                    animationDuration={600}
+                    onClick={(payload: { name?: string } | undefined) => {
+                      if (payload?.name) handleSliceClick(payload.name);
+                    }}
+                  >
+                    {data.map((item, i) => {
+                      const isDimmed = !isDrilldown && !!activeCategory && activeCategory !== "Todas" && activeCategory !== item.name;
+                      const isActive = !isDrilldown && activeCategory === item.name;
+                      return (
+                        <Cell
+                          key={i}
+                          fill={COLORS[i % COLORS.length]}
+                          className={`outline-none ${!isDrilldown && onCategoryClick ? "cursor-pointer" : ""}`}
+                          fillOpacity={isDimmed ? 0.35 : 1}
+                          stroke={isActive ? "hsl(var(--foreground))" : "none"}
+                          strokeWidth={isActive ? 2 : 0}
+                        />
+                      );
+                    })}
+                  </Pie>
+                  <Tooltip content={<CustomTooltip formatCurrency={formatCurrency} />} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
           </div>
 
-          <div className="min-h-0 min-w-0 overflow-y-auto overscroll-contain pr-0.5 [scrollbar-width:thin]">
+          <div className="min-h-0 min-w-0 overflow-y-auto overscroll-contain [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <div className="flex flex-col gap-0.5 py-1">
-              {data.map((item, i) => {
+              {visibleLegendData.map((item, i) => {
                 const isActive = !isDrilldown && activeCategory === item.name;
                 return (
                   <button
@@ -170,6 +174,11 @@ export function CategoryPieCharts({ transactions, formatCurrency, onCategoryClic
                   </button>
                 );
               })}
+              {hiddenCategoryCount > 0 && (
+                <div className="mt-0.5 flex items-center justify-end px-1 text-[8px] font-medium text-muted-foreground sm:text-[9px]">
+                  +{hiddenCategoryCount} {hiddenCategoryCount === 1 ? "categoria" : "categorias"}
+                </div>
+              )}
             </div>
           </div>
         </div>
