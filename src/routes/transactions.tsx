@@ -110,9 +110,20 @@ export function TransactionsPage() {
     setSelectedMonth(new Date(year, month - 1, 1));
   }, [searchParams.month]);
 
-  // Sync category from URL search param when it changes
+  // Category deep-links represent a drilldown of the full monthly category total.
+  // Clear persisted filters that could hide transactions included in that total.
   useEffect(() => {
-    if (searchParams.category) setActiveCategory(searchParams.category);
+    if (!searchParams.category) return;
+    setActiveCategory(searchParams.category);
+    setActiveSource("all");
+    setFilterAccountId(null);
+    setFilterStartDate(undefined);
+    setFilterEndDate(undefined);
+    setFilterMinAmount("");
+    setFilterMaxAmount("");
+    setFilterType("all");
+    localStorage.removeItem("transactions_filter_accountId");
+    localStorage.setItem("transactions_filter_source", "all");
   }, [searchParams.category]);
   const [activeSource, setActiveSource] = useState<"all" | "account" | "card">(
     searchParams.accountId ? "account" : (localStorage.getItem("transactions_filter_source") as any || "all")
@@ -1358,6 +1369,7 @@ export function TransactionsPage() {
                   key={item.category}
                   type="button"
                   onClick={() => {
+                    clearAdvancedFilters();
                     setActiveCategory(item.category);
                     if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
                   }}
