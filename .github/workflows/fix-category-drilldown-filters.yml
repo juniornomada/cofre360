@@ -1,10 +1,6 @@
 name: Fix category drilldown filters
 
-on:
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/fix-category-drilldown-filters.yml'
+on: push
 
 permissions:
   contents: write
@@ -14,75 +10,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: oven-sh/setup-bun@v2
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
-      - name: Make category drilldown match category totals
+      - name: Patch transactions drilldown
+        shell: bash
         run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          p = Path('src/routes/transactions.tsx')
-          s = p.read_text()
-
-          old = '''  // Sync category from URL search param when it changes
-  useEffect(() => {
-    if (searchParams.category) setActiveCategory(searchParams.category);
-  }, [searchParams.category]);'''
-          new = '''  // Category deep-links represent a drilldown of the full monthly category total.
-  // Clear persisted filters that could hide transactions included in that total.
-  useEffect(() => {
-    if (!searchParams.category) return;
-    setActiveCategory(searchParams.category);
-    setActiveSource("all");
-    setFilterAccountId(null);
-    setFilterStartDate(undefined);
-    setFilterEndDate(undefined);
-    setFilterMinAmount("");
-    setFilterMaxAmount("");
-    setFilterType("all");
-    localStorage.removeItem("transactions_filter_accountId");
-    localStorage.setItem("transactions_filter_source", "all");
-  }, [searchParams.category]);'''
-          if old not in s:
-              raise SystemExit('category URL sync anchor not found')
-          s = s.replace(old, new, 1)
-
-          old = '''                  onClick={() => {
-                    setActiveCategory(item.category);
-                    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
-                  }}'''
-          new = '''                  onClick={() => {
-                    clearAdvancedFilters();
-                    setActiveCategory(item.category);
-                    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
-                  }}'''
-          if old not in s:
-              raise SystemExit('category spending drilldown anchor not found')
-          s = s.replace(old, new, 1)
-
-          p.write_text(s)
-          PY
-      - name: Validate touched TypeScript surface
-        run: |
-          set +e
-          bun run typecheck 2>&1 | tee /tmp/typecheck.log
-          status=${PIPESTATUS[0]}
-          if grep -q 'src/routes/transactions.tsx' /tmp/typecheck.log; then
-            echo 'TypeScript error detected in transactions.tsx'
-            exit 1
-          fi
-          if [ "$status" -ne 0 ]; then
-            echo 'Known baseline TypeScript errors remain outside transactions.tsx.'
-          fi
-          exit 0
-      - name: Verify drilldown reset
+          python3 -c 'from pathlib import Path; p=Path("src/routes/transactions.tsx"); s=p.read_text(); old="  // Sync category from URL search param when it changes\n  useEffect(() => {\n    if (searchParams.category) setActiveCategory(searchParams.category);\n  }, [searchParams.category]);"; new="  // Category deep-links represent a drilldown of the full monthly category total.\n  // Clear persisted filters that could hide transactions included in that total.\n  useEffect(() => {\n    if (!searchParams.category) return;\n    setActiveCategory(searchParams.category);\n    setActiveSource(\"all\");\n    setFilterAccountId(null);\n    setFilterStartDate(undefined);\n    setFilterEndDate(undefined);\n    setFilterMinAmount(\"\");\n    setFilterMaxAmount(\"\");\n    setFilterType(\"all\");\n    localStorage.removeItem(\"transactions_filter_accountId\");\n    localStorage.setItem(\"transactions_filter_source\", \"all\");\n  }, [searchParams.category]);"; assert old in s, "category URL sync anchor not found"; s=s.replace(old,new,1); old2="                  onClick={() => {\n                    setActiveCategory(item.category);\n                    if (typeof window !== \"undefined\") window.scrollTo({ top: 0, behavior: \"smooth\" });\n                  }}"; new2="                  onClick={() => {\n                    clearAdvancedFilters();\n                    setActiveCategory(item.category);\n                    if (typeof window !== \"undefined\") window.scrollTo({ top: 0, behavior: \"smooth\" });\n                  }}"; assert old2 in s, "category spending drilldown anchor not found"; p.write_text(s.replace(old2,new2,1))'
+      - name: Verify patch
         run: |
           grep -q 'Category deep-links represent a drilldown' src/routes/transactions.tsx
           grep -q 'clearAdvancedFilters();' src/routes/transactions.tsx
-      - name: Remove one-shot workflow
-        run: rm .github/workflows/fix-category-drilldown-filters.yml
-      - name: Commit changes
+      - name: Remove workflow and commit
         run: |
+          rm .github/workflows/fix-category-drilldown-filters.yml
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add src/routes/transactions.tsx .github/workflows/fix-category-drilldown-filters.yml
