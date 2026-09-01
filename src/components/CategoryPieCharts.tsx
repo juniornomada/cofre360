@@ -169,9 +169,9 @@ export function CategoryPieCharts({ transactions, formatCurrency, onCategoryClic
                   >
                     <div className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
                     <span className="min-w-0 flex-1 text-left">
-                      <span className="flex min-w-0 items-center gap-1">
-                        <span className="min-w-0 flex-1 truncate">{item.name}</span>
-                        <span className="shrink-0 font-bold tabular-nums text-foreground">{item.percentage.toFixed(0)}%</span>
+                      <span className="grid min-w-0 grid-cols-[minmax(0,1fr)_28px] items-center gap-1">
+                        <span className="min-w-0 truncate">{item.name}</span>
+                        <span className="w-7 shrink-0 whitespace-nowrap text-right font-bold tabular-nums text-foreground">{item.percentage.toFixed(0)}%</span>
                       </span>
                       {amountVisible && (
                         <span className="block truncate text-[7px] tabular-nums text-muted-foreground sm:text-[8px]">
