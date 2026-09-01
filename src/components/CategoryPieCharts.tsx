@@ -88,17 +88,17 @@ export function CategoryPieCharts({ transactions, formatCurrency, onCategoryClic
     data: ReturnType<typeof aggregateByLevel>,
     title: string,
   ) => (
-    <div className="rounded-xl bg-card p-3">
-      <h3 className="mb-1 whitespace-nowrap text-[11px] font-semibold text-foreground sm:text-sm">{title}</h3>
-      <div className="h-40 w-full">
+    <div className="min-w-0 rounded-xl bg-card p-2.5 sm:p-3">
+      <h3 className="mb-1 truncate whitespace-nowrap text-[10px] font-semibold text-foreground sm:text-sm">{title}</h3>
+      <div className="h-36 w-full sm:h-40">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
               data={data}
               cx="50%"
               cy="50%"
-              innerRadius={30}
-              outerRadius={55}
+              innerRadius={26}
+              outerRadius={50}
               paddingAngle={3}
               dataKey="value"
               animationBegin={0}
@@ -126,7 +126,7 @@ export function CategoryPieCharts({ transactions, formatCurrency, onCategoryClic
           </PieChart>
         </ResponsiveContainer>
       </div>
-      <div className="mt-1 flex flex-wrap justify-center gap-1.5">
+      <div className="mt-1 flex flex-wrap justify-center gap-1">
         {data.map((item, i) => {
           const isActive = !isDrilldown && activeCategory === item.name;
           return (
@@ -137,14 +137,14 @@ export function CategoryPieCharts({ transactions, formatCurrency, onCategoryClic
               disabled={isDrilldown || !onCategoryClick}
               aria-pressed={isActive}
               aria-label={isDrilldown ? `${item.name}: ${item.percentage.toFixed(0)}%` : `Filtrar por categoria ${item.name}`}
-              className={`flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[9px] transition-colors ${
+              className={`flex min-w-0 items-center gap-1 rounded-full border px-1.5 py-0.5 text-[8px] transition-colors sm:text-[9px] ${
                 isActive
                   ? "bg-primary/20 border-primary/40 text-foreground"
                   : "bg-accent/20 border-border/10"
               } ${!isDrilldown && onCategoryClick ? "cursor-pointer hover:bg-accent/40" : "cursor-default"}`}
             >
               <div className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
-              <span className="max-w-[88px] truncate text-muted-foreground">{item.name}</span>
+              <span className="max-w-[64px] truncate text-muted-foreground sm:max-w-[88px]">{item.name}</span>
               <span className="shrink-0 font-bold tabular-nums text-foreground">{item.percentage.toFixed(0)}%</span>
             </button>
           );
@@ -153,10 +153,13 @@ export function CategoryPieCharts({ transactions, formatCurrency, onCategoryClic
     </div>
   );
 
+  const expenseTitle = isDrilldown ? "Despesas por subcategoria" : "Despesas por categoria";
+  const incomeTitle = isDrilldown ? "Receitas por subcategoria" : "Receitas por categoria";
+
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-      {hasUsefulExpenseBreakdown && renderChart(expenseData, isDrilldown ? `Despesas de ${activeCategory} por subcategoria` : "Despesas por categoria")}
-      {hasUsefulIncomeBreakdown && renderChart(incomeData, isDrilldown ? `Receitas de ${activeCategory} por subcategoria` : "Receitas por categoria")}
+    <div className="grid grid-cols-2 gap-2 sm:gap-4">
+      {hasUsefulExpenseBreakdown && renderChart(expenseData, expenseTitle)}
+      {hasUsefulIncomeBreakdown && renderChart(incomeData, incomeTitle)}
     </div>
   );
 }
