@@ -544,8 +544,17 @@ function CardsPage() {
 
 
 
+  const invoiceReferenceDate = (() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth() + globalMonthOffset, 15);
+  })();
   const invoicePeriods = invoiceCard
-    ? groupByBillingCycle(cardTransactions.filter(tx => tx.card === invoiceCard.name), invoiceCard.closing_day, invoiceCard.due_day)
+    ? groupByBillingCycle(
+        cardTransactions.filter(tx => tx.card === invoiceCard.name),
+        invoiceCard.closing_day,
+        invoiceCard.due_day,
+        invoiceReferenceDate,
+      )
     : [];
   // Freeze the invoice transaction list per (card, period) while the dialog is
   // open: the snapshot is taken on open and stays stable until close, so cache
@@ -986,7 +995,16 @@ function CardsPage() {
       // Update local state and trigger re-calculation of invoicePeriods
       const txs = (latestTxs as CardTransaction[]) || [];
       setCardTransactions(txs);
-      const updatedPeriods = groupByBillingCycle(txs, payingCard.closing_day, payingCard.due_day);
+      const paymentReferenceDate = (() => {
+        const now = new Date();
+        return new Date(now.getFullYear(), now.getMonth() + globalMonthOffset, 15);
+      })();
+      const updatedPeriods = groupByBillingCycle(
+        txs,
+        payingCard.closing_day,
+        payingCard.due_day,
+        paymentReferenceDate,
+      );
       const activePeriod = updatedPeriods[activeInvoiceIdx];
       
       const totalInvoice = activePeriod?.total || 0;
@@ -1635,17 +1653,60 @@ function CardsPage() {
             <div className="flex flex-col flex-1 min-h-0">
               <div className="flex items-center gap-2 px-5 pb-3">
                 <button
-                  onClick={() => setActiveInvoiceIdx(Math.max(0, activeInvoiceIdx - 1))}
-                  disabled={activeInvoiceIdx <= 0}
-                  className="interactive-button p-1.5 rounded-lg bg-accent hover:bg-accent/80 disabled:opacity-30 transition-colors"
+                  type="button"
+                  onClick={() => {
+                    setActiveInvoiceIdx(1);
+                    setMonthOffset(globalMonthOffset - 1);
+                  }}
+                  className="interactive-button flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent text-muted-foreground hover:bg-accent/80 transition-colors"
+                  aria-label="Fatura do mês anterior"
+                  title="Mês anterior"
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </button>
-                <div className="flex-1 text-center">
-                  <p className="text-sm font-semibold text-foreground">
-                    {activePeriod?.label.includes("(") ? activePeriod.label.split(" (")[0] : activePeriod?.label || "—"}
+                <div className="min-w-0 flex-1 text-center">
+                  <p className="truncate text-base font-bold text-foreground">
+                    {activePeriod
+                      ? `${monthNames[activePeriod.dueDate.getMonth()]} ${activePeriod.dueDate.getFullYear()}`
+                      : "—"}
                   </p>
                   {activePeriod && (
+                    <p className="text-[10px] text-muted-foreground">
+                      F {activePeriod.endDate.getDate().toString().padStart(2, "0")}/{(activePeriod.endDate.getMonth() + 1).toString().padStart(2, "0")}
+                      {" · Venc "}
+                      {activePeriod.dueDate.getDate().toString().padStart(2, "0")}/{(activePeriod.dueDate.getMonth() + 1).toString().padStart(2, "0")}
+                    </p>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveInvoiceIdx(1);
+                    setMonthOffset(globalMonthOffset + 1);
+                  }}
+                  className="interactive-button flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent text-muted-foreground hover:bg-accent/80 transition-colors"
+                  aria-label="Fatura do próximo mês"
+                  title="Próximo mês"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => {
+                    if (!invoiceCard || !rawActivePeriod) return;
+                    const key = `${invoiceCard.id}::${rawActivePeriod.endDate.toISOString().split("T")[0]}`;
+                    invoiceOrderRef.current.delete(key);
+                    setInvoiceOrderTick((t) => t + 1);
+                  }}
+                  aria-label="Restaurar ordem original da fatura"
+                  title="Restaurar ordem original"
+                  className="interactive-button flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent text-muted-foreground hover:bg-accent/80 transition-colors"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                </button>
+              </div>
+
+
+              {activePeriod && (
                     <p className="text-[10px] text-muted-foreground">
                       F {activePeriod.endDate.getDate().toString().padStart(2, "0")}/{ (activePeriod.endDate.getMonth() + 1).toString().padStart(2, "0") }
                       {" · Venc "}
