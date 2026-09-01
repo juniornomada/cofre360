@@ -14,6 +14,7 @@ interface CategoryPieChartsProps {
   formatCurrency: (value: number) => string;
   onCategoryClick?: (categoryGroup: string) => void;
   activeCategory?: string;
+  amountVisible?: boolean;
 }
 
 const COLORS = [
@@ -62,7 +63,7 @@ const CustomTooltip = ({ active, payload, formatCurrency }: any) => {
   );
 };
 
-export function CategoryPieCharts({ transactions, formatCurrency, onCategoryClick, activeCategory }: CategoryPieChartsProps) {
+export function CategoryPieCharts({ transactions, formatCurrency, onCategoryClick, activeCategory, amountVisible = false }: CategoryPieChartsProps) {
   const isDrilldown = !!activeCategory && activeCategory !== "Todas";
   const level: "group" | "sub" = isDrilldown ? "sub" : "group";
   const expenseData = useMemo(
@@ -90,11 +91,9 @@ export function CategoryPieCharts({ transactions, formatCurrency, onCategoryClic
   ) => {
     const kindLabel = kind === "expense" ? "Despesas" : "Receitas";
     const title = isDrilldown ? (activeCategory || kindLabel) : `${kindLabel} por categoria`;
-    const visibleLegendData = isDrilldown ? data : data.slice(0, 5);
-    const hiddenCategoryCount = isDrilldown ? 0 : Math.max(0, data.length - visibleLegendData.length);
 
     return (
-      <div className="flex h-[164px] min-w-0 flex-col rounded-xl border border-border/20 bg-card p-2.5 sm:h-[176px] sm:p-3">
+      <div className="flex h-full min-h-[164px] min-w-0 flex-col rounded-xl border border-border/20 bg-card p-2.5 sm:min-h-[176px] sm:p-3">
         <div className="flex h-5 shrink-0 items-center justify-between gap-2">
           <h3
             className="min-w-0 truncate whitespace-nowrap text-[11px] font-semibold leading-5 text-foreground sm:text-xs"
@@ -109,8 +108,8 @@ export function CategoryPieCharts({ transactions, formatCurrency, onCategoryClic
           )}
         </div>
 
-        <div className="grid min-h-0 flex-1 grid-cols-[minmax(72px,0.85fr)_minmax(92px,1.15fr)] items-center gap-1.5 sm:grid-cols-[minmax(90px,0.9fr)_minmax(118px,1.1fr)] sm:gap-2">
-          <div className="flex min-h-0 min-w-0 items-center justify-center overflow-hidden">
+        <div className="mt-1 grid min-w-0 flex-1 grid-cols-[minmax(70px,0.82fr)_minmax(96px,1.18fr)] items-center gap-1.5 sm:grid-cols-[minmax(90px,0.9fr)_minmax(118px,1.1fr)] sm:gap-2">
+          <div className="flex min-w-0 items-center justify-center overflow-hidden">
             <div className="h-[92px] w-full sm:h-[104px]">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -149,9 +148,9 @@ export function CategoryPieCharts({ transactions, formatCurrency, onCategoryClic
             </div>
           </div>
 
-          <div className="min-h-0 min-w-0 overflow-y-auto overscroll-contain [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            <div className="flex flex-col gap-0.5 py-1">
-              {visibleLegendData.map((item, i) => {
+          <div className="min-w-0 py-1">
+            <div className="flex flex-col gap-0.5">
+              {data.map((item, i) => {
                 const isActive = !isDrilldown && activeCategory === item.name;
                 return (
                   <button
@@ -162,23 +161,27 @@ export function CategoryPieCharts({ transactions, formatCurrency, onCategoryClic
                     disabled={isDrilldown || !onCategoryClick}
                     aria-pressed={isActive}
                     aria-label={isDrilldown ? `${item.name}: ${item.percentage.toFixed(0)}%` : `Filtrar por categoria ${item.name}`}
-                    className={`flex w-full min-w-0 items-center gap-1 rounded-md px-1 py-0.5 text-[8px] transition-colors sm:text-[9px] ${
+                    className={`flex w-full min-w-0 items-start gap-1 rounded-md px-1 py-0.5 text-[8px] transition-colors sm:text-[9px] ${
                       isActive
                         ? "bg-primary/15 text-foreground"
                         : "text-muted-foreground"
                     } ${!isDrilldown && onCategoryClick ? "cursor-pointer hover:bg-accent/40" : "cursor-default"}`}
                   >
-                    <div className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
-                    <span className="min-w-0 flex-1 truncate text-left">{item.name}</span>
-                    <span className="shrink-0 font-bold tabular-nums text-foreground">{item.percentage.toFixed(0)}%</span>
+                    <div className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
+                    <span className="min-w-0 flex-1 text-left">
+                      <span className="flex min-w-0 items-center gap-1">
+                        <span className="min-w-0 flex-1 truncate">{item.name}</span>
+                        <span className="shrink-0 font-bold tabular-nums text-foreground">{item.percentage.toFixed(0)}%</span>
+                      </span>
+                      {amountVisible && (
+                        <span className="block truncate text-[7px] tabular-nums text-muted-foreground sm:text-[8px]">
+                          R$ {formatCurrency(item.value)}
+                        </span>
+                      )}
+                    </span>
                   </button>
                 );
               })}
-              {hiddenCategoryCount > 0 && (
-                <div className="mt-0.5 flex items-center justify-end px-1 text-[8px] font-medium text-muted-foreground sm:text-[9px]">
-                  +{hiddenCategoryCount} {hiddenCategoryCount === 1 ? "categoria" : "categorias"}
-                </div>
-              )}
             </div>
           </div>
         </div>
