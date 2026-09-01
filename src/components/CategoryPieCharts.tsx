@@ -74,8 +74,8 @@ export function CategoryPieCharts({ transactions, formatCurrency, onCategoryClic
     [transactions, level],
   );
 
-  const hasUsefulExpenseBreakdown = expenseData.length > (isDrilldown ? 1 : 0);
-  const hasUsefulIncomeBreakdown = incomeData.length > (isDrilldown ? 1 : 0);
+  const hasUsefulExpenseBreakdown = expenseData.length > 0;
+  const hasUsefulIncomeBreakdown = incomeData.length > 0;
   if (!hasUsefulExpenseBreakdown && !hasUsefulIncomeBreakdown) return null;
 
   const handleSliceClick = (name: string) => {
