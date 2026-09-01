@@ -18,74 +18,10 @@ jobs:
           fetch-depth: 0
       - name: Align summary cards
         run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          p = Path('src/routes/transactions.tsx')
-          s = p.read_text()
-          old = '''      <section className="-mx-1 grid grid-cols-2 gap-2">
-        <button
-          type="button"
-          onClick={() => setFilterType(filterType === "income" ? "all" : "income")}
-          aria-pressed={filterType === "income"}
-          className={`interactive-button rounded-xl border bg-card p-3 text-left transition-all ${
-            filterType === "income"
-              ? "border-primary/60 ring-1 ring-primary/30"
-              : "border-border/30"
-          }`}
-        >
-          <div className="flex items-center gap-1 text-[10px] font-semibold uppercase text-muted-foreground">
-            <ArrowUpRight className="h-3.5 w-3.5 text-primary" />
-            Receitas
-          </div>
-          <p className="mt-1 text-base font-bold text-primary">
-            {balanceVisible ? `R$ ${formatCurrency(totalIncome)}` : "R$ ••••"}
-          </p>
-        </button>
-        <button
-          type="button"
-          onClick={() => setFilterType(filterType === "expense" ? "all" : "expense")}
-          aria-pressed={filterType === "expense"}
-          className={`interactive-button rounded-xl border bg-card p-3 text-left transition-all ${
-            filterType === "expense"
-              ? "border-destructive/60 ring-1 ring-destructive/30"
-              : "border-border/30"
-          }`}
-        >
-          <div className="flex items-center gap-1 text-[10px] font-semibold uppercase text-muted-foreground">
-            <ArrowDownRight className="h-3.5 w-3.5 text-destructive" />
-            Despesas
-          </div>
-          <p className="mt-1 text-base font-bold text-destructive">
-            {balanceVisible ? `R$ ${formatCurrency(totalExpense)}` : "R$ ••••"}
-          </p>
-        </button>
-      </section>'''
-          new = '''      <section className="grid grid-cols-2 gap-2">
-        <button
-          type="button"
-          onClick={() => setFilterType(filterType === "income" ? "all" : "income")}
-          aria-pressed={filterType === "income"}
-          className={`rounded-xl border border-border/30 bg-card p-3 text-left ${filterType === "income" ? "ring-1 ring-primary/30" : ""}`}
-        >
-          <div className="flex items-center gap-1 text-[10px] font-semibold uppercase text-muted-foreground"><ArrowUpRight className="h-3.5 w-3.5 text-primary" />Receitas</div>
-          <p className="mt-1 text-base font-bold text-primary">{balanceVisible ? `R$ ${formatCurrency(totalIncome)}` : "R$ ••••"}</p>
-        </button>
-        <button
-          type="button"
-          onClick={() => setFilterType(filterType === "expense" ? "all" : "expense")}
-          aria-pressed={filterType === "expense"}
-          className={`rounded-xl border border-border/30 bg-card p-3 text-left ${filterType === "expense" ? "ring-1 ring-destructive/30" : ""}`}
-        >
-          <div className="flex items-center gap-1 text-[10px] font-semibold uppercase text-muted-foreground"><ArrowDownRight className="h-3.5 w-3.5 text-destructive" />Despesas</div>
-          <p className="mt-1 text-base font-bold text-destructive">{balanceVisible ? `R$ ${formatCurrency(totalExpense)}` : "R$ ••••"}</p>
-        </button>
-      </section>'''
-          if old not in s:
-              raise SystemExit('summary card block not found')
-          p.write_text(s.replace(old, new, 1))
-          PY
+          echo 'H4sIANo+lmoC/81VXW/TMBR9z6+4iiat3UjDNnipmiK0geAFoWrwMqbVSW46a45t2c7aqarEb+Gn8Uu4cdrOlcbHQCDaKnZufI+Pzz25jSqjatDMXQueA6+1Mg7e020Uacj8rBdbU6RGNQ5t6gyTlhWOK2kHzi7ifmRpnR4YZOWVw4XrUcQx465qZm7Q0MN98J9legDPBnDOtRqCQdvUCpThMy6ZgEOouHBGAVPgVMEMHKSr/YhXsAMmlQMuwQ6jFvEX9plggdwxCymcodVoaeqRfS4l2QGXJS56IVY/QlkGuJ9k++3QYVTyW6JfZUvBrZtgRWC0PIC6T37SUexHEuct0P5DFGu0pMQttw3pUDJ4o2p8WI9ozcCiLwAUgln7jtWYxTPDS2gvSaGETY5hxnRyHI/XKZSUN84pub0HcHeaErtwHMSVPBW8uMmWvT5kY7DoXhMVNOe0vldtp5BlGcRcFkQ3hhcQMyFiGG5D/VWAyQxniaaiWyyz5XdAwoT7oy2nZD3StUwWAnJlSqpJNyTdkJ48hXyWkEYl6OQEWhMmAisHe8sf0DVczpIj8IM2nAp2R0j+BPFqes9lHLDytQ9UrwQugDusbVKgpJ287EcdhYujp3pxCZWSLrFY81yJEhqt0RTMYremppeqTCplcOZPGY9HL41R8w96wmfXLtzrOjkZPIe5v/rcNekY0vHG5aOUCO4Q1iFE7Tbc8paBZ+ZZ7eCNlzkTTBb4kVueCySxppO9VkxlauZOG2NQFnc9pxwTb72g/dW01Y1Wff38ZfuLV6NUBw5MO6/9dU/iQqO0u6bcxB7hyk3KP7BlyDj0ZYnWmYZe9lv8f7x5puby5+4MqLcO3TTfP3JoiPkol77q9P0tm47SdbsdU/uO9GBuSNTun85eDH1/v6R23Xb4Q7AX1PyHl/3oG82z6nlYBwAA' | base64 -d | gzip -d | python3
       - name: Verify
         run: |
+          grep -q 'mesmo visual da Home + filtro ao tocar' src/routes/transactions.tsx
           grep -q '<section className="grid grid-cols-2 gap-2">' src/routes/transactions.tsx
           grep -q 'rounded-xl border border-border/30 bg-card p-3 text-left' src/routes/transactions.tsx
           git diff --check
