@@ -1,0 +1,195 @@
+name: Invoice month navigation
+on:
+  push:
+    paths:
+      - '.github/workflows/invoice-month-navigation.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply invoice month navigation
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          p = Path('src/routes/cards.tsx')
+          text = p.read_text()
+
+          old_periods = '''  const invoicePeriods = invoiceCard
+    ? groupByBillingCycle(cardTransactions.filter(tx => tx.card === invoiceCard.name), invoiceCard.closing_day, invoiceCard.due_day)
+    : [];'''
+          new_periods = '''  const invoiceReferenceDate = (() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth() + globalMonthOffset, 15);
+  })();
+  const invoicePeriods = invoiceCard
+    ? groupByBillingCycle(
+        cardTransactions.filter(tx => tx.card === invoiceCard.name),
+        invoiceCard.closing_day,
+        invoiceCard.due_day,
+        invoiceReferenceDate,
+      )
+    : [];'''
+          if old_periods not in text:
+              raise SystemExit('invoicePeriods target not found')
+          text = text.replace(old_periods, new_periods, 1)
+
+          old_pay = '''      const updatedPeriods = groupByBillingCycle(txs, payingCard.closing_day, payingCard.due_day);
+      const activePeriod = updatedPeriods[activeInvoiceIdx];'''
+          new_pay = '''      const paymentReferenceDate = (() => {
+        const now = new Date();
+        return new Date(now.getFullYear(), now.getMonth() + globalMonthOffset, 15);
+      })();
+      const updatedPeriods = groupByBillingCycle(
+        txs,
+        payingCard.closing_day,
+        payingCard.due_day,
+        paymentReferenceDate,
+      );
+      const activePeriod = updatedPeriods[activeInvoiceIdx];'''
+          if old_pay not in text:
+              raise SystemExit('payment cycle target not found')
+          text = text.replace(old_pay, new_pay, 1)
+
+          old_nav = '''              <div className="flex items-center gap-2 px-5 pb-3">
+                <button
+                  onClick={() => setActiveInvoiceIdx(Math.max(0, activeInvoiceIdx - 1))}
+                  disabled={activeInvoiceIdx <= 0}
+                  className="interactive-button p-1.5 rounded-lg bg-accent hover:bg-accent/80 disabled:opacity-30 transition-colors"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+                <div className="flex-1 text-center">
+                  <p className="text-sm font-semibold text-foreground">
+                    {activePeriod?.label.includes("(") ? activePeriod.label.split(" (")[0] : activePeriod?.label || "—"}
+                  </p>
+                  {activePeriod && (
+                    <p className="text-[10px] text-muted-foreground">
+                      F {activePeriod.endDate.getDate().toString().padStart(2, "0")}/{ (activePeriod.endDate.getMonth() + 1).toString().padStart(2, "0") }
+                      {" · Venc "}
+                      {activePeriod.dueDate.getDate().toString().padStart(2, "0")}/{ (activePeriod.dueDate.getMonth() + 1).toString().padStart(2, "0") }
+                    </p>
+                  )}
+                </div>
+                <button
+                  onClick={() => setActiveInvoiceIdx(Math.min(invoicePeriods.length - 1, activeInvoiceIdx + 1))}
+                  disabled={activeInvoiceIdx >= invoicePeriods.length - 1}
+                  className="interactive-button p-1.5 rounded-lg bg-accent hover:bg-accent/80 disabled:opacity-30 transition-colors"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => {
+                    if (!invoiceCard || !rawActivePeriod) return;
+                    const key = `${invoiceCard.id}::${rawActivePeriod.endDate.toISOString().split("T")[0]}`;
+                    invoiceOrderRef.current.delete(key);
+                    // Force re-render so the freeze block re-snapshots from the
+                    // current raw data in its canonical order.
+                    setInvoiceOrderTick((t) => t + 1);
+                  }}
+                  aria-label="Restaurar ordem original da fatura"
+                  title="Restaurar ordem original"
+                  className="interactive-button p-1.5 rounded-lg bg-accent hover:bg-accent/80 transition-colors"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                </button>
+              </div>
+
+
+              <div className="flex gap-1 px-5 pb-3 overflow-x-auto no-scrollbar">
+                {invoicePeriods.map((period, idx) => (
+                    <button
+                      key={period.key}
+                      onClick={() => setActiveInvoiceIdx(idx)}
+                      data-testid={`period-tab-${period.key}`}
+                      className={cn(
+                        "whitespace-nowrap rounded-full px-3 py-1 text-[11px] font-medium transition-colors shrink-0",
+                        idx === activeInvoiceIdx
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-accent/50 text-muted-foreground hover:bg-accent"
+                      )}
+                    >
+                      {period.label.split("|")[0]}
+                    </button>
+
+                ))}
+              </div>'''
+          new_nav = '''              <div className="flex items-center gap-2 px-5 pb-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveInvoiceIdx(1);
+                    setMonthOffset(globalMonthOffset - 1);
+                  }}
+                  className="interactive-button flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent text-muted-foreground hover:bg-accent/80 transition-colors"
+                  aria-label="Fatura do mês anterior"
+                  title="Mês anterior"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+                <div className="min-w-0 flex-1 text-center">
+                  <p className="truncate text-base font-bold text-foreground">
+                    {activePeriod
+                      ? `${monthNames[activePeriod.dueDate.getMonth()]} ${activePeriod.dueDate.getFullYear()}`
+                      : "—"}
+                  </p>
+                  {activePeriod && (
+                    <p className="text-[10px] text-muted-foreground">
+                      F {activePeriod.endDate.getDate().toString().padStart(2, "0")}/{(activePeriod.endDate.getMonth() + 1).toString().padStart(2, "0")}
+                      {" · Venc "}
+                      {activePeriod.dueDate.getDate().toString().padStart(2, "0")}/{(activePeriod.dueDate.getMonth() + 1).toString().padStart(2, "0")}
+                    </p>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveInvoiceIdx(1);
+                    setMonthOffset(globalMonthOffset + 1);
+                  }}
+                  className="interactive-button flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent text-muted-foreground hover:bg-accent/80 transition-colors"
+                  aria-label="Fatura do próximo mês"
+                  title="Próximo mês"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => {
+                    if (!invoiceCard || !rawActivePeriod) return;
+                    const key = `${invoiceCard.id}::${rawActivePeriod.endDate.toISOString().split("T")[0]}`;
+                    invoiceOrderRef.current.delete(key);
+                    // Force re-render so the freeze block re-snapshots from the
+                    // current raw data in its canonical order.
+                    setInvoiceOrderTick((t) => t + 1);
+                  }}
+                  aria-label="Restaurar ordem original da fatura"
+                  title="Restaurar ordem original"
+                  className="interactive-button flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent text-muted-foreground hover:bg-accent/80 transition-colors"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                </button>
+              </div>'''
+          if old_nav not in text:
+              raise SystemExit('invoice nav target not found')
+          text = text.replace(old_nav, new_nav, 1)
+
+          p.write_text(text)
+          PY
+          rm .github/workflows/invoice-month-navigation.yml
+      - name: Verify
+        run: |
+          grep -F 'invoiceReferenceDate' src/routes/cards.tsx
+          grep -F 'Fatura do mês anterior' src/routes/cards.tsx
+          grep -F 'monthNames[activePeriod.dueDate.getMonth()]' src/routes/cards.tsx
+          ! grep -F 'data-testid={`period-tab-${period.key}`}' src/routes/cards.tsx
+          git diff --check
+      - name: Commit
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/routes/cards.tsx .github/workflows/invoice-month-navigation.yml
+          git commit -m 'feat: navigate card invoices by month'
+          git push
