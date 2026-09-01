@@ -1,8 +1,6 @@
 name: Hide transaction summary when filtered
-on:
+"on":
   push:
-    branches: [main]
-    paths: ['.github/workflows/hide-summary-when-filtered.yml']
 permissions:
   contents: write
 jobs:
@@ -16,13 +14,11 @@ jobs:
           from pathlib import Path
           p = Path('src/routes/transactions.tsx')
           s = p.read_text()
-
-          anchor = '''  const activeFilterCount = (filterStartDate || filterEndDate ? 1 : 0) + (minAmt !== null || maxAmt !== null ? 1 : 0) + (filterType !== "all" ? 1 : 0) + (sortBy !== "date-desc" ? 1 : 0) + (filterAccountId ? 1 : 0);'''
-          replacement = anchor + '''\n\n  const hasTransactionFilters = activeCategory !== "Todas" || activeSource !== "all" || !!filterAccountId || !!filterStartDate || !!filterEndDate || minAmt !== null || maxAmt !== null || filterType !== "all";'''
+          anchor = '  const activeFilterCount = (filterStartDate || filterEndDate ? 1 : 0) + (minAmt !== null || maxAmt !== null ? 1 : 0) + (filterType !== "all" ? 1 : 0) + (sortBy !== "date-desc" ? 1 : 0) + (filterAccountId ? 1 : 0);'
+          replacement = anchor + '\n\n  const hasTransactionFilters = activeCategory !== "Todas" || activeSource !== "all" || !!filterAccountId || !!filterStartDate || !!filterEndDate || minAmt !== null || maxAmt !== null || filterType !== "all";'
           if anchor not in s:
               raise SystemExit('activeFilterCount anchor not found')
           s = s.replace(anchor, replacement, 1)
-
           old_totals = '''      <section className="-mx-1 grid grid-cols-2 gap-2">
         <div className="rounded-xl border border-border/30 bg-card p-3">
           <div className="flex items-center gap-1 text-[10px] font-semibold uppercase text-muted-foreground"><ArrowUpRight className="h-3.5 w-3.5 text-primary" />Receitas</div>
@@ -48,7 +44,6 @@ jobs:
           if old_totals not in s:
               raise SystemExit('totals block not found')
           s = s.replace(old_totals, new_totals, 1)
-
           old_chart = '''      {/* Pie Charts */}
       <div className="mt-8 mb-8">
         <CategoryPieCharts
