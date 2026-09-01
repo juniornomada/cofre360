@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { SmartLink as Link } from "@/components/SmartLink";
 import { TransactionItem } from "@/components/TransactionItem";
 import { EmptyState } from "@/components/EmptyState";
-import { parseCategoryValue } from "@/lib/categories";
+import { parseCategoryValue, getCategoryIcon } from "@/lib/categories";
 import { fetchAllCategoryLedgerTransactions, type CategoryLedgerTransaction } from "@/lib/category-spending-ledger";
 import { Search, Pencil, Trash2, Plus, CalendarIcon, Loader2, Upload, CheckSquare, Square, X, SlidersHorizontal, ArrowLeftRight, ArrowRight, Eye, EyeOff, FileText, MoreVertical, GripVertical, ArrowLeft, Landmark, CreditCard, ArrowUpRight, ArrowDownRight } from "lucide-react";
 import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react";
@@ -464,9 +464,12 @@ export function TransactionsPage() {
     .filter((item) => item.count > 0)
     .sort((a, b) => b.count - a.count || a.category.localeCompare(b.category, "pt-BR"));
 
-  const quickCategories = monthCategoryRanking.slice(0, 4);
-  const moreCategories = monthCategoryRanking.slice(4);
-  const activeCategoryInMore = activeCategory !== "Todas" && moreCategories.some((item) => item.category === activeCategory);
+  const quickCategories4 = monthCategoryRanking.slice(0, 4);
+  const quickCategories5 = monthCategoryRanking.slice(0, 5);
+  const moreCategories4 = monthCategoryRanking.slice(4);
+  const moreCategories5 = monthCategoryRanking.slice(5);
+  const activeCategoryInMore4 = activeCategory !== "Todas" && moreCategories4.some((item) => item.category === activeCategory);
+  const activeCategoryInMore5 = activeCategory !== "Todas" && moreCategories5.some((item) => item.category === activeCategory);
 
   // Apply every filter except transaction type first. The Receitas/Despesas
   // summary cards use this base so both totals stay visible while either card
@@ -1242,60 +1245,110 @@ export function TransactionsPage() {
         </button>
       </div>
 
-      {/* 2. Categorias: Todas + 4 mais usadas no mês + Mais */}
-      <div className="grid grid-cols-[auto_repeat(4,minmax(0,1fr))_auto] items-center gap-1">
-        <button
-          type="button"
-          onClick={() => setActiveCategory("Todas")}
-          className={`interactive-button h-8 whitespace-nowrap rounded-full px-2.5 text-[10px] font-semibold transition-colors sm:text-xs ${
-            activeCategory === "Todas" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground"
-          }`}
-        >
-          Todas
-        </button>
-
-        {quickCategories.map(({ category }) => (
-          <button
-            key={category}
-            type="button"
-            title={category}
-            onClick={() => setActiveCategory(category)}
-            className={`interactive-button h-8 min-w-0 truncate rounded-full px-2 text-[10px] font-medium transition-colors sm:text-xs ${
-              activeCategory === category ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground"
-            }`}
-          >
-            {category}
-          </button>
-        ))}
-
-        {Array.from({ length: Math.max(0, 4 - quickCategories.length) }).map((_, index) => (
-          <span key={`category-placeholder-${index}`} className="h-8 min-w-0" aria-hidden="true" />
-        ))}
-
+      {/* 2. Categorias: ícones rápidos; sem filtro ativo = todas */}
+      <div className="grid grid-cols-5 gap-2 min-[390px]:hidden">
+        {quickCategories4.map(({ category }) => {
+          const isActive = activeCategory === category;
+          return (
+            <button
+              key={category}
+              type="button"
+              aria-label={`Filtrar por ${category}`}
+              aria-pressed={isActive}
+              title={category}
+              onClick={() => setActiveCategory(isActive ? "Todas" : category)}
+              className={`interactive-button flex h-9 min-w-0 items-center justify-center rounded-xl border text-base transition-all ${
+                isActive
+                  ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                  : "border-border/60 bg-card text-foreground hover:bg-accent"
+              }`}
+            >
+              <span aria-hidden="true">{getCategoryIcon(category)}</span>
+            </button>
+          );
+        })}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
               type="button"
-              disabled={moreCategories.length === 0}
-              className={`interactive-button h-8 whitespace-nowrap rounded-full px-2.5 text-[10px] font-semibold transition-colors sm:text-xs ${
-                activeCategoryInMore
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-card text-muted-foreground"
-              } disabled:cursor-default disabled:opacity-40`}
+              disabled={moreCategories4.length === 0}
               aria-label="Mais categorias"
-              title={activeCategoryInMore ? `Categoria selecionada: ${activeCategory}` : "Mais categorias"}
+              title={activeCategoryInMore4 ? `Categoria selecionada: ${activeCategory}` : "Mais categorias"}
+              className={`interactive-button flex h-9 min-w-0 items-center justify-center rounded-xl border transition-all ${
+                activeCategoryInMore4
+                  ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                  : "border-border/60 bg-card text-muted-foreground hover:bg-accent"
+              } disabled:cursor-default disabled:opacity-40`}
             >
-              Mais
+              <MoreVertical className="h-4 w-4" />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="max-h-[60vh] w-52 overflow-y-auto">
-            {moreCategories.map(({ category, count }) => (
+            {moreCategories4.map(({ category, count }) => (
               <DropdownMenuItem
                 key={category}
-                onClick={() => setActiveCategory(category)}
+                onClick={() => setActiveCategory(activeCategory === category ? "Todas" : category)}
                 className="flex items-center justify-between gap-3"
               >
-                <span className="truncate">{category}</span>
+                <span className="flex min-w-0 items-center gap-2">
+                  <span aria-hidden="true">{getCategoryIcon(category)}</span>
+                  <span className="truncate">{category}</span>
+                </span>
+                <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground">{count}</span>
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      <div className="hidden grid-cols-6 gap-2 min-[390px]:grid">
+        {quickCategories5.map(({ category }) => {
+          const isActive = activeCategory === category;
+          return (
+            <button
+              key={category}
+              type="button"
+              aria-label={`Filtrar por ${category}`}
+              aria-pressed={isActive}
+              title={category}
+              onClick={() => setActiveCategory(isActive ? "Todas" : category)}
+              className={`interactive-button flex h-9 min-w-0 items-center justify-center rounded-xl border text-base transition-all ${
+                isActive
+                  ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                  : "border-border/60 bg-card text-foreground hover:bg-accent"
+              }`}
+            >
+              <span aria-hidden="true">{getCategoryIcon(category)}</span>
+            </button>
+          );
+        })}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              disabled={moreCategories5.length === 0}
+              aria-label="Mais categorias"
+              title={activeCategoryInMore5 ? `Categoria selecionada: ${activeCategory}` : "Mais categorias"}
+              className={`interactive-button flex h-9 min-w-0 items-center justify-center rounded-xl border transition-all ${
+                activeCategoryInMore5
+                  ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                  : "border-border/60 bg-card text-muted-foreground hover:bg-accent"
+              } disabled:cursor-default disabled:opacity-40`}
+            >
+              <MoreVertical className="h-4 w-4" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="max-h-[60vh] w-52 overflow-y-auto">
+            {moreCategories5.map(({ category, count }) => (
+              <DropdownMenuItem
+                key={category}
+                onClick={() => setActiveCategory(activeCategory === category ? "Todas" : category)}
+                className="flex items-center justify-between gap-3"
+              >
+                <span className="flex min-w-0 items-center gap-2">
+                  <span aria-hidden="true">{getCategoryIcon(category)}</span>
+                  <span className="truncate">{category}</span>
+                </span>
                 <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground">{count}</span>
               </DropdownMenuItem>
             ))}
