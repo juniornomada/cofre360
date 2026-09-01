@@ -218,6 +218,16 @@ export function parseCategoryValue(value: string): { group: string; sub: string 
     return { group: "Transferências", sub: "Outros" };
   }
 
+  // Legacy/system-generated values must not fall back into the expense
+  // category "Outros". Rendimentos belongs to income; Ajustes is a
+  // technical balance category and is intentionally kept separate.
+  if (value === "Rendimentos" || value === "Rendimento") {
+    return { group: "Receita", sub: "Juros" };
+  }
+  if (value === "Ajustes" || value === "Ajuste de saldo") {
+    return { group: "Ajustes", sub: "Outros" };
+  }
+
   // Legacy: try to match old flat category to a group
   const found = categoryTree.find(g => g.label === value);
   if (found) return { group: found.label, sub: "Outros" };

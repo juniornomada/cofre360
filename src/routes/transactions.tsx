@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { SmartLink as Link } from "@/components/SmartLink";
 import { TransactionItem } from "@/components/TransactionItem";
 import { EmptyState } from "@/components/EmptyState";
-import { parseCategoryValue, getCategoryIcon } from "@/lib/categories";
+import { parseCategoryValue, getCategoryIcon, categoryTree } from "@/lib/categories";
 import { fetchAllCategoryLedgerTransactions, type CategoryLedgerTransaction } from "@/lib/category-spending-ledger";
 import { Search, Pencil, Trash2, Plus, CalendarIcon, Loader2, Upload, CheckSquare, Square, X, SlidersHorizontal, ArrowLeftRight, ArrowRight, Eye, EyeOff, FileText, GripVertical, ArrowLeft, Landmark, CreditCard, ArrowUpRight, ArrowDownRight } from "lucide-react";
 import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react";
@@ -455,6 +455,8 @@ export function TransactionsPage() {
       const timestamp = d?.getTime() ?? NaN;
       if (!Number.isFinite(timestamp) || timestamp < selectedMonthStartUtc || timestamp > selectedMonthEndUtc) return counts;
       const category = parseCategoryValue(tx.category || "").group || "Outros";
+      const categoryGroup = categoryTree.find((group) => group.label === category);
+      if (!categoryGroup || categoryGroup.type !== "expense") return counts;
       counts[category] = (counts[category] || 0) + 1;
       return counts;
     }, {}),
