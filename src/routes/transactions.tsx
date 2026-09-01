@@ -1327,14 +1327,14 @@ export function TransactionsPage() {
       </div>
 
       {/* 4. Receitas / Despesas: resumo original + filtro ao tocar */}
-      <section className="-mx-1 grid grid-cols-2 gap-2">
+      <section className="grid grid-cols-2 gap-2">
         <button
           type="button"
           onClick={() => setFilterType(filterType === "income" ? "all" : "income")}
           aria-pressed={filterType === "income"}
-          className={`interactive-button rounded-xl border bg-card p-3 text-left transition-all ${
+          className={`rounded-xl border bg-card p-3 text-left ${
             filterType === "income"
-              ? "border-primary/60 ring-1 ring-primary/30"
+              ? "border-border/30 ring-1 ring-primary/30"
               : "border-border/30"
           }`}
         >
@@ -1350,9 +1350,9 @@ export function TransactionsPage() {
           type="button"
           onClick={() => setFilterType(filterType === "expense" ? "all" : "expense")}
           aria-pressed={filterType === "expense"}
-          className={`interactive-button rounded-xl border bg-card p-3 text-left transition-all ${
+          className={`rounded-xl border bg-card p-3 text-left ${
             filterType === "expense"
-              ? "border-destructive/60 ring-1 ring-destructive/30"
+              ? "border-border/30 ring-1 ring-destructive/30"
               : "border-border/30"
           }`}
         >
