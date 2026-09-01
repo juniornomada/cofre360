@@ -80,7 +80,6 @@ export function CategoryPieCharts({ transactions, formatCurrency, onCategoryClic
 
   const handleSliceClick = (name: string) => {
     if (isDrilldown || !onCategoryClick) return;
-    // Top-level slices can filter the main category. Drilldown slices are informational.
     if (activeCategory === name) onCategoryClick("Todas");
     else onCategoryClick(name);
   };
@@ -109,15 +108,16 @@ export function CategoryPieCharts({ transactions, formatCurrency, onCategoryClic
               }}
             >
               {data.map((item, i) => {
-                const isDimmed = activeCategory && activeCategory !== "Todas" && activeCategory !== item.name;
+                const isDimmed = !isDrilldown && !!activeCategory && activeCategory !== "Todas" && activeCategory !== item.name;
+                const isActive = !isDrilldown && activeCategory === item.name;
                 return (
                   <Cell
                     key={i}
                     fill={COLORS[i % COLORS.length]}
                     className={`outline-none ${!isDrilldown && onCategoryClick ? "cursor-pointer" : ""}`}
                     fillOpacity={isDimmed ? 0.35 : 1}
-                    stroke={activeCategory === item.name ? "hsl(var(--foreground))" : "none"}
-                    strokeWidth={activeCategory === item.name ? 2 : 0}
+                    stroke={isActive ? "hsl(var(--foreground))" : "none"}
+                    strokeWidth={isActive ? 2 : 0}
                   />
                 );
               })}
@@ -128,7 +128,7 @@ export function CategoryPieCharts({ transactions, formatCurrency, onCategoryClic
       </div>
       <div className="-mt-12 flex flex-wrap justify-center gap-1.5">
         {data.map((item, i) => {
-          const isActive = activeCategory === item.name;
+          const isActive = !isDrilldown && activeCategory === item.name;
           return (
             <button
               key={item.name}
@@ -136,7 +136,7 @@ export function CategoryPieCharts({ transactions, formatCurrency, onCategoryClic
               onClick={() => handleSliceClick(item.name)}
               disabled={isDrilldown || !onCategoryClick}
               aria-pressed={isActive}
-              aria-label={`Filtrar por categoria ${item.name}`}
+              aria-label={isDrilldown ? `${item.name}: ${item.percentage.toFixed(0)}%` : `Filtrar por categoria ${item.name}`}
               className={`flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded-full border transition-colors ${
                 isActive
                   ? "bg-primary/20 border-primary/40 text-foreground"
@@ -144,7 +144,7 @@ export function CategoryPieCharts({ transactions, formatCurrency, onCategoryClic
               } ${!isDrilldown && onCategoryClick ? "cursor-pointer hover:bg-accent/40" : "cursor-default"}`}
             >
               <div className="h-1 w-1 shrink-0 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
-              <span className="text-muted-foreground truncate max-w-[60px]">{item.name}</span>
+              <span className="text-muted-foreground truncate max-w-[80px]">{item.name}</span>
               <span className="font-bold text-foreground shrink-0">{item.percentage.toFixed(0)}%</span>
             </button>
           );
