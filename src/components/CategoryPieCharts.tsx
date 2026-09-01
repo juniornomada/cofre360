@@ -86,88 +86,112 @@ export function CategoryPieCharts({ transactions, formatCurrency, onCategoryClic
 
   const renderChart = (
     data: ReturnType<typeof aggregateByLevel>,
-    title: string,
-  ) => (
-    <div className="flex h-[184px] min-w-0 flex-col rounded-xl bg-card p-2.5 sm:h-[196px] sm:p-3">
-      <h3 className="h-4 shrink-0 truncate whitespace-nowrap text-[10px] font-semibold leading-4 text-foreground sm:text-xs">
-        {title}
-      </h3>
+    kind: "expense" | "income",
+  ) => {
+    const kindLabel = kind === "expense" ? "Despesas" : "Receitas";
+    const title = isDrilldown ? (activeCategory || kindLabel) : `${kindLabel} por categoria`;
 
-      <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_72px] items-stretch gap-1.5 sm:grid-cols-[minmax(0,1fr)_104px] sm:gap-2">
-        <div className="min-h-0 min-w-0">
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={data}
-                cx="50%"
-                cy="50%"
-                innerRadius={22}
-                outerRadius={44}
-                paddingAngle={3}
-                dataKey="value"
-                animationBegin={0}
-                animationDuration={600}
-                onClick={(payload: { name?: string } | undefined) => {
-                  if (payload?.name) handleSliceClick(payload.name);
-                }}
-              >
-                {data.map((item, i) => {
-                  const isDimmed = !isDrilldown && !!activeCategory && activeCategory !== "Todas" && activeCategory !== item.name;
-                  const isActive = !isDrilldown && activeCategory === item.name;
-                  return (
-                    <Cell
-                      key={i}
-                      fill={COLORS[i % COLORS.length]}
-                      className={`outline-none ${!isDrilldown && onCategoryClick ? "cursor-pointer" : ""}`}
-                      fillOpacity={isDimmed ? 0.35 : 1}
-                      stroke={isActive ? "hsl(var(--foreground))" : "none"}
-                      strokeWidth={isActive ? 2 : 0}
-                    />
-                  );
-                })}
-              </Pie>
-              <Tooltip content={<CustomTooltip formatCurrency={formatCurrency} />} />
-            </PieChart>
-          </ResponsiveContainer>
+    return (
+      <div className="flex h-[176px] min-w-0 flex-col rounded-xl bg-card p-2.5 sm:h-[188px] sm:p-3">
+        <div className="flex h-5 shrink-0 items-center justify-between gap-2">
+          <h3
+            className="min-w-0 truncate whitespace-nowrap text-[11px] font-semibold leading-5 text-foreground sm:text-xs"
+            title={title}
+          >
+            {title}
+          </h3>
+          {isDrilldown && (
+            <span className="shrink-0 rounded-full bg-accent/50 px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wide text-muted-foreground">
+              {kindLabel}
+            </span>
+          )}
         </div>
 
-        <div className="min-h-0 min-w-0 overflow-y-auto overscroll-contain pr-0.5 [scrollbar-width:thin]">
-          <div className="flex flex-col gap-1 py-1">
-            {data.map((item, i) => {
-              const isActive = !isDrilldown && activeCategory === item.name;
-              return (
-                <button
-                  key={item.name}
-                  type="button"
-                  onClick={() => handleSliceClick(item.name)}
-                  disabled={isDrilldown || !onCategoryClick}
-                  aria-pressed={isActive}
-                  aria-label={isDrilldown ? `${item.name}: ${item.percentage.toFixed(0)}%` : `Filtrar por categoria ${item.name}`}
-                  className={`flex w-full min-w-0 items-center gap-1 rounded-md border px-1 py-1 text-[8px] transition-colors sm:px-1.5 sm:text-[9px] ${
-                    isActive
-                      ? "border-primary/40 bg-primary/20 text-foreground"
-                      : "border-border/10 bg-accent/20"
-                  } ${!isDrilldown && onCategoryClick ? "cursor-pointer hover:bg-accent/40" : "cursor-default"}`}
+        <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_78px] items-stretch gap-1.5 sm:grid-cols-[minmax(0,1fr)_112px] sm:gap-2">
+          <div className="min-h-0 min-w-0">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={data}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={24}
+                  outerRadius={46}
+                  paddingAngle={3}
+                  dataKey="value"
+                  animationBegin={0}
+                  animationDuration={600}
+                  onClick={(payload: { name?: string } | undefined) => {
+                    if (payload?.name) handleSliceClick(payload.name);
+                  }}
                 >
-                  <div className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
-                  <span className="min-w-0 flex-1 truncate text-left text-muted-foreground">{item.name}</span>
-                  <span className="shrink-0 font-bold tabular-nums text-foreground">{item.percentage.toFixed(0)}%</span>
-                </button>
-              );
-            })}
+                  {data.map((item, i) => {
+                    const isDimmed = !isDrilldown && !!activeCategory && activeCategory !== "Todas" && activeCategory !== item.name;
+                    const isActive = !isDrilldown && activeCategory === item.name;
+                    return (
+                      <Cell
+                        key={i}
+                        fill={COLORS[i % COLORS.length]}
+                        className={`outline-none ${!isDrilldown && onCategoryClick ? "cursor-pointer" : ""}`}
+                        fillOpacity={isDimmed ? 0.35 : 1}
+                        stroke={isActive ? "hsl(var(--foreground))" : "none"}
+                        strokeWidth={isActive ? 2 : 0}
+                      />
+                    );
+                  })}
+                </Pie>
+                <Tooltip content={<CustomTooltip formatCurrency={formatCurrency} />} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div className="min-h-0 min-w-0 overflow-y-auto overscroll-contain pr-0.5 [scrollbar-width:thin]">
+            <div className="flex flex-col gap-0.5 py-1">
+              {data.map((item, i) => {
+                const isActive = !isDrilldown && activeCategory === item.name;
+                return (
+                  <button
+                    key={item.name}
+                    type="button"
+                    title={`${item.name}: ${item.percentage.toFixed(0)}%`}
+                    onClick={() => handleSliceClick(item.name)}
+                    disabled={isDrilldown || !onCategoryClick}
+                    aria-pressed={isActive}
+                    aria-label={isDrilldown ? `${item.name}: ${item.percentage.toFixed(0)}%` : `Filtrar por categoria ${item.name}`}
+                    className={`flex w-full min-w-0 items-center gap-1 rounded-md px-1 py-0.5 text-[8px] transition-colors sm:text-[9px] ${
+                      isActive
+                        ? "bg-primary/15 text-foreground"
+                        : "text-muted-foreground"
+                    } ${!isDrilldown && onCategoryClick ? "cursor-pointer hover:bg-accent/40" : "cursor-default"}`}
+                  >
+                    <div className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
+                    <span className="min-w-0 flex-1 truncate text-left">{item.name}</span>
+                    <span className="shrink-0 font-bold tabular-nums text-foreground">{item.percentage.toFixed(0)}%</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
-  const expenseTitle = isDrilldown ? "Despesas por subcategoria" : "Despesas por categoria";
-  const incomeTitle = isDrilldown ? "Receitas por subcategoria" : "Receitas por categoria";
+  const onlyExpense = hasUsefulExpenseBreakdown && !hasUsefulIncomeBreakdown;
+  const onlyIncome = hasUsefulIncomeBreakdown && !hasUsefulExpenseBreakdown;
 
   return (
     <div className="grid grid-cols-2 items-stretch gap-2 sm:gap-4">
-      {hasUsefulExpenseBreakdown && renderChart(expenseData, expenseTitle)}
-      {hasUsefulIncomeBreakdown && renderChart(incomeData, incomeTitle)}
+      {hasUsefulExpenseBreakdown && (
+        <div className={onlyExpense ? "col-span-2 min-w-0" : "min-w-0"}>
+          {renderChart(expenseData, "expense")}
+        </div>
+      )}
+      {hasUsefulIncomeBreakdown && (
+        <div className={onlyIncome ? "col-span-2 min-w-0" : "min-w-0"}>
+          {renderChart(incomeData, "income")}
+        </div>
+      )}
     </div>
   );
 }

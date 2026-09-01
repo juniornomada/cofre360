@@ -1547,13 +1547,13 @@ export function TransactionsPage() {
                             aria-pressed={selected}
                             onClick={() => setEditTx({ ...editTx, card: c.name, bank_account_id: null })}
                             className={cn(
-                              "flex min-w-0 items-center gap-2 rounded-xl border p-2.5 text-left transition-all",
+                              "flex min-w-0 items-center gap-1.5 rounded-xl border p-2 text-left transition-all",
                               selected
                                 ? "border-primary bg-primary/10 ring-1 ring-primary/30"
                                 : "border-border bg-card hover:bg-accent/60"
                             )}
                           >
-                            <CardIcon color={c.color} name={c.name} size="lg" />
+                            <CardIcon color={c.color} name={c.name} size="xs" />
                             <span className="min-w-0 flex-1">
                               <span className="block truncate text-xs font-semibold text-foreground">{c.name}</span>
                               {c.brand && (
@@ -1589,7 +1589,7 @@ export function TransactionsPage() {
                             aria-pressed={selected}
                             onClick={() => setEditTx({ ...editTx, bank_account_id: a.id, card: null })}
                             className={cn(
-                              "flex min-w-0 items-center gap-2 rounded-xl border p-2.5 text-left transition-all",
+                              "flex min-w-0 items-center gap-1.5 rounded-xl border p-2 text-left transition-all",
                               selected
                                 ? "border-primary bg-primary/10 ring-1 ring-primary/30"
                                 : "border-border bg-card hover:bg-accent/60"
