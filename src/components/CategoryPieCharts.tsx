@@ -88,67 +88,69 @@ export function CategoryPieCharts({ transactions, formatCurrency, onCategoryClic
     data: ReturnType<typeof aggregateByLevel>,
     title: string,
   ) => (
-    <div className="rounded-xl bg-card p-4">
-      <h3 className="mb-2 text-sm font-semibold text-foreground">{title}</h3>
-      <div className="h-56">
-        <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
-            <Pie
-              data={data}
-              cx="50%"
-              cy="40%"
-              innerRadius={30}
-              outerRadius={55}
-              paddingAngle={3}
-              dataKey="value"
-              animationBegin={0}
-              animationDuration={600}
-              onClick={(payload: { name?: string } | undefined) => {
-                if (payload?.name) handleSliceClick(payload.name);
-              }}
-            >
-              {data.map((item, i) => {
-                const isDimmed = !isDrilldown && !!activeCategory && activeCategory !== "Todas" && activeCategory !== item.name;
-                const isActive = !isDrilldown && activeCategory === item.name;
-                return (
-                  <Cell
-                    key={i}
-                    fill={COLORS[i % COLORS.length]}
-                    className={`outline-none ${!isDrilldown && onCategoryClick ? "cursor-pointer" : ""}`}
-                    fillOpacity={isDimmed ? 0.35 : 1}
-                    stroke={isActive ? "hsl(var(--foreground))" : "none"}
-                    strokeWidth={isActive ? 2 : 0}
-                  />
-                );
-              })}
-            </Pie>
-            <Tooltip content={<CustomTooltip formatCurrency={formatCurrency} />} />
-          </PieChart>
-        </ResponsiveContainer>
-      </div>
-      <div className="-mt-12 flex flex-wrap justify-center gap-1.5">
-        {data.map((item, i) => {
-          const isActive = !isDrilldown && activeCategory === item.name;
-          return (
-            <button
-              key={item.name}
-              type="button"
-              onClick={() => handleSliceClick(item.name)}
-              disabled={isDrilldown || !onCategoryClick}
-              aria-pressed={isActive}
-              aria-label={isDrilldown ? `${item.name}: ${item.percentage.toFixed(0)}%` : `Filtrar por categoria ${item.name}`}
-              className={`flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded-full border transition-colors ${
-                isActive
-                  ? "bg-primary/20 border-primary/40 text-foreground"
-                  : "bg-accent/20 border-border/10"
-              } ${!isDrilldown && onCategoryClick ? "cursor-pointer hover:bg-accent/40" : "cursor-default"}`}
-            >
-              <div className="h-1 w-1 shrink-0 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
-              <span className="text-muted-foreground truncate max-w-[80px]">{item.name}</span>
-              <span className="font-bold text-foreground shrink-0">{item.percentage.toFixed(0)}%</span>
-            </button>
-          );
-        })}
+    <div className="rounded-xl bg-card p-3">
+      <h3 className="mb-1 whitespace-nowrap text-[11px] font-semibold text-foreground sm:text-sm">{title}</h3>
+      <div className="grid grid-cols-[minmax(0,1fr)_minmax(118px,0.9fr)] items-center gap-2">
+        <div className="h-40 min-w-0">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={data}
+                cx="50%"
+                cy="50%"
+                innerRadius={30}
+                outerRadius={55}
+                paddingAngle={3}
+                dataKey="value"
+                animationBegin={0}
+                animationDuration={600}
+                onClick={(payload: { name?: string } | undefined) => {
+                  if (payload?.name) handleSliceClick(payload.name);
+                }}
+              >
+                {data.map((item, i) => {
+                  const isDimmed = !isDrilldown && !!activeCategory && activeCategory !== "Todas" && activeCategory !== item.name;
+                  const isActive = !isDrilldown && activeCategory === item.name;
+                  return (
+                    <Cell
+                      key={i}
+                      fill={COLORS[i % COLORS.length]}
+                      className={`outline-none ${!isDrilldown && onCategoryClick ? "cursor-pointer" : ""}`}
+                      fillOpacity={isDimmed ? 0.35 : 1}
+                      stroke={isActive ? "hsl(var(--foreground))" : "none"}
+                      strokeWidth={isActive ? 2 : 0}
+                    />
+                  );
+                })}
+              </Pie>
+              <Tooltip content={<CustomTooltip formatCurrency={formatCurrency} />} />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+        <div className="flex max-h-40 min-w-0 flex-col gap-1 overflow-y-auto pr-1">
+          {data.map((item, i) => {
+            const isActive = !isDrilldown && activeCategory === item.name;
+            return (
+              <button
+                key={item.name}
+                type="button"
+                onClick={() => handleSliceClick(item.name)}
+                disabled={isDrilldown || !onCategoryClick}
+                aria-pressed={isActive}
+                aria-label={isDrilldown ? `${item.name}: ${item.percentage.toFixed(0)}%` : `Filtrar por categoria ${item.name}`}
+                className={`flex w-full min-w-0 items-center gap-1.5 rounded-md border px-1.5 py-1 text-[9px] transition-colors ${
+                  isActive
+                    ? "bg-primary/20 border-primary/40 text-foreground"
+                    : "bg-accent/20 border-border/10"
+                } ${!isDrilldown && onCategoryClick ? "cursor-pointer hover:bg-accent/40" : "cursor-default"}`}
+              >
+                <div className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
+                <span className="min-w-0 flex-1 truncate text-left text-muted-foreground">{item.name}</span>
+                <span className="shrink-0 font-bold tabular-nums text-foreground">{item.percentage.toFixed(0)}%</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
