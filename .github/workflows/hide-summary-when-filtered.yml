@@ -1,0 +1,99 @@
+name: Hide transaction summary when filtered
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/hide-summary-when-filtered.yml']
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch filtered transaction UI
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('src/routes/transactions.tsx')
+          s = p.read_text()
+
+          anchor = '''  const activeFilterCount = (filterStartDate || filterEndDate ? 1 : 0) + (minAmt !== null || maxAmt !== null ? 1 : 0) + (filterType !== "all" ? 1 : 0) + (sortBy !== "date-desc" ? 1 : 0) + (filterAccountId ? 1 : 0);'''
+          replacement = anchor + '''\n\n  const hasTransactionFilters = activeCategory !== "Todas" || activeSource !== "all" || !!filterAccountId || !!filterStartDate || !!filterEndDate || minAmt !== null || maxAmt !== null || filterType !== "all";'''
+          if anchor not in s:
+              raise SystemExit('activeFilterCount anchor not found')
+          s = s.replace(anchor, replacement, 1)
+
+          old_totals = '''      <section className="-mx-1 grid grid-cols-2 gap-2">
+        <div className="rounded-xl border border-border/30 bg-card p-3">
+          <div className="flex items-center gap-1 text-[10px] font-semibold uppercase text-muted-foreground"><ArrowUpRight className="h-3.5 w-3.5 text-primary" />Receitas</div>
+          <p className="mt-1 text-base font-bold text-primary">{balanceVisible ? `R$ ${formatCurrency(totalIncome)}` : "R$ ••••"}</p>
+        </div>
+        <div className="rounded-xl border border-border/30 bg-card p-3">
+          <div className="flex items-center gap-1 text-[10px] font-semibold uppercase text-muted-foreground"><ArrowDownRight className="h-3.5 w-3.5 text-destructive" />Despesas</div>
+          <p className="mt-1 text-base font-bold text-destructive">{balanceVisible ? `R$ ${formatCurrency(totalExpense)}` : "R$ ••••"}</p>
+        </div>
+      </section>'''
+          new_totals = '''      {!hasTransactionFilters && (
+        <section className="-mx-1 grid grid-cols-2 gap-2">
+          <div className="rounded-xl border border-border/30 bg-card p-3">
+            <div className="flex items-center gap-1 text-[10px] font-semibold uppercase text-muted-foreground"><ArrowUpRight className="h-3.5 w-3.5 text-primary" />Receitas</div>
+            <p className="mt-1 text-base font-bold text-primary">{balanceVisible ? `R$ ${formatCurrency(totalIncome)}` : "R$ ••••"}</p>
+          </div>
+          <div className="rounded-xl border border-border/30 bg-card p-3">
+            <div className="flex items-center gap-1 text-[10px] font-semibold uppercase text-muted-foreground"><ArrowDownRight className="h-3.5 w-3.5 text-destructive" />Despesas</div>
+            <p className="mt-1 text-base font-bold text-destructive">{balanceVisible ? `R$ ${formatCurrency(totalExpense)}` : "R$ ••••"}</p>
+          </div>
+        </section>
+      )}'''
+          if old_totals not in s:
+              raise SystemExit('totals block not found')
+          s = s.replace(old_totals, new_totals, 1)
+
+          old_chart = '''      {/* Pie Charts */}
+      <div className="mt-8 mb-8">
+        <CategoryPieCharts
+          transactions={filtered}
+          formatCurrency={formatCurrency}
+          activeCategory={activeCategory}
+          onCategoryClick={(cat) => {
+            setActiveCategory(cat);
+            if (typeof window !== "undefined") {
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }
+          }}
+        />
+      </div>'''
+          new_chart = '''      {/* Category chart is only useful before a category drilldown. */}
+      {activeCategory === "Todas" && (
+        <div className="mt-8 mb-8">
+          <CategoryPieCharts
+            transactions={filtered}
+            formatCurrency={formatCurrency}
+            activeCategory={activeCategory}
+            onCategoryClick={(cat) => {
+              setActiveCategory(cat);
+              if (typeof window !== "undefined") {
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }
+            }}
+          />
+        </div>
+      )}'''
+          if old_chart not in s:
+              raise SystemExit('chart block not found')
+          s = s.replace(old_chart, new_chart, 1)
+          p.write_text(s)
+          PY
+      - name: Verify changes
+        run: |
+          grep -q 'const hasTransactionFilters =' src/routes/transactions.tsx
+          grep -q '!hasTransactionFilters &&' src/routes/transactions.tsx
+          grep -q 'activeCategory === "Todas" &&' src/routes/transactions.tsx
+      - name: Remove workflow and commit
+        run: |
+          rm .github/workflows/hide-summary-when-filtered.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/routes/transactions.tsx .github/workflows/hide-summary-when-filtered.yml
+          git commit -m 'fix: simplify filtered transaction view'
+          git push
