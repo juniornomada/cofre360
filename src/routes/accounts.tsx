@@ -260,7 +260,7 @@ function SortableAccountItem({
                           );
                         }}
                         className={cn(
-                          "text-[11px] tabular-nums leading-tight font-medium text-left hover:underline underline-offset-2",
+                          "shrink-0 whitespace-nowrap text-[10px] sm:text-[11px] tabular-nums tracking-tight leading-tight font-medium text-left hover:underline underline-offset-2",
                           performance > 0 ? "text-primary" : performance < 0 ? "text-destructive" : "text-muted-foreground"
                         )}
                         title="Ver composição do rendimento"
