@@ -3,6 +3,7 @@ on:
   push:
     paths:
       - .github/scripts/patch-account-hierarchy.py
+      - .github/workflows/account-hierarchy-selector.yml
 permissions:
   contents: write
 jobs:
