@@ -32,6 +32,7 @@ type Account = {
   balance: number;
   is_visible: boolean | null;
   parent_account_id: string | null;
+  sort_order: number | null;
 };
 
 type Card = {
@@ -138,8 +139,10 @@ function RecoveredHome() {
         const [accountsRes, cardsRes, txRes, remindersRes, exactCategoryLedger] = await Promise.all([
           supabase
             .from("bank_accounts")
-            .select("id,name,icon,color,balance,is_visible,parent_account_id")
-            .eq("user_id", session.user.id),
+            .select("id,name,icon,color,balance,is_visible,parent_account_id,sort_order")
+            .eq("user_id", session.user.id)
+            .order("sort_order", { ascending: true })
+            .order("created_at", { ascending: true }),
           supabase
             .from("cards")
             .select("id,name,emoji,color,is_visible")
