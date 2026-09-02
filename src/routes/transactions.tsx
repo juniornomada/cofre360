@@ -38,6 +38,7 @@ import autoTable from "jspdf-autotable";
 import { mapServerError } from "@/lib/map-server-error";
 import { sanitizeTransactionName } from "@/lib/normalize-transaction-name";
 import { inferDebitInstallmentContext } from "@/lib/debit-installment-history-sync";
+import { buildTransferTransactionNames, extractTransferDescription } from "@/lib/transfer-label";
 
 
 
@@ -218,6 +219,7 @@ export function TransactionsPage() {
   
   const [transferFromId, setTransferFromId] = useState<string>("");
    const [transferToId, setTransferToId] = useState<string>("");
+   const [transferDescription, setTransferDescription] = useState<string>("");
     const [confirmInstallmentDiff, setConfirmInstallmentDiff] = useState(false);
     const [editNameMode, setEditNameMode] = useState<"none" | "text">("none");
     const [showUpdateScopeDialog, setShowUpdateScopeDialog] = useState(false);
@@ -663,6 +665,7 @@ export function TransactionsPage() {
       setEditTx(transferTx);
       setEditInstallmentMode("divide");
       setEditNameMode("none");
+      setTransferDescription(extractTransferDescription(tx.name));
 
       const groupId = tx.installment_group_id || null;
       const loadedPair = groupId
@@ -837,6 +840,7 @@ export function TransactionsPage() {
            return;
          }
 
+         const transferNames = buildTransferTransactionNames(transferDescription, fromAccount.name, toAccount.name);
          const shared = {
            icon: "🔄",
            category: "Transferências > Outros",
@@ -849,7 +853,7 @@ export function TransactionsPage() {
            .from("transactions")
            .update({
              ...shared,
-             name: `Transferência → ${toAccount.name}`,
+             name: transferNames.outgoing,
              type: "expense",
              bank_account_id: transferFromId,
            })
@@ -860,7 +864,7 @@ export function TransactionsPage() {
            .from("transactions")
            .update({
              ...shared,
-             name: `Transferência ← ${fromAccount.name}`,
+             name: transferNames.incoming,
              type: "income",
              bank_account_id: transferToId,
            })
@@ -898,6 +902,7 @@ export function TransactionsPage() {
            setEditTx(null);
            setTransferFromId("");
            setTransferToId("");
+           setTransferDescription("");
            await Promise.all([fetchTransactions(), fetchBankAccounts()]);
            if (shouldReturnHome) {
              window.location.assign("/home");
@@ -1734,6 +1739,25 @@ export function TransactionsPage() {
                   type={editTx.type}
                 />
               </Suspense>
+              )}
+
+              {isTransferTransaction(editTx) && (
+                <div>
+                  <label className="mb-0.5 block text-[11px] font-semibold text-foreground">Descrição <span className="font-normal text-muted-foreground">(opcional)</span></label>
+                  <input
+                    autoFocus
+                    value={transferDescription}
+                    maxLength={80}
+                    onChange={(e) => {
+                      let description = e.target.value;
+                      if (description.length > 0) description = description.charAt(0).toUpperCase() + description.slice(1);
+                      setTransferDescription(description);
+                    }}
+                    placeholder="Ex: Aporte CDB ou Resgate CDB"
+                    className="w-full rounded-lg bg-card px-2.5 py-1.5 text-xs text-foreground outline-none placeholder:text-muted-foreground focus:ring-1 focus:ring-primary/30"
+                  />
+                  <p className="mt-1 text-[9px] leading-tight text-muted-foreground">A descrição é aplicada às duas pontas da transferência.</p>
+                </div>
               )}
 
               <div className="grid grid-cols-2 gap-2">

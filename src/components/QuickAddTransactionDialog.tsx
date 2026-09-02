@@ -19,6 +19,7 @@ import { toast } from "sonner";
 import { getFriendlyErrorMessage } from "@/lib/utils";
 import { sanitizeTransactionWrite, sanitizeTransactionWrites } from "@/lib/normalize-transaction-name";
 import { inferYieldTransactionFields } from "@/lib/account-yield";
+import { buildTransferTransactionNames, extractTransferDescription } from "@/lib/transfer-label";
 
 export type QuickAddInitialType = "expense" | "income" | "transfer";
 
@@ -91,6 +92,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [transferFromId, setTransferFromId] = useState("");
   const [transferToId, setTransferToId] = useState("");
+  const [transferDescription, setTransferDescription] = useState("");
 
   const [newTx, setNewTx] = useState<NewTx>({
     icon: "🍔",
@@ -282,6 +284,11 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
     setIsTransfer(copyData ? (copyData.category === "Transferência" || copyData.category === "Transferências" || copyData.category.startsWith("Transferências >")) : initialType === "transfer");
     setTransferFromId("");
     setTransferToId("");
+    setTransferDescription(
+      copyData && (copyData.category === "Transferência" || copyData.category === "Transferências" || copyData.category.startsWith("Transferências >"))
+        ? extractTransferDescription(copyData.name)
+        : "",
+    );
 
     // Restaurar preferências de parcelamento (modo/valor/N) da última abertura,
     // quando não estamos duplicando uma transação existente e o tipo é despesa.
@@ -400,18 +407,19 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
         const groupId = (typeof crypto !== "undefined" && "randomUUID" in crypto)
           ? crypto.randomUUID()
           : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        const transferNames = buildTransferTransactionNames(transferDescription, fromName, toName);
         
-        console.log("QuickAdd: Inserting transfer transactions", { groupId, fromName, toName });
+        console.log("QuickAdd: Inserting transfer transactions", { groupId, fromName, toName, transferDescription });
         
         const { error, data } = await supabase.from("transactions").insert(sanitizeTransactionWrites([
           {
-            icon: "🔄", name: `Transferência → ${toName}`, category: "Transferências > Outros",
+            icon: "🔄", name: transferNames.outgoing, category: "Transferências > Outros",
             date: newTx.date, amount: newTx.amount, type: "expense",
             card: null, bank_account_id: transferFromId, installment_group_id: groupId,
             is_visible: true
           },
           {
-            icon: "🔄", name: `Transferência ← ${fromName}`, category: "Transferências > Outros",
+            icon: "🔄", name: transferNames.incoming, category: "Transferências > Outros",
             date: newTx.date, amount: newTx.amount, type: "income",
             card: null, bank_account_id: transferToId, installment_group_id: groupId,
             is_visible: true
@@ -565,6 +573,22 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
 
           {isTransfer ? (
             <>
+              <div>
+                <label className="text-[11px] font-semibold text-foreground mb-0.5 block">Descrição <span className="font-normal text-muted-foreground">(opcional)</span></label>
+                <input
+                  autoFocus
+                  value={transferDescription}
+                  maxLength={80}
+                  onChange={(e) => {
+                    let description = e.target.value;
+                    if (description.length > 0) description = description.charAt(0).toUpperCase() + description.slice(1);
+                    setTransferDescription(description);
+                  }}
+                  placeholder="Ex: Aporte CDB ou Resgate CDB"
+                  className="w-full rounded-lg bg-card px-2.5 py-1.5 text-xs text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary/30"
+                />
+                <p className="mt-1 text-[9px] leading-tight text-muted-foreground">Se vazio, será usado “Transferência”.</p>
+              </div>
               <div className="rounded-xl bg-card/50 p-2.5 space-y-2">
                 <div>
                   <label className="text-[11px] font-semibold text-foreground mb-1 block">De (origem)</label>
