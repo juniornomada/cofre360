@@ -23,6 +23,7 @@ import { useUserPreferences } from "@/hooks/use-user-preferences";
 import { cn } from "@/lib/utils";
 import { getCategoryIcon } from "@/lib/categories";
 import { addCurrencyCents, fetchAllCategoryLedgerTransactions, type CategoryLedgerTransaction } from "@/lib/category-spending-ledger";
+import { getCycleDates, groupByBillingCycle, type CardTransaction } from "@/lib/invoice-utils";
 
 type Account = {
   id: string;
@@ -41,6 +42,17 @@ type Card = {
   emoji: string | null;
   color: string | null;
   is_visible: boolean | null;
+  used: number;
+  closing_day: number | null;
+  due_day: number | null;
+  created_at: string | null;
+};
+
+type CardPayment = {
+  card_id: string;
+  amount: number;
+  paid_at: string;
+  target_period: string | null;
 };
 
 type Tx = {
@@ -119,6 +131,7 @@ function RecoveredHome() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [cards, setCards] = useState<Card[]>([]);
+  const [cardPayments, setCardPayments] = useState<CardPayment[]>([]);
   const [transactions, setTransactions] = useState<Tx[]>([]);
   const [categoryLedgerTransactions, setCategoryLedgerTransactions] = useState<CategoryLedgerTransaction[]>([]);
   const [reminders, setReminders] = useState<Reminder[]>([]);
@@ -136,7 +149,7 @@ function RecoveredHome() {
         if (!session || cancelled) return;
         setUserEmail(session.user.email || null);
 
-        const [accountsRes, cardsRes, txRes, remindersRes, exactCategoryLedger] = await Promise.all([
+        const [accountsRes, cardsRes, txRes, paymentsRes, remindersRes, exactCategoryLedger] = await Promise.all([
           supabase
             .from("bank_accounts")
             .select("id,name,icon,color,balance,is_visible,parent_account_id,sort_order")
@@ -145,13 +158,17 @@ function RecoveredHome() {
             .order("created_at", { ascending: true }),
           supabase
             .from("cards")
-            .select("id,name,emoji,color,is_visible")
+            .select("id,name,emoji,color,is_visible,used,closing_day,due_day,created_at")
             .eq("user_id", session.user.id),
           supabase
             .from("transactions")
             .select("id,name,icon,category,date,amount,type,card,bank_account_id,is_visible,created_at")
             .eq("user_id", session.user.id)
             .order("created_at", { ascending: false }),
+          supabase
+            .from("card_payments")
+            .select("card_id,amount,paid_at,target_period")
+            .eq("user_id", session.user.id),
           supabase
             .from("reminders")
             .select("id,title,icon,due_date,amount,type")
@@ -165,6 +182,7 @@ function RecoveredHome() {
         if (accountsRes.error) throw accountsRes.error;
         if (cardsRes.error) throw cardsRes.error;
         if (txRes.error) throw txRes.error;
+        if (paymentsRes.error) throw paymentsRes.error;
         if (remindersRes.error) throw remindersRes.error;
 
         const rawAccounts = (accountsRes.data || []) as Account[];
@@ -175,6 +193,7 @@ function RecoveredHome() {
           // from the selected month so Home can navigate historically.
           setAccounts(rawAccounts);
           setCards((cardsRes.data || []) as Card[]);
+          setCardPayments((paymentsRes.data || []) as CardPayment[]);
           setTransactions(rawTx);
           setCategoryLedgerTransactions(exactCategoryLedger);
           setReminders((remindersRes.data || []) as Reminder[]);
@@ -302,14 +321,75 @@ function RecoveredHome() {
 
   const cardTotals = useMemo(() => {
     const result: Record<string, number> = {};
-    for (const card of cards) result[card.name] = 0;
-    for (const tx of selectedMonthTransactions) {
-      if (!tx.card) continue;
-      const amount = Number(tx.amount || 0);
-      result[tx.card] = (result[tx.card] || 0) + (tx.type === "income" ? -amount : amount);
+
+    for (const card of cards) {
+      const cycleKey = getCycleDates(
+        selectedMonth,
+        card.closing_day || 1,
+        card.due_day || 10,
+      ).currentClose.toISOString().slice(0, 10);
+
+      const cardTxs: CardTransaction[] = transactions
+        .filter((tx) => tx.is_visible !== false && tx.card === card.name)
+        .map((tx) => ({
+          id: tx.id,
+          name: tx.name,
+          icon: tx.icon,
+          category: tx.category || "",
+          card: tx.card,
+          date: tx.date || "",
+          amount: Number(tx.amount || 0),
+          type: tx.type,
+          created_at: tx.created_at || "",
+          total_installments: null,
+          installment_number: null,
+          installment_group_id: null,
+        }));
+
+      const period = groupByBillingCycle(
+        cardTxs,
+        card.closing_day,
+        card.due_day,
+        selectedMonth,
+      ).find((item) => item.endDate.toISOString().slice(0, 10) === cycleKey);
+
+      let invoiceTotal = Number(period?.total || 0);
+
+      const openingAmount = Math.max(0, Number(card.used || 0));
+      if (openingAmount > 0 && card.created_at) {
+        const createdAt = new Date(card.created_at);
+        if (!Number.isNaN(createdAt.getTime())) {
+          const openingKey = getCycleDates(
+            createdAt,
+            card.closing_day || 1,
+            card.due_day || 10,
+          ).currentClose.toISOString().slice(0, 10);
+          if (openingKey === cycleKey) invoiceTotal += openingAmount;
+        }
+      }
+
+      let paid = 0;
+      for (const payment of cardPayments) {
+        if (payment.card_id !== card.id) continue;
+        let paymentKey = payment.target_period?.slice(0, 10) || "";
+        if (!paymentKey && payment.paid_at) {
+          const paidAt = new Date(payment.paid_at);
+          if (!Number.isNaN(paidAt.getTime())) {
+            paymentKey = getCycleDates(
+              paidAt,
+              card.closing_day || 1,
+              card.due_day || 10,
+            ).currentClose.toISOString().slice(0, 10);
+          }
+        }
+        if (paymentKey === cycleKey) paid += Number(payment.amount || 0);
+      }
+
+      result[card.name] = Math.max(0, Math.round((invoiceTotal - paid) * 100) / 100);
     }
+
     return result;
-  }, [cards, selectedMonthTransactions]);
+  }, [cards, transactions, cardPayments, selectedMonth]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
