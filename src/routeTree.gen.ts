@@ -16,6 +16,7 @@ import { Route as ReconciliationRouteImport } from './routes/reconciliation'
 import { Route as OrcametasRouteImport } from './routes/orcametas'
 import { Route as InvestRouteImport } from './routes/invest'
 import { Route as InsightsRouteImport } from './routes/insights'
+import { Route as HomeRouteImport } from './routes/home'
 import { Route as GoalsRouteImport } from './routes/goals'
 import { Route as ChatRouteImport } from './routes/chat'
 import { Route as CategoriesRouteImport } from './routes/categories'
@@ -59,6 +60,11 @@ const InvestRoute = InvestRouteImport.update({
 const InsightsRoute = InsightsRouteImport.update({
   id: '/insights',
   path: '/insights',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HomeRoute = HomeRouteImport.update({
+  id: '/home',
+  path: '/home',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GoalsRoute = GoalsRouteImport.update({
@@ -117,6 +123,7 @@ export interface FileRoutesByFullPath {
   '/categories': typeof CategoriesRoute
   '/chat': typeof ChatRoute
   '/goals': typeof GoalsRoute
+  '/home': typeof HomeRoute
   '/insights': typeof InsightsRoute
   '/invest': typeof InvestRoute
   '/orcametas': typeof OrcametasRoute
@@ -135,6 +142,7 @@ export interface FileRoutesByTo {
   '/categories': typeof CategoriesRoute
   '/chat': typeof ChatRoute
   '/goals': typeof GoalsRoute
+  '/home': typeof HomeRoute
   '/insights': typeof InsightsRoute
   '/invest': typeof InvestRoute
   '/orcametas': typeof OrcametasRoute
@@ -154,6 +162,7 @@ export interface FileRoutesById {
   '/categories': typeof CategoriesRoute
   '/chat': typeof ChatRoute
   '/goals': typeof GoalsRoute
+  '/home': typeof HomeRoute
   '/insights': typeof InsightsRoute
   '/invest': typeof InvestRoute
   '/orcametas': typeof OrcametasRoute
@@ -174,6 +183,7 @@ export interface FileRouteTypes {
     | '/categories'
     | '/chat'
     | '/goals'
+    | '/home'
     | '/insights'
     | '/invest'
     | '/orcametas'
@@ -192,6 +202,7 @@ export interface FileRouteTypes {
     | '/categories'
     | '/chat'
     | '/goals'
+    | '/home'
     | '/insights'
     | '/invest'
     | '/orcametas'
@@ -210,6 +221,7 @@ export interface FileRouteTypes {
     | '/categories'
     | '/chat'
     | '/goals'
+    | '/home'
     | '/insights'
     | '/invest'
     | '/orcametas'
@@ -229,6 +241,7 @@ export interface RootRouteChildren {
   CategoriesRoute: typeof CategoriesRoute
   ChatRoute: typeof ChatRoute
   GoalsRoute: typeof GoalsRoute
+  HomeRoute: typeof HomeRoute
   InsightsRoute: typeof InsightsRoute
   InvestRoute: typeof InvestRoute
   OrcametasRoute: typeof OrcametasRoute
@@ -288,6 +301,13 @@ declare module '@tanstack/react-router' {
       path: '/insights'
       fullPath: '/insights'
       preLoaderRoute: typeof InsightsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/home': {
+      id: '/home'
+      path: '/home'
+      fullPath: '/home'
+      preLoaderRoute: typeof HomeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/goals': {
@@ -365,6 +385,7 @@ const rootRouteChildren: RootRouteChildren = {
   CategoriesRoute: CategoriesRoute,
   ChatRoute: ChatRoute,
   GoalsRoute: GoalsRoute,
+  HomeRoute: HomeRoute,
   InsightsRoute: InsightsRoute,
   InvestRoute: InvestRoute,
   OrcametasRoute: OrcametasRoute,

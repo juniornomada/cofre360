@@ -379,12 +379,8 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
         }
 
         const fromAcc = bankAccounts.find(a => a.id === transferFromId);
-        if (fromAcc && (fromAcc.balance || 0) < newTx.amount) {
-          toast.error(`Saldo insuficiente na conta ${fromAcc.name}. Saldo disponível: R$ ${(fromAcc.balance || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`);
-          setIsSubmitting(false);
-          return;
-        }
-
+        // Transfers may intentionally leave the source account with a negative balance.
+        // This is a tracking app, so balance reconciliation can happen later.
         const toAcc = bankAccounts.find(a => a.id === transferToId);
         const fromName = fromAcc?.name || "Conta";
         const toName = toAcc?.name || "Conta";
