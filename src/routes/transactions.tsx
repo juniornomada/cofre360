@@ -190,6 +190,7 @@ export function TransactionsPage() {
   const [deleteTarget, setDeleteTarget] = useState<Transaction | null>(null);
   const [deleteScope, setDeleteScope] = useState<"single" | "future" | "all">("single");
    const [showAddDialog, setShowAddDialog] = useState(false);
+   const [showAddTypeDialog, setShowAddTypeDialog] = useState(false);
    const [quickAddType, setQuickAddType] = useState<"expense" | "income" | "transfer">("expense");
    const [copyTxData, setCopyTxData] = useState<{ name: string; amount: number; category: string; icon: string; card: string | null; bank_account_id: string | null } | null>(null);
    const emptyStateRef = useRef<HTMLDivElement>(null); const listRef = useRef<HTMLDivElement>(null);
@@ -416,14 +417,21 @@ export function TransactionsPage() {
 
 
   useEffect(() => {
-    if (searchParams.action === "add") {
-      if (searchParams.type === "transfer") {
-        setQuickAddType("transfer");
-      } else {
-        setQuickAddType(searchParams.type === "income" ? "income" : "expense");
-      }
+    if (searchParams.action !== "add") return;
+
+    // Links with an explicit type (for example, adding a purchase from a card
+    // invoice) can still open Quick Add directly. A plain `+` must ask the
+    // user what kind of transaction they want first.
+    if (searchParams.type === "expense" || searchParams.type === "income" || searchParams.type === "transfer") {
+      setQuickAddType(searchParams.type);
+      setShowAddTypeDialog(false);
       setShowAddDialog(true);
+      return;
     }
+
+    setCopyTxData(null);
+    setShowAddDialog(false);
+    setShowAddTypeDialog(true);
   }, [searchParams.action, searchParams.type]);
 
   // Accept legacy ISO dates and the app's compact date format.
@@ -1460,7 +1468,16 @@ export function TransactionsPage() {
                 {balanceVisible ? <Eye className="h-5 w-5 text-muted-foreground" /> : <EyeOff className="h-5 w-5 text-muted-foreground" />}
               </button>
 
-              <button onClick={() => setShowAddDialog(true)} className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground border border-primary/20 shadow-lg hover:brightness-110 transition-all">
+              <button
+                onClick={() => {
+                  setCopyTxData(null);
+                  setShowAddDialog(false);
+                  setShowAddTypeDialog(true);
+                }}
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground border border-primary/20 shadow-lg hover:brightness-110 transition-all"
+                aria-label="Adicionar transação"
+                title="Adicionar transação"
+              >
                 <Plus className="h-5 w-5" />
               </button>
             </>
@@ -2286,6 +2303,54 @@ export function TransactionsPage() {
         </DialogContent>
       </Dialog>
 
+
+
+      {/* Choose transaction type before opening Quick Add */}
+      <Dialog open={showAddTypeDialog} onOpenChange={setShowAddTypeDialog}>
+        <DialogContent className="max-w-[360px] rounded-2xl bg-background">
+          <DialogHeader>
+            <DialogTitle>Nova transação</DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-3 gap-2 py-2">
+            <button
+              type="button"
+              onClick={() => {
+                setQuickAddType("expense");
+                setShowAddTypeDialog(false);
+                setShowAddDialog(true);
+              }}
+              className="flex min-h-24 flex-col items-center justify-center gap-2 rounded-xl border border-destructive/30 bg-destructive/10 px-2 text-destructive transition-colors hover:bg-destructive/15"
+            >
+              <ArrowDownRight className="h-5 w-5" />
+              <span className="text-xs font-semibold">Despesa</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setQuickAddType("income");
+                setShowAddTypeDialog(false);
+                setShowAddDialog(true);
+              }}
+              className="flex min-h-24 flex-col items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-2 text-primary transition-colors hover:bg-primary/15"
+            >
+              <ArrowUpRight className="h-5 w-5" />
+              <span className="text-xs font-semibold">Receita</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setQuickAddType("transfer");
+                setShowAddTypeDialog(false);
+                setShowAddDialog(true);
+              }}
+              className="flex min-h-24 flex-col items-center justify-center gap-2 rounded-xl border border-border bg-card px-2 text-foreground transition-colors hover:bg-accent"
+            >
+              <ArrowLeftRight className="h-5 w-5" />
+              <span className="text-xs font-semibold">Transferência</span>
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Add */}
       <Suspense fallback={null}>

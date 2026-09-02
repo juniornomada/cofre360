@@ -65,6 +65,7 @@ type CardData = {
   closing_day: number | null;
   due_day: number | null;
   is_visible: boolean | null;
+  created_at?: string | null;
 };
 
 type BankAccount = {
@@ -81,6 +82,35 @@ type PaymentLine = {
 };
 
 import { groupByBillingCycle, parseTxDate, getCycleDates, monthNames, type CardTransaction, type InvoicePeriod } from "@/lib/invoice-utils";
+
+// `cards.used` is the invoice amount informed when a card is first registered.
+// It is an opening invoice balance, not a timeless aggregate. Associate it with
+// the billing cycle that was current on the card creation date so month cards,
+// invoice details and payments all agree with the consolidated total.
+const getOpeningInvoicePeriodKey = (card: CardData) => {
+  const openingAmount = Number(card.used || 0);
+  if (openingAmount <= 0 || !card.created_at) return "";
+  const createdAt = new Date(card.created_at);
+  if (Number.isNaN(createdAt.getTime())) return "";
+  const cycle = getCycleDates(createdAt, card.closing_day, card.due_day);
+  return cycle.currentClose.toISOString().split("T")[0];
+};
+
+const getOpeningInvoiceAmountForPeriod = (card: CardData, periodKey: string) => {
+  if (!periodKey || periodKey !== getOpeningInvoicePeriodKey(card)) return 0;
+  return Math.max(0, Number(card.used || 0));
+};
+
+const includeOpeningInvoiceAmount = (periods: InvoicePeriod[], card: CardData) =>
+  periods.map((period) => {
+    const periodKey = period.endDate?.toISOString().split("T")[0] || "";
+    const openingAmount = getOpeningInvoiceAmountForPeriod(card, periodKey);
+    if (!openingAmount) return period;
+    return {
+      ...period,
+      total: Math.round((Number(period.total || 0) + openingAmount) * 100) / 100,
+    };
+  });
 import { reportCycleSnapshot } from "@/lib/cycle-consistency";
 import { formatCardPaymentLabel, normalizeCardPaymentLabel } from "@/lib/card-payment-label";
 import { recordLegacyLabelDetection } from "@/lib/legacy-label-telemetry";
@@ -549,11 +579,14 @@ function CardsPage() {
     return new Date(now.getFullYear(), now.getMonth() + globalMonthOffset, 15);
   })();
   const invoicePeriods = invoiceCard
-    ? groupByBillingCycle(
-        cardTransactions.filter(tx => tx.card === invoiceCard.name),
-        invoiceCard.closing_day,
-        invoiceCard.due_day,
-        invoiceReferenceDate,
+    ? includeOpeningInvoiceAmount(
+        groupByBillingCycle(
+          cardTransactions.filter(tx => tx.card === invoiceCard.name),
+          invoiceCard.closing_day,
+          invoiceCard.due_day,
+          invoiceReferenceDate,
+        ),
+        invoiceCard,
       )
     : [];
   // Freeze the invoice transaction list per (card, period) while the dialog is
@@ -599,6 +632,7 @@ function CardsPage() {
   const getPaidTotalForPeriod = (cardId: string | undefined, period?: InvoicePeriod | null) =>
     getPaymentsForPeriod(cardId, period).reduce((sum, p) => sum + p.amount, 0);
   const activePeriodKey = getInvoicePeriodKey(activePeriod);
+  const activeOpeningInvoiceAmount = invoiceCard ? getOpeningInvoiceAmountForPeriod(invoiceCard, activePeriodKey) : 0;
   const activePeriodPayments = getPaymentsForPeriod(invoiceCard?.id, activePeriod);
 
   // Aviso sutil: quando o rótulo canônico é aplicado no momento da renderização
@@ -999,11 +1033,14 @@ function CardsPage() {
         const now = new Date();
         return new Date(now.getFullYear(), now.getMonth() + globalMonthOffset, 15);
       })();
-      const updatedPeriods = groupByBillingCycle(
-        txs,
-        payingCard.closing_day,
-        payingCard.due_day,
-        paymentReferenceDate,
+      const updatedPeriods = includeOpeningInvoiceAmount(
+        groupByBillingCycle(
+          txs,
+          payingCard.closing_day,
+          payingCard.due_day,
+          paymentReferenceDate,
+        ),
+        payingCard,
       );
       const activePeriod = updatedPeriods[activeInvoiceIdx];
       
@@ -1202,7 +1239,7 @@ function CardsPage() {
               <div className="flex flex-col gap-4">
                 {cards.map((card, i) => {
       const cardTransactionsFiltered = cardTransactions.filter(t => t.card === card.name);
-      const invoicePeriodsCard = groupByBillingCycle(cardTransactionsFiltered, card.closing_day, card.due_day);
+      const invoicePeriodsCard = includeOpeningInvoiceAmount(groupByBillingCycle(cardTransactionsFiltered, card.closing_day, card.due_day), card);
       const currentPeriod = invoicePeriodsCard.find(p => p.key === "current") || invoicePeriodsCard[1] || invoicePeriodsCard[0];
       const activeInvoicePeriod = currentPeriod ? {
         ...currentPeriod,
@@ -1253,10 +1290,12 @@ function CardsPage() {
         const d = parseTxDate(t.date, t.created_at);
         return d >= selPrevClose && d < selClose;
       });
-      const selTotal = selTxs.reduce(
+      const selTransactionsTotal = selTxs.reduce(
         (s, t) => s + (t.type === "income" ? -Number(t.amount) : Number(t.amount)),
         0,
       );
+      const selOpeningAmount = getOpeningInvoiceAmountForPeriod(card, selPeriodKey);
+      const selTotal = Math.round((selTransactionsTotal + selOpeningAmount) * 100) / 100;
       const selPaid = cardPaymentsByPeriod[card.id]?.[selPeriodKey] || 0;
       const selRemaining = Math.max(0, selTotal - selPaid);
 
@@ -1843,7 +1882,7 @@ function CardsPage() {
                 data-testid="invoice-scroll"
                 className="flex-1 overflow-y-auto px-5 pb-5"
               >
-                {activePeriod && activePeriod.transactions.length === 0 ? (
+                {activePeriod && activePeriod.transactions.length === 0 && activeOpeningInvoiceAmount <= 0 ? (
                   <InvoiceEmptyState
                     startDate={activePeriod.startDate}
                     endDate={activePeriod.endDate}
@@ -1859,6 +1898,18 @@ function CardsPage() {
                   />
                 ) : (
                   <div className="flex flex-col gap-0.5" data-testid="invoice-transactions-list">
+                    {activeOpeningInvoiceAmount > 0 && (
+                      <div className="flex items-center gap-2 py-2.5 border-b border-border/50">
+                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent text-base" aria-hidden="true">🧾</span>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-xs font-semibold text-foreground">Fatura inicial</p>
+                          <p className="truncate text-[10px] text-muted-foreground">Valor informado no cadastro do cartão</p>
+                        </div>
+                        <span className="shrink-0 text-xs font-semibold tabular-nums text-destructive">
+                          R$ {activeOpeningInvoiceAmount.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                    )}
                     {activePeriod?.transactions.map((tx) => (
                       <div
                         key={tx.id}
@@ -2162,7 +2213,7 @@ function CardsPage() {
                           </span>
                         </div>
                       ))}
-                      {(!activePeriod?.transactions || activePeriod.transactions.length === 0) && (
+                      {activeOpeningInvoiceAmount <= 0 && (!activePeriod?.transactions || activePeriod.transactions.length === 0) && (
                         <p className="text-center py-2 text-[10px] text-muted-foreground">Nenhuma transação neste período</p>
                       )}
                     </div>
