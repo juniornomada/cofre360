@@ -296,6 +296,7 @@ function RecoveredHome() {
       if (!d || d.getFullYear() !== selectedMonth.getFullYear() || d.getMonth() !== selectedMonth.getMonth()) continue;
       const rawCategory = (tx.category || "Sem categoria").trim();
       const mainCategory = rawCategory.split(" > ")[0]?.trim() || "Sem categoria";
+      if (mainCategory === "Transferência" || mainCategory === "Transferências") continue;
       totalsInCents[mainCategory] = addCurrencyCents(totalsInCents[mainCategory] || 0, tx.amount);
     }
     return Object.entries(totalsInCents)
