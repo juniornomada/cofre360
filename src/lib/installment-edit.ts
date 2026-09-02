@@ -14,6 +14,8 @@ function parseTxDateToDate(dateStr: string): Date {
   const trimmed = dateStr.trim();
   const iso = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (iso) return new Date(parseInt(iso[1], 10), parseInt(iso[2], 10) - 1, parseInt(iso[3], 10));
+  const br = trimmed.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+  if (br) return new Date(parseInt(br[3], 10), parseInt(br[2], 10) - 1, parseInt(br[1], 10));
   const parts = trimmed.toLowerCase().split(/\s+/);
   if (parts.length >= 2) {
     const day = parseInt(parts[0], 10);
@@ -33,6 +35,12 @@ function formatTxDate(original: string, target: Date): string {
     const mm = String(target.getMonth() + 1).padStart(2, "0");
     const dd = String(target.getDate()).padStart(2, "0");
     return `${yyyy}-${mm}-${dd}`;
+  }
+  if (/^\d{2}-\d{2}-\d{4}$/.test(original.trim())) {
+    const yyyy = target.getFullYear();
+    const mm = String(target.getMonth() + 1).padStart(2, "0");
+    const dd = String(target.getDate()).padStart(2, "0");
+    return `${dd}-${mm}-${yyyy}`;
   }
   const dd = String(target.getDate()).padStart(2, "0");
   const mm = shortMonthNames[target.getMonth()];
@@ -181,6 +189,7 @@ export type SaveInstallmentInput = {
   bank_account_id: string | null;
   installment_group_id?: string | null;
   current: number;
+  originalCurrent?: number;
   total: number;
   installmentAmount?: number;
   installmentMode?: string;
@@ -190,6 +199,59 @@ export type SaveInstallmentInput = {
 };
 
 export type SaveInstallmentResult = { futureRowsAdded: number; cleared: boolean };
+
+export type InstallmentCurrentCorrectionPlan = {
+  desiredNumbers: number[];
+  reusableOtherCount: number;
+  insertNumbers: number[];
+  deleteOtherNumbers: number[];
+  conflict: string | null;
+};
+
+export function buildInstallmentCurrentCorrectionPlan(
+  otherInstallmentNumbers: number[],
+  originalCurrent: number,
+  newCurrent: number,
+  total: number,
+): InstallmentCurrentCorrectionPlan {
+  const normalizedTotal = Math.max(1, Math.floor(Number(total) || 1));
+  const original = Math.max(1, Math.floor(Number(originalCurrent) || 1));
+  const current = Math.max(1, Math.floor(Number(newCurrent) || 1));
+  const others = otherInstallmentNumbers
+    .map(Number)
+    .filter((n) => Number.isInteger(n) && n >= 1)
+    .sort((a, b) => a - b);
+  const prefix = others.filter((n) => n < original);
+  const maxPrefix = prefix.length > 0 ? Math.max(...prefix) : 0;
+  const desiredNumbers = Array.from(
+    { length: Math.max(0, normalizedTotal - current + 1) },
+    (_, index) => current + index,
+  );
+
+  if (current > normalizedTotal) {
+    return { desiredNumbers: [], reusableOtherCount: 0, insertNumbers: [], deleteOtherNumbers: [], conflict: "Parcela atual maior que o total." };
+  }
+  if (maxPrefix >= current) {
+    return {
+      desiredNumbers,
+      reusableOtherCount: 0,
+      insertNumbers: [],
+      deleteOtherNumbers: [],
+      conflict: `Já existe a parcela ${current}/${normalizedTotal} antes desta transação.`,
+    };
+  }
+
+  const tailOthers = others.filter((n) => n >= original);
+  const desiredAfterAnchor = desiredNumbers.slice(1);
+  const reusableOtherCount = Math.min(tailOthers.length, desiredAfterAnchor.length);
+  return {
+    desiredNumbers,
+    reusableOtherCount,
+    insertNumbers: desiredAfterAnchor.slice(reusableOtherCount),
+    deleteOtherNumbers: tailOthers.slice(reusableOtherCount),
+    conflict: null,
+  };
+}
 
 export async function saveInstallmentPlan(input: SaveInstallmentInput): Promise<SaveInstallmentResult> {
   const baseName = sanitizeTransactionName(stripInstallmentSuffix(input.name));
@@ -237,6 +299,107 @@ export async function saveInstallmentPlan(input: SaveInstallmentInput): Promise<
     card: input.card,
     bank_account_id: input.bank_account_id,
   };
+
+  const originalCurrent = Math.max(1, Math.floor(Number(input.originalCurrent) || current));
+  if (input.installment_group_id && originalCurrent !== current) {
+    const { data: groupRows, error: groupError } = await supabase
+      .from("transactions")
+      .select("id, installment_number")
+      .eq("installment_group_id", groupId);
+    if (groupError) throw groupError;
+
+    const anchor = (groupRows || []).find((row: any) => row.id === input.id);
+    if (!anchor) throw new Error("Não foi possível localizar a parcela atual no grupo.");
+
+    const otherRows = (groupRows || [])
+      .filter((row: any) => row.id !== input.id)
+      .map((row: any) => ({ id: row.id as string, number: Number(row.installment_number) || 0 }))
+      .sort((a, b) => a.number - b.number);
+    const plan = buildInstallmentCurrentCorrectionPlan(
+      otherRows.map((row) => row.number),
+      originalCurrent,
+      current,
+      total,
+    );
+    if (plan.conflict) throw new Error(plan.conflict);
+
+    const prefixRows = otherRows.filter((row) => row.number < originalCurrent);
+    const tailRows = otherRows.filter((row) => row.number >= originalCurrent);
+
+    // Keep earlier installments intact, but keep shared plan metadata coherent.
+    for (const row of prefixRows) {
+      const { error } = await supabase.from("transactions").update({
+        total_installments: total,
+        installment_mode: input.installmentMode || "divide",
+        installment_source_amount: input.installmentSourceAmount ?? perInstallment,
+        name: baseName,
+        amount: perInstallment,
+        icon: input.icon,
+        category: input.category,
+        card: input.card,
+        bank_account_id: input.bank_account_id,
+      }).eq("id", row.id);
+      if (error) throw error;
+    }
+
+    const reusableRows = tailRows.slice(0, plan.reusableOtherCount);
+    const desiredNumbers = plan.desiredNumbers;
+    const anchorUpdate = {
+      ...updateData,
+      installment_number: desiredNumbers[0],
+      date: input.date,
+      type: input.type,
+    };
+    const { error: anchorError } = await supabase.from("transactions").update(anchorUpdate).eq("id", input.id);
+    if (anchorError) throw anchorError;
+
+    for (let index = 0; index < reusableRows.length; index++) {
+      const desiredNumber = desiredNumbers[index + 1];
+      const { error } = await supabase.from("transactions").update({
+        ...updateData,
+        installment_number: desiredNumber,
+        date: addMonthsKeepingFormat(input.date, index + 1),
+        type: input.type,
+      }).eq("id", reusableRows[index].id);
+      if (error) throw error;
+    }
+
+    const rowsToDelete = tailRows.slice(plan.reusableOtherCount);
+    if (rowsToDelete.length > 0) {
+      const { error: deleteError } = await supabase
+        .from("transactions")
+        .delete()
+        .in("id", rowsToDelete.map((row) => row.id));
+      if (deleteError) throw deleteError;
+    }
+
+    const missingStartIndex = 1 + reusableRows.length;
+    const toInsert = plan.insertNumbers.map((number, insertIndex) => {
+      const offset = missingStartIndex + insertIndex;
+      return {
+        id: uuid(),
+        name: baseName,
+        icon: input.icon,
+        category: input.category,
+        date: addMonthsKeepingFormat(input.date, offset),
+        amount: perInstallment,
+        type: input.type,
+        card: input.card,
+        bank_account_id: input.bank_account_id,
+        installment_number: number,
+        total_installments: total,
+        installment_group_id: groupId,
+        installment_mode: input.installmentMode || "divide",
+        installment_source_amount: input.installmentSourceAmount ?? perInstallment,
+      };
+    });
+    if (toInsert.length > 0) {
+      const { error: insertError } = await supabase.from("transactions").insert(toInsert);
+      if (insertError) throw insertError;
+    }
+
+    return { futureRowsAdded: toInsert.length, cleared: false };
+  }
 
   if (input.updateAllInGroup && input.installment_group_id) {
     const { data: siblings } = await supabase.from("transactions").select("id, installment_number").eq("installment_group_id", groupId);
