@@ -807,7 +807,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                       <div className="relative">
                         <BankLogo icon={a.icon} color={a.color} name={a.name} size="sm" />
                       </div>
-                      <span className="text-[9px] font-medium text-foreground truncate w-full text-center leading-tight">{a.name}</span>
+                      <span className={cn("font-medium text-foreground truncate w-full text-center leading-tight", a.name.length > 13 ? "text-[8px] tracking-tight" : "text-[9px]")}>{a.name}</span>
                     </button>
                   ))}
                 </div>
