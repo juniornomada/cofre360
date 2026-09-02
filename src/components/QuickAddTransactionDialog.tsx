@@ -298,6 +298,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
     const prefs = !copyData && initialType !== "income" && initialType !== "transfer" ? readPrefs() : null;
     setInstallmentEnabled(prefs?.enabled ?? false);
     setInstallmentCount(prefs?.count ?? 2);
+    setInstallmentStart(1);
     setInstallmentMode(prefs?.mode ?? "divide");
 
     setNewTx({
@@ -926,101 +927,140 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                         </button>
                       </div>
 
-                      <div className="space-y-2">
+                      <div className="space-y-2.5">
                         <div>
                           <label className="text-[11px] font-semibold text-foreground mb-1 block">Total de parcelas</label>
-                          <div className="flex flex-wrap gap-1 mb-2">
-                            {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
-                              <button
-                                key={n}
-                                type="button"
-                                onClick={() => {
-                                  if (installmentMode === "divide") {
-                                    // If dividing, we want to keep the total amount typed before selecting installments
-                                    setInstallmentCount(n);
-                                  } else {
-                                    setInstallmentCount(n);
-                                  }
-                                }}
-
-                                className={cn(
-                                  "px-2 py-1 rounded text-[10px] font-medium transition-colors border",
-                                  installmentCount === n 
-                                    ? "bg-primary text-primary-foreground border-primary" 
-                                    : "bg-card text-muted-foreground border-border hover:border-primary/50"
-                                )}
-                              >
-                                {n}x
-                              </button>
-                            ))}
-                          </div>
-                          <div className="flex gap-2 items-end">
-                            <div className="flex-1">
-                              <label className="text-[9px] text-muted-foreground mb-0.5 block italic">Ou digite outro valor</label>
-                              <input 
-                                type="number" 
-                                min={1} 
-                                max={48} 
-                                value={installmentCount} 
-                                onChange={e => { 
-                                  const val = e.target.value; 
-                                  setInstallmentCount(val === "" ? "" : Math.max(1, parseInt(val) || 1)); 
-                                }} 
-                                className="w-full rounded-lg bg-card px-2.5 py-1.5 text-xs text-foreground outline-none border border-border focus:border-primary/50" 
-                                placeholder="Ex: 15"
-                              />
-                            </div>
+                          <div className="grid grid-cols-[44px_1fr_44px] items-center gap-2">
+                            <button
+                              type="button"
+                              aria-label="Diminuir total de parcelas"
+                              onClick={() => {
+                                const current = Math.max(2, Number(installmentCount) || 2);
+                                const next = Math.max(2, current - 1);
+                                setInstallmentCount(next);
+                                setInstallmentStart(prev => Math.min(Math.max(1, Number(prev) || 1), next));
+                              }}
+                              disabled={(Number(installmentCount) || 2) <= 2}
+                              className="h-10 rounded-xl border border-border bg-card text-lg font-bold text-foreground transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-35"
+                            >
+                              −
+                            </button>
+                            <input
+                              type="number"
+                              inputMode="numeric"
+                              min={2}
+                              max={48}
+                              value={installmentCount}
+                              aria-label="Total de parcelas"
+                              onChange={e => {
+                                const raw = e.target.value;
+                                if (raw === "") {
+                                  setInstallmentCount("");
+                                  return;
+                                }
+                                const parsed = parseInt(raw, 10);
+                                if (!Number.isFinite(parsed)) return;
+                                const next = Math.min(48, Math.max(2, parsed));
+                                setInstallmentCount(next);
+                                setInstallmentStart(prev => Math.min(Math.max(1, Number(prev) || 1), next));
+                              }}
+                              onBlur={() => {
+                                const current = Number(installmentCount);
+                                if (!Number.isInteger(current) || current < 2) {
+                                  setInstallmentCount(2);
+                                  setInstallmentStart(prev => Math.min(Math.max(1, Number(prev) || 1), 2));
+                                }
+                              }}
+                              className="h-10 w-full rounded-xl border border-border bg-card px-3 text-center text-sm font-bold tabular-nums text-foreground outline-none focus:border-primary/60"
+                            />
+                            <button
+                              type="button"
+                              aria-label="Aumentar total de parcelas"
+                              onClick={() => {
+                                const current = Math.max(2, Number(installmentCount) || 2);
+                                setInstallmentCount(Math.min(48, current + 1));
+                              }}
+                              disabled={(Number(installmentCount) || 2) >= 48}
+                              className="h-10 rounded-xl border border-primary/40 bg-primary/10 text-lg font-bold text-primary transition-colors hover:bg-primary/20 disabled:cursor-not-allowed disabled:opacity-35"
+                            >
+                              +
+                            </button>
                           </div>
                         </div>
+
                         <div>
                           <label className="text-[11px] font-semibold text-foreground mb-1 block">
                             Parcela atual <span className="text-muted-foreground font-normal">(lançar a partir de)</span>
                           </label>
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="number"
-                              inputMode="numeric"
-                              min={1}
-                              max={Number(installmentCount) || 1}
-                              value={installmentStart}
-                              aria-invalid={!!installmentStartError}
-                              aria-describedby={installmentStartError ? "installment-start-error" : undefined}
-                              onChange={e => {
-                                const raw = e.target.value;
-                                if (raw === "") {
-                                  setInstallmentStart("");
-                                  return;
-                                }
-                                const v = parseInt(raw, 10);
-                                setInstallmentStart(Number.isFinite(v) ? v : "");
+                          <div className="grid grid-cols-[44px_1fr_44px] items-center gap-2">
+                            <button
+                              type="button"
+                              aria-label="Diminuir parcela atual"
+                              onClick={() => {
+                                const current = Math.max(1, Number(installmentStart) || 1);
+                                setInstallmentStart(Math.max(1, current - 1));
                               }}
-                              onBlur={() => {
-                                // Ao sair do campo, se estiver vazio, volta para 1 (default seguro).
-                                if (installmentStart === "") setInstallmentStart(1);
+                              disabled={(Number(installmentStart) || 1) <= 1}
+                              className="h-10 rounded-xl border border-border bg-card text-lg font-bold text-foreground transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-35"
+                            >
+                              −
+                            </button>
+                            <div className="relative">
+                              <input
+                                type="number"
+                                inputMode="numeric"
+                                min={1}
+                                max={Number(installmentCount) || 2}
+                                value={installmentStart}
+                                aria-label="Parcela atual"
+                                aria-invalid={!!installmentStartError}
+                                aria-describedby={installmentStartError ? "installment-start-error" : undefined}
+                                onChange={e => {
+                                  const raw = e.target.value;
+                                  if (raw === "") {
+                                    setInstallmentStart("");
+                                    return;
+                                  }
+                                  const parsed = parseInt(raw, 10);
+                                  if (!Number.isFinite(parsed)) return;
+                                  const total = Math.max(2, Number(installmentCount) || 2);
+                                  setInstallmentStart(Math.min(total, Math.max(1, parsed)));
+                                }}
+                                onBlur={() => {
+                                  if (installmentStart === "") setInstallmentStart(1);
+                                }}
+                                className={`h-10 w-full rounded-xl bg-card px-12 text-center text-sm font-bold tabular-nums text-foreground outline-none border ${installmentStartError ? "border-destructive focus:border-destructive" : "border-border focus:border-primary/60"}`}
+                              />
+                              <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-[10px] font-medium text-muted-foreground">
+                                de {Number(installmentCount) || 2}
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              aria-label="Aumentar parcela atual"
+                              onClick={() => {
+                                const total = Math.max(2, Number(installmentCount) || 2);
+                                const current = Math.max(1, Number(installmentStart) || 1);
+                                setInstallmentStart(Math.min(total, current + 1));
                               }}
-                              className={`w-16 rounded-lg bg-card px-2.5 py-1.5 text-xs text-foreground outline-none border ${installmentStartError ? "border-destructive focus:border-destructive" : "border-border focus:border-primary/50"}`}
-                            />
-                            {(() => {
-                              const total = Number(installmentCount) || 1;
-                              const startNum = Number(installmentStart);
-                              const validStart = Number.isFinite(startNum) && startNum >= 1 && startNum <= total;
-                              if (!validStart) {
-                                return (
-                                  <span className="text-[11px] text-muted-foreground">
-                                    de {total}
-                                  </span>
-                                );
-                              }
-                              const remaining = total - startNum + 1;
-                              return (
-                                <span className="text-[11px] text-muted-foreground">
-                                   de {total} — serão lançadas 
-                                  <span className="font-semibold text-foreground">{remaining}</span> 
-                                  parcela(s) ({startNum}/{total} → {total}/{total})
-                                </span>
-                              );
-                            })()}
+                              disabled={(Number(installmentStart) || 1) >= (Number(installmentCount) || 2)}
+                              className="h-10 rounded-xl border border-primary/40 bg-primary/10 text-lg font-bold text-primary transition-colors hover:bg-primary/20 disabled:cursor-not-allowed disabled:opacity-35"
+                            >
+                              +
+                            </button>
                           </div>
+                          {!installmentStartError && (() => {
+                            const total = Math.max(2, Number(installmentCount) || 2);
+                            const startAt = Math.min(total, Math.max(1, Number(installmentStart) || 1));
+                            const remaining = total - startAt + 1;
+                            return (
+                              <p className="mt-1 text-[10px] text-muted-foreground">
+                                {startAt === 1
+                                  ? `Serão lançadas ${remaining} parcelas (1/${total} → ${total}/${total}).`
+                                  : `Lançamento retroativo: serão criadas ${remaining} parcelas (${startAt}/${total} → ${total}/${total}).`}
+                              </p>
+                            );
+                          })()}
                           {installmentStartError && (
                             <p
                               id="installment-start-error"
