@@ -806,14 +806,8 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                     >
                       <div className="relative">
                         <BankLogo icon={a.icon} color={a.color} name={a.name} size="sm" />
-                        {a.parent_account_id && (
-                          <span aria-hidden="true" className="absolute -right-1 -top-1 flex h-3.5 min-w-3.5 items-center justify-center rounded-full border border-border bg-background px-0.5 text-[8px] font-black leading-none text-primary">↳</span>
-                        )}
                       </div>
                       <span className="text-[9px] font-medium text-foreground truncate w-full text-center leading-tight">{a.name}</span>
-                      <span className={cn("w-full truncate text-center text-[7px] leading-tight", a.parent_account_id ? "font-semibold text-primary" : "text-muted-foreground")} title={accountHierarchyLabel(a)}>
-                        {a.parent_account_id ? `Sub · ${a.parent_name || "Principal"}` : "Conta principal"}
-                      </span>
                     </button>
                   ))}
                 </div>
