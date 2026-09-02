@@ -39,11 +39,15 @@ export function inferYieldTransactionFields(
   }
 
   if (/^(ir|imposto de renda)(?:\b|\s|$)/.test(normalizedName)) {
-    return { type: "expense", category: "Impostos/Taxas > IR", icon: "📊" };
+    return { type: "expense", category: "Impostos/Taxas > IR/IOF", icon: "📊" };
   }
 
-  if (normalizedName.includes("taxa") && (normalizedName.includes("resgate") || normalizedName.includes("cdb"))) {
-    return { type: "expense", category: "Impostos/Taxas > Taxas Bancárias", icon: "🏦" };
+  if (
+    normalizedName.includes("ir/iof") ||
+    normalizedName.includes("ir e iof") ||
+    (normalizedName.includes("taxa") && (normalizedName.includes("resgate") || normalizedName.includes("cdb")))
+  ) {
+    return { type: "expense", category: "Impostos/Taxas > IR/IOF", icon: "📊" };
   }
 
   return null;
@@ -65,7 +69,7 @@ export function classifyAccountYieldTransaction(
   const isInvestmentFee =
     tx.type === "expense" && (
       (parsedCategory.group === "Impostos/Taxas" &&
-        (parsedCategory.sub === "IR" || parsedCategory.sub === "IOF" || parsedCategory.sub === "Taxas Bancárias")) ||
+        (parsedCategory.sub === "IR/IOF" || parsedCategory.sub === "IR" || parsedCategory.sub === "IOF" || parsedCategory.sub === "Taxas Bancárias")) ||
       /\biof\b/.test(normalizedName) ||
       /\bir\b/.test(normalizedName) ||
       normalizedName.includes("imposto de renda")
