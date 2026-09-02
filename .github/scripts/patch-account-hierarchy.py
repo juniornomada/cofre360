@@ -77,35 +77,38 @@ if old not in text:
     raise SystemExit("transfer destination map not found")
 text = text.replace(old, new, 1)
 
-old_inner = '''                        <BankLogo icon={a.icon} color={a.color} name={a.name} size="sm" />
+transfer_inner = '''                        <BankLogo icon={a.icon} color={a.color} name={a.name} size="sm" />
                         <span className="text-[9px] text-foreground truncate w-full text-center leading-tight">{a.name}</span>'''
-new_inner = '''                        <div className="relative">
+transfer_new = '''                        <div className="relative">
                           <BankLogo icon={a.icon} color={a.color} name={a.name} size="sm" />
                           {a.parent_account_id && (
-                            <span
-                              aria-hidden="true"
-                              className="absolute -right-1 -top-1 flex h-3.5 min-w-3.5 items-center justify-center rounded-full border border-border bg-background px-0.5 text-[8px] font-black leading-none text-primary"
-                            >
-                              ↳
-                            </span>
+                            <span aria-hidden="true" className="absolute -right-1 -top-1 flex h-3.5 min-w-3.5 items-center justify-center rounded-full border border-border bg-background px-0.5 text-[8px] font-black leading-none text-primary">↳</span>
                           )}
                         </div>
                         <span className="text-[9px] font-medium text-foreground truncate w-full text-center leading-tight">{a.name}</span>
-                        <span
-                          className={cn(
-                            "w-full truncate text-center text-[7px] leading-tight",
-                            a.parent_account_id ? "font-semibold text-primary" : "text-muted-foreground",
-                          )}
-                          title={accountHierarchyLabel(a)}
-                        >
-                          {a.parent_account_id
-                            ? `Sub · ${a.parent_name || "Principal"}`
-                            : "Conta principal"}
+                        <span className={cn("w-full truncate text-center text-[7px] leading-tight", a.parent_account_id ? "font-semibold text-primary" : "text-muted-foreground")} title={accountHierarchyLabel(a)}>
+                          {a.parent_account_id ? `Sub · ${a.parent_name || "Principal"}` : "Conta principal"}
                         </span>'''
-count_inner = text.count(old_inner)
-if count_inner < 3:
-    raise SystemExit(f"expected >=3 account tile contents, found {count_inner}")
-text = text.replace(old_inner, new_inner)
+transfer_count = text.count(transfer_inner)
+if transfer_count != 2:
+    raise SystemExit(f"expected 2 transfer tile contents, found {transfer_count}")
+text = text.replace(transfer_inner, transfer_new)
+
+standard_inner = '''                      <BankLogo icon={a.icon} color={a.color} name={a.name} size="sm" />
+                      <span className="text-[9px] text-foreground truncate w-full text-center leading-tight">{a.name}</span>'''
+standard_new = '''                      <div className="relative">
+                        <BankLogo icon={a.icon} color={a.color} name={a.name} size="sm" />
+                        {a.parent_account_id && (
+                          <span aria-hidden="true" className="absolute -right-1 -top-1 flex h-3.5 min-w-3.5 items-center justify-center rounded-full border border-border bg-background px-0.5 text-[8px] font-black leading-none text-primary">↳</span>
+                        )}
+                      </div>
+                      <span className="text-[9px] font-medium text-foreground truncate w-full text-center leading-tight">{a.name}</span>
+                      <span className={cn("w-full truncate text-center text-[7px] leading-tight", a.parent_account_id ? "font-semibold text-primary" : "text-muted-foreground")} title={accountHierarchyLabel(a)}>
+                        {a.parent_account_id ? `Sub · ${a.parent_name || "Principal"}` : "Conta principal"}
+                      </span>'''
+if standard_inner not in text:
+    raise SystemExit("standard account tile content not found")
+text = text.replace(standard_inner, standard_new, 1)
 
 p.write_text(text)
-print("patched", count_maps, count_inner)
+print("patched", count_maps, transfer_count)
