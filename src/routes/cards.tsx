@@ -1691,6 +1691,7 @@ function CardsPage() {
                   <ChevronRight className="h-4 w-4" />
                 </button>
                 <button
+                  type="button"
                   onClick={() => {
                     if (!invoiceCard || !rawActivePeriod) return;
                     const key = `${invoiceCard.id}::${rawActivePeriod.endDate.toISOString().split("T")[0]}`;
@@ -1703,59 +1704,6 @@ function CardsPage() {
                 >
                   <RotateCcw className="h-4 w-4" />
                 </button>
-              </div>
-
-
-              {activePeriod && (
-                    <p className="text-[10px] text-muted-foreground">
-                      F {activePeriod.endDate.getDate().toString().padStart(2, "0")}/{ (activePeriod.endDate.getMonth() + 1).toString().padStart(2, "0") }
-                      {" · Venc "}
-                      {activePeriod.dueDate.getDate().toString().padStart(2, "0")}/{ (activePeriod.dueDate.getMonth() + 1).toString().padStart(2, "0") }
-                    </p>
-                  )}
-                </div>
-                <button
-                  onClick={() => setActiveInvoiceIdx(Math.min(invoicePeriods.length - 1, activeInvoiceIdx + 1))}
-                  disabled={activeInvoiceIdx >= invoicePeriods.length - 1}
-                  className="interactive-button p-1.5 rounded-lg bg-accent hover:bg-accent/80 disabled:opacity-30 transition-colors"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={() => {
-                    if (!invoiceCard || !rawActivePeriod) return;
-                    const key = `${invoiceCard.id}::${rawActivePeriod.endDate.toISOString().split("T")[0]}`;
-                    invoiceOrderRef.current.delete(key);
-                    // Force re-render so the freeze block re-snapshots from the
-                    // current raw data in its canonical order.
-                    setInvoiceOrderTick((t) => t + 1);
-                  }}
-                  aria-label="Restaurar ordem original da fatura"
-                  title="Restaurar ordem original"
-                  className="interactive-button p-1.5 rounded-lg bg-accent hover:bg-accent/80 transition-colors"
-                >
-                  <RotateCcw className="h-4 w-4" />
-                </button>
-              </div>
-
-
-              <div className="flex gap-1 px-5 pb-3 overflow-x-auto no-scrollbar">
-                {invoicePeriods.map((period, idx) => (
-                    <button
-                      key={period.key}
-                      onClick={() => setActiveInvoiceIdx(idx)}
-                      data-testid={`period-tab-${period.key}`}
-                      className={cn(
-                        "whitespace-nowrap rounded-full px-3 py-1 text-[11px] font-medium transition-colors shrink-0",
-                        idx === activeInvoiceIdx
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-accent/50 text-muted-foreground hover:bg-accent"
-                      )}
-                    >
-                      {period.label.split("|")[0]}
-                    </button>
-
-                ))}
               </div>
 
               {activePeriod && (
