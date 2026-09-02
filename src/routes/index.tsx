@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
 import { z } from "zod";
 import { formatBRL } from "@/lib/format-brl";
@@ -1869,6 +1869,13 @@ function Dashboard() {
      return {
        compare: z.string().optional().catch(undefined).parse(search.compare),
      };
+   },
+   beforeLoad: ({ search }) => {
+     // Keep the internal theme comparison screen available, but make /home
+     // the single canonical dashboard for every normal app entry.
+     if (search.compare !== "theme") {
+       throw redirect({ to: "/home", replace: true });
+     }
    },
    component: Dashboard,
  });

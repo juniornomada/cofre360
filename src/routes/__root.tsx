@@ -175,7 +175,7 @@ function RootShell({ children }: { children: React.ReactNode }) {
       if (!session && path !== '/auth') {
         router.navigate({ to: '/auth' });
       } else if (session && path === '/auth') {
-        router.navigate({ to: '/' });
+        router.navigate({ to: '/home', replace: true });
       }
     }
   }, [session, authLoading, router.state.location.pathname]);
