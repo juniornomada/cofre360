@@ -972,10 +972,10 @@ export function TransactionsPage() {
        return;
      }
 
-     const isCreditExpense = editTx.type === "expense" && editTx.bank_account_id === null;
-     const hasValidCard = !!editTx.card && editTx.card !== "Nenhum";
-     if (isCreditExpense && !hasValidCard) {
-       toast.error("Selecione o cartão de crédito antes de salvar a transação.");
+     const hasSelectedPaymentSource =
+       !!editTx.bank_account_id || (!!editTx.card && editTx.card !== "Nenhum");
+     if (!hasSelectedPaymentSource) {
+       toast.error("Selecione uma conta ou um cartão antes de salvar a transação.");
        return;
      }
 
@@ -1913,16 +1913,6 @@ export function TransactionsPage() {
                   Conta Débito/Pix
                 </label>
                 <div className="grid grid-cols-5 gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => setEditTx({ ...editTx, bank_account_id: null })}
-                    className={`flex flex-col items-center gap-0.5 rounded-lg p-1.5 transition-all ${
-                      !editTx.bank_account_id ? "bg-primary/15 ring-1 ring-primary" : "bg-card hover:bg-accent"
-                    }`}
-                  >
-                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-muted text-[10px] text-muted-foreground">—</div>
-                    <span className="w-full truncate text-center text-[9px] leading-tight text-muted-foreground">Nenhuma</span>
-                  </button>
                   {bankAccounts.map((a) => (
                     <button
                       key={a.id}
@@ -1956,16 +1946,6 @@ export function TransactionsPage() {
                   Cartão de crédito
                 </label>
                 <div className="grid grid-cols-5 gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => setEditTx({ ...editTx, card: null })}
-                    className={`flex flex-col items-center gap-0.5 rounded-lg p-1.5 transition-all ${
-                      !editTx.card ? "bg-primary/15 ring-1 ring-primary" : "bg-card hover:bg-accent"
-                    }`}
-                  >
-                    <div className="flex h-7 w-7 items-center justify-center rounded-md bg-muted text-[10px] text-muted-foreground">—</div>
-                    <span className="w-full truncate text-center text-[9px] leading-tight text-muted-foreground">Nenhum</span>
-                  </button>
                   {cardOptions.filter(c => c.name !== "Nenhum").map((c) => {
                     const selected = editTx.card === c.name;
                     return (
@@ -1990,6 +1970,7 @@ export function TransactionsPage() {
                     );
                   })}
                 </div>
+                <p className="mt-1 text-[9px] text-muted-foreground">Selecione uma conta ou um cartão. Toque novamente no selecionado para desmarcar.</p>
               </div>
               )}
 
@@ -2144,10 +2125,9 @@ export function TransactionsPage() {
               size="sm"
               className="flex-1 h-10 text-xs rounded-xl"
               onClick={handleSaveEdit}
-              disabled={!!editTx && editTx.type === "expense" && (
-                (editTx.bank_account_id === null && (!editTx.card || editTx.card === "Nenhum")) ||
-                (editTx.card === null && !editTx.bank_account_id)
-              )}
+              disabled={!!editTx && !isTransferTransaction(editTx) &&
+                !editTx.bank_account_id && (!editTx.card || editTx.card === "Nenhum")
+              }
             >
               Salvar alterações
             </Button>
