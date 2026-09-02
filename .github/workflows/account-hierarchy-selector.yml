@@ -1,0 +1,29 @@
+name: Account hierarchy selector
+on:
+  push:
+    paths:
+      - .github/scripts/patch-account-hierarchy.py
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply patch
+        run: python3 .github/scripts/patch-account-hierarchy.py
+      - name: Verify
+        run: |
+          grep -F 'parent_account_id' src/components/QuickAddTransactionDialog.tsx
+          grep -F 'Subconta de' src/components/QuickAddTransactionDialog.tsx
+          grep -F 'orderedBankAccounts' src/components/QuickAddTransactionDialog.tsx
+          git diff --check
+      - name: Cleanup and commit
+        run: |
+          rm .github/scripts/patch-account-hierarchy.py
+          rm .github/workflows/account-hierarchy-selector.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/components/QuickAddTransactionDialog.tsx .github/scripts/patch-account-hierarchy.py .github/workflows/account-hierarchy-selector.yml
+          git commit -m 'feat: distinguish bank subaccounts in quick add'
+          git push
