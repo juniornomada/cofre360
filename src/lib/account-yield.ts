@@ -34,20 +34,21 @@ export function inferYieldTransactionFields(
     return { type: "income", category: "Receita > Juros", icon: "📈" };
   }
 
-  if (/\biof\b/.test(normalizedName)) {
-    return { type: "expense", category: "Impostos/Taxas > IOF", icon: "🏛️" };
-  }
-
-  if (/^(ir|imposto de renda)(?:\b|\s|$)/.test(normalizedName)) {
-    return { type: "expense", category: "Impostos/Taxas > IR/IOF", icon: "📊" };
-  }
-
+  // Quando o banco informa somente o desconto total, não inventamos a divisão.
   if (
     normalizedName.includes("ir/iof") ||
     normalizedName.includes("ir e iof") ||
     (normalizedName.includes("taxa") && (normalizedName.includes("resgate") || normalizedName.includes("cdb")))
   ) {
     return { type: "expense", category: "Impostos/Taxas > IR/IOF", icon: "📊" };
+  }
+
+  if (/\biof\b/.test(normalizedName)) {
+    return { type: "expense", category: "Impostos/Taxas > IOF", icon: "🏛️" };
+  }
+
+  if (/^(ir|imposto de renda)(?:\b|\s|$)/.test(normalizedName)) {
+    return { type: "expense", category: "Impostos/Taxas > IR", icon: "🏛️" };
   }
 
   return null;

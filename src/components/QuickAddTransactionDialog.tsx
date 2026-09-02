@@ -770,42 +770,29 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                   Conta Débito/Pix
                 </label>
                 <div className="grid grid-cols-5 gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setNewTx({ ...newTx, bank_account_id: null });
-                    }}
-                    className={`flex flex-col items-center gap-0.5 rounded-lg p-1.5 transition-all ${
-                      !newTx.bank_account_id ? "bg-primary/15 ring-1 ring-primary" : "bg-card hover:bg-accent"
-                    }`}
-                  >
-                    <div className="h-7 w-7 rounded-full bg-muted flex items-center justify-center text-muted-foreground text-[10px]">
-                      —
-                    </div>
-                    <span className="text-[9px] text-muted-foreground truncate w-full text-center leading-tight">Nenhuma</span>
-                  </button>
                   {orderedBankAccounts.map(a => (
                     <button
                       key={a.id}
                       type="button"
                       onClick={() => {
-                        const nextId = newTx.bank_account_id === a.id ? null : a.id;
-                        setNewTx({ ...newTx, bank_account_id: nextId });
-                        if (nextId) {
-                          setNewTx(prev => ({ ...prev, card: null }));
-                          setInstallmentEnabled(false);
-                          if (newTx.amount > 0 && newTx.name.trim()) handleAdd();
-                        }
+                        const selecting = newTx.bank_account_id !== a.id;
+                        setNewTx(prev => ({
+                          ...prev,
+                          bank_account_id: selecting ? a.id : null,
+                          card: selecting ? null : prev.card,
+                        }));
+                        if (selecting) setInstallmentEnabled(false);
                       }}
                       onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          const nextId = newTx.bank_account_id === a.id ? null : a.id;
-                          setNewTx({ ...newTx, bank_account_id: nextId });
-                          if (nextId) {
-                            setNewTx(prev => ({ ...prev, card: null }));
-                            setInstallmentEnabled(false);
-                            if (newTx.amount > 0 && newTx.name.trim()) handleAdd();
-                          }
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          const selecting = newTx.bank_account_id !== a.id;
+                          setNewTx(prev => ({
+                            ...prev,
+                            bank_account_id: selecting ? a.id : null,
+                            card: selecting ? null : prev.card,
+                          }));
+                          if (selecting) setInstallmentEnabled(false);
                         }
                       }}
                       className={`flex flex-col items-center gap-0.5 rounded-lg p-1.5 transition-all ${
@@ -832,21 +819,6 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                   Cartão de crédito
                 </label>
                 <div className="grid grid-cols-5 gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setNewTx({ ...newTx, card: null });
-                      setInstallmentEnabled(false);
-                    }}
-                    className={`flex flex-col items-center gap-0.5 rounded-lg p-1.5 transition-all ${
-                      !newTx.card ? "bg-primary/15 ring-1 ring-primary" : "bg-card hover:bg-accent"
-                    }`}
-                  >
-                    <div className="h-7 w-7 rounded-md bg-muted flex items-center justify-center text-muted-foreground text-[10px]">
-                      —
-                    </div>
-                    <span className="text-[9px] text-muted-foreground truncate w-full text-center leading-tight">Nenhum</span>
-                  </button>
                   {cardOptions.map(c => {
                     const selected = newTx.card === c.name;
                     return (
@@ -854,25 +826,24 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                         key={c.name}
                         type="button"
                         onClick={() => {
-                          if (newTx.card === c.name) {
-                            setNewTx({ ...newTx, card: null });
-                            setInstallmentEnabled(false);
-                          } else {
-                            const newCard = c.name;
-                            setNewTx({ ...newTx, card: newCard, bank_account_id: null });
-                            if (newTx.amount > 0 && newTx.name.trim()) handleAdd();
-                          }
+                          const selecting = newTx.card !== c.name;
+                          setNewTx(prev => ({
+                            ...prev,
+                            card: selecting ? c.name : null,
+                            bank_account_id: selecting ? null : prev.bank_account_id,
+                          }));
+                          if (!selecting) setInstallmentEnabled(false);
                         }}
                         onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            if (newTx.card === c.name) {
-                              setNewTx({ ...newTx, card: null });
-                              setInstallmentEnabled(false);
-                            } else {
-                              const newCard = c.name;
-                              setNewTx({ ...newTx, card: newCard, bank_account_id: null });
-                              if (newTx.amount > 0 && newTx.name.trim()) handleAdd();
-                            }
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            const selecting = newTx.card !== c.name;
+                            setNewTx(prev => ({
+                              ...prev,
+                              card: selecting ? c.name : null,
+                              bank_account_id: selecting ? null : prev.bank_account_id,
+                            }));
+                            if (!selecting) setInstallmentEnabled(false);
                           }
                         }}
                         className={`flex flex-col items-center gap-1 rounded-lg p-1.5 transition-all ${
@@ -885,8 +856,9 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                     );
                   })}
                 </div>
+                <p className="mt-1 text-[9px] text-muted-foreground">Selecione uma conta ou um cartão. Toque novamente no selecionado para desmarcar.</p>
               </div>
-              {newTx.card && newTx.card !== "Nenhum" && (
+              {newTx.card && (
                 <div className="space-y-2 rounded-lg bg-card/50 p-2.5">
                   <div className="flex items-center justify-between">
                     <label className="text-[11px] font-semibold text-foreground">Parcelar</label>
@@ -1121,7 +1093,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
             disabled={
               isSubmitting || !!installmentStartError || (isTransfer
                 ? !transferFromId || !transferToId || transferFromId === transferToId || !newTx.amount
-                : !newTx.name || !newTx.amount)
+                : !newTx.name || !newTx.amount || (!newTx.bank_account_id && !newTx.card))
             }
           >
             {isSubmitting ? (

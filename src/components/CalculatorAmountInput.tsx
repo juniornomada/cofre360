@@ -17,83 +17,81 @@ interface Props {
   onEnter?: () => void;
 }
 
-/**
- * Input component for currency (BRL) that uses the system keyboard.
- * Formats the value as "R$ 0,00" and shifts digits from right to left.
- */
-export function CalculatorAmountInput({ value, onChange, tone, className, autoFocus, onEnter }: Props) {
-  // Internal "cents" buffer. e.g. 1234 → R$ 12,34
-  const [cents, setCents] = useState<number>(() => Math.round((value || 0) * 100));
-  const [inputMode, setInputMode] = useState<"none" | "numeric">("none");
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  const formattedValue = (cents / 100).toLocaleString("pt-BR", {
+function formatCurrency(value: number) {
+  return Number(value || 0).toLocaleString("pt-BR", {
     style: "currency",
     currency: "BRL",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   });
+}
 
-  // Sync internal state when value is changed externally
+function toEditableValue(value: number) {
+  return Number(value || 0).toLocaleString("pt-BR", {
+    useGrouping: false,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
+function sanitizeEditableValue(raw: string) {
+  // Campo monetário natural: aceita apenas dígitos e um separador decimal.
+  const cleaned = raw.replace(/[^0-9,.]/g, "");
+  const separatorIndex = cleaned.search(/[,.]/);
+  if (separatorIndex < 0) return cleaned.slice(0, 9);
+
+  const integer = cleaned.slice(0, separatorIndex).replace(/\D/g, "").slice(0, 9);
+  const decimals = cleaned.slice(separatorIndex + 1).replace(/\D/g, "").slice(0, 2);
+  return `${integer},${decimals}`;
+}
+
+function parseEditableValue(raw: string) {
+  if (!raw || raw === ",") return 0;
+  const normalized = raw.replace(",", ".");
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? Math.round(parsed * 100) / 100 : 0;
+}
+
+/**
+ * Campo BRL editável como um input numérico normal.
+ * - foco seleciona o valor inteiro para permitir sobrescrever digitando;
+ * - seleção/cursor continuam livres depois disso;
+ * - permite apagar tudo ou editar parcialmente;
+ * - formata novamente como moeda ao sair do campo.
+ */
+export function CalculatorAmountInput({ value, onChange, tone, className, autoFocus, onEnter }: Props) {
+  const [focused, setFocused] = useState(false);
+  const [draft, setDraft] = useState(() => toEditableValue(value));
+  const inputRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
-    const incoming = Math.round((value || 0) * 100);
-    if (incoming !== cents) {
-      setCents(incoming);
-    }
-  }, [value]);
-
-  // Ensure cursor is always at the end after updates
-  useEffect(() => {
-    if (inputRef.current) {
-      const length = inputRef.current.value.length;
-      inputRef.current.setSelectionRange(length, length);
-    }
-  }, [formattedValue]);
-
+    if (!focused) setDraft(toEditableValue(value));
+  }, [value, focused]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const rawValue = e.target.value;
-    // Extract only digits
-    const digits = rawValue.replace(/\D/g, "");
-    
-    if (digits === "") {
-      setCents(0);
-      onChange(0);
-      return;
-    }
-
-    const nextCents = parseInt(digits, 10);
-    
-    // Limit to R$ 9.999.999,99 (9 digits in cents)
-    if (nextCents > 999_999_999) return;
-
-    setCents(nextCents);
-    onChange(nextCents / 100);
+    const next = sanitizeEditableValue(e.target.value);
+    setDraft(next);
+    onChange(parseEditableValue(next));
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" && onEnter) {
-      onEnter();
-    }
+    if (e.key === "Enter" && onEnter) onEnter();
     if (e.key === "Escape") {
-      setCents(0);
+      setDraft("");
       onChange(0);
     }
   };
 
   const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
-    const length = e.target.value.length;
-    e.target.setSelectionRange(length, length);
+    setFocused(true);
+    setDraft(toEditableValue(value));
+    // O primeiro toque/clique seleciona tudo: basta digitar para sobrescrever.
+    requestAnimationFrame(() => e.target.select());
   };
 
-  const handleClick = (e: React.MouseEvent<HTMLInputElement>) => {
-    const target = e.target as HTMLInputElement;
-    const length = target.value.length;
-    target.setSelectionRange(length, length);
-  };
-
-  const handleSelect = (e: React.SyntheticEvent<HTMLInputElement>) => {
-    const target = e.target as HTMLInputElement;
-    const length = target.value.length;
-    target.setSelectionRange(length, length);
+  const handleBlur = () => {
+    setFocused(false);
+    setDraft(toEditableValue(value));
   };
 
   const toneClassName = tone === "expense"
@@ -104,23 +102,19 @@ export function CalculatorAmountInput({ value, onChange, tone, className, autoFo
         ? "!text-black dark:!text-white !border-black dark:!border-white focus-visible:!ring-black dark:focus-visible:!ring-white"
         : "";
 
+  const formattedValue = formatCurrency(value);
+
   return (
     <div className="relative w-full">
       <Input
         ref={inputRef}
         type="text"
-        inputMode={inputMode}
-        value={formattedValue}
+        inputMode="decimal"
+        value={focused ? draft : formattedValue}
         onChange={handleInputChange}
         onKeyDown={handleKeyDown}
         onFocus={handleFocus}
-        onBlur={() => setInputMode("none")}
-        onClick={(e) => {
-          setInputMode("numeric");
-          handleClick(e);
-        }}
-        onTouchStart={() => setInputMode("numeric")}
-        onSelect={handleSelect}
+        onBlur={handleBlur}
         autoFocus={autoFocus}
         className={cn(
           "text-right tabular-nums font-bold text-base text-primary h-[44px] bg-primary/5 border-primary/20 shadow-inner",

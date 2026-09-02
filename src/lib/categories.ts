@@ -143,6 +143,7 @@ export const categoryTree: CategoryGroup[] = [
     type: "expense",
     subcategories: [
       { label: "IR/IOF", icon: "📊" },
+      { label: "IR", icon: "🏛️" },
       { label: "IOF", icon: "🏛️" },
       { label: "INSS/FGTS", icon: "🏛️" },
       { label: "Taxas Bancárias", icon: "🏦" },
@@ -211,12 +212,8 @@ export function getCategoryValue(group: string, sub: string): string {
 
 /** Parse a stored value back into group + sub */
 export function parseCategoryValue(value: string): { group: string; sub: string } {
-  // Compatibilidade com lançamentos antigos: a antiga categoria IR passou a
-  // representar o desconto combinado de IR/IOF quando o banco não discrimina.
-  if (value === "Impostos/Taxas > IR") {
-    return { group: "Impostos/Taxas", sub: "IR/IOF" };
-  }
-
+  // IR, IOF e IR/IOF são categorias distintas. Registros antigos em IR
+  // continuam válidos como IR e permanecem componentes do rendimento líquido.
   const parts = value.split(" > ");
   if (parts.length === 2) return { group: parts[0], sub: parts[1] };
   
