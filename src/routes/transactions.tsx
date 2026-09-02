@@ -3,6 +3,7 @@ import { SmartLink as Link } from "@/components/SmartLink";
 import { TransactionItem } from "@/components/TransactionItem";
 import { EmptyState } from "@/components/EmptyState";
 import { parseCategoryValue, getCategoryIcon, categoryTree } from "@/lib/categories";
+import { isAccountYieldComponent } from "@/lib/account-yield";
 import { fetchAllCategoryLedgerTransactions, type CategoryLedgerTransaction } from "@/lib/category-spending-ledger";
 import { Search, Pencil, Trash2, Plus, CalendarIcon, Loader2, Upload, CheckSquare, Square, X, SlidersHorizontal, ArrowLeftRight, ArrowRight, Eye, EyeOff, FileText, GripVertical, ArrowLeft, Landmark, CreditCard, ArrowUpRight, ArrowDownRight } from "lucide-react";
 import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react";
@@ -85,6 +86,7 @@ const iconOptions = ["🛵", "🏠", "💰", "🎬", "⛽", "🛒", "💊", "�
 
 export function TransactionsPage() {
   const searchParams = Route.useSearch();
+  const isYieldView = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("yield") === "1";
   const shouldReturnHome = searchParams.from === "home";
   const { balanceVisible, updateBalanceVisible } = useUserPreferences();
 
@@ -143,7 +145,17 @@ export function TransactionsPage() {
       localStorage.setItem("transactions_filter_source", "account");
       setShowAdvancedFilters(false);
     }
-  }, [searchParams.accountId]);
+    if (isYieldView) {
+      setActiveCategory("Todas");
+      setActiveSource("account");
+      setFilterStartDate(undefined);
+      setFilterEndDate(undefined);
+      setFilterMinAmount("");
+      setFilterMaxAmount("");
+      setFilterType("all");
+      setSortBy("date-desc");
+    }
+  }, [searchParams.accountId, isYieldView]);
 
   useEffect(() => {
     if (filterAccountId) localStorage.setItem("transactions_filter_accountId", filterAccountId);
@@ -377,6 +389,13 @@ export function TransactionsPage() {
     fetchBankAccounts();
   }, [fetchTransactions, fetchCards, fetchBankAccounts]);
 
+  // A composição de rendimento é uma auditoria acumulada: carregue todas as
+  // páginas automaticamente para não omitir juros ou taxas antigos.
+  useEffect(() => {
+    if (!isYieldView || loading || loadingMore || !hasMore) return;
+    void fetchTransactionsPage(false);
+  }, [isYieldView, loading, loadingMore, hasMore, fetchTransactionsPage]);
+
 
   useEffect(() => {
     if (searchParams.action === "add") {
@@ -441,6 +460,13 @@ export function TransactionsPage() {
 
   const selectedMonthStartUtc = Date.UTC(selectedMonth.getFullYear(), selectedMonth.getMonth(), 1);
   const selectedMonthEndUtc = Date.UTC(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 1) - 1;
+  const nowForYield = new Date();
+  const isCurrentYieldMonth =
+    selectedMonth.getFullYear() === nowForYield.getFullYear() &&
+    selectedMonth.getMonth() === nowForYield.getMonth();
+  const yieldCutoffUtc = isCurrentYieldMonth
+    ? Date.UTC(nowForYield.getFullYear(), nowForYield.getMonth(), nowForYield.getDate(), 23, 59, 59, 999)
+    : selectedMonthEndUtc;
   const selectedMonthLabelRaw = format(selectedMonth, "MMMM yyyy", { locale: ptBR });
   const selectedMonthLabel = selectedMonthLabelRaw.charAt(0).toUpperCase() + selectedMonthLabelRaw.slice(1);
   const shiftSelectedMonth = (delta: number) => {
@@ -486,7 +512,10 @@ export function TransactionsPage() {
     const matchesMax = maxAmt === null || Number(tx.amount) <= maxAmt;
     const d = parseTxDate(tx.date, tx.created_at);
     const timestamp = d?.getTime() ?? NaN;
-    const matchesMonth = Number.isFinite(timestamp) && timestamp >= selectedMonthStartUtc && timestamp <= selectedMonthEndUtc;
+    const matchesYieldComponent = !isYieldView || isAccountYieldComponent(tx);
+    const matchesMonth = isYieldView
+      ? (!d || timestamp <= yieldCutoffUtc)
+      : Number.isFinite(timestamp) && timestamp >= selectedMonthStartUtc && timestamp <= selectedMonthEndUtc;
     let matchesDate = true;
     if (filterStartDate || filterEndDate) {
       if (!d) matchesDate = false;
@@ -495,7 +524,7 @@ export function TransactionsPage() {
         if (filterEndDate && d.getTime() > toUtcDay(filterEndDate, true).getTime()) matchesDate = false;
       }
     }
-    return matchesCategory && matchesSource && matchesAccount && matchesMin && matchesMax && matchesMonth && matchesDate;
+    return matchesCategory && matchesSource && matchesAccount && matchesMin && matchesMax && matchesMonth && matchesDate && matchesYieldComponent;
   });
 
   const filtered = filterType === "all"
@@ -1164,13 +1193,25 @@ export function TransactionsPage() {
                       <BankLogo icon={acc.icon || "custom"} color={acc.color || ""} name={acc.name} size="xs" />
                       <span className="text-xs font-semibold text-muted-foreground truncate max-w-[150px]">{acc.name}</span>
                     </div>
+                    {isYieldView && (
+                      <div className="flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
+                        <span aria-hidden="true">📈</span>
+                        Rendimento
+                      </div>
+                    )}
                     <button 
                       onClick={() => {
+                        if (isYieldView) {
+                          window.location.assign(
+                            `/transactions?accountId=${encodeURIComponent(acc.id)}&month=${encodeURIComponent(format(selectedMonth, "yyyy-MM"))}`,
+                          );
+                          return;
+                        }
                         setFilterAccountId(null);
                         localStorage.removeItem("transactions_filter_accountId");
                       }}
                       className="flex h-6 w-6 items-center justify-center rounded-full bg-muted/50 text-muted-foreground hover:bg-muted transition-colors"
-                      title="Remover filtro de conta"
+                      title={isYieldView ? "Remover filtro de rendimento" : "Remover filtro de conta"}
                     >
                       <X className="h-3 w-3" />
                     </button>
@@ -1349,33 +1390,41 @@ export function TransactionsPage() {
 
 
 
-      {/* Navegação mensal principal */}
-      <div className="sticky top-0 z-30 -mx-1 flex items-center justify-between rounded-2xl border border-border/50 bg-card/95 px-2 py-2 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-card/85">
-        <button
-          type="button"
-          onClick={() => shiftSelectedMonth(-1)}
-          className="interactive-button flex h-10 w-10 items-center justify-center rounded-xl text-muted-foreground hover:bg-accent"
-          aria-label="Mês anterior"
-          title="Mês anterior"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </button>
-        <div className="min-w-0 text-center">
-          <p className="truncate text-base font-bold text-foreground">{selectedMonthLabel}</p>
+      {/* Navegação mensal principal / auditoria acumulada de rendimento */}
+      {isYieldView ? (
+        <div className="sticky top-0 z-30 -mx-1 rounded-2xl border border-primary/20 bg-card/95 px-3 py-2.5 text-center shadow-sm backdrop-blur supports-[backdrop-filter]:bg-card/85">
+          <p className="text-sm font-bold text-foreground">Composição do rendimento</p>
+          <p className="mt-0.5 text-[11px] text-muted-foreground">Juros − IR − IOF − taxas</p>
+          <p className="mt-0.5 text-[10px] font-medium text-primary">Todo o período até {selectedMonthLabel}</p>
         </div>
-        <button
-          type="button"
-          onClick={() => shiftSelectedMonth(1)}
-          className="interactive-button flex h-10 w-10 items-center justify-center rounded-xl text-muted-foreground hover:bg-accent"
-          aria-label="Próximo mês"
-          title="Próximo mês"
-        >
-          <ArrowRight className="h-5 w-5" />
-        </button>
-      </div>
+      ) : (
+        <div className="sticky top-0 z-30 -mx-1 flex items-center justify-between rounded-2xl border border-border/50 bg-card/95 px-2 py-2 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-card/85">
+          <button
+            type="button"
+            onClick={() => shiftSelectedMonth(-1)}
+            className="interactive-button flex h-10 w-10 items-center justify-center rounded-xl text-muted-foreground hover:bg-accent"
+            aria-label="Mês anterior"
+            title="Mês anterior"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+          <div className="min-w-0 text-center">
+            <p className="truncate text-base font-bold text-foreground">{selectedMonthLabel}</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => shiftSelectedMonth(1)}
+            className="interactive-button flex h-10 w-10 items-center justify-center rounded-xl text-muted-foreground hover:bg-accent"
+            aria-label="Próximo mês"
+            title="Próximo mês"
+          >
+            <ArrowRight className="h-5 w-5" />
+          </button>
+        </div>
+      )}
 
       {/* 2. Categorias: todas as categorias do mês visíveis por ícone */}
-      {monthCategoryRanking.length > 0 && (
+      {!isYieldView && monthCategoryRanking.length > 0 && (
         <div className="flex flex-wrap justify-center gap-1.5">
           {monthCategoryRanking.map(({ category }) => {
             const isActive = activeCategory === category;
@@ -1401,7 +1450,7 @@ export function TransactionsPage() {
       )}
 
       {/* 3. Origem: Conta / Cartão */}
-      <div className="grid grid-cols-2 gap-2">
+      {!isYieldView && <div className="grid grid-cols-2 gap-2">
         {([
           { key: "account" as const, label: "Conta", icon: "🏦" },
           { key: "card" as const, label: "Cartão", icon: "💳" },
@@ -1421,7 +1470,7 @@ export function TransactionsPage() {
             </button>
           );
         })}
-      </div>
+      </div>}
 
       {/* 4. Receitas / Despesas: resumo original + filtro ao tocar */}
       <section className="-mx-1 grid grid-cols-2 gap-2">
@@ -1437,7 +1486,7 @@ export function TransactionsPage() {
         >
           <div className="flex items-center justify-center gap-1 text-[10px] font-semibold uppercase text-muted-foreground">
             <ArrowUpRight className="h-3.5 w-3.5 text-primary" />
-            Receitas
+            {isYieldView ? "Juros" : "Receitas"}
           </div>
           <p className="mt-1 text-base font-bold text-primary">
             {balanceVisible ? `R$ ${formatCurrency(totalIncome)}` : "R$ ••••"}
@@ -1455,13 +1504,24 @@ export function TransactionsPage() {
         >
           <div className="flex items-center justify-center gap-1 text-[10px] font-semibold uppercase text-muted-foreground">
             <ArrowDownRight className="h-3.5 w-3.5 text-destructive" />
-            Despesas
+            {isYieldView ? "Taxas" : "Despesas"}
           </div>
           <p className="mt-1 text-base font-bold text-destructive">
             {balanceVisible ? `R$ ${formatCurrency(totalExpense)}` : "R$ ••••"}
           </p>
         </button>
       </section>
+      {isYieldView && (
+        <div className="flex items-center justify-between rounded-xl border border-primary/20 bg-primary/5 px-3 py-2">
+          <span className="text-xs font-semibold text-muted-foreground">Rendimento líquido</span>
+          <span className={cn(
+            "text-sm font-bold tabular-nums",
+            totalIncome - totalExpense >= 0 ? "text-primary" : "text-destructive",
+          )}>
+            {balanceVisible ? `${totalIncome - totalExpense >= 0 ? "+" : ""}R$ ${formatCurrency(totalIncome - totalExpense)}` : "R$ ••••"}
+          </span>
+        </div>
+      )}
 
 
        <div ref={listRef} tabIndex={-1} className="flex flex-col gap-2 focus:outline-none">
@@ -1533,7 +1593,7 @@ export function TransactionsPage() {
       </div>
 
       {/* Pie Charts */}
-      <div className="mt-8 mb-8">
+      {!isYieldView && <div className="mt-8 mb-8">
         <CategoryPieCharts
           transactions={filtered}
           formatCurrency={formatCurrency}
@@ -1545,7 +1605,7 @@ export function TransactionsPage() {
             }
           }}
         />
-      </div>
+      </div>}
 
       {/* Edit Dialog */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>

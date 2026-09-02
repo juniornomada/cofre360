@@ -22,7 +22,7 @@ import { PaymentDescriptionText } from "@/components/PaymentDescriptionText";
 import { CalculatorAmountInput } from "@/components/CalculatorAmountInput";
 import { cn } from "@/lib/utils";
 import { formatSignedBRL } from "@/lib/format-brl";
-import { parseCategoryValue } from "@/lib/categories";
+import { accountYieldDeltaCents } from "@/lib/account-yield";
 import {
   DndContext,
   closestCenter,
@@ -247,14 +247,25 @@ function SortableAccountItem({
                     <span className="text-[11px] tabular-nums leading-tight text-muted-foreground">
                       Saldo inicial: {balanceVisible ? formatSignedBRL(openingBalance) : "R$ ••••"}
                     </span>
-                    <span className={cn(
-                      "text-[11px] tabular-nums leading-tight font-medium",
-                      performance > 0 ? "text-primary" : performance < 0 ? "text-destructive" : "text-muted-foreground"
-                    )}>
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        window.location.assign(
+                          `/transactions?accountId=${encodeURIComponent(account.id)}&month=${encodeURIComponent(selectedMonthKey)}&yield=1`,
+                        );
+                      }}
+                      className={cn(
+                        "text-[11px] tabular-nums leading-tight font-medium text-left hover:underline underline-offset-2",
+                        performance > 0 ? "text-primary" : performance < 0 ? "text-destructive" : "text-muted-foreground"
+                      )}
+                      title="Ver composição do rendimento"
+                    >
                       Rendimento: {balanceVisible
                         ? `${formatSignedBRL(performance)} (${performancePct.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%)`
                         : "R$ ••••"}
-                    </span>
+                    </button>
                   </div>
                 )}
               </div>
@@ -534,31 +545,10 @@ function AccountsPage() {
             if (tx.type === "income") monthIncMap[id] = (monthIncMap[id] || 0) + amt;
             else monthExpMap[id] = (monthExpMap[id] || 0) + amt;
 
-            // Regra de rendimento da subconta:
-            //   juros/rendimentos - IR - IOF - taxas bancárias de resgate.
-            // Transferências (aporte/resgate) nunca entram aqui.
-            const parsedCategory = parseCategoryValue(String(tx.category || ""));
-            const normalizedName = String(tx.name || "")
-              .normalize("NFD")
-              .replace(/[\u0300-\u036f]/g, "")
-              .toLowerCase();
-            const amountCents = Math.round(amt * 100);
-            const isInterestIncome =
-              tx.type === "income" &&
-              parsedCategory.group === "Receita" &&
-              parsedCategory.sub === "Juros";
-            const isInvestmentFee =
-              tx.type === "expense" && (
-                (parsedCategory.group === "Impostos/Taxas" &&
-                  (parsedCategory.sub === "IR" || parsedCategory.sub === "Taxas Bancárias")) ||
-                /\biof\b/.test(normalizedName) ||
-                normalizedName.includes("imposto de renda")
-              );
-
-            if (isInterestIncome) {
-              yieldCentsMap[id] = (yieldCentsMap[id] || 0) + amountCents;
-            } else if (isInvestmentFee) {
-              yieldCentsMap[id] = (yieldCentsMap[id] || 0) - amountCents;
+            // A mesma regra alimenta o valor exibido e a auditoria em Transações.
+            const yieldDeltaCents = accountYieldDeltaCents(tx);
+            if (yieldDeltaCents !== 0) {
+              yieldCentsMap[id] = (yieldCentsMap[id] || 0) + yieldDeltaCents;
             }
           }
         }
