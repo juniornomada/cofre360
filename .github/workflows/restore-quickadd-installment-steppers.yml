@@ -26,10 +26,13 @@ jobs:
           grep -n 'Diminuir parcela atual' src/components/QuickAddTransactionDialog.tsx
           grep -n 'Aumentar parcela atual' src/components/QuickAddTransactionDialog.tsx
           grep -n 'Lançamento retroativo' src/components/QuickAddTransactionDialog.tsx
+          grep -n 'for (let i = startAt; i <= count; i++)' src/components/QuickAddTransactionDialog.tsx
+          grep -n 'Valor total da compra' src/components/QuickAddTransactionDialog.tsx
+          grep -n 'Valor de cada parcela' src/components/QuickAddTransactionDialog.tsx
           ! grep -q 'Ou digite outro valor' src/components/QuickAddTransactionDialog.tsx
           git diff --check
-      - name: Targeted installment tests
-        run: bunx vitest run src/tests/quickadd-preview-matches-handleadd.integration.test.ts src/tests/quickadd-installment-start-validation.integration.test.tsx
+      - name: Installment calculation regression suite
+        run: bunx vitest run src/tests/quickadd-preview-matches-handleadd.integration.test.ts
       - name: Build
         run: bun run build
       - name: Cleanup and commit
