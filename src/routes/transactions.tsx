@@ -36,7 +36,6 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { mapServerError } from "@/lib/map-server-error";
 import { sanitizeTransactionName } from "@/lib/normalize-transaction-name";
-import { validateEditedExpenseBalance } from "@/lib/transaction-balance-validation";
 import { inferDebitInstallmentContext } from "@/lib/debit-installment-history-sync";
 
 
@@ -75,6 +74,12 @@ interface CardOption {
   brand: string;
   color?: string | null;
 }
+
+const isTransferTransaction = (tx: Pick<Transaction, "category"> | null | undefined) => {
+  if (!tx) return false;
+  const category = (tx.category || "").trim();
+  return category === "Transferência" || category === "Transferências" || category.startsWith("Transferências >");
+};
 
 const iconOptions = ["🛵", "🏠", "💰", "🎬", "⛽", "🛒", "💊", "🎮", "💸", "🍕", "🚗", "👕", "📱", "🎵", "✈️", "🏥", "📚", "🐾"];
 
@@ -601,6 +606,49 @@ export function TransactionsPage() {
 
 
   const handleEdit = (tx: Transaction) => {
+    if (isTransferTransaction(tx)) {
+      const transferTx: Transaction = {
+        ...tx,
+        card: null,
+        installment_number: null,
+        total_installments: null,
+        installment_mode: null,
+        installment_source_amount: null,
+      };
+      setEditTx(transferTx);
+      setEditInstallmentMode("divide");
+      setEditNameMode("none");
+
+      const groupId = tx.installment_group_id || null;
+      const loadedPair = groupId
+        ? transactions.filter(item => item.installment_group_id === groupId && isTransferTransaction(item))
+        : [tx];
+      const loadedFrom = loadedPair.find(item => item.type === "expense") || (tx.type === "expense" ? tx : undefined);
+      const loadedTo = loadedPair.find(item => item.type === "income") || (tx.type === "income" ? tx : undefined);
+      setTransferFromId(loadedFrom?.bank_account_id || "");
+      setTransferToId(loadedTo?.bank_account_id || "");
+      setShowEditDialog(true);
+
+      if (groupId && (!loadedFrom || !loadedTo)) {
+        void (async () => {
+          const { data, error } = await supabase
+            .from("transactions")
+            .select("id,category,type,bank_account_id,installment_group_id")
+            .eq("installment_group_id", groupId);
+          if (error || !data) {
+            if (error) console.error("Erro ao carregar par da transferência:", error);
+            return;
+          }
+          const transferRows = data.filter(row => isTransferTransaction(row as Transaction));
+          const from = transferRows.find(row => row.type === "expense");
+          const to = transferRows.find(row => row.type === "income");
+          if (from?.bank_account_id) setTransferFromId(from.bank_account_id);
+          if (to?.bank_account_id) setTransferToId(to.bank_account_id);
+        })();
+      }
+      return;
+    }
+
     // Debit rows can originate from a purchase whose credit history still has
     // the authoritative installment context. Reuse only installment metadata;
     // never copy the credit group id or card to the debit transaction.
@@ -706,6 +754,114 @@ export function TransactionsPage() {
    const handleSaveEdit = async () => {
      if (!editTx) return;
 
+     if (isTransferTransaction(editTx)) {
+       if (!editTx.installment_group_id) {
+         toast.error("Esta transferência antiga não possui vínculo entre origem e destino.");
+         return;
+       }
+       if (!transferFromId || !transferToId || transferFromId === transferToId) {
+         toast.error("Selecione contas diferentes para origem e destino.");
+         return;
+       }
+       const transferAmount = Number(editTx.amount);
+       if (!Number.isFinite(transferAmount) || transferAmount <= 0) {
+         toast.error("Informe um valor maior que zero.");
+         return;
+       }
+
+       let savedSuccessfully = false;
+       try {
+         const { data: pairRows, error: pairError } = await supabase
+           .from("transactions")
+           .select("id,icon,name,category,date,amount,type,card,bank_account_id,installment_group_id")
+           .eq("installment_group_id", editTx.installment_group_id);
+         if (pairError) throw pairError;
+
+         const transferRows = (pairRows || []).filter(row => isTransferTransaction(row as Transaction));
+         const fromRow = transferRows.find(row => row.type === "expense");
+         const toRow = transferRows.find(row => row.type === "income");
+         if (!fromRow || !toRow) {
+           toast.error("Não foi possível localizar as duas pontas desta transferência.");
+           return;
+         }
+
+         const fromAccount = bankAccounts.find(account => account.id === transferFromId);
+         const toAccount = bankAccounts.find(account => account.id === transferToId);
+         if (!fromAccount || !toAccount) {
+           toast.error("Selecione contas válidas para a transferência.");
+           return;
+         }
+
+         const shared = {
+           icon: "🔄",
+           category: "Transferências > Outros",
+           date: editTx.date,
+           amount: transferAmount,
+           card: null,
+         };
+
+         const { error: fromError } = await supabase
+           .from("transactions")
+           .update({
+             ...shared,
+             name: `Transferência → ${toAccount.name}`,
+             type: "expense",
+             bank_account_id: transferFromId,
+           })
+           .eq("id", fromRow.id);
+         if (fromError) throw fromError;
+
+         const { error: toError } = await supabase
+           .from("transactions")
+           .update({
+             ...shared,
+             name: `Transferência ← ${fromAccount.name}`,
+             type: "income",
+             bank_account_id: transferToId,
+           })
+           .eq("id", toRow.id);
+
+         if (toError) {
+           // Best-effort rollback so a failed second update does not leave a half-edited transfer.
+           await supabase
+             .from("transactions")
+             .update({
+               icon: fromRow.icon,
+               name: fromRow.name,
+               category: fromRow.category,
+               date: fromRow.date,
+               amount: fromRow.amount,
+               type: fromRow.type,
+               card: fromRow.card,
+               bank_account_id: fromRow.bank_account_id,
+             })
+             .eq("id", fromRow.id);
+           throw toError;
+         }
+
+         clearEditDraft(fromRow.id);
+         clearEditDraft(toRow.id);
+         toast.success("Transferência atualizada");
+         savedSuccessfully = true;
+       } catch (error) {
+         console.error("Erro ao atualizar transferência:", error);
+         toast.error("Erro ao atualizar transferência");
+       } finally {
+         (document.activeElement as HTMLElement)?.blur();
+         if (savedSuccessfully) {
+           setShowEditDialog(false);
+           setEditTx(null);
+           setTransferFromId("");
+           setTransferToId("");
+           await Promise.all([fetchTransactions(), fetchBankAccounts()]);
+           if (shouldReturnHome) {
+             window.location.assign("/home");
+           }
+         }
+       }
+       return;
+     }
+
      const isCreditExpense = editTx.type === "expense" && editTx.bank_account_id === null;
      const hasValidCard = !!editTx.card && editTx.card !== "Nenhum";
      if (isCreditExpense && !hasValidCard) {
@@ -794,29 +950,7 @@ export function TransactionsPage() {
     let savedSuccessfully = false;
 
     try {
-      // Balance check for expenses from bank accounts
-      if (editTx.type === "expense" && editTx.bank_account_id) {
-        const acc = bankAccounts.find(a => a.id === editTx.bank_account_id);
-        if (acc) {
-          const originalTx = transactions.find(t => t.id === editTx.id);
-          const availableBalance = acc.balance || 0;
-
-          const balanceIsValid = !originalTx || validateEditedExpenseBalance({
-            originalAmount: originalTx.amount,
-            newAmount: perInstallment,
-            originalBankAccountId: originalTx.bank_account_id,
-            newBankAccountId: editTx.bank_account_id,
-            originalType: originalTx.type,
-            newType: editTx.type,
-            availableBalance,
-          });
-
-          if (!balanceIsValid) {
-            toast.error(`Saldo insuficiente na conta ${acc.name} (Saldo disponível: R$ ${availableBalance.toLocaleString("pt-BR", { minimumFractionDigits: 2 })})`);
-            return;
-          }
-        }
-      }
+      // Expenses may intentionally leave the selected account with a negative balance.
 
       // 1) Update fields on the current row (amount = per-installment when split)
       const { error: updErr } = await supabase.from("transactions").update({
@@ -1420,6 +1554,12 @@ export function TransactionsPage() {
             <div className="flex items-center gap-1.5">
               <DialogTitle className="shrink-0 whitespace-nowrap text-sm">Editar</DialogTitle>
               {editTx && (
+                isTransferTransaction(editTx) ? (
+                  <div className="flex min-w-0 flex-1 items-center justify-center rounded-lg bg-blue-500/15 py-1 text-[10px] font-semibold text-blue-500">
+                    <ArrowLeftRight className="mr-1 h-3 w-3" />
+                    Transferência
+                  </div>
+                ) : (
                 <div className="flex min-w-0 flex-1 gap-1">
                   <button
                     type="button"
@@ -1444,12 +1584,14 @@ export function TransactionsPage() {
                     Receita
                   </button>
                 </div>
+                )
               )}
             </div>
           </DialogHeader>
           <div className="flex min-h-0 flex-1 flex-col gap-2.5 overflow-x-hidden overflow-y-auto overscroll-contain p-4">
           {editTx && (
             <div className="flex min-w-0 flex-col gap-2.5">
+              {!isTransferTransaction(editTx) && (
               <div className="relative min-w-0">
                 <label className="mb-0.5 block text-[11px] font-semibold text-foreground">Nome</label>
                 <input
@@ -1505,7 +1647,9 @@ export function TransactionsPage() {
                   </div>
                 )}
               </div>
+              )}
 
+              {!isTransferTransaction(editTx) && (
               <Suspense fallback={<div className="flex h-20 items-center justify-center"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>}>
                 <CategoryPicker
                   value={editTx.category}
@@ -1514,6 +1658,7 @@ export function TransactionsPage() {
                   type={editTx.type}
                 />
               </Suspense>
+              )}
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
@@ -1548,11 +1693,60 @@ export function TransactionsPage() {
                     value={editTx.amount}
                     onChange={(v) => setEditTx({ ...editTx, amount: v })}
                     autoFocus={false}
-                    tone={editTx.type}
+                    tone={isTransferTransaction(editTx) ? "transfer" : editTx.type}
                   />
                 </div>
               </div>
 
+              {isTransferTransaction(editTx) && (
+                <div className="rounded-xl bg-card/50 p-2.5 space-y-2">
+                  <div>
+                    <label className="mb-1 block text-[11px] font-semibold text-foreground">De (origem)</label>
+                    <div className="grid grid-cols-5 gap-1.5">
+                      {bankAccounts.map((a) => (
+                        <button
+                          key={`from-${a.id}`}
+                          type="button"
+                          aria-pressed={transferFromId === a.id}
+                          onClick={() => setTransferFromId(a.id)}
+                          className={`flex flex-col items-center gap-0.5 rounded-lg p-1.5 transition-all ${
+                            transferFromId === a.id ? "bg-primary/15 ring-1 ring-primary" : "bg-card hover:bg-accent"
+                          }`}
+                        >
+                          <BankLogo icon={a.icon || "custom"} color={a.color || "from-gray-500 to-gray-700"} name={a.name} size="sm" />
+                          <span className="w-full truncate text-center text-[9px] leading-tight text-foreground">{a.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex justify-center">
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-500/15 text-blue-500">
+                      <ArrowRight className="h-3 w-3" />
+                    </span>
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-[11px] font-semibold text-foreground">Para (destino)</label>
+                    <div className="grid grid-cols-5 gap-1.5">
+                      {bankAccounts.filter(a => a.id !== transferFromId).map((a) => (
+                        <button
+                          key={`to-${a.id}`}
+                          type="button"
+                          aria-pressed={transferToId === a.id}
+                          onClick={() => setTransferToId(a.id)}
+                          className={`flex flex-col items-center gap-0.5 rounded-lg p-1.5 transition-all ${
+                            transferToId === a.id ? "bg-primary/15 ring-1 ring-primary" : "bg-card hover:bg-accent"
+                          }`}
+                        >
+                          <BankLogo icon={a.icon || "custom"} color={a.color || "from-gray-500 to-gray-700"} name={a.name} size="sm" />
+                          <span className="w-full truncate text-center text-[9px] leading-tight text-foreground">{a.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {!isTransferTransaction(editTx) && (
               <div>
                 <label className="mb-1 flex items-center gap-1 text-[11px] font-semibold text-foreground">
                   <Landmark className="h-3 w-3" />
@@ -1593,7 +1787,9 @@ export function TransactionsPage() {
                   ))}
                 </div>
               </div>
+              )}
 
+              {!isTransferTransaction(editTx) && (
               <div>
                 <label className="mb-1 flex items-center gap-1 text-[11px] font-semibold text-foreground">
                   <CreditCard className="h-3 w-3" />
@@ -1635,6 +1831,7 @@ export function TransactionsPage() {
                   })}
                 </div>
               </div>
+              )}
 
               {/* Parcelamento — apenas para despesas no cartão de crédito */}
               {editTx.card && (
