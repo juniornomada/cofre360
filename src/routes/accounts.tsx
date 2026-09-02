@@ -242,11 +242,11 @@ function SortableAccountItem({
                     <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground shrink-0" />
                   </button>
                 </div>
-                {((account.parent_account_id && openingBalance !== 0) || Math.abs(performance) >= 0.005) && (
+                {Math.abs(performance) >= 0.005 && (
                   <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 min-w-0">
-                    {account.parent_account_id && openingBalance !== 0 && (
-                      <span className="text-[11px] tabular-nums leading-tight text-muted-foreground">
-                        Saldo inicial: {balanceVisible ? formatSignedBRL(openingBalance) : "R$ ••••"}
+                    {account.parent_account_id && (
+                      <span className="shrink-0 whitespace-nowrap text-[10px] sm:text-[11px] tabular-nums tracking-tight leading-tight text-muted-foreground">
+                        Investido: {balanceVisible ? formatSignedBRL(investedPrincipal) : "R$ ••••"}
                       </span>
                     )}
                     {Math.abs(performance) >= 0.005 && (
