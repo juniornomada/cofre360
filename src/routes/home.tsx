@@ -485,9 +485,12 @@ function RecoveredHome() {
               <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent text-base">{tx.icon || (tx.type === "income" ? "💰" : "💸")}</span>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium text-foreground">{tx.name || "Transação"}</p>
-                <p className="truncate text-[10px] text-muted-foreground">{tx.category || "Sem categoria"} · {formatDisplayDate(tx.date, tx.created_at)}</p>
+                <p className="truncate text-[10px] text-muted-foreground">{tx.category || "Sem categoria"}</p>
               </div>
-              <span className={cn("text-sm font-semibold tabular-nums", tx.type === "income" ? "text-primary" : "text-destructive")}>{tx.type === "income" ? "+" : "-"} R$ {fmt(tx.amount)}</span>
+              <div className="shrink-0 text-right">
+                <p className={cn("whitespace-nowrap text-sm font-semibold tabular-nums", tx.type === "income" ? "text-primary" : "text-destructive")}>{tx.type === "income" ? "+" : "-"} R$ {fmt(tx.amount)}</p>
+                <p className="mt-0.5 whitespace-nowrap text-[10px] text-muted-foreground">{formatDisplayDate(tx.date, tx.created_at)}</p>
+              </div>
             </Link>
           ))}
           {!loading && recent.length === 0 && <p className="rounded-xl border border-dashed border-border/40 py-6 text-center text-xs text-muted-foreground">Nenhuma transação recente.</p>}
