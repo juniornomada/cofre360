@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - "scripts/patch_edit_installment_current.py"
+      - "scripts/patch_installment_editor_date_format.py"
       - ".github/workflows/edit-installment-current.yml"
 
 permissions:
@@ -18,13 +19,15 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
       - name: Apply correction patch
-        run: python scripts/patch_edit_installment_current.py
+        run: |
+          python scripts/patch_edit_installment_current.py
+          python scripts/patch_installment_editor_date_format.py
       - name: Verify source
         run: |
           grep -n 'aria-label="Parcela atual"' src/routes/transactions.tsx
           grep -n 'originalCurrent: editOriginalInstallmentNumber' src/routes/transactions.tsx
           grep -n 'buildInstallmentCurrentCorrectionPlan' src/lib/installment-edit.ts
-          grep -n 'dd-MM-yyyy' src/lib/installment-edit.ts
+          grep -n 'const br = trimmed.match' src/lib/installment-edit.ts
           git diff --check
       - name: Run installment correction tests
         run: bunx vitest run src/tests/installment-current-correction.test.ts src/tests/installment-mode-toggle.test.ts src/tests/installment-utils.test.ts
@@ -33,6 +36,7 @@ jobs:
       - name: Cleanup and commit
         run: |
           rm scripts/patch_edit_installment_current.py
+          rm scripts/patch_installment_editor_date_format.py
           rm .github/workflows/edit-installment-current.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
