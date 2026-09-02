@@ -21,7 +21,7 @@ import { sanitizeTransactionWrite, sanitizeTransactionWrites } from "@/lib/norma
 
 export type QuickAddInitialType = "expense" | "income" | "transfer";
 
-interface BankAccountOption { id: string; name: string; icon: string | null; color: string | null; balance: number }
+interface BankAccountOption { id: string; name: string; icon: string | null; color: string | null; balance: number; parent_account_id: string | null; parent_name: string | null }
 interface CardOption { name: string; brand: string; emoji: string | null; color: string | null }
 
 interface Props {
@@ -141,7 +141,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
         { data: txs, error: txsError }
       ] = await Promise.all([
         supabase.from("cards").select("name, brand, emoji, color").order("created_at", { ascending: true }),
-        supabase.from("bank_accounts").select("id, name, icon, color, balance").order("created_at", { ascending: true }),
+        supabase.from("bank_accounts").select("id, name, icon, color, balance, parent_account_id").order("created_at", { ascending: true }),
         supabase.from("transactions").select("bank_account_id, amount, type, is_visible").not("bank_account_id", "is", null),
       ]);
 
@@ -164,7 +164,11 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
         name: a.name,
         icon: a.icon,
         color: a.color,
-        balance: (a.balance || 0) + (incomeByAccount[a.id] || 0) - (expenseByAccount[a.id] || 0)
+        balance: (a.balance || 0) + (incomeByAccount[a.id] || 0) - (expenseByAccount[a.id] || 0),
+        parent_account_id: a.parent_account_id || null,
+        parent_name: a.parent_account_id
+          ? (accs || []).find(parent => parent.id === a.parent_account_id)?.name || null
+          : null,
       })));
     } catch (error: any) {
       console.error("Error fetching data:", error);
@@ -496,6 +500,25 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
     }
   };
 
+  const orderedBankAccounts = (() => {
+    const roots = bankAccounts.filter(account => !account.parent_account_id);
+    const grouped = roots.flatMap(parent => [
+      parent,
+      ...bankAccounts.filter(account => account.parent_account_id === parent.id),
+    ]);
+    const orphans = bankAccounts.filter(
+      account =>
+        !!account.parent_account_id &&
+        !bankAccounts.some(parent => parent.id === account.parent_account_id),
+    );
+    return [...grouped, ...orphans];
+  })();
+
+  const accountHierarchyLabel = (account: BankAccountOption) =>
+    account.parent_account_id
+      ? `Subconta de ${account.parent_name || "conta principal"}`
+      : "Conta principal";
+
   return (
     <>
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -537,7 +560,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                 <div>
                   <label className="text-[11px] font-semibold text-foreground mb-1 block">De (origem)</label>
                   <div className="grid grid-cols-5 gap-x-1.5 gap-y-0.5">
-                    {bankAccounts.map(a => (
+                    {orderedBankAccounts.map(a => (
                       <button
                         key={a.id}
                         type="button"
@@ -549,8 +572,16 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                           transferFromId === a.id ? "bg-primary/15 ring-1 ring-primary" : "bg-card hover:bg-accent"
                         }`}
                       >
-                        <BankLogo icon={a.icon} color={a.color} name={a.name} size="sm" />
-                        <span className="text-[9px] text-foreground truncate w-full text-center leading-tight">{a.name}</span>
+                        <div className="relative">
+                          <BankLogo icon={a.icon} color={a.color} name={a.name} size="sm" />
+                          {a.parent_account_id && (
+                            <span aria-hidden="true" className="absolute -right-1 -top-1 flex h-3.5 min-w-3.5 items-center justify-center rounded-full border border-border bg-background px-0.5 text-[8px] font-black leading-none text-primary">↳</span>
+                          )}
+                        </div>
+                        <span className="text-[9px] font-medium text-foreground truncate w-full text-center leading-tight">{a.name}</span>
+                        <span className={cn("w-full truncate text-center text-[7px] leading-tight", a.parent_account_id ? "font-semibold text-primary" : "text-muted-foreground")} title={accountHierarchyLabel(a)}>
+                          {a.parent_account_id ? `Sub · ${a.parent_name || "Principal"}` : "Conta principal"}
+                        </span>
                       </button>
                     ))}
                   </div>
@@ -563,7 +594,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                 <div>
                   <label className="text-[11px] font-semibold text-foreground mb-1 block">Para (destino)</label>
                   <div className="grid grid-cols-5 gap-x-1.5 gap-y-0.5">
-                    {bankAccounts.filter(a => a.id !== transferFromId).map(a => (
+                    {orderedBankAccounts.filter(a => a.id !== transferFromId).map(a => (
                       <button
                         key={a.id}
                         type="button"
@@ -575,8 +606,16 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                           transferToId === a.id ? "bg-primary/15 ring-1 ring-primary" : "bg-card hover:bg-accent"
                         }`}
                       >
-                        <BankLogo icon={a.icon} color={a.color} name={a.name} size="sm" />
-                        <span className="text-[9px] text-foreground truncate w-full text-center leading-tight">{a.name}</span>
+                        <div className="relative">
+                          <BankLogo icon={a.icon} color={a.color} name={a.name} size="sm" />
+                          {a.parent_account_id && (
+                            <span aria-hidden="true" className="absolute -right-1 -top-1 flex h-3.5 min-w-3.5 items-center justify-center rounded-full border border-border bg-background px-0.5 text-[8px] font-black leading-none text-primary">↳</span>
+                          )}
+                        </div>
+                        <span className="text-[9px] font-medium text-foreground truncate w-full text-center leading-tight">{a.name}</span>
+                        <span className={cn("w-full truncate text-center text-[7px] leading-tight", a.parent_account_id ? "font-semibold text-primary" : "text-muted-foreground")} title={accountHierarchyLabel(a)}>
+                          {a.parent_account_id ? `Sub · ${a.parent_name || "Principal"}` : "Conta principal"}
+                        </span>
                       </button>
                     ))}
                   </div>
@@ -712,7 +751,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                     </div>
                     <span className="text-[9px] text-muted-foreground truncate w-full text-center leading-tight">Nenhuma</span>
                   </button>
-                  {bankAccounts.map(a => (
+                  {orderedBankAccounts.map(a => (
                     <button
                       key={a.id}
                       type="button"
@@ -740,8 +779,16 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                         newTx.bank_account_id === a.id ? "bg-primary/15 ring-1 ring-primary" : "bg-card hover:bg-accent"
                       }`}
                     >
-                      <BankLogo icon={a.icon} color={a.color} name={a.name} size="sm" />
-                      <span className="text-[9px] text-foreground truncate w-full text-center leading-tight">{a.name}</span>
+                      <div className="relative">
+                        <BankLogo icon={a.icon} color={a.color} name={a.name} size="sm" />
+                        {a.parent_account_id && (
+                          <span aria-hidden="true" className="absolute -right-1 -top-1 flex h-3.5 min-w-3.5 items-center justify-center rounded-full border border-border bg-background px-0.5 text-[8px] font-black leading-none text-primary">↳</span>
+                        )}
+                      </div>
+                      <span className="text-[9px] font-medium text-foreground truncate w-full text-center leading-tight">{a.name}</span>
+                      <span className={cn("w-full truncate text-center text-[7px] leading-tight", a.parent_account_id ? "font-semibold text-primary" : "text-muted-foreground")} title={accountHierarchyLabel(a)}>
+                        {a.parent_account_id ? `Sub · ${a.parent_name || "Principal"}` : "Conta principal"}
+                      </span>
                     </button>
                   ))}
                 </div>
