@@ -22,6 +22,7 @@ import { PaymentDescriptionText } from "@/components/PaymentDescriptionText";
 import { CalculatorAmountInput } from "@/components/CalculatorAmountInput";
 import { cn } from "@/lib/utils";
 import { formatSignedBRL } from "@/lib/format-brl";
+import { parseCategoryValue } from "@/lib/categories";
 import {
   DndContext,
   closestCenter,
@@ -98,6 +99,7 @@ type SortableAccountItemProps = {
   setEditBalance: (v: string) => void;
   income: number;
   expense: number;
+  yieldAmount: number;
   deleteConfirm: string | null;
   setDeleteConfirm: (v: string | null) => void;
   startEdit: (account: BankAccount) => void;
@@ -129,6 +131,7 @@ function SortableAccountItem({
   setEditBalance,
   income,
   expense,
+  yieldAmount,
   deleteConfirm,
   setDeleteConfirm,
   startEdit,
@@ -161,8 +164,13 @@ function SortableAccountItem({
   // O campo `account.balance` representa o saldo inicial/de abertura da conta.
   const openingBalance = Math.round(Number(account.balance || 0) * 100) / 100;
   const currentBalance = Math.round((openingBalance + income - expense) * 100) / 100;
-  const performance = Math.round((currentBalance - openingBalance) * 100) / 100;
-  const performancePct = openingBalance !== 0 ? (performance / Math.abs(openingBalance)) * 100 : 0;
+  // Rendimento financeiro não é variação de saldo. Aportes e resgates alteram
+  // o saldo da subconta, mas somente juros menos IR/IOF/taxas compõem rendimento.
+  const performance = Math.round(Number(yieldAmount || 0) * 100) / 100;
+  const investedPrincipal = Math.round((currentBalance - performance) * 100) / 100;
+  const performancePct = Math.abs(investedPrincipal) >= 0.005
+    ? (performance / Math.abs(investedPrincipal)) * 100
+    : 0;
 
   return (
     <div
@@ -374,6 +382,7 @@ function AccountsPage() {
   const [expenseByAccount, setExpenseByAccount] = useState<Record<string, number>>({});
   const [monthIncomeByAccount, setMonthIncomeByAccount] = useState<Record<string, number>>({});
   const [monthExpenseByAccount, setMonthExpenseByAccount] = useState<Record<string, number>>({});
+  const [monthYieldByAccount, setMonthYieldByAccount] = useState<Record<string, number>>({});
   const [selectedMonth, setSelectedMonth] = useState<Date>(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
@@ -489,7 +498,7 @@ function AccountsPage() {
       // Buscar transações visíveis vinculadas a contas bancárias (exclui card e ocultas/soft-deleted).
       const { data: txData, error: txError } = await supabase
         .from("transactions")
-        .select("bank_account_id, amount, type, is_visible, card, date, created_at")
+        .select("bank_account_id, amount, type, is_visible, card, date, created_at, name, category")
         .eq("user_id", session.user.id)
         .not("bank_account_id", "is", null);
       if (txError) throw txError;
@@ -499,6 +508,7 @@ function AccountsPage() {
         const expMap: Record<string, number> = {};
         const monthIncMap: Record<string, number> = {};
         const monthExpMap: Record<string, number> = {};
+        const yieldCentsMap: Record<string, number> = {};
         const today = new Date();
         today.setHours(23, 59, 59, 999);
         const selectedMonthEnd = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0, 23, 59, 59, 999);
@@ -523,12 +533,42 @@ function AccountsPage() {
           if (!transactionDate || transactionDate <= selectedCutoff) {
             if (tx.type === "income") monthIncMap[id] = (monthIncMap[id] || 0) + amt;
             else monthExpMap[id] = (monthExpMap[id] || 0) + amt;
+
+            // Regra de rendimento da subconta:
+            //   juros/rendimentos - IR - IOF - taxas bancárias de resgate.
+            // Transferências (aporte/resgate) nunca entram aqui.
+            const parsedCategory = parseCategoryValue(String(tx.category || ""));
+            const normalizedName = String(tx.name || "")
+              .normalize("NFD")
+              .replace(/[\u0300-\u036f]/g, "")
+              .toLowerCase();
+            const amountCents = Math.round(amt * 100);
+            const isInterestIncome =
+              tx.type === "income" &&
+              parsedCategory.group === "Receita" &&
+              parsedCategory.sub === "Juros";
+            const isInvestmentFee =
+              tx.type === "expense" && (
+                (parsedCategory.group === "Impostos/Taxas" &&
+                  (parsedCategory.sub === "IR" || parsedCategory.sub === "Taxas Bancárias")) ||
+                /\biof\b/.test(normalizedName) ||
+                normalizedName.includes("imposto de renda")
+              );
+
+            if (isInterestIncome) {
+              yieldCentsMap[id] = (yieldCentsMap[id] || 0) + amountCents;
+            } else if (isInvestmentFee) {
+              yieldCentsMap[id] = (yieldCentsMap[id] || 0) - amountCents;
+            }
           }
         }
         setIncomeByAccount(incMap);
         setExpenseByAccount(expMap);
         setMonthIncomeByAccount(monthIncMap);
         setMonthExpenseByAccount(monthExpMap);
+        setMonthYieldByAccount(
+          Object.fromEntries(Object.entries(yieldCentsMap).map(([id, cents]) => [id, cents / 100])),
+        );
       }
     } catch (error: any) {
       console.error("Error fetching accounts:", error);
@@ -1134,6 +1174,7 @@ function AccountsPage() {
                     setEditBalance={setEditBalance}
                     income={monthIncomeByAccount[account.id] || 0}
                     expense={monthExpenseByAccount[account.id] || 0}
+                    yieldAmount={monthYieldByAccount[account.id] || 0}
                     deleteConfirm={deleteConfirm}
                     setDeleteConfirm={setDeleteConfirm}
                     startEdit={startEdit}
