@@ -15,6 +15,8 @@ interface Props {
   autoFocus?: boolean;
   /** Optional callback when Enter is pressed */
   onEnter?: () => void;
+  /** Show zero as an empty field. Intended for new transaction forms. */
+  blankWhenZero?: boolean;
 }
 
 function formatCurrency(value: number) {
@@ -59,14 +61,18 @@ function parseEditableValue(raw: string) {
  * - permite apagar tudo ou editar parcialmente;
  * - formata novamente como moeda ao sair do campo.
  */
-export function CalculatorAmountInput({ value, onChange, tone, className, autoFocus, onEnter }: Props) {
+export function CalculatorAmountInput({ value, onChange, tone, className, autoFocus, onEnter, blankWhenZero = false }: Props) {
   const [focused, setFocused] = useState(false);
-  const [draft, setDraft] = useState(() => toEditableValue(value));
+  const [draft, setDraft] = useState(() =>
+    blankWhenZero && Number(value || 0) === 0 ? "" : toEditableValue(value)
+  );
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (!focused) setDraft(toEditableValue(value));
-  }, [value, focused]);
+    if (!focused) {
+      setDraft(blankWhenZero && Number(value || 0) === 0 ? "" : toEditableValue(value));
+    }
+  }, [value, focused, blankWhenZero]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const next = sanitizeEditableValue(e.target.value);
@@ -84,14 +90,14 @@ export function CalculatorAmountInput({ value, onChange, tone, className, autoFo
 
   const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
     setFocused(true);
-    setDraft(toEditableValue(value));
+    setDraft(blankWhenZero && Number(value || 0) === 0 ? "" : toEditableValue(value));
     // O primeiro toque/clique seleciona tudo: basta digitar para sobrescrever.
     requestAnimationFrame(() => e.target.select());
   };
 
   const handleBlur = () => {
     setFocused(false);
-    setDraft(toEditableValue(value));
+    setDraft(blankWhenZero && Number(value || 0) === 0 ? "" : toEditableValue(value));
   };
 
   const toneClassName = tone === "expense"
@@ -102,7 +108,7 @@ export function CalculatorAmountInput({ value, onChange, tone, className, autoFo
         ? "!text-black dark:!text-white !border-black dark:!border-white focus-visible:!ring-black dark:focus-visible:!ring-white"
         : "";
 
-  const formattedValue = formatCurrency(value);
+  const formattedValue = blankWhenZero && Number(value || 0) === 0 ? "" : formatCurrency(value);
 
   return (
     <div className="relative w-full">
@@ -122,7 +128,7 @@ export function CalculatorAmountInput({ value, onChange, tone, className, autoFo
           toneClassName,
           className
         )}
-        aria-label={`Valor: ${formattedValue}`}
+        aria-label={formattedValue ? `Valor: ${formattedValue}` : "Valor vazio"}
       />
     </div>
   );

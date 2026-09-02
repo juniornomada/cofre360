@@ -268,6 +268,8 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
   useEffect(() => {
      if (!open) {
        setConfirmInstallmentDiff(false);
+       setNewTx(prev => prev.amount === 0 ? prev : { ...prev, amount: 0 });
+       setInstallmentFixedValue(0);
        isFirstRender.current = true;
        return;
      }
@@ -290,7 +292,8 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
         : "",
     );
 
-    // Restaurar preferências de parcelamento (modo/valor/N) da última abertura,
+    // Restaurar preferências de parcelamento (modo/N) da última abertura.
+    // O valor nunca é reaproveitado em uma nova transação.
     // quando não estamos duplicando uma transação existente e o tipo é despesa.
     const prefs = !copyData && initialType !== "income" && initialType !== "transfer" ? readPrefs() : null;
     setInstallmentEnabled(prefs?.enabled ?? false);
@@ -302,7 +305,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
       name: copyData ? copyData.name : "",
       category: copyData ? copyData.category : (initialType === "income" ? "Renda > Salário" : "Alimentação > Outros"),
       date: normalizeQuickAddDate(initialDate),
-      amount: copyData ? copyData.amount : (prefs?.amount ?? 0),
+      amount: 0,
       type: copyData ? (copyData.category.startsWith("Receita") || (copyData.category !== "Transferência" && !copyData.category.startsWith("Transferências") && !copyData.category.startsWith("Alimentação") && initialType === "income") ? "income" : "expense") : (initialType === "income" ? "income" : "expense"),
       card: copyData ? copyData.card : null,
       bank_account_id: copyData ? copyData.bank_account_id : null,
@@ -680,6 +683,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                       onEnter={handleAdd}
                       autoFocus={false}
                       tone="transfer"
+                      blankWhenZero
                     />
                  </div>
               </div>
@@ -761,6 +765,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                       }} 
                       onEnter={handleAdd}
                       tone={newTx.type}
+                      blankWhenZero
                     />
                   </div>
               </div>
