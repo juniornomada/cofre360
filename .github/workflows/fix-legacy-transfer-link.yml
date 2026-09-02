@@ -1,0 +1,36 @@
+name: Fix legacy transfer links
+
+on:
+  push:
+    paths:
+      - '.github/workflows/fix-legacy-transfer-link.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: oven-sh/setup-bun@v2
+      - name: Apply patch
+        run: python3 scripts/fix-legacy-transfer-link.py
+      - name: Verify source
+        run: |
+          grep -q 'Legacy transfers may have one side without installment_group_id' src/routes/transactions.tsx
+          grep -q 'Não foi possível identificar com segurança a outra ponta' src/routes/transactions.tsx
+          git diff --check
+      - name: Build
+        run: bun run build
+      - name: Cleanup and commit
+        run: |
+          rm scripts/fix-legacy-transfer-link.py
+          rm .github/workflows/fix-legacy-transfer-link.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'fix: recover legacy transfer pairs during edit'
+          git push
