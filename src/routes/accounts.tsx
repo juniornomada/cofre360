@@ -242,30 +242,34 @@ function SortableAccountItem({
                     <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground shrink-0" />
                   </button>
                 </div>
-                {account.parent_account_id && openingBalance !== 0 && (
+                {((account.parent_account_id && openingBalance !== 0) || Math.abs(performance) >= 0.005) && (
                   <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 min-w-0">
-                    <span className="text-[11px] tabular-nums leading-tight text-muted-foreground">
-                      Saldo inicial: {balanceVisible ? formatSignedBRL(openingBalance) : "R$ ••••"}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={(event) => {
-                        event.preventDefault();
-                        event.stopPropagation();
-                        window.location.assign(
-                          `/transactions?accountId=${encodeURIComponent(account.id)}&month=${encodeURIComponent(selectedMonthKey)}&yield=1`,
-                        );
-                      }}
-                      className={cn(
-                        "text-[11px] tabular-nums leading-tight font-medium text-left hover:underline underline-offset-2",
-                        performance > 0 ? "text-primary" : performance < 0 ? "text-destructive" : "text-muted-foreground"
-                      )}
-                      title="Ver composição do rendimento"
-                    >
-                      Rendimento: {balanceVisible
-                        ? `${formatSignedBRL(performance)} (${performancePct.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%)`
-                        : "R$ ••••"}
-                    </button>
+                    {account.parent_account_id && openingBalance !== 0 && (
+                      <span className="text-[11px] tabular-nums leading-tight text-muted-foreground">
+                        Saldo inicial: {balanceVisible ? formatSignedBRL(openingBalance) : "R$ ••••"}
+                      </span>
+                    )}
+                    {Math.abs(performance) >= 0.005 && (
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          window.location.assign(
+                            `/transactions?accountId=${encodeURIComponent(account.id)}&month=${encodeURIComponent(selectedMonthKey)}&yield=1`,
+                          );
+                        }}
+                        className={cn(
+                          "text-[11px] tabular-nums leading-tight font-medium text-left hover:underline underline-offset-2",
+                          performance > 0 ? "text-primary" : performance < 0 ? "text-destructive" : "text-muted-foreground"
+                        )}
+                        title="Ver composição do rendimento"
+                      >
+                        Rendimento: {balanceVisible
+                          ? `${formatSignedBRL(performance)} (${performancePct.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%)`
+                          : "R$ ••••"}
+                      </button>
+                    )}
                   </div>
                 )}
               </div>

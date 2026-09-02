@@ -18,6 +18,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { getFriendlyErrorMessage } from "@/lib/utils";
 import { sanitizeTransactionWrite, sanitizeTransactionWrites } from "@/lib/normalize-transaction-name";
+import { inferYieldTransactionFields } from "@/lib/account-yield";
 
 export type QuickAddInitialType = "expense" | "income" | "transfer";
 
@@ -101,6 +102,18 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
     card: initialCardName || null,
     bank_account_id: null,
   });
+
+  useEffect(() => {
+    if (isTransfer || !newTx.name.trim()) return;
+    const inferred = inferYieldTransactionFields(newTx.name);
+    if (!inferred) return;
+    if (
+      newTx.type === inferred.type &&
+      newTx.category === inferred.category &&
+      newTx.icon === inferred.icon
+    ) return;
+    setNewTx(prev => ({ ...prev, ...inferred, card: inferred.type === "income" ? null : prev.card }));
+  }, [isTransfer, newTx.name, newTx.type, newTx.category, newTx.icon]);
 
   const [installmentEnabled, setInstallmentEnabled] = useState(false);
   const [installmentCount, setInstallmentCount] = useState<number | "">(2);

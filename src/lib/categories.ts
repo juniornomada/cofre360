@@ -143,6 +143,7 @@ export const categoryTree: CategoryGroup[] = [
     type: "expense",
     subcategories: [
       { label: "IR", icon: "📊" },
+      { label: "IOF", icon: "🏛️" },
       { label: "INSS/FGTS", icon: "🏛️" },
       { label: "Taxas Bancárias", icon: "🏦" },
       { label: "Multas", icon: "⚠️" },

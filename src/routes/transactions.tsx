@@ -3,7 +3,7 @@ import { SmartLink as Link } from "@/components/SmartLink";
 import { TransactionItem } from "@/components/TransactionItem";
 import { EmptyState } from "@/components/EmptyState";
 import { parseCategoryValue, getCategoryIcon, categoryTree } from "@/lib/categories";
-import { isAccountYieldComponent } from "@/lib/account-yield";
+import { inferYieldTransactionFields, isAccountYieldComponent } from "@/lib/account-yield";
 import { fetchAllCategoryLedgerTransactions, type CategoryLedgerTransaction } from "@/lib/category-spending-ledger";
 import { Search, Pencil, Trash2, Plus, CalendarIcon, Loader2, Upload, CheckSquare, Square, X, SlidersHorizontal, ArrowLeftRight, ArrowRight, Eye, EyeOff, FileText, GripVertical, ArrowLeft, Landmark, CreditCard, ArrowUpRight, ArrowDownRight } from "lucide-react";
 import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react";
@@ -169,6 +169,22 @@ export function TransactionsPage() {
   
   const [editTx, setEditTx] = useState<Transaction | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
+  useEffect(() => {
+    if (!editTx || isTransferTransaction(editTx) || !editTx.name.trim()) return;
+    const inferred = inferYieldTransactionFields(editTx.name);
+    if (!inferred) return;
+    if (
+      editTx.type === inferred.type &&
+      editTx.category === inferred.category &&
+      editTx.icon === inferred.icon
+    ) return;
+    setEditTx(prev => prev ? ({
+      ...prev,
+      ...inferred,
+      card: inferred.type === "income" ? null : prev.card,
+    }) : prev);
+  }, [editTx?.name, editTx?.type, editTx?.category, editTx?.icon]);
+
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Transaction | null>(null);
   const [deleteScope, setDeleteScope] = useState<"single" | "future" | "all">("single");
