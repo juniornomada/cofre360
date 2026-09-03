@@ -116,6 +116,7 @@ import { formatCardPaymentLabel, normalizeCardPaymentLabel } from "@/lib/card-pa
 import { recordLegacyLabelDetection } from "@/lib/legacy-label-telemetry";
 import { sanitizeTransactionWrite, sanitizeTransactionWrites } from "@/lib/normalize-transaction-name";
 import { sortInvoiceChronoAsc } from "@/lib/invoice-chrono-sort";
+import { getInvoicePaymentStatus, remainingInvoiceAmount } from "@/lib/invoice-payment-status";
 import { mapServerError } from "@/lib/map-server-error";
 import { AutoFitText } from "@/components/AutoFitText";
 import { PaymentDescriptionText, normalizePaymentDescription } from "@/components/PaymentDescriptionText";
@@ -1247,7 +1248,7 @@ function CardsPage() {
 
       const currentPeriodKey = activePeriod?.endDate?.toISOString().split("T")[0];
       const paidInThisPeriod = currentPeriodKey ? cardPaymentsByPeriod[payingCard.id]?.[currentPeriodKey] || 0 : 0;
-      const remainingBeforeThis = Math.max(0, totalInvoice - paidInThisPeriod);
+      const remainingBeforeThis = remainingInvoiceAmount(totalInvoice, paidInThisPeriod);
 
       const isTotalPayment = Math.abs(paymentTotal - remainingBeforeThis) < 0.01;
       
@@ -1485,7 +1486,7 @@ function CardsPage() {
       const selOpeningAmount = getOpeningInvoiceAmountForPeriod(card, selPeriodKey);
       const selTotal = Math.round((selTransactionsTotal + selOpeningAmount) * 100) / 100;
       const selPaid = cardPaymentsByPeriod[card.id]?.[selPeriodKey] || 0;
-      const selRemaining = Math.max(0, selTotal - selPaid);
+      const selRemaining = remainingInvoiceAmount(selTotal, selPaid);
 
       reportCycleSnapshot({
         source: "cards",
@@ -1676,10 +1677,11 @@ function CardsPage() {
                   {(() => {
                     const paidThisPeriod = selPaid;
                     const remainingThisPeriod = selRemaining;
-                    const isFullyPaid = selTotal > 0 && remainingThisPeriod === 0;
-                    const isPartiallyPaid = paidThisPeriod > 0 && remainingThisPeriod > 0;
-                    const isOpen = selTotal > 0 && paidThisPeriod === 0;
-                    const isEmpty = selTotal === 0;
+                    const paymentStatus = getInvoicePaymentStatus(selTotal, paidThisPeriod);
+                    const isFullyPaid = paymentStatus === "total";
+                    const isPartiallyPaid = paymentStatus === "partial";
+                    const isOpen = paymentStatus === "open";
+                    const isEmpty = paymentStatus === "empty";
                     const detailedPayments = selDetailedPayments;
                     void detailedPayments;
 
@@ -2336,14 +2338,15 @@ function CardsPage() {
                         const payments = getPaymentsForPeriod(payingCard.id, activePeriod);
                         const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
                         const totalInvoice = activePeriod?.total || 0;
+                        const paymentStatus = getInvoicePaymentStatus(totalInvoice, totalPaid);
                         
-                        if (totalPaid > 0 && totalPaid < totalInvoice) {
+                        if (paymentStatus === "partial") {
                           return (
                             <Badge variant="outline" className="h-4 px-1 text-[8px] font-bold uppercase tracking-wider bg-amber-500/10 text-amber-600 border-amber-500/20">
                               Parcial
                             </Badge>
                           );
-                        } else if (totalPaid >= totalInvoice && totalInvoice > 0) {
+                        } else if (paymentStatus === "total") {
                           return (
                             <Badge variant="outline" className="h-4 px-1 text-[8px] font-bold uppercase tracking-wider bg-primary/10 text-primary border-primary/20">
                               Total
@@ -2470,7 +2473,7 @@ function CardsPage() {
                 const currentInvoiceTotal = (invoicePeriods[activeInvoiceIdx] || invoicePeriods[0])?.total || 0;
                 const currentPeriod = invoicePeriods[activeInvoiceIdx] || invoicePeriods[0];
                 const paidInThisPeriod = getPaidTotalForPeriod(payingCard.id, currentPeriod);
-                const remaining = Math.max(0, currentInvoiceTotal - paidInThisPeriod);
+                const remaining = remainingInvoiceAmount(currentInvoiceTotal, paidInThisPeriod);
                 const eligible = bankAccounts.filter((a) => a.balance > 0).sort((a, b) => b.balance - a.balance);
                 const best = eligible[0];
                 if (!best || remaining <= 0) return null;
