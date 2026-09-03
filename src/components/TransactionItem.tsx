@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { getCategoryDisplay, getCategoryIcon } from "@/lib/categories";
 import { restoreAccents } from "@/lib/restore-accents";
@@ -56,17 +56,6 @@ function toIsoDate(value: string | null | undefined, refIso?: string): string | 
   return null;
 }
 
-function inferPurchaseDate(date: string, installmentNumber: number | undefined, refIso?: string): string | null {
-  const iso = toIsoDate(date, refIso);
-  if (!iso) return null;
-  const [year, month, day] = iso.split("-").map(Number);
-  const offset = Math.max(0, Number(installmentNumber || 1) - 1);
-  const target = new Date(Date.UTC(year, month - 1 - offset, 1));
-  const lastDay = new Date(Date.UTC(target.getUTCFullYear(), target.getUTCMonth() + 1, 0)).getUTCDate();
-  const safeDay = Math.min(day, lastDay);
-  return `${target.getUTCFullYear()}-${String(target.getUTCMonth() + 1).padStart(2, "0")}-${String(safeDay).padStart(2, "0")}`;
-}
-
 interface TransactionItemProps {
   id?: string;
   icon: string;
@@ -99,14 +88,17 @@ export function TransactionItem({
   installment_group_id, installment_number, total_installments, style, onEdit, onDelete, amountVisible = true
 }: TransactionItemProps) {
   const isInstallment = !!total_installments && total_installments > 1 && !!installment_number;
-  const inferredPurchaseDate = useMemo(
-    () => inferPurchaseDate(date, installment_number, created_at),
-    [date, installment_number, created_at],
-  );
-  const [purchaseDate, setPurchaseDate] = useState<string>(() => toIsoDate(purchase_date, created_at) || inferredPurchaseDate || "");
-  const [purchaseDateDraft, setPurchaseDateDraft] = useState<string>(() => toIsoDate(purchase_date, created_at) || inferredPurchaseDate || "");
+  const explicitPurchaseDate = toIsoDate(purchase_date, created_at) || "";
+  const [purchaseDate, setPurchaseDate] = useState<string>(explicitPurchaseDate);
+  const [purchaseDateDraft, setPurchaseDateDraft] = useState<string>(explicitPurchaseDate);
   const [purchaseDateOpen, setPurchaseDateOpen] = useState(false);
   const [savingPurchaseDate, setSavingPurchaseDate] = useState(false);
+
+  useEffect(() => {
+    const next = toIsoDate(purchase_date, created_at) || "";
+    setPurchaseDate(next);
+    setPurchaseDateDraft(next);
+  }, [purchase_date, created_at]);
 
   const savePurchaseDate = async () => {
     if (!purchaseDateDraft || (!installment_group_id && !id)) return;
