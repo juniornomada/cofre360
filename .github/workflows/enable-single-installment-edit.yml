@@ -1,0 +1,89 @@
+name: Enable single installment editing
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: ${{ !contains(github.event.head_commit.message, '[single-installment-edit-applied]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Make single-installment edits truly isolated
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          p = Path('src/routes/transactions.tsx')
+          s = p.read_text()
+
+          old_import = 'import { saveInstallmentPlan, stripInstallmentSuffix, detectInstallmentChanges, splitInstallmentChanges, propagateCosmeticFieldsToGroup } from "@/lib/installment-edit";'
+          new_import = 'import { saveInstallmentPlan, stripInstallmentSuffix, detectInstallmentChanges, propagateCosmeticFieldsToGroup } from "@/lib/installment-edit";'
+          if old_import in s:
+              s = s.replace(old_import, new_import)
+
+          old_scope = '''         const { structural } = splitInstallmentChanges(changes);
+         // Only ask about scope for structural changes (name/value/count/date).
+         // Cosmetic fields (category/icon/card/account) always propagate to the
+         // whole group automatically — they describe the purchase itself.
+         if (structural.length > 0) {
+           setScopeChanges(structural);
+           setShowUpdateScopeDialog(true);
+           return;
+         }'''
+          new_scope = '''         // Any field can be edited only on the selected installment.
+         // Ask for scope whenever something changed so "Apenas esta parcela"
+         // is truly isolated for name, value, category, icon, date, card and account.
+         if (changes.length > 0) {
+           setScopeChanges(changes);
+           setShowUpdateScopeDialog(true);
+           return;
+         }'''
+          if old_scope in s:
+              s = s.replace(old_scope, new_scope)
+          elif new_scope not in s:
+              raise SystemExit('scope block not found')
+
+          old_propagation = '''      // Always propagate cosmetic fields (category/icon/card/account) to all
+      // siblings in the group — a purchase's category/card is a property of
+      // the whole plan, not of a single installment.
+      if (editTx.installment_group_id) {'''
+          new_propagation = '''      // Propagate cosmetic fields only when the user explicitly chose the
+      // entire installment group. "Apenas esta parcela" must stay isolated.
+      if (editTx.installment_group_id && updateScope === "all") {'''
+          if old_propagation in s:
+              s = s.replace(old_propagation, new_propagation)
+          elif new_propagation not in s:
+              raise SystemExit('cosmetic propagation block not found')
+
+          old_copy = 'Você alterou uma transação parcelada. Deseja aplicar as alterações apenas nesta parcela ou em todas as demais? Categoria e ícone são propagados juntos quando você escolhe "Todas as parcelas do grupo".'
+          new_copy = 'Você alterou uma transação parcelada. Escolha se a edição vale somente para esta parcela ou para todo o grupo. Em "Apenas esta parcela", nome, valor, categoria, ícone, data, cartão e conta ficam restritos ao lançamento selecionado.'
+          if old_copy in s:
+              s = s.replace(old_copy, new_copy)
+
+          p.write_text(s)
+          PY
+
+      - name: Verify patch
+        run: |
+          git diff --check
+          grep -F 'if (editTx.installment_group_id && updateScope === "all")' src/routes/transactions.tsx
+          grep -F 'if (changes.length > 0)' src/routes/transactions.tsx
+
+      - name: Commit patch and remove temporary workflow
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git rm .github/workflows/enable-single-installment-edit.yml
+          git add src/routes/transactions.tsx
+          if git diff --cached --quiet; then
+            echo "Patch already applied"
+            exit 0
+          fi
+          git commit -m "fix: allow isolated installment edits [single-installment-edit-applied]"
+          git push
