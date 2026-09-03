@@ -911,15 +911,34 @@ function CardsPage() {
   const handleEditTx = (tx: CardTransaction) => {
     setEditOriginalTx({ ...tx });
     setEditTx({ ...tx });
+    setInstallmentCurrent(String(Math.max(1, Number(tx.installment_number) || 1)));
+    setInstallmentTotal(String(Math.max(1, Number(tx.total_installments) || 1)));
     setEditScopeDialogOpen(false);
     setShowEditDialog(true);
   };
 
   const performSaveEditTx = async (scope: "single" | "future") => {
-    if (!editTx) return;
+    if (!editTx || !editOriginalTx) return;
+
+    const requestedCurrent = parseInt(installmentCurrent, 10);
+    const requestedTotal = parseInt(installmentTotal, 10);
+    if (
+      !Number.isFinite(requestedCurrent) ||
+      !Number.isFinite(requestedTotal) ||
+      requestedCurrent < 1 ||
+      requestedTotal < 1 ||
+      requestedCurrent > requestedTotal ||
+      requestedTotal > 48
+    ) {
+      toast.error("Parcelas inválidas");
+      return;
+    }
+
     setIsSavingEdit(true);
     try {
-      const current = Math.max(1, Number(editTx.installment_number) || 1);
+      const originalCurrent = Math.max(1, Number(editOriginalTx.installment_number) || 1);
+      const originalTotal = Math.max(1, Number(editOriginalTx.total_installments) || 1);
+      const installmentChanged = requestedCurrent !== originalCurrent || requestedTotal !== originalTotal;
       const baseName = stripInstallmentSuffix(editTx.name);
       const sharedUpdate = {
         name: baseName,
@@ -928,7 +947,120 @@ function CardsPage() {
         amount: editTx.amount,
       };
 
-      if (scope === "future" && editTx.installment_group_id) {
+      if (installmentChanged) {
+        if (requestedTotal === 1) {
+          // Converte a parcela selecionada em compra única. As demais parcelas
+          // do grupo são preservadas para evitar exclusão implícita de dados.
+          const { error } = await supabase
+            .from("transactions")
+            .update({
+              ...sharedUpdate,
+              date: editTx.date,
+              installment_number: 1,
+              total_installments: 1,
+              installment_group_id: null,
+            })
+            .eq("id", editTx.id);
+          if (error) throw error;
+        } else {
+          const groupId =
+            editOriginalTx.installment_group_id ||
+            (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+              ? crypto.randomUUID()
+              : `${Date.now()}-${Math.random().toString(16).slice(2)}`);
+
+          let groupRows: CardTransaction[] = [];
+          if (editOriginalTx.installment_group_id) {
+            const { data, error } = await supabase
+              .from("transactions")
+              .select("id, name, icon, category, date, amount, type, card, created_at, total_installments, installment_number, installment_group_id")
+              .eq("installment_group_id", editOriginalTx.installment_group_id)
+              .order("installment_number", { ascending: true });
+            if (error) throw error;
+            groupRows = (data as CardTransaction[]) || [];
+          } else {
+            groupRows = [{ ...editOriginalTx }];
+          }
+
+          const previousRows = groupRows.filter(
+            (row) => Math.max(1, Number(row.installment_number) || 1) < originalCurrent,
+          );
+          const affectedRows = groupRows.filter(
+            (row) => Math.max(1, Number(row.installment_number) || 1) >= originalCurrent,
+          );
+
+          // Se o total mudou, parcelas anteriores também precisam exibir o novo total.
+          if (requestedTotal !== originalTotal && previousRows.length > 0) {
+            const previousResults = await Promise.all(
+              previousRows.map((row) =>
+                supabase
+                  .from("transactions")
+                  .update({ total_installments: requestedTotal })
+                  .eq("id", row.id),
+              ),
+            );
+            const previousFailure = previousResults.find((result) => result.error);
+            if (previousFailure?.error) throw previousFailure.error;
+          }
+
+          const desiredCount = requestedTotal - requestedCurrent + 1;
+          for (let index = 0; index < desiredCount; index++) {
+            const installmentNumber = requestedCurrent + index;
+            const existing = affectedRows[index];
+            const shouldPropagateContent = scope === "future" || index === 0;
+            const contentUpdate = existing && !shouldPropagateContent
+              ? {
+                  name: stripInstallmentSuffix(existing.name),
+                  category: existing.category,
+                  icon: existing.icon,
+                  amount: existing.amount,
+                }
+              : sharedUpdate;
+            const payload = {
+              ...contentUpdate,
+              date: addMonthsIso(editTx.date, index),
+              installment_number: installmentNumber,
+              total_installments: requestedTotal,
+              installment_group_id: groupId,
+            };
+
+            if (existing) {
+              const { error } = await supabase
+                .from("transactions")
+                .update(payload)
+                .eq("id", existing.id);
+              if (error) throw error;
+            } else {
+              const { error } = await supabase.from("transactions").insert(
+                sanitizeTransactionWrite({
+                  ...payload,
+                  type: editTx.type,
+                  card: editTx.card || invoiceCard?.name || null,
+                }),
+              );
+              if (error) throw error;
+            }
+          }
+
+          // Ao reduzir o total, remove somente parcelas futuras que ficaram fora
+          // da nova sequência. As parcelas anteriores à editada nunca são apagadas.
+          const extraRows = affectedRows.slice(desiredCount);
+          if (extraRows.length > 0) {
+            const deleteResults = await Promise.all(
+              extraRows.map((row) => supabase.from("transactions").delete().eq("id", row.id)),
+            );
+            const deleteFailure = deleteResults.find((result) => result.error);
+            if (deleteFailure?.error) throw deleteFailure.error;
+          }
+        }
+
+        toast.success(
+          scope === "future"
+            ? "Parcelamento e parcelas futuras atualizados"
+            : "Parcelamento atualizado",
+        );
+      } else if (scope === "future" && editTx.installment_group_id) {
+        const current = Math.max(1, Number(editTx.installment_number) || 1);
         const { data: siblings, error: siblingsError } = await supabase
           .from("transactions")
           .select("id, installment_number")
@@ -937,7 +1069,7 @@ function CardsPage() {
           .order("installment_number", { ascending: true });
         if (siblingsError) throw siblingsError;
 
-        const dateChanged = !!editOriginalTx && editOriginalTx.date !== editTx.date;
+        const dateChanged = editOriginalTx.date !== editTx.date;
         const results = await Promise.all((siblings || []).map((row) => {
           const n = Math.max(current, Number(row.installment_number) || current);
           const update: Record<string, unknown> = { ...sharedUpdate };
@@ -971,10 +1103,28 @@ function CardsPage() {
   };
 
   const saveEditTx = async () => {
-    if (!editTx) return;
-    const current = Math.max(1, Number(editTx.installment_number) || 1);
-    const total = Math.max(1, Number(editTx.total_installments) || 1);
-    if (editTx.installment_group_id && total > 1 && current < total) {
+    if (!editTx || !editOriginalTx) return;
+    const requestedCurrent = parseInt(installmentCurrent, 10);
+    const requestedTotal = parseInt(installmentTotal, 10);
+    if (
+      !Number.isFinite(requestedCurrent) ||
+      !Number.isFinite(requestedTotal) ||
+      requestedCurrent < 1 ||
+      requestedTotal < 1 ||
+      requestedCurrent > requestedTotal ||
+      requestedTotal > 48
+    ) {
+      toast.error("Parcelas inválidas");
+      return;
+    }
+
+    const originalCurrent = Math.max(1, Number(editOriginalTx.installment_number) || 1);
+    const originalTotal = Math.max(1, Number(editOriginalTx.total_installments) || 1);
+    const hasFutureImpact =
+      (editTx.installment_group_id && originalCurrent < originalTotal) ||
+      requestedCurrent < requestedTotal;
+
+    if (hasFutureImpact) {
       setEditScopeDialogOpen(true);
       return;
     }
@@ -1971,7 +2121,7 @@ function CardsPage() {
                           </p>
                         </div>
 
-                        <div className="ml-1.5 flex items-center gap-1.5 group/card-tx-row relative shrink-0">
+                        <div className="ml-2.5 flex items-center gap-1.5 group/card-tx-row relative shrink-0">
                           <span className="text-xs font-semibold text-destructive tabular-nums shrink-0">
                             -R$ {Number(tx.amount).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                           </span>
@@ -1987,7 +2137,7 @@ function CardsPage() {
                             <Pencil className="h-3.5 w-3.5" />
                           </button>
 
-                          {/* Mobile/touch: mantém exclusão e parcelamento acessíveis sem poluir a linha. */}
+                          {/* Mobile/touch: ações secundárias — parcelamento agora fica dentro do editor. */}
                           <div className="sm:hidden">
                             <DropdownMenu modal={false}>
                               <DropdownMenuTrigger asChild>
@@ -2001,11 +2151,6 @@ function CardsPage() {
                                 </button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end" className="z-[120] rounded-xl">
-                                <DropdownMenuItem onClick={() => openInstallmentDialog(tx)} className="cursor-pointer">
-                                  <Layers className="mr-2 h-4 w-4" />
-                                  Editar parcelamento
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
                                 <DropdownMenuItem onClick={() => handleDeleteTx(tx)} className="cursor-pointer text-destructive focus:text-destructive">
                                   <Trash2 className="mr-2 h-4 w-4" />
                                   Excluir transação
@@ -2033,15 +2178,6 @@ function CardsPage() {
                               aria-label="Excluir transação"
                             >
                               <Trash2 className="h-3.5 w-3.5" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => openInstallmentDialog(tx)}
-                              className="p-1.5 rounded-full bg-accent/50 hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
-                              title="Editar parcelamento"
-                              aria-label="Editar parcelamento"
-                            >
-                              <Layers className="h-3.5 w-3.5" />
                             </button>
                           </div>
                         </div>
@@ -2620,6 +2756,49 @@ function CardsPage() {
                 </Popover>
               </div>
 
+              <div data-testid="invoice-edit-installment" className="rounded-xl border border-border/50 bg-accent/20 p-2.5">
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <Label className="text-xs font-semibold text-foreground">Parcelamento</Label>
+                  <span className="text-[10px] text-muted-foreground">Edite aqui sem sair da transação</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2.5">
+                  <div className="space-y-1">
+                    <Label className="text-[10px] text-muted-foreground">Parcela atual</Label>
+                    <Input
+                      aria-label="Parcela atual"
+                      type="number"
+                      inputMode="numeric"
+                      min={1}
+                      max={48}
+                      value={installmentCurrent}
+                      onChange={(e) => setInstallmentCurrent(e.target.value.replace(/\D/g, "").slice(0, 2))}
+                      className="h-9 rounded-xl text-center tabular-nums"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-[10px] text-muted-foreground">Total de parcelas</Label>
+                    <Input
+                      aria-label="Total de parcelas"
+                      type="number"
+                      inputMode="numeric"
+                      min={1}
+                      max={48}
+                      value={installmentTotal}
+                      onChange={(e) => {
+                        const next = e.target.value.replace(/\D/g, "").slice(0, 2);
+                        setInstallmentTotal(next);
+                        const max = parseInt(next, 10);
+                        const current = parseInt(installmentCurrent, 10);
+                        if (Number.isFinite(max) && Number.isFinite(current) && current > max) {
+                          setInstallmentCurrent(String(max));
+                        }
+                      }}
+                      className="h-9 rounded-xl text-center tabular-nums"
+                    />
+                  </div>
+                </div>
+              </div>
+
               <div
                 data-testid="invoice-edit-amount"
                 onFocusCapture={(event) => {
@@ -2653,8 +2832,9 @@ function CardsPage() {
             <AlertDialogDescription>
               {editTx && (
                 <>
-                  Esta compra está na parcela <strong>{editTx.installment_number}/{editTx.total_installments}</strong>.
-                  Escolha se a correção vale somente para esta parcela ou também para as próximas.
+                  Esta compra está sendo editada como parcela <strong>{installmentCurrent}/{installmentTotal}</strong>.
+                  Escolha se as alterações de valor, nome e categoria valem somente para esta parcela ou também para as próximas.
+                  Alterações na numeração do parcelamento mantêm a sequência futura coerente.
                 </>
               )}
             </AlertDialogDescription>
