@@ -206,6 +206,8 @@ function CardsPage() {
   // Transaction Edit/Delete state
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [editTx, setEditTx] = useState<CardTransaction | null>(null);
+  const [editOriginalTx, setEditOriginalTx] = useState<CardTransaction | null>(null);
+  const [editScopeDialogOpen, setEditScopeDialogOpen] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<CardTransaction | null>(null);
   const [deleteScope, setDeleteScope] = useState<"single" | "future" | "all">("single");
@@ -907,40 +909,76 @@ function CardsPage() {
   }, [invoiceDialogOpen, fetchHistory]);
 
   const handleEditTx = (tx: CardTransaction) => {
+    setEditOriginalTx({ ...tx });
     setEditTx({ ...tx });
+    setEditScopeDialogOpen(false);
     setShowEditDialog(true);
   };
 
-  const saveEditTx = async () => {
+  const performSaveEditTx = async (scope: "single" | "future") => {
     if (!editTx) return;
     setIsSavingEdit(true);
     try {
-      const { error } = await supabase
-        .from("transactions")
-        .update({
-          name: editTx.name,
-          category: editTx.category,
-          icon: editTx.icon,
-          date: editTx.date,
-          amount: editTx.amount,
-        })
-        .eq("id", editTx.id);
-      
-      if (error) throw error;
-      
-      toast.success("Transação atualizada com sucesso");
-      setShowEditDialog(false);
-      // Refresh transactions for the card
-      // Refresh transactions silently — preserves scroll and active period.
-      if (invoiceCard) refreshInvoiceSilently(invoiceCard);
-      else fetchAll();
+      const current = Math.max(1, Number(editTx.installment_number) || 1);
+      const baseName = stripInstallmentSuffix(editTx.name);
+      const sharedUpdate = {
+        name: baseName,
+        category: editTx.category,
+        icon: editTx.icon,
+        amount: editTx.amount,
+      };
 
+      if (scope === "future" && editTx.installment_group_id) {
+        const { data: siblings, error: siblingsError } = await supabase
+          .from("transactions")
+          .select("id, installment_number")
+          .eq("installment_group_id", editTx.installment_group_id)
+          .gte("installment_number", current)
+          .order("installment_number", { ascending: true });
+        if (siblingsError) throw siblingsError;
+
+        const dateChanged = !!editOriginalTx && editOriginalTx.date !== editTx.date;
+        const results = await Promise.all((siblings || []).map((row) => {
+          const n = Math.max(current, Number(row.installment_number) || current);
+          const update: Record<string, unknown> = { ...sharedUpdate };
+          if (row.id === editTx.id) update.date = editTx.date;
+          else if (dateChanged) update.date = addMonthsIso(editTx.date, n - current);
+          return supabase.from("transactions").update(update).eq("id", row.id);
+        }));
+        const failed = results.find((result) => result.error);
+        if (failed?.error) throw failed.error;
+        toast.success("Esta parcela e as futuras foram atualizadas");
+      } else {
+        const { error } = await supabase
+          .from("transactions")
+          .update({ ...sharedUpdate, date: editTx.date })
+          .eq("id", editTx.id);
+        if (error) throw error;
+        toast.success("Parcela atualizada");
+      }
+
+      setEditScopeDialogOpen(false);
+      setShowEditDialog(false);
+      setEditOriginalTx(null);
+      if (invoiceCard) await refreshInvoiceSilently(invoiceCard);
+      else await fetchAll();
     } catch (error: any) {
       console.error("Error updating transaction:", error);
       toast.error("Erro ao atualizar transação");
     } finally {
       setIsSavingEdit(false);
     }
+  };
+
+  const saveEditTx = async () => {
+    if (!editTx) return;
+    const current = Math.max(1, Number(editTx.installment_number) || 1);
+    const total = Math.max(1, Number(editTx.total_installments) || 1);
+    if (editTx.installment_group_id && total > 1 && current < total) {
+      setEditScopeDialogOpen(true);
+      return;
+    }
+    await performSaveEditTx("single");
   };
 
   const handleDeleteTx = (tx: CardTransaction) => {
@@ -2600,6 +2638,42 @@ function CardsPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={editScopeDialogOpen} onOpenChange={(open) => { if (!isSavingEdit) setEditScopeDialogOpen(open); }}>
+        <AlertDialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-sm mx-auto rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Aplicar alteração no parcelamento?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {editTx && (
+                <>
+                  Esta compra está na parcela <strong>{editTx.installment_number}/{editTx.total_installments}</strong>.
+                  Escolha se a correção vale somente para esta parcela ou também para as próximas.
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2 sm:gap-2">
+            <AlertDialogCancel disabled={isSavingEdit}>Voltar</AlertDialogCancel>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={isSavingEdit}
+              onClick={() => void performSaveEditTx("single")}
+            >
+              Só esta parcela
+            </Button>
+            <AlertDialogAction
+              disabled={isSavingEdit}
+              onClick={(e) => {
+                e.preventDefault();
+                void performSaveEditTx("future");
+              }}
+            >
+              {isSavingEdit ? <Loader2 className="h-4 w-4 animate-spin" /> : "Esta e as futuras"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Delete Dialog */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
