@@ -2541,12 +2541,15 @@ function CardsPage() {
 
       {/* Edit Dialog */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-sm mx-auto rounded-2xl p-4 sm:p-6 flex flex-col gap-4">
+        <DialogContent
+          data-testid="invoice-edit-dialog"
+          className="max-w-[calc(100vw-1rem)] sm:max-w-sm mx-auto rounded-2xl p-3 sm:p-6 flex max-h-[calc(100dvh-1rem)] flex-col gap-2 sm:gap-4 overflow-y-auto overscroll-contain"
+        >
           <DialogHeader className="pr-6">
             <DialogTitle className="text-sm">Editar Transação</DialogTitle>
           </DialogHeader>
           {editTx && (
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-3 sm:gap-4">
               <div className="relative">
                 <Label className="text-xs text-muted-foreground mb-1 block">Nome</Label>
                 <Input
@@ -2592,7 +2595,7 @@ function CardsPage() {
                 )}
               </div>
               
-              <div className="min-h-[60px]">
+              <div className="min-h-[52px] sm:min-h-[60px]">
                 <Suspense fallback={<div className="h-10 flex items-center justify-center"><Loader2 className="h-4 w-4 animate-spin text-primary" /></div>}>
                   <CategoryPicker
                     value={editTx.category}
@@ -2628,7 +2631,13 @@ function CardsPage() {
                 </Popover>
               </div>
 
-              <div>
+              <div
+                data-testid="invoice-edit-amount"
+                onFocusCapture={(event) => {
+                  const field = event.currentTarget;
+                  window.setTimeout(() => field.scrollIntoView({ behavior: "smooth", block: "center" }), 180);
+                }}
+              >
                 <Label className="text-xs text-muted-foreground mb-1 block">Valor (R$)</Label>
                 <CalculatorAmountInput
                   value={editTx.amount}
@@ -2639,7 +2648,7 @@ function CardsPage() {
               <Button
                 onClick={saveEditTx}
                 disabled={isSavingEdit}
-                className="w-full rounded-2xl py-6 font-semibold mt-2"
+                className="w-full rounded-2xl py-4 sm:py-6 font-semibold mt-0 sm:mt-2"
               >
                 {isSavingEdit ? <Loader2 className="h-4 w-4 animate-spin" /> : "Salvar alterações"}
               </Button>
