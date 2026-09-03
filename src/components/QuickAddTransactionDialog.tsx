@@ -929,66 +929,6 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
 
                       <div className="space-y-2.5">
                         <div>
-                          <label className="text-[11px] font-semibold text-foreground mb-1 block">Total de parcelas</label>
-                          <div className="grid grid-cols-[44px_1fr_44px] items-center gap-2">
-                            <button
-                              type="button"
-                              aria-label="Diminuir total de parcelas"
-                              onClick={() => {
-                                const current = Math.max(2, Number(installmentCount) || 2);
-                                const next = Math.max(2, current - 1);
-                                setInstallmentCount(next);
-                                setInstallmentStart(prev => Math.min(Math.max(1, Number(prev) || 1), next));
-                              }}
-                              disabled={(Number(installmentCount) || 2) <= 2}
-                              className="h-10 rounded-xl border border-border bg-card text-lg font-bold text-foreground transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-35"
-                            >
-                              −
-                            </button>
-                            <input
-                              type="number"
-                              inputMode="numeric"
-                              min={2}
-                              max={48}
-                              value={installmentCount}
-                              aria-label="Total de parcelas"
-                              onChange={e => {
-                                const raw = e.target.value;
-                                if (raw === "") {
-                                  setInstallmentCount("");
-                                  return;
-                                }
-                                const parsed = parseInt(raw, 10);
-                                if (!Number.isFinite(parsed)) return;
-                                const next = Math.min(48, Math.max(2, parsed));
-                                setInstallmentCount(next);
-                                setInstallmentStart(prev => Math.min(Math.max(1, Number(prev) || 1), next));
-                              }}
-                              onBlur={() => {
-                                const current = Number(installmentCount);
-                                if (!Number.isInteger(current) || current < 2) {
-                                  setInstallmentCount(2);
-                                  setInstallmentStart(prev => Math.min(Math.max(1, Number(prev) || 1), 2));
-                                }
-                              }}
-                              className="h-10 w-full rounded-xl border border-border bg-card px-3 text-center text-sm font-bold tabular-nums text-foreground outline-none focus:border-primary/60"
-                            />
-                            <button
-                              type="button"
-                              aria-label="Aumentar total de parcelas"
-                              onClick={() => {
-                                const current = Math.max(2, Number(installmentCount) || 2);
-                                setInstallmentCount(Math.min(48, current + 1));
-                              }}
-                              disabled={(Number(installmentCount) || 2) >= 48}
-                              className="h-10 rounded-xl border border-primary/40 bg-primary/10 text-lg font-bold text-primary transition-colors hover:bg-primary/20 disabled:cursor-not-allowed disabled:opacity-35"
-                            >
-                              +
-                            </button>
-                          </div>
-                        </div>
-
-                        <div>
                           <label className="text-[11px] font-semibold text-foreground mb-1 block">
                             Parcela atual <span className="text-muted-foreground font-normal">(lançar a partir de)</span>
                           </label>
@@ -1071,6 +1011,66 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                             </p>
                           )}
                         </div>
+                        <div>
+                          <label className="text-[11px] font-semibold text-foreground mb-1 block">Total de parcelas</label>
+                          <div className="grid grid-cols-[44px_1fr_44px] items-center gap-2">
+                            <button
+                              type="button"
+                              aria-label="Diminuir total de parcelas"
+                              onClick={() => {
+                                const current = Math.max(2, Number(installmentCount) || 2);
+                                const next = Math.max(2, current - 1);
+                                setInstallmentCount(next);
+                                setInstallmentStart(prev => Math.min(Math.max(1, Number(prev) || 1), next));
+                              }}
+                              disabled={(Number(installmentCount) || 2) <= 2}
+                              className="h-10 rounded-xl border border-border bg-card text-lg font-bold text-foreground transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-35"
+                            >
+                              −
+                            </button>
+                            <input
+                              type="number"
+                              inputMode="numeric"
+                              min={2}
+                              max={48}
+                              value={installmentCount}
+                              aria-label="Total de parcelas"
+                              onChange={e => {
+                                const raw = e.target.value;
+                                if (raw === "") {
+                                  setInstallmentCount("");
+                                  return;
+                                }
+                                const parsed = parseInt(raw, 10);
+                                if (!Number.isFinite(parsed)) return;
+                                const next = Math.min(48, Math.max(2, parsed));
+                                setInstallmentCount(next);
+                                setInstallmentStart(prev => Math.min(Math.max(1, Number(prev) || 1), next));
+                              }}
+                              onBlur={() => {
+                                const current = Number(installmentCount);
+                                if (!Number.isInteger(current) || current < 2) {
+                                  setInstallmentCount(2);
+                                  setInstallmentStart(prev => Math.min(Math.max(1, Number(prev) || 1), 2));
+                                }
+                              }}
+                              className="h-10 w-full rounded-xl border border-border bg-card px-3 text-center text-sm font-bold tabular-nums text-foreground outline-none focus:border-primary/60"
+                            />
+                            <button
+                              type="button"
+                              aria-label="Aumentar total de parcelas"
+                              onClick={() => {
+                                const current = Math.max(2, Number(installmentCount) || 2);
+                                setInstallmentCount(Math.min(48, current + 1));
+                              }}
+                              disabled={(Number(installmentCount) || 2) >= 48}
+                              className="h-10 rounded-xl border border-primary/40 bg-primary/10 text-lg font-bold text-primary transition-colors hover:bg-primary/20 disabled:cursor-not-allowed disabled:opacity-35"
+                            >
+                              +
+                            </button>
+                          </div>
+                        </div>
+
                       </div>
                         <div className="space-y-1.5 rounded-md bg-primary/5 border border-primary/20 p-2">
                           <p className="text-[11px] text-foreground font-medium">
