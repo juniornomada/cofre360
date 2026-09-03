@@ -1,6 +1,7 @@
 export type CategorySpendingInstallmentRow = {
   amount: number | string | null;
   date?: string | null;
+  purchase_date?: string | null;
   created_at?: string | null;
   is_visible?: boolean | null;
   installment_group_id?: string | null;
@@ -76,6 +77,15 @@ function isInstallmentGroup(row: CategorySpendingInstallmentRow): boolean {
 }
 
 /**
+ * Returns the economic purchase date. New rows use purchase_date explicitly;
+ * legacy installment groups fall back to the old date inference in the
+ * collapsing step below.
+ */
+export function categoryPurchaseDate(row: CategorySpendingInstallmentRow): string | null | undefined {
+  return row.purchase_date || row.date;
+}
+
+/**
  * Returns whether a row represents the economic purchase in a monthly category view.
  * Future installments are cash-flow rows and must not be counted again as new spending.
  */
@@ -101,7 +111,8 @@ export function categoryPurchaseAmount(row: CategorySpendingInstallmentRow): num
 /**
  * Collapses the complete category ledger into one economic row per installment group.
  * The resulting row is dated in the original purchase month and carries the full
- * purchase amount. This is intentionally separate from invoice/cash-flow calculations.
+ * purchase amount. transactions.date remains untouched in the database and continues
+ * to represent the installment/cash-flow date.
  */
 export function collapseCategorySpendingRows<T extends CategorySpendingInstallmentRow>(rows: T[]): T[] {
   const singles: T[] = [];
@@ -109,7 +120,12 @@ export function collapseCategorySpendingRows<T extends CategorySpendingInstallme
 
   for (const row of rows) {
     if (!isInstallmentGroup(row)) {
-      singles.push(row);
+      const purchaseDate = categoryPurchaseDate(row);
+      singles.push({
+        ...row,
+        date: purchaseDate,
+        purchase_date: purchaseDate,
+      } as T);
       continue;
     }
 
@@ -163,13 +179,20 @@ export function collapseCategorySpendingRows<T extends CategorySpendingInstallme
     }
     economicAmount = Math.round(economicAmount * 100) / 100;
 
-    const originalDate = anchorNumber > 1
-      ? shiftLedgerDateMonths(anchor.date, -(anchorNumber - 1), anchor.created_at)
-      : anchor.date;
+    const explicitPurchaseDate = sorted
+      .map((row) => row.purchase_date?.trim())
+      .find((value): value is string => Boolean(value));
+
+    const originalDate = explicitPurchaseDate || (
+      anchorNumber > 1
+        ? shiftLedgerDateMonths(anchor.date, -(anchorNumber - 1), anchor.created_at)
+        : anchor.date
+    );
 
     collapsed.push({
       ...anchor,
       date: originalDate,
+      purchase_date: originalDate,
       amount: economicAmount,
       is_visible: true,
     } as T);
