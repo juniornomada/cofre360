@@ -1567,20 +1567,6 @@ function CardsPage() {
                           >
                             <ChevronRight className="h-3.5 w-3.5" />
                           </button>
-                          {monthOffset !== 0 && (
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setMonthOffset(0);
-                              }}
-                              data-on-card="true"
-                              className="text-[9px] font-semibold text-white/80 hover:text-white underline underline-offset-2 ml-1"
-                              aria-label="Voltar para o vencimento atual"
-                            >
-                              hoje
-                            </button>
-                          )}
                         </div>
 
                         <div className="flex justify-between items-start gap-2 mb-1.5">
