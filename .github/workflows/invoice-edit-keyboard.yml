@@ -1,0 +1,41 @@
+name: Invoice edit keyboard
+
+on:
+  push:
+    paths:
+      - "scripts/patch_invoice_keyboard.py"
+      - ".github/workflows/invoice-edit-keyboard.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      - name: Apply patch
+        run: python scripts/patch_invoice_keyboard.py
+      - name: Verify source
+        run: |
+          grep -n 'invoice-edit-dialog' src/routes/cards.tsx
+          grep -n 'invoice-edit-amount' src/routes/cards.tsx
+          grep -n '100dvh' src/routes/cards.tsx
+          grep -n 'scrollIntoView' src/routes/cards.tsx
+          git diff --check
+      - name: Relevant tests
+        run: bunx vitest run src/tests/cards-invoice-sort-guard.test.ts src/tests/cards-invoice-edit-future-scope.test.ts
+      - name: Build
+        run: bun run build
+      - name: Cleanup and commit
+        run: |
+          rm scripts/patch_invoice_keyboard.py
+          rm .github/workflows/invoice-edit-keyboard.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "fix: keep invoice amount visible above mobile keyboard"
+          git push
