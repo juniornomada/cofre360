@@ -1700,9 +1700,9 @@ function CardsPage() {
 
         <DialogContent
           data-testid="invoice-dialog"
-          className="max-w-md mx-auto rounded-2xl max-h-[85vh] flex flex-col p-0 gap-0"
+          className="max-w-md mx-auto rounded-2xl h-[85dvh] max-h-[85dvh] flex flex-col overflow-hidden p-0 gap-0"
         >
-          <DialogHeader className="px-5 pt-5 pb-3">
+          <DialogHeader className="shrink-0 px-5 pt-5 pb-3">
             <DialogTitle
               data-testid="invoice-dialog-title"
               className="flex items-center gap-2 text-base"
@@ -1728,7 +1728,7 @@ function CardsPage() {
 
           ) : (
             <div className="flex flex-col flex-1 min-h-0">
-              <div className="flex items-center gap-2 px-5 pb-3">
+              <div className="shrink-0 flex items-center gap-2 px-5 pb-3">
                 <button
                   type="button"
                   onClick={() => {
@@ -1784,7 +1784,7 @@ function CardsPage() {
               </div>
 
               {activePeriod && (
-                <div className="mx-5 mb-4 flex flex-col gap-3">
+                <div className="shrink-0 mx-5 mb-4 flex flex-col gap-3">
                   <div className="rounded-xl bg-accent/50 p-3 flex justify-between items-center gap-3">
                     <div className="flex-1">
                       <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider block">Total da fatura</span>
@@ -1918,7 +1918,7 @@ function CardsPage() {
               <div
                 ref={invoiceScrollRef}
                 data-testid="invoice-scroll"
-                className="flex-1 overflow-y-auto px-5 pb-5"
+                className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-5"
               >
                 {activePeriod && activePeriod.transactions.length === 0 && activeOpeningInvoiceAmount <= 0 ? (
                   <InvoiceEmptyState
