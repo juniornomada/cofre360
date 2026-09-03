@@ -1939,7 +1939,7 @@ function CardsPage() {
                         key={tx.id}
                         data-testid="invoice-transaction-item"
                         data-tx-id={tx.id}
-                        className="flex items-center gap-2 py-2.5 border-b border-border/50 last:border-0"
+                        className="flex items-center gap-2.5 py-2.5 border-b border-border/50 last:border-0"
                       >
                         <span className="text-lg">{tx.icon}</span>
                         <div className="flex-1 min-w-0">
@@ -1965,10 +1965,13 @@ function CardsPage() {
                               )}
                             </span>
                           </p>
-                          <p className="text-[10px] text-muted-foreground">{tx.category} · {tx.date}</p>
+                          <p className="flex min-w-0 items-center gap-1.5 text-[10px] text-muted-foreground">
+                            <span className="min-w-0 truncate">{tx.category}</span>
+                            <span className="shrink-0 whitespace-nowrap">· {tx.date}</span>
+                          </p>
                         </div>
 
-                        <div className="flex items-center gap-1.5 group/card-tx-row relative shrink-0">
+                        <div className="ml-1.5 flex items-center gap-1.5 group/card-tx-row relative shrink-0">
                           <span className="text-xs font-semibold text-destructive tabular-nums shrink-0">
                             -R$ {Number(tx.amount).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                           </span>
