@@ -1,35 +1,73 @@
-name: Apply edit balance hotfix
+name: Apply isolated installment edit patch
 on:
   push:
-    branches: [fix/edit-date-balance-validation]
+    branches: [main]
 permissions:
   contents: write
 jobs:
   patch:
-    if: ${{ !contains(github.event.head_commit.message, '[hotfix-applied]') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Patch transaction edit validation
+      - name: Patch transaction installment edit scope
         run: |
           python3 - <<'PY'
           from pathlib import Path
           p=Path('src/routes/transactions.tsx')
           s=p.read_text()
-          imp='import { validateEditedExpenseBalance } from "@/lib/transaction-balance-validation";\n'
-          anchor='import { sanitizeTransactionName } from "@/lib/normalize-transaction-name";\n'
-          if imp not in s:
-              s=s.replace(anchor, anchor+imp)
-          old='''          let availableBalance = acc.balance || 0;\n          \n          // If editing an existing expense from the same account, add back the current amount to check limit\n          if (originalTx && originalTx.bank_account_id === editTx.bank_account_id && originalTx.type === "expense") {\n            availableBalance += originalTx.amount;\n          }\n          \n          if (perInstallment > availableBalance) {\n            toast.error(`Saldo insuficiente na conta ${acc.name} (Saldo disponível: R$ ${availableBalance.toLocaleString("pt-BR", { minimumFractionDigits: 2 })})`);\n            return;\n          }'''
-          new='''          const availableBalance = acc.balance || 0;\n\n          const balanceIsValid = !originalTx || validateEditedExpenseBalance({\n            originalAmount: originalTx.amount,\n            newAmount: perInstallment,\n            originalBankAccountId: originalTx.bank_account_id,\n            newBankAccountId: editTx.bank_account_id,\n            originalType: originalTx.type,\n            newType: editTx.type,\n            availableBalance,\n          });\n\n          if (!balanceIsValid) {\n            toast.error(`Saldo insuficiente na conta ${acc.name} (Saldo disponível: R$ ${availableBalance.toLocaleString("pt-BR", { minimumFractionDigits: 2 })})`);\n            return;\n          }'''
-          if old not in s:
-              raise SystemExit('old balance block not found')
-          p.write_text(s.replace(old,new))
+          s=s.replace(
+              'import { saveInstallmentPlan, stripInstallmentSuffix, detectInstallmentChanges, splitInstallmentChanges, propagateCosmeticFieldsToGroup } from "@/lib/installment-edit";',
+              'import { saveInstallmentPlan, stripInstallmentSuffix, detectInstallmentChanges, propagateCosmeticFieldsToGroup } from "@/lib/installment-edit";'
+          )
+          old='''         const { structural } = splitInstallmentChanges(changes);
+         // Only ask about scope for structural changes (name/value/count/date).
+         // Cosmetic fields (category/icon/card/account) always propagate to the
+         // whole group automatically — they describe the purchase itself.
+         if (structural.length > 0) {
+           setScopeChanges(structural);
+           setShowUpdateScopeDialog(true);
+           return;
+         }'''
+          new='''         // Any field can be edited only on the selected installment.
+         // Ask for scope whenever something changed so "Apenas esta parcela"
+         // is truly isolated for name, value, category, icon, date, card and account.
+         if (changes.length > 0) {
+           setScopeChanges(changes);
+           setShowUpdateScopeDialog(true);
+           return;
+         }'''
+          if old in s:
+              s=s.replace(old,new)
+          elif new not in s:
+              raise SystemExit('scope block not found')
+          old='''      // Always propagate cosmetic fields (category/icon/card/account) to all
+      // siblings in the group — a purchase's category/card is a property of
+      // the whole plan, not of a single installment.
+      if (editTx.installment_group_id) {'''
+          new='''      // Propagate cosmetic fields only when the user explicitly chose the
+      // entire installment group. "Apenas esta parcela" must stay isolated.
+      if (editTx.installment_group_id && updateScope === "all") {'''
+          if old in s:
+              s=s.replace(old,new)
+          elif new not in s:
+              raise SystemExit('propagation block not found')
+          s=s.replace(
+              'Você alterou uma transação parcelada. Deseja aplicar as alterações apenas nesta parcela ou em todas as demais? Categoria e ícone são propagados juntos quando você escolhe "Todas as parcelas do grupo".',
+              'Você alterou uma transação parcelada. Escolha se a edição vale somente para esta parcela ou para todo o grupo. Em "Apenas esta parcela", nome, valor, categoria, ícone, data, cartão e conta ficam restritos ao lançamento selecionado.'
+          )
+          p.write_text(s)
           PY
-      - name: Commit hotfix
+      - name: Verify patch
+        run: |
+          git diff --check
+          grep -F 'if (editTx.installment_group_id && updateScope === "all")' src/routes/transactions.tsx
+          grep -F 'if (changes.length > 0)' src/routes/transactions.tsx
+      - name: Commit patch and restore workflow files
         run: |
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add src/routes/transactions.tsx
-          git commit -m "fix: wire balance validation into transaction edit [hotfix-applied]"
+          git show HEAD^:.github/workflows/apply-edit-balance-hotfix.yml > .github/workflows/apply-edit-balance-hotfix.yml
+          git rm -f .github/workflows/enable-single-installment-edit.yml || true
+          git add src/routes/transactions.tsx .github/workflows/apply-edit-balance-hotfix.yml
+          git commit -m "fix: allow isolated installment edits [single-installment-edit-applied]"
           git push
