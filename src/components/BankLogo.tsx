@@ -16,7 +16,9 @@ const BANK_ICON_BASE = "https://henriquezolini.github.io/react-bancos/icons";
 export const bankPresets: BankPreset[] = [
   { id: "bradesco", label: "Bradesco", abbr: "Br", color: "from-red-600 to-red-800", textColor: "text-white", bgHex: "#CC092F", logoUrl: `${BANK_ICON_BASE}/bradesco.svg` },
   { id: "bb", label: "Banco do Brasil", abbr: "BB", color: "from-yellow-400 to-yellow-600", textColor: "text-blue-900", bgHex: "#FDDF00", logoUrl: `${BANK_ICON_BASE}/bancodobrasil.svg`, aliases: ["bb"] },
-  { id: "caixa", label: "Caixa Econômica", abbr: "CX", color: "from-blue-600 to-blue-900", textColor: "text-white", bgHex: "#005CA9", logoUrl: `${BANK_ICON_BASE}/caixa.svg`, aliases: ["caixa economica federal", "cef"] },
+  { id: "caixa", label: "Caixa Econômica Federal", abbr: "CX", color: "from-blue-600 to-blue-900", textColor: "text-white", bgHex: "#005CA9", logoUrl: `${BANK_ICON_BASE}/caixa.svg`, aliases: ["caixa econômica", "caixa economica", "caixa economica federal", "cef"] },
+  { id: "caixacacr", label: "Caixa CA CR", abbr: "CX", color: "from-blue-600 to-blue-900", textColor: "text-white", bgHex: "#005CA9", logoUrl: `${BANK_ICON_BASE}/caixa.svg`, aliases: ["caixa ca cr", "caixa alimentação", "caixa alimentacao", "caixa refeição", "caixa refeicao"] },
+  { id: "porto", label: "Porto Bank", abbr: "PB", color: "from-sky-400 to-blue-600", textColor: "text-white", bgHex: "#00A1FC", logoUrl: `${BANK_ICON_BASE}/porto.svg`, aliases: ["porto", "porto seguro", "banco porto", "porto bank"] },
   { id: "nubank", label: "Nubank", abbr: "Nu", color: "from-purple-500 to-purple-800", textColor: "text-white", bgHex: "#820AD1", logoUrl: `${BANK_ICON_BASE}/nubank.svg` },
   { id: "mercadopago", label: "Mercado Pago", abbr: "MP", color: "from-blue-400 to-blue-600", textColor: "text-white", bgHex: "#009EE3", logoUrl: `${BANK_ICON_BASE}/mercadopago.svg` },
   { id: "itau", label: "Itaú", abbr: "Itaú", color: "from-orange-500 to-orange-700", textColor: "text-blue-900", bgHex: "#FF6600", logoUrl: `${BANK_ICON_BASE}/itau.svg`, aliases: ["itau unibanco"] },
