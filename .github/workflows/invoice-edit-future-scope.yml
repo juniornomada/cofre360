@@ -18,7 +18,15 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
       - name: Apply patch
-        run: python scripts/patch_invoice_edit_scope.py
+        run: |
+          python scripts/patch_invoice_edit_scope.py
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('src/tests/cards-invoice-edit-future-scope.test.ts')
+          s = p.read_text()
+          s = s.replace('readFileSync(new URL("../routes/cards.tsx", import.meta.url), "utf8")', 'readFileSync("src/routes/cards.tsx", "utf8")')
+          p.write_text(s)
+          PY
       - name: Verify source
         run: |
           grep -n 'Aplicar alteração no parcelamento' src/routes/cards.tsx
