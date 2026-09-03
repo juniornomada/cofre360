@@ -95,6 +95,22 @@ function fmtCompact(value: number) {
   return `R$ ${compact}`;
 }
 
+function normalizeCategoryLabel(value: string | null | undefined) {
+  return (value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase();
+}
+
+function isCardPaymentCategory(value: string | null | undefined) {
+  const mainCategory = (value || "").split(" > ")[0]?.trim() || "";
+  const normalized = normalizeCategoryLabel(mainCategory);
+  return normalized === "pagamento de cartao" ||
+    normalized === "pagamento do cartao" ||
+    normalized === "pagamento cartao";
+}
+
 function safeDate(value: string | null, refIso?: string | null) {
   if (!value) return null;
   const trimmed = value.trim().toLowerCase();
@@ -283,7 +299,7 @@ function RecoveredHome() {
     let expense = 0;
     for (const tx of selectedMonthTransactions) {
       if (tx.type === "income") income += Number(tx.amount || 0);
-      else expense += Number(tx.amount || 0);
+      else if (!isCardPaymentCategory(tx.category)) expense += Number(tx.amount || 0);
     }
     return { income, expense };
   }, [selectedMonthTransactions]);
@@ -296,7 +312,7 @@ function RecoveredHome() {
       if (!d || d.getFullYear() !== selectedMonth.getFullYear() || d.getMonth() !== selectedMonth.getMonth()) continue;
       const rawCategory = (tx.category || "Sem categoria").trim();
       const mainCategory = rawCategory.split(" > ")[0]?.trim() || "Sem categoria";
-      if (mainCategory === "Transferência" || mainCategory === "Transferências") continue;
+      if (mainCategory === "Transferência" || mainCategory === "Transferências" || isCardPaymentCategory(mainCategory)) continue;
       totalsInCents[mainCategory] = addCurrencyCents(totalsInCents[mainCategory] || 0, tx.amount);
     }
     return Object.entries(totalsInCents)
