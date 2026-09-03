@@ -19,37 +19,45 @@ jobs:
               'import { saveInstallmentPlan, stripInstallmentSuffix, detectInstallmentChanges, splitInstallmentChanges, propagateCosmeticFieldsToGroup } from "@/lib/installment-edit";',
               'import { saveInstallmentPlan, stripInstallmentSuffix, detectInstallmentChanges, propagateCosmeticFieldsToGroup } from "@/lib/installment-edit";'
           )
-          old='''         const { structural } = splitInstallmentChanges(changes);
-         // Only ask about scope for structural changes (name/value/count/date).
-         // Cosmetic fields (category/icon/card/account) always propagate to the
-         // whole group automatically — they describe the purchase itself.
-         if (structural.length > 0) {
-           setScopeChanges(structural);
-           setShowUpdateScopeDialog(true);
-           return;
-         }'''
-          new='''         // Any field can be edited only on the selected installment.
-         // Ask for scope whenever something changed so "Apenas esta parcela"
-         // is truly isolated for name, value, category, icon, date, card and account.
-         if (changes.length > 0) {
-           setScopeChanges(changes);
-           setShowUpdateScopeDialog(true);
-           return;
-         }'''
-          if old in s:
-              s=s.replace(old,new)
-          elif new not in s:
+          old_scope = (
+              "         const { structural } = splitInstallmentChanges(changes);\n"
+              "         // Only ask about scope for structural changes (name/value/count/date).\n"
+              "         // Cosmetic fields (category/icon/card/account) always propagate to the\n"
+              "         // whole group automatically — they describe the purchase itself.\n"
+              "         if (structural.length > 0) {\n"
+              "           setScopeChanges(structural);\n"
+              "           setShowUpdateScopeDialog(true);\n"
+              "           return;\n"
+              "         }"
+          )
+          new_scope = (
+              "         // Any field can be edited only on the selected installment.\n"
+              "         // Ask for scope whenever something changed so \"Apenas esta parcela\"\n"
+              "         // is truly isolated for name, value, category, icon, date, card and account.\n"
+              "         if (changes.length > 0) {\n"
+              "           setScopeChanges(changes);\n"
+              "           setShowUpdateScopeDialog(true);\n"
+              "           return;\n"
+              "         }"
+          )
+          if old_scope in s:
+              s=s.replace(old_scope,new_scope)
+          elif new_scope not in s:
               raise SystemExit('scope block not found')
-          old='''      // Always propagate cosmetic fields (category/icon/card/account) to all
-      // siblings in the group — a purchase's category/card is a property of
-      // the whole plan, not of a single installment.
-      if (editTx.installment_group_id) {'''
-          new='''      // Propagate cosmetic fields only when the user explicitly chose the
-      // entire installment group. "Apenas esta parcela" must stay isolated.
-      if (editTx.installment_group_id && updateScope === "all") {'''
-          if old in s:
-              s=s.replace(old,new)
-          elif new not in s:
+          old_prop = (
+              "      // Always propagate cosmetic fields (category/icon/card/account) to all\n"
+              "      // siblings in the group — a purchase's category/card is a property of\n"
+              "      // the whole plan, not of a single installment.\n"
+              "      if (editTx.installment_group_id) {"
+          )
+          new_prop = (
+              "      // Propagate cosmetic fields only when the user explicitly chose the\n"
+              "      // entire installment group. \"Apenas esta parcela\" must stay isolated.\n"
+              "      if (editTx.installment_group_id && updateScope === \"all\") {"
+          )
+          if old_prop in s:
+              s=s.replace(old_prop,new_prop)
+          elif new_prop not in s:
               raise SystemExit('propagation block not found')
           s=s.replace(
               'Você alterou uma transação parcelada. Deseja aplicar as alterações apenas nesta parcela ou em todas as demais? Categoria e ícone são propagados juntos quando você escolhe "Todas as parcelas do grupo".',
