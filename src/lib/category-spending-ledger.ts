@@ -6,6 +6,7 @@ export type CategoryLedgerTransaction = {
   name: string;
   category: string | null;
   date: string | null;
+  purchase_date: string | null;
   amount: number | string | null;
   type: string | null;
   card: string | null;
@@ -27,14 +28,16 @@ export async function fetchAllCategoryLedgerTransactions(userId: string): Promis
   for (let from = 0; ; from += LEDGER_PAGE_SIZE) {
     const { data, error } = await supabase
       .from("transactions")
-      .select("id,name,category,date,amount,type,card,bank_account_id,is_visible,created_at,installment_group_id,installment_number,total_installments,installment_mode,installment_source_amount")
+      // purchase_date was added after the generated client types. select("*")
+      // keeps the ledger compatible until the next schema type refresh.
+      .select("*")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .range(from, from + LEDGER_PAGE_SIZE - 1);
 
     if (error) throw error;
 
-    const page = (data || []) as CategoryLedgerTransaction[];
+    const page = (data || []) as unknown as CategoryLedgerTransaction[];
     rows.push(...page);
     if (page.length < LEDGER_PAGE_SIZE) break;
   }
