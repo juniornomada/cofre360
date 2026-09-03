@@ -1,11 +1,15 @@
+import { useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 import { getCategoryDisplay, getCategoryIcon } from "@/lib/categories";
 import { restoreAccents } from "@/lib/restore-accents";
 import { formatBRL } from "@/lib/format-brl";
-import { CreditCard, Landmark, ArrowLeftRight, Layers, Pencil, Trash2, Eye, EyeOff } from "lucide-react";
+import { CreditCard, Landmark, ArrowLeftRight, CalendarDays, Trash2 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { AutoFitText } from "@/components/AutoFitText";
 import { normalizeCardPaymentLabel } from "@/lib/card-payment-label";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const MONTHS_PT_ABBR = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
 
@@ -32,11 +36,44 @@ function formatTxDate(date: string, _refIso?: string): string {
   return date;
 }
 
+function toIsoDate(value: string | null | undefined, refIso?: string): string | null {
+  if (!value) return null;
+  const trimmed = value.trim().toLowerCase();
+  const iso = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
+
+  const dmy = trimmed.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
+  if (dmy) return `${dmy[3]}-${dmy[2].padStart(2, "0")}-${dmy[1].padStart(2, "0")}`;
+
+  const compact = trimmed.match(/^(\d{1,2})\s+([a-zç]{3})(?:\s+(\d{4}))?$/i);
+  if (compact) {
+    const month = MONTHS_PT_ABBR.indexOf(compact[2]);
+    if (month >= 0) {
+      const year = compact[3] || String(refIso ? new Date(refIso).getFullYear() : new Date().getFullYear());
+      return `${year}-${String(month + 1).padStart(2, "0")}-${compact[1].padStart(2, "0")}`;
+    }
+  }
+  return null;
+}
+
+function inferPurchaseDate(date: string, installmentNumber: number | undefined, refIso?: string): string | null {
+  const iso = toIsoDate(date, refIso);
+  if (!iso) return null;
+  const [year, month, day] = iso.split("-").map(Number);
+  const offset = Math.max(0, Number(installmentNumber || 1) - 1);
+  const target = new Date(Date.UTC(year, month - 1 - offset, 1));
+  const lastDay = new Date(Date.UTC(target.getUTCFullYear(), target.getUTCMonth() + 1, 0)).getUTCDate();
+  const safeDay = Math.min(day, lastDay);
+  return `${target.getUTCFullYear()}-${String(target.getUTCMonth() + 1).padStart(2, "0")}-${String(safeDay).padStart(2, "0")}`;
+}
+
 interface TransactionItemProps {
+  id?: string;
   icon: string;
   name: string;
   category: string;
   date: string;
+  purchase_date?: string | null;
   created_at?: string;
   amount: number;
   type: "income" | "expense";
@@ -46,28 +83,57 @@ interface TransactionItemProps {
   isTransferPair?: boolean;
   transferFromName?: string;
   transferToName?: string;
+  installment_group_id?: string | null;
   installment_number?: number;
   total_installments?: number;
   style?: React.CSSProperties;
   onEdit?: () => void;
   onDelete?: () => void;
-  
   is_visible?: boolean;
   amountVisible?: boolean;
 }
 
-export function TransactionItem({ 
-  icon, name, category, date, created_at, amount, type, card, cardBrand, 
-  bank_account_id, isTransferPair, transferFromName, transferToName, 
-  installment_number, total_installments, style, onEdit, onDelete, amountVisible = true
+export function TransactionItem({
+  id, icon, name, category, date, purchase_date, created_at, amount, type, card, cardBrand,
+  bank_account_id, isTransferPair, transferFromName, transferToName,
+  installment_group_id, installment_number, total_installments, style, onEdit, onDelete, amountVisible = true
 }: TransactionItemProps) {
   const isInstallment = !!total_installments && total_installments > 1 && !!installment_number;
-  // Strip the trailing "(n/m)" from the displayed name since we'll show it as a badge.
-  // Reformata rótulos legados de pagamento de cartão ("... fatura cartão X")
-  // para o padrão canônico ("... cartão X") em tempo de render — cobre dados
-  // importados ou copiados de fontes antigas que escapem da migração.
+  const inferredPurchaseDate = useMemo(
+    () => inferPurchaseDate(date, installment_number, created_at),
+    [date, installment_number, created_at],
+  );
+  const [purchaseDate, setPurchaseDate] = useState<string>(() => toIsoDate(purchase_date, created_at) || inferredPurchaseDate || "");
+  const [purchaseDateDraft, setPurchaseDateDraft] = useState<string>(() => toIsoDate(purchase_date, created_at) || inferredPurchaseDate || "");
+  const [purchaseDateOpen, setPurchaseDateOpen] = useState(false);
+  const [savingPurchaseDate, setSavingPurchaseDate] = useState(false);
+
+  const savePurchaseDate = async () => {
+    if (!purchaseDateDraft || (!installment_group_id && !id)) return;
+    setSavingPurchaseDate(true);
+    try {
+      let query = supabase
+        .from("transactions")
+        .update({ purchase_date: purchaseDateDraft } as any);
+
+      query = installment_group_id
+        ? query.eq("installment_group_id", installment_group_id)
+        : query.eq("id", id as string);
+
+      const { error } = await query;
+      if (error) throw error;
+      setPurchaseDate(purchaseDateDraft);
+      setPurchaseDateOpen(false);
+      toast.success("Data da compra atualizada sem alterar as parcelas");
+    } catch (error) {
+      console.error("Erro ao atualizar data da compra:", error);
+      toast.error("Erro ao atualizar data da compra");
+    } finally {
+      setSavingPurchaseDate(false);
+    }
+  };
+
   const normalizedName = normalizeCardPaymentLabel(name);
-  // Strip the trailing "(n/m)" from the displayed name since we'll show it as a badge.
   const displayName = isInstallment
     ? normalizedName.replace(/\s*\(\s*\d{1,2}\s*\/\s*\d{1,2}\s*\)\s*$/, "").trim()
     : normalizedName;
@@ -86,20 +152,18 @@ export function TransactionItem({
     >
       {onDelete && (
         <div className="absolute right-2 sm:right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5 sm:opacity-0 group-hover/item:opacity-100 focus-within:opacity-100 transition-all duration-200 sm:translate-x-2 group-hover/item:translate-x-0 focus-within:translate-x-0 z-10 pointer-events-auto sm:pointer-events-none sm:group-hover/item:pointer-events-auto sm:focus-within:pointer-events-auto">
-          <div 
+          <div
             className="flex items-center gap-1 bg-card/90 sm:bg-card/80 backdrop-blur-sm p-1 rounded-full border border-border/50 shadow-sm sm:shadow-none"
             role="group"
             aria-label="Ações da transação"
           >
-            {onDelete && (
-              <button
-                onClick={(e) => { e.stopPropagation(); onDelete(); }}
-                className="p-1.5 rounded-full hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-destructive focus-visible:ring-offset-1"
-                aria-label="Excluir"
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
-            )}
+            <button
+              onClick={(e) => { e.stopPropagation(); onDelete(); }}
+              className="p-1.5 rounded-full hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-destructive focus-visible:ring-offset-1"
+              aria-label="Excluir"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
           </div>
         </div>
       )}
@@ -107,7 +171,7 @@ export function TransactionItem({
         {isTransferPair ? (
           <Tooltip>
             <TooltipTrigger asChild>
-              <div 
+              <div
                 className="flex h-full w-full items-center justify-center rounded-xl bg-accent text-lg transition-transform duration-200 group-active:scale-90 overflow-hidden content-visibility-auto cursor-help focus:outline-none focus:ring-2 focus:ring-primary"
                 tabIndex={0}
                 aria-label="Transferência"
@@ -127,7 +191,7 @@ export function TransactionItem({
             <span role="img" aria-label={category}>{displayIcon}</span>
           </div>
         )}
-        
+
         {isCard && (
           <div
             className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-primary-foreground ring-2 ring-card shadow-sm"
@@ -204,6 +268,47 @@ export function TransactionItem({
           </span>
         </div>
 
+        {isInstallment && (installment_group_id || id) && (
+          <div className="mt-1 flex justify-end">
+            <Popover open={purchaseDateOpen} onOpenChange={setPurchaseDateOpen}>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  onClick={(e) => e.stopPropagation()}
+                  className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[9px] font-medium text-muted-foreground hover:bg-accent hover:text-foreground"
+                  title="Data original da compra. Não altera o calendário das parcelas."
+                >
+                  <CalendarDays className="h-3 w-3" />
+                  Compra: {purchaseDate ? formatTxDate(purchaseDate) : "definir"}
+                </button>
+              </PopoverTrigger>
+              <PopoverContent
+                align="end"
+                className="w-64 p-3"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <p className="text-xs font-semibold text-foreground">Data da compra</p>
+                <p className="mt-1 text-[10px] leading-relaxed text-muted-foreground">
+                  Usada para gastos por categoria. A data da parcela ({formatTxDate(date, created_at)}) não será alterada.
+                </p>
+                <input
+                  type="date"
+                  value={purchaseDateDraft}
+                  onChange={(e) => setPurchaseDateDraft(e.target.value)}
+                  className="mt-2 h-9 w-full rounded-lg border border-border bg-background px-2 text-xs text-foreground outline-none focus:border-primary/60"
+                />
+                <button
+                  type="button"
+                  disabled={!purchaseDateDraft || savingPurchaseDate}
+                  onClick={(e) => { e.stopPropagation(); void savePurchaseDate(); }}
+                  className="mt-2 h-9 w-full rounded-lg bg-primary px-3 text-xs font-semibold text-primary-foreground disabled:opacity-50"
+                >
+                  {savingPurchaseDate ? "Salvando..." : "Salvar data da compra"}
+                </button>
+              </PopoverContent>
+            </Popover>
+          </div>
+        )}
       </div>
     </div>
   );
