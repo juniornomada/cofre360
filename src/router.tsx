@@ -1,5 +1,6 @@
 import { createRouter, useRouter } from "@tanstack/react-router";
 import { routeTree } from "./routeTree.gen";
+import { installInvoiceTransactionRowInteractions } from "@/lib/invoice-transaction-row-interactions";
 
 function DefaultErrorComponent({
   error,
@@ -63,6 +64,8 @@ function DefaultErrorComponent({
 }
 
 export const getRouter = () => {
+  installInvoiceTransactionRowInteractions();
+
   const router = (createRouter as any)({
     routeTree,
     context: {},
