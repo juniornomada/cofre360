@@ -1,12 +1,17 @@
 import { useMemo } from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { parseCategoryValue } from "@/lib/categories";
+import { categoryPurchaseAmount, isCategoryPurchaseRow } from "@/lib/category-spending";
 
 interface Transaction {
   id: string;
   category: string;
   amount: number;
   type: "income" | "expense";
+  installment_group_id?: string | null;
+  installment_number?: number | null;
+  total_installments?: number | null;
+  installment_source_amount?: number | string | null;
 }
 
 interface CategoryPieChartsProps {
@@ -34,7 +39,11 @@ function aggregateByLevel(txs: Transaction[], level: "group" | "sub") {
   const map = new Map<string, number>();
 
   txs.forEach((tx) => {
-    const val = Number(tx.amount);
+    // Category spending represents the economic purchase, not each invoice
+    // installment. Only the first installment contributes to the month and its
+    // value is expanded back to the full purchase amount.
+    if (!isCategoryPurchaseRow(tx)) return;
+    const val = categoryPurchaseAmount(tx);
     if (!Number.isFinite(val)) return;
     const parsed = parseCategoryValue(tx.category);
     const name = level === "sub" ? (parsed.sub || "Outros") : parsed.group;
