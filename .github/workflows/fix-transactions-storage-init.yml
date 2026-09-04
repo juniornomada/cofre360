@@ -1,4 +1,4 @@
-name: Guard transaction filter storage
+name: Fix transactions storage init
 on:
   push:
     branches:
@@ -10,43 +10,30 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Guard localStorage during route initialization
+      - name: Patch storage access
         run: |
           python3 - <<'PY'
           from pathlib import Path
           p = Path('src/routes/transactions.tsx')
           s = p.read_text()
-          old = '''  const [activeSource, setActiveSource] = useState<"all" | "account" | "card">(
-    searchParams.accountId ? "account" : (localStorage.getItem("transactions_filter_source") as any || "all")
-  );
-  const [filterAccountId, setFilterAccountId] = useState<string | null>(
-    searchParams.accountId || localStorage.getItem("transactions_filter_accountId") || null
-  );'''
-          new = '''  const [activeSource, setActiveSource] = useState<"all" | "account" | "card">(() => {
-    if (searchParams.accountId) return "account";
-    if (typeof window === "undefined") return "all";
-    const saved = window.localStorage.getItem("transactions_filter_source");
-    return saved === "account" || saved === "card" ? saved : "all";
-  });
-  const [filterAccountId, setFilterAccountId] = useState<string | null>(() => {
-    if (searchParams.accountId) return searchParams.accountId;
-    if (typeof window === "undefined") return null;
-    return window.localStorage.getItem("transactions_filter_accountId");
-  });'''
-          if old not in s:
-              raise SystemExit('transaction filter initializer not found')
-          p.write_text(s.replace(old, new, 1))
+          a = 'searchParams.accountId ? "account" : (localStorage.getItem("transactions_filter_source") as any || "all")'
+          b = 'searchParams.accountId ? "account" : (((typeof window !== "undefined" ? window.localStorage.getItem("transactions_filter_source") : null) as any) || "all")'
+          c = 'searchParams.accountId || localStorage.getItem("transactions_filter_accountId") || null'
+          d = 'searchParams.accountId || (typeof window !== "undefined" ? window.localStorage.getItem("transactions_filter_accountId") : null) || null'
+          if a not in s or c not in s:
+              raise SystemExit('storage expressions not found')
+          p.write_text(s.replace(a, b, 1).replace(c, d, 1))
           PY
       - name: Verify
         run: |
           git diff --check
-          grep -F 'if (typeof window === "undefined") return "all";' src/routes/transactions.tsx
-          grep -F 'if (typeof window === "undefined") return null;' src/routes/transactions.tsx
+          grep -F 'typeof window !== "undefined" ? window.localStorage.getItem("transactions_filter_source")' src/routes/transactions.tsx
+          grep -F 'typeof window !== "undefined" ? window.localStorage.getItem("transactions_filter_accountId")' src/routes/transactions.tsx
       - name: Commit
         run: |
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git rm .github/workflows/fix-transactions-storage-init.yml
           git add src/routes/transactions.tsx
-          git commit -m "fix: guard transaction filter storage initialization"
+          git commit -m "fix: guard transaction storage initialization"
           git push
