@@ -1,0 +1,100 @@
+name: Apply purchase date invoice display
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  patch:
+    if: ${{ !contains(github.event.head_commit.message, '[purchase-date-display-applied]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch purchase date display and persistence
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          # 1) CardTransaction carries the explicit purchase date.
+          p = Path('src/lib/invoice-utils.ts')
+          s = p.read_text()
+          old = '  date: string;\n  amount: number;'
+          new = '  date: string;\n  purchase_date?: string | null;\n  amount: number;'
+          if old in s:
+              s = s.replace(old, new, 1)
+          elif new not in s:
+              raise SystemExit('invoice-utils CardTransaction anchor not found')
+          p.write_text(s)
+
+          # 2) Invoice screens fetch and display purchase_date. If a legacy
+          # installment group has no explicit purchase_date, only installment
+          # 1 is accepted as a safe fallback. Historical partial groups do not
+          # get a fabricated date.
+          p = Path('src/routes/cards.tsx')
+          s = p.read_text()
+          s = s.replace(
+              'id, name, amount, date, created_at, card, icon, category, type, total_installments, installment_number, installment_group_id',
+              'id, name, amount, date, purchase_date, created_at, card, icon, category, type, total_installments, installment_number, installment_group_id'
+          )
+          s = s.replace(
+              'id, name, icon, category, date, amount, type, card, created_at, total_installments, installment_number, installment_group_id',
+              'id, name, icon, category, date, purchase_date, amount, type, card, created_at, total_installments, installment_number, installment_group_id'
+          )
+
+          helper_anchor = 'import { PaymentDescriptionText, normalizePaymentDescription } from "@/components/PaymentDescriptionText";\n'
+          helper = '''\nconst getInvoicePurchaseDate = (tx: CardTransaction, allTransactions: CardTransaction[]): string | null => {\n  if (tx.purchase_date) return tx.purchase_date;\n  if (tx.installment_group_id) {\n    const firstInstallment = allTransactions.find((row) =>\n      row.installment_group_id === tx.installment_group_id &&\n      Number(row.installment_number) === 1\n    );\n    return firstInstallment?.purchase_date || firstInstallment?.date || null;\n  }\n  return tx.date || null;\n};\n'''
+          if 'const getInvoicePurchaseDate =' not in s:
+              if helper_anchor not in s:
+                  raise SystemExit('cards helper import anchor not found')
+              s = s.replace(helper_anchor, helper_anchor + helper, 1)
+
+          old_display = '<span className="shrink-0 whitespace-nowrap">· {tx.date}</span>'
+          new_display = '<span className="shrink-0 whitespace-nowrap">· Compra: {getInvoicePurchaseDate(tx, cardTransactions) || "definir"}</span>'
+          if old_display in s:
+              s = s.replace(old_display, new_display, 1)
+          elif new_display not in s:
+              raise SystemExit('main invoice date display anchor not found')
+
+          old_detail = '<span className="text-[8px] text-muted-foreground">{tx.date && tx.date.includes(" ") ? tx.date : (tx.date ? format(new Date(tx.date), "dd MMM", { locale: ptBR }) : "")}</span>'
+          new_detail = '<span className="text-[8px] text-muted-foreground">Compra: {getInvoicePurchaseDate(tx, cardTransactions) || "definir"}</span>'
+          if old_detail in s:
+              s = s.replace(old_detail, new_detail, 1)
+          elif new_detail not in s:
+              raise SystemExit('payment invoice detail date anchor not found')
+          p.write_text(s)
+
+          # 3) New purchases persist purchase_date. For a partial historical
+          # launch (e.g. starting at 9/12), do not guess the original purchase
+          # date from the current installment date.
+          p = Path('src/components/QuickAddTransactionDialog.tsx')
+          s = p.read_text()
+          old = '          date: formatQuickAddDate(installDate),\n          amount: parcela, type: finalType,'
+          new = '          date: formatQuickAddDate(installDate),\n          purchase_date: startAt === 1 ? newTx.date : null,\n          amount: parcela, type: finalType,'
+          if old in s:
+              s = s.replace(old, new, 1)
+          elif new not in s:
+              raise SystemExit('QuickAdd installment date anchor not found')
+
+          old = '         date: newTx.date, amount: newTx.amount, type: finalType,\n         card: cardValue, bank_account_id: newTx.bank_account_id || null,'
+          new = '         date: newTx.date, purchase_date: newTx.date, amount: newTx.amount, type: finalType,\n         card: cardValue, bank_account_id: newTx.bank_account_id || null,'
+          if old in s:
+              s = s.replace(old, new, 1)
+          elif new not in s:
+              raise SystemExit('QuickAdd single purchase date anchor not found')
+          p.write_text(s)
+          PY
+      - name: Verify patch
+        run: |
+          git diff --check
+          grep -F 'purchase_date?: string | null;' src/lib/invoice-utils.ts
+          grep -F 'Compra: {getInvoicePurchaseDate(tx, cardTransactions) || "definir"}' src/routes/cards.tsx
+          grep -F 'purchase_date: startAt === 1 ? newTx.date : null' src/components/QuickAddTransactionDialog.tsx
+          bunx tsc --noEmit
+      - name: Commit patch
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git rm .github/workflows/apply-purchase-date-invoice-display.yml
+          git add src/lib/invoice-utils.ts src/routes/cards.tsx src/components/QuickAddTransactionDialog.tsx
+          git commit -m "feat: show purchase date consistently on card invoices [purchase-date-display-applied]"
+          git push
