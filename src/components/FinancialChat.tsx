@@ -3,6 +3,7 @@ import { Send, Bot, Sparkles, Loader2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -26,6 +27,18 @@ export function FinancialChat({ initialPrompt, suggestions }: { initialPrompt?: 
   const [mounted, setMounted] = useState(false);
   const activeSuggestions = suggestions ?? SUGGESTIONS;
 
+  const getAuthHeaders = async (): Promise<Record<string, string>> => {
+    const { data: { session }, error } = await supabase.auth.getSession();
+    if (error || !session?.access_token) {
+      throw new Error("Sessão expirada");
+    }
+    return {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${session.access_token}`,
+      apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+    };
+  };
+
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -48,12 +61,10 @@ export function FinancialChat({ initialPrompt, suggestions }: { initialPrompt?: 
   const fetchFollowUps = async (convo: Msg[]) => {
     setLoadingFollowUps(true);
     try {
+      const authHeaders = await getAuthHeaders();
       const resp = await fetch(`${CHAT_URL}?mode=suggestions`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
+        headers: authHeaders,
         body: JSON.stringify({ messages: convo }),
       });
       if (!resp.ok) return;
@@ -90,12 +101,10 @@ export function FinancialChat({ initialPrompt, suggestions }: { initialPrompt?: 
     };
 
     try {
+      const authHeaders = await getAuthHeaders();
       const resp = await fetch(CHAT_URL, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
+        headers: authHeaders,
         body: JSON.stringify({ messages: newMessages }),
       });
 
