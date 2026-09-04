@@ -488,6 +488,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
         rows.push({
           icon: newTx.icon, name: newTx.name, category: newTx.category,
           date: formatQuickAddDate(installDate),
+          purchase_date: startAt === 1 ? newTx.date : null,
           amount: parcela, type: finalType,
           card: cardValue, bank_account_id: newTx.bank_account_id || null,
           installment_number: i,
@@ -503,7 +504,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
      } else {
        const { error } = await supabase.from("transactions").insert(sanitizeTransactionWrite({
          icon: newTx.icon, name: newTx.name, category: newTx.category,
-         date: newTx.date, amount: newTx.amount, type: finalType,
+         date: newTx.date, purchase_date: newTx.date, amount: newTx.amount, type: finalType,
          card: cardValue, bank_account_id: newTx.bank_account_id || null,
          is_visible: true
        }));

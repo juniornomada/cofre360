@@ -121,6 +121,18 @@ import { mapServerError } from "@/lib/map-server-error";
 import { AutoFitText } from "@/components/AutoFitText";
 import { PaymentDescriptionText, normalizePaymentDescription } from "@/components/PaymentDescriptionText";
 
+const getInvoicePurchaseDate = (tx: CardTransaction, allTransactions: CardTransaction[]): string | null => {
+  if (tx.purchase_date) return tx.purchase_date;
+  if (tx.installment_group_id) {
+    const firstInstallment = allTransactions.find((row) =>
+      row.installment_group_id === tx.installment_group_id &&
+      Number(row.installment_number) === 1
+    );
+    return firstInstallment?.purchase_date || firstInstallment?.date || null;
+  }
+  return tx.date || null;
+};
+
 
  export const Route = createFileRoute("/cards")({
    head: () => ({
@@ -263,7 +275,7 @@ function CardsPage() {
 
       const [cardsRes, txRes, accountsRes, paymentsRes, allTxRes] = await Promise.all([
         supabase.from("cards").select("*").eq("user_id", session.user.id).order("sort_order", { ascending: true }).order("created_at", { ascending: true }),
-        supabase.from("transactions").select("id, name, amount, date, created_at, card, icon, category, type, total_installments, installment_number, installment_group_id").eq("user_id", session.user.id).not("card", "is", null).order("date", { ascending: true, nullsFirst: false }).order("created_at", { ascending: true, nullsFirst: false }).order("id", { ascending: true }).limit(10000),
+        supabase.from("transactions").select("id, name, amount, date, purchase_date, created_at, card, icon, category, type, total_installments, installment_number, installment_group_id").eq("user_id", session.user.id).not("card", "is", null).order("date", { ascending: true, nullsFirst: false }).order("created_at", { ascending: true, nullsFirst: false }).order("id", { ascending: true }).limit(10000),
         supabase.from("bank_accounts").select("*").eq("user_id", session.user.id).order("created_at", { ascending: true }),
         supabase.from("card_payments").select("id, card_id, bank_account_id, amount, paid_at, target_period").eq("user_id", session.user.id).limit(10000),
         supabase.from("transactions").select("bank_account_id, amount, type, is_visible").eq("user_id", session.user.id).not("bank_account_id", "is", null).limit(10000),
@@ -523,7 +535,7 @@ function CardsPage() {
         fetchAll(),
         supabase
           .from("transactions")
-          .select("id, name, icon, category, date, amount, type, card, created_at, total_installments, installment_number, installment_group_id")
+          .select("id, name, icon, category, date, purchase_date, amount, type, card, created_at, total_installments, installment_number, installment_group_id")
           .eq("card", card.name)
           .order("created_at", { ascending: false }),
       ]);
@@ -554,7 +566,7 @@ function CardsPage() {
         fetchAll(),
         supabase
           .from("transactions")
-          .select("id, name, icon, category, date, amount, type, card, created_at, total_installments, installment_number, installment_group_id")
+          .select("id, name, icon, category, date, purchase_date, amount, type, card, created_at, total_installments, installment_number, installment_group_id")
           .eq("card", card.name)
           .order("created_at", { ascending: false }),
       ]);
@@ -974,7 +986,7 @@ function CardsPage() {
           if (editOriginalTx.installment_group_id) {
             const { data, error } = await supabase
               .from("transactions")
-              .select("id, name, icon, category, date, amount, type, card, created_at, total_installments, installment_number, installment_group_id")
+              .select("id, name, icon, category, date, purchase_date, amount, type, card, created_at, total_installments, installment_number, installment_group_id")
               .eq("installment_group_id", editOriginalTx.installment_group_id)
               .order("installment_number", { ascending: true });
             if (error) throw error;
@@ -1181,7 +1193,7 @@ function CardsPage() {
      try {
       const { data, error } = await supabase
         .from("transactions")
-        .select("id, name, icon, category, date, amount, type, card, created_at, total_installments, installment_number, installment_group_id")
+        .select("id, name, icon, category, date, purchase_date, amount, type, card, created_at, total_installments, installment_number, installment_group_id")
         .eq("card", card.name)
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -1209,7 +1221,7 @@ function CardsPage() {
       // Re-fetch transactions for this specific card to ensure invoice is up to date
       const { data: latestTxs, error: txError } = await supabase
         .from("transactions")
-        .select("id, name, icon, category, date, amount, type, card, created_at, total_installments, installment_number, installment_group_id")
+        .select("id, name, icon, category, date, purchase_date, amount, type, card, created_at, total_installments, installment_number, installment_group_id")
         .eq("card", payingCard.name)
         .order("created_at", { ascending: false });
 
@@ -1322,7 +1334,7 @@ function CardsPage() {
       // Update specific card transactions to ensure they are consistent in all views
       const { data: updatedTxs } = await supabase
         .from("transactions")
-        .select("id, name, icon, category, date, amount, type, card, created_at, total_installments, installment_number, installment_group_id")
+        .select("id, name, icon, category, date, purchase_date, amount, type, card, created_at, total_installments, installment_number, installment_group_id")
         .eq("card", payingCard.name)
         .order("created_at", { ascending: false });
       
@@ -2119,7 +2131,7 @@ function CardsPage() {
                           </p>
                           <p className="flex min-w-0 items-center gap-1.5 text-[10px] text-muted-foreground">
                             <span className="min-w-0 truncate">{tx.category}</span>
-                            <span className="shrink-0 whitespace-nowrap">· {tx.date}</span>
+                            <span className="shrink-0 whitespace-nowrap">· Compra: {getInvoicePurchaseDate(tx, cardTransactions) || "definir"}</span>
                           </p>
                         </div>
 
@@ -2423,7 +2435,7 @@ function CardsPage() {
                                   </span>
                                 )}
                               </AutoFitText>
-                              <span className="text-[8px] text-muted-foreground">{tx.date && tx.date.includes(" ") ? tx.date : (tx.date ? format(new Date(tx.date), "dd MMM", { locale: ptBR }) : "")}</span>
+                              <span className="text-[8px] text-muted-foreground">Compra: {getInvoicePurchaseDate(tx, cardTransactions) || "definir"}</span>
                             </div>
                           </div>
                           <span className={cn(

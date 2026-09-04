@@ -6,6 +6,7 @@ export type CardTransaction = {
   category: string;
   card?: string | null;
   date: string;
+  purchase_date?: string | null;
   amount: number;
   type: string;
   created_at: string;
