@@ -2142,7 +2142,7 @@ function CardsPage() {
                           </p>
                           <p className="flex min-w-0 items-center gap-1.5 text-[10px] text-muted-foreground">
                             <span className="min-w-0 truncate">{tx.category}</span>
-                            <span className="shrink-0 whitespace-nowrap">· Compra: {getInvoicePurchaseDate(tx, cardTransactions) || "definir"}</span>
+                            <span className="shrink-0 whitespace-nowrap">· {getInvoicePurchaseDate(tx, cardTransactions) || "definir"}</span>
                           </p>
                         </div>
 
@@ -2446,7 +2446,7 @@ function CardsPage() {
                                   </span>
                                 )}
                               </AutoFitText>
-                              <span className="text-[8px] text-muted-foreground">Compra: {getInvoicePurchaseDate(tx, cardTransactions) || "definir"}</span>
+                              <span className="text-[8px] text-muted-foreground">{getInvoicePurchaseDate(tx, cardTransactions) || "definir"}</span>
                             </div>
                           </div>
                           <span className={cn(
@@ -2645,7 +2645,7 @@ function CardsPage() {
                   <PaymentDescriptionText name={installmentTx.name} />
                 </p>
                 <p className="text-[11px] text-muted-foreground mt-0.5">
-                  R$ {Number(installmentTx.amount).toLocaleString("pt-BR", { minimumFractionDigits: 2 })} · {installmentTx.date}
+                  R$ {Number(installmentTx.amount).toLocaleString("pt-BR", { minimumFractionDigits: 2 })} · {formatPurchaseDateBr(installmentTx.date) || installmentTx.date}
                 </p>
               </div>
 

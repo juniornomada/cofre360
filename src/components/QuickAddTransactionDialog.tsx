@@ -76,6 +76,8 @@ const parseQuickAddDate = (value: string): Date | undefined => {
 };
 
 const formatQuickAddDate = (date: Date) => format(date, "dd-MM-yyyy");
+const formatQuickAddDisplayDate = (value: string) =>
+  value.replace(/^(\d{2})-(\d{2})-(\d{4})$/, "$1/$2/$3");
 const normalizeQuickAddDate = (value?: string) => {
   if (!value) return formatQuickAddDate(new Date());
   const parsed = parseQuickAddDate(value);
@@ -669,7 +671,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                     <PopoverTrigger asChild>
                       <Button variant="outline" className={cn("w-full justify-start text-left font-normal rounded-lg bg-card border-none h-8 px-2.5 text-xs", !newTx.date && "text-muted-foreground")}>
                         <CalendarIcon className="mr-1.5 h-3.5 w-3.5" />
-                        {newTx.date || "Data"}
+                        {newTx.date ? formatQuickAddDisplayDate(newTx.date) : "Data"}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
@@ -749,7 +751,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                     <PopoverTrigger asChild>
                       <Button variant="outline" className={cn("w-full justify-start text-left font-normal rounded-lg bg-card border-none h-8 px-2.5 text-xs", !newTx.date && "text-muted-foreground")}>
                         <CalendarIcon className="mr-1.5 h-3.5 w-3.5" />
-                        {newTx.date || "Data"}
+                        {newTx.date ? formatQuickAddDisplayDate(newTx.date) : "Data"}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0 z-[60]" align="start" sideOffset={4}>

@@ -479,7 +479,7 @@ export function TransactionsPage() {
 
   const formatEditorTxDate = (s: string, refIso?: string) => {
     const parsed = parseEditorTxDate(s, refIso);
-    return parsed ? format(parsed, "dd-MM-yyyy") : s;
+    return parsed ? format(parsed, "dd/MM/yyyy") : s;
   };
 
   const toUtcDay = (d: Date, endOfDay = false) =>
