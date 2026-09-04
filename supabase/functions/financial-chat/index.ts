@@ -1,524 +1,491 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
+const PROD_ORIGIN = "https://cofre360.vercel.app";
 const ALLOWED_ORIGINS = new Set([
+  PROD_ORIGIN,
   "https://cofre360.lovable.app",
   "https://id-preview--8755cbe4-fc00-44b3-810a-824346dac2f8.lovable.app",
   "http://localhost:5173",
   "http://localhost:3000",
 ]);
+
 function buildCors(origin: string | null) {
-  const allow = origin && ALLOWED_ORIGINS.has(origin) ? origin : "https://cofre360.lovable.app";
+  const allow = origin && ALLOWED_ORIGINS.has(origin) ? origin : PROD_ORIGIN;
   return {
     "Access-Control-Allow-Origin": allow,
-    "Vary": "Origin",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
     "Access-Control-Allow-Headers":
-      "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+      "authorization, apikey, x-client-info, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+    "Access-Control-Expose-Headers": "content-type",
+    "Vary": "Origin",
   };
 }
-const corsHeaders = buildCors(null);
 
-interface ChatMessage {
-  role: "user" | "assistant";
-  content: string;
+type ChatMessage = { role: "user" | "assistant"; content: string };
+type Transaction = {
+  id?: string;
+  name?: string | null;
+  category?: string | null;
+  date?: string | null;
+  purchase_date?: string | null;
+  amount?: number | null;
+  type?: string | null;
+  card?: string | null;
+  bank_account_id?: string | null;
+  installment_group_id?: string | null;
+  installment_number?: number | null;
+  total_installments?: number | null;
+  installment_source_amount?: number | null;
+  is_visible?: boolean | null;
+  created_at?: string | null;
+};
+
+type EconomicExpense = {
+  name: string;
+  category: string;
+  amount: number;
+  date: Date;
+};
+
+const MONTHS_SHORT = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+const MONTHS_FULL = ["janeiro", "fevereiro", "marco", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
+const MONTHS_LABEL = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+
+const norm = (value: string | null | undefined) =>
+  String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase();
+
+function formatBRL(value: number) {
+  return Number(value || 0).toLocaleString("pt-BR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
 }
 
-const SYSTEM_PROMPT = `Você é um assistente pessoal de finanças do app Cofre 360, especializado em ajudar o usuário a controlar suas finanças pessoais em português brasileiro.
-
-Seu papel:
-- Analisar dados financeiros reais do usuário (receitas, despesas, categorias, cartões, contas, metas, orçamentos).
-- Dar dicas práticas, orientações claras e sugestões acionáveis de economia, organização e investimento.
-- Responder de forma calorosa, motivadora e objetiva — como um consultor financeiro próximo e empático.
-- Usar valores em R$ formatados (ex.: R$ 1.234,56) e emojis com moderação para deixar a conversa leve.
-- Quando faltar dado, oriente o usuário a cadastrar (ex.: "Cadastre suas receitas para ter uma visão completa").
-- Sempre que possível use markdown leve: **negrito**, listas, e títulos curtos.
-- Nunca invente números: trabalhe SEMPRE com os dados de contexto fornecidos abaixo.
-- Mantenha respostas concisas (máx ~6 parágrafos curtos) a menos que o usuário peça detalhe.
-
-PRIORIDADE — Saúde do "Saldo previsto fim do mês":
-- Quando o usuário perguntar sobre saldo previsto, projeção do mês ou saúde financeira, foque em manter esse saldo POSITIVO e SAUDÁVEL.
-- Sempre cruze: receitas previstas vs despesas previstas, orçamentos por categoria (ULTRAPASSADO ou perto disso), categorias com maior gasto, gastos aleatórios/supérfluos.
-- Aponte 2-3 RISCOS específicos com valores em R$ (ex.: "Alimentação já consumiu 92% do orçamento — R$ 1.250 de R$ 1.350").
-- Sugira AÇÕES diretas e numéricas (ex.: "Reduza pedidos de delivery em R$ 200 esta semana", "Evite novos gastos com lazer até o dia 30").
-- Se o saldo previsto estiver NEGATIVO, alerte com 🚨 e proponha um plano de corte por categoria para zerar o déficit.
-- Se estiver POSITIVO mas apertado, sugira reforço de meta/poupança com valor sugerido.
-- Frases-modelo permitidas: "Cuidado com gastos aleatórios que já somam R$ X", "Evite pedir comida, seu orçamento de Alimentação já atingiu o limite", "Reduza gasto com X para manter sua conta saudável".`;
-
-function formatBRL(n: number): string {
-  return n.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+function brNow() {
+  return new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
 }
 
-const SHORT_MONTHS = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
-const FULL_MONTHS = ["janeiro","fevereiro","marco","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
-const MONTH_NAMES_PT = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+function parseTxDate(value: string | null | undefined, createdAt?: string | null): Date | null {
+  if (!value) return null;
+  const text = value.trim().toLowerCase();
 
-function parseTxDate(dateStr: string): Date | null {
-  if (!dateStr) return null;
-  const parts = dateStr.trim().toLowerCase().split(/\s+/);
-  if (parts.length < 2) return null;
-  const day = parseInt(parts[0], 10);
-  const monthIdx = SHORT_MONTHS.indexOf(parts[1]);
-  if (isNaN(day) || monthIdx < 0) return null;
-  return new Date(new Date().getFullYear(), monthIdx, day);
-}
+  const iso = text.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (iso) return new Date(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3]));
 
-const normTxt = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-
-interface PeriodFilter {
-  start: Date;
-  end: Date;
-  label: string;
-}
-
-/**
- * Detecta período em linguagem natural na última mensagem do usuário.
- * Ex.: "abril do dia 01 até 17", "01/04 a 17/04", "em março", "últimos 7 dias".
- */
-function detectPeriod(text: string): PeriodFilter | null {
-  if (!text) return null;
-  const t = normTxt(text);
-  const year = new Date().getFullYear();
-
-  // dd/mm a dd/mm
-  const rangeNumeric = t.match(/(\d{1,2})[\/\-](\d{1,2})(?:[\/\-]\d{2,4})?\s*(?:a|ate|-|até)\s*(\d{1,2})[\/\-](\d{1,2})(?:[\/\-]\d{2,4})?/);
-  if (rangeNumeric) {
-    const [, d1, m1, d2, m2] = rangeNumeric;
-    return {
-      start: new Date(year, parseInt(m1) - 1, parseInt(d1)),
-      end: new Date(year, parseInt(m2) - 1, parseInt(d2), 23, 59, 59),
-      label: `${d1}/${m1} a ${d2}/${m2}`,
-    };
+  const dmy = text.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{2,4})$/);
+  if (dmy) {
+    let year = Number(dmy[3]);
+    if (year < 100) year += 2000;
+    return new Date(year, Number(dmy[2]) - 1, Number(dmy[1]));
   }
 
-  // "do dia X ao/até dia Y de <mês>" ou "<mês> do dia X até Y"
-  const monthRegex = FULL_MONTHS.join("|") + "|" + SHORT_MONTHS.join("|");
-  const rangeWithMonth = t.match(new RegExp(`(?:dia\\s+)?(\\d{1,2})\\s*(?:a|ate|-|até|ao)\\s*(?:dia\\s+)?(\\d{1,2})\\s*(?:de\\s+)?(${monthRegex})`));
-  const monthThenRange = t.match(new RegExp(`(${monthRegex})[^\\d]*(?:dia\\s+)?(\\d{1,2})\\s*(?:a|ate|-|até|ao)\\s*(?:dia\\s+)?(\\d{1,2})`));
-  let m: { d1: number; d2: number; mon: string } | null = null;
-  if (rangeWithMonth) m = { d1: parseInt(rangeWithMonth[1]), d2: parseInt(rangeWithMonth[2]), mon: rangeWithMonth[3] };
-  else if (monthThenRange) m = { d1: parseInt(monthThenRange[2]), d2: parseInt(monthThenRange[3]), mon: monthThenRange[1] };
-  if (m) {
-    let idx = FULL_MONTHS.indexOf(m.mon);
-    if (idx < 0) idx = SHORT_MONTHS.indexOf(m.mon);
-    if (idx >= 0) {
-      return {
-        start: new Date(year, idx, m.d1),
-        end: new Date(year, idx, m.d2, 23, 59, 59),
-        label: `${m.d1} a ${m.d2} de ${MONTH_NAMES_PT[idx]}`,
-      };
-    }
-  }
-
-  // "últimos N dias"
-  const lastN = t.match(/ultim[oa]s?\s+(\d+)\s+dias?/);
-  if (lastN) {
-    const n = parseInt(lastN[1]);
-    const end = new Date();
-    const start = new Date();
-    start.setDate(end.getDate() - n);
-    return { start, end, label: `últimos ${n} dias` };
-  }
-
-  // "em <mês>" ou nome de mês isolado
-  for (let i = 0; i < FULL_MONTHS.length; i++) {
-    const re = new RegExp(`\\b(${FULL_MONTHS[i]}|${SHORT_MONTHS[i]})\\b`);
-    if (re.test(t)) {
-      return {
-        start: new Date(year, i, 1),
-        end: new Date(year, i + 1, 0, 23, 59, 59),
-        label: MONTH_NAMES_PT[i],
-      };
+  const parts = text.split(/\s+/);
+  if (parts.length >= 2) {
+    const day = Number(parts[0]);
+    const month = MONTHS_SHORT.indexOf(parts[1].slice(0, 3));
+    if (Number.isFinite(day) && month >= 0) {
+      const refYear = createdAt ? new Date(createdAt).getFullYear() : brNow().getFullYear();
+      const year = parts[2] && /^\d{4}$/.test(parts[2]) ? Number(parts[2]) : refYear;
+      return new Date(year, month, day);
     }
   }
 
   return null;
 }
 
-// Stop-words que não devem virar termo de busca
-const STOP_WORDS = new Set([
-  "quanto","gastei","gasto","gastos","com","de","do","da","dos","das","em","no","na","nos","nas",
-  "o","a","os","as","um","uma","uns","umas","esse","essa","esses","essas","este","esta","isto","aquilo",
-  "mes","mês","ano","semana","dia","hoje","ontem","passado","atual","ultimo","ultima","ultimos","ultimas",
-  "qual","quais","meu","minha","meus","minhas","seu","sua","quanto","muito","pouco",
-  "para","por","que","tem","ter","foi","sao","são","e","ou","mas","entre","ate","até",
-  "categoria","subcategoria","despesa","despesas","receita","receitas","transacao","transacoes","transação","transações",
-  "lance","lancar","lançar","registra","registrar","analise","análise","analisar","mostre","mostrar","ver","veja",
-  "janeiro","fevereiro","marco","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro",
-  "jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez",
-]);
-
-function extractKeywords(text: string): string[] {
-  const t = normTxt(text);
-  // remove números/datas
-  const cleaned = t.replace(/[\d\/\-\.]+/g, " ");
-  const tokens = cleaned.split(/[^a-z]+/).filter(Boolean);
-  const kws: string[] = [];
-  for (const tok of tokens) {
-    if (tok.length < 4) continue;
-    if (STOP_WORDS.has(tok)) continue;
-    if (kws.includes(tok)) continue;
-    kws.push(tok);
-  }
-  return kws.slice(0, 5);
+function monthKey(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
 }
 
-interface KeywordMatch {
-  keyword: string;
-  curMonthTotal: number;
-  prevMonthTotal: number;
-  curCount: number;
-  prevCount: number;
-  inPeriodTotal: number;
-  inPeriodCount: number;
-  topTx: any[]; // top transações do mês atual
+function rootCategory(category: string | null | undefined) {
+  return String(category || "Outros").split(">")[0]?.trim() || "Outros";
 }
 
-function matchTx(tx: any, kw: string): boolean {
-  const name = normTxt(String(tx.name || ""));
-  const cat = normTxt(String(tx.category || ""));
-  return name.includes(kw) || cat.includes(kw);
+function isTransferOrCardPayment(category: string | null | undefined) {
+  const root = norm(rootCategory(category));
+  return root === "transferencia" ||
+    root === "transferencias" ||
+    root === "pagamento de cartao" ||
+    root === "pagamento do cartao" ||
+    root === "pagamento cartao";
 }
 
-function buildKeywordSection(
-  transactions: any[],
-  keywords: string[],
-  curMonth: number,
-  prevMonth: number,
-  period?: PeriodFilter | null,
-): string {
-  if (!keywords.length) return "";
+function shiftMonths(date: Date, delta: number) {
+  const result = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  result.setMonth(result.getMonth() + delta);
+  return result;
+}
 
-  const matches: KeywordMatch[] = keywords.map((kw) => {
-    const filtered = transactions.filter((t) => t.type === "expense" && matchTx(t, kw));
-    const cur = filtered.filter((t) => {
-      const d = parseTxDate(t.date);
-      return d && d.getMonth() === curMonth;
-    });
-    const prev = filtered.filter((t) => {
-      const d = parseTxDate(t.date);
-      return d && d.getMonth() === prevMonth;
-    });
-    const inPeriod = period
-      ? filtered.filter((t) => {
-          const d = parseTxDate(t.date);
-          return d && d >= period.start && d <= period.end;
-        })
-      : [];
-    return {
-      keyword: kw,
-      curMonthTotal: cur.reduce((s, t) => s + Number(t.amount), 0),
-      prevMonthTotal: prev.reduce((s, t) => s + Number(t.amount), 0),
-      curCount: cur.length,
-      prevCount: prev.length,
-      inPeriodTotal: inPeriod.reduce((s, t) => s + Number(t.amount), 0),
-      inPeriodCount: inPeriod.length,
-      topTx: cur.slice(0, 10),
-    };
-  });
-
-  // Mantém só keywords com pelo menos 1 match em algum período
-  const useful = matches.filter(
-    (m) => m.curCount > 0 || m.prevCount > 0 || m.inPeriodCount > 0,
+function collapseEconomicExpenses(rows: Transaction[]): EconomicExpense[] {
+  const visibleExpenses = rows.filter((tx) =>
+    tx.is_visible !== false && tx.type === "expense" && !isTransferOrCardPayment(tx.category),
   );
-  if (!useful.length) {
-    return `\n\n### 🔍 Busca inteligente
-Nenhuma transação encontrada para: ${keywords.join(", ")}.`;
-  }
 
-  const sections = useful.map((m) => {
-    let variation = "";
-    if (m.prevMonthTotal > 0) {
-      const diff = m.curMonthTotal - m.prevMonthTotal;
-      const pct = Math.round((diff / m.prevMonthTotal) * 100);
-      variation = diff >= 0
-        ? `${pct}% a MAIS que mês passado (R$ ${formatBRL(m.prevMonthTotal)})`
-        : `${Math.abs(pct)}% a MENOS que mês passado (R$ ${formatBRL(m.prevMonthTotal)})`;
-    } else if (m.curMonthTotal > 0) {
-      variation = "sem registros no mês passado para comparar";
+  const output: EconomicExpense[] = [];
+  const groups = new Map<string, Transaction[]>();
+
+  for (const tx of visibleExpenses) {
+    const total = Number(tx.total_installments || 1);
+    if (tx.card && tx.installment_group_id && total > 1) {
+      const group = groups.get(tx.installment_group_id) || [];
+      group.push(tx);
+      groups.set(tx.installment_group_id, group);
+      continue;
     }
 
-    const txList = m.topTx
-      .map((t) => `  - ${t.date} | R$ ${formatBRL(Number(t.amount))} | ${t.name} | ${t.category}`)
-      .join("\n");
-
-    const periodLine = period
-      ? `\n- No período "${period.label}": R$ ${formatBRL(m.inPeriodTotal)} (${m.inPeriodCount} transações)`
-      : "";
-
-    return `**"${m.keyword}"**
-- Mês atual: R$ ${formatBRL(m.curMonthTotal)} (${m.curCount} transações)
-- Mês passado: R$ ${formatBRL(m.prevMonthTotal)} (${m.prevCount} transações)
-- Comparação: ${variation || "(sem dados)"}${periodLine}
-- Transações do mês atual:
-${txList || "  (nenhuma)"}`;
-  });
-
-  return `\n\n### 🔍 Busca inteligente por palavras-chave
-${sections.join("\n\n")}`;
-}
-
-function buildPeriodSection(transactions: any[], period: PeriodFilter): string {
-  const inRange = transactions.filter((t) => {
-    const d = parseTxDate(t.date);
-    return d && d >= period.start && d <= period.end;
-  });
-
-  const income = inRange.filter((t) => t.type === "income").reduce((s, t) => s + Number(t.amount), 0);
-  const expense = inRange.filter((t) => t.type === "expense").reduce((s, t) => s + Number(t.amount), 0);
-
-  const catMap: Record<string, number> = {};
-  for (const t of inRange) {
-    if (t.type !== "expense") continue;
-    const cat = String(t.category || "Outros");
-    // Conta no nome principal e na subcategoria (se houver)
-    const parts = cat.split(">").map((p) => p.trim()).filter(Boolean);
-    for (const p of parts) catMap[p] = (catMap[p] || 0) + Number(t.amount);
+    const date = parseTxDate(tx.purchase_date || tx.date, tx.created_at);
+    if (!date) continue;
+    output.push({
+      name: String(tx.name || "Transação"),
+      category: String(tx.category || "Outros"),
+      amount: Number(tx.amount || 0),
+      date,
+    });
   }
-  const catLines = Object.entries(catMap)
-    .sort((a, b) => b[1] - a[1])
-    .map(([c, v]) => `- ${c}: R$ ${formatBRL(v)}`)
-    .join("\n");
 
-  const txLines = inRange
-    .slice(0, 50)
-    .map((t) => `- ${t.date} | ${t.type === "expense" ? "−" : "+"}R$ ${formatBRL(Number(t.amount))} | ${t.name} | ${t.category}`)
-    .join("\n");
+  for (const group of groups.values()) {
+    const ordered = [...group].sort(
+      (a, b) => Number(a.installment_number || 1) - Number(b.installment_number || 1),
+    );
+    const first = ordered[0];
+    const sourceAmount = ordered.find((tx) => Number(tx.installment_source_amount || 0) > 0)?.installment_source_amount;
+    const totalInstallments = Math.max(1, Number(first.total_installments || ordered.length || 1));
+    const loadedSum = ordered.reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
+    const amount = Number(sourceAmount || 0) > 0
+      ? Number(sourceAmount)
+      : ordered.length >= totalInstallments
+        ? loadedSum
+        : Number(first.amount || 0) * totalInstallments;
 
-  return `\n\n### 🔎 Filtro detectado: ${period.label} (${inRange.length} transações)
-- Receitas no período: R$ ${formatBRL(income)}
-- Despesas no período: R$ ${formatBRL(expense)}
-- Saldo do período: R$ ${formatBRL(income - expense)}
+    let date = ordered
+      .map((tx) => parseTxDate(tx.purchase_date, tx.created_at))
+      .find((d): d is Date => !!d) || null;
 
-#### Gastos por categoria/subcategoria no período
-${catLines || "(sem despesas no período)"}
+    if (!date) {
+      const installmentDate = parseTxDate(first.date, first.created_at);
+      if (installmentDate) {
+        date = shiftMonths(installmentDate, -(Math.max(1, Number(first.installment_number || 1)) - 1));
+      }
+    }
+    if (!date) continue;
 
-#### Transações do período (até 50)
-${txLines || "(nenhuma transação encontrada)"}`;
+    output.push({
+      name: String(first.name || "Transação parcelada"),
+      category: String(first.category || "Outros"),
+      amount,
+      date,
+    });
+  }
+
+  return output;
 }
 
-async function buildFinancialContext(supabase: any, periodHint?: string): Promise<string> {
+function categoryTotals(rows: EconomicExpense[], key: string) {
+  const totals = new Map<string, number>();
+  for (const row of rows) {
+    if (monthKey(row.date) !== key) continue;
+    const category = rootCategory(row.category);
+    totals.set(category, (totals.get(category) || 0) + row.amount);
+  }
+  return [...totals.entries()].sort((a, b) => b[1] - a[1]);
+}
+
+const STOP_WORDS = new Set([
+  "quanto", "gastei", "gasto", "gastos", "com", "de", "do", "da", "dos", "das", "em", "no", "na", "nos", "nas",
+  "esse", "essa", "este", "esta", "mes", "ano", "semana", "dia", "hoje", "ontem", "passado", "atual", "ultimo", "ultima",
+  "qual", "quais", "meu", "minha", "meus", "minhas", "para", "por", "que", "tem", "ter", "foi", "sao", "entre", "ate",
+  "categoria", "subcategoria", "despesa", "despesas", "receita", "receitas", "transacao", "transacoes", "comparativo", "comparar",
+  ...MONTHS_FULL, ...MONTHS_SHORT,
+]);
+
+function extractKeywords(question: string) {
+  return norm(question)
+    .replace(/[\d/\-.]+/g, " ")
+    .split(/[^a-z]+/)
+    .filter((token) => token.length >= 4 && !STOP_WORDS.has(token))
+    .filter((token, index, arr) => arr.indexOf(token) === index)
+    .slice(0, 5);
+}
+
+function keywordSection(expenses: EconomicExpense[], question: string, currentKey: string, previousKey: string) {
+  const keywords = extractKeywords(question);
+  if (!keywords.length) return "";
+
+  const lines: string[] = [];
+  for (const keyword of keywords) {
+    const matches = expenses.filter((row) =>
+      norm(row.name).includes(keyword) || norm(row.category).includes(keyword),
+    );
+    if (!matches.length) continue;
+    const current = matches
+      .filter((row) => monthKey(row.date) === currentKey)
+      .reduce((sum, row) => sum + row.amount, 0);
+    const previous = matches
+      .filter((row) => monthKey(row.date) === previousKey)
+      .reduce((sum, row) => sum + row.amount, 0);
+    lines.push(`- ${keyword}: mês atual R$ ${formatBRL(current)} | mês anterior R$ ${formatBRL(previous)}`);
+  }
+  return lines.length ? `\n### Busca específica pela pergunta\n${lines.join("\n")}` : "";
+}
+
+function requestedMonth(question: string, now: Date) {
+  const text = norm(question);
+  if (/mes\s+(passado|anterior)/.test(text)) {
+    const d = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    return { key: monthKey(d), label: `${MONTHS_LABEL[d.getMonth()]}/${d.getFullYear()}` };
+  }
+  for (let i = 0; i < MONTHS_FULL.length; i++) {
+    if (new RegExp(`\\b(${MONTHS_FULL[i]}|${MONTHS_SHORT[i]})\\b`).test(text)) {
+      return { key: `${now.getFullYear()}-${String(i + 1).padStart(2, "0")}`, label: `${MONTHS_LABEL[i]}/${now.getFullYear()}` };
+    }
+  }
+  return null;
+}
+
+async function buildFinancialContext(supabase: any, question: string) {
   const [txRes, accRes, cardsRes, goalsRes, budgetsRes] = await Promise.all([
-    supabase.from("transactions").select("*"),
-    supabase.from("bank_accounts").select("*"),
-    supabase.from("cards").select("*"),
-    supabase.from("goals").select("*"),
-    supabase.from("budget_categories").select("*"),
+    supabase.from("transactions").select("id,name,category,date,purchase_date,amount,type,card,bank_account_id,installment_group_id,installment_number,total_installments,installment_source_amount,is_visible,created_at"),
+    supabase.from("bank_accounts").select("id,name,balance,is_visible"),
+    supabase.from("cards").select("name,used,card_limit,is_visible"),
+    supabase.from("goals").select("name,current_amount,target_amount"),
+    supabase.from("budget_categories").select("category,budget_limit"),
   ]);
 
-  const transactions = (txRes.data || []) as any[];
-  const accounts = (accRes.data || []) as any[];
-  const cards = (cardsRes.data || []) as any[];
-  const goals = (goalsRes.data || []) as any[];
-  const budgets = (budgetsRes.data || []) as any[];
+  if (txRes.error) throw txRes.error;
+  if (accRes.error) throw accRes.error;
+  if (cardsRes.error) throw cardsRes.error;
 
-  const now = new Date();
-  const currentMonth = now.getMonth();
-  const prevMonth = (currentMonth - 1 + 12) % 12;
+  const transactions = (txRes.data || []) as Transaction[];
+  const accounts = accRes.data || [];
+  const cards = cardsRes.data || [];
+  const goals = goalsRes.data || [];
+  const budgets = budgetsRes.data || [];
+  const expenses = collapseEconomicExpenses(transactions);
 
-  const curTx = transactions.filter((t) => {
-    const d = parseTxDate(t.date);
-    return d && d.getMonth() === currentMonth;
-  });
-  const prevTx = transactions.filter((t) => {
-    const d = parseTxDate(t.date);
-    return d && d.getMonth() === prevMonth;
-  });
+  const now = brNow();
+  const currentKey = monthKey(new Date(now.getFullYear(), now.getMonth(), 1));
+  const previousDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const previousKey = monthKey(previousDate);
+  const currentCategories = categoryTotals(expenses, currentKey);
+  const previousCategories = categoryTotals(expenses, previousKey);
+  const currentExpense = currentCategories.reduce((sum, [, value]) => sum + value, 0);
+  const previousExpense = previousCategories.reduce((sum, [, value]) => sum + value, 0);
 
-  const curIncome = curTx.filter((t) => t.type === "income").reduce((s, t) => s + Number(t.amount), 0);
-  const curExpense = curTx.filter((t) => t.type === "expense").reduce((s, t) => s + Number(t.amount), 0);
-  const prevIncome = prevTx.filter((t) => t.type === "income").reduce((s, t) => s + Number(t.amount), 0);
-  const prevExpense = prevTx.filter((t) => t.type === "expense").reduce((s, t) => s + Number(t.amount), 0);
+  const rawIncomeForKey = (key: string) => transactions
+    .filter((tx) => tx.is_visible !== false && tx.type === "income" && !isTransferOrCardPayment(tx.category))
+    .filter((tx) => {
+      const date = parseTxDate(tx.date, tx.created_at);
+      return date && monthKey(date) === key;
+    })
+    .reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
 
-  const catMap: Record<string, number> = {};
-  for (const t of curTx) {
-    if (t.type !== "expense") continue;
-    const cat = String(t.category || "Outros").split(">")[0].trim();
-    catMap[cat] = (catMap[cat] || 0) + Number(t.amount);
+  const currentIncome = rawIncomeForKey(currentKey);
+  const previousIncome = rawIncomeForKey(previousKey);
+
+  const accountMovement = new Map<string, number>();
+  for (const tx of transactions) {
+    if (tx.is_visible === false || !tx.bank_account_id || tx.card) continue;
+    const signed = tx.type === "income" ? Number(tx.amount || 0) : -Number(tx.amount || 0);
+    accountMovement.set(tx.bank_account_id, (accountMovement.get(tx.bank_account_id) || 0) + signed);
   }
-  const topCats = Object.entries(catMap)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 8)
-    .map(([c, v]) => `- ${c}: R$ ${formatBRL(v)}`)
-    .join("\n");
-
-  const totalBalance = accounts.reduce((s, a) => s + Number(a.balance), 0);
-  const accLines = accounts
-    .map((a) => `- ${a.name}: R$ ${formatBRL(Number(a.balance))}`)
-    .join("\n");
-
-  const cardLines = cards
-    .map((c) => `- ${c.name} (••${c.last_four}): usado R$ ${formatBRL(Number(c.used))} de R$ ${formatBRL(Number(c.card_limit))}`)
-    .join("\n");
-
-  const goalLines = goals
-    .map((g) => `- ${g.name}: R$ ${formatBRL(Number(g.current_amount))} / R$ ${formatBRL(Number(g.target_amount))}`)
-    .join("\n");
-
-  // Calcula o gasto real por orçamento cruzando com transações do mês atual.
-  // Faz match com categoria principal OU subcategoria (formato "Principal > Sub").
-  const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-  const budgetLines = budgets
-    .map((b) => {
-      const target = norm(String(b.category));
-      const realSpent = curTx
-        .filter((t) => t.type === "expense")
-        .filter((t) => {
-          const cat = String(t.category || "");
-          const parts = cat.split(">").map((p) => norm(p));
-          return parts.includes(target);
-        })
-        .reduce((s, t) => s + Number(t.amount), 0);
-      const limit = Number(b.budget_limit);
-      const pct = limit > 0 ? Math.round((realSpent / limit) * 100) : 0;
-      const status = limit > 0 && realSpent > limit ? " ⚠️ ULTRAPASSADO" : "";
-      return `- ${b.category}: gasto R$ ${formatBRL(realSpent)} de R$ ${formatBRL(limit)} (${pct}%)${status}`;
+  const accountLines = accounts
+    .filter((account: any) => account.is_visible !== false)
+    .map((account: any) => {
+      const balance = Number(account.balance || 0) + (accountMovement.get(account.id) || 0);
+      return `- ${account.name}: R$ ${formatBRL(balance)}`;
     })
     .join("\n");
 
-  const monthName = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"][currentMonth];
+  const cardLines = cards
+    .filter((card: any) => card.is_visible !== false)
+    .map((card: any) => `- ${card.name}: usado R$ ${formatBRL(Number(card.used || 0))} de R$ ${formatBRL(Number(card.card_limit || 0))}`)
+    .join("\n");
 
-  return `## Dados financeiros do usuário (${monthName}/${now.getFullYear()})
+  const budgetLines = budgets.map((budget: any) => {
+    const spent = currentCategories
+      .filter(([category]) => norm(category) === norm(budget.category))
+      .reduce((sum, [, value]) => sum + value, 0);
+    const limit = Number(budget.budget_limit || 0);
+    const pct = limit > 0 ? Math.round((spent / limit) * 100) : 0;
+    return `- ${budget.category}: R$ ${formatBRL(spent)} de R$ ${formatBRL(limit)} (${pct}%)`;
+  }).join("\n");
 
-### Resumo do mês atual
-- Receitas: R$ ${formatBRL(curIncome)}
-- Despesas: R$ ${formatBRL(curExpense)}
-- Saldo do mês: R$ ${formatBRL(curIncome - curExpense)}
+  const goalLines = goals.map((goal: any) =>
+    `- ${goal.name}: R$ ${formatBRL(Number(goal.current_amount || 0))} / R$ ${formatBRL(Number(goal.target_amount || 0))}`,
+  ).join("\n");
 
-### Mês anterior (comparação)
-- Receitas: R$ ${formatBRL(prevIncome)}
-- Despesas: R$ ${formatBRL(prevExpense)}
+  const currentCategoryLines = currentCategories.slice(0, 15)
+    .map(([category, amount]) => `- ${category}: R$ ${formatBRL(amount)}`)
+    .join("\n");
+  const previousCategoryLines = previousCategories.slice(0, 15)
+    .map(([category, amount]) => `- ${category}: R$ ${formatBRL(amount)}`)
+    .join("\n");
 
-### Saldo total nas contas: R$ ${formatBRL(totalBalance)}
+  const requested = requestedMonth(question, now);
+  let requestedSection = "";
+  if (requested && requested.key !== currentKey && requested.key !== previousKey) {
+    const requestedCategories = categoryTotals(expenses, requested.key);
+    const requestedTotal = requestedCategories.reduce((sum, [, value]) => sum + value, 0);
+    requestedSection = `\n### Período solicitado: ${requested.label}\n- Despesas: R$ ${formatBRL(requestedTotal)}\n${requestedCategories.slice(0, 15).map(([c, v]) => `- ${c}: R$ ${formatBRL(v)}`).join("\n") || "(sem despesas)"}`;
+  }
 
-### Contas
-${accLines || "(nenhuma cadastrada)"}
+  const recentTransactions = [...transactions]
+    .filter((tx) => tx.is_visible !== false)
+    .sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime())
+    .slice(0, 80)
+    .map((tx) => `- ${tx.date || "sem data"} | ${tx.type === "income" ? "+" : "-"}R$ ${formatBRL(Number(tx.amount || 0))} | ${tx.name || "Transação"} | ${tx.category || "Outros"}`)
+    .join("\n");
 
-### Cartões de crédito
-${cardLines || "(nenhum cadastrado)"}
+  return `## Dados financeiros reais do usuário
+Data de referência: ${now.toLocaleDateString("pt-BR")}
 
-### Top categorias de gasto este mês
-${topCats || "(sem despesas)"}
+### Mês atual — ${MONTHS_LABEL[now.getMonth()]}/${now.getFullYear()}
+- Receitas: R$ ${formatBRL(currentIncome)}
+- Gastos econômicos por categoria: R$ ${formatBRL(currentExpense)}
+- Saldo receitas - gastos: R$ ${formatBRL(currentIncome - currentExpense)}
 
-### Orçamentos
-${budgetLines || "(nenhum cadastrado)"}
+#### Gastos por categoria no mês atual
+${currentCategoryLines || "(sem despesas)"}
 
-### Metas financeiras
-${goalLines || "(nenhuma cadastrada)"}
+### Mês anterior — ${MONTHS_LABEL[previousDate.getMonth()]}/${previousDate.getFullYear()}
+- Receitas: R$ ${formatBRL(previousIncome)}
+- Gastos econômicos por categoria: R$ ${formatBRL(previousExpense)}
 
-### Total de transações registradas: ${transactions.length}${
-    periodHint ? (() => {
-      const p = detectPeriod(periodHint);
-      return p ? buildPeriodSection(transactions, p) : "";
-    })() : ""
-  }${
-    periodHint ? (() => {
-      const kws = extractKeywords(periodHint);
-      const p = detectPeriod(periodHint);
-      return buildKeywordSection(transactions, kws, currentMonth, prevMonth, p);
-    })() : ""
-  }`;
+#### Gastos por categoria no mês anterior
+${previousCategoryLines || "(sem despesas)"}
+
+### Contas — saldo calculado
+${accountLines || "(nenhuma conta)"}
+
+### Cartões
+${cardLines || "(nenhum cartão)"}
+
+### Orçamentos do mês atual
+${budgetLines || "(nenhum orçamento)"}
+
+### Metas
+${goalLines || "(nenhuma meta)"}${requestedSection}${keywordSection(expenses, question, currentKey, previousKey)}
+
+### Transações recentes (referência; parcelas permanecem mensais aqui)
+${recentTransactions || "(nenhuma transação)"}`;
 }
 
-async function generateSuggestions(
-  apiKey: string,
-  messages: ChatMessage[],
-): Promise<string[]> {
-  const recent = messages.slice(-4)
-    .map((m) => `${m.role === "user" ? "Usuário" : "Assistente"}: ${m.content.slice(0, 500)}`)
-    .join("\n\n");
+const SYSTEM_PROMPT = `Você é o Assistente Financeiro do Cofre360. Responda em português brasileiro, de forma objetiva e útil.
 
-  const prompt = `Você é um gerador de perguntas de follow-up para um assistente financeiro pessoal em português brasileiro.
+Regras obrigatórias:
+- Use SOMENTE os dados financeiros fornecidos no contexto; nunca invente valores.
+- Para perguntas de gasto por categoria, use os valores pré-calculados em "Gastos por categoria" ou "Busca específica pela pergunta".
+- Gastos parcelados de cartão são consolidados economicamente no mês da compra nas seções de categoria; não some parcelas futuras de novo como novo gasto da categoria.
+- Transferências entre contas e pagamentos de cartão não são novos gastos por categoria e foram excluídos desses totais.
+- Diferencie gasto econômico de movimentação de caixa/fatura quando isso for relevante.
+- Formate dinheiro em R$ e datas em dd/mm/aaaa quando citar datas.
+- Se não houver dado suficiente, diga isso claramente.
+- Mantenha a resposta concisa, normalmente até 6 parágrafos curtos.`;
 
-Com base na conversa abaixo, gere EXATAMENTE 3 perguntas curtas (máximo 8 palavras cada) que o usuário PROVAVELMENTE faria a seguir, relacionadas ao tema discutido. As perguntas devem ser práticas, específicas e diretamente conectadas ao contexto da última resposta.
-
-Responda APENAS com um JSON válido no formato: {"suggestions": ["pergunta 1", "pergunta 2", "pergunta 3"]}
-
-Conversa recente:
-${recent}`;
+async function generateSuggestions(apiKey: string, messages: ChatMessage[]) {
+  const recent = messages.slice(-4).map((message) =>
+    `${message.role === "user" ? "Usuário" : "Assistente"}: ${message.content.slice(0, 500)}`,
+  ).join("\n");
 
   try {
-    const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
-        messages: [{ role: "user", content: prompt }],
+        messages: [{
+          role: "user",
+          content: `Gere exatamente 3 perguntas curtas de continuação, em português brasileiro, com base nesta conversa financeira. Responda somente JSON no formato {"suggestions":["...","...","..."]}.\n\n${recent}`,
+        }],
         response_format: { type: "json_object" },
       }),
     });
-    if (!resp.ok) return [];
-    const data = await resp.json();
+    if (!response.ok) return [];
+    const data = await response.json();
     const content = data.choices?.[0]?.message?.content || "{}";
     const parsed = JSON.parse(content);
-    const arr = Array.isArray(parsed.suggestions) ? parsed.suggestions : [];
-    return arr.filter((s: any) => typeof s === "string" && s.trim()).slice(0, 3);
-  } catch (e) {
-    console.error("suggestions error:", e);
+    return Array.isArray(parsed.suggestions)
+      ? parsed.suggestions.filter((item: unknown) => typeof item === "string").slice(0, 3)
+      : [];
+  } catch (error) {
+    console.error("financial-chat suggestions error:", error);
     return [];
   }
 }
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const corsHeaders = buildCors(req.headers.get("Origin"));
+
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { status: 200, headers: corsHeaders });
+  }
+
+  if (req.method !== "POST") {
+    return new Response(JSON.stringify({ error: "Method not allowed" }), {
+      status: 405,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
 
   try {
-    const url = new URL(req.url);
-    const mode = url.searchParams.get("mode");
-    const { messages } = (await req.json()) as { messages: ChatMessage[] };
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
     const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
 
-    if (!LOVABLE_API_KEY) {
-      return new Response(JSON.stringify({ error: "LOVABLE_API_KEY não configurada" }), {
+    if (!LOVABLE_API_KEY || !SUPABASE_URL || !SUPABASE_ANON_KEY) {
+      console.error("financial-chat missing server configuration");
+      return new Response(JSON.stringify({ error: "Assistente indisponível por configuração do servidor" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Require an authenticated caller. Build a per-user Supabase client (RLS-scoped).
-    const authHeader = req.headers.get("Authorization") ?? "";
+    const authHeader = req.headers.get("Authorization") || "";
     if (!authHeader.toLowerCase().startsWith("bearer ")) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const supabase = createClient(SUPABASE_URL!, SUPABASE_ANON_KEY!, {
+
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
       global: { headers: { Authorization: authHeader } },
       auth: { persistSession: false, autoRefreshToken: false },
     });
-    const { data: userData, error: userErr } = await supabase.auth.getUser();
-    if (userErr || !userData?.user) {
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    if (userError || !userData.user) {
+      console.error("financial-chat invalid user session", userError?.message);
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    if (mode === "suggestions") {
-      const suggestions = await generateSuggestions(LOVABLE_API_KEY, messages);
-      return new Response(JSON.stringify({ suggestions }), {
+    const body = await req.json();
+    const messages = Array.isArray(body?.messages) ? body.messages as ChatMessage[] : [];
+    if (!messages.length) {
+      return new Response(JSON.stringify({ error: "Nenhuma mensagem enviada" }), {
+        status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const lastUser = [...messages].reverse().find((m) => m.role === "user")?.content ?? "";
-    const context = await buildFinancialContext(supabase, lastUser);
+    const url = new URL(req.url);
+    if (url.searchParams.get("mode") === "suggestions") {
+      const suggestions = await generateSuggestions(LOVABLE_API_KEY, messages);
+      return new Response(JSON.stringify({ suggestions }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
-    const fullSystem = `${SYSTEM_PROMPT}
-
-REGRA DE PERÍODO: Quando houver a seção "🔎 Filtro detectado" no contexto, responda EXCLUSIVAMENTE com base nos dados desse período. NUNCA misture transações de outros meses ou datas fora do intervalo informado. Cite o período no início da resposta (ex.: "No período de 1 a 17 de abril...").
-
-REGRA DE BUSCA INTELIGENTE: Quando houver a seção "🔍 Busca inteligente por palavras-chave" no contexto, use SEMPRE esses números pré-calculados como fonte da verdade. Para perguntas tipo "quanto gastei com X?":
-1. Use o total do mês atual da palavra-chave detectada.
-2. Inclua a comparação com o mês passado já calculada (X% a mais/menos).
-3. Se houver período no filtro, priorize o valor "No período".
-4. Liste 2-3 transações reais como exemplo, se útil.
-5. Se "Nenhuma transação encontrada", diga claramente e sugira cadastrar.
-
-${context}`;
-
+    const question = [...messages].reverse().find((message) => message.role === "user")?.content || "";
+    const context = await buildFinancialContext(supabase, question);
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -527,40 +494,44 @@ ${context}`;
       },
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
-        messages: [{ role: "system", content: fullSystem }, ...messages],
+        messages: [
+          { role: "system", content: `${SYSTEM_PROMPT}\n\n${context}` },
+          ...messages,
+        ],
         stream: true,
       }),
     });
 
     if (!response.ok) {
-      if (response.status === 429) {
-        return new Response(
-          JSON.stringify({ error: "Muitas requisições. Aguarde alguns segundos e tente novamente." }),
-          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-        );
-      }
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: "Créditos esgotados. Adicione fundos ao workspace para continuar." }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-        );
-      }
-      const t = await response.text();
-      console.error("AI gateway error:", response.status, t);
-      return new Response(JSON.stringify({ error: "Erro no gateway de IA" }), {
-        status: 500,
+      const gatewayBody = await response.text();
+      console.error("financial-chat AI gateway error", response.status, gatewayBody);
+      const status = response.status === 429 || response.status === 402 ? response.status : 502;
+      const error = response.status === 429
+        ? "Muitas requisições. Aguarde alguns segundos."
+        : response.status === 402
+          ? "Créditos do assistente esgotados."
+          : "Erro no provedor de IA";
+      return new Response(JSON.stringify({ error }), {
+        status,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     return new Response(response.body, {
-      headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+      status: 200,
+      headers: {
+        ...corsHeaders,
+        "Content-Type": "text/event-stream; charset=utf-8",
+        "Cache-Control": "no-cache",
+      },
     });
-  } catch (e) {
-    console.error("financial-chat error:", e);
-    return new Response(
-      JSON.stringify({ error: e instanceof Error ? e.message : "Erro desconhecido" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
+  } catch (error) {
+    console.error("financial-chat error:", error);
+    return new Response(JSON.stringify({
+      error: error instanceof Error ? error.message : "Erro desconhecido",
+    }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 });
