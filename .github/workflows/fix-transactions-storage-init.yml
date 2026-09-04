@@ -1,0 +1,52 @@
+name: Guard transaction filter storage
+on:
+  push:
+    branches:
+      - main
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Guard local storage access
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('src/routes/transactions.tsx')
+          text = path.read_text()
+          old = '''  const [activeSource, setActiveSource] = useState<"all" | "account" | "card">(
+    searchParams.accountId ? "account" : (localStorage.getItem("transactions_filter_source") as any || "all")
+  );
+  const [filterAccountId, setFilterAccountId] = useState<string | null>(
+    searchParams.accountId || localStorage.getItem("transactions_filter_accountId") || null
+  );'''
+          new = '''  const [activeSource, setActiveSource] = useState<"all" | "account" | "card">(() => {
+    if (searchParams.accountId) return "account";
+    if (typeof window === "undefined") return "all";
+    const saved = window.localStorage.getItem("transactions_filter_source");
+    return saved === "account" || saved === "card" ? saved : "all";
+  });
+  const [filterAccountId, setFilterAccountId] = useState<string | null>(() => {
+    if (searchParams.accountId) return searchParams.accountId;
+    if (typeof window === "undefined") return null;
+    return window.localStorage.getItem("transactions_filter_accountId");
+  });'''
+          if old not in text:
+              raise SystemExit('storage initializer block not found')
+          path.write_text(text.replace(old, new, 1))
+          PY
+      - name: Verify
+        run: |
+          git diff --check
+          grep -F 'if (typeof window === "undefined") return "all";' src/routes/transactions.tsx
+          grep -F 'if (typeof window === "undefined") return null;' src/routes/transactions.tsx
+      - name: Commit
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git rm .github/workflows/fix-transactions-storage-init.yml
+          git add src/routes/transactions.tsx
+          git commit -m "fix: guard transaction filter storage initialization"
+          git push
