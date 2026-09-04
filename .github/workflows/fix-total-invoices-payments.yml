@@ -1,0 +1,76 @@
+name: Fix total invoices payment deduction
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  patch:
+    if: ${{ !contains(github.event.head_commit.message, '[total-invoices-fixed]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fix consolidated invoice total
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('src/routes/cards.tsx')
+          s = p.read_text()
+          old = '''  // Soma dos lançamentos da fatura ATUAL + FUTURAS (não inclui período "past")
+  const sumCurrentAndFuture = (cardName: string, closingDay: number | null, dueDay: number | null) => {
+    const txs = cardTransactions.filter(t => t.card === cardName);
+    const periods = groupByBillingCycle(txs, closingDay, dueDay);
+    return periods
+      .filter(p => p.key === "current" || p.key.startsWith("future_"))
+      .reduce((s, p) => s + (p.total || 0), 0);
+  };
+  const totalAllInvoices = cards.reduce((sum, c) => {
+    return sum + sumCurrentAndFuture(c.name, c.closing_day, c.due_day) + (c.used || 0);
+  }, 0);
+  const totalLimit = cards.reduce((sum, c) => sum + (c.card_limit || 0), 0);
+  // Pagamentos (parciais ou totais) restauram o limite disponível consolidado
+  const totalPaidAll = cards.reduce((sum, c) => sum + (cardPayments[c.id] || 0), 0);
+  const totalAvailable = totalLimit - totalAllInvoices + totalPaidAll;
+'''
+          new = '''  // Fatura total = saldo ainda a pagar da fatura atual + futuras.
+  // Cada pagamento é abatido somente do período ao qual foi vinculado.
+  const remainingCurrentAndFuture = (card: CardData) => {
+    const txs = cardTransactions.filter(t => t.card === card.name);
+    const periods = includeOpeningInvoiceAmount(
+      groupByBillingCycle(txs, card.closing_day, card.due_day),
+      card,
+    );
+
+    return periods
+      .filter(p => p.key === "current" || p.key.startsWith("future_"))
+      .reduce((sum, period) => {
+        const periodKey = period.endDate?.toISOString().split("T")[0] || "";
+        const paid = periodKey ? (cardPaymentsByPeriod[card.id]?.[periodKey] || 0) : 0;
+        const remaining = Math.max(0, Number(period.total || 0) - Number(paid || 0));
+        return sum + remaining;
+      }, 0);
+  };
+
+  const totalAllInvoices = cards.reduce((sum, card) => sum + remainingCurrentAndFuture(card), 0);
+  const totalLimit = cards.reduce((sum, c) => sum + (c.card_limit || 0), 0);
+  // Como os pagamentos já foram abatidos em totalAllInvoices, não devem ser somados novamente aqui.
+  const totalAvailable = totalLimit - totalAllInvoices;
+'''
+          if old not in s:
+              raise SystemExit('invoice total anchor not found')
+          p.write_text(s.replace(old, new, 1))
+          PY
+      - name: Verify patch
+        run: |
+          git diff --check
+          grep -F 'const remainingCurrentAndFuture = (card: CardData)' src/routes/cards.tsx
+          grep -F 'const totalAvailable = totalLimit - totalAllInvoices;' src/routes/cards.tsx
+          if grep -F 'totalPaidAll' src/routes/cards.tsx; then exit 1; fi
+      - name: Commit patch
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git rm .github/workflows/fix-total-invoices-payments.yml
+          git add src/routes/cards.tsx
+          git commit -m "fix: deduct invoice payments from consolidated total [total-invoices-fixed]"
+          git push
