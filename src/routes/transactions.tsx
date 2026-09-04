@@ -132,10 +132,10 @@ export function TransactionsPage() {
     localStorage.setItem("transactions_filter_source", "all");
   }, [searchParams.category]);
   const [activeSource, setActiveSource] = useState<"all" | "account" | "card">(
-    searchParams.accountId ? "account" : (localStorage.getItem("transactions_filter_source") as any || "all")
+    searchParams.accountId ? "account" : (((typeof window !== "undefined" ? window.localStorage.getItem("transactions_filter_source") : null) as any) || "all")
   );
   const [filterAccountId, setFilterAccountId] = useState<string | null>(
-    searchParams.accountId || localStorage.getItem("transactions_filter_accountId") || null
+    searchParams.accountId || (typeof window !== "undefined" ? window.localStorage.getItem("transactions_filter_accountId") : null) || null
   );
 
   useEffect(() => {
