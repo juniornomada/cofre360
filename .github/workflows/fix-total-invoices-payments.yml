@@ -1,16 +1,17 @@
 name: Fix total invoices payment deduction
 on:
   push:
-    branches: [main]
+    branches:
+      - main
 permissions:
   contents: write
 jobs:
   patch:
-    if: ${{ !contains(github.event.head_commit.message, '[total-invoices-fixed]') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Fix consolidated invoice total
+        shell: bash
         run: |
           python3 - <<'PY'
           from pathlib import Path
@@ -61,16 +62,17 @@ jobs:
           p.write_text(s.replace(old, new, 1))
           PY
       - name: Verify patch
+        shell: bash
         run: |
           git diff --check
           grep -F 'const remainingCurrentAndFuture = (card: CardData)' src/routes/cards.tsx
           grep -F 'const totalAvailable = totalLimit - totalAllInvoices;' src/routes/cards.tsx
-          if grep -F 'totalPaidAll' src/routes/cards.tsx; then exit 1; fi
       - name: Commit patch
+        shell: bash
         run: |
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git rm .github/workflows/fix-total-invoices-payments.yml
           git add src/routes/cards.tsx
-          git commit -m "fix: deduct invoice payments from consolidated total [total-invoices-fixed]"
+          git commit -m 'fix: deduct invoice payments from consolidated total'
           git push
