@@ -1,0 +1,63 @@
+name: Fix financial chat client auth
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  patch:
+    if: ${{ !contains(github.event.head_commit.message, '[financial-chat-auth-applied]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch FinancialChat auth headers
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('src/components/FinancialChat.tsx')
+          s = p.read_text()
+
+          anchor = 'import { toast } from "sonner";\n'
+          imp = 'import { supabase } from "@/integrations/supabase/client";\n'
+          if imp not in s:
+              s = s.replace(anchor, anchor + imp, 1)
+
+          marker = '  const activeSuggestions = suggestions ?? SUGGESTIONS;\n'
+          helper = '''  const activeSuggestions = suggestions ?? SUGGESTIONS;\n\n  const getAuthHeaders = async (): Promise<Record<string, string>> => {\n    const { data: { session }, error } = await supabase.auth.getSession();\n    if (error || !session?.access_token) {\n      throw new Error("Sessão expirada");\n    }\n    return {\n      "Content-Type": "application/json",\n      Authorization: `Bearer ${session.access_token}`,\n      apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,\n    };\n  };\n'''
+          if 'const getAuthHeaders = async' not in s:
+              if marker not in s:
+                  raise SystemExit('activeSuggestions marker not found')
+              s = s.replace(marker, helper, 1)
+
+          old_headers = '''        headers: {\n          "Content-Type": "application/json",\n          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,\n        },'''
+          if s.count(old_headers) != 2:
+              raise SystemExit(f'expected 2 legacy auth header blocks, found {s.count(old_headers)}')
+
+          first = '''      const authHeaders = await getAuthHeaders();\n      const resp = await fetch(`${CHAT_URL}?mode=suggestions`, {\n        method: "POST",\n        headers: authHeaders,'''
+          old_first = '''      const resp = await fetch(`${CHAT_URL}?mode=suggestions`, {\n        method: "POST",\n''' + old_headers + '''\n'''
+          if old_first not in s:
+              raise SystemExit('follow-up fetch block not found')
+          s = s.replace(old_first, first + '\n', 1)
+
+          second = '''      const authHeaders = await getAuthHeaders();\n      const resp = await fetch(CHAT_URL, {\n        method: "POST",\n        headers: authHeaders,'''
+          old_second = '''      const resp = await fetch(CHAT_URL, {\n        method: "POST",\n''' + old_headers + '''\n'''
+          if old_second not in s:
+              raise SystemExit('chat fetch block not found')
+          s = s.replace(old_second, second + '\n', 1)
+
+          p.write_text(s)
+          PY
+      - name: Verify patch
+        run: |
+          git diff --check
+          grep -F 'Authorization: `Bearer ${session.access_token}`' src/components/FinancialChat.tsx
+          grep -F 'apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY' src/components/FinancialChat.tsx
+          if grep -F 'Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`' src/components/FinancialChat.tsx; then exit 1; fi
+      - name: Commit patch
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git rm .github/workflows/fix-financial-chat-client-auth.yml
+          git add src/components/FinancialChat.tsx
+          git commit -m 'fix: authenticate financial chat with user session [financial-chat-auth-applied]'
+          git push
