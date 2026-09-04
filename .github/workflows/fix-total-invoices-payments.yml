@@ -13,54 +13,7 @@ jobs:
       - name: Fix consolidated invoice total
         shell: bash
         run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          p = Path('src/routes/cards.tsx')
-          s = p.read_text()
-          old = '''  // Soma dos lançamentos da fatura ATUAL + FUTURAS (não inclui período "past")
-  const sumCurrentAndFuture = (cardName: string, closingDay: number | null, dueDay: number | null) => {
-    const txs = cardTransactions.filter(t => t.card === cardName);
-    const periods = groupByBillingCycle(txs, closingDay, dueDay);
-    return periods
-      .filter(p => p.key === "current" || p.key.startsWith("future_"))
-      .reduce((s, p) => s + (p.total || 0), 0);
-  };
-  const totalAllInvoices = cards.reduce((sum, c) => {
-    return sum + sumCurrentAndFuture(c.name, c.closing_day, c.due_day) + (c.used || 0);
-  }, 0);
-  const totalLimit = cards.reduce((sum, c) => sum + (c.card_limit || 0), 0);
-  // Pagamentos (parciais ou totais) restauram o limite disponível consolidado
-  const totalPaidAll = cards.reduce((sum, c) => sum + (cardPayments[c.id] || 0), 0);
-  const totalAvailable = totalLimit - totalAllInvoices + totalPaidAll;
-'''
-          new = '''  // Fatura total = saldo ainda a pagar da fatura atual + futuras.
-  // Cada pagamento é abatido somente do período ao qual foi vinculado.
-  const remainingCurrentAndFuture = (card: CardData) => {
-    const txs = cardTransactions.filter(t => t.card === card.name);
-    const periods = includeOpeningInvoiceAmount(
-      groupByBillingCycle(txs, card.closing_day, card.due_day),
-      card,
-    );
-
-    return periods
-      .filter(p => p.key === "current" || p.key.startsWith("future_"))
-      .reduce((sum, period) => {
-        const periodKey = period.endDate?.toISOString().split("T")[0] || "";
-        const paid = periodKey ? (cardPaymentsByPeriod[card.id]?.[periodKey] || 0) : 0;
-        const remaining = Math.max(0, Number(period.total || 0) - Number(paid || 0));
-        return sum + remaining;
-      }, 0);
-  };
-
-  const totalAllInvoices = cards.reduce((sum, card) => sum + remainingCurrentAndFuture(card), 0);
-  const totalLimit = cards.reduce((sum, c) => sum + (c.card_limit || 0), 0);
-  // Como os pagamentos já foram abatidos em totalAllInvoices, não devem ser somados novamente aqui.
-  const totalAvailable = totalLimit - totalAllInvoices;
-'''
-          if old not in s:
-              raise SystemExit('invoice total anchor not found')
-          p.write_text(s.replace(old, new, 1))
-          PY
+          python3 -c "from pathlib import Path; import base64; p=Path('src/routes/cards.tsx'); s=p.read_text(); old=base64.b64decode('ICAvLyBTb21hIGRvcyBsYW7Dp2FtZW50b3MgZGEgZmF0dXJhIEFUVUFMICsgRlVUVVJBUyAobsOjbyBpbmNsdWkgcGVyw61vZG8gInBhc3QiKQogIGNvbnN0IHN1bUN1cnJlbnRBbmRGdXR1cmUgPSAoY2FyZE5hbWU6IHN0cmluZywgY2xvc2luZ0RheTogbnVtYmVyIHwgbnVsbCwgZHVlRGF5OiBudW1iZXIgfCBudWxsKSA9PiB7CiAgICBjb25zdCB0eHMgPSBjYXJkVHJhbnNhY3Rpb25zLmZpbHRlcih0ID0+IHQuY2FyZCA9PT0gY2FyZE5hbWUpOwogICAgY29uc3QgcGVyaW9kcyA9IGdyb3VwQnlCaWxsaW5nQ3ljbGUodHhzLCBjbG9zaW5nRGF5LCBkdWVEYXkpOwogICAgcmV0dXJuIHBlcmlvZHMKICAgICAgLmZpbHRlcihwID0+IHAua2V5ID09PSAiY3VycmVudCIgfHwgcC5rZXkuc3RhcnRzV2l0aCgiZnV0dXJlXyIpKQogICAgICAucmVkdWNlKChzLCBwKSA9PiBzICsgKHAudG90YWwgfHwgMCksIDApOwogIH07CiAgY29uc3QgdG90YWxBbGxJbnZvaWNlcyA9IGNhcmRzLnJlZHVjZSgoc3VtLCBjKSA9PiB7CiAgICByZXR1cm4gc3VtICsgc3VtQ3VycmVudEFuZEZ1dHVyZShjLm5hbWUsIGMuY2xvc2luZ19kYXksIGMuZHVlX2RheSkgKyAoYy51c2VkIHx8IDApOwogIH0sIDApOwogIGNvbnN0IHRvdGFsTGltaXQgPSBjYXJkcy5yZWR1Y2UoKHN1bSwgYykgPT4gc3VtICsgKGMuY2FyZF9saW1pdCB8fCAwKSwgMCk7CiAgLy8gUGFnYW1lbnRvcyAocGFyY2lhaXMgb3UgdG90YWlzKSByZXN0YXVyYW0gbyBsaW1pdGUgZGlzcG9uw612ZWwgY29uc29saWRhZG8KICBjb25zdCB0b3RhbFBhaWRBbGwgPSBjYXJkcy5yZWR1Y2UoKHN1bSwgYykgPT4gc3VtICsgKGNhcmRQYXltZW50c1tjLmlkXSB8fCAwKSwgMCk7CiAgY29uc3QgdG90YWxBdmFpbGFibGUgPSB0b3RhbExpbWl0IC0gdG90YWxBbGxJbnZvaWNlcyArIHRvdGFsUGFpZEFsbDsK').decode(); new=base64.b64decode('ICAvLyBGYXR1cmEgdG90YWwgPSBzYWxkbyBhaW5kYSBhIHBhZ2FyIGRhIGZhdHVyYSBhdHVhbCArIGZ1dHVyYXMuCiAgLy8gQ2FkYSBwYWdhbWVudG8gw6kgYWJhdGlkbyBzb21lbnRlIGRvIHBlcsOtb2RvIGFvIHF1YWwgZm9pIHZpbmN1bGFkby4KICBjb25zdCByZW1haW5pbmdDdXJyZW50QW5kRnV0dXJlID0gKGNhcmQ6IENhcmREYXRhKSA9PiB7CiAgICBjb25zdCB0eHMgPSBjYXJkVHJhbnNhY3Rpb25zLmZpbHRlcih0ID0+IHQuY2FyZCA9PT0gY2FyZC5uYW1lKTsKICAgIGNvbnN0IHBlcmlvZHMgPSBpbmNsdWRlT3BlbmluZ0ludm9pY2VBbW91bnQoCiAgICAgIGdyb3VwQnlCaWxsaW5nQ3ljbGUodHhzLCBjYXJkLmNsb3NpbmdfZGF5LCBjYXJkLmR1ZV9kYXkpLAogICAgICBjYXJkLAogICAgKTsKCiAgICByZXR1cm4gcGVyaW9kcwogICAgICAuZmlsdGVyKHAgPT4gcC5rZXkgPT09ICJjdXJyZW50IiB8fCBwLmtleS5zdGFydHNXaXRoKCJmdXR1cmVfIikpCiAgICAgIC5yZWR1Y2UoKHN1bSwgcGVyaW9kKSA9PiB7CiAgICAgICAgY29uc3QgcGVyaW9kS2V5ID0gcGVyaW9kLmVuZERhdGU/LnRvSVNPU3RyaW5nKCkuc3BsaXQoIlQiKVswXSB8fCAiIjsKICAgICAgICBjb25zdCBwYWlkID0gcGVyaW9kS2V5ID8gKGNhcmRQYXltZW50c0J5UGVyaW9kW2NhcmQuaWRdPy5bcGVyaW9kS2V5XSB8fCAwKSA6IDA7CiAgICAgICAgY29uc3QgcmVtYWluaW5nID0gTWF0aC5tYXgoMCwgTnVtYmVyKHBlcmlvZC50b3RhbCB8fCAwKSAtIE51bWJlcihwYWlkIHx8IDApKTsKICAgICAgICByZXR1cm4gc3VtICsgcmVtYWluaW5nOwogICAgICB9LCAwKTsKICB9OwoKICBjb25zdCB0b3RhbEFsbEludm9pY2VzID0gY2FyZHMucmVkdWNlKChzdW0sIGNhcmQpID0+IHN1bSArIHJlbWFpbmluZ0N1cnJlbnRBbmRGdXR1cmUoY2FyZCksIDApOwogIGNvbnN0IHRvdGFsTGltaXQgPSBjYXJkcy5yZWR1Y2UoKHN1bSwgYykgPT4gc3VtICsgKGMuY2FyZF9saW1pdCB8fCAwKSwgMCk7CiAgLy8gQ29tbyBvcyBwYWdhbWVudG9zIGrDoSBmb3JhbSBhYmF0aWRvcyBlbSB0b3RhbEFsbEludm9pY2VzLCBuw6NvIGRldmVtIHNlciBzb21hZG9zIG5vdmFtZW50ZSBhcXVpLgogIGNvbnN0IHRvdGFsQXZhaWxhYmxlID0gdG90YWxMaW1pdCAtIHRvdGFsQWxsSW52b2ljZXM7Cg==').decode(); assert old in s, 'invoice total anchor not found'; p.write_text(s.replace(old,new,1))"
       - name: Verify patch
         shell: bash
         run: |
