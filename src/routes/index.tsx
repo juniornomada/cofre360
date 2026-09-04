@@ -41,7 +41,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 
 const CategoryPicker = lazy(() => import("@/components/CategoryPicker").then(m => ({ default: m.CategoryPicker })));
-const QuickAddTransactionDialog = lazy(() => import("@/components/QuickAddTransactionDialog").then(m => ({ default: m.QuickAddTransactionDialog })));
+import { QuickAddTransactionDialog } from "@/components/QuickAddTransactionDialog";
 import { CalculatorAmountInput } from "@/components/CalculatorAmountInput";
 
 import type { QuickAddInitialType } from "@/components/QuickAddTransactionDialog";
