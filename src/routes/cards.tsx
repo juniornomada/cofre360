@@ -1368,21 +1368,29 @@ function CardsPage() {
     );
   }
 
-  // Soma dos lançamentos da fatura ATUAL + FUTURAS (não inclui período "past")
-  const sumCurrentAndFuture = (cardName: string, closingDay: number | null, dueDay: number | null) => {
-    const txs = cardTransactions.filter(t => t.card === cardName);
-    const periods = groupByBillingCycle(txs, closingDay, dueDay);
+  // Fatura total = saldo ainda a pagar da fatura atual + futuras.
+  // Cada pagamento é abatido somente do período ao qual foi vinculado.
+  const remainingCurrentAndFuture = (card: CardData) => {
+    const txs = cardTransactions.filter(t => t.card === card.name);
+    const periods = includeOpeningInvoiceAmount(
+      groupByBillingCycle(txs, card.closing_day, card.due_day),
+      card,
+    );
+
     return periods
       .filter(p => p.key === "current" || p.key.startsWith("future_"))
-      .reduce((s, p) => s + (p.total || 0), 0);
+      .reduce((sum, period) => {
+        const periodKey = period.endDate?.toISOString().split("T")[0] || "";
+        const paid = periodKey ? (cardPaymentsByPeriod[card.id]?.[periodKey] || 0) : 0;
+        const remaining = Math.max(0, Number(period.total || 0) - Number(paid || 0));
+        return sum + remaining;
+      }, 0);
   };
-  const totalAllInvoices = cards.reduce((sum, c) => {
-    return sum + sumCurrentAndFuture(c.name, c.closing_day, c.due_day) + (c.used || 0);
-  }, 0);
+
+  const totalAllInvoices = cards.reduce((sum, card) => sum + remainingCurrentAndFuture(card), 0);
   const totalLimit = cards.reduce((sum, c) => sum + (c.card_limit || 0), 0);
-  // Pagamentos (parciais ou totais) restauram o limite disponível consolidado
-  const totalPaidAll = cards.reduce((sum, c) => sum + (cardPayments[c.id] || 0), 0);
-  const totalAvailable = totalLimit - totalAllInvoices + totalPaidAll;
+  // Como os pagamentos já foram abatidos em totalAllInvoices, não devem ser somados novamente aqui.
+  const totalAvailable = totalLimit - totalAllInvoices;
 
   return (
     <div className="a11y-focus-scope animate-page-enter flex flex-col gap-5 px-4 pt-6 pb-24">
