@@ -1,16 +1,16 @@
 name: Apply purchase date BR format
 on:
   push:
-    branches: [main]
+    branches:
+      - main
 permissions:
   contents: write
 jobs:
   patch:
-    if: ${{ !contains(github.event.head_commit.message, '[purchase-date-br-format-applied]') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Format purchase date as dd/mm/yyyy
+      - name: Patch display format
         run: |
           python3 - <<'PY'
           from pathlib import Path
@@ -31,9 +31,9 @@ jobs:
   if (!value) return null;
   const raw = value.trim();
   const dmy = raw.match(/^(\\d{2})-(\\d{2})-(\\d{4})$/);
-  if (dmy) return `${dmy[1]}/${dmy[2]}/${dmy[3]}`;
+  if (dmy) return dmy[1] + "/" + dmy[2] + "/" + dmy[3];
   const iso = raw.match(/^(\\d{4})-(\\d{2})-(\\d{2})(?:T.*)?$/);
-  if (iso) return `${iso[3]}/${iso[2]}/${iso[1]}`;
+  if (iso) return iso[3] + "/" + iso[2] + "/" + iso[1];
   return raw;
 };
 
@@ -57,12 +57,12 @@ const getInvoicePurchaseDate = (tx: CardTransaction, allTransactions: CardTransa
         run: |
           git diff --check
           grep -F 'const formatPurchaseDateBr' src/routes/cards.tsx
-          grep -F 'return `${dmy[1]}/${dmy[2]}/${dmy[3]}`;' src/routes/cards.tsx
+          grep -F 'if (dmy) return dmy[1] + "/" + dmy[2] + "/" + dmy[3];' src/routes/cards.tsx
       - name: Commit patch
         run: |
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git rm .github/workflows/apply-purchase-date-br-format.yml
           git add src/routes/cards.tsx
-          git commit -m "fix: format purchase date as dd/mm/yyyy [purchase-date-br-format-applied]"
+          git commit -m "fix: format purchase date as dd/mm/yyyy"
           git push
