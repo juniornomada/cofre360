@@ -264,7 +264,10 @@ export function groupByBillingCycle(txs: CardTransaction[], closingDay: number |
 
   let futureStart = new Date(closingDate);
   let futureIndex = 0;
-  while (futureStart < maxFutureDate || futureIndex === 0) {
+  // A transaction on the closing day belongs to the NEXT interval because
+  // invoice periods use [startDate, endDate). Generate that extra interval
+  // when the latest transaction lands exactly on a closing boundary.
+  while (futureStart <= maxFutureDate || futureIndex === 0) {
     const futureEnd = new Date(futureStart.getFullYear(), futureStart.getMonth() + 1, cDay);
     periods.push({
       label: formatLabel("Próxima", futureEnd),
