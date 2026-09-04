@@ -121,16 +121,27 @@ import { mapServerError } from "@/lib/map-server-error";
 import { AutoFitText } from "@/components/AutoFitText";
 import { PaymentDescriptionText, normalizePaymentDescription } from "@/components/PaymentDescriptionText";
 
+const formatPurchaseDateBr = (value: string | null | undefined): string | null => {
+  if (!value) return null;
+  const raw = value.trim();
+  const dmy = raw.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+  if (dmy) return dmy[1] + "/" + dmy[2] + "/" + dmy[3];
+  const iso = raw.match(/^(\d{4})-(\d{2})-(\d{2})(?:T.*)?$/);
+  if (iso) return iso[3] + "/" + iso[2] + "/" + iso[1];
+  return raw;
+};
+
 const getInvoicePurchaseDate = (tx: CardTransaction, allTransactions: CardTransaction[]): string | null => {
-  if (tx.purchase_date) return tx.purchase_date;
-  if (tx.installment_group_id) {
+  let value: string | null = tx.purchase_date || null;
+  if (!value && tx.installment_group_id) {
     const firstInstallment = allTransactions.find((row) =>
       row.installment_group_id === tx.installment_group_id &&
       Number(row.installment_number) === 1
     );
-    return firstInstallment?.purchase_date || firstInstallment?.date || null;
+    value = firstInstallment?.purchase_date || firstInstallment?.date || null;
   }
-  return tx.date || null;
+  if (!value && !tx.installment_group_id) value = tx.date || null;
+  return formatPurchaseDateBr(value);
 };
 
 
