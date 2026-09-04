@@ -10,60 +10,29 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Patch transfer dialog loading
-        shell: bash
+      - name: Make quick add eager
         run: |
           python3 - <<'PY'
           from pathlib import Path
-
-          lazy_line = 'const QuickAddTransactionDialog = lazy(() => import("@/components/QuickAddTransactionDialog").then(m => ({ default: m.QuickAddTransactionDialog })));'
-          static_import = 'import { QuickAddTransactionDialog } from "@/components/QuickAddTransactionDialog";'
-
-          for filename in ('src/routes/index.tsx', 'src/routes/transactions.tsx'):
-              p = Path(filename)
-              s = p.read_text()
-              if lazy_line not in s:
-                  raise SystemExit(f'lazy QuickAdd import not found in {filename}')
-              s = s.replace(lazy_line, static_import, 1)
-              p.write_text(s)
-
-          p = Path('src/routes/transactions.tsx')
-          s = p.read_text()
-          old = '''  const [activeSource, setActiveSource] = useState<"all" | "account" | "card">(
-    searchParams.accountId ? "account" : (localStorage.getItem("transactions_filter_source") as any || "all")
-  );
-  const [filterAccountId, setFilterAccountId] = useState<string | null>(
-    searchParams.accountId || localStorage.getItem("transactions_filter_accountId") || null
-  );'''
-          new = '''  const [activeSource, setActiveSource] = useState<"all" | "account" | "card">(() => {
-    if (searchParams.accountId) return "account";
-    if (typeof window === "undefined") return "all";
-    const saved = window.localStorage.getItem("transactions_filter_source");
-    return saved === "account" || saved === "card" ? saved : "all";
-  });
-  const [filterAccountId, setFilterAccountId] = useState<string | null>(() => {
-    if (searchParams.accountId) return searchParams.accountId;
-    if (typeof window === "undefined") return null;
-    return window.localStorage.getItem("transactions_filter_accountId");
-  });'''
-          if old not in s:
-              raise SystemExit('transactions localStorage initializer anchor not found')
-          p.write_text(s.replace(old, new, 1))
+          old = 'const QuickAddTransactionDialog = lazy(() => import("@/components/QuickAddTransactionDialog").then(m => ({ default: m.QuickAddTransactionDialog })));'
+          new = 'import { QuickAddTransactionDialog } from "@/components/QuickAddTransactionDialog";'
+          for name in ['src/routes/index.tsx', 'src/routes/transactions.tsx']:
+              path = Path(name)
+              text = path.read_text()
+              if old not in text:
+                  raise SystemExit('QuickAdd lazy import not found: ' + name)
+              path.write_text(text.replace(old, new, 1))
           PY
-      - name: Verify patch
-        shell: bash
+      - name: Verify
         run: |
           git diff --check
           grep -F 'import { QuickAddTransactionDialog } from "@/components/QuickAddTransactionDialog";' src/routes/index.tsx
           grep -F 'import { QuickAddTransactionDialog } from "@/components/QuickAddTransactionDialog";' src/routes/transactions.tsx
-          grep -F 'if (typeof window === "undefined") return "all";' src/routes/transactions.tsx
-          if grep -F 'const QuickAddTransactionDialog = lazy(' src/routes/index.tsx src/routes/transactions.tsx; then exit 1; fi
-      - name: Commit patch
-        shell: bash
+      - name: Commit
         run: |
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git rm .github/workflows/fix-transfer-dialog-loading.yml
           git add src/routes/index.tsx src/routes/transactions.tsx
-          git commit -m 'fix: stabilize transfer dialog loading'
+          git commit -m "fix: load transfer dialog with transaction pages"
           git push
