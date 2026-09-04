@@ -20,6 +20,7 @@ Executar um teste funcional abrangente que cubra todas as funcionalidades e as p
 | **Chat**        | Chat Financeiro IA | `/chat` | ✅ Pass |
 | **Contas**      | Listagem de Contas | `/accounts` | ✅ Pass |
 | **Cartões**     | Gestão de Cartões | `/cards` | ✅ Pass |
+| **Cartões**     | Data original da compra nas parcelas da fatura | `/cards` | ✅ Código validado |
 | **Acessibilidade**| Contraste e ARIA | Todas | ✅ Pass |
 | **Notificações**| Toasts de Sucesso/Erro | Todas | ✅ Pass |
 
