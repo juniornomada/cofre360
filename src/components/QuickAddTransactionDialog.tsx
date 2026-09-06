@@ -20,6 +20,7 @@ import { getFriendlyErrorMessage } from "@/lib/utils";
 import { sanitizeTransactionWrite, sanitizeTransactionWrites } from "@/lib/normalize-transaction-name";
 import { inferYieldTransactionFields } from "@/lib/account-yield";
 import { buildTransferTransactionNames, extractTransferDescription } from "@/lib/transfer-label";
+import type { VoiceTransactionDraft } from "@/lib/voice-transaction";
 
 export type QuickAddInitialType = "expense" | "income" | "transfer";
 
@@ -34,6 +35,8 @@ interface Props {
   initialCardName?: string;
   /** Pré-seleciona a data. Exibição canônica: "dd-MM-yyyy"; formatos legados também são aceitos. */
   initialDate?: string;
+  /** Rascunho preenchido pelo lançamento por voz. Sempre exige revisão e confirmação do usuário. */
+  initialDraft?: VoiceTransactionDraft | null;
   onSuccess?: () => void;
   copyData?: {
     name: string;
@@ -84,7 +87,7 @@ const normalizeQuickAddDate = (value?: string) => {
   return parsed ? formatQuickAddDate(parsed) : value;
 };
 
-export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "expense", initialCardName, initialDate, onSuccess, copyData }: Props) {
+export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "expense", initialCardName, initialDate, initialDraft, onSuccess, copyData }: Props) {
   const todayFormatted = formatQuickAddDate(new Date());
 
   const [bankAccounts, setBankAccounts] = useState<BankAccountOption[]>([]);
@@ -297,20 +300,23 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
     // Restaurar preferências de parcelamento (modo/N) da última abertura.
     // O valor nunca é reaproveitado em uma nova transação.
     // quando não estamos duplicando uma transação existente e o tipo é despesa.
-    const prefs = !copyData && initialType !== "income" && initialType !== "transfer" ? readPrefs() : null;
-    setInstallmentEnabled(prefs?.enabled ?? false);
-    setInstallmentCount(prefs?.count ?? 2);
+    const voiceInstallments = initialDraft?.installmentCount && initialDraft.installmentCount >= 2
+      ? initialDraft.installmentCount
+      : null;
+    const prefs = !initialDraft && !copyData && initialType !== "income" && initialType !== "transfer" ? readPrefs() : null;
+    setInstallmentEnabled(voiceInstallments ? true : (prefs?.enabled ?? false));
+    setInstallmentCount(voiceInstallments ?? prefs?.count ?? 2);
     setInstallmentStart(1);
-    setInstallmentMode(prefs?.mode ?? "divide");
+    setInstallmentMode("divide");
 
     setNewTx({
-      icon: copyData ? copyData.icon : (initialType === "income" ? "💰" : "🍔"),
-      name: copyData ? copyData.name : "",
-      category: copyData ? copyData.category : (initialType === "income" ? "Renda > Salário" : "Alimentação > Outros"),
-      date: normalizeQuickAddDate(initialDate),
-      amount: 0,
-      type: copyData ? (copyData.category.startsWith("Receita") || (copyData.category !== "Transferência" && !copyData.category.startsWith("Transferências") && !copyData.category.startsWith("Alimentação") && initialType === "income") ? "income" : "expense") : (initialType === "income" ? "income" : "expense"),
-      card: copyData ? copyData.card : null,
+      icon: initialDraft?.icon || (copyData ? copyData.icon : (initialType === "income" ? "💰" : "🍔")),
+      name: initialDraft?.name || (copyData ? copyData.name : ""),
+      category: initialDraft?.category || (copyData ? copyData.category : (initialType === "income" ? "Renda > Salário" : "Alimentação > Outros")),
+      date: normalizeQuickAddDate(initialDraft?.date || initialDate),
+      amount: initialDraft?.amount || 0,
+      type: initialDraft?.type || (copyData ? (copyData.category.startsWith("Receita") || (copyData.category !== "Transferência" && !copyData.category.startsWith("Transferências") && !copyData.category.startsWith("Alimentação") && initialType === "income") ? "income" : "expense") : (initialType === "income" ? "income" : "expense")),
+      card: initialDraft?.card ?? (copyData ? copyData.card : null),
       bank_account_id: copyData ? copyData.bank_account_id : null,
     });
     
@@ -319,7 +325,22 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
       const isInc = copyData.category.startsWith("Receita") || (initialType === "income" && !copyData.category.startsWith("Transferência"));
       setNewTx(prev => ({ ...prev, type: isInc ? "income" : "expense" }));
     }
-  }, [open, initialType, initialDate, fetchData, fetchHistory]);
+  }, [open, initialType, initialDate, initialDraft, fetchData, fetchHistory]);
+
+  useEffect(() => {
+    if (!open || !initialDraft?.name || txHistory.size === 0) return;
+    const history = txHistory.get(initialDraft.name.trim().toLowerCase());
+    if (!history) return;
+    setNewTx(prev => ({ ...prev, icon: history.icon, category: history.category }));
+  }, [open, initialDraft?.name, txHistory]);
+
+  useEffect(() => {
+    if (!open || !initialDraft?.card || cardOptions.length === 0) return;
+    const spoken = initialDraft.card.trim().toLowerCase();
+    const match = cardOptions.find(card => card.name.trim().toLowerCase() === spoken);
+    if (!match || newTx.card === match.name) return;
+    setNewTx(prev => ({ ...prev, card: match.name, bank_account_id: null }));
+  }, [open, initialDraft?.card, cardOptions, newTx.card]);
 
   // Persistir preferências de parcelamento ao alterar.
   useEffect(() => {

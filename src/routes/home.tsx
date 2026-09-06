@@ -18,6 +18,9 @@ import { SmartLink as Link } from "@/components/SmartLink";
 import { BankLogo } from "@/components/BankLogo";
 import { CardIcon } from "@/components/CardIcon";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { VoiceTransactionButton } from "@/components/VoiceTransactionButton";
+import { QuickAddTransactionDialog } from "@/components/QuickAddTransactionDialog";
+import type { VoiceTransactionDraft } from "@/lib/voice-transaction";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserPreferences } from "@/hooks/use-user-preferences";
 import { cn } from "@/lib/utils";
@@ -152,6 +155,8 @@ function RecoveredHome() {
   const [categoryLedgerTransactions, setCategoryLedgerTransactions] = useState<CategoryLedgerTransaction[]>([]);
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [loading, setLoading] = useState(true);
+  const [voiceDraft, setVoiceDraft] = useState<VoiceTransactionDraft | null>(null);
+  const [voiceDialogOpen, setVoiceDialogOpen] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState<Date>(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
@@ -446,6 +451,12 @@ function RecoveredHome() {
           <button onClick={() => updateBalanceVisible(!balanceVisible)} className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-card" aria-label="Alternar saldos">
             {balanceVisible ? <Eye className="h-4 w-4 text-muted-foreground" /> : <EyeOff className="h-4 w-4 text-muted-foreground" />}
           </button>
+          <VoiceTransactionButton
+            onDraft={(draft) => {
+              setVoiceDraft(draft);
+              setVoiceDialogOpen(true);
+            }}
+          />
           <Link to="/transactions" search={{ action: "add" } as any} className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground" aria-label="Adicionar transação">
             <Plus className="h-4 w-4" />
           </Link>
@@ -593,6 +604,17 @@ function RecoveredHome() {
           {!loading && recent.length === 0 && <p className="rounded-xl border border-dashed border-border/40 py-6 text-center text-xs text-muted-foreground">Nenhuma transação recente.</p>}
         </div>
       </section>
+
+      <QuickAddTransactionDialog
+        open={voiceDialogOpen}
+        onOpenChange={(open) => {
+          setVoiceDialogOpen(open);
+          if (!open) setVoiceDraft(null);
+        }}
+        initialType={voiceDraft?.type || "expense"}
+        initialDraft={voiceDraft}
+        onSuccess={() => window.location.reload()}
+      />
 
       {reminders.length > 0 && (
         <section>
