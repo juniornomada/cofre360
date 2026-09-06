@@ -13,7 +13,6 @@ export type VoiceTransactionDraft = {
 };
 
 const pad = (value: number) => String(value).padStart(2, "0");
-
 const formatDate = (date: Date) => `${pad(date.getDate())}-${pad(date.getMonth() + 1)}-${date.getFullYear()}`;
 
 const normalize = (value: string) =>
@@ -24,15 +23,32 @@ const normalize = (value: string) =>
     .trim()
     .toLowerCase();
 
-function parseAmount(text: string): number {
-  const currencyMatch = text.match(/(?:r\$\s*)?(\d{1,3}(?:\.\d{3})*(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)\s*(?:reais?|real)?/i);
-  if (!currencyMatch) return 0;
-  const raw = currencyMatch[1];
+function moneyToNumber(raw: string): number {
   const normalized = raw.includes(",")
     ? raw.replace(/\./g, "").replace(",", ".")
     : raw;
   const amount = Number(normalized);
   return Number.isFinite(amount) ? amount : 0;
+}
+
+function parseAmount(text: string): number {
+  // Prioriza expressões inequivocamente monetárias para não confundir
+  // "3 parcelas" / "3x" / datas com o valor da transação.
+  const explicit = text.match(/(?:r\$\s*)(\d{1,3}(?:\.\d{3})*(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)/i)
+    || text.match(/(\d{1,3}(?:\.\d{3})*(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)\s*(?:reais?|real)\b/i);
+  if (explicit) return moneyToNumber(explicit[1]);
+
+  // Fallback para fala curta, ex.: "Padaria 25". Ignora número de parcelas e datas.
+  const candidates = Array.from(text.matchAll(/\b(\d+(?:[.,]\d{1,2})?)\b/g));
+  for (const candidate of candidates) {
+    const raw = candidate[1];
+    const index = candidate.index ?? 0;
+    const around = text.slice(Math.max(0, index - 3), index + raw.length + 12);
+    if (/\d+\s*(?:x|parcelas?)\b/i.test(around)) continue;
+    if (/\d{1,2}[\/-]\d{1,2}/.test(around)) continue;
+    return moneyToNumber(raw);
+  }
+  return 0;
 }
 
 function parseDate(text: string, now = new Date()): string {
@@ -51,7 +67,7 @@ function parseDate(text: string, now = new Date()): string {
 }
 
 function parseCard(text: string): string | null {
-  const match = text.match(/\bcart[aã]o\s+(.+?)(?=\s+(?:categoria\b|em\s+\d{1,2}\s*(?:x|parcelas?)\b|\d{1,2}\s*(?:x|parcelas?)\b|hoje\b|ontem\b|anteontem\b|no\s+dia\b|dia\s+\d|$))/i);
+  const match = text.match(/\bcart[aã]o\s+(.+?)(?=\s+(?:categoria\b|em\s+\d{1,2}\s*(?:x|parcelas?)\b|\d{1,2}\s*(?:x|parcelas?)\b|hoje\b|ontem\b|anteontem\b|no\s+dia\b|dia\s+\d|$)|[,.]|$)/i);
   if (!match) return null;
   return match[1].trim().replace(/[,.]+$/, "") || null;
 }
@@ -83,22 +99,23 @@ function inferCategory(name: string, spokenCategory: string | null, type: VoiceT
   if (/farmacia|remedio|medicamento/.test(n)) return { category: "Saúde > Farmácia", icon: "💊" };
   if (/mercado|supermercado|padaria|restaurante|lanchonete|ifood|delivery/.test(n)) return { category: "Alimentação > Outros", icon: "🍔" };
   if (/aluguel|condominio|energia|luz|agua|internet/.test(n)) return { category: "Moradia > Outros", icon: "🏠" };
-  return { category: "Outros > Outros", icon: "💸" };
+  return { category: "Outros > Outros", icon: "📄" };
 }
 
 function extractName(text: string): string {
   let value = text.trim();
   value = value.replace(/^\s*(?:eu\s+)?(?:gastei|paguei|comprei|adquiri|recebi|ganhei|entrou|caiu)\s+/i, "");
-  value = value.replace(/(?:r\$\s*)?\d{1,3}(?:\.\d{3})*(?:,\d{1,2})?\s*(?:reais?|real)?/i, " ");
-  value = value.replace(/\bcart[aã]o\s+.+?(?=\s+(?:categoria\b|em\s+\d{1,2}\s*(?:x|parcelas?)\b|\d{1,2}\s*(?:x|parcelas?)\b|hoje\b|ontem\b|anteontem\b|no\s+dia\b|dia\s+\d|$))/i, " ");
-  value = value.replace(/\bcategoria\s+.+?(?=\s+(?:em\s+\d{1,2}\s*(?:x|parcelas?)\b|\d{1,2}\s*(?:x|parcelas?)\b|hoje\b|ontem\b|anteontem\b|no\s+dia\b|dia\s+\d|$))/i, " ");
+  value = value.replace(/(?:r\$\s*)\d{1,3}(?:\.\d{3})*(?:,\d{1,2})?|(?:r\$\s*)\d+(?:[.,]\d{1,2})?/i, " ");
+  value = value.replace(/\d{1,3}(?:\.\d{3})*(?:,\d{1,2})?\s*(?:reais?|real)\b|\d+(?:[.,]\d{1,2})?\s*(?:reais?|real)\b/i, " ");
+  value = value.replace(/\b(?:no|na|pelo|pela|com\s+o|com\s+a)?\s*cart[aã]o\s+.+?(?=\s+(?:categoria\b|em\s+\d{1,2}\s*(?:x|parcelas?)\b|\d{1,2}\s*(?:x|parcelas?)\b|hoje\b|ontem\b|anteontem\b|no\s+dia\b|dia\s+\d|$)|[,.]|$)/i, " ");
+  value = value.replace(/\bcategoria\s+.+?(?=\s+(?:em\s+\d{1,2}\s*(?:x|parcelas?)\b|\d{1,2}\s*(?:x|parcelas?)\b|hoje\b|ontem\b|anteontem\b|no\s+dia\b|dia\s+\d|$)|[,.]|$)/i, " ");
   value = value.replace(/\b(?:em\s+)?\d{1,2}\s*(?:x|parcelas?)\b/gi, " ");
   value = value.replace(/\b(?:hoje|ontem|anteontem)\b/gi, " ");
   value = value.replace(/\b(?:no\s+dia|dia)\s+\d{1,2}(?:[\/-]\d{1,2})?(?:[\/-]\d{2,4})?\b/gi, " ");
   value = value.replace(/\b\d{1,2}[\/-]\d{1,2}(?:[\/-]\d{2,4})?\b/g, " ");
-  value = value.replace(/\s+/g, " ").trim();
+  value = value.replace(/[,.]/g, " ").replace(/\s+/g, " ").trim();
   value = value.replace(/^(?:no|na|em|com|do|da|para|por)\s+/i, "");
-  value = value.replace(/[,.]+$/, "").trim();
+  value = value.replace(/\s+(?:no|na|em|com|do|da|para|por)$/i, "").trim();
   if (!value) return "Transação por voz";
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
@@ -109,7 +126,7 @@ export function parseVoiceTransaction(transcript: string, now = new Date()): Voi
     ? "income"
     : "expense";
 
-  const spokenCategoryMatch = transcript.match(/\bcategoria\s+(.+?)(?=\s+(?:em\s+\d{1,2}\s*(?:x|parcelas?)\b|\d{1,2}\s*(?:x|parcelas?)\b|hoje\b|ontem\b|anteontem\b|no\s+dia\b|dia\s+\d|$))/i);
+  const spokenCategoryMatch = transcript.match(/\bcategoria\s+(.+?)(?=\s+(?:em\s+\d{1,2}\s*(?:x|parcelas?)\b|\d{1,2}\s*(?:x|parcelas?)\b|hoje\b|ontem\b|anteontem\b|no\s+dia\b|dia\s+\d|$)|[,.]|$)/i);
   const spokenCategory = spokenCategoryMatch?.[1]?.trim() || null;
   const name = extractName(transcript);
   const inferred = inferCategory(name, spokenCategory, type);
