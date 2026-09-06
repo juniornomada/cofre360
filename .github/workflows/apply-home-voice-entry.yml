@@ -1,0 +1,181 @@
+name: Apply home voice entry
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  patch:
+    if: "!contains(github.event.head_commit.message, '[home-voice-applied]')"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch quick add and home
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          # --- QuickAddTransactionDialog: accept a voice draft ---
+          p = Path('src/components/QuickAddTransactionDialog.tsx')
+          s = p.read_text()
+
+          anchor = 'import { buildTransferTransactionNames, extractTransferDescription } from "@/lib/transfer-label";'
+          replacement = anchor + '\nimport type { VoiceTransactionDraft } from "@/lib/voice-transaction";'
+          if replacement not in s:
+              if anchor not in s: raise SystemExit('quickadd import anchor not found')
+              s = s.replace(anchor, replacement, 1)
+
+          old = '''  /** Pré-seleciona a data. Exibição canônica: "dd-MM-yyyy"; formatos legados também são aceitos. */
+  initialDate?: string;
+  onSuccess?: () => void;'''
+          new = '''  /** Pré-seleciona a data. Exibição canônica: "dd-MM-yyyy"; formatos legados também são aceitos. */
+  initialDate?: string;
+  /** Rascunho preenchido pelo lançamento por voz. Sempre exige revisão e confirmação do usuário. */
+  initialDraft?: VoiceTransactionDraft | null;
+  onSuccess?: () => void;'''
+          if old not in s: raise SystemExit('quickadd props anchor not found')
+          s = s.replace(old, new, 1)
+
+          old = 'export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "expense", initialCardName, initialDate, onSuccess, copyData }: Props) {'
+          new = 'export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "expense", initialCardName, initialDate, initialDraft, onSuccess, copyData }: Props) {'
+          if old not in s: raise SystemExit('quickadd signature anchor not found')
+          s = s.replace(old, new, 1)
+
+          old = '''    const prefs = !copyData && initialType !== "income" && initialType !== "transfer" ? readPrefs() : null;
+    setInstallmentEnabled(prefs?.enabled ?? false);
+    setInstallmentCount(prefs?.count ?? 2);
+    setInstallmentStart(1);
+    setInstallmentMode(prefs?.mode ?? "divide");'''
+          new = '''    const voiceInstallments = initialDraft?.installmentCount && initialDraft.installmentCount >= 2
+      ? initialDraft.installmentCount
+      : null;
+    const prefs = !initialDraft && !copyData && initialType !== "income" && initialType !== "transfer" ? readPrefs() : null;
+    setInstallmentEnabled(voiceInstallments ? true : (prefs?.enabled ?? false));
+    setInstallmentCount(voiceInstallments ?? prefs?.count ?? 2);
+    setInstallmentStart(1);
+    setInstallmentMode("divide");'''
+          if old not in s: raise SystemExit('quickadd installment reset anchor not found')
+          s = s.replace(old, new, 1)
+
+          old = '''    setNewTx({
+      icon: copyData ? copyData.icon : (initialType === "income" ? "💰" : "🍔"),
+      name: copyData ? copyData.name : "",
+      category: copyData ? copyData.category : (initialType === "income" ? "Renda > Salário" : "Alimentação > Outros"),
+      date: normalizeQuickAddDate(initialDate),
+      amount: 0,
+      type: copyData ? (copyData.category.startsWith("Receita") || (copyData.category !== "Transferência" && !copyData.category.startsWith("Transferências") && !copyData.category.startsWith("Alimentação") && initialType === "income") ? "income" : "expense") : (initialType === "income" ? "income" : "expense"),
+      card: copyData ? copyData.card : null,
+      bank_account_id: copyData ? copyData.bank_account_id : null,
+    });'''
+          new = '''    setNewTx({
+      icon: initialDraft?.icon || (copyData ? copyData.icon : (initialType === "income" ? "💰" : "🍔")),
+      name: initialDraft?.name || (copyData ? copyData.name : ""),
+      category: initialDraft?.category || (copyData ? copyData.category : (initialType === "income" ? "Renda > Salário" : "Alimentação > Outros")),
+      date: normalizeQuickAddDate(initialDraft?.date || initialDate),
+      amount: initialDraft?.amount || 0,
+      type: initialDraft?.type || (copyData ? (copyData.category.startsWith("Receita") || (copyData.category !== "Transferência" && !copyData.category.startsWith("Transferências") && !copyData.category.startsWith("Alimentação") && initialType === "income") ? "income" : "expense") : (initialType === "income" ? "income" : "expense")),
+      card: initialDraft?.card ?? (copyData ? copyData.card : null),
+      bank_account_id: copyData ? copyData.bank_account_id : null,
+    });'''
+          if old not in s: raise SystemExit('quickadd newTx reset anchor not found')
+          s = s.replace(old, new, 1)
+
+          old = '  }, [open, initialType, initialDate, fetchData, fetchHistory]);'
+          new = '  }, [open, initialType, initialDate, initialDraft, fetchData, fetchHistory]);'
+          if old not in s: raise SystemExit('quickadd effect deps anchor not found')
+          s = s.replace(old, new, 1)
+
+          # Reuse exact historical name memory and normalize spoken card casing once data arrives.
+          history_anchor = '''  // Persistir preferências de parcelamento ao alterar.
+  useEffect(() => {'''
+          history_insert = '''  useEffect(() => {
+    if (!open || !initialDraft?.name || txHistory.size === 0) return;
+    const history = txHistory.get(initialDraft.name.trim().toLowerCase());
+    if (!history) return;
+    setNewTx(prev => ({ ...prev, icon: history.icon, category: history.category }));
+  }, [open, initialDraft?.name, txHistory]);
+
+  useEffect(() => {
+    if (!open || !initialDraft?.card || cardOptions.length === 0) return;
+    const spoken = initialDraft.card.trim().toLowerCase();
+    const match = cardOptions.find(card => card.name.trim().toLowerCase() === spoken);
+    if (!match || newTx.card === match.name) return;
+    setNewTx(prev => ({ ...prev, card: match.name, bank_account_id: null }));
+  }, [open, initialDraft?.card, cardOptions, newTx.card]);
+
+  // Persistir preferências de parcelamento ao alterar.
+  useEffect(() => {'''
+          if history_anchor not in s: raise SystemExit('quickadd voice reconciliation anchor not found')
+          s = s.replace(history_anchor, history_insert, 1)
+          p.write_text(s)
+
+          # --- Home: microphone button + review dialog ---
+          p = Path('src/routes/home.tsx')
+          s = p.read_text()
+
+          anchor = 'import { ThemeToggle } from "@/components/ThemeToggle";'
+          replacement = anchor + '\nimport { VoiceTransactionButton } from "@/components/VoiceTransactionButton";\nimport { QuickAddTransactionDialog } from "@/components/QuickAddTransactionDialog";\nimport type { VoiceTransactionDraft } from "@/lib/voice-transaction";'
+          if replacement not in s:
+              if anchor not in s: raise SystemExit('home import anchor not found')
+              s = s.replace(anchor, replacement, 1)
+
+          old = '''  const [loading, setLoading] = useState(true);
+  const [selectedMonth, setSelectedMonth] = useState<Date>(() => {'''
+          new = '''  const [loading, setLoading] = useState(true);
+  const [voiceDraft, setVoiceDraft] = useState<VoiceTransactionDraft | null>(null);
+  const [voiceDialogOpen, setVoiceDialogOpen] = useState(false);
+  const [selectedMonth, setSelectedMonth] = useState<Date>(() => {'''
+          if old not in s: raise SystemExit('home state anchor not found')
+          s = s.replace(old, new, 1)
+
+          old = '''          <Link to="/transactions" search={{ action: "add" } as any} className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground" aria-label="Adicionar transação">
+            <Plus className="h-4 w-4" />
+          </Link>'''
+          new = '''          <VoiceTransactionButton
+            onDraft={(draft) => {
+              setVoiceDraft(draft);
+              setVoiceDialogOpen(true);
+            }}
+          />
+          <Link to="/transactions" search={{ action: "add" } as any} className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground" aria-label="Adicionar transação">
+            <Plus className="h-4 w-4" />
+          </Link>'''
+          if old not in s: raise SystemExit('home plus anchor not found')
+          s = s.replace(old, new, 1)
+
+          old = '''      {reminders.length > 0 && (
+        <section>'''
+          # Dialog is inserted before reminders so it remains inside the Home component tree.
+          new = '''      <QuickAddTransactionDialog
+        open={voiceDialogOpen}
+        onOpenChange={(open) => {
+          setVoiceDialogOpen(open);
+          if (!open) setVoiceDraft(null);
+        }}
+        initialType={voiceDraft?.type || "expense"}
+        initialDraft={voiceDraft}
+        onSuccess={() => window.location.reload()}
+      />
+
+      {reminders.length > 0 && (
+        <section>'''
+          if old not in s: raise SystemExit('home dialog anchor not found')
+          s = s.replace(old, new, 1)
+          p.write_text(s)
+          PY
+
+      - name: Verify patch
+        run: |
+          git diff --check
+          grep -F 'initialDraft?: VoiceTransactionDraft | null;' src/components/QuickAddTransactionDialog.tsx
+          grep -F '<VoiceTransactionButton' src/routes/home.tsx
+          grep -F 'initialDraft={voiceDraft}' src/routes/home.tsx
+      - name: Commit patch
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git rm .github/workflows/apply-home-voice-entry.yml
+          git add src/components/QuickAddTransactionDialog.tsx src/routes/home.tsx
+          git commit -m 'feat: add voice transaction entry on Home [home-voice-applied]'
+          git push
