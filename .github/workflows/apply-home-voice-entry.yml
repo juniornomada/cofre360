@@ -6,7 +6,6 @@ permissions:
   contents: write
 jobs:
   patch:
-    if: "!contains(github.event.head_commit.message, '[home-voice-applied]')"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -16,7 +15,6 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
 
-          # --- QuickAddTransactionDialog: accept a voice draft ---
           p = Path('src/components/QuickAddTransactionDialog.tsx')
           s = p.read_text()
 
@@ -86,7 +84,6 @@ jobs:
           if old not in s: raise SystemExit('quickadd effect deps anchor not found')
           s = s.replace(old, new, 1)
 
-          # Reuse exact historical name memory and normalize spoken card casing once data arrives.
           history_anchor = '''  // Persistir preferências de parcelamento ao alterar.
   useEffect(() => {'''
           history_insert = '''  useEffect(() => {
@@ -110,7 +107,6 @@ jobs:
           s = s.replace(history_anchor, history_insert, 1)
           p.write_text(s)
 
-          # --- Home: microphone button + review dialog ---
           p = Path('src/routes/home.tsx')
           s = p.read_text()
 
@@ -146,7 +142,6 @@ jobs:
 
           old = '''      {reminders.length > 0 && (
         <section>'''
-          # Dialog is inserted before reminders so it remains inside the Home component tree.
           new = '''      <QuickAddTransactionDialog
         open={voiceDialogOpen}
         onOpenChange={(open) => {
@@ -164,7 +159,6 @@ jobs:
           s = s.replace(old, new, 1)
           p.write_text(s)
           PY
-
       - name: Verify patch
         run: |
           git diff --check
