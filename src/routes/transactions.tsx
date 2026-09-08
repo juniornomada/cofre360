@@ -48,6 +48,7 @@ interface Transaction {
   name: string;
   category: string;
   date: string;
+  purchase_date?: string | null;
   amount: number;
   type: "income" | "expense";
   card?: string | null;
@@ -754,6 +755,7 @@ export function TransactionsPage() {
           icon: editTx.icon,
           name: editTx.name,
           date: editTx.date,
+          purchase_date: editTx.purchase_date ?? null,
           type: editTx.type,
           card: editTx.card ?? null,
           bank_account_id: editTx.bank_account_id ?? null,
@@ -776,7 +778,7 @@ export function TransactionsPage() {
       if (!target) {
         const { data, error } = await supabase
           .from("transactions")
-          .select("id,icon,name,category,date,amount,type,card,bank_account_id,created_at,installment_group_id,installment_number,total_installments,installment_mode,installment_source_amount,is_visible")
+          .select("id,icon,name,category,date,purchase_date,amount,type,card,bank_account_id,created_at,installment_group_id,installment_number,total_installments,installment_mode,installment_source_amount,is_visible")
           .eq("id", editId)
           .maybeSingle();
 
@@ -1086,6 +1088,7 @@ export function TransactionsPage() {
         name: finalName,
         category: editTx.category,
         date: editTx.date,
+        ...(editTx.card && editTx.card !== "Nenhum" ? { purchase_date: editTx.purchase_date ?? null } : {}),
         amount: perInstallment,
         type: editTx.type,
         card: editTx.card,
@@ -1144,6 +1147,17 @@ export function TransactionsPage() {
             card: editTx.card ?? null,
             bank_account_id: editTx.bank_account_id ?? null,
           });
+        }
+      }
+
+      if (editTx.card && editTx.card !== "Nenhum" && editTx.installment_group_id) {
+        const originalTx = transactions.find(t => t.id === editTx.id);
+        if ((originalTx?.purchase_date || null) !== (editTx.purchase_date || null)) {
+          const { error: purchaseDateError } = await supabase
+            .from("transactions")
+            .update({ purchase_date: editTx.purchase_date ?? null })
+            .eq("installment_group_id", editTx.installment_group_id);
+          if (purchaseDateError) throw purchaseDateError;
         }
       }
 
@@ -1850,30 +1864,47 @@ export function TransactionsPage() {
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="mb-0.5 block text-[11px] font-semibold text-foreground">Data</label>
+                  <label className="mb-0.5 block text-[11px] font-semibold text-foreground">
+                    {editTx.card && editTx.card !== "Nenhum" ? "Data da compra" : "Data"}
+                  </label>
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button
                         variant="outline"
                         className={cn(
                           "h-8 w-full justify-start rounded-lg border-none bg-card px-2.5 text-left text-xs font-normal",
-                          !editTx.date && "text-muted-foreground",
+                          !(editTx.card && editTx.card !== "Nenhum" ? editTx.purchase_date : editTx.date) && "text-muted-foreground",
                         )}
                       >
                         <CalendarIcon className="mr-1.5 h-3.5 w-3.5" />
-                        {editTx.date ? formatEditorTxDate(editTx.date, editTx.created_at) : "Data"}
+                        {editTx.card && editTx.card !== "Nenhum"
+                          ? (editTx.purchase_date ? formatEditorTxDate(editTx.purchase_date, editTx.created_at) : "Definir data")
+                          : (editTx.date ? formatEditorTxDate(editTx.date, editTx.created_at) : "Data")}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="z-[60] w-auto p-0" align="start" sideOffset={4}>
                       <Calendar
                         mode="single"
-                        selected={parseEditorTxDate(editTx.date, editTx.created_at)}
-                        onSelect={(date) => { if (date) setEditTx({ ...editTx, date: format(date, "dd-MM-yyyy") }); }}
+                        selected={parseEditorTxDate(
+                          (editTx.card && editTx.card !== "Nenhum" ? editTx.purchase_date : editTx.date) || "",
+                          editTx.created_at,
+                        )}
+                        onSelect={(date) => {
+                          if (!date) return;
+                          if (editTx.card && editTx.card !== "Nenhum") {
+                            setEditTx({ ...editTx, purchase_date: format(date, "yyyy-MM-dd") });
+                          } else {
+                            setEditTx({ ...editTx, date: format(date, "dd-MM-yyyy") });
+                          }
+                        }}
                         initialFocus
                         className={cn("p-3 pointer-events-auto")}
                       />
                     </PopoverContent>
                   </Popover>
+                  {editTx.card && editTx.card !== "Nenhum" && (
+                    <p className="mt-1 text-[9px] leading-tight text-muted-foreground">A parcela permanece na fatura original.</p>
+                  )}
                 </div>
                 <div>
                   <label className="mb-0.5 block text-[11px] font-semibold text-foreground">Valor (R$)</label>

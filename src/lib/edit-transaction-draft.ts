@@ -19,6 +19,7 @@ export interface EditDraftFields {
   icon?: string;
   name?: string;
   date?: string;
+  purchase_date?: string | null;
   type?: "income" | "expense";
   card?: string | null;
   bank_account_id?: string | null;

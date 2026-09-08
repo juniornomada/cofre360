@@ -969,6 +969,7 @@ function CardsPage() {
         category: editTx.category,
         icon: editTx.icon,
         amount: editTx.amount,
+        purchase_date: editTx.purchase_date || null,
       };
 
       if (installmentChanged) {
@@ -1113,6 +1114,18 @@ function CardsPage() {
         toast.success("Parcela atualizada");
       }
 
+      const purchaseDateGroupId = editOriginalTx.installment_group_id || editTx.installment_group_id;
+      if (
+        purchaseDateGroupId &&
+        (editOriginalTx.purchase_date || null) !== (editTx.purchase_date || null)
+      ) {
+        const { error: purchaseDateError } = await supabase
+          .from("transactions")
+          .update({ purchase_date: editTx.purchase_date || null })
+          .eq("installment_group_id", purchaseDateGroupId);
+        if (purchaseDateError) throw purchaseDateError;
+      }
+
       setEditScopeDialogOpen(false);
       setShowEditDialog(false);
       setEditOriginalTx(null);
@@ -1144,6 +1157,21 @@ function CardsPage() {
 
     const originalCurrent = Math.max(1, Number(editOriginalTx.installment_number) || 1);
     const originalTotal = Math.max(1, Number(editOriginalTx.total_installments) || 1);
+    const onlyPurchaseDateChanged =
+      (editOriginalTx.purchase_date || null) !== (editTx.purchase_date || null) &&
+      stripInstallmentSuffix(editOriginalTx.name) === stripInstallmentSuffix(editTx.name) &&
+      (editOriginalTx.category || "") === (editTx.category || "") &&
+      (editOriginalTx.icon || "") === (editTx.icon || "") &&
+      Number(editOriginalTx.amount) === Number(editTx.amount) &&
+      editOriginalTx.date === editTx.date &&
+      requestedCurrent === originalCurrent &&
+      requestedTotal === originalTotal;
+
+    if (onlyPurchaseDateChanged) {
+      await performSaveEditTx("single");
+      return;
+    }
+
     const hasFutureImpact =
       (editTx.installment_group_id && originalCurrent < originalTotal) ||
       requestedCurrent < requestedTotal;
@@ -2765,29 +2793,28 @@ function CardsPage() {
               </div>
 
               <div>
-                <Label className="text-xs text-muted-foreground mb-1 block">Data</Label>
+                <Label className="text-xs text-muted-foreground mb-1 block">Data da compra</Label>
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button variant="outline" className={cn("w-full justify-start text-left font-normal rounded-xl bg-accent/30 border-none h-10", !editTx.date && "text-muted-foreground")}>
+                    <Button variant="outline" className={cn("w-full justify-start text-left font-normal rounded-xl bg-accent/30 border-none h-10", !editTx.purchase_date && "text-muted-foreground")}>
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {editTx.date}
+                      {formatPurchaseDateBr(editTx.purchase_date) || "Definir data"}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
                     <Calendar
                       mode="single"
-                      selected={(() => {
-                        try {
-                          return parse(editTx.date, "dd MMM", new Date(), { locale: ptBR });
-                        } catch { return undefined; }
-                      })()}
+                      selected={editTx.purchase_date
+                        ? parseTxDate(editTx.purchase_date, editTx.created_at || new Date().toISOString())
+                        : undefined}
                       onSelect={(date) => {
-                        if (date) setEditTx({ ...editTx, date: format(date, "dd MMM", { locale: ptBR }) });
+                        if (date) setEditTx({ ...editTx, purchase_date: format(date, "yyyy-MM-dd") });
                       }}
                       initialFocus
                     />
                   </PopoverContent>
                 </Popover>
+                <p className="mt-1 text-[9px] text-muted-foreground">A parcela permanece na fatura original.</p>
               </div>
 
               <div data-testid="invoice-edit-installment" className="rounded-xl border border-border/50 bg-accent/20 p-2.5">
