@@ -1,0 +1,305 @@
+name: Fix purchase date editor
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  patch:
+    if: ${{ !contains(github.event.head_commit.message, '[purchase-date-editor-applied]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch card and transaction editors
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path, old, new, label):
+              p = Path(path)
+              s = p.read_text()
+              if old not in s:
+                  raise SystemExit(f'anchor not found: {label} in {path}')
+              p.write_text(s.replace(old, new, 1))
+
+          # cards.tsx: the date field in the credit-card editor edits purchase_date only.
+          replace_once('src/routes/cards.tsx', '''              <div>
+                <Label className="text-xs text-muted-foreground mb-1 block">Data</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className={cn("w-full justify-start text-left font-normal rounded-xl bg-accent/30 border-none h-10", !editTx.date && "text-muted-foreground")}>
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {editTx.date}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={(() => {
+                        try {
+                          return parse(editTx.date, "dd MMM", new Date(), { locale: ptBR });
+                        } catch { return undefined; }
+                      })()}
+                      onSelect={(date) => {
+                        if (date) setEditTx({ ...editTx, date: format(date, "dd MMM", { locale: ptBR }) });
+                      }}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>''', '''              <div>
+                <Label className="text-xs text-muted-foreground mb-1 block">Data da compra</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className={cn("w-full justify-start text-left font-normal rounded-xl bg-accent/30 border-none h-10", !editTx.purchase_date && "text-muted-foreground")}>
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {formatPurchaseDateBr(editTx.purchase_date) || "Definir data"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={editTx.purchase_date
+                        ? parseTxDate(editTx.purchase_date, editTx.created_at || new Date().toISOString())
+                        : undefined}
+                      onSelect={(date) => {
+                        if (date) setEditTx({ ...editTx, purchase_date: format(date, "yyyy-MM-dd") });
+                      }}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+                <p className="mt-1 text-[9px] text-muted-foreground">A data da parcela na fatura não será alterada.</p>
+              </div>''', 'cards purchase-date UI')
+
+          replace_once('src/routes/cards.tsx', '''      const sharedUpdate = {
+        name: baseName,
+        category: editTx.category,
+        icon: editTx.icon,
+        amount: editTx.amount,
+      };''', '''      const sharedUpdate = {
+        name: baseName,
+        category: editTx.category,
+        icon: editTx.icon,
+        amount: editTx.amount,
+        purchase_date: editTx.purchase_date || null,
+      };''', 'cards shared purchase date')
+
+          replace_once('src/routes/cards.tsx', '''      setEditScopeDialogOpen(false);
+      setShowEditDialog(false);
+      setEditOriginalTx(null);''', '''      const purchaseDateGroupId = editOriginalTx.installment_group_id || editTx.installment_group_id;
+      if (
+        purchaseDateGroupId &&
+        (editOriginalTx.purchase_date || null) !== (editTx.purchase_date || null)
+      ) {
+        const { error: purchaseDateError } = await supabase
+          .from("transactions")
+          .update({ purchase_date: editTx.purchase_date || null })
+          .eq("installment_group_id", purchaseDateGroupId);
+        if (purchaseDateError) throw purchaseDateError;
+      }
+
+      setEditScopeDialogOpen(false);
+      setShowEditDialog(false);
+      setEditOriginalTx(null);''', 'cards group purchase date propagation')
+
+          replace_once('src/routes/cards.tsx', '''    const originalCurrent = Math.max(1, Number(editOriginalTx.installment_number) || 1);
+    const originalTotal = Math.max(1, Number(editOriginalTx.total_installments) || 1);
+    const hasFutureImpact =''', '''    const originalCurrent = Math.max(1, Number(editOriginalTx.installment_number) || 1);
+    const originalTotal = Math.max(1, Number(editOriginalTx.total_installments) || 1);
+    const onlyPurchaseDateChanged =
+      (editOriginalTx.purchase_date || null) !== (editTx.purchase_date || null) &&
+      stripInstallmentSuffix(editOriginalTx.name) === stripInstallmentSuffix(editTx.name) &&
+      (editOriginalTx.category || "") === (editTx.category || "") &&
+      (editOriginalTx.icon || "") === (editTx.icon || "") &&
+      Number(editOriginalTx.amount) === Number(editTx.amount) &&
+      editOriginalTx.date === editTx.date &&
+      requestedCurrent === originalCurrent &&
+      requestedTotal === originalTotal;
+
+    if (onlyPurchaseDateChanged) {
+      await performSaveEditTx("single");
+      return;
+    }
+
+    const hasFutureImpact =''', 'cards bypass scope for purchase date only')
+
+          # Preserve purchase date when adding installment rows from the card screen.
+          replace_once('src/routes/cards.tsx', '''          installment_group_id: string;
+        }> = [];''', '''          installment_group_id: string;
+          purchase_date?: string | null;
+        }> = [];''', 'cards installment type purchase date')
+          replace_once('src/routes/cards.tsx', '''            installment_group_id: groupId,
+          });''', '''            installment_group_id: groupId,
+            purchase_date: installmentTx.purchase_date || null,
+          });''', 'cards installment insert purchase date')
+
+          # transactions.tsx: expose purchase_date in editor state and edit only that for card rows.
+          replace_once('src/routes/transactions.tsx', '''  date: string;
+  amount: number;''', '''  date: string;
+  purchase_date?: string | null;
+  amount: number;''', 'transaction interface purchase date')
+
+          replace_once('src/routes/transactions.tsx', '''          .select("id,icon,name,category,date,amount,type,card,bank_account_id,created_at,installment_group_id,installment_number,total_installments,installment_mode,installment_source_amount,is_visible")''', '''          .select("id,icon,name,category,date,purchase_date,amount,type,card,bank_account_id,created_at,installment_group_id,installment_number,total_installments,installment_mode,installment_source_amount,is_visible")''', 'direct edit purchase date select')
+
+          replace_once('src/routes/transactions.tsx', '''          date: editTx.date,
+          type: editTx.type,''', '''          date: editTx.date,
+          purchase_date: editTx.purchase_date ?? null,
+          type: editTx.type,''', 'draft purchase date')
+
+          replace_once('src/routes/transactions.tsx', '''                  <label className="mb-0.5 block text-[11px] font-semibold text-foreground">Data</label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "h-8 w-full justify-start rounded-lg border-none bg-card px-2.5 text-left text-xs font-normal",
+                          !editTx.date && "text-muted-foreground",
+                        )}
+                      >
+                        <CalendarIcon className="mr-1.5 h-3.5 w-3.5" />
+                        {editTx.date ? formatEditorTxDate(editTx.date, editTx.created_at) : "Data"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="z-[60] w-auto p-0" align="start" sideOffset={4}>
+                      <Calendar
+                        mode="single"
+                        selected={parseEditorTxDate(editTx.date, editTx.created_at)}
+                        onSelect={(date) => { if (date) setEditTx({ ...editTx, date: format(date, "dd-MM-yyyy") }); }}
+                        initialFocus
+                        className={cn("p-3 pointer-events-auto")}
+                      />
+                    </PopoverContent>
+                  </Popover>''', '''                  <label className="mb-0.5 block text-[11px] font-semibold text-foreground">
+                    {editTx.card && editTx.card !== "Nenhum" ? "Data da compra" : "Data"}
+                  </label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "h-8 w-full justify-start rounded-lg border-none bg-card px-2.5 text-left text-xs font-normal",
+                          !(editTx.card && editTx.card !== "Nenhum" ? editTx.purchase_date : editTx.date) && "text-muted-foreground",
+                        )}
+                      >
+                        <CalendarIcon className="mr-1.5 h-3.5 w-3.5" />
+                        {editTx.card && editTx.card !== "Nenhum"
+                          ? (editTx.purchase_date ? formatEditorTxDate(editTx.purchase_date, editTx.created_at) : "Definir data")
+                          : (editTx.date ? formatEditorTxDate(editTx.date, editTx.created_at) : "Data")}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="z-[60] w-auto p-0" align="start" sideOffset={4}>
+                      <Calendar
+                        mode="single"
+                        selected={parseEditorTxDate(
+                          (editTx.card && editTx.card !== "Nenhum" ? editTx.purchase_date : editTx.date) || "",
+                          editTx.created_at,
+                        )}
+                        onSelect={(date) => {
+                          if (!date) return;
+                          if (editTx.card && editTx.card !== "Nenhum") {
+                            setEditTx({ ...editTx, purchase_date: format(date, "yyyy-MM-dd") });
+                          } else {
+                            setEditTx({ ...editTx, date: format(date, "dd-MM-yyyy") });
+                          }
+                        }}
+                        initialFocus
+                        className={cn("p-3 pointer-events-auto")}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  {editTx.card && editTx.card !== "Nenhum" && (
+                    <p className="mt-1 text-[9px] leading-tight text-muted-foreground">A parcela permanece na fatura original.</p>
+                  )}''', 'transactions purchase-date UI')
+
+          replace_once('src/routes/transactions.tsx', '''        category: editTx.category,
+        date: editTx.date,
+        amount: perInstallment,''', '''        category: editTx.category,
+        date: editTx.date,
+        ...(editTx.card && editTx.card !== "Nenhum" ? { purchase_date: editTx.purchase_date ?? null } : {}),
+        amount: perInstallment,''', 'transaction save current purchase date')
+
+          replace_once('src/routes/transactions.tsx', '''            date: editTx.date,
+            amount: editTx.amount,
+            type: editTx.type,''', '''            date: editTx.date,
+            purchaseDate: editTx.card && editTx.card !== "Nenhum" ? (editTx.purchase_date ?? null) : undefined,
+            amount: editTx.amount,
+            type: editTx.type,''', 'saveInstallmentPlan purchase date argument')
+
+          replace_once('src/routes/transactions.tsx', '''      if (editTx.installment_group_id) {
+        const originalTx = transactions.find(t => t.id === editTx.id);
+        const cosmeticChanged =''', '''      if (editTx.installment_group_id) {
+        const originalTx = transactions.find(t => t.id === editTx.id);
+        const cosmeticChanged =''', 'transaction cosmetic anchor')
+
+          replace_once('src/routes/transactions.tsx', '''      if (result.cleared) {''', '''      if (editTx.card && editTx.card !== "Nenhum" && editTx.installment_group_id) {
+        const originalTx = transactions.find(t => t.id === editTx.id);
+        if ((originalTx?.purchase_date || null) !== (editTx.purchase_date || null)) {
+          const { error: purchaseDateError } = await supabase
+            .from("transactions")
+            .update({ purchase_date: editTx.purchase_date ?? null })
+            .eq("installment_group_id", editTx.installment_group_id);
+          if (purchaseDateError) throw purchaseDateError;
+        }
+      }
+
+      if (result.cleared) {''', 'transaction group purchase date propagation')
+
+          # Draft schema supports purchase_date.
+          replace_once('src/lib/edit-transaction-draft.ts', '''  date?: string;
+  type?: "income" | "expense";''', '''  date?: string;
+  purchase_date?: string | null;
+  type?: "income" | "expense";''', 'draft schema purchase date')
+
+          # Shared installment engine preserves purchase_date when it creates or rewrites rows.
+          replace_once('src/lib/installment-edit.ts', '''  date: string;
+  amount: number;''', '''  date: string;
+  purchaseDate?: string | null;
+  amount: number;''', 'installment input purchase date')
+
+          replace_once('src/lib/installment-edit.ts', '''        bank_account_id: input.bank_account_id,
+        installment_number: 1,''', '''        bank_account_id: input.bank_account_id,
+        ...(input.purchaseDate !== undefined ? { purchase_date: input.purchaseDate } : {}),
+        installment_number: 1,''', 'single plan purchase date')
+
+          replace_once('src/lib/installment-edit.ts', '''    bank_account_id: input.bank_account_id,
+  };''', '''    bank_account_id: input.bank_account_id,
+    ...(input.purchaseDate !== undefined ? { purchase_date: input.purchaseDate } : {}),
+  };''', 'updateData purchase date')
+
+          replace_once('src/lib/installment-edit.ts', '''        bank_account_id: input.bank_account_id,
+      }).eq("id", row.id);''', '''        bank_account_id: input.bank_account_id,
+        ...(input.purchaseDate !== undefined ? { purchase_date: input.purchaseDate } : {}),
+      }).eq("id", row.id);''', 'prefix purchase date')
+
+          # Add purchase_date to both installment insertion object shapes.
+          target = '''        installment_source_amount: input.installmentSourceAmount ?? perInstallment,
+      };'''
+          replacement = '''        installment_source_amount: input.installmentSourceAmount ?? perInstallment,
+        ...(input.purchaseDate !== undefined ? { purchase_date: input.purchaseDate } : {}),
+      };'''
+          p = Path('src/lib/installment-edit.ts')
+          s = p.read_text()
+          count = s.count(target)
+          if count < 2:
+              raise SystemExit(f'expected at least 2 installment insert anchors, got {count}')
+          s = s.replace(target, replacement)
+          p.write_text(s)
+          PY
+      - name: Verify patch
+        run: |
+          git diff --check
+          grep -F 'Data da compra' src/routes/cards.tsx
+          grep -F 'A data da parcela na fatura não será alterada.' src/routes/cards.tsx
+          grep -F 'purchase_date: editTx.purchase_date || null' src/routes/cards.tsx
+          grep -F 'A parcela permanece na fatura original.' src/routes/transactions.tsx
+          grep -F 'purchaseDate: editTx.card' src/routes/transactions.tsx
+          grep -F 'purchaseDate?: string | null' src/lib/installment-edit.ts
+      - name: Commit patch
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git rm .github/workflows/fix-purchase-date-editor.yml
+          git add src/routes/cards.tsx src/routes/transactions.tsx src/lib/edit-transaction-draft.ts src/lib/installment-edit.ts
+          git commit -m "fix: edit card purchase date without moving installment [purchase-date-editor-applied]"
+          git push
