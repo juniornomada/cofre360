@@ -3,12 +3,23 @@ import { Loader2, Mic } from "lucide-react";
 import { toast } from "sonner";
 import { parseVoiceTransaction, type VoiceTransactionDraft } from "@/lib/voice-transaction";
 
+interface SpeechRecognitionAlternativeLike {
+  transcript?: string;
+}
+
 interface SpeechRecognitionResultLike {
-  0?: { transcript?: string };
+  0?: SpeechRecognitionAlternativeLike;
+  isFinal?: boolean;
+}
+
+interface SpeechRecognitionResultListLike {
+  length: number;
+  [index: number]: SpeechRecognitionResultLike | undefined;
 }
 
 interface SpeechRecognitionEventLike {
-  results?: { 0?: SpeechRecognitionResultLike };
+  resultIndex?: number;
+  results?: SpeechRecognitionResultListLike;
 }
 
 interface SpeechRecognitionErrorLike {
@@ -37,6 +48,8 @@ type SpeechWindow = Window & {
 export function VoiceTransactionButton({ onDraft }: { onDraft: (draft: VoiceTransactionDraft) => void }) {
   const [listening, setListening] = useState(false);
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+  const finalSegmentsRef = useRef<Record<number, string>>({});
+  const recognitionErrorRef = useRef(false);
 
   const stop = () => {
     recognitionRef.current?.stop();
@@ -61,23 +74,29 @@ export function VoiceTransactionButton({ onDraft }: { onDraft: (draft: VoiceTran
       const recognition = new Recognition();
       recognition.lang = "pt-BR";
       recognition.interimResults = false;
-      recognition.continuous = false;
+      // Fala longa pode chegar em vários resultados finais. Acumulamos todos
+      // e só interpretamos quando o usuário termina ou o navegador encerra a sessão.
+      recognition.continuous = true;
       recognition.maxAlternatives = 1;
       recognitionRef.current = recognition;
+      finalSegmentsRef.current = {};
+      recognitionErrorRef.current = false;
 
       recognition.onresult = (event) => {
-        const transcript = event.results?.[0]?.[0]?.transcript?.trim() || "";
-        if (!transcript) {
-          toast.error("Não consegui entender a fala. Tente novamente.");
-          return;
+        const results = event.results;
+        if (!results) return;
+        const startIndex = Math.max(0, event.resultIndex ?? 0);
+        for (let index = startIndex; index < results.length; index += 1) {
+          const result = results[index];
+          if (!result || result.isFinal === false) continue;
+          const transcript = result[0]?.transcript?.trim() || "";
+          if (transcript) finalSegmentsRef.current[index] = transcript;
         }
-        const draft = parseVoiceTransaction(transcript);
-        onDraft(draft);
-        toast.success(`Entendi: “${transcript}”`);
       };
 
       recognition.onerror = (event) => {
         const error = event.error || "";
+        recognitionErrorRef.current = true;
         if (error === "not-allowed" || error === "service-not-allowed") {
           toast.error("Permita o acesso ao microfone para lançar por voz.");
         } else if (error === "no-speech") {
@@ -88,8 +107,23 @@ export function VoiceTransactionButton({ onDraft }: { onDraft: (draft: VoiceTran
       };
 
       recognition.onend = () => {
+        const transcript = Object.entries(finalSegmentsRef.current)
+          .sort(([a], [b]) => Number(a) - Number(b))
+          .map(([, value]) => value)
+          .join(" ")
+          .replace(/\s+/g, " ")
+          .trim();
+
         setListening(false);
         recognitionRef.current = null;
+
+        if (!recognitionErrorRef.current && transcript) {
+          const draft = parseVoiceTransaction(transcript);
+          onDraft(draft);
+          toast.success("Áudio interpretado. Confira os campos antes de salvar.");
+        } else if (!recognitionErrorRef.current && !transcript) {
+          toast.error("Não consegui entender a fala. Tente novamente.");
+        }
       };
 
       setListening(true);
@@ -111,8 +145,8 @@ export function VoiceTransactionButton({ onDraft }: { onDraft: (draft: VoiceTran
           ? "border-destructive/50 bg-destructive/15 text-destructive shadow-[0_0_0_4px_hsl(var(--destructive)/0.08)]"
           : "border-primary/30 bg-primary/10 text-primary hover:bg-primary/15"
       }`}
-      aria-label={listening ? "Parar gravação de voz" : "Adicionar transação por voz"}
-      title={listening ? "Ouvindo... toque para parar" : "Adicionar por voz"}
+      aria-label={listening ? "Finalizar lançamento por voz" : "Adicionar transação por voz"}
+      title={listening ? "Ouvindo... toque para finalizar" : "Adicionar por voz"}
     >
       {listening ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mic className="h-4 w-4" />}
     </button>
