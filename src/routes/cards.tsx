@@ -2302,9 +2302,12 @@ function CardsPage() {
                                 )}>
                                   {pending ? "Reembolso pendente" : "Reembolso confirmado"}
                                 </span>
-                                <span className="text-[9px] font-semibold tabular-nums text-muted-foreground">
-                                  R$ {Number(refund.refund_amount).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                                </span>
+                                <span className={cn(
+                        "text-[9px] font-bold tabular-nums",
+                        pending ? "text-amber-600" : "text-emerald-600",
+                      )}>
+                        +R$ {Number(refund.refund_amount).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                      </span>
                                 {pending && refund.expected_by && (
                                   <span className="text-[9px] text-muted-foreground">
                                     até {formatRefundExpectedDate(refund.expected_by)}
