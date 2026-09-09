@@ -1,0 +1,46 @@
+name: Apply refund credit display
+
+on:
+  push:
+    branches: ["main"]
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch pending refund display
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('src/routes/cards.tsx')
+          s = p.read_text(encoding='utf-8')
+          old = '''                                <span className="text-[9px] font-semibold tabular-nums text-muted-foreground">
+                                  R$ {Number(refund.refund_amount).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                                </span>'''
+          new = '''                                <span className={cn(
+                                  "text-[9px] font-bold tabular-nums",
+                                  pending ? "text-amber-600" : "text-emerald-600",
+                                )}>
+                                  +R$ {Number(refund.refund_amount).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                                </span>'''
+          count = s.count(old)
+          if count != 1:
+              raise SystemExit(f'expected 1 refund amount display anchor, found {count}')
+          s = s.replace(old, new, 1)
+          p.write_text(s, encoding='utf-8')
+          PY
+      - name: Verify patch
+        run: |
+          git diff --check
+          grep -F '+R$ {Number(refund.refund_amount)' src/routes/cards.tsx
+      - name: Commit source fix
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git rm .github/workflows/apply-refund-credit-display.yml
+          git add src/routes/cards.tsx
+          git commit -m 'fix: show pending refunds as future credits'
+          git push
