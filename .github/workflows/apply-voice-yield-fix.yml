@@ -1,0 +1,34 @@
+name: Apply voice yield fix
+
+on:
+  push:
+    branches: ["main"]
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply source patch
+        run: python3 .github/scripts/apply_voice_yield_fix.py
+      - name: Verify patch
+        run: |
+          git diff --check
+          grep -F 'bankAccount: string | null' src/lib/voice-transaction.ts
+          grep -F 'bankAccount: parseBankAccount(transcript)' src/lib/voice-transaction.ts
+          grep -F 'initialDraft?.bankAccount' src/components/QuickAddTransactionDialog.tsx
+          grep -F 'Cofrinho 140%' src/lib/__tests__/voice-transaction.test.ts
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+      - name: Run voice regression test
+        run: npx vitest run src/lib/__tests__/voice-transaction.test.ts
+      - name: Commit source fix
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git rm .github/workflows/apply-voice-yield-fix.yml .github/scripts/apply_voice_yield_fix.py
+          git add src/lib/voice-transaction.ts src/components/QuickAddTransactionDialog.tsx src/lib/__tests__/voice-transaction.test.ts
+          git commit -m 'fix: understand yield voice commands and bank accounts'
+          git push
