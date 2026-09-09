@@ -1,0 +1,116 @@
+from pathlib import Path
+
+p = Path('src/routes/cards.tsx')
+s = p.read_text(encoding='utf-8')
+
+anchor = '''  const formatRefundExpectedDate = (value: string | null) => {
+    if (!value) return null;
+    const match = value.match(/^(\\d{4})-(\\d{2})-(\\d{2})/);
+    return match ? `${match[3]}/${match[2]}/${match[1]}` : value;
+  };
+'''
+helper = anchor + '''
+
+  // Pending refunds are visual follow-ups, not accounting entries. Once the
+  // original purchase is no longer in the viewed invoice, carry the pending
+  // item to the cycle containing its expected date. If that date has passed,
+  // keep carrying it with today until the refund is confirmed.
+  const getCarriedPendingRefundsForPeriod = (period?: InvoicePeriod | null) => {
+    if (!period) return [] as Array<{ refund: CardRefund; tx: CardTransaction }>;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    return cardRefunds.flatMap((refund) => {
+      if (refund.status !== "pending") return [];
+      const tx = cardTransactions.find((row) => row.id === refund.transaction_id);
+      if (!tx) return [];
+
+      if (period.transactions.some((row) => row.id === tx.id)) return [];
+
+      let anchorDate = new Date(today);
+      if (refund.expected_by) {
+        const match = refund.expected_by.match(/^(\\d{4})-(\\d{2})-(\\d{2})/);
+        if (match) {
+          const expected = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+          expected.setHours(0, 0, 0, 0);
+          if (!Number.isNaN(expected.getTime()) && expected > today) anchorDate = expected;
+        }
+      }
+
+      return anchorDate >= period.startDate && anchorDate < period.endDate
+        ? [{ refund, tx }]
+        : [];
+    });
+  };
+'''
+if anchor not in s:
+    raise SystemExit('formatRefundExpectedDate anchor not found')
+s = s.replace(anchor, helper, 1)
+
+old = '''  const activePeriodPayments = getPaymentsForPeriod(invoiceCard?.id, activePeriod);
+'''
+new = old + '''  const carriedPendingRefunds = getCarriedPendingRefundsForPeriod(activePeriod);
+'''
+if old not in s:
+    raise SystemExit('activePeriodPayments anchor not found')
+s = s.replace(old, new, 1)
+
+old_empty = '''                {activePeriod && activePeriod.transactions.length === 0 && activeOpeningInvoiceAmount <= 0 ? (
+'''
+new_empty = '''                {activePeriod && activePeriod.transactions.length === 0 && activeOpeningInvoiceAmount <= 0 && carriedPendingRefunds.length === 0 ? (
+'''
+if old_empty not in s:
+    raise SystemExit('empty-state anchor not found')
+s = s.replace(old_empty, new_empty, 1)
+
+insert_anchor = '''                    {activeOpeningInvoiceAmount > 0 && (
+'''
+carried_ui = '''                    {carriedPendingRefunds.length > 0 && (
+                      <div className="mb-2 rounded-xl border border-amber-500/20 bg-amber-500/5 p-2.5">
+                        <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-amber-600">
+                          Reembolsos pendentes
+                        </p>
+                        <div className="space-y-2">
+                          {carriedPendingRefunds.map(({ refund, tx }) => (
+                            <div key={refund.id} className="flex items-center gap-2">
+                              <span className="text-base" aria-hidden="true">↩️</span>
+                              <div className="min-w-0 flex-1">
+                                <p className="truncate text-[11px] font-semibold text-foreground">
+                                  {normalizePaymentDescription(tx.name, { stripInstallmentSuffix: true })}
+                                </p>
+                                <p className="text-[9px] text-muted-foreground">
+                                  Crédito pendente{refund.expected_by ? ` · previsão ${formatRefundExpectedDate(refund.expected_by)}` : ""}
+                                </p>
+                              </div>
+                              <div className="flex shrink-0 flex-col items-end gap-1">
+                                <span className="text-[11px] font-bold tabular-nums text-amber-600">
+                                  +R$ {Number(refund.refund_amount).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    confirmCardRefund(refund, tx);
+                                  }}
+                                  disabled={confirmingRefundId === refund.id}
+                                  className="rounded-md bg-emerald-600/10 px-1.5 py-0.5 text-[9px] font-bold text-emerald-600 hover:bg-emerald-600/20 disabled:opacity-50"
+                                >
+                                  {confirmingRefundId === refund.id ? "Confirmando…" : "Confirmar"}
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        <p className="mt-2 text-[9px] text-muted-foreground">
+                          Não altera a fatura nem o limite até a confirmação.
+                        </p>
+                      </div>
+                    )}
+
+'''
+if insert_anchor not in s:
+    raise SystemExit('invoice opening amount anchor not found')
+s = s.replace(insert_anchor, carried_ui + insert_anchor, 1)
+
+p.write_text(s, encoding='utf-8')
