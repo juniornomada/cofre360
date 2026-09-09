@@ -185,6 +185,7 @@ function CardsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [editBrand, setEditBrand] = useState("");
+  const [editLastFour, setEditLastFour] = useState("");
   const [editLimit, setEditLimit] = useState("");
   const [editClosing, setEditClosing] = useState("");
   const [editDue, setEditDue] = useState("");
@@ -478,6 +479,7 @@ function CardsPage() {
     setEditingId(card.id);
     setEditName(card.name);
     setEditBrand(card.brand);
+    setEditLastFour(String(card.last_four ?? "").replace(/\D/g, "").slice(-4).padStart(4, "0"));
     setEditLimit(card.card_limit.toString());
     setEditClosing(card.closing_day?.toString() || "");
     setEditDue(card.due_day?.toString() || "");
@@ -485,10 +487,16 @@ function CardsPage() {
   };
 
   const saveEdit = async (id: string) => {
+    const normalizedLastFour = editLastFour.replace(/\D/g, "").slice(-4);
+    if (normalizedLastFour.length !== 4) {
+      toast.error("Informe os 4 últimos dígitos do cartão");
+      return;
+    }
     try {
       const { error } = await supabase.from("cards").update({
         name: editName.trim() || "Cartão",
         brand: editBrand || "custom",
+        last_four: normalizedLastFour,
         card_limit: parseFloat(editLimit) || 0,
         closing_day: parseInt(editClosing) || 1,
         due_day: parseInt(editDue) || 10,
@@ -1673,6 +1681,23 @@ function CardsPage() {
                               {bp.label}
                             </button>
                           ))}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] opacity-70 w-14">Final</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[11px] font-mono text-white/75">••••</span>
+                          <Input
+                            type="text"
+                            inputMode="numeric"
+                            autoComplete="cc-number"
+                            value={editLastFour}
+                            onChange={(e) => setEditLastFour(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                            maxLength={4}
+                            aria-label="Quatro últimos dígitos do cartão"
+                            className="h-7 w-16 rounded-lg bg-white/20 border-white/30 text-white text-xs font-mono tabular-nums tracking-wider"
+                            onKeyDown={(e) => { if (e.key === "Enter") saveEdit(card.id); if (e.key === "Escape") cancelEdit(); }}
+                          />
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
