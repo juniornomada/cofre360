@@ -1,0 +1,29 @@
+name: Apply investment manual valuations
+
+on:
+  push:
+    branches: ["main"]
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply source patch
+        run: python3 .github/scripts/patch_investment_manual_values.py
+      - name: Verify patch
+        run: |
+          git diff --check
+          grep -F 'Bruto atual (R$)' src/routes/invest.tsx
+          grep -F 'Pós-Fixado' src/routes/invest.tsx
+          grep -F 'line-clamp-2' src/routes/invest.tsx
+      - name: Commit source fix
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git rm .github/workflows/apply-investment-manual-values.yml .github/scripts/patch_investment_manual_values.py
+          git add src/routes/invest.tsx
+          git commit -m 'feat: improve manual investment tracking'
+          git push
