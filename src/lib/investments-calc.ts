@@ -8,6 +8,10 @@ export type AssetClass =
   | "acao"
   | "fii"
   | "etf"
+  | "pos_fixado"
+  | "alternativos"
+  | "renda_variavel_global"
+  | "renda_variavel_brasil"
   | "outro";
 
 export const ASSET_CLASS_LABELS: Record<AssetClass, string> = {
@@ -17,6 +21,10 @@ export const ASSET_CLASS_LABELS: Record<AssetClass, string> = {
   acao: "Ações",
   fii: "Fundo Imobiliário",
   etf: "ETF",
+  pos_fixado: "Pós-Fixado",
+  alternativos: "Alternativos",
+  renda_variavel_global: "Renda Variável Global",
+  renda_variavel_brasil: "Renda Variável Brasil",
   outro: "Outro",
 };
 
@@ -54,6 +62,14 @@ export interface Investment {
   maturity_date: string | null;
   current_price: number | null;
   last_quote_at: string | null;
+  invested_amount?: number | null;
+  current_gross_value?: number | null;
+  current_net_value?: number | null;
+  risk_level?: string | null;
+  risk_score?: number | null;
+  redemption_quote?: string | null;
+  redemption_settlement?: string | null;
+  last_manual_update?: string | null;
 }
 
 export interface ValuationResult {
@@ -77,19 +93,38 @@ export interface ValuationResult {
 
 /**
  * Calcula valoração atual / projetada de um investimento.
- * Para renda variável (cripto/ação/fii/etf), usa quantity * current_price.
- * Para Tesouro/CDB com yield_rate, calcula juros compostos até `targetDate`.
+ * Prioridade: valores manuais atuais > cotação automática > cálculo legado.
  */
 export function valuate(inv: Investment, targetDate: Date = new Date()): ValuationResult {
   const asOf = targetDate.toISOString();
   const cls = (inv.asset_class || "").toLowerCase();
+  const manualInvested = inv.invested_amount != null ? Number(inv.invested_amount) : Number(inv.value) || 0;
+
+  // Valor manual informado pelo usuário é a fonte principal para fundos e demais
+  // investimentos acompanhados diretamente pelo saldo da instituição.
+  if (inv.current_gross_value != null) {
+    const invested = manualInvested;
+    const grossValue = Number(inv.current_gross_value) || 0;
+    const netValue = inv.current_net_value != null ? Number(inv.current_net_value) : grossValue;
+    const grossPnL = grossValue - invested;
+    return {
+      grossValue,
+      invested,
+      grossPnL,
+      pctChange: invested > 0 ? (grossPnL / invested) * 100 : 0,
+      estimatedTax: Math.max(0, grossValue - netValue),
+      estimatedAdminFee: 0,
+      netValue,
+      asOf,
+    };
+  }
 
   // Renda variável: marca a mercado
   if (cls === "cripto" || cls === "acao" || cls === "fii" || cls === "etf") {
     const qty = Number(inv.quantity) || 0;
     const px = Number(inv.current_price) || Number(inv.purchase_price) || 0;
     const buy = Number(inv.purchase_price) || 0;
-    const invested = qty * buy || Number(inv.value) || 0;
+    const invested = manualInvested || qty * buy;
     const grossValue = qty * px || invested;
     const grossPnL = grossValue - invested;
     return {
@@ -107,12 +142,11 @@ export function valuate(inv: Investment, targetDate: Date = new Date()): Valuati
   // Renda fixa: Tesouro / CDB com yield_rate
   if ((cls === "tesouro" || cls === "cdb") && inv.purchase_date && inv.yield_rate != null) {
     const purchase = new Date(inv.purchase_date);
-    const principal = Number(inv.value) || (Number(inv.quantity) * Number(inv.purchase_price)) || 0;
+    const principal = manualInvested || (Number(inv.quantity) * Number(inv.purchase_price)) || 0;
     const ratePct = Number(inv.yield_rate) || 0;
     const adminPct = Number(inv.admin_fee) || 0;
     const years = Math.max(0, yearsBetween(purchase, targetDate));
     const days = daysBetween(purchase, targetDate);
-    // Juros compostos anuais (aproximação para Selic/CDB pós-fixado e prefixado)
     const grossValue = principal * Math.pow(1 + ratePct / 100, years);
     const grossPnL = grossValue - principal;
     const irRate = irRateForDays(days);
@@ -131,8 +165,8 @@ export function valuate(inv: Investment, targetDate: Date = new Date()): Valuati
     };
   }
 
-  // Fallback (legado / manual): usa value + change%
-  const invested = Number(inv.value) || 0;
+  // Fallback legado: usa value + change%.
+  const invested = manualInvested;
   const pct = Number(inv.change) || 0;
   const grossValue = invested * (1 + pct / 100);
   return {
