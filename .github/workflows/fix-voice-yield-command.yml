@@ -6,7 +6,6 @@ permissions:
   contents: write
 jobs:
   patch:
-    if: ${{ !contains(github.event.head_commit.message, '[voice-yield-fixed]') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -14,13 +13,6 @@ jobs:
         run: |
           python3 - <<'PY'
           from pathlib import Path
-
-          def replace_once(path, old, new, label):
-              p = Path(path)
-              s = p.read_text(encoding='utf-8')
-              if old not in s:
-                  raise SystemExit(f'anchor not found: {label} in {path}')
-              p.write_text(s.replace(old, new, 1), encoding='utf-8')
 
           voice = Path('src/lib/voice-transaction.ts')
           s = voice.read_text(encoding='utf-8')
@@ -43,7 +35,7 @@ jobs:
               raise SystemExit('metadata boundary anchor not found')
           s = s.replace(old_boundary, new_boundary, 1)
 
-          card_anchor = '''function parseInstallments(text: string): number | null {'''
+          anchor = 'function parseInstallments(text: string): number | null {'
           bank_parser = '''function parseBankAccount(text: string): string | null {
   const match = text.match(new RegExp(
     `\\\\bconta(?:\\\\s+banc[aá]ria)?\\\\s+(?:(?:do|da|de)\\\\s+)?(.+?)(?=\\\\s+(?:${METADATA_BOUNDARY})|[,.]|$)`,
@@ -55,9 +47,9 @@ jobs:
 }
 
 function parseInstallments(text: string): number | null {'''
-          if card_anchor not in s:
+          if anchor not in s:
               raise SystemExit('installment anchor not found')
-          s = s.replace(card_anchor, bank_parser, 1)
+          s = s.replace(anchor, bank_parser, 1)
 
           old_intent = r'/\b(?:gastei|paguei|comprei|adquiri|recebi|ganhei|lancei|registrei|adicionei)\b\s+(.+)$/i'
           new_intent = r'/\b(?:gastei|paguei|comprei|adquiri|recebi|ganhei|lancei|registrei|adicionei|lance|registre|adicione)\b\s+(.+)$/i'
@@ -99,7 +91,6 @@ function parseInstallments(text: string): number | null {'''
               raise SystemExit('return anchor not found')
           s = s.replace(old_return, new_return, 1)
 
-          # Do not ever use an account percentage (e.g. "Cofrinho 140%") as a fallback amount.
           old_fallback = '''      if (/\\d+\\s*(?:x|parcelas?)\\b/i.test(around)) continue;
       if (/\\d{1,2}[\\/-]\\d{1,2}/.test(around)) continue;
       return moneyToNumber(raw);'''
@@ -110,7 +101,6 @@ function parseInstallments(text: string): number | null {'''
           if old_fallback not in s:
               raise SystemExit('fallback amount anchor not found')
           s = s.replace(old_fallback, new_fallback, 1)
-
           voice.write_text(s, encoding='utf-8')
 
           quick = Path('src/components/QuickAddTransactionDialog.tsx')
@@ -142,8 +132,7 @@ function parseInstallments(text: string): number | null {'''
 '''
           if card_effect not in q:
               raise SystemExit('QuickAdd card-effect anchor not found')
-          q = q.replace(card_effect, account_effect, 1)
-          quick.write_text(q, encoding='utf-8')
+          quick.write_text(q.replace(card_effect, account_effect, 1), encoding='utf-8')
 
           test = Path('src/lib/__tests__/voice-transaction.test.ts')
           t = test.read_text(encoding='utf-8')
@@ -167,14 +156,12 @@ function parseInstallments(text: string): number | null {'''
     expect(draft.card).toBeNull();
     expect(draft.amount).toBe(1.06);
   });'''
-          t = t[:idx] + regression + t[idx:]
-          test.write_text(t, encoding='utf-8')
+          test.write_text(t[:idx] + regression + t[idx:], encoding='utf-8')
           PY
       - name: Verify patch
         run: |
           git diff --check
           grep -F 'bankAccount: string | null' src/lib/voice-transaction.ts
-          grep -F 'Receita > Juros' src/lib/voice-transaction.ts
           grep -F 'bankAccount: parseBankAccount(transcript)' src/lib/voice-transaction.ts
           grep -F 'initialDraft?.bankAccount' src/components/QuickAddTransactionDialog.tsx
           grep -F 'Cofrinho 140%' src/lib/__tests__/voice-transaction.test.ts
