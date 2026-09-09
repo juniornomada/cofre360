@@ -342,6 +342,22 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
     setNewTx(prev => ({ ...prev, card: match.name, bank_account_id: null }));
   }, [open, initialDraft?.card, cardOptions, newTx.card]);
 
+  useEffect(() => {
+    if (!open || !initialDraft?.bankAccount || bankAccounts.length === 0) return;
+    const normalizeAccountName = (value: string) => value
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/\bpor cento\b/g, "%")
+      .replace(/\s*%\s*/g, "%")
+      .replace(/\s+/g, " ")
+      .trim();
+    const spoken = normalizeAccountName(initialDraft.bankAccount);
+    const match = bankAccounts.find(account => normalizeAccountName(account.name) === spoken);
+    if (!match || newTx.bank_account_id === match.id) return;
+    setNewTx(prev => ({ ...prev, bank_account_id: match.id, card: null }));
+  }, [open, initialDraft?.bankAccount, bankAccounts, newTx.bank_account_id]);
+
   // Persistir preferências de parcelamento ao alterar.
   useEffect(() => {
     if (!open) return;

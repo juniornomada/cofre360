@@ -8,6 +8,7 @@ export type VoiceTransactionDraft = {
   category: string;
   icon: string;
   card: string | null;
+  bankAccount: string | null;
   installmentCount: number | null;
   transcript: string;
 };
@@ -124,9 +125,9 @@ function moneyToNumber(raw: string): number {
 function parseAmount(text: string): number {
   // Expressões monetárias explícitas têm prioridade e evitam confundir
   // número de parcelas, datas e outros números citados numa fala longa.
-  const numeric = text.match(/(?:r\$\s*)(\d{1,3}(?:\.\d{3})*(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)/i)
-    || text.match(/(\d{1,3}(?:\.\d{3})*(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)\s*(?:reais?|real)\b/i)
-    || text.match(/\b(?:no\s+valor\s+de|valor\s+de|valor)\s+(\d{1,3}(?:\.\d{3})*(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)/i);
+  const numeric = text.match(/(?:r\$\s*)(\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)/i)
+    || text.match(/(\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)\s*(?:reais?|real)\b/i)
+    || text.match(/\b(?:no\s+valor\s+de|valor\s+de|valor)\s+(\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)/i);
   if (numeric) return moneyToNumber(numeric[1]);
 
   const wordMoney = text.match(NUMBER_WORD_MONEY_RE) || text.match(VALUE_WORDS_RE);
@@ -150,6 +151,7 @@ function parseAmount(text: string): number {
       const around = text.slice(Math.max(0, index - 4), index + raw.length + 14);
       if (/\d+\s*(?:x|parcelas?)\b/i.test(around)) continue;
       if (/\d{1,2}[\/-]\d{1,2}/.test(around)) continue;
+      if (/^\s*%/.test(text.slice(index + raw.length, index + raw.length + 3))) continue;
       return moneyToNumber(raw);
     }
   }
@@ -171,13 +173,23 @@ function parseDate(text: string, now = new Date()): string {
   return formatDate(date);
 }
 
-const METADATA_BOUNDARY = String.raw`(?:no\s+valor\b|valor\b|por\s+(?:r\$|\d)|cart[aã]o\b|categoria\b|em\s+(?:\d+|${NUMBER_WORD_TOKEN})\s*(?:x|parcelas?)\b|hoje\b|ontem\b|anteontem\b|data\b|dia\s+\d)`;
+const METADATA_BOUNDARY = String.raw`(?:no\s+valor\b|valor\b|por\s+(?:r\$|\d)|cart[aã]o\b|conta(?:\s+banc[aá]ria)?\b|categoria\b|em\s+(?:\d+|${NUMBER_WORD_TOKEN})\s*(?:x|parcelas?)\b|hoje\b|ontem\b|anteontem\b|data\b|dia\s+\d)`;
 
 function parseCard(text: string): string | null {
   const match = text.match(new RegExp(`\\bcart[aã]o(?:\\s+de\\s+cr[eé]dito)?\\s+(?:do|da|é|e)?\\s*(.+?)(?=\\s+(?:${METADATA_BOUNDARY})|[,.]|$)`, "i"));
   if (!match) return null;
   const card = match[1].trim().replace(/[,.]+$/, "");
   return card && card.length <= 50 ? card : null;
+}
+
+function parseBankAccount(text: string): string | null {
+  const match = text.match(new RegExp(
+    `\\bconta(?:\\s+banc[aá]ria)?\\s+(?:(?:do|da|de)\\s+)?(.+?)(?=\\s+(?:${METADATA_BOUNDARY})|[,.]|$)`,
+    "i",
+  ));
+  if (!match) return null;
+  const account = match[1].trim().replace(/[,.]+$/, "");
+  return account && account.length <= 80 ? account : null;
 }
 
 function parseInstallments(text: string): number | null {
@@ -233,9 +245,9 @@ function cleanNameCandidate(raw: string): string {
 
 function findMoneyPosition(text: string): { start: number; end: number } | null {
   const patterns = [
-    /(?:r\$\s*)(\d{1,3}(?:\.\d{3})*(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)/i,
-    /(\d{1,3}(?:\.\d{3})*(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)\s*(?:reais?|real)\b/i,
-    /\b(?:no\s+valor\s+de|valor\s+de|valor)\s+(\d{1,3}(?:\.\d{3})*(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)/i,
+    /(?:r\$\s*)(\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)/i,
+    /(\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)\s*(?:reais?|real)\b/i,
+    /\b(?:no\s+valor\s+de|valor\s+de|valor)\s+(\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)/i,
     NUMBER_WORD_MONEY_RE,
     VALUE_WORDS_RE,
   ];
@@ -257,7 +269,7 @@ function extractName(text: string): string {
   const money = findMoneyPosition(text);
   if (money) {
     const beforeMoney = text.slice(0, money.start);
-    const intent = beforeMoney.match(/\b(?:gastei|paguei|comprei|adquiri|recebi|ganhei|lancei|registrei|adicionei)\b\s+(.+)$/i);
+    const intent = beforeMoney.match(/\b(?:gastei|paguei|comprei|adquiri|recebi|ganhei|lancei|registrei|adicionei|lance|registre|adicione)\b\s+(.+)$/i);
     if (intent?.[1]) {
       const candidate = intent[1]
         .replace(/\b(?:no\s+valor\s+de|valor\s+de|valor|por)\s*$/i, "")
@@ -290,7 +302,8 @@ function extractName(text: string): string {
 
 export function parseVoiceTransaction(transcript: string, now = new Date()): VoiceTransactionDraft {
   const normalized = normalize(transcript);
-  const type: VoiceTransactionType = /\b(recebi|ganhei|entrou|caiu|receita|salario|reembolso)\b/.test(normalized)
+  const isYield = /\b(rendimentos?|juros?|rentabilidade)\b/.test(normalized);
+  const type: VoiceTransactionType = isYield || /\b(recebi|ganhei|entrou|caiu|receita|salario|reembolso)\b/.test(normalized)
     ? "income"
     : "expense";
 
@@ -299,8 +312,10 @@ export function parseVoiceTransaction(transcript: string, now = new Date()): Voi
     "i",
   ));
   const spokenCategory = spokenCategoryMatch?.[1]?.trim() || null;
-  const name = extractName(transcript);
-  const inferred = inferCategory(name, spokenCategory, type);
+  const name = isYield ? "Rendimento" : extractName(transcript);
+  const inferred = isYield
+    ? { category: "Receita > Juros", icon: "📈" }
+    : inferCategory(name, spokenCategory, type);
 
   return {
     type,
@@ -310,6 +325,7 @@ export function parseVoiceTransaction(transcript: string, now = new Date()): Voi
     category: inferred.category,
     icon: inferred.icon,
     card: parseCard(transcript),
+    bankAccount: parseBankAccount(transcript),
     installmentCount: parseInstallments(transcript),
     transcript: transcript.trim(),
   };

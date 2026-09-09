@@ -43,4 +43,19 @@ describe("parseVoiceTransaction", () => {
     expect(draft.name).toBe("Transação por voz");
     expect(draft.amount).toBe(0);
   });
+
+  it("entende rendimento, conta com percentual e valor decimal com ponto", () => {
+    const draft = parseVoiceTransaction(
+      "Lance um rendimento na conta Cofrinho 140% no valor de 1.06",
+      now,
+    );
+
+    expect(draft.type).toBe("income");
+    expect(draft.name).toBe("Rendimento");
+    expect(draft.category).toBe("Receita > Juros");
+    expect(draft.icon).toBe("📈");
+    expect(draft.bankAccount).toBe("Cofrinho 140%");
+    expect(draft.card).toBeNull();
+    expect(draft.amount).toBe(1.06);
+  });
 });
