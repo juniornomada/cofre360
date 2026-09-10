@@ -5,11 +5,9 @@ import {
   TrendingUp,
   TrendingDown,
   Plus,
-  Pencil,
   Trash2,
   Loader2,
   RefreshCw,
-  Eye,
 } from "lucide-react";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useServerFn } from "@tanstack/react-start";
@@ -450,65 +448,61 @@ function InvestPage() {
             const positive = val.grossPnL >= 0;
             return (
               <div
-                key={inv.id}
-                className="group interactive-card flex items-center gap-3 rounded-2xl bg-card p-4 animate-stagger-in"
-                style={{ animationDelay: `${i * 40}ms` }}
-              >
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent text-lg">
-                  {inv.icon}
-                </div>
-                <button
-                  onClick={() => setDetail(inv)}
-                  className="flex-1 min-w-0 text-left"
-                >
-                  <p className="text-sm font-semibold leading-snug text-foreground line-clamp-2">{inv.name}</p>
-                  <p className="text-[10px] text-muted-foreground">
-                    {ASSET_CLASS_LABELS[(inv.asset_class as AssetClass) || "outro"] || inv.type}
-                    {inv.asset_code ? ` • ${inv.asset_code}` : ""}
-                  </p>
-                </button>
-                <div className="text-right">
-                  <p className="text-sm font-semibold text-foreground tabular-nums">
-                    {fmtBRL(val.grossValue)}
-                  </p>
-                  <div className="flex items-center justify-end gap-0.5">
-                    {positive ? (
-                      <TrendingUp className="h-2.5 w-2.5 text-primary" />
-                    ) : (
-                      <TrendingDown className="h-2.5 w-2.5 text-destructive" />
-                    )}
-                    <span className={`text-[10px] font-medium tabular-nums ${positive ? "text-primary" : "text-destructive"}`}>
-                      {positive ? "+" : ""}{fmtBRL(val.grossPnL)} · {positive ? "+" : ""}{val.pctChange.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%
-                    </span>
-                  </div>
-                  {inv.current_net_value != null && (
-                    <p className="text-[9px] text-muted-foreground tabular-nums">Líquido {fmtBRL(val.netValue)}</p>
-                  )}
-                </div>
-                <div className="flex gap-1">
-                  <button
-                    onClick={() => setDetail(inv)}
-                    className="hidden sm:flex h-7 w-7 items-center justify-center rounded-lg bg-accent text-muted-foreground hover:text-foreground"
-                    aria-label="Detalhes"
-                  >
-                    <Eye className="h-3.5 w-3.5" />
-                  </button>
-                  <button
-                    onClick={() => openEdit(inv)}
-                    className="hidden sm:flex h-7 w-7 items-center justify-center rounded-lg bg-accent text-muted-foreground hover:text-foreground"
-                    aria-label="Editar"
-                  >
-                    <Pencil className="h-3.5 w-3.5" />
-                  </button>
-                  <button
-                    onClick={() => setDeleteId(inv.id)}
-                    className="flex h-7 w-7 items-center justify-center rounded-lg bg-destructive/10 text-destructive hover:bg-destructive/20"
-                    aria-label="Excluir"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              </div>
+      key={inv.id}
+      onClick={() => openEdit(inv)}
+      className="interactive-card cursor-pointer rounded-2xl bg-card p-3 animate-stagger-in"
+      style={{ animationDelay: `${i * 40}ms` }}
+    >
+      <div className="flex items-start gap-2.5">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent text-base">
+          {inv.icon}
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="line-clamp-2 break-words pr-1 text-[12px] font-semibold leading-[1.15] text-foreground sm:text-[13px]">
+            {inv.name}
+          </p>
+          <p className="mt-0.5 truncate text-[9px] text-muted-foreground">
+            {ASSET_CLASS_LABELS[(inv.asset_class as AssetClass) || "outro"] || inv.type}
+            {inv.asset_code ? ` • ${inv.asset_code}` : ""}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            setDeleteId(inv.id);
+          }}
+          className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-destructive/10 text-destructive hover:bg-destructive/20"
+          aria-label={`Excluir ${inv.name}`}
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </button>
+      </div>
+      <div className="mt-2 flex items-end justify-between gap-2 pl-[46px]">
+        <div className="min-w-0">
+          {inv.current_net_value != null && (
+            <p className="truncate text-[9px] text-muted-foreground tabular-nums">
+              Líquido {fmtBRL(val.netValue)}
+            </p>
+          )}
+        </div>
+        <div className="shrink-0 text-right">
+          <p className="text-xs font-semibold text-foreground tabular-nums">
+            {fmtBRL(val.grossValue)}
+          </p>
+          <div className="flex items-center justify-end gap-0.5">
+            {positive ? (
+              <TrendingUp className="h-2.5 w-2.5 text-primary" />
+            ) : (
+              <TrendingDown className="h-2.5 w-2.5 text-destructive" />
+            )}
+            <span className={`text-[9px] font-medium tabular-nums ${positive ? "text-primary" : "text-destructive"}`}>
+              {positive ? "+" : ""}{fmtBRL(val.grossPnL)} · {positive ? "+" : ""}{val.pctChange.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
             );
           })
         )}
