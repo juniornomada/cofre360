@@ -8,6 +8,8 @@ import {
   Trash2,
   Loader2,
   RefreshCw,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useServerFn } from "@tanstack/react-start";
@@ -29,6 +31,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { useUserPreferences } from "@/hooks/use-user-preferences";
 import {
   PieChart,
   Pie,
@@ -126,6 +129,7 @@ function isVariable(cls: string) {
 }
 
 function InvestPage() {
+  const { balanceVisible, updateBalanceVisible } = useUserPreferences();
   const [portfolio, setPortfolio] = useState<Investment[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -355,6 +359,15 @@ function InvestPage() {
         </div>
         <div className="flex gap-2">
           <button
+            type="button"
+            onClick={() => updateBalanceVisible(!balanceVisible)}
+            className="interactive-button flex h-8 w-8 items-center justify-center rounded-full border border-border bg-card text-muted-foreground hover:bg-accent transition-all"
+            title={balanceVisible ? "Ocultar valores" : "Mostrar valores"}
+            aria-label={balanceVisible ? "Ocultar valores" : "Mostrar valores"}
+          >
+            {balanceVisible ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+          </button>
+          <button
             onClick={handleRefresh}
             disabled={refreshing}
             className="flex h-8 w-8 items-center justify-center rounded-full bg-card text-muted-foreground hover:text-foreground disabled:opacity-50"
@@ -375,11 +388,11 @@ function InvestPage() {
       {/* Resumo */}
       <div className="interactive-card rounded-2xl bg-gradient-to-br from-primary/20 to-card p-5 animate-stagger-in">
         <p className="text-sm text-muted-foreground">Patrimônio bruto</p>
-        <p className="text-2xl font-bold text-foreground tabular-nums mt-1">{fmtBRL(totalGross)}</p>
+        <p className="text-2xl font-bold text-foreground tabular-nums mt-1">{balanceVisible ? fmtBRL(totalGross) : "R$ ••••"}</p>
         <div className="mt-2 flex items-center gap-2 flex-wrap text-xs">
-          <span className="text-muted-foreground">Investido: <strong className="text-foreground">{fmtBRL(totalInvested)}</strong></span>
+          <span className="text-muted-foreground">Investido: <strong className="text-foreground">{balanceVisible ? fmtBRL(totalInvested) : "R$ ••••"}</strong></span>
           <span className="text-muted-foreground">•</span>
-          <span className="text-muted-foreground">Líquido: <strong className="text-foreground">{fmtBRL(totalNet)}</strong></span>
+          <span className="text-muted-foreground">Líquido: <strong className="text-foreground">{balanceVisible ? fmtBRL(totalNet) : "R$ ••••"}</strong></span>
         </div>
         {totalInvested > 0 && (
           <div className="mt-2 flex items-center gap-1">
@@ -389,7 +402,7 @@ function InvestPage() {
               <TrendingDown className="h-3 w-3 text-destructive" />
             )}
             <span className={`text-xs font-medium ${totalPnL >= 0 ? "text-primary" : "text-destructive"}`}>
-              {totalPnL >= 0 ? "+" : ""}{fmtBRL(totalPnL)} ({pnlPct.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%)
+              {balanceVisible ? `${totalPnL >= 0 ? "+" : ""}${fmtBRL(totalPnL)} (${pnlPct.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%)` : "R$ ••••"}
             </span>
           </div>
         )}
@@ -431,7 +444,7 @@ function InvestPage() {
                   ))}
                 </Pie>
                 <RTooltip
-                  formatter={(v: any) => fmtBRL(Number(v))}
+                  formatter={(v: any) => balanceVisible ? fmtBRL(Number(v)) : "R$ ••••"}
                   contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
                 />
               </PieChart>
@@ -439,7 +452,7 @@ function InvestPage() {
             <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
               <div className="text-center">
                 <p className="text-[9px] text-muted-foreground">Valor bruto</p>
-                <p className="text-xs font-bold text-foreground tabular-nums">{fmtBRL(totalGross)}</p>
+                <p className="text-xs font-bold text-foreground tabular-nums">{balanceVisible ? fmtBRL(totalGross) : "R$ ••••"}</p>
               </div>
             </div>
           </div>
@@ -458,7 +471,7 @@ function InvestPage() {
                     </span>
                   </div>
                   <div className="pl-4 text-[9px] font-semibold tabular-nums" style={{ color: d.color }}>
-                    {pct.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}% · {fmtBRL(d.value)}
+                    {balanceVisible ? `${pct.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}% · ${fmtBRL(d.value)}` : "••••"}
                   </div>
                 </div>
               );
@@ -524,13 +537,13 @@ function InvestPage() {
         <div className="min-w-0">
           {inv.current_net_value != null && (
             <p className="truncate text-[9px] text-muted-foreground tabular-nums">
-              Líquido {fmtBRL(val.netValue)}
+              Líquido {balanceVisible ? fmtBRL(val.netValue) : "R$ ••••"}
             </p>
           )}
         </div>
         <div className="shrink-0 text-right">
           <p className="text-xs font-semibold text-foreground tabular-nums">
-            {fmtBRL(val.grossValue)}
+            {balanceVisible ? fmtBRL(val.grossValue) : "R$ ••••"}
           </p>
           <div className="flex items-center justify-end gap-0.5">
             {positive ? (
@@ -539,7 +552,7 @@ function InvestPage() {
               <TrendingDown className="h-2.5 w-2.5 text-destructive" />
             )}
             <span className={`text-[9px] font-medium tabular-nums ${positive ? "text-primary" : "text-destructive"}`}>
-              {positive ? "+" : ""}{fmtBRL(val.grossPnL)} · {positive ? "+" : ""}{val.pctChange.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%
+              {balanceVisible ? `${positive ? "+" : ""}${fmtBRL(val.grossPnL)} · ${positive ? "+" : ""}${val.pctChange.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%` : "••••"}
             </span>
           </div>
         </div>
