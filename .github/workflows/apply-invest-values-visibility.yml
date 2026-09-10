@@ -1,0 +1,83 @@
+name: Apply investments value visibility
+
+on:
+  push:
+    branches: ["main"]
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch investments visibility
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('src/routes/invest.tsx')
+          s = p.read_text(encoding='utf-8')
+
+          s = s.replace('  RefreshCw,\n} from "lucide-react";', '  RefreshCw,\n  Eye,\n  EyeOff,\n} from "lucide-react";', 1)
+          s = s.replace('import { Button } from "@/components/ui/button";\n', 'import { Button } from "@/components/ui/button";\nimport { useUserPreferences } from "@/hooks/use-user-preferences";\n', 1)
+
+          marker = 'function InvestPage() {\n'
+          if marker not in s:
+              raise SystemExit('InvestPage marker not found')
+          s = s.replace(marker, marker + '  const { balanceVisible, updateBalanceVisible } = useUserPreferences();\n', 1)
+
+          old_header = '''        <div className="flex gap-2">
+          <button
+            onClick={handleRefresh}'''
+          new_header = '''        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => updateBalanceVisible(!balanceVisible)}
+            className="interactive-button flex h-8 w-8 items-center justify-center rounded-full border border-border bg-card text-muted-foreground hover:bg-accent transition-all"
+            title={balanceVisible ? "Ocultar valores" : "Mostrar valores"}
+            aria-label={balanceVisible ? "Ocultar valores" : "Mostrar valores"}
+          >
+            {balanceVisible ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+          </button>
+          <button
+            onClick={handleRefresh}'''
+          if old_header not in s:
+              raise SystemExit('header action block not found')
+          s = s.replace(old_header, new_header, 1)
+
+          replacements = {
+            '{fmtBRL(totalGross)}': '{balanceVisible ? fmtBRL(totalGross) : "R$ ••••"}',
+            '{fmtBRL(totalInvested)}': '{balanceVisible ? fmtBRL(totalInvested) : "R$ ••••"}',
+            '{fmtBRL(totalNet)}': '{balanceVisible ? fmtBRL(totalNet) : "R$ ••••"}',
+            '{totalPnL >= 0 ? "+" : ""}{fmtBRL(totalPnL)} ({pnlPct.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%)': '{balanceVisible ? `${totalPnL >= 0 ? "+" : ""}${fmtBRL(totalPnL)} (${pnlPct.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%)` : "R$ ••••"}',
+            'formatter={(v: any) => fmtBRL(Number(v))}': 'formatter={(v: any) => balanceVisible ? fmtBRL(Number(v)) : "R$ ••••"}',
+            '{pct.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}% · {fmtBRL(d.value)}': '{balanceVisible ? `${pct.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}% · ${fmtBRL(d.value)}` : "••••"}',
+            '{fmtBRL(val.grossValue)}': '{balanceVisible ? fmtBRL(val.grossValue) : "R$ ••••"}',
+            'Líquido {fmtBRL(val.netValue)}': 'Líquido {balanceVisible ? fmtBRL(val.netValue) : "R$ ••••"}',
+            '{positive ? "+" : ""}{fmtBRL(val.grossPnL)} · {positive ? "+" : ""}{val.pctChange.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%': '{balanceVisible ? `${positive ? "+" : ""}${fmtBRL(val.grossPnL)} · ${positive ? "+" : ""}${val.pctChange.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%` : "••••"}',
+          }
+          for old, new in replacements.items():
+              count = s.count(old)
+              if count < 1:
+                  raise SystemExit(f'missing replacement target: {old[:50]}')
+              s = s.replace(old, new)
+
+          p.write_text(s, encoding='utf-8')
+          PY
+      - name: Verify patch
+        run: |
+          git diff --check
+          grep -F 'useUserPreferences' src/routes/invest.tsx
+          grep -F 'updateBalanceVisible(!balanceVisible)' src/routes/invest.tsx
+          grep -F 'Ocultar valores' src/routes/invest.tsx
+          grep -F 'R$ ••••' src/routes/invest.tsx
+          grep -F '<Eye ' src/routes/invest.tsx
+          grep -F '<EyeOff ' src/routes/invest.tsx
+      - name: Commit source fix
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git rm .github/workflows/apply-invest-values-visibility.yml
+          git add src/routes/invest.tsx
+          git commit -m 'feat: add investment values visibility toggle'
+          git push
