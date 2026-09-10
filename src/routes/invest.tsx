@@ -62,14 +62,22 @@ const parseNum = (s: string) => {
 const fmtBRL = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
-const PIE_COLORS = [
-  "hsl(var(--chart-1))",
-  "hsl(var(--chart-2))",
-  "hsl(var(--chart-3))",
-  "hsl(var(--chart-4))",
-  "hsl(var(--chart-5))",
-  "hsl(var(--primary))",
-];
+const ASSET_CLASS_COLORS: Partial<Record<AssetClass, string>> = {
+  pos_fixado: "#FACC15",
+  alternativos: "#A855F7",
+  renda_variavel_global: "#EF4444",
+  renda_variavel_brasil: "#06B6D4",
+  tesouro: "#EAB308",
+  cdb: "#22C55E",
+  cripto: "#F97316",
+  acao: "#3B82F6",
+  fii: "#14B8A6",
+  etf: "#6366F1",
+  outro: "#94A3B8",
+};
+
+const getAssetClassColor = (assetClass: string | null | undefined) =>
+  ASSET_CLASS_COLORS[(assetClass || "outro") as AssetClass] || "#94A3B8";
 
 type FormState = {
   name: string;
@@ -201,14 +209,21 @@ function InvestPage() {
   const totalPnL = totalGross - totalInvested;
   const pnlPct = totalInvested > 0 ? (totalPnL / totalInvested) * 100 : 0;
 
-  // Pie data by asset_class
+  // Pie data by asset_class. Colors are fixed per class so the visual identity never changes with ordering.
   const pieData = useMemo(() => {
-    const map = new Map<string, number>();
+    const map = new Map<string, { key: string; name: string; value: number; color: string }>();
     for (const { inv, val } of valuations) {
-      const key = ASSET_CLASS_LABELS[(inv.asset_class || "outro") as AssetClass] || inv.type || "Outro";
-      map.set(key, (map.get(key) || 0) + val.grossValue);
+      const key = (inv.asset_class || "outro") as string;
+      const name = ASSET_CLASS_LABELS[key as AssetClass] || inv.type || "Outro";
+      const current = map.get(key);
+      map.set(key, {
+        key,
+        name,
+        value: (current?.value || 0) + val.grossValue,
+        color: getAssetClassColor(key),
+      });
     }
-    return Array.from(map, ([name, value]) => ({ name, value })).filter((d) => d.value > 0);
+    return Array.from(map.values()).filter((d) => d.value > 0);
   }, [valuations]);
 
   const openAdd = (cls?: AssetClass) => {
@@ -397,20 +412,22 @@ function InvestPage() {
       {/* Gráfico de alocação */}
       {pieData.length > 0 && (
         <div className="rounded-2xl bg-card p-4">
-          <h2 className="text-sm font-semibold text-foreground mb-2">Alocação por classe</h2>
-          <div className="h-48 w-full">
+          <h2 className="mb-2 text-sm font-semibold text-foreground">Alocação por classe</h2>
+          <div className="relative h-52 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
                   data={pieData}
                   dataKey="value"
                   nameKey="name"
-                  innerRadius={45}
-                  outerRadius={80}
+                  innerRadius={52}
+                  outerRadius={82}
                   paddingAngle={2}
+                  stroke="hsl(var(--card))"
+                  strokeWidth={3}
                 >
-                  {pieData.map((_, i) => (
-                    <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
+                  {pieData.map((d) => (
+                    <Cell key={d.key} fill={d.color} />
                   ))}
                 </Pie>
                 <RTooltip
@@ -419,14 +436,33 @@ function InvestPage() {
                 />
               </PieChart>
             </ResponsiveContainer>
-          </div>
-          <div className="flex flex-wrap gap-2 mt-2">
-            {pieData.map((d, i) => (
-              <div key={d.name} className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
-                <div className="h-2 w-2 rounded-full" style={{ background: PIE_COLORS[i % PIE_COLORS.length] }} />
-                {d.name} {((d.value / totalGross) * 100).toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%
+            <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+              <div className="text-center">
+                <p className="text-[9px] text-muted-foreground">Valor bruto</p>
+                <p className="text-xs font-bold text-foreground tabular-nums">{fmtBRL(totalGross)}</p>
               </div>
-            ))}
+            </div>
+          </div>
+          <div className="mt-1 grid grid-cols-2 gap-x-4 gap-y-2">
+            {pieData.map((d) => {
+              const pct = totalGross > 0 ? (d.value / totalGross) * 100 : 0;
+              return (
+                <div key={d.key} className="min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <span
+                      className="h-2.5 w-2.5 shrink-0 rounded-full"
+                      style={{ backgroundColor: d.color }}
+                    />
+                    <span className="min-w-0 truncate text-[10px] font-medium text-foreground" title={d.name}>
+                      {d.name}
+                    </span>
+                  </div>
+                  <div className="pl-4 text-[9px] font-semibold tabular-nums" style={{ color: d.color }}>
+                    {pct.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}% · {fmtBRL(d.value)}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
@@ -461,10 +497,16 @@ function InvestPage() {
           <p className="line-clamp-2 break-words pr-1 text-[12px] font-semibold leading-[1.15] text-foreground sm:text-[13px]">
             {inv.name}
           </p>
-          <p className="mt-0.5 truncate text-[9px] text-muted-foreground">
-            {ASSET_CLASS_LABELS[(inv.asset_class as AssetClass) || "outro"] || inv.type}
-            {inv.asset_code ? ` • ${inv.asset_code}` : ""}
-          </p>
+          <div className="mt-0.5 flex min-w-0 items-center gap-1.5">
+            <span
+              className="h-2 w-2 shrink-0 rounded-full"
+              style={{ backgroundColor: getAssetClassColor(inv.asset_class) }}
+            />
+            <p className="min-w-0 truncate text-[9px] text-muted-foreground">
+              {ASSET_CLASS_LABELS[(inv.asset_class as AssetClass) || "outro"] || inv.type}
+              {inv.asset_code ? ` • ${inv.asset_code}` : ""}
+            </p>
+          </div>
         </div>
         <button
           type="button"
