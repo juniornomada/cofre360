@@ -73,28 +73,12 @@ jobs:
               money_block = money_block.replace(patterns_anchor, patterns_anchor + conversational_pattern, 1)
           s = s[:money_start] + money_block + s[money_end:]
 
-          parse_anchor = 'export function parseVoiceTransaction(transcript: string, now = new Date()): VoiceTransactionDraft {'
-          name_helper = '''function canonicalizeKnownTransactionName(value: string): string {
-            return value.replace(/^Posto de gasolina\\b/i, "Posto de Gasolina");
-          }
-
-          '''
-          if 'function canonicalizeKnownTransactionName' not in s:
-              if parse_anchor not in s:
-                  raise SystemExit("parseVoiceTransaction anchor not found")
-              s = s.replace(parse_anchor, name_helper + parse_anchor, 1)
-
-          old_compose = '''  const name = reference && !baseName.endsWith(`(${reference})`)
-            ? `${baseName} (${reference})`
-            : baseName;'''
-          new_compose = '''  const composedName = reference && !baseName.endsWith(`(${reference})`)
-            ? `${baseName} (${reference})`
-            : baseName;
-          const name = canonicalizeKnownTransactionName(composedName);'''
-          if old_compose in s:
-              s = s.replace(old_compose, new_compose, 1)
-          elif 'const name = canonicalizeKnownTransactionName(composedName);' not in s:
-              raise SystemExit("name compose anchor not found")
+          clean_anchor = '  return value.charAt(0).toUpperCase() + value.slice(1);\n'
+          clean_replacement = '  value = value.replace(/^posto de gasolina\\b/i, "Posto de Gasolina");\n' + clean_anchor
+          if 'value = value.replace(/^posto de gasolina' not in s:
+              if clean_anchor not in s:
+                  raise SystemExit("cleanNameCandidate return anchor not found")
+              s = s.replace(clean_anchor, clean_replacement, 1)
 
           voice_path.write_text(s, encoding="utf-8")
 
