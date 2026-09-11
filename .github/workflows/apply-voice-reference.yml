@@ -1,0 +1,78 @@
+name: Apply voice reference naming rule
+
+on:
+  push:
+    branches: ["main"]
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch voice reference rule
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('src/lib/voice-transaction.ts')
+          s = path.read_text(encoding='utf-8')
+
+          old_boundary = r'''const METADATA_BOUNDARY = String.raw`(?:no\s+valor\b|valor\b|por\s+(?:r\$|\d)|cart[aã]o\b|conta(?:\s+banc[aá]ria)?\b|categoria\b|em\s+(?:\d+|${NUMBER_WORD_TOKEN})\s*(?:x|parcelas?)\b|hoje\b|ontem\b|anteontem\b|data\b|dia\s+\d)`;'''
+          new_boundary = r'''const METADATA_BOUNDARY = String.raw`(?:no\s+valor\b|valor\b|por\s+(?:r\$|\d)|cart[aã]o\b|conta(?:\s+banc[aá]ria)?\b|categoria\b|refer[eê]ncia\b|em\s+(?:\d+|${NUMBER_WORD_TOKEN})\s*(?:x|parcelas?)\b|hoje\b|ontem\b|anteontem\b|data\b|dia\s+\d)`;'''
+          if old_boundary not in s:
+              raise SystemExit('metadata boundary not found')
+          s = s.replace(old_boundary, new_boundary, 1)
+
+          marker = '''function parseInstallments(text: string): number | null {'''
+          if marker not in s:
+              raise SystemExit('parseInstallments marker not found')
+          reference_fn = r'''function parseReference(text: string): string | null {
+  const match = text.match(new RegExp(
+    `\\brefer[eê]ncia\\s*(?:[,;:=\\-]\\s*)?(?:é|e)?\\s*(.+?)(?=\\s+(?:${METADATA_BOUNDARY})|[,.]|$)`,
+    "i",
+  ));
+  if (!match) return null;
+  const reference = match[1]
+    .trim()
+    .replace(/^[()]+|[(),.!?;:]+$/g, "")
+    .replace(/\s+/g, " ");
+  if (!reference || reference.length > 40 || reference.split(" ").length > 6) return null;
+  return reference;
+}
+
+'''
+          s = s.replace(marker, reference_fn + marker, 1)
+
+          old_name = '''  const name = isYield ? "Rendimento" : extractName(transcript);
+  const inferred = isYield
+    ? { category: "Receita > Juros", icon: "📈" }
+    : inferCategory(name, spokenCategory, type);'''
+          new_name = '''  const baseName = isYield ? "Rendimento" : extractName(transcript);
+  const reference = parseReference(transcript);
+  const name = reference && !baseName.endsWith(`(${reference})`)
+    ? `${baseName} (${reference})`
+    : baseName;
+  const inferred = isYield
+    ? { category: "Receita > Juros", icon: "📈" }
+    : inferCategory(name, spokenCategory, type);'''
+          if old_name not in s:
+              raise SystemExit('name composition block not found')
+          s = s.replace(old_name, new_name, 1)
+
+          path.write_text(s, encoding='utf-8')
+          PY
+      - name: Verify patch
+        run: |
+          git diff --check
+          grep -F 'refer[eê]ncia' src/lib/voice-transaction.ts
+          grep -F 'const reference = parseReference(transcript);' src/lib/voice-transaction.ts
+      - name: Commit source change
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git rm .github/workflows/apply-voice-reference.yml
+          git add src/lib/voice-transaction.ts
+          git commit -m 'feat: support reference suffix in voice transaction names'
+          git push
