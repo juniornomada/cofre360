@@ -1,0 +1,184 @@
+name: Fix voice centavos and account matching
+
+on:
+  push:
+    branches: ["main"]
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch voice parser and account matching
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          voice = Path('src/lib/voice-transaction.ts')
+          s = voice.read_text(encoding='utf-8')
+
+          normalize_block = '''const normalize = (value: string) =>
+  value
+    .normalize("NFD")
+    .replace(/[\\u0300-\\u036f]/g, "")
+    .replace(/\\s+/g, " ")
+    .trim()
+    .toLowerCase();'''
+          normalize_new = normalize_block + '''
+
+/** Normaliza referências de conta faladas para comparação tolerante.
+ * Ex.: "Cofrinho 140", "Cofrinho 140%" e "Cofrinho 140 por cento" são equivalentes.
+ */
+export const normalizeVoiceAccountReference = (value: string) =>
+  normalize(value)
+    .replace(/\\bpor cento\\b/g, "")
+    .replace(/%/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\\s+/g, " ")
+    .trim();
+
+export const voiceAccountNamesMatch = (spoken: string, saved: string) =>
+  normalizeVoiceAccountReference(spoken) === normalizeVoiceAccountReference(saved);'''
+          if normalize_block not in s:
+              raise SystemExit('normalize block not found')
+          s = s.replace(normalize_block, normalize_new, 1)
+
+          amount_start = '''function parseAmount(text: string): number {
+  // Expressões monetárias explícitas têm prioridade e evitam confundir
+  // número de parcelas, datas e outros números citados numa fala longa.
+  const numeric = text.match(/(?:r\\$\\s*)(\\d{1,3}(?:\\.\\d{3})+(?:,\\d{1,2})?|\\d+(?:[.,]\\d{1,2})?)/i)
+    || text.match(/(\\d{1,3}(?:\\.\\d{3})+(?:,\\d{1,2})?|\\d+(?:[.,]\\d{1,2})?)\\s*(?:reais?|real)\\b/i)
+    || text.match(/\\b(?:no\\s+valor\\s+de|valor\\s+de|valor)\\s+(\\d{1,3}(?:\\.\\d{3})+(?:,\\d{1,2})?|\\d+(?:[.,]\\d{1,2})?)/i);
+  if (numeric) return moneyToNumber(numeric[1]);'''
+          amount_new = '''function parseAmount(text: string): number {
+  // "31 centavos" precisa ser interpretado antes de qualquer número inteiro,
+  // senão o 31 seria confundido com R$ 31,00.
+  const numericCents = text.match(/\\b(?:(?:no\\s+valor\\s+de|valor\\s+de|valor|por)\\s*(?:[,;:=\\-]\\s*)?)?(\\d{1,2})\\s+centavos?\\b/i);
+  if (numericCents) return Number(numericCents[1]) / 100;
+
+  const wordCents = text.match(new RegExp(
+    `\\\\b(?:(?:no\\\\s+valor\\\\s+de|valor\\\\s+de|valor|por)\\\\s*(?:[,;:=\\\\-]\\\\s*)?)?(${NUMBER_WORD_SEQUENCE})\\\\s+centavos?\\\\b`,
+    "i",
+  ));
+  if (wordCents) {
+    const cents = parsePortugueseNumberWords(wordCents[1]);
+    if (cents !== null && cents >= 0 && cents < 100) return cents / 100;
+  }
+
+  // Expressões monetárias explícitas têm prioridade e evitam confundir
+  // número de parcelas, datas e outros números citados numa fala longa.
+  const numeric = text.match(/(?:r\\$\\s*)(\\d{1,3}(?:\\.\\d{3})+(?:,\\d{1,2})?|\\d+(?:[.,]\\d{1,2})?)/i)
+    || text.match(/(\\d{1,3}(?:\\.\\d{3})+(?:,\\d{1,2})?|\\d+(?:[.,]\\d{1,2})?)\\s*(?:reais?|real)\\b/i)
+    || text.match(/\\b(?:no\\s+valor\\s+de|valor\\s+de|valor)\\s*(?:[,;:=\\-]\\s*)?(\\d{1,3}(?:\\.\\d{3})+(?:,\\d{1,2})?|\\d+(?:[.,]\\d{1,2})?)/i);
+  if (numeric) return moneyToNumber(numeric[1]);'''
+          if amount_start not in s:
+              raise SystemExit('parseAmount start not found')
+          s = s.replace(amount_start, amount_new, 1)
+
+          old_card = '''`\\\\bcart[aã]o(?:\\\\s+de\\\\s+cr[eé]dito)?\\\\s+(?:do|da|é|e)?\\\\s*(.+?)(?=\\\\s+(?:${METADATA_BOUNDARY})|[,.]|$)`'''
+          new_card = '''`\\\\bcart[aã]o(?:\\\\s+de\\\\s+cr[eé]dito)?\\\\s*(?:[,;:=\\\\-]\\\\s*)?(?:do|da|é|e)?\\\\s*(.+?)(?=\\\\s+(?:${METADATA_BOUNDARY})|[,.]|$)`'''
+          if old_card in s:
+              s = s.replace(old_card, new_card, 1)
+
+          old_account = '''`\\\\bconta(?:\\\\s+banc[aá]ria)?\\\\s+(?:(?:do|da|de)\\\\s+)?(.+?)(?=\\\\s+(?:${METADATA_BOUNDARY})|[,.]|$)`,'''
+          new_account = '''`\\\\bconta(?:\\\\s+banc[aá]ria)?\\\\s*(?:[,;:=\\\\-]\\\\s*)?(?:(?:do|da|de)\\\\s+)?(.+?)(?=\\\\s+(?:${METADATA_BOUNDARY})|[,.]|$)`,'''
+          if old_account not in s:
+              raise SystemExit('parseBankAccount pattern not found')
+          s = s.replace(old_account, new_account, 1)
+
+          old_category = '''`\\\\bcategoria\\\\s+(?:é|e|:)?\\\\s*(.+?)(?=\\\\s+(?:${METADATA_BOUNDARY})|[,.]|$)`,'''
+          new_category = '''`\\\\bcategoria\\\\s*(?:[,;:=\\\\-]\\\\s*)?(?:é|e)?\\\\s*(.+?)(?=\\\\s+(?:${METADATA_BOUNDARY})|[,.]|$)`,'''
+          if old_category in s:
+              s = s.replace(old_category, new_category, 1)
+
+          old_name = '''`\\\\b(?:nome(?:\\\\s+da)?(?:\\\\s+transa[cç][aã]o)?|descri[cç][aã]o)\\\\s*(?:é|e|vai\\\\s+ser|ser[aá]|:|=)?\\\\s*(?:de\\\\s+)?(.+?)(?=\\\\s+(?:${METADATA_BOUNDARY})|[,.]|$)`,'''
+          new_name = '''`\\\\b(?:nome(?:\\\\s+da)?(?:\\\\s+transa[cç][aã]o)?|descri[cç][aã]o)\\\\s*(?:[,;:=\\\\-]\\\\s*)?(?:é|e|vai\\\\s+ser|ser[aá])?\\\\s*(?:de\\\\s+)?(.+?)(?=\\\\s+(?:${METADATA_BOUNDARY})|[,.]|$)`,'''
+          if old_name in s:
+              s = s.replace(old_name, new_name, 1)
+
+          voice.write_text(s, encoding='utf-8')
+
+          quick = Path('src/components/QuickAddTransactionDialog.tsx')
+          q = quick.read_text(encoding='utf-8')
+          old_import = 'import type { VoiceTransactionDraft } from "@/lib/voice-transaction";'
+          new_import = 'import { voiceAccountNamesMatch, type VoiceTransactionDraft } from "@/lib/voice-transaction";'
+          if old_import not in q:
+              raise SystemExit('voice import not found in QuickAdd')
+          q = q.replace(old_import, new_import, 1)
+
+          start_marker = '''  useEffect(() => {
+    if (!open || !initialDraft?.bankAccount || bankAccounts.length === 0) return;
+    const normalizeAccountName = (value: string) => value'''
+          start = q.find(start_marker)
+          if start < 0:
+              raise SystemExit('account matching effect start not found')
+          end_marker = '  }, [open, initialDraft?.bankAccount, bankAccounts, newTx.bank_account_id]);'
+          end = q.find(end_marker, start)
+          if end < 0:
+              raise SystemExit('account matching effect end not found')
+          end += len(end_marker)
+          new_effect = '''  useEffect(() => {
+    if (!open || !initialDraft?.bankAccount || bankAccounts.length === 0) return;
+    const spokenAccount = initialDraft.bankAccount;
+    const match = bankAccounts.find(account => voiceAccountNamesMatch(spokenAccount, account.name));
+    if (!match || newTx.bank_account_id === match.id) return;
+    setNewTx(prev => ({ ...prev, bank_account_id: match.id, card: null }));
+  }, [open, initialDraft?.bankAccount, bankAccounts, newTx.bank_account_id]);'''
+          q = q[:start] + new_effect + q[end:]
+          quick.write_text(q, encoding='utf-8')
+
+          tests = Path('src/lib/__tests__/voice-transaction.test.ts')
+          t = tests.read_text(encoding='utf-8')
+          t = t.replace(
+            'import { parseVoiceTransaction } from "@/lib/voice-transaction";',
+            'import { parseVoiceTransaction, voiceAccountNamesMatch } from "@/lib/voice-transaction";',
+            1,
+          )
+          insert = '''
+
+  it("entende 31 centavos como R$ 0,31 em comando estruturado", () => {
+    const draft = parseVoiceTransaction(
+      "Receita, nome, rendimento, valor, 31 centavos, conta, Cofrinho 140",
+      now,
+    );
+
+    expect(draft.type).toBe("income");
+    expect(draft.name).toBe("Rendimento");
+    expect(draft.category).toBe("Receita > Juros");
+    expect(draft.amount).toBe(0.31);
+    expect(draft.bankAccount).toBe("Cofrinho 140");
+  });
+
+  it("aceita 0.31 e 0,31 como o mesmo valor", () => {
+    expect(parseVoiceTransaction("Receita nome rendimento valor 0.31 conta Cofrinho 140", now).amount).toBe(0.31);
+    expect(parseVoiceTransaction("Receita nome rendimento valor 0,31 conta Cofrinho 140%", now).amount).toBe(0.31);
+  });
+
+  it("considera Cofrinho 140 e Cofrinho 140% a mesma conta", () => {
+    expect(voiceAccountNamesMatch("Cofrinho 140", "Cofrinho 140%")).toBe(true);
+    expect(voiceAccountNamesMatch("Cofrinho 140 por cento", "Cofrinho 140%")).toBe(true);
+  });'''
+          close = t.rfind('\n});')
+          if close < 0:
+              raise SystemExit('test describe closing not found')
+          t = t[:close] + insert + t[close:]
+          tests.write_text(t, encoding='utf-8')
+          PY
+      - name: Verify patch
+        run: |
+          git diff --check
+          grep -F 'numericCents' src/lib/voice-transaction.ts
+          grep -F 'voiceAccountNamesMatch' src/lib/voice-transaction.ts
+          grep -F 'voiceAccountNamesMatch(spokenAccount, account.name)' src/components/QuickAddTransactionDialog.tsx
+          grep -F '31 centavos' src/lib/__tests__/voice-transaction.test.ts
+          grep -F '0.31' src/lib/__tests__/voice-transaction.test.ts
+      - name: Commit source fix
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git rm .github/workflows/fix-voice-centavos-account.yml
+          git add src/lib/voice-transaction.ts src/components/QuickAddTransactionDialog.tsx src/lib/__tests__/voice-transaction.test.ts
+          git commit -m 'fix: parse voice centavos and match account percentage'
+          git push
