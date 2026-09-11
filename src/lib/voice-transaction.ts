@@ -236,28 +236,56 @@ function parseInstallments(text: string): number | null {
 }
 
 function inferCategory(name: string, spokenCategory: string | null, type: VoiceTransactionType) {
-  if (type === "income") {
-    const category = spokenCategory ? `Receita > ${spokenCategory}` : "Receita > Outros";
-    return { category, icon: "💰" };
-  }
-
-  if (spokenCategory) {
-    const categoryNorm = normalize(spokenCategory);
-    if (categoryNorm.includes("transport")) return { category: "Transporte > Outros", icon: "🚗" };
-    if (categoryNorm.includes("aliment")) return { category: "Alimentação > Outros", icon: "🍔" };
-    if (categoryNorm.includes("saude")) return { category: "Saúde > Outros", icon: "💊" };
-    if (categoryNorm.includes("moradia")) return { category: "Moradia > Outros", icon: "🏠" };
-    if (categoryNorm.includes("compra")) return { category: "Compras > Outros", icon: "🛍️" };
-  }
-
   const n = normalize(name);
+  const spoken = spokenCategory ? normalize(spokenCategory) : null;
+
+  if (type === "income") {
+    const signal = spoken || n;
+    if (/\bsalario\b|\bordenado\b/.test(signal)) return { category: "Receita > Salário", icon: "💼" };
+    if (/\bfreelance\b|\bfreela\b/.test(signal)) return { category: "Receita > Freelance", icon: "💻" };
+    if (/\bjuros?\b|\brendimentos?\b|\brentabilidade\b/.test(signal)) return { category: "Receita > Juros", icon: "📈" };
+    if (/\breembolso\b|\bestorno\b/.test(signal)) return { category: "Receita > Reembolso", icon: "↩️" };
+    return { category: "Receita > Outros", icon: "💰" };
+  }
+
+  if (spoken) {
+    if (/pedagio/.test(spoken)) return { category: "Transporte > Pedágio", icon: "🛣️" };
+    if (/combustivel|gasolina|etanol|diesel/.test(spoken)) return { category: "Transporte > Combustível", icon: "⛽" };
+    if (/manutencao|mecanica|oficina/.test(spoken)) return { category: "Transporte > Manutenção", icon: "🔧" };
+    if (/estacionamento/.test(spoken)) return { category: "Transporte > Estacionamento", icon: "🅿️" };
+    if (/uber|\b99\b/.test(spoken)) return { category: "Transporte > Uber/99", icon: "🚕" };
+    if (spoken.includes("transport")) return { category: "Transporte > Outros", icon: "🚗" };
+    if (/supermercado|mercado/.test(spoken)) return { category: "Alimentação > Supermercado", icon: "🛒" };
+    if (/padaria|cafe/.test(spoken)) return { category: "Alimentação > Padaria/Café", icon: "☕" };
+    if (/delivery|ifood/.test(spoken)) return { category: "Alimentação > Delivery", icon: "🛵" };
+    if (/restaurante|lanchonete/.test(spoken)) return { category: "Alimentação > Restaurante", icon: "🍽️" };
+    if (spoken.includes("aliment")) return { category: "Alimentação > Outros", icon: "🍔" };
+    if (/farmacia/.test(spoken)) return { category: "Saúde > Farmácia", icon: "💊" };
+    if (spoken.includes("saude")) return { category: "Saúde > Outros", icon: "💊" };
+    if (/aluguel/.test(spoken)) return { category: "Moradia > Aluguel", icon: "🏠" };
+    if (/condominio/.test(spoken)) return { category: "Moradia > Condomínio", icon: "🏢" };
+    if (/energia|\bluz\b/.test(spoken)) return { category: "Moradia > Energia", icon: "⚡" };
+    if (/\bagua\b/.test(spoken)) return { category: "Moradia > Água", icon: "💧" };
+    if (/internet|telefone/.test(spoken)) return { category: "Moradia > Internet/Telefone", icon: "📶" };
+    if (spoken.includes("moradia")) return { category: "Moradia > Outros", icon: "🏠" };
+    if (spoken.includes("compra")) return { category: "Compras > Outros", icon: "🛍️" };
+  }
+
   if (/mecanica|mecanico|oficina|auto center|auto-center/.test(n)) return { category: "Transporte > Manutenção", icon: "🔧" };
   if (/posto|gasolina|combustivel|etanol|diesel/.test(n)) return { category: "Transporte > Combustível", icon: "⛽" };
+  if (/pedagio/.test(n)) return { category: "Transporte > Pedágio", icon: "🛣️" };
+  if (/estacionamento/.test(n)) return { category: "Transporte > Estacionamento", icon: "🅿️" };
+  if (/\buber\b|\b99\b/.test(n)) return { category: "Transporte > Uber/99", icon: "🚕" };
   if (/farmacia|remedio|medicamento/.test(n)) return { category: "Saúde > Farmácia", icon: "💊" };
   if (/padaria|cafe/.test(n)) return { category: "Alimentação > Padaria/Café", icon: "☕" };
   if (/mercado|supermercado/.test(n)) return { category: "Alimentação > Supermercado", icon: "🛒" };
-  if (/restaurante|lanchonete|ifood|delivery/.test(n)) return { category: "Alimentação > Outros", icon: "🍔" };
-  if (/aluguel|condominio|energia|luz|agua|internet/.test(n)) return { category: "Moradia > Outros", icon: "🏠" };
+  if (/ifood|delivery/.test(n)) return { category: "Alimentação > Delivery", icon: "🛵" };
+  if (/restaurante|lanchonete/.test(n)) return { category: "Alimentação > Restaurante", icon: "🍽️" };
+  if (/aluguel/.test(n)) return { category: "Moradia > Aluguel", icon: "🏠" };
+  if (/condominio/.test(n)) return { category: "Moradia > Condomínio", icon: "🏢" };
+  if (/energia|\bluz\b/.test(n)) return { category: "Moradia > Energia", icon: "⚡" };
+  if (/\bagua\b/.test(n)) return { category: "Moradia > Água", icon: "💧" };
+  if (/internet|telefone/.test(n)) return { category: "Moradia > Internet/Telefone", icon: "📶" };
   return { category: "Outros > Outros", icon: "📄" };
 }
 
