@@ -24,6 +24,17 @@ const normalize = (value: string) =>
     .trim()
     .toLowerCase();
 
+export const normalizeVoiceAccountReference = (value: string) =>
+  normalize(value)
+    .replace(/\bpor cento\b/g, "")
+    .replace(/%/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+export const voiceAccountNamesMatch = (spoken: string, saved: string) =>
+  normalizeVoiceAccountReference(spoken) === normalizeVoiceAccountReference(saved);
+
 const NUMBER_WORD_VALUES: Record<string, number> = {
   zero: 0,
   um: 1,
@@ -123,11 +134,21 @@ function moneyToNumber(raw: string): number {
 }
 
 function parseAmount(text: string): number {
+  // Centavos isolados têm prioridade para que "31 centavos" vire R$ 0,31.
+  const numericCents = text.match(/\b(?:(?:no\s+valor\s+de|valor\s+de|valor|por)\s*(?:[,;:=\-]\s*)?)?(\d{1,2})\s+centavos?\b/i);
+  if (numericCents) return Number(numericCents[1]) / 100;
+
+  const wordCents = text.match(new RegExp(`\\b(?:(?:no\\s+valor\\s+de|valor\\s+de|valor|por)\\s*(?:[,;:=\\-]\\s*)?)?(${NUMBER_WORD_SEQUENCE})\\s+centavos?\\b`, "i"));
+  if (wordCents) {
+    const centsValue = parsePortugueseNumberWords(wordCents[1]);
+    if (centsValue !== null && centsValue >= 0 && centsValue < 100) return centsValue / 100;
+  }
+
   // Expressões monetárias explícitas têm prioridade e evitam confundir
   // número de parcelas, datas e outros números citados numa fala longa.
   const numeric = text.match(/(?:r\$\s*)(\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)/i)
     || text.match(/(\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)\s*(?:reais?|real)\b/i)
-    || text.match(/\b(?:no\s+valor\s+de|valor\s+de|valor)\s+(\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)/i);
+    || text.match(/\b(?:no\s+valor\s+de|valor\s+de|valor)\s*(?:[,;:=\-]\s*)?(\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)/i);
   if (numeric) return moneyToNumber(numeric[1]);
 
   const wordMoney = text.match(NUMBER_WORD_MONEY_RE) || text.match(VALUE_WORDS_RE);
@@ -184,7 +205,7 @@ function parseCard(text: string): string | null {
 
 function parseBankAccount(text: string): string | null {
   const match = text.match(new RegExp(
-    `\\bconta(?:\\s+banc[aá]ria)?\\s+(?:(?:do|da|de)\\s+)?(.+?)(?=\\s+(?:${METADATA_BOUNDARY})|[,.]|$)`,
+    `\\bconta(?:\\s+banc[aá]ria)?\\s*(?:[,;:=\\-]\\s*)?(?:(?:do|da|de)\\s+)?(.+?)(?=\\s+(?:${METADATA_BOUNDARY})|[,.]|$)`,
     "i",
   ));
   if (!match) return null;

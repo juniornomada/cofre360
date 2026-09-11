@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseVoiceTransaction } from "@/lib/voice-transaction";
+import { parseVoiceTransaction, voiceAccountNamesMatch } from "@/lib/voice-transaction";
 
 describe("parseVoiceTransaction", () => {
   const now = new Date(2026, 8, 8, 10, 0, 0);
@@ -57,5 +57,24 @@ describe("parseVoiceTransaction", () => {
     expect(draft.bankAccount).toBe("Cofrinho 140%");
     expect(draft.card).toBeNull();
     expect(draft.amount).toBe(1.06);
+  });
+
+  it("entende 31 centavos como R$ 0,31 em comando estruturado", () => {
+    const draft = parseVoiceTransaction("Receita, nome, rendimento, valor, 31 centavos, conta, Cofrinho 140", now);
+    expect(draft.type).toBe("income");
+    expect(draft.name).toBe("Rendimento");
+    expect(draft.category).toBe("Receita > Juros");
+    expect(draft.amount).toBe(0.31);
+    expect(draft.bankAccount).toBe("Cofrinho 140");
+  });
+
+  it("aceita 0.31 e 0,31 como o mesmo valor", () => {
+    expect(parseVoiceTransaction("Receita nome rendimento valor 0.31 conta Cofrinho 140", now).amount).toBe(0.31);
+    expect(parseVoiceTransaction("Receita nome rendimento valor 0,31 conta Cofrinho 140%", now).amount).toBe(0.31);
+  });
+
+  it("considera Cofrinho 140 e Cofrinho 140% a mesma conta", () => {
+    expect(voiceAccountNamesMatch("Cofrinho 140", "Cofrinho 140%")).toBe(true);
+    expect(voiceAccountNamesMatch("Cofrinho 140 por cento", "Cofrinho 140%")).toBe(true);
   });
 });

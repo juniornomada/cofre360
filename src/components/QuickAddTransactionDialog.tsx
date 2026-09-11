@@ -20,7 +20,7 @@ import { getFriendlyErrorMessage } from "@/lib/utils";
 import { sanitizeTransactionWrite, sanitizeTransactionWrites } from "@/lib/normalize-transaction-name";
 import { inferYieldTransactionFields } from "@/lib/account-yield";
 import { buildTransferTransactionNames, extractTransferDescription } from "@/lib/transfer-label";
-import type { VoiceTransactionDraft } from "@/lib/voice-transaction";
+import { voiceAccountNamesMatch, type VoiceTransactionDraft } from "@/lib/voice-transaction";
 
 export type QuickAddInitialType = "expense" | "income" | "transfer";
 
@@ -344,16 +344,8 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
 
   useEffect(() => {
     if (!open || !initialDraft?.bankAccount || bankAccounts.length === 0) return;
-    const normalizeAccountName = (value: string) => value
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .toLowerCase()
-      .replace(/\bpor cento\b/g, "%")
-      .replace(/\s*%\s*/g, "%")
-      .replace(/\s+/g, " ")
-      .trim();
-    const spoken = normalizeAccountName(initialDraft.bankAccount);
-    const match = bankAccounts.find(account => normalizeAccountName(account.name) === spoken);
+    const spokenAccount = initialDraft.bankAccount;
+    const match = bankAccounts.find(account => voiceAccountNamesMatch(spokenAccount, account.name));
     if (!match || newTx.bank_account_id === match.id) return;
     setNewTx(prev => ({ ...prev, bank_account_id: match.id, card: null }));
   }, [open, initialDraft?.bankAccount, bankAccounts, newTx.bank_account_id]);
