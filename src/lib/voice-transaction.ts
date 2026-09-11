@@ -134,7 +134,6 @@ function moneyToNumber(raw: string): number {
 }
 
 function parseAmount(text: string): number {
-  // Centavos isolados têm prioridade para que "31 centavos" vire R$ 0,31.
   const numericCents = text.match(/\b(?:(?:no\s+valor\s+de|valor\s+de|valor|por)\s*(?:[,;:=\-]\s*)?)?(\d{1,2})\s+centavos?\b/i);
   if (numericCents) return Number(numericCents[1]) / 100;
 
@@ -144,8 +143,6 @@ function parseAmount(text: string): number {
     if (centsValue !== null && centsValue >= 0 && centsValue < 100) return centsValue / 100;
   }
 
-  // Expressões monetárias explícitas têm prioridade e evitam confundir
-  // número de parcelas, datas e outros números citados numa fala longa.
   const numeric = text.match(/(?:r\$\s*)(\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)/i)
     || text.match(/(\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)\s*(?:reais?|real)\b/i)
     || text.match(/\b(?:no\s+valor\s+de|valor\s+de|valor)\s*(?:[,;:=\-]\s*)?(\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)/i);
@@ -162,8 +159,6 @@ function parseAmount(text: string): number {
     }
   }
 
-  // Só usa número solto como fallback em comandos curtos. Em fala longa,
-  // é mais seguro deixar o valor zerado para revisão do que escolher um número aleatório.
   if (text.trim().split(/\s+/).length <= 8) {
     const candidates = Array.from(text.matchAll(/\b(\d+(?:[.,]\d{1,2})?)\b/g));
     for (const candidate of candidates) {
@@ -268,7 +263,7 @@ function inferCategory(name: string, spokenCategory: string | null, type: VoiceT
 
 function cleanNameCandidate(raw: string): string {
   let value = raw
-    .replace(/^[,.!?;:\\s]+/g, "")
+    .replace(/^[,.!?;:\s]+/g, "")
     .replace(/[,.!?;:]+$/g, "")
     .replace(/^\s*(?:uma?\s+)?(?:transa[cç][aã]o|despesa|compra|gasto|receita)\s+(?:chamad[ao]\s+|com\s+o\s+nome\s+)?/i, "")
     .replace(/^\s*(?:no|na|em|do|da|para|por)\s+/i, "")
@@ -349,8 +344,6 @@ function extractName(text: string): string {
     }
   }
 
-  // Em comandos longos sem estrutura clara não copiamos a fala inteira para o nome.
-  // Isso força uma revisão segura em vez de gravar um texto enorme como descrição.
   const compact = text.trim().replace(/\s+/g, " ");
   if (compact.split(" ").length <= 7 && compact.length <= 80) {
     const short = compact
