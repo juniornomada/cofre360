@@ -194,7 +194,7 @@ function parseDate(text: string, now = new Date()): string {
   return formatDate(date);
 }
 
-const METADATA_BOUNDARY = String.raw`(?:no\s+valor\b|valor\b|por\s+(?:r\$|\d)|cart[aã]o\b|conta(?:\s+banc[aá]ria)?\b|categoria\b|em\s+(?:\d+|${NUMBER_WORD_TOKEN})\s*(?:x|parcelas?)\b|hoje\b|ontem\b|anteontem\b|data\b|dia\s+\d)`;
+const METADATA_BOUNDARY = String.raw`(?:no\s+valor\b|valor\b|por\s+(?:r\$|\d)|cart[aã]o\b|conta(?:\s+banc[aá]ria)?\b|categoria\b|refer[eê]ncia\b|em\s+(?:\d+|${NUMBER_WORD_TOKEN})\s*(?:x|parcelas?)\b|hoje\b|ontem\b|anteontem\b|data\b|dia\s+\d)`;
 
 function parseCard(text: string): string | null {
   const match = text.match(new RegExp(`\\bcart[aã]o(?:\\s+de\\s+cr[eé]dito)?\\s+(?:do|da|é|e)?\\s*(.+?)(?=\\s+(?:${METADATA_BOUNDARY})|[,.]|$)`, "i"));
@@ -211,6 +211,20 @@ function parseBankAccount(text: string): string | null {
   if (!match) return null;
   const account = match[1].trim().replace(/[,.]+$/, "");
   return account && account.length <= 80 ? account : null;
+}
+
+function parseReference(text: string): string | null {
+  const match = text.match(new RegExp(
+    `\\brefer[eê]ncia\\s*(?:[,;:=\\-]\\s*)?(?:é|e)?\\s*(.+?)(?=\\s+(?:${METADATA_BOUNDARY})|[,.]|$)`,
+    "i",
+  ));
+  if (!match) return null;
+  const reference = match[1]
+    .trim()
+    .replace(/^[()]+|[(),.!?;:]+$/g, "")
+    .replace(/\s+/g, " ");
+  if (!reference || reference.length > 40 || reference.split(" ").length > 6) return null;
+  return reference;
 }
 
 function parseInstallments(text: string): number | null {
@@ -333,7 +347,11 @@ export function parseVoiceTransaction(transcript: string, now = new Date()): Voi
     "i",
   ));
   const spokenCategory = spokenCategoryMatch?.[1]?.trim() || null;
-  const name = isYield ? "Rendimento" : extractName(transcript);
+  const baseName = isYield ? "Rendimento" : extractName(transcript);
+  const reference = parseReference(transcript);
+  const name = reference && !baseName.endsWith(`(${reference})`)
+    ? `${baseName} (${reference})`
+    : baseName;
   const inferred = isYield
     ? { category: "Receita > Juros", icon: "📈" }
     : inferCategory(name, spokenCategory, type);

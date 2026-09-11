@@ -77,4 +77,18 @@ describe("parseVoiceTransaction", () => {
     expect(voiceAccountNamesMatch("Cofrinho 140", "Cofrinho 140%")).toBe(true);
     expect(voiceAccountNamesMatch("Cofrinho 140 por cento", "Cofrinho 140%")).toBe(true);
   });
+
+  it("coloca referência entre parênteses no nome", () => {
+    expect(parseVoiceTransaction("Receita, nome Salário Junior, referência mãe, valor 1000 reais", now).name)
+      .toBe("Salário Junior (mãe)");
+    expect(parseVoiceTransaction("Despesa, nome Pedágio, referência pai, valor 20 reais", now).name)
+      .toBe("Pedágio (pai)");
+    expect(parseVoiceTransaction("Despesa nome Posto de Gasolina referência Spacefox valor 100 reais", now).name)
+      .toBe("Posto de Gasolina (Spacefox)");
+  });
+
+  it("mantém o nome normal quando não há referência", () => {
+    expect(parseVoiceTransaction("Receita, nome Salário Junior, valor 1000 reais", now).name)
+      .toBe("Salário Junior");
+  });
 });
