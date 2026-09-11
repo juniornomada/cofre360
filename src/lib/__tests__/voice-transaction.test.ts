@@ -135,4 +135,27 @@ describe("parseVoiceTransaction", () => {
     expect(parseVoiceTransaction("Despesa, nome, iFood, valor, 45 reais", now).category)
       .toBe("Alimentação > Delivery");
   });
+
+  it("entende frase informal completa com valor, referência e conta", () => {
+    const draft = parseVoiceTransaction(
+      "Gastei 150.99 em posto de gasolina referência Space Fox na conta Banco do Brasil.",
+      now,
+    );
+
+    expect(draft.type).toBe("expense");
+    expect(draft.amount).toBe(150.99);
+    expect(draft.name).toBe("Posto de Gasolina (Spacefox)");
+    expect(draft.category).toBe("Transporte > Combustível");
+    expect(draft.bankAccount).toBe("Banco do Brasil");
+  });
+
+  it("aceita vírgula no valor da frase informal completa", () => {
+    const draft = parseVoiceTransaction(
+      "Gastei 150,99 em posto de gasolina referência Space Fox na conta Banco do Brasil",
+      now,
+    );
+    expect(draft.amount).toBe(150.99);
+    expect(draft.name).toBe("Posto de Gasolina (Spacefox)");
+    expect(draft.bankAccount).toBe("Banco do Brasil");
+  });
 });

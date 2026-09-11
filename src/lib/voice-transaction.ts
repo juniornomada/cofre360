@@ -143,6 +143,11 @@ function parseAmount(text: string): number {
     if (centsValue !== null && centsValue >= 0 && centsValue < 100) return centsValue / 100;
   }
 
+  const conversationalNumeric = text.match(
+  /\b(?:gastei|paguei|comprei|adquiri|recebi|ganhei|lancei|registrei|adicionei)\s+(?:r\$\s*)?(\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)\b/i,
+);
+if (conversationalNumeric) return moneyToNumber(conversationalNumeric[1]);
+
   const numeric = text.match(/(?:r\$\s*)(\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)/i)
     || text.match(/(\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)\s*(?:reais?|real)\b/i)
     || text.match(/\b(?:no\s+valor\s+de|valor\s+de|valor)\s*(?:[,;:=\-]\s*)?(\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)/i);
@@ -208,9 +213,18 @@ function parseBankAccount(text: string): string | null {
   return account && account.length <= 80 ? account : null;
 }
 
+function canonicalizeKnownReference(value: string): string {
+  const normalized = normalize(value);
+  if (normalized === "mae") return "mãe";
+  if (normalized === "pai") return "pai";
+  if (normalized === "creta") return "Creta";
+  if (normalized === "spacefox" || normalized === "space fox") return "Spacefox";
+  return value;
+}
+
 function parseReference(text: string): string | null {
   const match = text.match(new RegExp(
-    `\\brefer[eê]ncia\\s*(?:[,;:=\\-]\\s*)?(?:é|e)?\\s*(.+?)(?=\\s+(?:${METADATA_BOUNDARY})|[,.]|$)`,
+    `\\brefer[eê]ncia\\s*(?:[,;:=\\-]\\s*)?(?:é|e)?\\s*(.+?)(?=\\s+(?:(?:na|no|em)\\s+)?(?:${METADATA_BOUNDARY})|[,.]|$)`,
     "i",
   ));
   if (!match) return null;
@@ -219,7 +233,7 @@ function parseReference(text: string): string | null {
     .replace(/^[()]+|[(),.!?;:]+$/g, "")
     .replace(/\s+/g, " ");
   if (!reference || reference.length > 40 || reference.split(" ").length > 6) return null;
-  return reference;
+  return canonicalizeKnownReference(reference);
 }
 
 function parseInstallments(text: string): number | null {
@@ -299,6 +313,7 @@ function cleanNameCandidate(raw: string): string {
     .trim();
 
   if (!value || value.split(" ").length > 12 || value.length > 80) return "Transação por voz";
+  value = value.replace(/^posto de gasolina\b/i, "Posto de Gasolina");
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
@@ -329,6 +344,7 @@ function splitInformalReferenceFromName(name: string): { baseName: string; refer
 
 function findMoneyPosition(text: string): { start: number; end: number } | null {
   const patterns = [
+    /\b(?:gastei|paguei|comprei|adquiri|recebi|ganhei|lancei|registrei|adicionei)\s+(?:r\$\s*)?(\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)\b/i,
     /(?:r\$\s*)(\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)/i,
     /(\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)\s*(?:reais?|real)\b/i,
     /\b(?:no\s+valor\s+de|valor\s+de|valor)\s+(\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)/i,
