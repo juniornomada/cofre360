@@ -2,13 +2,16 @@ import { useRef, useState } from "react";
 import { Loader2, Mic } from "lucide-react";
 import { toast } from "sonner";
 import { parseVoiceTransaction, type VoiceTransactionDraft } from "@/lib/voice-transaction";
+import { selectPreferredVoiceTranscript } from "@/lib/voice-recognition";
 
 interface SpeechRecognitionAlternativeLike {
   transcript?: string;
+  confidence?: number;
 }
 
 interface SpeechRecognitionResultLike {
-  0?: SpeechRecognitionAlternativeLike;
+  length?: number;
+  [index: number]: SpeechRecognitionAlternativeLike | undefined;
   isFinal?: boolean;
 }
 
@@ -77,7 +80,9 @@ export function VoiceTransactionButton({ onDraft }: { onDraft: (draft: VoiceTran
       // Fala longa pode chegar em vários resultados finais. Acumulamos todos
       // e só interpretamos quando o usuário termina ou o navegador encerra a sessão.
       recognition.continuous = true;
-      recognition.maxAlternatives = 1;
+      // Pedimos várias alternativas porque o reconhecimento do Android pode trocar
+      // "31 centavos" por uma alternativa ambígua como "R$ 31".
+      recognition.maxAlternatives = 5;
       recognitionRef.current = recognition;
       finalSegmentsRef.current = {};
       recognitionErrorRef.current = false;
@@ -89,7 +94,15 @@ export function VoiceTransactionButton({ onDraft }: { onDraft: (draft: VoiceTran
         for (let index = startIndex; index < results.length; index += 1) {
           const result = results[index];
           if (!result || result.isFinal === false) continue;
-          const transcript = result[0]?.transcript?.trim() || "";
+
+          const alternatives: string[] = [];
+          const alternativeCount = Math.max(1, result.length ?? 1);
+          for (let alternativeIndex = 0; alternativeIndex < alternativeCount; alternativeIndex += 1) {
+            const transcript = result[alternativeIndex]?.transcript?.trim() || "";
+            if (transcript) alternatives.push(transcript);
+          }
+
+          const transcript = selectPreferredVoiceTranscript(alternatives);
           if (transcript) finalSegmentsRef.current[index] = transcript;
         }
       };
