@@ -268,6 +268,7 @@ function inferCategory(name: string, spokenCategory: string | null, type: VoiceT
 
 function cleanNameCandidate(raw: string): string {
   let value = raw
+    .replace(/^[,.!?;:\\s]+/g, "")
     .replace(/[,.!?;:]+$/g, "")
     .replace(/^\s*(?:uma?\s+)?(?:transa[cç][aã]o|despesa|compra|gasto|receita)\s+(?:chamad[ao]\s+|com\s+o\s+nome\s+)?/i, "")
     .replace(/^\s*(?:no|na|em|do|da|para|por)\s+/i, "")
@@ -276,6 +277,31 @@ function cleanNameCandidate(raw: string): string {
 
   if (!value || value.split(" ").length > 12 || value.length > 80) return "Transação por voz";
   return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+const INFORMAL_REFERENCE_LABELS: Record<string, string> = {
+  mae: "mãe",
+  pai: "pai",
+  creta: "Creta",
+  spacefox: "Spacefox",
+  "space fox": "Spacefox",
+};
+
+function splitInformalReferenceFromName(name: string): { baseName: string; reference: string | null } {
+  if (!name || name === "Transação por voz") return { baseName: name, reference: null };
+
+  const withPreposition = name.match(/\s+(?:do|da|de)\s+(m[aã]e|pai|creta|space\s*fox)\s*$/i);
+  const bareKnown = name.match(/\s+(m[aã]e|pai|creta|space\s*fox)\s*$/i);
+  const match = withPreposition || bareKnown;
+  if (!match) return { baseName: name, reference: null };
+
+  const rawReference = match[1];
+  const reference = INFORMAL_REFERENCE_LABELS[normalize(rawReference)];
+  if (!reference) return { baseName: name, reference: null };
+
+  const baseName = name.slice(0, match.index).trim().replace(/[,.!?;:]+$/g, "");
+  if (!baseName) return { baseName: name, reference: null };
+  return { baseName, reference };
 }
 
 function findMoneyPosition(text: string): { start: number; end: number } | null {
@@ -296,7 +322,7 @@ function findMoneyPosition(text: string): { start: number; end: number } | null 
 
 function extractName(text: string): string {
   const explicit = text.match(new RegExp(
-    `\\b(?:nome(?:\\s+da)?(?:\\s+transa[cç][aã]o)?|descri[cç][aã]o)\\s*(?:é|e|vai\\s+ser|ser[aá]|:|=)?\\s*(?:de\\s+)?(.+?)(?=\\s+(?:${METADATA_BOUNDARY})|[,.]|$)`,
+    `\\b(?:nome(?:\\s+da)?(?:\\s+transa[cç][aã]o)?|descri[cç][aã]o)\\s*(?:[,;:=\\-]\\s*)?(?:é|e|vai\\s+ser|ser[aá])?\\s*(?:de\\s+)?(.+?)(?=\\s+(?:${METADATA_BOUNDARY})|[,.]|$)`,
     "i",
   ));
   if (explicit?.[1]) return cleanNameCandidate(explicit[1]);
@@ -347,8 +373,13 @@ export function parseVoiceTransaction(transcript: string, now = new Date()): Voi
     "i",
   ));
   const spokenCategory = spokenCategoryMatch?.[1]?.trim() || null;
-  const baseName = isYield ? "Rendimento" : extractName(transcript);
-  const reference = parseReference(transcript);
+  const extractedName = isYield ? "Rendimento" : extractName(transcript);
+  const explicitReference = parseReference(transcript);
+  const informalReference = explicitReference
+    ? { baseName: extractedName, reference: null }
+    : splitInformalReferenceFromName(extractedName);
+  const baseName = explicitReference ? extractedName : informalReference.baseName;
+  const reference = explicitReference || informalReference.reference;
   const name = reference && !baseName.endsWith(`(${reference})`)
     ? `${baseName} (${reference})`
     : baseName;

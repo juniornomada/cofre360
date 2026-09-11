@@ -92,4 +92,22 @@ describe("parseVoiceTransaction", () => {
     expect(parseVoiceTransaction("Receita, nome Salário Junior, valor 1000 reais", now).name)
       .toBe("Salário Junior");
   });
+
+  it("entende referência informal no próprio nome", () => {
+    expect(parseVoiceTransaction("Despesa, nome, Posto de Gasolina do Creta, valor, 100 reais", now).name)
+      .toBe("Posto de Gasolina (Creta)");
+    expect(parseVoiceTransaction("Despesa, nome, Posto de Gasolina Spacefox, valor, 100 reais", now).name)
+      .toBe("Posto de Gasolina (Spacefox)");
+    expect(parseVoiceTransaction("Receita, nome, Salário Junior da mãe, valor, 1000 reais", now).name)
+      .toBe("Salário Junior (mãe)");
+    expect(parseVoiceTransaction("Despesa, nome, Pedágio do pai, valor, 20 reais", now).name)
+      .toBe("Pedágio (pai)");
+  });
+
+  it("não cria referência informal quando o sufixo não é conhecido", () => {
+    expect(parseVoiceTransaction("Receita, nome, Salário Carol, valor, 2000 reais", now).name)
+      .toBe("Salário Carol");
+    expect(parseVoiceTransaction("Receita, nome, Salário Junior, valor, 2000 reais", now).name)
+      .toBe("Salário Junior");
+  });
 });
