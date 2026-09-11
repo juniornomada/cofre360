@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { parseVoiceTransaction, voiceAccountNamesMatch } from "@/lib/voice-transaction";
 
-// Regressões do fluxo de voz: valores, conta e referência entre parênteses.
+// Regressões do fluxo de voz: valores, conta, referência e categoria inferida.
 describe("parseVoiceTransaction", () => {
   const now = new Date(2026, 8, 8, 10, 0, 0);
 
@@ -109,5 +109,30 @@ describe("parseVoiceTransaction", () => {
       .toBe("Salário Carol");
     expect(parseVoiceTransaction("Receita, nome, Salário Junior, valor, 2000 reais", now).name)
       .toBe("Salário Junior");
+  });
+
+  it("infere categorias seguras quando a transação ainda não tem histórico", () => {
+    const salary = parseVoiceTransaction("Receita, nome, Salário Junior da mãe, valor, 1000 reais", now);
+    expect(salary.category).toBe("Receita > Salário");
+    expect(salary.icon).toBe("💼");
+
+    const fuel = parseVoiceTransaction("Despesa, nome, Posto de Gasolina do Creta, valor, 100 reais", now);
+    expect(fuel.category).toBe("Transporte > Combustível");
+    expect(fuel.icon).toBe("⛽");
+
+    const toll = parseVoiceTransaction("Despesa, nome, Pedágio do pai, valor, 20 reais", now);
+    expect(toll.category).toBe("Transporte > Pedágio");
+    expect(toll.icon).toBe("🛣️");
+
+    const unknown = parseVoiceTransaction("Despesa, nome, Floricultura Central, valor, 80 reais", now);
+    expect(unknown.category).toBe("Outros > Outros");
+    expect(unknown.icon).toBe("📄");
+  });
+
+  it("distingue restaurante de delivery na inferência sem histórico", () => {
+    expect(parseVoiceTransaction("Despesa, nome, Restaurante Central, valor, 60 reais", now).category)
+      .toBe("Alimentação > Restaurante");
+    expect(parseVoiceTransaction("Despesa, nome, iFood, valor, 45 reais", now).category)
+      .toBe("Alimentação > Delivery");
   });
 });
