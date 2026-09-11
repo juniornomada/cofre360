@@ -19,4 +19,4 @@ jobs:
       - name: Verify
         run: git diff --check && grep -F "const reference = parseReference(transcript);" src/lib/voice-transaction.ts && grep -F "coloca referência entre parênteses no nome" src/lib/__tests__/voice-transaction.test.ts
       - name: Commit
-        run: git config user.name "github-actions[bot]" && git config user.email "41898282+github-actions[bot]@users.noreply.github.com" && git rm .github/workflows/apply-voice-reference.yml && git add src/lib/voice-transaction.ts src/lib/__tests__/voice-transaction.test.ts && git commit -m "feat: support reference suffix in voice transaction names" && git push
+        run: git config user.name "github-actions[bot]" && git config user.email "41898282+github-actions[bot]@users.noreply.github.com" && git rm .github/workflows/apply-voice-reference.yml && git add src/lib/voice-transaction.ts src/lib/__tests__/voice-transaction.test.ts && git commit -m "feat support reference suffix in voice transaction names" && git push
