@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { parseVoiceTransaction, voiceAccountNamesMatch } from "@/lib/voice-transaction";
 
+// Regressões do fluxo de voz: valores, conta e referência entre parênteses.
 describe("parseVoiceTransaction", () => {
   const now = new Date(2026, 8, 8, 10, 0, 0);
 
