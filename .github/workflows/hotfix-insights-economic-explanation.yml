@@ -1,4 +1,4 @@
-name: Improve Insights IA economic spending explanations
+name: Fix Insights IA old installment categories
 on:
   push:
     branches: [main]
@@ -13,58 +13,119 @@ jobs:
       - uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Improve financial chat explanations
+      - name: Fix old installment category intent
         run: |
           python - <<'PY'
           from pathlib import Path
           path = Path('supabase/functions/financial-chat/index.ts')
           text = path.read_text()
-          needle = '  const asksObjectiveAmount = /(quanto .*gastei|quanto gastei|qual .*gasto|gasto total|gastos totais|total .*despesas?|despesas? .*mes|despesas? .*mês|despesas? em |despesas? de )/.test(q);'
-          insertion = "\n".join([
-              needle,
-              '  const asksEconomicVsExpenseConcept =',
-              '    /(gasto economico|gasto real|despesa economica)/.test(q) &&',
-              '    /(despesas?|saida|movimentacao|fluxo de caixa|pagamento)/.test(q) &&',
-              '    /(diferenca|diferente|qual e|o que muda)/.test(q);',
-          ])
-          if needle not in text:
-              raise SystemExit('Could not find objective amount intent')
-          text = text.replace(needle, insertion, 1)
-          old_gate = '  if (!detailOnly && !asksCategoryBreakdown && !asksObjectiveAmount) return null;'
-          new_gate = '  if (!detailOnly && !asksCategoryBreakdown && !asksObjectiveAmount && !asksEconomicVsExpenseConcept) return null;'
-          if old_gate not in text:
-              raise SystemExit('Could not find deterministic gate')
-          text = text.replace(old_gate, new_gate, 1)
-          anchor = '  const allCategoryNames = Array.from(new Set(expenses.map((row) => rootCategory(row.category))));'
-          answer_lines = [
-              '  if (asksEconomicVsExpenseConcept && !detailOnly) {',
-              '    return `### 💳 Gasto econômico x movimentação financeira — ${label}\\n\\n**No Cofre360, o card DESPESAS é a referência do gasto econômico líquido do mês: R$ ${formatBRL(monthly.expense)}.**\\n\\nEle mostra o que efetivamente pesa como despesa no período, sem contar novamente movimentos que apenas deslocam dinheiro:\\n\\n- **Transferências entre suas contas** não entram como despesa.\\n- **Pagamentos de fatura do cartão** não entram de novo, porque as compras/parcelas já compõem as despesas.\\n- **Ajustes de saldo** ficam fora por não representarem consumo.\\n- **Reembolsos confirmados** reduzem o total de despesas.\\n\\nJá a **movimentação financeira das contas** mede entradas e saídas de caixa e pode incluir transferências e pagamentos de cartão. Por isso, saída de dinheiro da conta não é a mesma coisa que gasto econômico.\\n\\n> 💡 **Resumo:** para saber quanto pesou economicamente no mês, use **DESPESAS: R$ ${formatBRL(monthly.expense)}**. Para entender por onde o dinheiro transitou, olhe a movimentação das contas. A visão de gastos por categoria é uma análise separada, baseada na data original e no valor econômico da compra.`;',
-              '  }',
-              '',
-              anchor,
-          ]
-          if anchor not in text:
-              raise SystemExit('Could not find answer insertion anchor')
-          text = text.replace(anchor, "\n".join(answer_lines), 1)
-          prompt_anchor = '- Diferencie gasto econômico de movimentação de caixa/fatura quando isso for relevante.'
-          prompt_lines = [
-              prompt_anchor,
-              '- Em perguntas conceituais, responda primeiro a conclusão em linguagem simples e só depois explique a regra. Não responda apenas repetindo o valor do card.',
-              '- Se o usuário perguntar a diferença entre gasto econômico/real e o total de DESPESAS do mês, explique que, no resumo mensal do Cofre360, o card DESPESAS é a referência do gasto econômico líquido do período: ele exclui transferências internas, pagamentos de cartão e ajustes de saldo, e abate reembolsos confirmados. Diferencie isso de saída/movimentação de caixa. Se útil, esclareça também que a visão por categoria usa a data original e o valor econômico integral da compra e, por isso, é uma análise separada.',
-              '- Sempre que houver um valor real no contexto que responda à pergunta, incorpore-o à explicação em vez de dar uma resposta puramente genérica.',
-          ]
-          if prompt_anchor not in text:
-              raise SystemExit('Could not find system prompt anchor')
-          text = text.replace(prompt_anchor, "\n".join(prompt_lines), 1)
+
+          helper_anchor = '''function categoryTotals(rows: EconomicExpense[], key: string) {
+  const totals = new Map<string, number>();
+  for (const row of rows) {
+    if (monthKey(row.date) !== key) continue;
+    const category = rootCategory(row.category);
+    totals.set(category, (totals.get(category) || 0) + row.amount);
+  }
+  return [...totals.entries()].sort((a, b) => b[1] - a[1]);
+}
+'''
+          helper = helper_anchor + '''
+function oldInstallmentCategoryTotals(rows: Transaction[], key: string) {
+  const totals = new Map<string, number>();
+
+  for (const tx of rows) {
+    if (tx.is_visible === false || tx.type !== "expense" || !tx.card) continue;
+    if (isTransferOrCardPayment(tx.category) || isAdjustmentCategory(tx.category)) continue;
+
+    const totalInstallments = Number(tx.total_installments || 1);
+    const installmentNumber = Math.max(1, Number(tx.installment_number || 1));
+    if (totalInstallments <= 1) continue;
+
+    const chargeDate = parseTxDate(tx.date, tx.created_at);
+    if (!chargeDate || monthKey(chargeDate) !== key) continue;
+
+    let purchaseDate = parseTxDate(tx.purchase_date, tx.created_at);
+    if (!purchaseDate && installmentNumber > 1) {
+      purchaseDate = shiftMonths(chargeDate, -(installmentNumber - 1));
+    }
+    if (!purchaseDate || monthKey(purchaseDate) === key) continue;
+
+    const category = rootCategory(tx.category);
+    totals.set(category, (totals.get(category) || 0) + Number(tx.amount || 0));
+  }
+
+  return [...totals.entries()]
+    .map(([category, amount]) => [category, roundMoney(amount)] as [string, number])
+    .filter(([, amount]) => amount !== 0)
+    .sort((a, b) => b[1] - a[1]);
+}
+'''
+          if 'function oldInstallmentCategoryTotals(' not in text:
+              if helper_anchor not in text:
+                  raise SystemExit('Could not find categoryTotals helper')
+              text = text.replace(helper_anchor, helper, 1)
+
+          intent_anchor = '  const asksCategoryBreakdown = /(gastos? por categoria|em quais categorias|quais categorias|categorias? .*gastei|gastei .*categorias?)/.test(q);'
+          intent_block = '''  const asksOldInstallmentCategories =
+    /(parcelas?.*(compras?|gastos?).*(antig|anterior)|compras? .*antig.*parcelas?|parcelas? .*mes(es)? anterior)/.test(q) &&
+    /(categor|respons|quais|origem|vieram|onde)/.test(q);
+''' + intent_anchor
+          if 'const asksOldInstallmentCategories' not in text:
+              if intent_anchor not in text:
+                  raise SystemExit('Could not find category intent')
+              text = text.replace(intent_anchor, intent_block, 1)
+
+          gate_old = '  if (!detailOnly && !asksCategoryBreakdown && !asksObjectiveAmount && !asksEconomicVsExpenseConcept) return null;'
+          gate_new = '  if (!detailOnly && !asksOldInstallmentCategories && !asksCategoryBreakdown && !asksObjectiveAmount && !asksEconomicVsExpenseConcept) return null;'
+          if gate_new not in text:
+              if gate_old not in text:
+                  raise SystemExit('Could not find deterministic gate')
+              text = text.replace(gate_old, gate_new, 1)
+
+          calculation_anchor = '  const categoryTotal = roundMoney(categories.reduce((sum, [, value]) => sum + value, 0));'
+          calculation_block = calculation_anchor + '''
+  const oldInstallmentCategories = oldInstallmentCategoryTotals(transactions, key);
+  const oldInstallmentTotal = roundMoney(oldInstallmentCategories.reduce((sum, [, value]) => sum + value, 0));
+'''
+          if 'const oldInstallmentCategories = oldInstallmentCategoryTotals' not in text:
+              if calculation_anchor not in text:
+                  raise SystemExit('Could not find category total anchor')
+              text = text.replace(calculation_anchor, calculation_block, 1)
+
+          answer_anchor = '  if (asksEconomicVsExpenseConcept && !detailOnly) {'
+          answer_block = '''  if (asksOldInstallmentCategories && !detailOnly) {
+    const oldInstallmentLines = oldInstallmentCategories.length
+      ? oldInstallmentCategories.slice(0, 12).map(([category, amount]) => `- ${categoryEmoji(category)} **${category} — R$ ${formatBRL(amount)}**`).join("\\n")
+      : "(nenhuma parcela de compra antiga cobrada no período)";
+
+    return `### 💳 Parcelas de compras antigas por categoria — ${label}\\n\\n**Total cobrado no mês vindo de compras anteriores: R$ ${formatBRL(oldInstallmentTotal)}**\\n\\n${oldInstallmentLines}\\n\\n> 💡 Aqui entram somente **parcelas cobradas em ${label} cuja compra original ocorreu em mês anterior**. Isso é diferente de “Gastos por categoria”, que mostra as compras realizadas no próprio período pelo valor econômico total.`;
+  }
+
+''' + answer_anchor
+          if 'Parcelas de compras antigas por categoria' not in text:
+              if answer_anchor not in text:
+                  raise SystemExit('Could not find deterministic answer anchor')
+              text = text.replace(answer_anchor, answer_block, 1)
+
+          prompt_anchor = '- NUNCA use a "Composição das DESPESAS pelo mês de cobrança/lançamento" como se fosse gasto novo por categoria. Ela serve apenas para explicar quais parcelas/lançamentos compõem o card mensal de DESPESAS e pode incluir compras de meses anteriores.'
+          prompt_extra = prompt_anchor + '''
+- Se o usuário perguntar especificamente quais categorias originaram parcelas de compras antigas cobradas no mês, responda SOMENTE com as parcelas do mês cuja compra original ocorreu em mês anterior, agrupadas pela categoria da compra. Não use a visão geral de "Gastos por categoria" para essa pergunta.
+'''
+          if 'quais categorias originaram parcelas de compras antigas' not in text:
+              if prompt_anchor not in text:
+                  raise SystemExit('Could not find system prompt installment anchor')
+              text = text.replace(prompt_anchor, prompt_extra, 1)
+
           path.write_text(text)
           PY
-          grep -q 'asksEconomicVsExpenseConcept' supabase/functions/financial-chat/index.ts
-          grep -q 'Gasto econômico x movimentação financeira' supabase/functions/financial-chat/index.ts
-          grep -q 'Em perguntas conceituais, responda primeiro a conclusão' supabase/functions/financial-chat/index.ts
+          grep -q 'oldInstallmentCategoryTotals' supabase/functions/financial-chat/index.ts
+          grep -q 'asksOldInstallmentCategories' supabase/functions/financial-chat/index.ts
+          grep -q 'Parcelas de compras antigas por categoria' supabase/functions/financial-chat/index.ts
       - name: Commit result
         run: |
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add supabase/functions/financial-chat/index.ts
-          git commit -m "fix: improve Insights IA economic explanations"
+          git commit -m "fix: answer old installment categories correctly"
           git push
