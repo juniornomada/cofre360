@@ -555,9 +555,17 @@ export function TransactionsPage() {
     return matchesCategory && matchesSource && matchesAccount && matchesMin && matchesMax && matchesMonth && matchesDate && matchesYieldComponent;
   });
 
+  // Receitas/Despesas representam fluxo econômico real. Transferências entre
+  // contas e pagamentos de cartão continuam visíveis em "Todos", mas não são
+  // classificados como nova receita ou nova despesa.
+  const isEconomicSummaryTransaction = (tx: Transaction) => {
+    const group = parseCategoryValue(tx.category || "").group;
+    return group !== "Transferências" && group !== "Pagamento de Cartão";
+  };
+
   const filtered = filterType === "all"
     ? filteredWithoutType
-    : filteredWithoutType.filter((tx) => tx.type === filterType);
+    : filteredWithoutType.filter((tx) => tx.type === filterType && isEconomicSummaryTransaction(tx));
 
   const activeFilterCount = (filterStartDate || filterEndDate ? 1 : 0) + (minAmt !== null || maxAmt !== null ? 1 : 0) + (filterType !== "all" ? 1 : 0) + (sortBy !== "date-desc" ? 1 : 0) + (filterAccountId ? 1 : 0);
 
@@ -615,8 +623,15 @@ export function TransactionsPage() {
     localStorage.setItem("transactions_filter_source", "all");
   };
 
-  const totalIncome = filteredWithoutType.filter(t => t.type === "income" && t.is_visible !== false).reduce((s, t) => s + t.amount, 0);
-  const totalExpense = filteredWithoutType.filter(t => t.type === "expense" && t.is_visible !== false).reduce((s, t) => s + t.amount, 0);
+  const economicSummaryTransactions = filteredWithoutType.filter(
+    (tx) => tx.is_visible !== false && isEconomicSummaryTransaction(tx),
+  );
+  const totalIncome = economicSummaryTransactions
+    .filter((tx) => tx.type === "income")
+    .reduce((sum, tx) => sum + Number(tx.amount), 0);
+  const totalExpense = economicSummaryTransactions
+    .filter((tx) => tx.type === "expense")
+    .reduce((sum, tx) => sum + Number(tx.amount), 0);
 
   const generatePDF = () => {
     try {
