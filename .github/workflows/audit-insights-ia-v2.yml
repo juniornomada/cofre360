@@ -1,4 +1,4 @@
-name: Audit and harden Insights IA
+name: Audit Insights IA follow-up details
 on:
   push:
     branches: [main]
@@ -13,21 +13,18 @@ jobs:
       - uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Patch suggestion lists
-        run: python .github/scripts/audit_insights_patch.py || true
-      - name: Patch backend and regression suite
-        run: python .github/scripts/audit_insights_backend_patch.py
-      - name: Validate patch
+      - name: Harden follow-up details
+        run: python .github/scripts/audit_insights_followup_patch.py
+      - name: Validate follow-up hardening
         run: |
-          grep -q 'oldInstallmentDetails' supabase/functions/financial-chat/index.ts
-          grep -q 'AUDITED_SUGGESTIONS' supabase/functions/financial-chat/index.ts
-          grep -q 'NUNCA estime parcelas' supabase/functions/financial-chat/index.ts
-          grep -q 'Follow-up contextual de alimentação' supabase/functions/run-ai-tests/index.ts
-          grep -q 'Como estão minhas finanças este mês' src/routes/insights.tsx
-      - name: Commit audited fixes
+          grep -q 'asksCategoryItemDetail' supabase/functions/financial-chat/index.ts
+          grep -q 'currentEconomicItemLines' supabase/functions/financial-chat/index.ts
+          grep -q 'chargeMonthStart' supabase/functions/financial-chat/index.ts
+          grep -q 'outras despesas' supabase/functions/financial-chat/index.ts
+      - name: Commit follow-up hardening
         run: |
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add src/routes/insights.tsx src/components/FinancialChat.tsx supabase/functions/financial-chat/index.ts supabase/functions/run-ai-tests/index.ts
-          git commit -m 'fix: audit and harden Insights IA financial answers'
+          git add supabase/functions/financial-chat/index.ts
+          git commit -m 'fix: harden Insights IA item-level follow-ups'
           git push
