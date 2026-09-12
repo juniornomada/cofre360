@@ -1,0 +1,84 @@
+name: Refine Insights IA transaction lists
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/refine-insights-show-all-transactions.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Show every transaction and prefix category icons
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          chat = Path('src/components/FinancialChat.tsx')
+          text = chat.read_text()
+          text = text.replace(
+              'import { Children, isValidElement, useState, useRef, useEffect, type ReactNode } from "react";',
+              'import { isValidElement, useState, useRef, useEffect, type ReactNode } from "react";',
+              1,
+          )
+          text = text.replace('const MAX_VISIBLE_ASSISTANT_ITEMS = 5;\n', '', 1)
+
+          start = text.index('function CompactAssistantList(')
+          end = text.index('\n}\n\nexport function FinancialChat', start) + 3
+          replacement = '''function CompactAssistantList({ children, ordered = false }: { children?: ReactNode; ordered?: boolean }) {
+  const ListTag = ordered ? "ol" : "ul";
+
+  return (
+    <div className="my-2.5">
+      <ListTag className="space-y-1.5">{children}</ListTag>
+    </div>
+  );
+}
+'''
+          text = text[:start] + replacement + text[end:]
+          chat.write_text(text)
+
+          backend = Path('supabase/functions/financial-chat/index.ts')
+          code = backend.read_text()
+          code = code.replace(
+              'oldInstallmentRows.slice(0, 25).map((item) => {',
+              'oldInstallmentRows.map((item) => {',
+              1,
+          )
+          code = code.replace(
+              'return `- **${item.name} — R$ ${formatBRL(item.amount)}** · ${item.installmentNumber}/${item.totalInstallments} · ${item.category} · ${item.card} · compra ${purchase}`;',
+              'return `- ${categoryEmoji(item.category)} **${item.name} — R$ ${formatBRL(item.amount)}** · ${item.installmentNumber}/${item.totalInstallments} · ${item.category} · ${item.card} · compra ${purchase}`;',
+              1,
+          )
+          code = code.replace(
+              'items.slice(0, 30).map((row) => `- **${row.name} — R$ ${formatBRL(row.amount)}** · ${row.category}`).join("\\n")',
+              'items.map((row) => `- ${categoryEmoji(rootCategory(row.category))} **${row.name} — R$ ${formatBRL(row.amount)}** · ${row.category}`).join("\\n")',
+              1,
+          )
+          backend.write_text(code)
+          PY
+
+          grep -q 'ListTag className="space-y-1.5">{children}' src/components/FinancialChat.tsx
+          ! grep -q 'Ver todos (' src/components/FinancialChat.tsx
+          grep -q 'oldInstallmentRows.map' supabase/functions/financial-chat/index.ts
+          grep -q 'categoryEmoji(item.category)' supabase/functions/financial-chat/index.ts
+          grep -q 'items.map((row) => `- ${categoryEmoji(rootCategory(row.category))}' supabase/functions/financial-chat/index.ts
+
+      - name: Commit result
+        shell: bash
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/components/FinancialChat.tsx supabase/functions/financial-chat/index.ts
+          git commit -m "feat: show all Insights IA transactions with category icons"
+          git push
