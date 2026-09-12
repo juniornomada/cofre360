@@ -1,0 +1,50 @@
+name: Highlight active summary filter
+
+on:
+  push:
+    paths:
+      - .github/workflows/highlight-summary-filter.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Patch active Receitas/Despesas styles
+        shell: bash
+        run: |
+          SCRIPT='from pathlib import Path
+p=Path("src/routes/transactions.tsx")
+s=p.read_text()
+old1="""className={`rounded-xl border bg-card p-3 text-center ${\n            filterType === \"income\"\n              ? \"border-border/30 ring-1 ring-primary/30\"\n              : \"border-border/30\"\n          }`}"""
+new1="""className={`rounded-xl border p-3 text-center transition-colors ${\n            filterType === \"income\"\n              ? \"border-primary/60 bg-primary/10 ring-1 ring-primary/40 shadow-sm\"\n              : \"border-border/30 bg-card\"\n          }`}"""
+old2="""className={`rounded-xl border bg-card p-3 text-center ${\n            filterType === \"expense\"\n              ? \"border-border/30 ring-1 ring-destructive/30\"\n              : \"border-border/30\"\n          }`}"""
+new2="""className={`rounded-xl border p-3 text-center transition-colors ${\n            filterType === \"expense\"\n              ? \"border-destructive/60 bg-destructive/10 ring-1 ring-destructive/40 shadow-sm\"\n              : \"border-border/30 bg-card\"\n          }`}"""
+if old1 not in s: raise SystemExit("income style not found")
+if old2 not in s: raise SystemExit("expense style not found")
+s=s.replace(old1,new1,1).replace(old2,new2,1)
+p.write_text(s)
+'
+          printf '%s' "$SCRIPT" | base64 -w0 > /tmp/script.b64
+          base64 -d /tmp/script.b64 | python3
+
+      - name: Validate patch
+        run: |
+          git diff --check
+          grep -F 'border-primary/60 bg-primary/10 ring-1 ring-primary/40 shadow-sm' src/routes/transactions.tsx
+          grep -F 'border-destructive/60 bg-destructive/10 ring-1 ring-destructive/40 shadow-sm' src/routes/transactions.tsx
+
+      - name: Commit patch and remove workflow
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/highlight-summary-filter.yml
+          git add src/routes/transactions.tsx
+          git commit -m "feat: highlight active income expense filters"
+          git push
