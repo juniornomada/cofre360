@@ -267,6 +267,36 @@ function categoryTotals(rows: EconomicExpense[], key: string) {
   return [...totals.entries()].sort((a, b) => b[1] - a[1]);
 }
 
+function oldInstallmentCategoryTotals(rows: Transaction[], key: string) {
+  const totals = new Map<string, number>();
+
+  for (const tx of rows) {
+    if (tx.is_visible === false || tx.type !== "expense" || !tx.card) continue;
+    if (isTransferOrCardPayment(tx.category) || isAdjustmentCategory(tx.category)) continue;
+
+    const totalInstallments = Number(tx.total_installments || 1);
+    const installmentNumber = Math.max(1, Number(tx.installment_number || 1));
+    if (totalInstallments <= 1) continue;
+
+    const chargeDate = parseTxDate(tx.date, tx.created_at);
+    if (!chargeDate || monthKey(chargeDate) !== key) continue;
+
+    let purchaseDate = parseTxDate(tx.purchase_date, tx.created_at);
+    if (!purchaseDate && installmentNumber > 1) {
+      purchaseDate = shiftMonths(chargeDate, -(installmentNumber - 1));
+    }
+    if (!purchaseDate || monthKey(purchaseDate) === key) continue;
+
+    const category = rootCategory(tx.category);
+    totals.set(category, (totals.get(category) || 0) + Number(tx.amount || 0));
+  }
+
+  return [...totals.entries()]
+    .map(([category, amount]) => [category, roundMoney(amount)] as [string, number])
+    .filter(([, amount]) => amount !== 0)
+    .sort((a, b) => b[1] - a[1]);
+}
+
 const STOP_WORDS = new Set([
   "quanto", "gastei", "gasto", "gastos", "com", "de", "do", "da", "dos", "das", "em", "no", "na", "nos", "nas",
   "esse", "essa", "este", "esta", "mes", "ano", "semana", "dia", "hoje", "ontem", "passado", "atual", "ultimo", "ultima",
@@ -367,13 +397,16 @@ async function buildDeterministicFinancialAnswer(
     return null;
   }
 
+  const asksOldInstallmentCategories =
+    /(parcelas?.*(compras?|gastos?).*(antig|anterior)|compras? .*antig.*parcelas?|parcelas? .*mes(es)? anterior)/.test(q) &&
+    /(categor|respons|quais|origem|vieram|onde)/.test(q);
   const asksCategoryBreakdown = /(gastos? por categoria|em quais categorias|quais categorias|categorias? .*gastei|gastei .*categorias?)/.test(q);
   const asksObjectiveAmount = /(quanto .*gastei|quanto gastei|qual .*gasto|gasto total|gastos totais|total .*despesas?|despesas? .*mes|despesas? .*mês|despesas? em |despesas? de )/.test(q);
   const asksEconomicVsExpenseConcept =
     /(gasto economico|gasto real|despesa economica)/.test(q) &&
     /(despesas?|saida|movimentacao|fluxo de caixa|pagamento)/.test(q) &&
     /(diferenca|diferente|qual e|o que muda)/.test(q);
-  if (!detailOnly && !asksCategoryBreakdown && !asksObjectiveAmount && !asksEconomicVsExpenseConcept) return null;
+  if (!detailOnly && !asksOldInstallmentCategories && !asksCategoryBreakdown && !asksObjectiveAmount && !asksEconomicVsExpenseConcept) return null;
 
   const { data, error } = await supabase
     .from("transactions")
@@ -389,6 +422,16 @@ async function buildDeterministicFinancialAnswer(
   const monthly = monthlyEconomicSummary(transactions, key);
   const categories = categoryTotals(expenses, key);
   const categoryTotal = roundMoney(categories.reduce((sum, [, value]) => sum + value, 0));
+  const oldInstallmentCategories = oldInstallmentCategoryTotals(transactions, key);
+  const oldInstallmentTotal = roundMoney(oldInstallmentCategories.reduce((sum, [, value]) => sum + value, 0));
+
+  if (asksOldInstallmentCategories && !detailOnly) {
+    const oldInstallmentLines = oldInstallmentCategories.length
+      ? oldInstallmentCategories.slice(0, 12).map(([category, amount]) => `- ${categoryEmoji(category)} **${category} — R$ ${formatBRL(amount)}**`).join("\n")
+      : "(nenhuma parcela de compra antiga cobrada no período)";
+
+    return `### 💳 Parcelas de compras antigas por categoria — ${label}\n\n**Total cobrado no mês vindo de compras anteriores: R$ ${formatBRL(oldInstallmentTotal)}**\n\n${oldInstallmentLines}\n\n> 💡 Aqui entram somente **parcelas cobradas em ${label} cuja compra original ocorreu em mês anterior**. Isso é diferente de “Gastos por categoria”, que mostra as compras realizadas no próprio período pelo valor econômico total.`;
+  }
 
   if (asksEconomicVsExpenseConcept && !detailOnly) {
     return `### 💳 Gasto econômico x movimentação financeira — ${label}\n\n**No Cofre360, o card DESPESAS é a referência do gasto econômico líquido do mês: R$ ${formatBRL(monthly.expense)}.**\n\nEle mostra o que efetivamente pesa como despesa no período, sem contar novamente movimentos que apenas deslocam dinheiro:\n\n- **Transferências entre suas contas** não entram como despesa.\n- **Pagamentos de fatura do cartão** não entram de novo, porque as compras/parcelas já compõem as despesas.\n- **Ajustes de saldo** ficam fora por não representarem consumo.\n- **Reembolsos confirmados** reduzem o total de despesas.\n\nJá a **movimentação financeira das contas** mede entradas e saídas de caixa e pode incluir transferências e pagamentos de cartão. Por isso, saída de dinheiro da conta não é a mesma coisa que gasto econômico.\n\n> 💡 **Resumo:** para saber quanto pesou economicamente no mês, use **DESPESAS: R$ ${formatBRL(monthly.expense)}**. Para entender por onde o dinheiro transitou, olhe a movimentação das contas. A visão de gastos por categoria é uma análise separada, baseada na data original e no valor econômico da compra.`;
@@ -580,6 +623,7 @@ Regras financeiras obrigatórias:
 - Quando o usuário perguntar "gasto total", "quanto gastei no mês", "despesas do mês" ou equivalente, use SEMPRE o valor "Despesas" da seção "MESMA REGRA DA HOME/TRANSAÇÕES". Esse é o mesmo número exibido nos cards do app.
 - Se o usuário perguntar "em quais categorias", "gastos por categoria", "quanto gastei com Transporte/Alimentação/etc." ou equivalente, use SEMPRE a seção "Gastos por categoria — compras realizadas no período". Essa visão usa a data original da compra e não repete parcelas nos meses seguintes.
 - NUNCA use a "Composição das DESPESAS pelo mês de cobrança/lançamento" como se fosse gasto novo por categoria. Ela serve apenas para explicar quais parcelas/lançamentos compõem o card mensal de DESPESAS e pode incluir compras de meses anteriores.
+- Se o usuário perguntar especificamente quais categorias originaram parcelas de compras antigas cobradas no mês, responda SOMENTE com as parcelas do mês cuja compra original ocorreu em mês anterior, agrupadas pela categoria da compra. Não use a visão geral de "Gastos por categoria" para essa pergunta.
 - Se o usuário perguntar quais parcelas/lançamentos compõem o total de DESPESAS, use a composição mensal e deixe explícito que parcelas de compras antigas continuam sendo despesas do mês da cobrança, mas não novos gastos da categoria.
 - Se o usuário responder apenas "detalhe" depois de perguntar o gasto/despesa total do mês, apresente as duas visões separadamente e com rótulos claros: (1) DESPESAS do mês pela cobrança/lançamento; (2) GASTOS POR CATEGORIA das compras realizadas no mês. Não force os dois totais a serem iguais.
 - NÃO use o "Total por categorias no mês da compra" como resposta para "gasto total/despesas do mês". Essa visão existe para análise econômica por categoria e pode diferir do card mensal por compras parceladas e data original da compra.
