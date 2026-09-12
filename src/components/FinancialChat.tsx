@@ -53,13 +53,43 @@ const assistantNodeText = (node: ReactNode): string => {
 
 const assistantListTone = (value: string) => {
   const text = value.toLocaleLowerCase("pt-BR");
-  if (text.includes("transporte") || text.includes("🚗")) return "border-sky-400/30 bg-sky-400/[0.07]";
-  if (text.includes("saúde") || text.includes("saude") || text.includes("💊")) return "border-rose-400/30 bg-rose-400/[0.07]";
-  if (text.includes("compras") || text.includes("🛍️")) return "border-violet-400/30 bg-violet-400/[0.07]";
-  if (text.includes("alimentação") || text.includes("alimentacao") || text.includes("🍴")) return "border-amber-400/30 bg-amber-400/[0.07]";
-  if (text.includes("moradia") || text.includes("🏠")) return "border-emerald-400/30 bg-emerald-400/[0.07]";
-  if (text.includes("receita") || text.includes("💰")) return "border-emerald-400/25 bg-emerald-400/[0.06]";
-  return "border-border/50 bg-background/35";
+
+  // Paleta semântica de alto contraste. Cada categoria usa uma família de cor
+  // diferente e combinações específicas para light/dark theme.
+  if (text.includes("transporte") || text.includes("🚗")) {
+    return "border-cyan-500/60 bg-cyan-50 text-cyan-950 dark:border-cyan-400/50 dark:bg-cyan-400/10 dark:text-cyan-100";
+  }
+  if (text.includes("compras") || text.includes("🛍️")) {
+    return "border-lime-500/70 bg-lime-50 text-lime-950 dark:border-lime-300/60 dark:bg-lime-300/10 dark:text-lime-100";
+  }
+  if (text.includes("saúde") || text.includes("saude") || text.includes("💊")) {
+    return "border-rose-500/60 bg-rose-50 text-rose-950 dark:border-rose-400/50 dark:bg-rose-400/10 dark:text-rose-100";
+  }
+  if (text.includes("alimentação") || text.includes("alimentacao") || text.includes("🍴")) {
+    return "border-amber-500/65 bg-amber-50 text-amber-950 dark:border-amber-300/55 dark:bg-amber-300/10 dark:text-amber-100";
+  }
+  if (text.includes("moradia") || text.includes("🏠")) {
+    return "border-blue-500/60 bg-blue-50 text-blue-950 dark:border-blue-400/50 dark:bg-blue-400/10 dark:text-blue-100";
+  }
+  if (text.includes("impostos") || text.includes("taxas") || text.includes("🧾")) {
+    return "border-orange-500/65 bg-orange-50 text-orange-950 dark:border-orange-400/55 dark:bg-orange-400/10 dark:text-orange-100";
+  }
+  if (text.includes("educação") || text.includes("educacao") || text.includes("🎓")) {
+    return "border-indigo-500/60 bg-indigo-50 text-indigo-950 dark:border-indigo-400/50 dark:bg-indigo-400/10 dark:text-indigo-100";
+  }
+  if (text.includes("lazer") || text.includes("🎮")) {
+    return "border-fuchsia-500/60 bg-fuchsia-50 text-fuchsia-950 dark:border-fuchsia-400/50 dark:bg-fuchsia-400/10 dark:text-fuchsia-100";
+  }
+  if (text.includes("pets") || text.includes("pet ") || text.includes("🐾")) {
+    return "border-teal-500/60 bg-teal-50 text-teal-950 dark:border-teal-400/50 dark:bg-teal-400/10 dark:text-teal-100";
+  }
+  if (text.includes("receita") || text.includes("💰")) {
+    return "border-emerald-500/60 bg-emerald-50 text-emerald-950 dark:border-emerald-400/50 dark:bg-emerald-400/10 dark:text-emerald-100";
+  }
+  if (text.includes("outros") || text.includes("📦")) {
+    return "border-slate-400/60 bg-slate-50 text-slate-950 dark:border-slate-400/45 dark:bg-slate-400/10 dark:text-slate-100";
+  }
+  return "border-border/60 bg-background/45 text-foreground";
 };
 
 function CompactAssistantList({ children, ordered = false }: { children?: ReactNode; ordered?: boolean }) {
@@ -565,9 +595,10 @@ export function FinancialChat({ initialPrompt, suggestions }: { initialPrompt?: 
                       </li>
                     ),
                     strong: ({ children }) => {
-                      const value = assistantNodeText(children);
+                      const value = assistantNodeText(children).trim();
+                      const isStandaloneAmount = /^(?:total[^:]{0,40}:\s*)?[-+]?R\$/i.test(value);
                       return (
-                        <strong className={cn("font-semibold", /R\$/.test(value) ? "text-primary" : "text-foreground")}>
+                        <strong className={cn("font-semibold", isStandaloneAmount ? "text-primary" : "text-inherit")}>
                           {children}
                         </strong>
                       );
