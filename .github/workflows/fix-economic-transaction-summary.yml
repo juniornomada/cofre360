@@ -1,0 +1,80 @@
+name: Apply economic transaction summary fix
+
+on:
+  push:
+    paths:
+      - .github/workflows/fix-economic-transaction-summary.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Patch transaction summary semantics
+        shell: python
+        run: |
+          from pathlib import Path
+
+          path = Path("src/routes/transactions.tsx")
+          text = path.read_text()
+
+          old_filter = '''  const filtered = filterType === "all"
+    ? filteredWithoutType
+    : filteredWithoutType.filter((tx) => tx.type === filterType);
+'''
+          new_filter = '''  // Receitas/Despesas representam fluxo econômico real. Transferências entre
+  // contas e pagamentos de cartão continuam visíveis em "Todos", mas não são
+  // classificados como nova receita ou nova despesa.
+  const isEconomicSummaryTransaction = (tx: Transaction) => {
+    const group = parseCategoryValue(tx.category || "").group;
+    return group !== "Transferências" && group !== "Pagamento de Cartão";
+  };
+
+  const filtered = filterType === "all"
+    ? filteredWithoutType
+    : filteredWithoutType.filter((tx) => tx.type === filterType && isEconomicSummaryTransaction(tx));
+'''
+
+          old_totals = '''  const totalIncome = filteredWithoutType.filter(t => t.type === "income" && t.is_visible !== false).reduce((s, t) => s + t.amount, 0);
+  const totalExpense = filteredWithoutType.filter(t => t.type === "expense" && t.is_visible !== false).reduce((s, t) => s + t.amount, 0);
+'''
+          new_totals = '''  const economicSummaryTransactions = filteredWithoutType.filter(
+    (tx) => tx.is_visible !== false && isEconomicSummaryTransaction(tx),
+  );
+  const totalIncome = economicSummaryTransactions
+    .filter((tx) => tx.type === "income")
+    .reduce((sum, tx) => sum + Number(tx.amount), 0);
+  const totalExpense = economicSummaryTransactions
+    .filter((tx) => tx.type === "expense")
+    .reduce((sum, tx) => sum + Number(tx.amount), 0);
+'''
+
+          if old_filter not in text:
+            raise SystemExit("filter block not found")
+          if old_totals not in text:
+            raise SystemExit("totals block not found")
+
+          text = text.replace(old_filter, new_filter, 1)
+          text = text.replace(old_totals, new_totals, 1)
+          path.write_text(text)
+
+      - name: Validate patch
+        run: |
+          git diff --check
+          grep -F 'group !== "Transferências" && group !== "Pagamento de Cartão"' src/routes/transactions.tsx
+          grep -F 'isEconomicSummaryTransaction(tx)' src/routes/transactions.tsx
+
+      - name: Commit patch and remove temporary workflow
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/fix-economic-transaction-summary.yml
+          git add src/routes/transactions.tsx
+          git commit -m "fix: exclude internal movements from income expense summary"
+          git push
