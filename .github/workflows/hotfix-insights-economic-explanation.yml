@@ -17,62 +17,50 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
-
           path = Path('supabase/functions/financial-chat/index.ts')
           text = path.read_text()
-
-          old = '''  const asksCategoryBreakdown = /(gastos? por categoria|em quais categorias|quais categorias|categorias? .*gastei|gastei .*categorias?)/.test(q);
-  const asksObjectiveAmount = /(quanto .*gastei|quanto gastei|qual .*gasto|gasto total|gastos totais|total .*despesas?|despesas? .*mes|despesas? .*mês|despesas? em |despesas? de )/.test(q);
-  if (!detailOnly && !asksCategoryBreakdown && !asksObjectiveAmount) return null;
-'''
-          new = '''  const asksCategoryBreakdown = /(gastos? por categoria|em quais categorias|quais categorias|categorias? .*gastei|gastei .*categorias?)/.test(q);
-  const asksObjectiveAmount = /(quanto .*gastei|quanto gastei|qual .*gasto|gasto total|gastos totais|total .*despesas?|despesas? .*mes|despesas? .*mês|despesas? em |despesas? de )/.test(q);
-  const asksEconomicVsExpenseConcept =
-    /(gasto economico|gasto real|despesa economica)/.test(q) &&
-    /(despesas?|saida|movimentacao|fluxo de caixa|pagamento)/.test(q) &&
-    /(diferenca|diferente|qual e|o que muda)/.test(q);
-  if (!detailOnly && !asksCategoryBreakdown && !asksObjectiveAmount && !asksEconomicVsExpenseConcept) return null;
-'''
-          if old not in text:
-              raise SystemExit('Could not find deterministic intent block')
-          text = text.replace(old, new, 1)
-
-          anchor = '''  const categoryTotal = roundMoney(categories.reduce((sum, [, value]) => sum + value, 0));
-
-  const allCategoryNames = Array.from(new Set(expenses.map((row) => rootCategory(row.category))));
-'''
-          replacement = '''  const categoryTotal = roundMoney(categories.reduce((sum, [, value]) => sum + value, 0));
-
-  if (asksEconomicVsExpenseConcept && !detailOnly) {
-    return `### 💳 Gasto econômico x movimentação financeira — ${label}\n\n**No Cofre360, o card DESPESAS é a referência do gasto econômico líquido do mês: R$ ${formatBRL(monthly.expense)}.**\n\nEle mostra o que efetivamente pesa como despesa no período, sem contar novamente movimentos que apenas deslocam dinheiro:\n\n- **Transferências entre suas contas** não entram como despesa.\n- **Pagamentos de fatura do cartão** não entram de novo, porque as compras/parcelas já compõem as despesas.\n- **Ajustes de saldo** ficam fora por não representarem consumo.\n- **Reembolsos confirmados** reduzem o total de despesas.\n\nJá a **movimentação financeira das contas** mede entradas e saídas de caixa e pode incluir transferências e pagamentos de cartão. Por isso, saída de dinheiro da conta não é a mesma coisa que gasto econômico.\n\n> 💡 **Resumo:** para saber quanto pesou economicamente no mês, use **DESPESAS: R$ ${formatBRL(monthly.expense)}**. Para entender por onde o dinheiro transitou, olhe a movimentação das contas. A visão de gastos por categoria é uma análise separada, baseada na data original e no valor econômico da compra.`;
-  }
-
-  const allCategoryNames = Array.from(new Set(expenses.map((row) => rootCategory(row.category))));
-'''
+          needle = '  const asksObjectiveAmount = /(quanto .*gastei|quanto gastei|qual .*gasto|gasto total|gastos totais|total .*despesas?|despesas? .*mes|despesas? .*mês|despesas? em |despesas? de )/.test(q);'
+          insertion = "\n".join([
+              needle,
+              '  const asksEconomicVsExpenseConcept =',
+              '    /(gasto economico|gasto real|despesa economica)/.test(q) &&',
+              '    /(despesas?|saida|movimentacao|fluxo de caixa|pagamento)/.test(q) &&',
+              '    /(diferenca|diferente|qual e|o que muda)/.test(q);',
+          ])
+          if needle not in text:
+              raise SystemExit('Could not find objective amount intent')
+          text = text.replace(needle, insertion, 1)
+          old_gate = '  if (!detailOnly && !asksCategoryBreakdown && !asksObjectiveAmount) return null;'
+          new_gate = '  if (!detailOnly && !asksCategoryBreakdown && !asksObjectiveAmount && !asksEconomicVsExpenseConcept) return null;'
+          if old_gate not in text:
+              raise SystemExit('Could not find deterministic gate')
+          text = text.replace(old_gate, new_gate, 1)
+          anchor = '  const allCategoryNames = Array.from(new Set(expenses.map((row) => rootCategory(row.category))));'
+          answer_lines = [
+              '  if (asksEconomicVsExpenseConcept && !detailOnly) {',
+              '    return `### 💳 Gasto econômico x movimentação financeira — ${label}\\n\\n**No Cofre360, o card DESPESAS é a referência do gasto econômico líquido do mês: R$ ${formatBRL(monthly.expense)}.**\\n\\nEle mostra o que efetivamente pesa como despesa no período, sem contar novamente movimentos que apenas deslocam dinheiro:\\n\\n- **Transferências entre suas contas** não entram como despesa.\\n- **Pagamentos de fatura do cartão** não entram de novo, porque as compras/parcelas já compõem as despesas.\\n- **Ajustes de saldo** ficam fora por não representarem consumo.\\n- **Reembolsos confirmados** reduzem o total de despesas.\\n\\nJá a **movimentação financeira das contas** mede entradas e saídas de caixa e pode incluir transferências e pagamentos de cartão. Por isso, saída de dinheiro da conta não é a mesma coisa que gasto econômico.\\n\\n> 💡 **Resumo:** para saber quanto pesou economicamente no mês, use **DESPESAS: R$ ${formatBRL(monthly.expense)}**. Para entender por onde o dinheiro transitou, olhe a movimentação das contas. A visão de gastos por categoria é uma análise separada, baseada na data original e no valor econômico da compra.`;',
+              '  }',
+              '',
+              anchor,
+          ]
           if anchor not in text:
-              raise SystemExit('Could not find insertion anchor')
-          text = text.replace(anchor, replacement, 1)
-
-          prompt_anchor = '''- Diferencie gasto econômico de movimentação de caixa/fatura quando isso for relevante.
-- Formate dinheiro em R$ e datas em dd/mm/aaaa quando citar datas.
-'''
-          prompt_replacement = '''- Diferencie gasto econômico de movimentação de caixa/fatura quando isso for relevante.
-- Em perguntas conceituais, responda primeiro a conclusão em linguagem simples e só depois explique a regra. Não responda apenas repetindo o valor do card.
-- Se o usuário perguntar a diferença entre gasto econômico/real e o total de DESPESAS do mês, explique que, no resumo mensal do Cofre360, o card DESPESAS é a referência do gasto econômico líquido do período: ele exclui transferências internas, pagamentos de cartão e ajustes de saldo, e abate reembolsos confirmados. Diferencie isso de saída/movimentação de caixa. Se útil, esclareça também que a visão por categoria usa a data original e o valor econômico integral da compra e, por isso, é uma análise separada.
-- Sempre que houver um valor real no contexto que responda à pergunta, incorpore-o à explicação em vez de dar uma resposta puramente genérica.
-- Formate dinheiro em R$ e datas em dd/mm/aaaa quando citar datas.
-'''
+              raise SystemExit('Could not find answer insertion anchor')
+          text = text.replace(anchor, "\n".join(answer_lines), 1)
+          prompt_anchor = '- Diferencie gasto econômico de movimentação de caixa/fatura quando isso for relevante.'
+          prompt_lines = [
+              prompt_anchor,
+              '- Em perguntas conceituais, responda primeiro a conclusão em linguagem simples e só depois explique a regra. Não responda apenas repetindo o valor do card.',
+              '- Se o usuário perguntar a diferença entre gasto econômico/real e o total de DESPESAS do mês, explique que, no resumo mensal do Cofre360, o card DESPESAS é a referência do gasto econômico líquido do período: ele exclui transferências internas, pagamentos de cartão e ajustes de saldo, e abate reembolsos confirmados. Diferencie isso de saída/movimentação de caixa. Se útil, esclareça também que a visão por categoria usa a data original e o valor econômico integral da compra e, por isso, é uma análise separada.',
+              '- Sempre que houver um valor real no contexto que responda à pergunta, incorpore-o à explicação em vez de dar uma resposta puramente genérica.',
+          ]
           if prompt_anchor not in text:
               raise SystemExit('Could not find system prompt anchor')
-          text = text.replace(prompt_anchor, prompt_replacement, 1)
-
+          text = text.replace(prompt_anchor, "\n".join(prompt_lines), 1)
           path.write_text(text)
           PY
-
           grep -q 'asksEconomicVsExpenseConcept' supabase/functions/financial-chat/index.ts
           grep -q 'Gasto econômico x movimentação financeira' supabase/functions/financial-chat/index.ts
           grep -q 'Em perguntas conceituais, responda primeiro a conclusão' supabase/functions/financial-chat/index.ts
-
       - name: Commit result
         run: |
           git config user.name github-actions[bot]
