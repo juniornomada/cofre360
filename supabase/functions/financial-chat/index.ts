@@ -60,6 +60,41 @@ const norm = (value: string | null | undefined) =>
     .trim()
     .toLowerCase();
 
+function compactTransactionName(value: string, maxWords = 5) {
+  const cleaned = String(value || "")
+    .replace(/(?:\s+[-–—·]?\s*)?(?:MELI|MERCADO\s+LIVRE)\s*$/i, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  const words = cleaned.split(" ").filter(Boolean);
+  return words.slice(0, maxWords).join(" ") || String(value || "").trim();
+}
+
+function compactTransactionNames(values: string[], maxWords = 5) {
+  const cleaned = values.map((value) => String(value || "")
+    .replace(/(?:\s+[-–—·]?\s*)?(?:MELI|MERCADO\s+LIVRE)\s*$/i, "")
+    .replace(/\s+/g, " ")
+    .trim());
+
+  return cleaned.map((value, index) => {
+    const words = value.split(" ").filter(Boolean);
+    let size = Math.min(maxWords, words.length);
+    let candidate = words.slice(0, size).join(" ");
+
+    while (size < words.length) {
+      const collision = cleaned.some((other, otherIndex) => {
+        if (otherIndex === index || other === value) return false;
+        const otherWords = other.split(" ").filter(Boolean);
+        return otherWords.slice(0, size).join(" ").toLocaleLowerCase("pt-BR") === candidate.toLocaleLowerCase("pt-BR");
+      });
+      if (!collision) break;
+      size += 1;
+      candidate = words.slice(0, size).join(" ");
+    }
+
+    return candidate || compactTransactionName(values[index], maxWords);
+  });
+}
+
 function formatBRL(value: number) {
   return Number(value || 0).toLocaleString("pt-BR", {
     minimumFractionDigits: 2,
@@ -498,11 +533,11 @@ async function buildDeterministicFinancialAnswer(
     if (!wantsDetail) {
       return `### 💳 Parcelas de compras antigas — ${label}\n\n**Total cobrado no mês vindo de compras anteriores: R$ ${formatBRL(oldInstallmentTotal)}**\n\n${categorySummary}\n\n> 💡 Aqui entram somente parcelas cobradas em ${label} cuja **compra original ocorreu em mês anterior**. O valor é calculado a partir das parcelas reais, não pela diferença entre DESPESAS e Gastos por categoria.`;
     }
+    const compactOldInstallmentNames = compactTransactionNames(oldInstallmentRows.map((item) => item.name));
     const detailLines = oldInstallmentRows.length
-      ? oldInstallmentRows.map((item) => {
-          const purchase = item.purchaseDate.toLocaleDateString("pt-BR");
-          return `- ${categoryEmoji(item.category)} **${item.name} — R$ ${formatBRL(item.amount)}** · ${item.installmentNumber}/${item.totalInstallments} · ${item.category} · ${item.card} · compra ${purchase}`;
-        }).join("\n")
+      ? oldInstallmentRows.map((item, index) =>
+          `- ${categoryEmoji(item.category)} **${compactOldInstallmentNames[index]} — R$ ${formatBRL(item.amount)}** · ${item.installmentNumber}/${item.totalInstallments}`,
+        ).join("\n")
       : "(nenhuma parcela de compra antiga cobrada no período)";
     return `### 💳 Detalhe das parcelas de compras antigas — ${label}\n\n**Total dessas parcelas: R$ ${formatBRL(oldInstallmentTotal)}**\n\n${detailLines}\n\n**Resumo por categoria**\n${categorySummary}\n\n> 💡 Estes lançamentos são selecionados individualmente pela data da cobrança e pela data original da compra. **Não** são estimados pela diferença entre os dois totais mensais.`;
   }
@@ -597,8 +632,9 @@ async function buildDeterministicFinancialAnswer(
     }
 
     const total = roundMoney(items.reduce((sum, row) => sum + row.amount, 0));
+    const compactItemNames = compactTransactionNames(items.map((row) => row.name));
     const lines = items.length
-      ? items.map((row) => `- ${categoryEmoji(rootCategory(row.category))} **${row.name} — R$ ${formatBRL(row.amount)}** · ${row.category}`).join("\n")
+      ? items.map((row, index) => `- ${categoryEmoji(rootCategory(row.category))} **${compactItemNames[index]} — R$ ${formatBRL(row.amount)}**`).join("\n")
       : "(nenhuma compra encontrada com esses critérios)";
     const exclusionText = exclusionWords.length ? `, excluindo “${exclusionWords.join(" ")}”` : "";
     return `### ${categoryEmoji(matchedCategory)} Detalhe de ${matchedCategory} — ${label}\n\n**Total${exclusionText}: R$ ${formatBRL(total)}**\n\n${lines}\n\n> 💡 O detalhamento usa as compras econômicas reais do período, item por item, em vez de inferir o restante por diferença.`;
