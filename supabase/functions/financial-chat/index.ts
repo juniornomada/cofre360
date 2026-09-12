@@ -369,7 +369,11 @@ async function buildDeterministicFinancialAnswer(
 
   const asksCategoryBreakdown = /(gastos? por categoria|em quais categorias|quais categorias|categorias? .*gastei|gastei .*categorias?)/.test(q);
   const asksObjectiveAmount = /(quanto .*gastei|quanto gastei|qual .*gasto|gasto total|gastos totais|total .*despesas?|despesas? .*mes|despesas? .*mês|despesas? em |despesas? de )/.test(q);
-  if (!detailOnly && !asksCategoryBreakdown && !asksObjectiveAmount) return null;
+  const asksEconomicVsExpenseConcept =
+    /(gasto economico|gasto real|despesa economica)/.test(q) &&
+    /(despesas?|saida|movimentacao|fluxo de caixa|pagamento)/.test(q) &&
+    /(diferenca|diferente|qual e|o que muda)/.test(q);
+  if (!detailOnly && !asksCategoryBreakdown && !asksObjectiveAmount && !asksEconomicVsExpenseConcept) return null;
 
   const { data, error } = await supabase
     .from("transactions")
@@ -385,6 +389,10 @@ async function buildDeterministicFinancialAnswer(
   const monthly = monthlyEconomicSummary(transactions, key);
   const categories = categoryTotals(expenses, key);
   const categoryTotal = roundMoney(categories.reduce((sum, [, value]) => sum + value, 0));
+
+  if (asksEconomicVsExpenseConcept && !detailOnly) {
+    return `### 💳 Gasto econômico x movimentação financeira — ${label}\n\n**No Cofre360, o card DESPESAS é a referência do gasto econômico líquido do mês: R$ ${formatBRL(monthly.expense)}.**\n\nEle mostra o que efetivamente pesa como despesa no período, sem contar novamente movimentos que apenas deslocam dinheiro:\n\n- **Transferências entre suas contas** não entram como despesa.\n- **Pagamentos de fatura do cartão** não entram de novo, porque as compras/parcelas já compõem as despesas.\n- **Ajustes de saldo** ficam fora por não representarem consumo.\n- **Reembolsos confirmados** reduzem o total de despesas.\n\nJá a **movimentação financeira das contas** mede entradas e saídas de caixa e pode incluir transferências e pagamentos de cartão. Por isso, saída de dinheiro da conta não é a mesma coisa que gasto econômico.\n\n> 💡 **Resumo:** para saber quanto pesou economicamente no mês, use **DESPESAS: R$ ${formatBRL(monthly.expense)}**. Para entender por onde o dinheiro transitou, olhe a movimentação das contas. A visão de gastos por categoria é uma análise separada, baseada na data original e no valor econômico da compra.`;
+  }
 
   const allCategoryNames = Array.from(new Set(expenses.map((row) => rootCategory(row.category))));
   const matchedCategory = allCategoryNames
@@ -581,6 +589,9 @@ Regras financeiras obrigatórias:
 - Gastos parcelados de cartão são consolidados economicamente no mês da compra nas seções de categoria; o valor integral da compra entra uma única vez no mês da compra. As parcelas futuras entram em DESPESAS do respectivo mês/fatura, mas NÃO entram novamente como gasto de Transporte, Alimentação, Compras ou qualquer outra categoria.
 - Transferências entre contas e pagamentos de cartão não são novos gastos por categoria e foram excluídos desses totais.
 - Diferencie gasto econômico de movimentação de caixa/fatura quando isso for relevante.
+- Em perguntas conceituais, responda primeiro a conclusão em linguagem simples e só depois explique a regra. Não responda apenas repetindo o valor do card.
+- Se o usuário perguntar a diferença entre gasto econômico/real e o total de DESPESAS do mês, explique que, no resumo mensal do Cofre360, o card DESPESAS é a referência do gasto econômico líquido do período: ele exclui transferências internas, pagamentos de cartão e ajustes de saldo, e abate reembolsos confirmados. Diferencie isso de saída/movimentação de caixa. Se útil, esclareça também que a visão por categoria usa a data original e o valor econômico integral da compra e, por isso, é uma análise separada.
+- Sempre que houver um valor real no contexto que responda à pergunta, incorpore-o à explicação em vez de dar uma resposta puramente genérica.
 - Formate dinheiro em R$ e datas em dd/mm/aaaa quando citar datas.
 - Se não houver dado suficiente, diga isso claramente.
 
