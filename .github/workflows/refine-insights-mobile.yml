@@ -1,0 +1,133 @@
+name: Refine Insights IA mobile lists
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/refine-insights-mobile.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Make assistant lists compact and scannable on mobile
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('src/components/FinancialChat.tsx')
+          text = path.read_text()
+
+          old_import = 'import { useState, useRef, useEffect } from "react";'
+          new_import = 'import { Children, isValidElement, useState, useRef, useEffect, type ReactNode } from "react";'
+          if old_import not in text:
+              raise SystemExit('React import anchor not found')
+          text = text.replace(old_import, new_import, 1)
+
+          anchor = '''const formatConversationDate = (value: string) => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+};
+'''
+          helper = anchor + '''
+const MAX_VISIBLE_ASSISTANT_ITEMS = 5;
+
+const assistantNodeText = (node: ReactNode): string => {
+  if (typeof node === "string" || typeof node === "number") return String(node);
+  if (Array.isArray(node)) return node.map(assistantNodeText).join(" ");
+  if (isValidElement(node)) {
+    return assistantNodeText((node.props as { children?: ReactNode }).children);
+  }
+  return "";
+};
+
+const assistantListTone = (value: string) => {
+  const text = value.toLocaleLowerCase("pt-BR");
+  if (text.includes("transporte") || text.includes("🚗")) return "border-sky-400/30 bg-sky-400/[0.07]";
+  if (text.includes("saúde") || text.includes("saude") || text.includes("💊")) return "border-rose-400/30 bg-rose-400/[0.07]";
+  if (text.includes("compras") || text.includes("🛍️")) return "border-violet-400/30 bg-violet-400/[0.07]";
+  if (text.includes("alimentação") || text.includes("alimentacao") || text.includes("🍴")) return "border-amber-400/30 bg-amber-400/[0.07]";
+  if (text.includes("moradia") || text.includes("🏠")) return "border-emerald-400/30 bg-emerald-400/[0.07]";
+  if (text.includes("receita") || text.includes("💰")) return "border-emerald-400/25 bg-emerald-400/[0.06]";
+  return "border-border/50 bg-background/35";
+};
+
+function CompactAssistantList({ children, ordered = false }: { children?: ReactNode; ordered?: boolean }) {
+  const [expanded, setExpanded] = useState(false);
+  const items = Children.toArray(children);
+  const canCollapse = items.length > MAX_VISIBLE_ASSISTANT_ITEMS;
+  const visibleItems = canCollapse && !expanded ? items.slice(0, MAX_VISIBLE_ASSISTANT_ITEMS) : items;
+  const ListTag = ordered ? "ol" : "ul";
+
+  return (
+    <div className="my-2.5">
+      <ListTag className="space-y-1.5">{visibleItems}</ListTag>
+      {canCollapse && (
+        <button
+          type="button"
+          onClick={() => setExpanded((value) => !value)}
+          className="mt-2 inline-flex items-center rounded-full border border-primary/25 bg-primary/[0.07] px-2.5 py-1 text-[11px] font-medium text-primary transition-colors hover:bg-primary/15"
+        >
+          {expanded ? "Mostrar menos" : `Ver todos (${items.length})`}
+        </button>
+      )}
+    </div>
+  );
+}
+'''
+          if anchor not in text:
+              raise SystemExit('formatConversationDate anchor not found')
+          text = text.replace(anchor, helper, 1)
+
+          old_markdown = '''                    ul: ({ children }) => <ul className="my-2 space-y-1.5 pl-5 list-disc marker:text-primary">{children}</ul>,
+                    ol: ({ children }) => <ol className="my-2 space-y-1.5 pl-5 list-decimal marker:text-primary">{children}</ol>,
+                    li: ({ children }) => <li className="pl-0.5 leading-5.5">{children}</li>,
+                    strong: ({ children }) => <strong className="font-semibold text-foreground">{children}</strong>,'''
+          new_markdown = '''                    ul: ({ children }) => <CompactAssistantList>{children}</CompactAssistantList>,
+                    ol: ({ children }) => <CompactAssistantList ordered>{children}</CompactAssistantList>,
+                    li: ({ children }) => (
+                      <li className={cn(
+                        "list-none rounded-xl border px-2.5 py-2 text-[13px] leading-5",
+                        assistantListTone(assistantNodeText(children)),
+                      )}>
+                        {children}
+                      </li>
+                    ),
+                    strong: ({ children }) => {
+                      const value = assistantNodeText(children);
+                      return (
+                        <strong className={cn("font-semibold", /R\\$/.test(value) ? "text-primary" : "text-foreground")}>
+                          {children}
+                        </strong>
+                      );
+                    },
+                    code: ({ children }) => (
+                      <code className="mx-0.5 inline-flex rounded-md border border-border/60 bg-background/65 px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">
+                        {children}
+                      </code>
+                    ),'''
+          if old_markdown not in text:
+              raise SystemExit('Markdown renderer anchor not found')
+          text = text.replace(old_markdown, new_markdown, 1)
+
+          path.write_text(text)
+          PY
+          grep -q 'CompactAssistantList' src/components/FinancialChat.tsx
+          grep -q 'Ver todos' src/components/FinancialChat.tsx
+          grep -q 'border-sky-400' src/components/FinancialChat.tsx
+      - name: Commit result
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/components/FinancialChat.tsx
+          git commit -m "feat: compact and color Insights IA lists on mobile"
+          git push
