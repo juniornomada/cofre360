@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { Children, isValidElement, useState, useRef, useEffect, type ReactNode } from "react";
 import { Send, Bot, Sparkles, Loader2, History, MessageSquarePlus } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { cn } from "@/lib/utils";
@@ -23,6 +23,7 @@ const SUGGESTIONS = [
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/financial-chat`;
 const MAX_CONTEXT_MESSAGES = 20;
 const MAX_HISTORY_MESSAGES = 200;
+const MAX_VISIBLE_ASSISTANT_ITEMS = 5;
 
 const conversationTitleFrom = (value: string) => {
   const clean = value.replace(/\s+/g, " ").trim();
@@ -40,6 +41,49 @@ const formatConversationDate = (value: string) => {
     minute: "2-digit",
   }).format(date);
 };
+
+const assistantNodeText = (node: ReactNode): string => {
+  if (typeof node === "string" || typeof node === "number") return String(node);
+  if (Array.isArray(node)) return node.map(assistantNodeText).join(" ");
+  if (isValidElement(node)) {
+    return assistantNodeText((node.props as { children?: ReactNode }).children);
+  }
+  return "";
+};
+
+const assistantListTone = (value: string) => {
+  const text = value.toLocaleLowerCase("pt-BR");
+  if (text.includes("transporte") || text.includes("🚗")) return "border-sky-400/30 bg-sky-400/[0.07]";
+  if (text.includes("saúde") || text.includes("saude") || text.includes("💊")) return "border-rose-400/30 bg-rose-400/[0.07]";
+  if (text.includes("compras") || text.includes("🛍️")) return "border-violet-400/30 bg-violet-400/[0.07]";
+  if (text.includes("alimentação") || text.includes("alimentacao") || text.includes("🍴")) return "border-amber-400/30 bg-amber-400/[0.07]";
+  if (text.includes("moradia") || text.includes("🏠")) return "border-emerald-400/30 bg-emerald-400/[0.07]";
+  if (text.includes("receita") || text.includes("💰")) return "border-emerald-400/25 bg-emerald-400/[0.06]";
+  return "border-border/50 bg-background/35";
+};
+
+function CompactAssistantList({ children, ordered = false }: { children?: ReactNode; ordered?: boolean }) {
+  const [expanded, setExpanded] = useState(false);
+  const items = Children.toArray(children);
+  const canCollapse = items.length > MAX_VISIBLE_ASSISTANT_ITEMS;
+  const visibleItems = canCollapse && !expanded ? items.slice(0, MAX_VISIBLE_ASSISTANT_ITEMS) : items;
+  const ListTag = ordered ? "ol" : "ul";
+
+  return (
+    <div className="my-2.5">
+      <ListTag className="space-y-1.5">{visibleItems}</ListTag>
+      {canCollapse && (
+        <button
+          type="button"
+          onClick={() => setExpanded((value) => !value)}
+          className="mt-2 inline-flex items-center rounded-full border border-primary/25 bg-primary/[0.07] px-2.5 py-1 text-[11px] font-medium text-primary transition-colors hover:bg-primary/15"
+        >
+          {expanded ? "Mostrar menos" : `Ver todos (${items.length})`}
+        </button>
+      )}
+    </div>
+  );
+}
 
 export function FinancialChat({ initialPrompt, suggestions }: { initialPrompt?: string; suggestions?: string[] } = {}) {
   const [messages, setMessages] = useState<Msg[]>([]);
@@ -510,10 +554,29 @@ export function FinancialChat({ initialPrompt, suggestions }: { initialPrompt?: 
                     h2: ({ children }) => <h2 className="mb-2 mt-3 text-[15px] font-bold text-primary first:mt-0">{children}</h2>,
                     h3: ({ children }) => <h3 className="mb-1.5 mt-3 text-sm font-semibold text-emerald-400 first:mt-0">{children}</h3>,
                     p: ({ children }) => <p className="my-2 leading-6 first:mt-0 last:mb-0">{children}</p>,
-                    ul: ({ children }) => <ul className="my-2 space-y-1.5 pl-5 list-disc marker:text-primary">{children}</ul>,
-                    ol: ({ children }) => <ol className="my-2 space-y-1.5 pl-5 list-decimal marker:text-primary">{children}</ol>,
-                    li: ({ children }) => <li className="pl-0.5 leading-5.5">{children}</li>,
-                    strong: ({ children }) => <strong className="font-semibold text-foreground">{children}</strong>,
+                    ul: ({ children }) => <CompactAssistantList>{children}</CompactAssistantList>,
+                    ol: ({ children }) => <CompactAssistantList ordered>{children}</CompactAssistantList>,
+                    li: ({ children }) => (
+                      <li className={cn(
+                        "list-none rounded-xl border px-2.5 py-2 text-[13px] leading-5",
+                        assistantListTone(assistantNodeText(children)),
+                      )}>
+                        {children}
+                      </li>
+                    ),
+                    strong: ({ children }) => {
+                      const value = assistantNodeText(children);
+                      return (
+                        <strong className={cn("font-semibold", /R\$/.test(value) ? "text-primary" : "text-foreground")}>
+                          {children}
+                        </strong>
+                      );
+                    },
+                    code: ({ children }) => (
+                      <code className="mx-0.5 inline-flex rounded-md border border-border/60 bg-background/65 px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">
+                        {children}
+                      </code>
+                    ),
                     blockquote: ({ children }) => (
                       <blockquote className="my-3 rounded-r-xl border-l-2 border-amber-400 bg-amber-400/10 px-3 py-2 text-foreground">
                         {children}
