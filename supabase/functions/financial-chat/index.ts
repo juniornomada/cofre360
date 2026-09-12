@@ -400,7 +400,7 @@ async function buildDeterministicFinancialAnswer(
   }
 
   const categoryLines = categories.length
-    ? categories.slice(0, 12).map(([category, amount]) => `${categoryEmoji(category)} **${category} — R$ ${formatBRL(amount)}**`).join("\n")
+    ? categories.slice(0, 12).map(([category, amount]) => `- ${categoryEmoji(category)} **${category} — R$ ${formatBRL(amount)}**`).join("\n")
     : "(sem compras no período)";
 
   if (asksCategoryBreakdown && !detailOnly) {
@@ -589,7 +589,7 @@ Padrão visual obrigatório das respostas:
 - Quando a pergunta envolver uma categoria ou período, abra com um título visual, por exemplo: "### 🍴 Alimentação — Setembro/2026".
 - Destaque o total principal em negrito logo no início, por exemplo: "**Total: R$ 1.045,34**".
 - Use emojis com moderação como guias visuais, normalmente um por título ou linha de categoria. Exemplos: 🛒 Supermercado, ☕ Padaria/Café, 🍕 Restaurante, 📦 Outros, 🚗 Transporte, 🏠 Moradia, 💊 Saúde, 🎓 Educação, 🛍️ Compras, 🎮 Lazer, 🐾 Pets, 💳 Cartões, 💰 Receitas.
-- Em detalhamentos, prefira uma linha por categoria/subcategoria: "🛒 **Supermercado — R$ 758,03**".
+- Em detalhamentos, use lista Markdown com exatamente uma categoria/subcategoria por item e por linha, por exemplo: "- 🛒 **Supermercado — R$ 758,03**". Nunca coloque duas categorias na mesma linha.
 - Use "> ⚠️ **Atenção:** ..." para possíveis inconsistências, categorias suspeitas ou dados que não fecham.
 - Use "> 💡 **Insight:** ..." para uma recomendação prática ou oportunidade de economia quando houver base nos dados.
 - Não repita a mesma soma ou lista duas vezes. Não escreva contas aritméticas extensas salvo se o usuário pedir explicitamente.
