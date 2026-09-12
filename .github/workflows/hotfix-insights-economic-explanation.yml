@@ -1,4 +1,4 @@
-name: Fix Insights IA old installment categories
+name: Fix Insights IA old installment details
 on:
   push:
     branches: [main]
@@ -13,115 +13,123 @@ jobs:
       - uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Fix old installment category intent
+      - name: Fix old installment detail answers
         run: |
           python - <<'PY'
           from pathlib import Path
           path = Path('supabase/functions/financial-chat/index.ts')
           text = path.read_text()
 
-          if 'function oldInstallmentCategoryTotals(' not in text:
-              anchor = 'function categoryTotals(rows: EconomicExpense[], key: string) {'
-              start = text.index(anchor)
-              end = text.index('\n}\n', start) + 3
-              helper = "\n".join([
-                  '',
-                  'function oldInstallmentCategoryTotals(rows: Transaction[], key: string) {',
-                  '  const totals = new Map<string, number>();',
-                  '',
-                  '  for (const tx of rows) {',
-                  '    if (tx.is_visible === false || tx.type !== "expense" || !tx.card) continue;',
-                  '    if (isTransferOrCardPayment(tx.category) || isAdjustmentCategory(tx.category)) continue;',
-                  '',
-                  '    const totalInstallments = Number(tx.total_installments || 1);',
-                  '    const installmentNumber = Math.max(1, Number(tx.installment_number || 1));',
-                  '    if (totalInstallments <= 1) continue;',
-                  '',
-                  '    const chargeDate = parseTxDate(tx.date, tx.created_at);',
-                  '    if (!chargeDate || monthKey(chargeDate) !== key) continue;',
-                  '',
-                  '    let purchaseDate = parseTxDate(tx.purchase_date, tx.created_at);',
-                  '    if (!purchaseDate && installmentNumber > 1) {',
-                  '      purchaseDate = shiftMonths(chargeDate, -(installmentNumber - 1));',
-                  '    }',
-                  '    if (!purchaseDate || monthKey(purchaseDate) === key) continue;',
-                  '',
-                  '    const category = rootCategory(tx.category);',
-                  '    totals.set(category, (totals.get(category) || 0) + Number(tx.amount || 0));',
-                  '  }',
-                  '',
-                  '  return [...totals.entries()]',
-                  '    .map(([category, amount]) => [category, roundMoney(amount)] as [string, number])',
-                  '    .filter(([, amount]) => amount !== 0)',
-                  '    .sort((a, b) => b[1] - a[1]);',
-                  '}',
-                  '',
-              ])
-              text = text[:end] + helper + text[end:]
+          old_helper_start = text.index('function oldInstallmentCategoryTotals(')
+          old_helper_end = text.index('\n}\n', old_helper_start) + 3
+          new_helper = '''function oldInstallmentDetails(rows: Transaction[], key: string) {
+  const details: Array<{
+    name: string;
+    category: string;
+    amount: number;
+    installmentNumber: number;
+    totalInstallments: number;
+    purchaseDate: Date;
+    chargeDate: Date;
+    card: string;
+  }> = [];
 
-          intent_anchor = '  const asksCategoryBreakdown = /(gastos? por categoria|em quais categorias|quais categorias|categorias? .*gastei|gastei .*categorias?)/.test(q);'
-          if 'const asksOldInstallmentCategories' not in text:
-              intent_lines = [
-                  '  const asksOldInstallmentCategories =',
-                  '    /(parcelas?.*(compras?|gastos?).*(antig|anterior)|compras? .*antig.*parcelas?|parcelas? .*mes(es)? anterior)/.test(q) &&',
-                  '    /(categor|respons|quais|origem|vieram|onde)/.test(q);',
-                  intent_anchor,
-              ]
-              if intent_anchor not in text:
-                  raise SystemExit('Could not find category intent')
-              text = text.replace(intent_anchor, "\n".join(intent_lines), 1)
+  for (const tx of rows) {
+    if (tx.is_visible === false || tx.type !== "expense" || !tx.card) continue;
+    if (isTransferOrCardPayment(tx.category) || isAdjustmentCategory(tx.category)) continue;
 
-          gate_old = '  if (!detailOnly && !asksCategoryBreakdown && !asksObjectiveAmount && !asksEconomicVsExpenseConcept) return null;'
-          gate_new = '  if (!detailOnly && !asksOldInstallmentCategories && !asksCategoryBreakdown && !asksObjectiveAmount && !asksEconomicVsExpenseConcept) return null;'
-          if gate_new not in text:
-              if gate_old not in text:
-                  raise SystemExit('Could not find deterministic gate')
-              text = text.replace(gate_old, gate_new, 1)
+    const totalInstallments = Number(tx.total_installments || 1);
+    const installmentNumber = Math.max(1, Number(tx.installment_number || 1));
+    if (totalInstallments <= 1) continue;
 
-          calculation_anchor = '  const categoryTotal = roundMoney(categories.reduce((sum, [, value]) => sum + value, 0));'
-          if 'const oldInstallmentCategories = oldInstallmentCategoryTotals' not in text:
-              calculation_lines = [
-                  calculation_anchor,
-                  '  const oldInstallmentCategories = oldInstallmentCategoryTotals(transactions, key);',
-                  '  const oldInstallmentTotal = roundMoney(oldInstallmentCategories.reduce((sum, [, value]) => sum + value, 0));',
-              ]
-              if calculation_anchor not in text:
-                  raise SystemExit('Could not find category total anchor')
-              text = text.replace(calculation_anchor, "\n".join(calculation_lines), 1)
+    const chargeDate = parseTxDate(tx.date, tx.created_at);
+    if (!chargeDate || monthKey(chargeDate) !== key) continue;
 
-          answer_anchor = '  if (asksEconomicVsExpenseConcept && !detailOnly) {'
-          if 'Parcelas de compras antigas por categoria' not in text:
-              answer_lines = [
-                  '  if (asksOldInstallmentCategories && !detailOnly) {',
-                  '    const oldInstallmentLines = oldInstallmentCategories.length',
-                  '      ? oldInstallmentCategories.slice(0, 12).map(([category, amount]) => `- ${categoryEmoji(category)} **${category} — R$ ${formatBRL(amount)}**`).join("\\n")',
-                  '      : "(nenhuma parcela de compra antiga cobrada no período)";',
-                  '',
-                  '    return `### 💳 Parcelas de compras antigas por categoria — ${label}\\n\\n**Total cobrado no mês vindo de compras anteriores: R$ ${formatBRL(oldInstallmentTotal)}**\\n\\n${oldInstallmentLines}\\n\\n> 💡 Aqui entram somente **parcelas cobradas em ${label} cuja compra original ocorreu em mês anterior**. Isso é diferente de “Gastos por categoria”, que mostra as compras realizadas no próprio período pelo valor econômico total.`;',
-                  '  }',
-                  '',
-                  answer_anchor,
-              ]
-              if answer_anchor not in text:
-                  raise SystemExit('Could not find deterministic answer anchor')
-              text = text.replace(answer_anchor, "\n".join(answer_lines), 1)
+    let purchaseDate = parseTxDate(tx.purchase_date, tx.created_at);
+    if (!purchaseDate && installmentNumber > 1) {
+      purchaseDate = shiftMonths(chargeDate, -(installmentNumber - 1));
+    }
+    if (!purchaseDate || monthKey(purchaseDate) === key) continue;
 
-          prompt_anchor = '- NUNCA use a "Composição das DESPESAS pelo mês de cobrança/lançamento" como se fosse gasto novo por categoria. Ela serve apenas para explicar quais parcelas/lançamentos compõem o card mensal de DESPESAS e pode incluir compras de meses anteriores.'
-          prompt_line = '- Se o usuário perguntar especificamente quais categorias originaram parcelas de compras antigas cobradas no mês, responda SOMENTE com as parcelas do mês cuja compra original ocorreu em mês anterior, agrupadas pela categoria da compra. Não use a visão geral de "Gastos por categoria" para essa pergunta.'
-          if prompt_line not in text:
-              if prompt_anchor not in text:
-                  raise SystemExit('Could not find system prompt installment anchor')
-              text = text.replace(prompt_anchor, prompt_anchor + "\n" + prompt_line, 1)
+    details.push({
+      name: String(tx.name || "Transação parcelada"),
+      category: rootCategory(tx.category),
+      amount: roundMoney(Number(tx.amount || 0)),
+      installmentNumber,
+      totalInstallments,
+      purchaseDate,
+      chargeDate,
+      card: String(tx.card || "Cartão"),
+    });
+  }
+
+  return details.sort((a, b) => b.amount - a.amount || a.name.localeCompare(b.name));
+}
+
+function oldInstallmentCategoryTotals(rows: Transaction[], key: string) {
+  const totals = new Map<string, number>();
+  for (const item of oldInstallmentDetails(rows, key)) {
+    totals.set(item.category, (totals.get(item.category) || 0) + item.amount);
+  }
+  return [...totals.entries()]
+    .map(([category, amount]) => [category, roundMoney(amount)] as [string, number])
+    .filter(([, amount]) => amount !== 0)
+    .sort((a, b) => b[1] - a[1]);
+}
+'''
+          text = text[:old_helper_start] + new_helper + text[old_helper_end:]
+
+          old_intent = '''  const asksOldInstallmentCategories =
+    /(parcelas?.*(compras?|gastos?).*(antig|anterior)|compras? .*antig.*parcelas?|parcelas? .*mes(es)? anterior)/.test(q) &&
+    /(categor|respons|quais|origem|vieram|onde)/.test(q);'''
+          new_intent = '''  const asksOldInstallmentCategories =
+    /(parcelas?.*(compras?|gastos?).*(antig|anterior)|compras? .*antig.*parcelas?|parcelas? .*mes(es)? anterior)/.test(q) &&
+    /(categor|respons|quais|origem|vieram|onde|detalh|somad|compoe|compõem|cobradas?)/.test(q);'''
+          if old_intent not in text:
+              raise SystemExit('Could not find old installment intent')
+          text = text.replace(old_intent, new_intent, 1)
+
+          calc_anchor = '  const oldInstallmentCategories = oldInstallmentCategoryTotals(transactions, key);\n  const oldInstallmentTotal = roundMoney(oldInstallmentCategories.reduce((sum, [, value]) => sum + value, 0));'
+          calc_replacement = calc_anchor + '\n  const oldInstallmentRows = oldInstallmentDetails(transactions, key);'
+          if 'const oldInstallmentRows = oldInstallmentDetails' not in text:
+              if calc_anchor not in text:
+                  raise SystemExit('Could not find old installment calculations')
+              text = text.replace(calc_anchor, calc_replacement, 1)
+
+          answer_start = text.index('  if (asksOldInstallmentCategories && !detailOnly) {')
+          answer_end = text.index('\n  if (asksEconomicVsExpenseConcept', answer_start)
+          new_answer = '''  if (asksOldInstallmentCategories) {
+    const oldInstallmentLines = oldInstallmentRows.length
+      ? oldInstallmentRows.slice(0, 20).map((item) => {
+          const purchase = item.purchaseDate.toLocaleDateString("pt-BR");
+          return `- ${categoryEmoji(item.category)} **${item.name}** — R$ ${formatBRL(item.amount)} · ${item.installmentNumber}/${item.totalInstallments} · ${item.category} · ${item.card} · compra ${purchase}`;
+        }).join("\\n")
+      : "(nenhuma parcela de compra antiga cobrada no período)";
+
+    const categorySummary = oldInstallmentCategories.length
+      ? oldInstallmentCategories.map(([category, amount]) => `${categoryEmoji(category)} ${category}: R$ ${formatBRL(amount)}`).join(" · ")
+      : "nenhuma";
+
+    return `### 💳 Parcelas de compras antigas cobradas em ${label}\\n\\n**Total dessas parcelas: R$ ${formatBRL(oldInstallmentTotal)}**\\n\\n${oldInstallmentLines}\\n\\n**Por categoria:** ${categorySummary}\\n\\n> 💡 Estes valores vêm diretamente das parcelas cobradas em ${label} cuja **data original da compra é de um mês anterior**. Não são calculados pela diferença entre DESPESAS e Gastos por categoria.`;
+  }
+'''
+          text = text[:answer_start] + new_answer + text[answer_end:]
+
+          prompt_old = '- Se o usuário perguntar especificamente quais categorias originaram parcelas de compras antigas cobradas no mês, responda SOMENTE com as parcelas do mês cuja compra original ocorreu em mês anterior, agrupadas pela categoria da compra. Não use a visão geral de "Gastos por categoria" para essa pergunta.'
+          prompt_new = '- Se o usuário perguntar sobre parcelas de compras antigas cobradas no mês, inclusive pedindo detalhe, mostre as parcelas reais individualmente (nome, valor da parcela, número da parcela, total de parcelas, categoria, cartão e data original da compra) e depois resuma por categoria. Selecione somente lançamentos parcelados cobrados no período cuja data original da compra ocorreu em mês anterior. NUNCA estime essas parcelas pela diferença entre DESPESAS e Gastos por categoria.'
+          if prompt_old not in text:
+              raise SystemExit('Could not find old installment prompt rule')
+          text = text.replace(prompt_old, prompt_new, 1)
 
           path.write_text(text)
           PY
-          grep -q 'oldInstallmentCategoryTotals' supabase/functions/financial-chat/index.ts
-          grep -q 'asksOldInstallmentCategories' supabase/functions/financial-chat/index.ts
-          grep -q 'Parcelas de compras antigas por categoria' supabase/functions/financial-chat/index.ts
+          grep -q 'oldInstallmentDetails' supabase/functions/financial-chat/index.ts
+          grep -q 'Não são calculados pela diferença entre DESPESAS e Gastos por categoria' supabase/functions/financial-chat/index.ts
+          grep -q 'NUNCA estime essas parcelas pela diferença' supabase/functions/financial-chat/index.ts
       - name: Commit result
         run: |
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add supabase/functions/financial-chat/index.ts
-          git commit -m "fix: answer old installment categories correctly"
+          git commit -m "fix: show exact old installment details in Insights IA"
           git push
