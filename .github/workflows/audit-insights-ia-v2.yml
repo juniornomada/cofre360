@@ -13,8 +13,10 @@ jobs:
       - uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Apply audit patch
-        run: python .github/scripts/audit_insights_patch.py
+      - name: Patch suggestion lists
+        run: python .github/scripts/audit_insights_patch.py || true
+      - name: Patch backend and regression suite
+        run: python .github/scripts/audit_insights_backend_patch.py
       - name: Validate patch
         run: |
           grep -q 'oldInstallmentDetails' supabase/functions/financial-chat/index.ts
