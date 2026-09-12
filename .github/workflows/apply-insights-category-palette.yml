@@ -1,4 +1,4 @@
-name: Apply Insights IA category palette
+name: Apply Insights IA transaction refinement
 
 on:
   push:
@@ -15,12 +15,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Apply palette patch
-        run: python .github/scripts/apply_insights_palette.py
+      - name: Apply transaction list patch
+        run: python .github/scripts/apply_insights_show_all_transactions.py
       - name: Commit result
         run: |
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add src/components/FinancialChat.tsx
-          git commit -m "feat: differentiate Insights IA category colors"
+          git add src/components/FinancialChat.tsx supabase/functions/financial-chat/index.ts
+          git commit -m "feat: show all Insights IA transactions with category icons"
           git push
