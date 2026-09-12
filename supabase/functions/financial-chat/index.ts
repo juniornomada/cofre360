@@ -499,9 +499,9 @@ async function buildDeterministicFinancialAnswer(
       return `### 💳 Parcelas de compras antigas — ${label}\n\n**Total cobrado no mês vindo de compras anteriores: R$ ${formatBRL(oldInstallmentTotal)}**\n\n${categorySummary}\n\n> 💡 Aqui entram somente parcelas cobradas em ${label} cuja **compra original ocorreu em mês anterior**. O valor é calculado a partir das parcelas reais, não pela diferença entre DESPESAS e Gastos por categoria.`;
     }
     const detailLines = oldInstallmentRows.length
-      ? oldInstallmentRows.slice(0, 25).map((item) => {
+      ? oldInstallmentRows.map((item) => {
           const purchase = item.purchaseDate.toLocaleDateString("pt-BR");
-          return `- **${item.name} — R$ ${formatBRL(item.amount)}** · ${item.installmentNumber}/${item.totalInstallments} · ${item.category} · ${item.card} · compra ${purchase}`;
+          return `- ${categoryEmoji(item.category)} **${item.name} — R$ ${formatBRL(item.amount)}** · ${item.installmentNumber}/${item.totalInstallments} · ${item.category} · ${item.card} · compra ${purchase}`;
         }).join("\n")
       : "(nenhuma parcela de compra antiga cobrada no período)";
     return `### 💳 Detalhe das parcelas de compras antigas — ${label}\n\n**Total dessas parcelas: R$ ${formatBRL(oldInstallmentTotal)}**\n\n${detailLines}\n\n**Resumo por categoria**\n${categorySummary}\n\n> 💡 Estes lançamentos são selecionados individualmente pela data da cobrança e pela data original da compra. **Não** são estimados pela diferença entre os dois totais mensais.`;
@@ -598,7 +598,7 @@ async function buildDeterministicFinancialAnswer(
 
     const total = roundMoney(items.reduce((sum, row) => sum + row.amount, 0));
     const lines = items.length
-      ? items.slice(0, 30).map((row) => `- **${row.name} — R$ ${formatBRL(row.amount)}** · ${row.category}`).join("\n")
+      ? items.map((row) => `- ${categoryEmoji(rootCategory(row.category))} **${row.name} — R$ ${formatBRL(row.amount)}** · ${row.category}`).join("\n")
       : "(nenhuma compra encontrada com esses critérios)";
     const exclusionText = exclusionWords.length ? `, excluindo “${exclusionWords.join(" ")}”` : "";
     return `### ${categoryEmoji(matchedCategory)} Detalhe de ${matchedCategory} — ${label}\n\n**Total${exclusionText}: R$ ${formatBRL(total)}**\n\n${lines}\n\n> 💡 O detalhamento usa as compras econômicas reais do período, item por item, em vez de inferir o restante por diferença.`;

@@ -1,4 +1,4 @@
-import { Children, isValidElement, useState, useRef, useEffect, type ReactNode } from "react";
+import { isValidElement, useState, useRef, useEffect, type ReactNode } from "react";
 import { Send, Bot, Sparkles, Loader2, History, MessageSquarePlus } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { cn } from "@/lib/utils";
@@ -23,7 +23,6 @@ const SUGGESTIONS = [
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/financial-chat`;
 const MAX_CONTEXT_MESSAGES = 20;
 const MAX_HISTORY_MESSAGES = 200;
-const MAX_VISIBLE_ASSISTANT_ITEMS = 5;
 
 const conversationTitleFrom = (value: string) => {
   const clean = value.replace(/\s+/g, " ").trim();
@@ -93,24 +92,11 @@ const assistantListTone = (value: string) => {
 };
 
 function CompactAssistantList({ children, ordered = false }: { children?: ReactNode; ordered?: boolean }) {
-  const [expanded, setExpanded] = useState(false);
-  const items = Children.toArray(children);
-  const canCollapse = items.length > MAX_VISIBLE_ASSISTANT_ITEMS;
-  const visibleItems = canCollapse && !expanded ? items.slice(0, MAX_VISIBLE_ASSISTANT_ITEMS) : items;
   const ListTag = ordered ? "ol" : "ul";
 
   return (
     <div className="my-2.5">
-      <ListTag className="space-y-1.5">{visibleItems}</ListTag>
-      {canCollapse && (
-        <button
-          type="button"
-          onClick={() => setExpanded((value) => !value)}
-          className="mt-2 inline-flex items-center rounded-full border border-primary/25 bg-primary/[0.07] px-2.5 py-1 text-[11px] font-medium text-primary transition-colors hover:bg-primary/15"
-        >
-          {expanded ? "Mostrar menos" : `Ver todos (${items.length})`}
-        </button>
-      )}
+      <ListTag className="space-y-1.5">{children}</ListTag>
     </div>
   );
 }
