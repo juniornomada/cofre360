@@ -1640,10 +1640,10 @@ export function TransactionsPage() {
             }
           }}
           aria-pressed={filterType === "income"}
-          className={`rounded-xl border bg-card p-3 text-center ${
+          className={`rounded-xl border p-3 text-center transition-colors ${
             filterType === "income"
-              ? "border-border/30 ring-1 ring-primary/30"
-              : "border-border/30"
+              ? "border-primary/60 bg-primary/10 ring-1 ring-primary/40 shadow-sm"
+              : "border-border/30 bg-card"
           }`}
         >
           <div className="flex items-center justify-center gap-1 text-[10px] font-semibold uppercase text-muted-foreground">
@@ -1674,10 +1674,10 @@ export function TransactionsPage() {
             }
           }}
           aria-pressed={filterType === "expense"}
-          className={`rounded-xl border bg-card p-3 text-center ${
+          className={`rounded-xl border p-3 text-center transition-colors ${
             filterType === "expense"
-              ? "border-border/30 ring-1 ring-destructive/30"
-              : "border-border/30"
+              ? "border-destructive/60 bg-destructive/10 ring-1 ring-destructive/40 shadow-sm"
+              : "border-border/30 bg-card"
           }`}
         >
           <div className="flex items-center justify-center gap-1 text-[10px] font-semibold uppercase text-muted-foreground">
