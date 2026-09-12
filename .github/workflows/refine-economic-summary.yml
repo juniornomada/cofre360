@@ -1,0 +1,63 @@
+name: Refine economic summary semantics
+
+on:
+  push:
+    paths:
+      - .github/workflows/refine-economic-summary.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Patch Home and Transactions summaries
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          home = Path('src/routes/home.tsx')
+          text = home.read_text()
+          old = '  const monthly = useMemo(() => {\n    let income = 0;\n    let expense = 0;\n    for (const tx of selectedMonthTransactions) {\n      const mainCategory = (tx.category || "").split(" > ")[0]?.trim() || "";\n      const normalizedCategory = normalizeCategoryLabel(mainCategory);\n      const isTransfer = normalizedCategory === "transferencia" || normalizedCategory === "transferencias";\n\n      // Transferências entre contas são movimentações internas, não receita/despesa.\n      // Pagamento de cartão também não é nova despesa: as compras já foram contabilizadas.\n      if (isTransfer) continue;\n      if (tx.type === "income") income += Number(tx.amount || 0);\n      else if (!isCardPaymentCategory(tx.category)) expense += Number(tx.amount || 0);\n    }\n    return { income, expense };\n  }, [selectedMonthTransactions]);\n'
+          new = '  const monthly = useMemo(() => {\n    let income = 0;\n    let expense = 0;\n    for (const tx of selectedMonthTransactions) {\n      const mainCategory = (tx.category || "").split(" > ")[0]?.trim() || "";\n      const normalizedCategory = normalizeCategoryLabel(mainCategory);\n      const normalizedFullCategory = normalizeCategoryLabel(tx.category);\n      const isTransfer = normalizedCategory === "transferencia" || normalizedCategory === "transferencias";\n      const isAdjustment = normalizedCategory === "ajustes";\n      const isRefund = normalizedFullCategory === "receita > reembolso";\n\n      // Movimentos internos e ajustes técnicos alteram saldo, mas não resultado econômico.\n      if (isTransfer || isAdjustment) continue;\n      // Reembolso corrige a despesa original; não é uma nova receita.\n      if (isRefund) {\n        expense -= Number(tx.amount || 0);\n        continue;\n      }\n      if (tx.type === "income") income += Number(tx.amount || 0);\n      else if (!isCardPaymentCategory(tx.category)) expense += Number(tx.amount || 0);\n    }\n    return { income, expense };\n  }, [selectedMonthTransactions]);\n'
+          if old not in text:
+              raise SystemExit('Home monthly block not found')
+          home.write_text(text.replace(old, new, 1))
+
+          tx = Path('src/routes/transactions.tsx')
+          text = tx.read_text()
+          old1 = '  const isEconomicSummaryTransaction = (tx: Transaction) => {\n    const group = parseCategoryValue(tx.category || "").group;\n    return group !== "Transferências" && group !== "Pagamento de Cartão";\n  };\n\n  const filtered = filterType === "all"\n    ? filteredWithoutType\n    : filteredWithoutType.filter((tx) => tx.type === filterType && isEconomicSummaryTransaction(tx));\n'
+          new1 = '  const getEconomicSummaryKind = (tx: Transaction): "income" | "expense" | "refund" | "ignore" => {\n    const group = parseCategoryValue(tx.category || "").group;\n    if (group === "Transferências" || group === "Pagamento de Cartão" || group === "Ajustes") return "ignore";\n    if ((tx.category || "").trim() === "Receita > Reembolso") return "refund";\n    return tx.type;\n  };\n\n  const filtered = filterType === "all"\n    ? filteredWithoutType\n    : filteredWithoutType.filter((tx) => {\n        const kind = getEconomicSummaryKind(tx);\n        if (filterType === "income") return kind === "income";\n        return kind === "expense" || kind === "refund";\n      });\n'
+          if old1 not in text:
+              raise SystemExit('Transactions filter block not found')
+          text = text.replace(old1, new1, 1)
+
+          old2 = '  const economicSummaryTransactions = filteredWithoutType.filter(\n    (tx) => tx.is_visible !== false && isEconomicSummaryTransaction(tx),\n  );\n  const totalIncome = economicSummaryTransactions\n    .filter((tx) => tx.type === "income")\n    .reduce((sum, tx) => sum + Number(tx.amount), 0);\n  const totalExpense = economicSummaryTransactions\n    .filter((tx) => tx.type === "expense")\n    .reduce((sum, tx) => sum + Number(tx.amount), 0);\n'
+          new2 = '  const economicSummaryTransactions = filteredWithoutType.filter((tx) => tx.is_visible !== false);\n  const totalIncome = economicSummaryTransactions\n    .filter((tx) => getEconomicSummaryKind(tx) === "income")\n    .reduce((sum, tx) => sum + Number(tx.amount), 0);\n  const grossExpense = economicSummaryTransactions\n    .filter((tx) => getEconomicSummaryKind(tx) === "expense")\n    .reduce((sum, tx) => sum + Number(tx.amount), 0);\n  const refundAmount = economicSummaryTransactions\n    .filter((tx) => getEconomicSummaryKind(tx) === "refund")\n    .reduce((sum, tx) => sum + Number(tx.amount), 0);\n  const totalExpense = grossExpense - refundAmount;\n'
+          if old2 not in text:
+              raise SystemExit('Transactions totals block not found')
+          tx.write_text(text.replace(old2, new2, 1))
+          PY
+
+      - name: Validate patch
+        run: |
+          git diff --check
+          grep -F 'const isAdjustment = normalizedCategory === "ajustes";' src/routes/home.tsx
+          grep -F 'expense -= Number(tx.amount || 0);' src/routes/home.tsx
+          grep -F 'getEconomicSummaryKind' src/routes/transactions.tsx
+          grep -F 'const refundAmount' src/routes/transactions.tsx
+
+      - name: Commit patch and remove temporary workflow
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/refine-economic-summary.yml
+          git add src/routes/home.tsx src/routes/transactions.tsx
+          git commit -m "fix: reconcile adjustments and refunds in economic summary"
+          git push
