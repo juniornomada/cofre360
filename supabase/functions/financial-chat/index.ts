@@ -60,7 +60,7 @@ const norm = (value: string | null | undefined) =>
     .trim()
     .toLowerCase();
 
-function compactTransactionName(value: string, maxWords = 5) {
+function compactTransactionName(value: string, maxWords = 4) {
   const cleaned = String(value || "")
     .replace(/(?:\s+[-–—·]?\s*)?(?:MELI|MERCADO\s+LIVRE)\s*$/i, "")
     .replace(/\s+/g, " ")
@@ -69,7 +69,7 @@ function compactTransactionName(value: string, maxWords = 5) {
   return words.slice(0, maxWords).join(" ") || String(value || "").trim();
 }
 
-function compactTransactionNames(values: string[], maxWords = 5) {
+function compactTransactionNames(values: string[], maxWords = 4) {
   const cleaned = values.map((value) => String(value || "")
     .replace(/(?:\s+[-–—·]?\s*)?(?:MELI|MERCADO\s+LIVRE)\s*$/i, "")
     .replace(/\s+/g, " ")
