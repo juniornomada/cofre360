@@ -1622,7 +1622,23 @@ export function TransactionsPage() {
       <section className="-mx-1 grid grid-cols-2 gap-2">
         <button
           type="button"
-          onClick={() => setFilterType(filterType === "income" ? "all" : "income")}
+          onClick={() => {
+            const nextType = filterType === "income" ? "all" : "income";
+            setFilterType(nextType);
+            if (nextType !== "all") {
+              setActiveCategory("Todas");
+              setActiveSource("all");
+              setFilterAccountId(null);
+              setFilterStartDate(undefined);
+              setFilterEndDate(undefined);
+              setFilterMinAmount("");
+              setFilterMaxAmount("");
+              setGlobalSearch("");
+              setShowAdvancedFilters(false);
+              localStorage.removeItem("transactions_filter_accountId");
+              localStorage.setItem("transactions_filter_source", "all");
+            }
+          }}
           aria-pressed={filterType === "income"}
           className={`rounded-xl border bg-card p-3 text-center ${
             filterType === "income"
@@ -1640,7 +1656,23 @@ export function TransactionsPage() {
         </button>
         <button
           type="button"
-          onClick={() => setFilterType(filterType === "expense" ? "all" : "expense")}
+          onClick={() => {
+            const nextType = filterType === "expense" ? "all" : "expense";
+            setFilterType(nextType);
+            if (nextType !== "all") {
+              setActiveCategory("Todas");
+              setActiveSource("all");
+              setFilterAccountId(null);
+              setFilterStartDate(undefined);
+              setFilterEndDate(undefined);
+              setFilterMinAmount("");
+              setFilterMaxAmount("");
+              setGlobalSearch("");
+              setShowAdvancedFilters(false);
+              localStorage.removeItem("transactions_filter_accountId");
+              localStorage.setItem("transactions_filter_source", "all");
+            }
+          }}
           aria-pressed={filterType === "expense"}
           className={`rounded-xl border bg-card p-3 text-center ${
             filterType === "expense"
