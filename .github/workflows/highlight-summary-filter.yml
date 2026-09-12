@@ -19,20 +19,7 @@ jobs:
       - name: Patch active Receitas/Despesas styles
         shell: bash
         run: |
-          SCRIPT='from pathlib import Path
-p=Path("src/routes/transactions.tsx")
-s=p.read_text()
-old1="""className={`rounded-xl border bg-card p-3 text-center ${\n            filterType === \"income\"\n              ? \"border-border/30 ring-1 ring-primary/30\"\n              : \"border-border/30\"\n          }`}"""
-new1="""className={`rounded-xl border p-3 text-center transition-colors ${\n            filterType === \"income\"\n              ? \"border-primary/60 bg-primary/10 ring-1 ring-primary/40 shadow-sm\"\n              : \"border-border/30 bg-card\"\n          }`}"""
-old2="""className={`rounded-xl border bg-card p-3 text-center ${\n            filterType === \"expense\"\n              ? \"border-border/30 ring-1 ring-destructive/30\"\n              : \"border-border/30\"\n          }`}"""
-new2="""className={`rounded-xl border p-3 text-center transition-colors ${\n            filterType === \"expense\"\n              ? \"border-destructive/60 bg-destructive/10 ring-1 ring-destructive/40 shadow-sm\"\n              : \"border-border/30 bg-card\"\n          }`}"""
-if old1 not in s: raise SystemExit("income style not found")
-if old2 not in s: raise SystemExit("expense style not found")
-s=s.replace(old1,new1,1).replace(old2,new2,1)
-p.write_text(s)
-'
-          printf '%s' "$SCRIPT" | base64 -w0 > /tmp/script.b64
-          base64 -d /tmp/script.b64 | python3
+          echo 'ZnJvbSBwYXRobGliIGltcG9ydCBQYXRoCnA9UGF0aCgic3JjL3JvdXRlcy90cmFuc2FjdGlvbnMudHN4IikKcz1wLnJlYWRfdGV4dCgpCm9sZDE9J2NsYXNzTmFtZT17YHJvdW5kZWQteGwgYm9yZGVyIGJnLWNhcmQgcC0zIHRleHQtY2VudGVyICR7XFxuICAgICAgICAgICAgZmlsdGVyVHlwZSA9PT0gImluY29tZSJcXG4gICAgICAgICAgICAgID8gImJvcmRlci1ib3JkZXIvMzAgcmluZy0xIHJpbmctcHJpbWFyeS8zMCJcXG4gICAgICAgICAgICAgIDogImJvcmRlci1ib3JkZXIvMzAiXFxuICAgICAgICAgIH1gfScKbmV3MT0nY2xhc3NOYW1lPXtgcm91bmRlZC14bCBib3JkZXIgcC0zIHRleHQtY2VudGVyIHRyYW5zaXRpb24tY29sb3JzICR7XFxuICAgICAgICAgICAgZmlsdGVyVHlwZSA9PT0gImluY29tZSJcXG4gICAgICAgICAgICAgID8gImJvcmRlci1wcmltYXJ5LzYwIGJnLXByaW1hcnkvMTAgcmluZy0xIHJpbmctcHJpbWFyeS80MCBzaGFkb3ctc20iXFxuICAgICAgICAgICAgICA6ICJib3JkZXItYm9yZGVyLzMwIGJnLWNhcmQiXFxuICAgICAgICAgIH1gfScKb2xkMj0nY2xhc3NOYW1lPXtgcm91bmRlZC14bCBib3JkZXIgYmctY2FyZCBwLTMgdGV4dC1jZW50ZXIgJHtcXG4gICAgICAgICAgICBmaWx0ZXJUeXBlID09PSAiZXhwZW5zZSJcXG4gICAgICAgICAgICAgID8gImJvcmRlci1ib3JkZXIvMzAgcmluZy0xIHJpbmctZGVzdHJ1Y3RpdmUvMzAiXFxuICAgICAgICAgICAgICA6ICJib3JkZXItYm9yZGVyLzMwIlxcbiAgICAgICAgICB9YH0nCm5ldzI9J2NsYXNzTmFtZT17YHJvdW5kZWQteGwgYm9yZGVyIHAtMyB0ZXh0LWNlbnRlciB0cmFuc2l0aW9uLWNvbG9ycyAke1xcbiAgICAgICAgICAgIGZpbHRlclR5cGUgPT09ICJleHBlbnNlIlxcbiAgICAgICAgICAgICAgPyAiYm9yZGVyLWRlc3RydWN0aXZlLzYwIGJnLWRlc3RydWN0aXZlLzEwIHJpbmctMSByaW5nLWRlc3RydWN0aXZlLzQwIHNoYWRvdy1zbSJcXG4gICAgICAgICAgICAgIDogImJvcmRlci1ib3JkZXIvMzAgYmctY2FyZCJcXG4gICAgICAgICAgfWB9JwppZiBvbGQxIG5vdCBpbiBzOiByYWlzZSBTeXN0ZW1FeGl0KCJpbmNvbWUgc3R5bGUgbm90IGZvdW5kIikKaWYgb2xkMiBub3QgaW4gczogcmFpc2UgU3lzdGVtRXhpdCgiZXhwZW5zZSBzdHlsZSBub3QgZm91bmQiKQpzPXMucmVwbGFjZShvbGQxLG5ldzEsMSkucmVwbGFjZShvbGQyLG5ldzIsMSkKcC53cml0ZV90ZXh0KHMpCg==' | base64 -d | python3
 
       - name: Validate patch
         run: |
