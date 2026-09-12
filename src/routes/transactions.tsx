@@ -558,14 +558,20 @@ export function TransactionsPage() {
   // Receitas/Despesas representam fluxo econômico real. Transferências entre
   // contas e pagamentos de cartão continuam visíveis em "Todos", mas não são
   // classificados como nova receita ou nova despesa.
-  const isEconomicSummaryTransaction = (tx: Transaction) => {
+  const getEconomicSummaryKind = (tx: Transaction): "income" | "expense" | "refund" | "ignore" => {
     const group = parseCategoryValue(tx.category || "").group;
-    return group !== "Transferências" && group !== "Pagamento de Cartão";
+    if (group === "Transferências" || group === "Pagamento de Cartão" || group === "Ajustes") return "ignore";
+    if ((tx.category || "").trim() === "Receita > Reembolso") return "refund";
+    return tx.type;
   };
 
   const filtered = filterType === "all"
     ? filteredWithoutType
-    : filteredWithoutType.filter((tx) => tx.type === filterType && isEconomicSummaryTransaction(tx));
+    : filteredWithoutType.filter((tx) => {
+        const kind = getEconomicSummaryKind(tx);
+        if (filterType === "income") return kind === "income";
+        return kind === "expense" || kind === "refund";
+      });
 
   const activeFilterCount = (filterStartDate || filterEndDate ? 1 : 0) + (minAmt !== null || maxAmt !== null ? 1 : 0) + (filterType !== "all" ? 1 : 0) + (sortBy !== "date-desc" ? 1 : 0) + (filterAccountId ? 1 : 0);
 
@@ -623,15 +629,17 @@ export function TransactionsPage() {
     localStorage.setItem("transactions_filter_source", "all");
   };
 
-  const economicSummaryTransactions = filteredWithoutType.filter(
-    (tx) => tx.is_visible !== false && isEconomicSummaryTransaction(tx),
-  );
+  const economicSummaryTransactions = filteredWithoutType.filter((tx) => tx.is_visible !== false);
   const totalIncome = economicSummaryTransactions
-    .filter((tx) => tx.type === "income")
+    .filter((tx) => getEconomicSummaryKind(tx) === "income")
     .reduce((sum, tx) => sum + Number(tx.amount), 0);
-  const totalExpense = economicSummaryTransactions
-    .filter((tx) => tx.type === "expense")
+  const grossExpense = economicSummaryTransactions
+    .filter((tx) => getEconomicSummaryKind(tx) === "expense")
     .reduce((sum, tx) => sum + Number(tx.amount), 0);
+  const refundAmount = economicSummaryTransactions
+    .filter((tx) => getEconomicSummaryKind(tx) === "refund")
+    .reduce((sum, tx) => sum + Number(tx.amount), 0);
+  const totalExpense = grossExpense - refundAmount;
 
   const generatePDF = () => {
     try {

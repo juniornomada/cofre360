@@ -305,11 +305,18 @@ function RecoveredHome() {
     for (const tx of selectedMonthTransactions) {
       const mainCategory = (tx.category || "").split(" > ")[0]?.trim() || "";
       const normalizedCategory = normalizeCategoryLabel(mainCategory);
+      const normalizedFullCategory = normalizeCategoryLabel(tx.category);
       const isTransfer = normalizedCategory === "transferencia" || normalizedCategory === "transferencias";
+      const isAdjustment = normalizedCategory === "ajustes";
+      const isRefund = normalizedFullCategory === "receita > reembolso";
 
-      // Transferências entre contas são movimentações internas, não receita/despesa.
-      // Pagamento de cartão também não é nova despesa: as compras já foram contabilizadas.
-      if (isTransfer) continue;
+      // Movimentos internos e ajustes técnicos alteram saldo, mas não resultado econômico.
+      if (isTransfer || isAdjustment) continue;
+      // Reembolso corrige a despesa original; não é uma nova receita.
+      if (isRefund) {
+        expense -= Number(tx.amount || 0);
+        continue;
+      }
       if (tx.type === "income") income += Number(tx.amount || 0);
       else if (!isCardPaymentCategory(tx.category)) expense += Number(tx.amount || 0);
     }
