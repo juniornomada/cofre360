@@ -1,0 +1,25 @@
+name: Apply Insights show-all transactions
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/apply-insights-show-all-transactions.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply patch
+        run: python .github/scripts/apply_insights_show_all_transactions.py
+      - name: Commit result
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/components/FinancialChat.tsx supabase/functions/financial-chat/index.ts
+          git commit -m "feat: show all Insights IA transactions with category icons"
+          git push
