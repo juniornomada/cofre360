@@ -1,0 +1,26 @@
+name: Apply Insights IA compact names
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/apply-insights-compact-names.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply compact-name patch
+        run: python .github/scripts/apply_insights_compact_names.py
+      - name: Commit result
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add supabase/functions/financial-chat/index.ts
+          git commit -m "feat: compact Insights IA transaction names"
+          git push
