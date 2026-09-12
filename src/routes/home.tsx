@@ -303,6 +303,13 @@ function RecoveredHome() {
     let income = 0;
     let expense = 0;
     for (const tx of selectedMonthTransactions) {
+      const mainCategory = (tx.category || "").split(" > ")[0]?.trim() || "";
+      const normalizedCategory = normalizeCategoryLabel(mainCategory);
+      const isTransfer = normalizedCategory === "transferencia" || normalizedCategory === "transferencias";
+
+      // Transferências entre contas são movimentações internas, não receita/despesa.
+      // Pagamento de cartão também não é nova despesa: as compras já foram contabilizadas.
+      if (isTransfer) continue;
       if (tx.type === "income") income += Number(tx.amount || 0);
       else if (!isCardPaymentCategory(tx.category)) expense += Number(tx.amount || 0);
     }
