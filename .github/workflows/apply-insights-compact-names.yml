@@ -1,4 +1,4 @@
-name: Apply Insights IA single-line transactions
+name: Apply Insights IA four-word transaction names
 
 on:
   push:
@@ -15,12 +15,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Apply single-line transaction patch
-        run: python .github/scripts/apply_insights_single_line_transactions.py
+      - name: Set compact transaction names to four words
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('supabase/functions/financial-chat/index.ts')
+          text = path.read_text()
+          text = text.replace('function compactTransactionName(value: string, maxWords = 5)', 'function compactTransactionName(value: string, maxWords = 4)', 1)
+          text = text.replace('function compactTransactionNames(values: string[], maxWords = 5)', 'function compactTransactionNames(values: string[], maxWords = 4)', 1)
+          path.write_text(text)
+          PY
+          grep -q 'compactTransactionName(value: string, maxWords = 4)' supabase/functions/financial-chat/index.ts
+          grep -q 'compactTransactionNames(values: string\[\], maxWords = 4)' supabase/functions/financial-chat/index.ts
       - name: Commit result
+        shell: bash
         run: |
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add src/components/FinancialChat.tsx supabase/functions/financial-chat/index.ts
-          git commit -m "feat: keep Insights IA transactions on one line"
+          git add supabase/functions/financial-chat/index.ts
+          git commit -m "feat: limit Insights IA transaction names to four words"
           git push
