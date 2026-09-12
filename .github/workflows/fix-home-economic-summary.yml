@@ -1,0 +1,75 @@
+name: Apply Home economic summary fix
+
+on:
+  push:
+    paths:
+      - .github/workflows/fix-home-economic-summary.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Patch Home monthly summary
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+
+          path = Path("src/routes/home.tsx")
+          text = path.read_text()
+
+          old = '''  const monthly = useMemo(() => {
+    let income = 0;
+    let expense = 0;
+    for (const tx of selectedMonthTransactions) {
+      if (tx.type === "income") income += Number(tx.amount || 0);
+      else if (!isCardPaymentCategory(tx.category)) expense += Number(tx.amount || 0);
+    }
+    return { income, expense };
+  }, [selectedMonthTransactions]);
+'''
+
+          new = '''  const monthly = useMemo(() => {
+    let income = 0;
+    let expense = 0;
+    for (const tx of selectedMonthTransactions) {
+      const mainCategory = (tx.category || "").split(" > ")[0]?.trim() || "";
+      const normalizedCategory = normalizeCategoryLabel(mainCategory);
+      const isTransfer = normalizedCategory === "transferencia" || normalizedCategory === "transferencias";
+
+      // Transferências entre contas são movimentações internas, não receita/despesa.
+      // Pagamento de cartão também não é nova despesa: as compras já foram contabilizadas.
+      if (isTransfer) continue;
+      if (tx.type === "income") income += Number(tx.amount || 0);
+      else if (!isCardPaymentCategory(tx.category)) expense += Number(tx.amount || 0);
+    }
+    return { income, expense };
+  }, [selectedMonthTransactions]);
+'''
+
+          if old not in text:
+            raise SystemExit("monthly summary block not found")
+
+          path.write_text(text.replace(old, new, 1))
+          PY
+
+      - name: Validate patch
+        run: |
+          git diff --check
+          grep -F 'const isTransfer = normalizedCategory === "transferencia" || normalizedCategory === "transferencias";' src/routes/home.tsx
+          grep -F 'if (isTransfer) continue;' src/routes/home.tsx
+
+      - name: Commit patch and remove temporary workflow
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/fix-home-economic-summary.yml
+          git add src/routes/home.tsx
+          git commit -m "fix: exclude transfers from Home income expense summary"
+          git push
