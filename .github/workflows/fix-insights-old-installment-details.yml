@@ -1,0 +1,126 @@
+name: Apply Insights IA old installment detail fix
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/fix-insights-old-installment-details.yml
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch financial chat
+        shell: bash
+        run: |
+          python <<'PY'
+          from pathlib import Path
+          p = Path('supabase/functions/financial-chat/index.ts')
+          s = p.read_text()
+
+          start = s.index('function oldInstallmentCategoryTotals(')
+          end = s.index('\n}\n', start) + 3
+          helper = r'''function oldInstallmentDetails(rows: Transaction[], key: string) {
+  const details: Array<{
+    name: string;
+    category: string;
+    amount: number;
+    installmentNumber: number;
+    totalInstallments: number;
+    purchaseDate: Date;
+    chargeDate: Date;
+    card: string;
+  }> = [];
+
+  for (const tx of rows) {
+    if (tx.is_visible === false || tx.type !== "expense" || !tx.card) continue;
+    if (isTransferOrCardPayment(tx.category) || isAdjustmentCategory(tx.category)) continue;
+
+    const totalInstallments = Number(tx.total_installments || 1);
+    const installmentNumber = Math.max(1, Number(tx.installment_number || 1));
+    if (totalInstallments <= 1) continue;
+
+    const chargeDate = parseTxDate(tx.date, tx.created_at);
+    if (!chargeDate || monthKey(chargeDate) !== key) continue;
+
+    let purchaseDate = parseTxDate(tx.purchase_date, tx.created_at);
+    if (!purchaseDate && installmentNumber > 1) {
+      purchaseDate = shiftMonths(chargeDate, -(installmentNumber - 1));
+    }
+    if (!purchaseDate || monthKey(purchaseDate) === key) continue;
+
+    details.push({
+      name: String(tx.name || "Transação parcelada"),
+      category: rootCategory(tx.category),
+      amount: roundMoney(Number(tx.amount || 0)),
+      installmentNumber,
+      totalInstallments,
+      purchaseDate,
+      chargeDate,
+      card: String(tx.card || "Cartão"),
+    });
+  }
+
+  return details.sort((a, b) => b.amount - a.amount || a.name.localeCompare(b.name));
+}
+
+function oldInstallmentCategoryTotals(rows: Transaction[], key: string) {
+  const totals = new Map<string, number>();
+  for (const item of oldInstallmentDetails(rows, key)) {
+    totals.set(item.category, (totals.get(item.category) || 0) + item.amount);
+  }
+  return [...totals.entries()]
+    .map(([category, amount]) => [category, roundMoney(amount)] as [string, number])
+    .filter(([, amount]) => amount !== 0)
+    .sort((a, b) => b[1] - a[1]);
+}
+'''
+          s = s[:start] + helper + s[end:]
+
+          s = s.replace(
+              '    /(categor|respons|quais|origem|vieram|onde)/.test(q);',
+              '    /(categor|respons|quais|origem|vieram|onde|detalh|somad|compoe|cobradas?)/.test(q);',
+              1,
+          )
+
+          calc = '  const oldInstallmentTotal = roundMoney(oldInstallmentCategories.reduce((sum, [, value]) => sum + value, 0));'
+          if 'const oldInstallmentRows = oldInstallmentDetails' not in s:
+              s = s.replace(calc, calc + '\n  const oldInstallmentRows = oldInstallmentDetails(transactions, key);', 1)
+
+          a = s.index('  if (asksOldInstallmentCategories && !detailOnly) {')
+          b = s.index('\n  if (asksEconomicVsExpenseConcept', a)
+          answer = r'''  if (asksOldInstallmentCategories) {
+    const oldInstallmentLines = oldInstallmentRows.length
+      ? oldInstallmentRows.slice(0, 20).map((item) => {
+          const purchase = item.purchaseDate.toLocaleDateString("pt-BR");
+          return `- ${categoryEmoji(item.category)} **${item.name}** — R$ ${formatBRL(item.amount)} · ${item.installmentNumber}/${item.totalInstallments} · ${item.category} · ${item.card} · compra ${purchase}`;
+        }).join("\n")
+      : "(nenhuma parcela de compra antiga cobrada no período)";
+
+    const categorySummary = oldInstallmentCategories.length
+      ? oldInstallmentCategories.map(([category, amount]) => `${categoryEmoji(category)} ${category}: R$ ${formatBRL(amount)}`).join(" · ")
+      : "nenhuma";
+
+    return `### 💳 Parcelas de compras antigas cobradas em ${label}\n\n**Total dessas parcelas: R$ ${formatBRL(oldInstallmentTotal)}**\n\n${oldInstallmentLines}\n\n**Por categoria:** ${categorySummary}\n\n> 💡 Estes valores vêm diretamente das parcelas cobradas em ${label} cuja **data original da compra é de um mês anterior**. Não são calculados pela diferença entre DESPESAS e Gastos por categoria.`;
+  }
+'''
+          s = s[:a] + answer + s[b:]
+
+          old_rule = '- Se o usuário perguntar especificamente quais categorias originaram parcelas de compras antigas cobradas no mês, responda SOMENTE com as parcelas do mês cuja compra original ocorreu em mês anterior, agrupadas pela categoria da compra. Não use a visão geral de "Gastos por categoria" para essa pergunta.'
+          new_rule = '- Se o usuário perguntar sobre parcelas de compras antigas cobradas no mês, inclusive pedindo detalhe, mostre as parcelas reais individualmente (nome, valor da parcela, número da parcela, total de parcelas, categoria, cartão e data original da compra) e depois resuma por categoria. Selecione somente lançamentos parcelados cobrados no período cuja data original da compra ocorreu em mês anterior. NUNCA estime essas parcelas pela diferença entre DESPESAS e Gastos por categoria.'
+          s = s.replace(old_rule, new_rule, 1)
+
+          p.write_text(s)
+          PY
+          grep -q oldInstallmentDetails supabase/functions/financial-chat/index.ts
+          grep -q 'NUNCA estime essas parcelas pela diferença' supabase/functions/financial-chat/index.ts
+      - name: Commit
+        shell: bash
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add supabase/functions/financial-chat/index.ts
+          git commit -m 'fix: show exact old installment details in Insights IA'
+          git push
