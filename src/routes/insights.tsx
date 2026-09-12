@@ -7,13 +7,14 @@ export const Route = createFileRoute("/insights")({
 });
 
 const SUGGESTED_QUESTIONS = [
-  "Quanto gastei esse mês com alimentação?",
-  "Quanto gastei esse mês com compras online?",
-  "O que posso fazer para reduzir os gastos com alimentação?",
-  "Qual a minha projeção de saldo para o fim do mês?",
-  "Quanto gastei com Mercado Pago em maio?",
-  "Meus gastos aumentaram ou diminuíram em relação ao mês passado?",
-  "Quanto gastei com alimentação no mês anterior e qual o comparativo com esse mês?",
+  "Como estão minhas finanças este mês?",
+  "Qual foi o gasto total deste mês?",
+  "Quais categorias tiveram mais gastos neste mês?",
+  "Como os gastos de Alimentação estão divididos por subcategoria neste mês?",
+  "Quais parcelas de compras antigas foram cobradas neste mês?",
+  "Qual foi o total de receitas deste mês?",
+  "Compare as compras realizadas neste mês com o mês passado.",
+  "Qual a diferença entre gasto econômico e movimentação financeira?",
 ];
 
 function AIInsightsChat() {

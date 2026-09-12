@@ -20,20 +20,28 @@ const corsHeaders = buildCors(null);
 interface TestCase {
   id: string;
   name: string;
-  query: string;
+  query?: string;
+  messages?: Array<{ role: "user" | "assistant"; content: string }>;
   expectedKeywords: string[];
+  forbiddenKeywords?: string[];
   category: string;
 }
 
 const TEST_SUITE: TestCase[] = [
-  { id: "1", name: "Resumo Geral de Abril", query: "Qual foi meu resumo financeiro de abril?", expectedKeywords: ["abril", "receitas", "despesas", "saldo"], category: "Resumo" },
-  { id: "2", name: "Gasto com Alimentação (Abril)", query: "Quanto eu gastei com alimentação em abril?", expectedKeywords: ["alimentação", "abril", "R$"], category: "Categorias" },
-  { id: "3", name: "Comparação Mês Atual vs Anterior", query: "Meus gastos aumentaram ou diminuíram em relação ao mês passado?", expectedKeywords: ["comparação", "mês passado", "%"], category: "Comparação" },
-  { id: "4", name: "Busca por Nome Específico", query: "Quanto gastei com Mercado Pago em março?", expectedKeywords: ["mercado pago", "março"], category: "Filtros" },
-  { id: "5", name: "Projeção de Saldo", query: "Qual minha projeção de saldo para o fim do mês?", expectedKeywords: ["projeção", "saldo", "previsto"], category: "Resumo" },
+  { id: "1", name: "Resumo financeiro atual", query: "Como estão minhas finanças este mês?", expectedKeywords: ["receitas", "despesas", "resultado", "R$"], category: "Resumo" },
+  { id: "2", name: "Gasto total atual", query: "Qual foi o gasto total deste mês?", expectedKeywords: ["despesas", "total", "R$"], category: "Resumo" },
+  { id: "3", name: "Categorias atuais", query: "Quais categorias tiveram mais gastos neste mês?", expectedKeywords: ["gastos por categoria", "compras realizadas", "R$"], category: "Categorias" },
+  { id: "4", name: "Subcategorias de alimentação", query: "Como os gastos de Alimentação estão divididos por subcategoria neste mês?", expectedKeywords: ["alimentação", "subcategoria", "total", "R$"], category: "Categorias" },
+  { id: "5", name: "Parcelas antigas exatas", query: "Quais parcelas de compras antigas foram cobradas neste mês?", expectedKeywords: ["parcelas de compras antigas", "total", "compra", "R$"], forbiddenKeywords: ["representa principalmente", "sugere parcelas", "calculado pela diferença"], category: "Parcelas" },
+  { id: "6", name: "Receitas atuais", query: "Qual foi o total de receitas deste mês?", expectedKeywords: ["receitas", "total", "R$"], category: "Resumo" },
+  { id: "7", name: "Comparação econômica", query: "Compare as compras realizadas neste mês com o mês passado.", expectedKeywords: ["comparativo", "compras realizadas", "diferença", "R$"], category: "Comparação" },
+  { id: "8", name: "Conceito econômico x caixa", query: "Qual a diferença entre gasto econômico e movimentação financeira?", expectedKeywords: ["movimentação", "transferências", "pagamentos", "R$"], category: "Conceito" },
+  { id: "9", name: "Follow-up contextual de alimentação", messages: [{ role: "user", content: "Quanto gastei com alimentação?" }, { role: "assistant", content: "Total de Alimentação informado." }, { role: "user", content: "Em quais categorias?" }], expectedKeywords: ["alimentação", "subcategoria", "total", "R$"], category: "Contexto" },
+  { id: "10", name: "Follow-up detalhe de parcelas antigas", messages: [{ role: "user", content: "Quais categorias foram responsáveis pelas parcelas de compras antigas?" }, { role: "assistant", content: "Resumo das categorias informado." }, { role: "user", content: "detalhe" }], expectedKeywords: ["detalhe", "parcelas de compras antigas", "compra", "R$"], forbiddenKeywords: ["representa principalmente", "sugere parcelas"], category: "Contexto" },
+  { id: "11", name: "Composição sem subtração indevida", query: "Quais foram as despesas que não entraram nos gastos por categoria?", expectedKeywords: ["composição", "parcelas de compras antigas", "importante", "R$"], forbiddenKeywords: ["provavelmente parcelas", "sugere parcelas"], category: "Reconciliação" },
 ];
 
-async function runOne(test: TestCase, chatUrl: string, authKey: string) {
+async function runOne(test: TestCase, chatUrl: string, authKey: string, anonKey: string) {
   const start = Date.now();
   const findings: string[] = [];
   try {
@@ -42,9 +50,9 @@ async function runOne(test: TestCase, chatUrl: string, authKey: string) {
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${authKey}`,
-        apikey: authKey,
+        apikey: anonKey,
       },
-      body: JSON.stringify({ messages: [{ role: "user", content: test.query }] }),
+      body: JSON.stringify({ messages: test.messages || [{ role: "user", content: test.query || "" }] }),
     });
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
 
@@ -79,6 +87,12 @@ async function runOne(test: TestCase, chatUrl: string, authKey: string) {
         findings.push(`✅ keyword: ${kw}`);
       } else {
         findings.push(`❌ faltou: ${kw}`);
+      }
+    }
+    for (const kw of test.forbiddenKeywords || []) {
+      if (lower.includes(kw.toLowerCase())) {
+        findings.push(`❌ conteúdo proibido: ${kw}`);
+        matches = Math.max(0, matches - 1);
       }
     }
     const accuracy = Math.round((matches / test.expectedKeywords.length) * 100);
@@ -149,7 +163,7 @@ serve(async (req) => {
     const results = [];
     for (const t of TEST_SUITE) {
       // Forward the caller token so financial-chat's auth check passes.
-      results.push(await runOne(t, chatUrl, token));
+      results.push(await runOne(t, chatUrl, token, ANON_KEY));
     }
 
     const total = results.length;

@@ -15,9 +15,9 @@ type ConversationSummary = {
 
 const SUGGESTIONS = [
   "Como estão minhas finanças este mês?",
-  "Onde posso economizar?",
-  "Análise meus gastos por categoria",
-  "Dicas para alcançar minhas metas",
+  "Qual foi o gasto total deste mês?",
+  "Quais categorias tiveram mais gastos neste mês?",
+  "Quais parcelas de compras antigas foram cobradas neste mês?",
 ];
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/financial-chat`;
