@@ -50,6 +50,19 @@ const assistantNodeText = (node: ReactNode): string => {
   return "";
 };
 
+const assistantTransactionLine = (node: ReactNode) => {
+  const text = assistantNodeText(node).replace(/\s+/g, " ").trim();
+  const match = text.match(/^(\S+)\s+(.+?)\s+R\$\s*([0-9.]+,\d{2})(?:\s*[·•]?\s*(\d+\/\d+))?$/);
+  if (!match) return null;
+
+  return {
+    icon: match[1],
+    name: match[2].replace(/\s*[—–-]\s*$/, "").trim(),
+    amount: `R$ ${match[3]}`,
+    installment: match[4] || "",
+  };
+};
+
 const assistantListTone = (value: string) => {
   const text = value.toLocaleLowerCase("pt-BR");
 
@@ -572,14 +585,27 @@ export function FinancialChat({ initialPrompt, suggestions }: { initialPrompt?: 
                     p: ({ children }) => <p className="my-2 leading-6 first:mt-0 last:mb-0">{children}</p>,
                     ul: ({ children }) => <CompactAssistantList>{children}</CompactAssistantList>,
                     ol: ({ children }) => <CompactAssistantList ordered>{children}</CompactAssistantList>,
-                    li: ({ children }) => (
-                      <li className={cn(
-                        "list-none rounded-xl border px-2.5 py-2 text-[13px] leading-5",
-                        assistantListTone(assistantNodeText(children)),
-                      )}>
-                        {children}
-                      </li>
-                    ),
+                    li: ({ children }) => {
+                      const transaction = assistantTransactionLine(children);
+                      return (
+                        <li className={cn(
+                          "list-none rounded-xl border",
+                          transaction ? "px-2 py-1.5" : "px-2.5 py-2 text-[13px] leading-5",
+                          assistantListTone(assistantNodeText(children)),
+                        )}>
+                          {transaction ? (
+                            <div className="flex min-w-0 items-center gap-1 whitespace-nowrap text-[clamp(10.5px,2.8vw,13px)] leading-5 tracking-[-0.025em]">
+                              <span className="shrink-0">{transaction.icon}</span>
+                              <span className="min-w-0 flex-1 truncate font-semibold">{transaction.name}</span>
+                              <span className="shrink-0 font-semibold tabular-nums">{transaction.amount}</span>
+                              {transaction.installment && (
+                                <span className="shrink-0 font-medium tabular-nums opacity-80">{transaction.installment}</span>
+                              )}
+                            </div>
+                          ) : children}
+                        </li>
+                      );
+                    },
                     strong: ({ children }) => {
                       const value = assistantNodeText(children).trim();
                       const isStandaloneAmount = /^(?:total[^:]{0,40}:\s*)?[-+]?R\$/i.test(value);

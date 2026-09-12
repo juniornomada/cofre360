@@ -536,7 +536,7 @@ async function buildDeterministicFinancialAnswer(
     const compactOldInstallmentNames = compactTransactionNames(oldInstallmentRows.map((item) => item.name));
     const detailLines = oldInstallmentRows.length
       ? oldInstallmentRows.map((item, index) =>
-          `- ${categoryEmoji(item.category)} **${compactOldInstallmentNames[index]} — R$ ${formatBRL(item.amount)}** · ${item.installmentNumber}/${item.totalInstallments}`,
+          `- ${categoryEmoji(item.category)} **${compactOldInstallmentNames[index]}** R$ ${formatBRL(item.amount)} ${item.installmentNumber}/${item.totalInstallments}`,
         ).join("\n")
       : "(nenhuma parcela de compra antiga cobrada no período)";
     return `### 💳 Detalhe das parcelas de compras antigas — ${label}\n\n**Total dessas parcelas: R$ ${formatBRL(oldInstallmentTotal)}**\n\n${detailLines}\n\n**Resumo por categoria**\n${categorySummary}\n\n> 💡 Estes lançamentos são selecionados individualmente pela data da cobrança e pela data original da compra. **Não** são estimados pela diferença entre os dois totais mensais.`;
@@ -634,7 +634,7 @@ async function buildDeterministicFinancialAnswer(
     const total = roundMoney(items.reduce((sum, row) => sum + row.amount, 0));
     const compactItemNames = compactTransactionNames(items.map((row) => row.name));
     const lines = items.length
-      ? items.map((row, index) => `- ${categoryEmoji(rootCategory(row.category))} **${compactItemNames[index]} — R$ ${formatBRL(row.amount)}**`).join("\n")
+      ? items.map((row, index) => `- ${categoryEmoji(rootCategory(row.category))} **${compactItemNames[index]}** R$ ${formatBRL(row.amount)}`).join("\n")
       : "(nenhuma compra encontrada com esses critérios)";
     const exclusionText = exclusionWords.length ? `, excluindo “${exclusionWords.join(" ")}”` : "";
     return `### ${categoryEmoji(matchedCategory)} Detalhe de ${matchedCategory} — ${label}\n\n**Total${exclusionText}: R$ ${formatBRL(total)}**\n\n${lines}\n\n> 💡 O detalhamento usa as compras econômicas reais do período, item por item, em vez de inferir o restante por diferença.`;
