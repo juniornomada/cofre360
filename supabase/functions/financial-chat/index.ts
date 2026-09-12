@@ -318,7 +318,8 @@ function oldInstallmentDetails(rows: Transaction[], key: string) {
     if (!chargeDate || monthKey(chargeDate) !== key) continue;
     let purchaseDate = parseTxDate(tx.purchase_date, tx.created_at);
     if (!purchaseDate && installmentNumber > 1) purchaseDate = shiftMonths(chargeDate, -(installmentNumber - 1));
-    if (!purchaseDate || monthKey(purchaseDate) === key) continue;
+    const chargeMonthStart = new Date(chargeDate.getFullYear(), chargeDate.getMonth(), 1);
+    if (!purchaseDate || purchaseDate >= chargeMonthStart) continue;
     details.push({
       name: String(tx.name || "Transação parcelada"),
       category: rootCategory(tx.category),
@@ -443,7 +444,7 @@ async function buildDeterministicFinancialAnswer(
   const q = norm(anchorQuestion);
 
   // Conselhos e projeções continuam com a IA; números, comparações e composições usam cálculo determinístico.
-  if (!detailOnly && /(reduzir|economizar|dicas?|recomend|projec|por que|porque|como posso|analise|análise)/.test(q)) return null;
+  if (!detailOnly && /(reduzir|economizar|cortar|dicas?|recomend|projec|por que|porque|como posso|analise|análise)/.test(q)) return null;
 
   const asksOldInstallmentCategories =
     /(parcelas?.*(compras?|gastos?).*(antig|anterior)|compras? .*antig.*parcelas?|parcelas? .*mes(es)? anterior)/.test(q) &&
@@ -456,11 +457,12 @@ async function buildDeterministicFinancialAnswer(
   const asksPurchaseComparison = /(aumentaram|diminuiram|diminuíram|compar.*(mes|mês|compras?|gastos?)|mes passado|mês passado|mes anterior|mês anterior)/.test(q) &&
     /(gastos?|compras?|alimentacao|alimentação|moradia|transporte|saude|saúde|categoria)/.test(q);
   const asksExpenseComposition = /(despesas?.*(nao entraram|não entraram|fora|diferenca|diferença|compoem|compõem).*(gastos?|categor)|o que.*nao entrou.*categor|o que.*não entrou.*categor)/.test(q);
+  const asksCategoryItemDetail = /(quais .*despesas|quais .*gastos|outras despesas|outros gastos|alem|além|tirando|exceto|detalh.*categoria)/.test(q);
   const asksEconomicVsExpenseConcept =
     /(gasto economico|gasto real|despesa economica)/.test(q) &&
     /(despesas?|saida|movimentacao|fluxo de caixa|pagamento)/.test(q) &&
     /(diferenca|diferente|qual e|o que muda)/.test(q);
-  if (!detailOnly && !asksOldInstallmentCategories && !asksCategoryBreakdown && !asksSubcategoryBreakdown && !asksObjectiveAmount && !asksIncomeAmount && !asksFinancialSummary && !asksPurchaseComparison && !asksExpenseComposition && !asksEconomicVsExpenseConcept) return null;
+  if (!detailOnly && !asksOldInstallmentCategories && !asksCategoryBreakdown && !asksSubcategoryBreakdown && !asksObjectiveAmount && !asksIncomeAmount && !asksFinancialSummary && !asksPurchaseComparison && !asksExpenseComposition && !asksCategoryItemDetail && !asksEconomicVsExpenseConcept) return null;
 
   const { data, error } = await supabase
     .from("transactions")
@@ -576,6 +578,30 @@ async function buildDeterministicFinancialAnswer(
   if (matchedCard && asksObjectiveAmount && !detailOnly) {
     const value = roundMoney(expenses.filter((row) => monthKey(row.date) === key && norm(row.card) === norm(matchedCard)).reduce((sum, row) => sum + row.amount, 0));
     return `### 💳 ${matchedCard} — ${label}\n\n**Compras realizadas no cartão: R$ ${formatBRL(value)}**\n\n> 💡 Este valor considera a data original e o valor econômico das compras vinculadas ao cartão, sem repetir as parcelas futuras.`;
+  }
+
+  if (matchedCategory && asksCategoryItemDetail && !detailOnly) {
+    let items = expenses
+      .filter((row) => monthKey(row.date) === key && norm(rootCategory(row.category)) === norm(matchedCategory))
+      .sort((a, b) => b.amount - a.amount || a.name.localeCompare(b.name));
+
+    const exclusionMatch = q.match(/(?:alem(?: do| da| de)?|tirando|exceto)\s+(.+)$/);
+    const exclusionWords = (exclusionMatch?.[1] || "")
+      .split(/[^a-z0-9]+/)
+      .filter((word) => word.length >= 4 && !["categoria", "mes", "este", "esse"].includes(word));
+    if (exclusionWords.length) {
+      items = items.filter((row) => {
+        const haystack = `${norm(row.name)} ${norm(row.category)}`;
+        return !exclusionWords.some((word) => haystack.includes(word));
+      });
+    }
+
+    const total = roundMoney(items.reduce((sum, row) => sum + row.amount, 0));
+    const lines = items.length
+      ? items.slice(0, 30).map((row) => `- **${row.name} — R$ ${formatBRL(row.amount)}** · ${row.category}`).join("\n")
+      : "(nenhuma compra encontrada com esses critérios)";
+    const exclusionText = exclusionWords.length ? `, excluindo “${exclusionWords.join(" ")}”` : "";
+    return `### ${categoryEmoji(matchedCategory)} Detalhe de ${matchedCategory} — ${label}\n\n**Total${exclusionText}: R$ ${formatBRL(total)}**\n\n${lines}\n\n> 💡 O detalhamento usa as compras econômicas reais do período, item por item, em vez de inferir o restante por diferença.`;
   }
 
   if (matchedCategory && asksSubcategoryBreakdown && !detailOnly) {
@@ -697,6 +723,18 @@ async function buildFinancialContext(supabase: any, question: string) {
   const previousDetailedCategoryLines = previousDetailedCategories.slice(0, 30)
     .map(([category, amount]) => `- ${category}: R$ ${formatBRL(amount)}`)
     .join("\n");
+  const currentEconomicItemLines = expenses
+    .filter((row) => monthKey(row.date) === currentKey)
+    .sort((a, b) => b.amount - a.amount || a.name.localeCompare(b.name))
+    .slice(0, 100)
+    .map((row) => `- ${row.date.toLocaleDateString("pt-BR")} | ${row.name} | ${row.category} | R$ ${formatBRL(row.amount)}${row.card ? ` | ${row.card}` : ""}`)
+    .join("\n");
+  const previousEconomicItemLines = expenses
+    .filter((row) => monthKey(row.date) === previousKey)
+    .sort((a, b) => b.amount - a.amount || a.name.localeCompare(b.name))
+    .slice(0, 100)
+    .map((row) => `- ${row.date.toLocaleDateString("pt-BR")} | ${row.name} | ${row.category} | R$ ${formatBRL(row.amount)}${row.card ? ` | ${row.card}` : ""}`)
+    .join("\n");
 
   const requested = requestedMonth(question, now);
   let requestedSection = "";
@@ -742,6 +780,9 @@ ${currentCategoryLines || "(sem despesas)"}
 #### Detalhe real por categoria/subcategoria — compras do mês atual
 ${currentDetailedCategoryLines || "(sem despesas)"}
 
+#### Compras econômicas reais do mês atual — item a item
+${currentEconomicItemLines || "(sem compras)"}
+
 ### Mês anterior — ${MONTHS_LABEL[previousDate.getMonth()]}/${previousDate.getFullYear()} — MESMA REGRA DA HOME/TRANSAÇÕES
 - Receitas: R$ ${formatBRL(previousIncome)}
 - Despesas: R$ ${formatBRL(previousExpense)}
@@ -756,6 +797,9 @@ ${previousCategoryLines || "(sem despesas)"}
 
 #### Detalhe real por categoria/subcategoria — compras do mês anterior
 ${previousDetailedCategoryLines || "(sem despesas)"}
+
+#### Compras econômicas reais do mês anterior — item a item
+${previousEconomicItemLines || "(sem compras)"}
 
 ### Contas — saldo calculado
 ${accountLines || "(nenhuma conta)"}
@@ -785,6 +829,7 @@ Regras financeiras obrigatórias:
 - Não invente a natureza de uma diferença entre totais e não use expressões como "provavelmente parcelas de...", "sugere..." ou "pode incluir..." sem transações explícitas que comprovem isso.
 - Não classifique uma despesa como fixa, essencial, recorrente ou dispensável sem essa informação explícita nos dados ou sem o usuário ter confirmado.
 - Se o usuário pedir uma subcategoria ou uma composição de categoria, use o "Detalhe real por categoria/subcategoria" e garanta que a soma feche com o total da categoria.
+- Para perguntas como “quais outras despesas”, “além de”, “tirando” ou “exceto”, use as compras econômicas reais item a item e aplique a exclusão explicitamente. Não responda apenas com uma subtração de totais se os itens estiverem disponíveis.
 - Se o usuário perguntar especificamente quais categorias originaram parcelas de compras antigas cobradas no mês, responda SOMENTE com as parcelas do mês cuja compra original ocorreu em mês anterior, agrupadas pela categoria da compra. Não use a visão geral de "Gastos por categoria" para essa pergunta.
 - Se o usuário perguntar quais parcelas/lançamentos compõem o total de DESPESAS, use a composição mensal e deixe explícito que parcelas de compras antigas continuam sendo despesas do mês da cobrança, mas não novos gastos da categoria.
 - Se o usuário responder apenas "detalhe" depois de perguntar o gasto/despesa total do mês, apresente as duas visões separadamente e com rótulos claros: (1) DESPESAS do mês pela cobrança/lançamento; (2) GASTOS POR CATEGORIA das compras realizadas no mês. Não force os dois totais a serem iguais.
