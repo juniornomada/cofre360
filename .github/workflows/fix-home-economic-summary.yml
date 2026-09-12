@@ -17,44 +17,19 @@ jobs:
           fetch-depth: 0
 
       - name: Patch Home monthly summary
+        shell: bash
         run: |
-          python3 <<'PY'
+          python - <<'PY'
           from pathlib import Path
 
           path = Path("src/routes/home.tsx")
           text = path.read_text()
 
-          old = '''  const monthly = useMemo(() => {
-    let income = 0;
-    let expense = 0;
-    for (const tx of selectedMonthTransactions) {
-      if (tx.type === "income") income += Number(tx.amount || 0);
-      else if (!isCardPaymentCategory(tx.category)) expense += Number(tx.amount || 0);
-    }
-    return { income, expense };
-  }, [selectedMonthTransactions]);
-'''
-
-          new = '''  const monthly = useMemo(() => {
-    let income = 0;
-    let expense = 0;
-    for (const tx of selectedMonthTransactions) {
-      const mainCategory = (tx.category || "").split(" > ")[0]?.trim() || "";
-      const normalizedCategory = normalizeCategoryLabel(mainCategory);
-      const isTransfer = normalizedCategory === "transferencia" || normalizedCategory === "transferencias";
-
-      // Transferências entre contas são movimentações internas, não receita/despesa.
-      // Pagamento de cartão também não é nova despesa: as compras já foram contabilizadas.
-      if (isTransfer) continue;
-      if (tx.type === "income") income += Number(tx.amount || 0);
-      else if (!isCardPaymentCategory(tx.category)) expense += Number(tx.amount || 0);
-    }
-    return { income, expense };
-  }, [selectedMonthTransactions]);
-'''
+          old = '  const monthly = useMemo(() => {\n    let income = 0;\n    let expense = 0;\n    for (const tx of selectedMonthTransactions) {\n      if (tx.type === "income") income += Number(tx.amount || 0);\n      else if (!isCardPaymentCategory(tx.category)) expense += Number(tx.amount || 0);\n    }\n    return { income, expense };\n  }, [selectedMonthTransactions]);\n'
+          new = '  const monthly = useMemo(() => {\n    let income = 0;\n    let expense = 0;\n    for (const tx of selectedMonthTransactions) {\n      const mainCategory = (tx.category || "").split(" > ")[0]?.trim() || "";\n      const normalizedCategory = normalizeCategoryLabel(mainCategory);\n      const isTransfer = normalizedCategory === "transferencia" || normalizedCategory === "transferencias";\n\n      // Transferências entre contas são movimentações internas, não receita/despesa.\n      // Pagamento de cartão também não é nova despesa: as compras já foram contabilizadas.\n      if (isTransfer) continue;\n      if (tx.type === "income") income += Number(tx.amount || 0);\n      else if (!isCardPaymentCategory(tx.category)) expense += Number(tx.amount || 0);\n    }\n    return { income, expense };\n  }, [selectedMonthTransactions]);\n'
 
           if old not in text:
-            raise SystemExit("monthly summary block not found")
+              raise SystemExit("monthly summary block not found")
 
           path.write_text(text.replace(old, new, 1))
           PY
