@@ -1,4 +1,4 @@
-name: Fix category spending consistency
+name: Refine investment allocation legend
 
 on:
   push:
@@ -18,175 +18,30 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 0
 
-      - name: Unify category totals across chart and filters
+      - name: Keep only percentage in allocation legend
         shell: bash
         run: |
           python - <<'PY'
           from pathlib import Path
 
-          path = Path('src/routes/transactions.tsx')
+          path = Path('src/routes/invest.tsx')
           text = path.read_text()
-
-          old_filtered = '''  const filtered = filterType === "all"
-    ? filteredWithoutType
-    : economicFilteredWithoutType.filter((tx) => {
-        const kind = getEconomicSummaryKind(tx);
-        if (filterType === "income") return kind === "income";
-        return kind === "expense" || kind === "refund";
-      });
-'''
-
-          new_filtered = '''  const rawFiltered = filterType === "all"
-    ? filteredWithoutType
-    : economicFilteredWithoutType.filter((tx) => {
-        const kind = getEconomicSummaryKind(tx);
-        if (filterType === "income") return kind === "income";
-        return kind === "expense" || kind === "refund";
-      });
-
-  // Category views have one source of truth: the fully-collapsed economic
-  // purchase ledger. Its date is the original purchase date and its amount is
-  // the full economic purchase value, so old invoice charges are never counted
-  // again as new category spending in the selected month.
-  const categoryEconomicRows = categoryLedgerTransactions.filter((tx) => {
-    if (tx.is_visible === false) return false;
-
-    const categoryValue = String(tx.category || "Outros");
-    const parsedCategory = parseCategoryValue(categoryValue);
-    const isRefund = categoryValue.trim() === "Receita > Reembolso";
-    const isIgnoredCategory =
-      parsedCategory.group === "Transferências" ||
-      parsedCategory.group === "Pagamento de Cartão" ||
-      parsedCategory.group === "Ajustes";
-    if (isIgnoredCategory) return false;
-
-    const rowType = tx.type === "income" ? "income" : tx.type === "expense" ? "expense" : null;
-    if (!rowType) return false;
-
-    const matchesCategory =
-      activeCategory === "Todas" ||
-      categoryValue === activeCategory ||
-      parsedCategory.group === activeCategory ||
-      (activeCategory === "Reembolso" && isRefund);
-    if (!matchesCategory) return false;
-
-    const matchesSource = activeSource === "all"
-      ? true
-      : activeSource === "card"
-        ? !!tx.card
-        : !!tx.bank_account_id && !tx.card;
-    if (!matchesSource) return false;
-
-    if (filterAccountId && tx.bank_account_id !== filterAccountId) return false;
-
-    const amount = Number(tx.amount || 0);
-    if (minAmt !== null && amount < minAmt) return false;
-    if (maxAmt !== null && amount > maxAmt) return false;
-
-    const d = parseTxDate(tx.date || "", tx.created_at || undefined);
-    const timestamp = d?.getTime() ?? NaN;
-    if (!Number.isFinite(timestamp) || timestamp < selectedMonthStartUtc || timestamp > selectedMonthEndUtc) return false;
-
-    if (filterStartDate && timestamp < toUtcDay(filterStartDate).getTime()) return false;
-    if (filterEndDate && timestamp > toUtcDay(filterEndDate, true).getTime()) return false;
-
-    if (filterType === "income") return rowType === "income" && !isRefund;
-    if (filterType === "expense") return rowType === "expense" || isRefund;
-    return true;
-  });
-
-  // CategoryPieCharts normally expands raw installment rows. These rows are
-  // already collapsed by fetchAllCategoryLedgerTransactions, so neutralize the
-  // installment metadata to prevent double expansion.
-  const categoryChartTransactions = categoryEconomicRows.map((tx) => ({
-    id: tx.id,
-    category: String(tx.category || "Outros"),
-    amount: Number(tx.amount || 0),
-    type: tx.type === "income" ? "income" as const : "expense" as const,
-    installment_group_id: null,
-    installment_number: null,
-    total_installments: null,
-    installment_source_amount: null,
-  }));
-
-  const categoryScopeActive = !isYieldView && activeCategory !== "Todas";
-  const filtered = rawFiltered;
-'''
-
-          if old_filtered not in text:
-              raise SystemExit('missing filtered block')
-          text = text.replace(old_filtered, new_filtered, 1)
-
-          old_totals = '''  const totalExpense = grossExpense - refundAmount;
-
-  const generatePDF = () => {'''
-          new_totals = '''  const totalExpense = grossExpense - refundAmount;
-
-  const categoryScopedIncome = categoryEconomicRows
-    .filter((tx) => tx.type === "income" && String(tx.category || "").trim() !== "Receita > Reembolso")
-    .reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
-  const categoryScopedGrossExpense = categoryEconomicRows
-    .filter((tx) => tx.type === "expense")
-    .reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
-  const categoryScopedRefund = categoryEconomicRows
-    .filter((tx) => String(tx.category || "").trim() === "Receita > Reembolso")
-    .reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
-  const displayTotalIncome = categoryScopeActive ? categoryScopedIncome : totalIncome;
-  const displayTotalExpense = categoryScopeActive
-    ? categoryScopedGrossExpense - categoryScopedRefund
-    : totalExpense;
-
-  const generatePDF = () => {'''
-          if old_totals not in text:
-              raise SystemExit('missing totals block')
-          text = text.replace(old_totals, new_totals, 1)
-
-          text = text.replace(
-              'doc.text(`Total Receitas: R$ ${totalIncome.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`, 14, finalY + 10);',
-              'doc.text(`Total Receitas: R$ ${displayTotalIncome.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`, 14, finalY + 10);',
-              1,
-          )
-          text = text.replace(
-              'doc.text(`Total Despesas: R$ ${totalExpense.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`, 14, finalY + 16);',
-              'doc.text(`Total Despesas: R$ ${displayTotalExpense.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`, 14, finalY + 16);',
-              1,
-          )
-          text = text.replace(
-              'doc.text(`Saldo: R$ ${(totalIncome - totalExpense).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`, 14, finalY + 22);',
-              'doc.text(`Saldo: R$ ${(displayTotalIncome - displayTotalExpense).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`, 14, finalY + 22);',
-              1,
-          )
-
-          old_income_card = '{balanceVisible ? `R$ ${formatCurrency(totalIncome)}` : "R$ ••••"}'
-          new_income_card = '{balanceVisible ? `R$ ${formatCurrency(displayTotalIncome)}` : "R$ ••••"}'
-          if old_income_card not in text:
-              raise SystemExit('missing income card total')
-          text = text.replace(old_income_card, new_income_card, 1)
-
-          text = text.replace('!isYieldView && totalExpense < 0', '!isYieldView && displayTotalExpense < 0')
-          text = text.replace('totalExpense < 0 ? "Saldo reembolsos" : "Despesas"', 'displayTotalExpense < 0 ? "Saldo reembolsos" : "Despesas"')
-          text = text.replace('!isYieldView && totalExpense < 0 ? "text-primary" : "text-destructive"', '!isYieldView && displayTotalExpense < 0 ? "text-primary" : "text-destructive"')
-          text = text.replace('!isYieldView && totalExpense < 0\n                  ? `+ R$ ${formatCurrency(Math.abs(totalExpense))}`\n                  : `R$ ${formatCurrency(totalExpense)}`', '!isYieldView && displayTotalExpense < 0\n                  ? `+ R$ ${formatCurrency(Math.abs(displayTotalExpense))}`\n                  : `R$ ${formatCurrency(displayTotalExpense)}`')
-
-          old_chart = '          transactions={filtered}\n'
-          new_chart = '          transactions={categoryChartTransactions}\n'
-          if old_chart not in text:
-              raise SystemExit('missing category chart source')
-          text = text.replace(old_chart, new_chart, 1)
-
-          path.write_text(text)
+          old = '{balanceVisible ? `${pct.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}% · ${fmtBRL(d.value)}` : "••••"}'
+          new = '{balanceVisible ? `${pct.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%` : "••••"}'
+          if old not in text:
+              raise SystemExit('Investment allocation legend marker not found; source changed and was not patched.')
+          path.write_text(text.replace(old, new, 1))
           PY
 
-          grep -q 'transactions={categoryChartTransactions}' src/routes/transactions.tsx
-          grep -q 'const displayTotalExpense = categoryScopeActive' src/routes/transactions.tsx
-          grep -q 'old invoice charges are never counted' src/routes/transactions.tsx
+          grep -q 'maximumFractionDigits: 1 })}%` : "••••"' src/routes/invest.tsx
 
       - name: Commit result
+        shell: bash
         run: |
           rm .github/workflows/fix-category-consistency.yml
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add -A
           git diff --cached --quiet && exit 0
-          git commit -m "fix: unify category spending totals across views"
+          git commit -m "refactor: simplify investment allocation legend"
           git push
