@@ -50,6 +50,52 @@ const assistantNodeText = (node: ReactNode): string => {
   return "";
 };
 
+const formatAssistantContent = (content: string) => {
+  if (!content.includes("Detalhe das parcelas de compras antigas") || content.includes("#### ")) return content;
+
+  const lines = content.split("\n");
+  const transactionPattern = /^- (\S+) \*\*(.+?)\*\* R\$ ([0-9.]+,\d{2}) (\d+\/\d+)$/;
+  const summaryPattern = /^- (\S+) \*\*(.+?) — R\$ ([0-9.]+,\d{2})\*\*$/;
+  const summaryTitleIndex = lines.findIndex((line) => line.trim() === "**Resumo por categoria**");
+  if (summaryTitleIndex < 0) return content;
+
+  const transactions = lines
+    .slice(0, summaryTitleIndex)
+    .map((line) => line.match(transactionPattern))
+    .filter((match): match is RegExpMatchArray => !!match)
+    .map((match) => ({ icon: match[1], name: match[2], amount: match[3], installment: match[4] }));
+
+  const footerIndex = lines.findIndex((line, index) => index > summaryTitleIndex && line.startsWith("> 💡"));
+  const summaryEnd = footerIndex >= 0 ? footerIndex : lines.length;
+  const summaries = lines
+    .slice(summaryTitleIndex + 1, summaryEnd)
+    .map((line) => line.match(summaryPattern))
+    .filter((match): match is RegExpMatchArray => !!match)
+    .map((match) => ({ icon: match[1], category: match[2], amount: match[3] }));
+
+  if (!transactions.length || !summaries.length) return content;
+
+  const firstTransactionIndex = lines.findIndex((line) => transactionPattern.test(line));
+  if (firstTransactionIndex < 0) return content;
+
+  const prefix = lines.slice(0, firstTransactionIndex);
+  while (prefix.length && prefix[prefix.length - 1].trim() === "") prefix.pop();
+
+  const grouped = summaries.flatMap((summary, index) => {
+    const rows = transactions.filter((transaction) => transaction.icon === summary.icon);
+    if (!rows.length) return [];
+    const block = [
+      `#### ${summary.icon} ${summary.category}: R$ ${summary.amount}`,
+      ...rows.map((row) => `- ${row.installment} **${row.name}** · **R$ ${row.amount}**`),
+    ];
+    if (index < summaries.length - 1) block.push("");
+    return block;
+  });
+
+  const footer = footerIndex >= 0 ? lines.slice(footerIndex) : [];
+  return [...prefix, "", ...grouped, ...(footer.length ? ["", ...footer] : [])].join("\n");
+};
+
 const assistantTransactionLine = (node: ReactNode) => {
   const text = assistantNodeText(node).replace(/\s+/g, " ").trim();
 
@@ -79,8 +125,6 @@ const assistantTransactionLine = (node: ReactNode) => {
 const assistantListTone = (value: string) => {
   const text = value.toLocaleLowerCase("pt-BR");
 
-  // Paleta semântica de alto contraste. Cada categoria usa uma família de cor
-  // diferente e combinações específicas para light/dark theme.
   if (text.includes("transporte") || text.includes("🚗")) {
     return "border-cyan-500/60 bg-cyan-50 text-cyan-950 dark:border-cyan-400/50 dark:bg-cyan-400/10 dark:text-cyan-100";
   }
@@ -310,8 +354,6 @@ export function FinancialChat({ initialPrompt, suggestions }: { initialPrompt?: 
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, followUps]);
 
-  // Auto-envia prompt inicial vindo via query string (ex.: card "Previsto fim do mês")
-  // Só dispara depois que o histórico foi restaurado, evitando sobrescrever a conversa salva.
   useEffect(() => {
     if (!mounted || !historyReady) return;
     if (!initialPrompt) return;
@@ -464,7 +506,6 @@ export function FinancialChat({ initialPrompt, suggestions }: { initialPrompt?: 
 
   return (
     <div className="rounded-2xl bg-card border border-border/50 overflow-hidden flex flex-col">
-      {/* Header */}
       <div className="flex items-center gap-3 p-4 border-b border-border/50 bg-gradient-to-r from-primary/10 via-violet-500/5 to-transparent">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-violet-500 shadow-lg shadow-primary/20">
           <Bot className="h-5 w-5 text-primary-foreground" />
@@ -541,7 +582,6 @@ export function FinancialChat({ initialPrompt, suggestions }: { initialPrompt?: 
         </div>
       )}
 
-      {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-4 max-h-[520px] min-h-[300px]">
         {!historyReady && (
           <div className="flex min-h-[220px] items-center justify-center gap-2 text-xs text-muted-foreground">
@@ -665,7 +705,7 @@ export function FinancialChat({ initialPrompt, suggestions }: { initialPrompt?: 
                     hr: () => <hr className="my-3 border-border/70" />,
                   }}
                 >
-                  {msg.content || "..."}
+                  {formatAssistantContent(msg.content) || "..."}
                 </ReactMarkdown>
               </div>
             ) : (
@@ -681,7 +721,6 @@ export function FinancialChat({ initialPrompt, suggestions }: { initialPrompt?: 
           </div>
         )}
 
-        {/* Sugestões de follow-up dinâmicas */}
         {!isLoading && (followUps.length > 0 || loadingFollowUps) && messages.length > 0 && (
           <div className="pt-1 animate-fade-in">
             <div className="mb-2 flex items-center gap-1.5 text-[10px] text-muted-foreground">
@@ -711,7 +750,6 @@ export function FinancialChat({ initialPrompt, suggestions }: { initialPrompt?: 
         )}
       </div>
 
-      {/* Input */}
       <div className="flex items-center gap-2 p-3 border-t border-border/50 bg-card">
         <input
           type="text"
