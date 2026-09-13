@@ -1,0 +1,112 @@
+name: Apply category consistency patch
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/category-consistency.trigger'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+      - name: Patch transactions category source
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('src/routes/transactions.tsx')
+          s = p.read_text()
+          old = '''  const filtered = filterType === "all"
+    ? filteredWithoutType
+    : economicFilteredWithoutType.filter((tx) => {
+        const kind = getEconomicSummaryKind(tx);
+        if (filterType === "income") return kind === "income";
+        return kind === "expense" || kind === "refund";
+      });
+'''
+          new = '''  const rawFiltered = filterType === "all"
+    ? filteredWithoutType
+    : economicFilteredWithoutType.filter((tx) => {
+        const kind = getEconomicSummaryKind(tx);
+        if (filterType === "income") return kind === "income";
+        return kind === "expense" || kind === "refund";
+      });
+
+  const categoryEconomicRows = categoryLedgerTransactions.filter((tx) => {
+    if (tx.is_visible === false) return false;
+    const categoryValue = String(tx.category || "Outros");
+    const parsedCategory = parseCategoryValue(categoryValue);
+    const isRefund = categoryValue.trim() === "Receita > Reembolso";
+    if (parsedCategory.group === "Transferências" || parsedCategory.group === "Pagamento de Cartão" || parsedCategory.group === "Ajustes") return false;
+    const rowType = tx.type === "income" ? "income" : tx.type === "expense" ? "expense" : null;
+    if (!rowType) return false;
+    const matchesCategory = activeCategory === "Todas" || categoryValue === activeCategory || parsedCategory.group === activeCategory || (activeCategory === "Reembolso" && isRefund);
+    if (!matchesCategory) return false;
+    const matchesSource = activeSource === "all" ? true : activeSource === "card" ? !!tx.card : !!tx.bank_account_id && !tx.card;
+    if (!matchesSource) return false;
+    if (filterAccountId && tx.bank_account_id !== filterAccountId) return false;
+    const amount = Number(tx.amount || 0);
+    if (minAmt !== null && amount < minAmt) return false;
+    if (maxAmt !== null && amount > maxAmt) return false;
+    const d = parseTxDate(tx.date || "", tx.created_at || undefined);
+    const timestamp = d?.getTime() ?? NaN;
+    if (!Number.isFinite(timestamp) || timestamp < selectedMonthStartUtc || timestamp > selectedMonthEndUtc) return false;
+    if (filterStartDate && timestamp < toUtcDay(filterStartDate).getTime()) return false;
+    if (filterEndDate && timestamp > toUtcDay(filterEndDate, true).getTime()) return false;
+    if (filterType === "income") return rowType === "income" && !isRefund;
+    if (filterType === "expense") return rowType === "expense" || isRefund;
+    return true;
+  });
+
+  const categoryChartTransactions = categoryEconomicRows.map((tx) => ({
+    id: tx.id,
+    category: String(tx.category || "Outros"),
+    amount: Number(tx.amount || 0),
+    type: tx.type === "income" ? "income" as const : "expense" as const,
+    installment_group_id: null,
+    installment_number: null,
+    total_installments: null,
+    installment_source_amount: null,
+  }));
+  const categoryScopeActive = !isYieldView && activeCategory !== "Todas";
+  const filtered = rawFiltered;
+'''
+          if old not in s: raise SystemExit('filtered marker missing')
+          s = s.replace(old, new, 1)
+
+          old2 = '''  const totalExpense = grossExpense - refundAmount;
+
+  const generatePDF = () => {'''
+          new2 = '''  const totalExpense = grossExpense - refundAmount;
+  const categoryScopedIncome = categoryEconomicRows.filter((tx) => tx.type === "income" && String(tx.category || "").trim() !== "Receita > Reembolso").reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
+  const categoryScopedGrossExpense = categoryEconomicRows.filter((tx) => tx.type === "expense").reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
+  const categoryScopedRefund = categoryEconomicRows.filter((tx) => String(tx.category || "").trim() === "Receita > Reembolso").reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
+  const displayTotalIncome = categoryScopeActive ? categoryScopedIncome : totalIncome;
+  const displayTotalExpense = categoryScopeActive ? categoryScopedGrossExpense - categoryScopedRefund : totalExpense;
+
+  const generatePDF = () => {'''
+          if old2 not in s: raise SystemExit('totals marker missing')
+          s = s.replace(old2, new2, 1)
+
+          s = s.replace('{balanceVisible ? `R$ ${formatCurrency(totalIncome)}` : "R$ ••••"}', '{balanceVisible ? `R$ ${formatCurrency(displayTotalIncome)}` : "R$ ••••"}', 1)
+          s = s.replace('!isYieldView && totalExpense < 0', '!isYieldView && displayTotalExpense < 0')
+          s = s.replace('totalExpense < 0 ? "Saldo reembolsos" : "Despesas"', 'displayTotalExpense < 0 ? "Saldo reembolsos" : "Despesas"')
+          s = s.replace('!isYieldView && totalExpense < 0 ? "text-primary" : "text-destructive"', '!isYieldView && displayTotalExpense < 0 ? "text-primary" : "text-destructive"')
+          s = s.replace('!isYieldView && totalExpense < 0\n                  ? `+ R$ ${formatCurrency(Math.abs(totalExpense))}`\n                  : `R$ ${formatCurrency(totalExpense)}`', '!isYieldView && displayTotalExpense < 0\n                  ? `+ R$ ${formatCurrency(Math.abs(displayTotalExpense))}`\n                  : `R$ ${formatCurrency(displayTotalExpense)}`')
+          s = s.replace('          transactions={filtered}\n', '          transactions={categoryChartTransactions}\n', 1)
+          p.write_text(s)
+          PY
+          grep -q 'transactions={categoryChartTransactions}' src/routes/transactions.tsx
+          grep -q 'const displayTotalExpense = categoryScopeActive' src/routes/transactions.tsx
+      - name: Commit patch
+        run: |
+          rm -f .github/workflows/fix-category-consistency.yml .github/workflows/fix-category-consistency-run.yml .github/category-consistency.trigger
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git commit -m "fix: unify category spending totals across views"
+          git push
