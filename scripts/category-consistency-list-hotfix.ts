@@ -52,7 +52,26 @@ export function categoryConsistencyListHotfix(): Plugin {
         throw new Error("Category list consistency marker not found in transformed transactions.tsx");
       }
 
-      return { code: code.replace(marker, replacement), map: null };
+      let transformed = code.replace(marker, replacement);
+
+      // Keep every category filter on one compact row on mobile. The container
+      // shrinks to the icon group when it fits and becomes horizontally
+      // scrollable only on very narrow screens or when more categories exist.
+      const categoryRowClass = 'className="flex flex-wrap justify-center gap-1.5"';
+      const compactCategoryRowClass = 'className="mx-auto flex w-fit max-w-full flex-nowrap items-center gap-1 overflow-x-auto px-0.5"';
+      if (!transformed.includes(categoryRowClass)) {
+        throw new Error("Category icon row marker not found in transformed transactions.tsx");
+      }
+      transformed = transformed.replace(categoryRowClass, compactCategoryRowClass);
+
+      const categoryButtonClass = 'className={`interactive-button flex h-9 w-12 shrink-0 items-center justify-center rounded-xl border text-base transition-all ${';
+      const compactCategoryButtonClass = 'className={`interactive-button flex h-9 w-10 shrink-0 items-center justify-center rounded-xl border text-base transition-all ${';
+      if (!transformed.includes(categoryButtonClass)) {
+        throw new Error("Category icon button marker not found in transformed transactions.tsx");
+      }
+      transformed = transformed.replace(categoryButtonClass, compactCategoryButtonClass);
+
+      return { code: transformed, map: null };
     },
   };
 }
