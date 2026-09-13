@@ -218,6 +218,16 @@ export function parseTxDate(dateStr: string, fallback: string): Date {
 
 
 
+export function getBillingCycleMonthKey(dateStr: string, fallback: string, closingDay: number | null | undefined): string {
+  const txDate = parseTxDate(dateStr, fallback);
+  const cDay = closingDay || 1;
+  let cycleEnd = new Date(txDate.getFullYear(), txDate.getMonth(), cDay);
+  if (txDate >= cycleEnd) {
+    cycleEnd = new Date(txDate.getFullYear(), txDate.getMonth() + 1, cDay);
+  }
+  return `${cycleEnd.getFullYear()}-${String(cycleEnd.getMonth() + 1).padStart(2, "0")}`;
+}
+
 export function getCycleDates(referenceDate: Date, closingDay: number, dueDay: number) {
   const cDay = closingDay || 1;
   const dDay = dueDay || 10;

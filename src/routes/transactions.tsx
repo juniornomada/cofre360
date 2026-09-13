@@ -39,6 +39,7 @@ import { mapServerError } from "@/lib/map-server-error";
 import { sanitizeTransactionName } from "@/lib/normalize-transaction-name";
 import { inferDebitInstallmentContext } from "@/lib/debit-installment-history-sync";
 import { buildTransferTransactionNames, extractTransferDescription } from "@/lib/transfer-label";
+import { getBillingCycleMonthKey } from "@/lib/invoice-utils";
 
 
 
@@ -76,6 +77,8 @@ interface CardOption {
   name: string;
   brand: string;
   color?: string | null;
+  closing_day?: number | null;
+  due_day?: number | null;
 }
 
 const isTransferTransaction = (tx: Pick<Transaction, "category"> | null | undefined) => {
@@ -280,11 +283,11 @@ export function TransactionsPage() {
 
   const fetchCards = useCallback(async () => {
     try {
-      const { data, error } = await supabase.from("cards").select("name, brand, color").order("created_at", { ascending: true });
+      const { data, error } = await supabase.from("cards").select("name, brand, color, closing_day, due_day").order("created_at", { ascending: true });
       if (error) throw error;
       
       if (data) {
-        const options = data.map(c => ({ name: c.name, brand: c.brand, color: c.color }));
+        const options = data.map(c => ({ name: c.name, brand: c.brand, color: c.color, closing_day: c.closing_day, due_day: c.due_day }));
         setCardOptions([{ name: "Nenhum", brand: "", color: null }, ...options]);
         const brandMap: Record<string, string> = {};
         data.forEach(c => { brandMap[c.name] = c.brand; });
@@ -488,6 +491,7 @@ export function TransactionsPage() {
 
   const selectedMonthStartUtc = Date.UTC(selectedMonth.getFullYear(), selectedMonth.getMonth(), 1);
   const selectedMonthEndUtc = Date.UTC(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 1) - 1;
+  const selectedMonthKey = `${selectedMonth.getFullYear()}-${String(selectedMonth.getMonth() + 1).padStart(2, "0")}`;
   const nowForYield = new Date();
   const isCurrentYieldMonth =
     selectedMonth.getFullYear() === nowForYield.getFullYear() &&
@@ -525,25 +529,28 @@ export function TransactionsPage() {
     .sort((a, b) => b.count - a.count || a.category.localeCompare(b.category, "pt-BR"));
 
 
-  // Apply every filter except transaction type first. The Receitas/Despesas
-  // summary cards use this base so both totals stay visible while either card
-  // is acting as the type filter.
-  const filteredWithoutType = transactions.filter((tx) => {
+  // "Todos" keeps calendar-month browsing; the economic summary uses
+  // each card's invoice cycle so DESPESAS closes with the card totals.
+  const matchesBaseFilters = (tx: Transaction, monthMode: "calendar" | "economic") => {
     const matchesCategory = activeCategory === "Todas" || tx.category === activeCategory || parseCategoryValue(tx.category).group === activeCategory || (activeCategory === "Transferências" && (tx.category === "Transferência" || tx.category === "Transferências"));
-    const matchesSource = activeSource === "all"
-      ? true
-      : activeSource === "card"
-        ? !!tx.card
-        : !!tx.bank_account_id && !tx.card;
+    const matchesSource = activeSource === "all" ? true : activeSource === "card" ? !!tx.card : !!tx.bank_account_id && !tx.card;
     const matchesAccount = !filterAccountId || tx.bank_account_id === filterAccountId;
     const matchesMin = minAmt === null || Number(tx.amount) >= minAmt;
     const matchesMax = maxAmt === null || Number(tx.amount) <= maxAmt;
     const d = parseTxDate(tx.date, tx.created_at);
     const timestamp = d?.getTime() ?? NaN;
     const matchesYieldComponent = !isYieldView || isAccountYieldComponent(tx);
-    const matchesMonth = isYieldView
+    let matchesMonth = isYieldView
       ? (!d || timestamp <= yieldCutoffUtc)
       : Number.isFinite(timestamp) && timestamp >= selectedMonthStartUtc && timestamp <= selectedMonthEndUtc;
+
+    if (!isYieldView && monthMode === "economic" && tx.card) {
+      const card = cardOptions.find((option) => option.name === tx.card);
+      if (card?.closing_day) {
+        matchesMonth = getBillingCycleMonthKey(tx.date, tx.created_at || "", card.closing_day) === selectedMonthKey;
+      }
+    }
+
     let matchesDate = true;
     if (filterStartDate || filterEndDate) {
       if (!d) matchesDate = false;
@@ -553,7 +560,10 @@ export function TransactionsPage() {
       }
     }
     return matchesCategory && matchesSource && matchesAccount && matchesMin && matchesMax && matchesMonth && matchesDate && matchesYieldComponent;
-  });
+  };
+
+  const filteredWithoutType = transactions.filter((tx) => matchesBaseFilters(tx, "calendar"));
+  const economicFilteredWithoutType = transactions.filter((tx) => matchesBaseFilters(tx, "economic"));
 
   // Receitas/Despesas representam fluxo econômico real. Transferências entre
   // contas e pagamentos de cartão continuam visíveis em "Todos", mas não são
@@ -567,7 +577,7 @@ export function TransactionsPage() {
 
   const filtered = filterType === "all"
     ? filteredWithoutType
-    : filteredWithoutType.filter((tx) => {
+    : economicFilteredWithoutType.filter((tx) => {
         const kind = getEconomicSummaryKind(tx);
         if (filterType === "income") return kind === "income";
         return kind === "expense" || kind === "refund";
@@ -629,7 +639,7 @@ export function TransactionsPage() {
     localStorage.setItem("transactions_filter_source", "all");
   };
 
-  const economicSummaryTransactions = filteredWithoutType.filter((tx) => tx.is_visible !== false);
+  const economicSummaryTransactions = economicFilteredWithoutType.filter((tx) => tx.is_visible !== false);
   const totalIncome = economicSummaryTransactions
     .filter((tx) => getEconomicSummaryKind(tx) === "income")
     .reduce((sum, tx) => sum + Number(tx.amount), 0);

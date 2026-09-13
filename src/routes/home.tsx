@@ -26,7 +26,7 @@ import { useUserPreferences } from "@/hooks/use-user-preferences";
 import { cn } from "@/lib/utils";
 import { getCategoryDisplay, getCategoryIcon } from "@/lib/categories";
 import { addCurrencyCents, fetchAllCategoryLedgerTransactions, type CategoryLedgerTransaction } from "@/lib/category-spending-ledger";
-import { getCycleDates, groupByBillingCycle, type CardTransaction } from "@/lib/invoice-utils";
+import { getBillingCycleMonthKey, getCycleDates, groupByBillingCycle, type CardTransaction } from "@/lib/invoice-utils";
 
 type Account = {
   id: string;
@@ -300,28 +300,44 @@ function RecoveredHome() {
   }, [transactions, selectedMonth]);
 
   const monthly = useMemo(() => {
-    let income = 0;
-    let expense = 0;
-    for (const tx of selectedMonthTransactions) {
-      const mainCategory = (tx.category || "").split(" > ")[0]?.trim() || "";
-      const normalizedCategory = normalizeCategoryLabel(mainCategory);
-      const normalizedFullCategory = normalizeCategoryLabel(tx.category);
-      const isTransfer = normalizedCategory === "transferencia" || normalizedCategory === "transferencias";
-      const isAdjustment = normalizedCategory === "ajustes";
-      const isRefund = normalizedFullCategory === "receita > reembolso";
+  let income = 0;
+  let expense = 0;
+  const cardByName = new Map(cards.map((card) => [card.name, card]));
 
-      // Movimentos internos e ajustes técnicos alteram saldo, mas não resultado econômico.
-      if (isTransfer || isAdjustment) continue;
-      // Reembolso corrige a despesa original; não é uma nova receita.
-      if (isRefund) {
-        expense -= Number(tx.amount || 0);
-        continue;
+  for (const tx of transactions) {
+    if (tx.is_visible === false) continue;
+    const transactionDate = safeDate(tx.date, tx.created_at);
+    if (!transactionDate) continue;
+
+    let belongsToSelectedMonth =
+      transactionDate.getFullYear() === selectedMonth.getFullYear() &&
+      transactionDate.getMonth() === selectedMonth.getMonth();
+
+    if (tx.card) {
+      const card = cardByName.get(tx.card);
+      if (card) {
+        belongsToSelectedMonth = getBillingCycleMonthKey(tx.date || "", tx.created_at || "", card.closing_day) === selectedMonthKey;
       }
-      if (tx.type === "income") income += Number(tx.amount || 0);
-      else if (!isCardPaymentCategory(tx.category)) expense += Number(tx.amount || 0);
     }
-    return { income, expense };
-  }, [selectedMonthTransactions]);
+    if (!belongsToSelectedMonth) continue;
+
+    const mainCategory = (tx.category || "").split(" > ")[0]?.trim() || "";
+    const normalizedCategory = normalizeCategoryLabel(mainCategory);
+    const normalizedFullCategory = normalizeCategoryLabel(tx.category);
+    const isTransfer = normalizedCategory === "transferencia" || normalizedCategory === "transferencias";
+    const isAdjustment = normalizedCategory === "ajustes";
+    const isRefund = normalizedFullCategory === "receita > reembolso";
+
+    if (isTransfer || isAdjustment) continue;
+    if (isRefund) {
+      expense -= Number(tx.amount || 0);
+      continue;
+    }
+    if (tx.type === "income") income += Number(tx.amount || 0);
+    else if (!isCardPaymentCategory(tx.category)) expense += Number(tx.amount || 0);
+  }
+  return { income, expense };
+}, [transactions, cards, selectedMonth, selectedMonthKey]);
 
   const categorySpending = useMemo(() => {
     const totalsInCents: Record<string, number> = {};
