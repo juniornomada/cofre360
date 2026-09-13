@@ -23,11 +23,16 @@ jobs:
 
           path = Path('src/routes/invest.tsx')
           text = path.read_text()
-          old = '''                <RTooltip
-                  formatter={(v: any) => balanceVisible ? fmtBRL(Number(v)) : "R$ ••••"}
-                  contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
-                />'''
-          new = '''                <RTooltip
+          marker = 'formatter={(v: any) => balanceVisible ? fmtBRL(Number(v)) : "R$ ••••"}'
+          marker_index = text.find(marker)
+          if marker_index < 0:
+              raise SystemExit('Tooltip formatter marker not found; source changed and was not patched.')
+          start = text.rfind('<RTooltip', 0, marker_index)
+          end = text.find('/>', marker_index)
+          if start < 0 or end < 0:
+              raise SystemExit('Tooltip block bounds not found.')
+          end += 2
+          new = '''<RTooltip
                   cursor={false}
                   allowEscapeViewBox={{ x: false, y: false }}
                   offset={10}
@@ -57,9 +62,7 @@ jobs:
                     );
                   }}
                 />'''
-          if old not in text:
-              raise SystemExit('Tooltip marker not found; source changed and was not patched.')
-          path.write_text(text.replace(old, new, 1))
+          path.write_text(text[:start] + new + text[end:])
           Path('.github/workflows/fix-invest-tooltip.yml').unlink()
           PY
       - name: Commit direct source fix
