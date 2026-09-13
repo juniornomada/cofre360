@@ -24,7 +24,7 @@ import type { VoiceTransactionDraft } from "@/lib/voice-transaction";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserPreferences } from "@/hooks/use-user-preferences";
 import { cn } from "@/lib/utils";
-import { getCategoryIcon } from "@/lib/categories";
+import { getCategoryDisplay, getCategoryIcon } from "@/lib/categories";
 import { addCurrencyCents, fetchAllCategoryLedgerTransactions, type CategoryLedgerTransaction } from "@/lib/category-spending-ledger";
 import { getCycleDates, groupByBillingCycle, type CardTransaction } from "@/lib/invoice-utils";
 
@@ -607,7 +607,9 @@ function RecoveredHome() {
               <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent text-base">{tx.icon || (tx.type === "income" ? "💰" : "💸")}</span>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium text-foreground">{tx.name || "Transação"}</p>
-                <p className="truncate text-[10px] text-muted-foreground">{tx.category || "Sem categoria"}</p>
+                <span className="inline-flex max-w-[120px] truncate rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold text-primary">
+        {getCategoryDisplay(tx.category || "Sem categoria")}
+      </span>
               </div>
               <div className="shrink-0 text-right">
                 <p className={cn("whitespace-nowrap text-sm font-semibold tabular-nums", tx.type === "income" ? "text-primary" : "text-destructive")}>{tx.type === "income" ? "+" : "-"} R$ {fmt(tx.amount)}</p>
