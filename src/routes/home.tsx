@@ -586,8 +586,15 @@ function RecoveredHome() {
           <p className="mt-1 text-base font-bold text-primary">{balanceVisible ? `R$ ${fmt(monthly.income)}` : "R$ ••••"}</p>
         </div>
         <div className="rounded-xl border border-border/30 bg-card p-3">
-          <div className="flex items-center gap-1 text-[10px] font-semibold uppercase text-muted-foreground"><ArrowDownRight className="h-3.5 w-3.5 text-destructive" />Despesas</div>
-          <p className="mt-1 text-base font-bold text-destructive">{balanceVisible ? `R$ ${fmt(monthly.expense)}` : "R$ ••••"}</p>
+          <div className="flex items-center gap-1 text-[10px] font-semibold uppercase text-muted-foreground">
+            <ArrowDownRight className={`h-3.5 w-3.5 ${monthly.expense < 0 ? "text-primary" : "text-destructive"}`} />
+            {monthly.expense < 0 ? "Saldo reembolsos" : "Despesas"}
+          </div>
+          <p className={`mt-1 text-base font-bold ${monthly.expense < 0 ? "text-primary" : "text-destructive"}`}>
+            {balanceVisible
+              ? (monthly.expense < 0 ? `+ R$ ${fmt(Math.abs(monthly.expense))}` : `R$ ${fmt(monthly.expense)}`)
+              : "R$ ••••"}
+          </p>
         </div>
       </section>
 

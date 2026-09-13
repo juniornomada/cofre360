@@ -1691,11 +1691,15 @@ export function TransactionsPage() {
           }`}
         >
           <div className="flex items-center justify-center gap-1 text-[10px] font-semibold uppercase text-muted-foreground">
-            <ArrowDownRight className="h-3.5 w-3.5 text-destructive" />
-            {isYieldView ? "Taxas" : "Despesas"}
+            <ArrowDownRight className={`h-3.5 w-3.5 ${!isYieldView && totalExpense < 0 ? "text-primary" : "text-destructive"}`} />
+            {isYieldView ? "Taxas" : totalExpense < 0 ? "Saldo reembolsos" : "Despesas"}
           </div>
-          <p className="mt-1 text-base font-bold text-destructive">
-            {balanceVisible ? `R$ ${formatCurrency(totalExpense)}` : "R$ ••••"}
+          <p className={`mt-1 text-base font-bold ${!isYieldView && totalExpense < 0 ? "text-primary" : "text-destructive"}`}>
+            {balanceVisible
+              ? (!isYieldView && totalExpense < 0
+                  ? `+ R$ ${formatCurrency(Math.abs(totalExpense))}`
+                  : `R$ ${formatCurrency(totalExpense)}`)
+              : "R$ ••••"}
           </p>
         </button>
       </section>

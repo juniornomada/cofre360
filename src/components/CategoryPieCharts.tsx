@@ -35,6 +35,18 @@ const COLORS = [
   "hsl(191, 96%, 58%)",  // vivid cyan
 ];
 
+const isRefundTransaction = (tx: Transaction) =>
+  (tx.category || "").trim() === "Receita > Reembolso";
+
+function aggregateRefunds(txs: Transaction[]) {
+  const total = txs.reduce((sum, tx) => {
+    const value = Number(tx.amount);
+    return Number.isFinite(value) && value > 0 ? sum + value : sum;
+  }, 0);
+  if (total <= 0) return [];
+  return [{ name: "Reembolso", value: total, percentage: 100 }];
+}
+
 function aggregateByLevel(txs: Transaction[], level: "group" | "sub") {
   const map = new Map<string, number>();
 
@@ -93,13 +105,19 @@ export function CategoryPieCharts({ transactions, formatCurrency, onCategoryClic
     [transactions, level],
   );
   const incomeData = useMemo(
-    () => aggregateByLevel(transactions.filter((t) => t.type === "income"), level),
+    () => aggregateByLevel(transactions.filter((t) => t.type === "income" && !isRefundTransaction(t)), level),
     [transactions, level],
+  );
+
+  const refundData = useMemo(
+    () => aggregateRefunds(transactions.filter(isRefundTransaction)),
+    [transactions],
   );
 
   const hasUsefulExpenseBreakdown = expenseData.length > 0;
   const hasUsefulIncomeBreakdown = incomeData.length > 0;
-  if (!hasUsefulExpenseBreakdown && !hasUsefulIncomeBreakdown) return null;
+  const hasUsefulRefundBreakdown = refundData.length > 0;
+  if (!hasUsefulExpenseBreakdown && !hasUsefulIncomeBreakdown && !hasUsefulRefundBreakdown) return null;
 
   const handleSliceClick = (name: string) => {
     if (isDrilldown || !onCategoryClick) return;
@@ -109,10 +127,12 @@ export function CategoryPieCharts({ transactions, formatCurrency, onCategoryClic
 
   const renderChart = (
     data: ReturnType<typeof aggregateByLevel>,
-    kind: "expense" | "income",
+    kind: "expense" | "income" | "refund",
   ) => {
-    const kindLabel = kind === "expense" ? "Despesas" : "Receitas";
-    const title = isDrilldown ? (activeCategory || kindLabel) : `${kindLabel} por categoria`;
+    const kindLabel = kind === "expense" ? "Despesas" : kind === "income" ? "Receitas" : "Reembolsos";
+    const title = kind === "refund"
+      ? "Reembolsos · abatimento de despesas"
+      : isDrilldown ? (activeCategory || kindLabel) : `${kindLabel} por categoria`;
 
     return (
       <div className="flex h-full min-h-[164px] min-w-0 flex-col rounded-xl border border-border/20 bg-card p-2.5 sm:min-h-[176px] sm:p-3">
@@ -211,8 +231,9 @@ export function CategoryPieCharts({ transactions, formatCurrency, onCategoryClic
     );
   };
 
-  const onlyExpense = hasUsefulExpenseBreakdown && !hasUsefulIncomeBreakdown;
-  const onlyIncome = hasUsefulIncomeBreakdown && !hasUsefulExpenseBreakdown;
+  const visibleChartCount = [hasUsefulExpenseBreakdown, hasUsefulIncomeBreakdown, hasUsefulRefundBreakdown].filter(Boolean).length;
+  const singleChartClass = visibleChartCount === 1 ? "col-span-2 min-w-0" : "min-w-0";
+  const refundChartClass = visibleChartCount === 1 || visibleChartCount === 3 ? "col-span-2 min-w-0" : "min-w-0";
 
   return (
     <>
@@ -226,13 +247,18 @@ export function CategoryPieCharts({ transactions, formatCurrency, onCategoryClic
       `}</style>
       <div className="category-summary-donuts grid grid-cols-2 items-stretch gap-2 sm:gap-4">
         {hasUsefulExpenseBreakdown && (
-          <div className={onlyExpense ? "col-span-2 min-w-0" : "min-w-0"}>
+          <div className={singleChartClass}>
             {renderChart(expenseData, "expense")}
           </div>
         )}
         {hasUsefulIncomeBreakdown && (
-          <div className={onlyIncome ? "col-span-2 min-w-0" : "min-w-0"}>
+          <div className={singleChartClass}>
             {renderChart(incomeData, "income")}
+          </div>
+        )}
+        {hasUsefulRefundBreakdown && (
+          <div className={refundChartClass}>
+            {renderChart(refundData, "refund")}
           </div>
         )}
       </div>
