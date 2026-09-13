@@ -455,9 +455,35 @@ function InvestPage() {
                   ))}
                 </Pie>
                 <RTooltip
-                  formatter={(v: any) => balanceVisible ? fmtBRL(Number(v)) : "R$ ••••"}
-                  contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
+        cursor={false}
+        allowEscapeViewBox={{ x: false, y: false }}
+        offset={10}
+        wrapperStyle={{ zIndex: 20, pointerEvents: "none" }}
+        content={({ active, payload }) => {
+          if (!active || !payload?.length) return null;
+          const item = payload[0]?.payload as { name?: string; value?: number; color?: string } | undefined;
+          const value = Number(item?.value ?? 0);
+          const pct = totalGross > 0 ? (value / totalGross) * 100 : 0;
+          return (
+            <div className="max-w-[190px] rounded-xl border border-border bg-popover px-3 py-2 shadow-lg">
+              <div className="flex min-w-0 items-center gap-1.5">
+                <span
+                  className="h-2.5 w-2.5 shrink-0 rounded-full"
+                  style={{ backgroundColor: item?.color || "hsl(var(--primary))" }}
                 />
+                <p className="min-w-0 truncate text-[10px] font-medium text-popover-foreground">
+                  {item?.name || "Investimento"}
+                </p>
+              </div>
+              <p className="mt-1 whitespace-nowrap text-xs font-bold tabular-nums text-popover-foreground">
+                {balanceVisible
+                  ? `${fmtBRL(value)} • ${pct.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`
+                  : "R$ ••••"}
+              </p>
+            </div>
+          );
+        }}
+      />
               </PieChart>
             </ResponsiveContainer>
             <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
