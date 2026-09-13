@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 import { getCategoryDisplay, getCategoryIcon } from "@/lib/categories";
 import { restoreAccents } from "@/lib/restore-accents";
 import { formatBRL } from "@/lib/format-brl";
-import { CreditCard, Landmark, ArrowLeftRight, CalendarDays, Trash2 } from "lucide-react";
+import { CreditCard, Landmark, ArrowLeftRight, Trash2 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { AutoFitText } from "@/components/AutoFitText";
@@ -255,23 +255,16 @@ export function TransactionItem({
               </span>
             )}
           </div>
-          <span className="text-[10px] text-muted-foreground font-medium shrink-0 tabular-nums text-right w-[72px]">
-            {formatTxDate(date, created_at)}
-          </span>
-        </div>
-
-        {isInstallment && (installment_group_id || id) && (
-          <div className="mt-1 flex justify-end">
+          {isInstallment && (installment_group_id || id) ? (
             <Popover open={purchaseDateOpen} onOpenChange={setPurchaseDateOpen}>
               <PopoverTrigger asChild>
                 <button
                   type="button"
                   onClick={(e) => e.stopPropagation()}
-                  className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[9px] font-medium text-muted-foreground hover:bg-accent hover:text-foreground"
+                  className="shrink-0 whitespace-nowrap rounded-md px-1 py-0.5 text-[9px] font-medium tabular-nums text-muted-foreground hover:bg-accent hover:text-foreground"
                   title="Data original da compra. Não altera o calendário das parcelas."
                 >
-                  <CalendarDays className="h-3 w-3" />
-                  Compra: {purchaseDate ? formatTxDate(purchaseDate) : "definir"}
+                  ({purchaseDate ? `Compra: ${formatTxDate(purchaseDate)}` : "Compra: definir"}) - {formatTxDate(date, created_at)}
                 </button>
               </PopoverTrigger>
               <PopoverContent
@@ -299,8 +292,12 @@ export function TransactionItem({
                 </button>
               </PopoverContent>
             </Popover>
-          </div>
-        )}
+          ) : (
+            <span className="shrink-0 whitespace-nowrap text-right text-[10px] font-medium tabular-nums text-muted-foreground">
+              {formatTxDate(date, created_at)}
+            </span>
+          )}
+        </div>
       </div>
     </div>
   );
