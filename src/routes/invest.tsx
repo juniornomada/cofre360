@@ -213,6 +213,14 @@ function InvestPage() {
   const totalPnL = totalGross - totalInvested;
   const pnlPct = totalInvested > 0 ? (totalPnL / totalInvested) * 100 : 0;
 
+  const lastManualUpdateLabel = useMemo(() => {
+    const timestamps = portfolio
+      .map((inv) => inv.last_manual_update ? new Date(inv.last_manual_update).getTime() : Number.NaN)
+      .filter((value) => Number.isFinite(value));
+    if (timestamps.length === 0) return "Ainda não informado";
+    return new Date(Math.max(...timestamps)).toLocaleDateString("pt-BR");
+  }, [portfolio]);
+
   // Pie data by asset_class. Colors are fixed per class so the visual identity never changes with ordering.
   const pieData = useMemo(() => {
     const map = new Map<string, { key: string; name: string; value: number; color: string }>();
@@ -299,7 +307,15 @@ function InvestPage() {
         risk_score: form.risk_score.trim() ? parseNum(form.risk_score) : null,
         redemption_quote: form.redemption_quote || null,
         redemption_settlement: form.redemption_settlement || null,
-        last_manual_update: (manualGross != null || manualNet != null) ? new Date().toISOString() : null,
+        last_manual_update: (() => {
+          if (manualGross == null && manualNet == null) return null;
+          if (!editing) return new Date().toISOString();
+          const grossChanged = Number(editing.current_gross_value ?? 0) !== Number(manualGross ?? 0);
+          const netChanged = Number(editing.current_net_value ?? 0) !== Number(manualNet ?? 0);
+          return grossChanged || netChanged
+            ? new Date().toISOString()
+            : (editing.last_manual_update || new Date().toISOString());
+        })(),
         value: derivedInvested || 0,
         change: manualChange,
       };
@@ -408,17 +424,12 @@ function InvestPage() {
         )}
       </div>
 
-      {/* Data alvo para projeção */}
+      {/* Última atualização manual dos valores da carteira */}
       <div className="rounded-2xl bg-card p-4">
-        <label className="text-xs text-muted-foreground mb-1 block">Projetar valor para a data</label>
-        <input
-          type="date"
-          value={targetDate}
-          onChange={(e) => setTargetDate(e.target.value)}
-          className="w-full rounded-xl bg-accent/40 px-3 py-2 text-sm text-foreground outline-none"
-        />
+        <p className="text-xs text-muted-foreground">Valor atualizado em</p>
+        <p className="mt-1 text-sm font-semibold text-foreground tabular-nums">{lastManualUpdateLabel}</p>
         <p className="mt-1 text-[10px] text-muted-foreground">
-          Renda fixa: aplica juros compostos, IR regressivo e taxa de administração até essa data.
+          Data da última atualização manual dos valores informados na carteira.
         </p>
       </div>
 
