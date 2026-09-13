@@ -508,7 +508,7 @@ function InvestPage() {
                     </span>
                   </div>
                   <div className="pl-4 text-[9px] font-semibold tabular-nums" style={{ color: d.color }}>
-                    {balanceVisible ? `${pct.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}% · ${fmtBRL(d.value)}` : "••••"}
+                    {balanceVisible ? `${pct.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%` : "••••"}
                   </div>
                 </div>
               );
