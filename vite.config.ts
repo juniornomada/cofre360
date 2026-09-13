@@ -9,10 +9,11 @@ import { mergeConfig, defineConfig } from "vite";
 import { defaultExclude } from 'vitest/config';
 import { categoryConsistencyHotfix } from "./scripts/category-consistency-hotfix";
 import { categoryConsistencyListHotfix } from "./scripts/category-consistency-list-hotfix";
+import { investLastUpdateHotfix } from "./scripts/invest-last-update-hotfix";
 
 export default defineTanstackConfig({
   vite: {
-    plugins: [categoryConsistencyHotfix(), categoryConsistencyListHotfix()],
+    plugins: [categoryConsistencyHotfix(), categoryConsistencyListHotfix(), investLastUpdateHotfix()],
     test: {
       globals: true,
       environment: "jsdom",
