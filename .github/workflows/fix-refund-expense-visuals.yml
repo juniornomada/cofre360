@@ -1,0 +1,245 @@
+name: Fix refund expense visuals
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/fix-refund-expense-visuals.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Correct refund classification and negative expense presentation
+        shell: bash
+        run: |
+          python <<'PY'
+          from pathlib import Path
+
+          def replace_once(text, old, new, label):
+              if old not in text:
+                  raise SystemExit(f"missing marker: {label}")
+              return text.replace(old, new, 1)
+
+          # 1) Charts: confirmed refunds are expense abatements, never Receita.
+          p = Path('src/components/CategoryPieCharts.tsx')
+          text = p.read_text()
+
+          colors_end = '''const COLORS = [
+            "hsl(210, 100%, 64%)", // vivid blue
+            "hsl(275, 92%, 68%)",  // vivid purple
+            "hsl(48, 100%, 60%)",  // vivid yellow
+            "hsl(16, 100%, 63%)",  // vivid orange
+            "hsl(337, 92%, 65%)",  // vivid pink
+            "hsl(174, 88%, 52%)",  // vivid teal
+            "hsl(31, 100%, 58%)",  // vivid amber
+            "hsl(248, 94%, 70%)",  // vivid indigo
+            "hsl(0, 94%, 64%)",    // vivid red
+            "hsl(191, 96%, 58%)",  // vivid cyan
+          ];
+          '''
+          helpers = colors_end + '''
+          const isRefundTransaction = (tx: Transaction) =>
+            (tx.category || "").trim() === "Receita > Reembolso";
+
+          function aggregateRefunds(txs: Transaction[]) {
+            const total = txs.reduce((sum, tx) => {
+              const value = Number(tx.amount);
+              return Number.isFinite(value) && value > 0 ? sum + value : sum;
+            }, 0);
+            if (total <= 0) return [];
+            return [{ name: "Reembolso", value: total, percentage: 100 }];
+          }
+          '''
+          text = replace_once(text, colors_end, helpers, 'refund chart helpers')
+
+          old_data = '''  const expenseData = useMemo(
+            () => aggregateByLevel(transactions.filter((t) => t.type === "expense"), level),
+            [transactions, level],
+          );
+          const incomeData = useMemo(
+            () => aggregateByLevel(transactions.filter((t) => t.type === "income"), level),
+            [transactions, level],
+          );
+
+          const hasUsefulExpenseBreakdown = expenseData.length > 0;
+          const hasUsefulIncomeBreakdown = incomeData.length > 0;
+          if (!hasUsefulExpenseBreakdown && !hasUsefulIncomeBreakdown) return null;
+          '''
+          new_data = '''  const expenseData = useMemo(
+            () => aggregateByLevel(transactions.filter((t) => t.type === "expense"), level),
+            [transactions, level],
+          );
+          const incomeData = useMemo(
+            () => aggregateByLevel(transactions.filter((t) => t.type === "income" && !isRefundTransaction(t)), level),
+            [transactions, level],
+          );
+          const refundData = useMemo(
+            () => aggregateRefunds(transactions.filter(isRefundTransaction)),
+            [transactions],
+          );
+
+          const hasUsefulExpenseBreakdown = expenseData.length > 0;
+          const hasUsefulIncomeBreakdown = incomeData.length > 0;
+          const hasUsefulRefundBreakdown = refundData.length > 0;
+          if (!hasUsefulExpenseBreakdown && !hasUsefulIncomeBreakdown && !hasUsefulRefundBreakdown) return null;
+          '''
+          text = replace_once(text, old_data, new_data, 'chart data classification')
+
+          old_kind = '''    kind: "expense" | "income",
+          ) => {
+            const kindLabel = kind === "expense" ? "Despesas" : "Receitas";
+            const title = isDrilldown ? (activeCategory || kindLabel) : `${kindLabel} por categoria`;
+          '''
+          new_kind = '''    kind: "expense" | "income" | "refund",
+          ) => {
+            const kindLabel = kind === "expense" ? "Despesas" : kind === "income" ? "Receitas" : "Reembolsos";
+            const title = kind === "refund"
+              ? "Reembolsos · abatimento de despesas"
+              : isDrilldown ? (activeCategory || kindLabel) : `${kindLabel} por categoria`;
+          '''
+          text = replace_once(text, old_kind, new_kind, 'chart kind labels')
+
+          old_bottom = '''  const onlyExpense = hasUsefulExpenseBreakdown && !hasUsefulIncomeBreakdown;
+          const onlyIncome = hasUsefulIncomeBreakdown && !hasUsefulExpenseBreakdown;
+
+          return (
+            <>
+              <style>{`
+                div:has(> .category-summary-donuts) {
+                  margin-bottom: 0.5rem !important;
+                }
+                div:has(> .category-summary-donuts) + section {
+                  display: none !important;
+                }
+              `}</style>
+              <div className="category-summary-donuts grid grid-cols-2 items-stretch gap-2 sm:gap-4">
+                {hasUsefulExpenseBreakdown && (
+                  <div className={onlyExpense ? "col-span-2 min-w-0" : "min-w-0"}>
+                    {renderChart(expenseData, "expense")}
+                  </div>
+                )}
+                {hasUsefulIncomeBreakdown && (
+                  <div className={onlyIncome ? "col-span-2 min-w-0" : "min-w-0"}>
+                    {renderChart(incomeData, "income")}
+                  </div>
+                )}
+              </div>
+            </>
+          );
+          '''
+          new_bottom = '''  const visibleChartCount = [hasUsefulExpenseBreakdown, hasUsefulIncomeBreakdown, hasUsefulRefundBreakdown].filter(Boolean).length;
+          const singleChartClass = visibleChartCount === 1 ? "col-span-2 min-w-0" : "min-w-0";
+          const refundChartClass = visibleChartCount === 1 || visibleChartCount === 3 ? "col-span-2 min-w-0" : "min-w-0";
+
+          return (
+            <>
+              <style>{`
+                div:has(> .category-summary-donuts) {
+                  margin-bottom: 0.5rem !important;
+                }
+                div:has(> .category-summary-donuts) + section {
+                  display: none !important;
+                }
+              `}</style>
+              <div className="category-summary-donuts grid grid-cols-2 items-stretch gap-2 sm:gap-4">
+                {hasUsefulExpenseBreakdown && (
+                  <div className={singleChartClass}>
+                    {renderChart(expenseData, "expense")}
+                  </div>
+                )}
+                {hasUsefulIncomeBreakdown && (
+                  <div className={singleChartClass}>
+                    {renderChart(incomeData, "income")}
+                  </div>
+                )}
+                {hasUsefulRefundBreakdown && (
+                  <div className={refundChartClass}>
+                    {renderChart(refundData, "refund")}
+                  </div>
+                )}
+              </div>
+            </>
+          );
+          '''
+          text = replace_once(text, old_bottom, new_bottom, 'chart rendering')
+          p.write_text(text)
+
+          # 2) Transactions: when refunds exceed expenses, present the result as a
+          # positive refund balance rather than a negative expense.
+          p = Path('src/routes/transactions.tsx')
+          text = p.read_text()
+          old_class = '''          className={`rounded-xl border p-3 text-center transition-colors ${
+            filterType === "expense"
+              ? "border-destructive/60 bg-destructive/10 ring-1 ring-destructive/40 shadow-sm"
+              : "border-border/30 bg-card"
+          }`}
+          >
+          <div className="flex items-center justify-center gap-1 text-[10px] font-semibold uppercase text-muted-foreground">
+            <ArrowDownRight className="h-3.5 w-3.5 text-destructive" />
+            {isYieldView ? "Taxas" : "Despesas"}
+          </div>
+          <p className="mt-1 text-base font-bold text-destructive">
+            {balanceVisible ? `R$ ${formatCurrency(totalExpense)}` : "R$ ••••"}
+          </p>
+          '''
+          new_class = '''          className={`rounded-xl border p-3 text-center transition-colors ${
+            filterType === "expense"
+              ? (!isYieldView && totalExpense < 0
+                  ? "border-primary/60 bg-primary/10 ring-1 ring-primary/40 shadow-sm"
+                  : "border-destructive/60 bg-destructive/10 ring-1 ring-destructive/40 shadow-sm")
+              : "border-border/30 bg-card"
+          }`}
+          >
+          <div className="flex items-center justify-center gap-1 text-[10px] font-semibold uppercase text-muted-foreground">
+            <ArrowDownRight className={`h-3.5 w-3.5 ${!isYieldView && totalExpense < 0 ? "text-primary" : "text-destructive"}`} />
+            {isYieldView ? "Taxas" : totalExpense < 0 ? "Saldo reembolsos" : "Despesas"}
+          </div>
+          <p className={`mt-1 text-base font-bold ${!isYieldView && totalExpense < 0 ? "text-primary" : "text-destructive"}`}>
+            {balanceVisible
+              ? (!isYieldView && totalExpense < 0
+                  ? `+ R$ ${formatCurrency(Math.abs(totalExpense))}`
+                  : `R$ ${formatCurrency(totalExpense)}`)
+              : "R$ ••••"}
+          </p>
+          '''
+          text = replace_once(text, old_class, new_class, 'transactions negative expenses')
+          p.write_text(text)
+
+          # 3) Home: same semantic presentation for a month with net refunds.
+          p = Path('src/routes/home.tsx')
+          text = p.read_text()
+          old_home = '''        <div className="rounded-xl border border-border/30 bg-card p-3">
+          <div className="flex items-center gap-1 text-[10px] font-semibold uppercase text-muted-foreground"><ArrowDownRight className="h-3.5 w-3.5 text-destructive" />Despesas</div>
+          <p className="mt-1 text-base font-bold text-destructive">{balanceVisible ? `R$ ${fmt(monthly.expense)}` : "R$ ••••"}</p>
+        </div>
+          '''
+          new_home = '''        <div className="rounded-xl border border-border/30 bg-card p-3">
+          <div className="flex items-center gap-1 text-[10px] font-semibold uppercase text-muted-foreground">
+            <ArrowDownRight className={`h-3.5 w-3.5 ${monthly.expense < 0 ? "text-primary" : "text-destructive"}`} />
+            {monthly.expense < 0 ? "Saldo reembolsos" : "Despesas"}
+          </div>
+          <p className={`mt-1 text-base font-bold ${monthly.expense < 0 ? "text-primary" : "text-destructive"}`}>
+            {balanceVisible
+              ? (monthly.expense < 0 ? `+ R$ ${fmt(Math.abs(monthly.expense))}` : `R$ ${fmt(monthly.expense)}`)
+              : "R$ ••••"}
+          </p>
+        </div>
+          '''
+          text = replace_once(text, old_home, new_home, 'home negative expenses')
+          p.write_text(text)
+          PY
+
+          rm .github/workflows/fix-refund-expense-visuals.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet && exit 0
+          git commit -m "fix: classify refunds as expense abatements"
+          git push
