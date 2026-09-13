@@ -52,6 +52,18 @@ const assistantNodeText = (node: ReactNode): string => {
 
 const assistantTransactionLine = (node: ReactNode) => {
   const text = assistantNodeText(node).replace(/\s+/g, " ").trim();
+
+  const installmentFirst = text.match(/^(\d+\/\d+)\s+(.+?)\s*[·•]?\s+R\$\s*([0-9.]+,\d{2})$/);
+  if (installmentFirst) {
+    return {
+      icon: "",
+      name: installmentFirst[2].replace(/\s*[—–-]\s*$/, "").trim(),
+      amount: `R$ ${installmentFirst[3]}`,
+      installment: installmentFirst[1],
+      installmentFirst: true,
+    };
+  }
+
   const match = text.match(/^(\S+)\s+(.+?)\s+R\$\s*([0-9.]+,\d{2})(?:\s*[·•]?\s*(\d+\/\d+))?$/);
   if (!match) return null;
 
@@ -60,6 +72,7 @@ const assistantTransactionLine = (node: ReactNode) => {
     name: match[2].replace(/\s*[—–-]\s*$/, "").trim(),
     amount: `R$ ${match[3]}`,
     installment: match[4] || "",
+    installmentFirst: false,
   };
 };
 
@@ -582,6 +595,14 @@ export function FinancialChat({ initialPrompt, suggestions }: { initialPrompt?: 
                     h1: ({ children }) => <h1 className="mb-2 mt-1 text-base font-bold text-primary">{children}</h1>,
                     h2: ({ children }) => <h2 className="mb-2 mt-3 text-[15px] font-bold text-primary first:mt-0">{children}</h2>,
                     h3: ({ children }) => <h3 className="mb-1.5 mt-3 text-sm font-semibold text-emerald-400 first:mt-0">{children}</h3>,
+                    h4: ({ children }) => (
+                      <h4 className={cn(
+                        "mb-1 mt-3 rounded-lg border px-2 py-1.5 text-[13px] font-bold first:mt-0",
+                        assistantListTone(assistantNodeText(children)),
+                      )}>
+                        {children}
+                      </h4>
+                    ),
                     p: ({ children }) => <p className="my-2 leading-6 first:mt-0 last:mb-0">{children}</p>,
                     ul: ({ children }) => <CompactAssistantList>{children}</CompactAssistantList>,
                     ol: ({ children }) => <CompactAssistantList ordered>{children}</CompactAssistantList>,
@@ -589,17 +610,33 @@ export function FinancialChat({ initialPrompt, suggestions }: { initialPrompt?: 
                       const transaction = assistantTransactionLine(children);
                       return (
                         <li className={cn(
-                          "list-none rounded-xl border",
-                          transaction ? "px-2 py-1.5" : "px-2.5 py-2 text-[13px] leading-5",
-                          assistantListTone(assistantNodeText(children)),
+                          "list-none",
+                          transaction?.installmentFirst
+                            ? "px-1 py-1 text-[12px] leading-5"
+                            : transaction
+                              ? "rounded-xl border px-2 py-1.5"
+                              : "rounded-xl border px-2.5 py-2 text-[13px] leading-5",
+                          !transaction?.installmentFirst && assistantListTone(assistantNodeText(children)),
                         )}>
                           {transaction ? (
-                            <div className="flex min-w-0 items-center gap-1 whitespace-nowrap text-[clamp(10.5px,2.8vw,13px)] leading-5 tracking-[-0.025em]">
-                              <span className="shrink-0">{transaction.icon}</span>
-                              <span className="min-w-0 flex-1 truncate font-semibold">{transaction.name}</span>
-                              <span className="shrink-0 font-semibold tabular-nums">{transaction.amount}</span>
-                              {transaction.installment && (
-                                <span className="shrink-0 font-medium tabular-nums opacity-80">{transaction.installment}</span>
+                            <div className="flex min-w-0 items-center gap-1.5 whitespace-nowrap text-[clamp(10.5px,2.8vw,13px)] leading-5 tracking-[-0.025em]">
+                              {transaction.installmentFirst ? (
+                                <>
+                                  <span className="shrink-0 rounded-md border border-border/60 bg-background/65 px-1.5 py-0.5 text-[10.5px] font-semibold tabular-nums text-muted-foreground">
+                                    {transaction.installment}
+                                  </span>
+                                  <span className="min-w-0 flex-1 truncate font-medium">{transaction.name}</span>
+                                  <span className="shrink-0 font-semibold tabular-nums">{transaction.amount}</span>
+                                </>
+                              ) : (
+                                <>
+                                  <span className="shrink-0">{transaction.icon}</span>
+                                  <span className="min-w-0 flex-1 truncate font-semibold">{transaction.name}</span>
+                                  <span className="shrink-0 font-semibold tabular-nums">{transaction.amount}</span>
+                                  {transaction.installment && (
+                                    <span className="shrink-0 font-medium tabular-nums opacity-80">{transaction.installment}</span>
+                                  )}
+                                </>
                               )}
                             </div>
                           ) : children}

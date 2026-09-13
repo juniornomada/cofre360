@@ -534,12 +534,19 @@ async function buildDeterministicFinancialAnswer(
       return `### 💳 Parcelas de compras antigas — ${label}\n\n**Total cobrado no mês vindo de compras anteriores: R$ ${formatBRL(oldInstallmentTotal)}**\n\n${categorySummary}\n\n> 💡 Aqui entram somente parcelas cobradas em ${label} cuja **compra original ocorreu em mês anterior**. O valor é calculado a partir das parcelas reais, não pela diferença entre DESPESAS e Gastos por categoria.`;
     }
     const compactOldInstallmentNames = compactTransactionNames(oldInstallmentRows.map((item) => item.name));
-    const detailLines = oldInstallmentRows.length
-      ? oldInstallmentRows.map((item, index) =>
-          `- ${categoryEmoji(item.category)} **${compactOldInstallmentNames[index]}** R$ ${formatBRL(item.amount)} ${item.installmentNumber}/${item.totalInstallments}`,
-        ).join("\n")
+    const groupedDetails = oldInstallmentCategories.length
+      ? oldInstallmentCategories.map(([category, categoryAmount]) => {
+          const itemLines = oldInstallmentRows
+            .map((item, index) => ({ item, compactName: compactOldInstallmentNames[index] }))
+            .filter(({ item }) => norm(item.category) === norm(category))
+            .map(({ item, compactName }) =>
+              `- ${item.installmentNumber}/${item.totalInstallments} **${compactName}** · **R$ ${formatBRL(item.amount)}**`,
+            )
+            .join("\n");
+          return `#### ${categoryEmoji(category)} ${category}: R$ ${formatBRL(categoryAmount)}\n${itemLines}`;
+        }).join("\n\n")
       : "(nenhuma parcela de compra antiga cobrada no período)";
-    return `### 💳 Detalhe das parcelas de compras antigas — ${label}\n\n**Total dessas parcelas: R$ ${formatBRL(oldInstallmentTotal)}**\n\n${detailLines}\n\n**Resumo por categoria**\n${categorySummary}\n\n> 💡 Estes lançamentos são selecionados individualmente pela data da cobrança e pela data original da compra. **Não** são estimados pela diferença entre os dois totais mensais.`;
+    return `### 💳 Detalhe das parcelas de compras antigas — ${label}\n\n**Total dessas parcelas: R$ ${formatBRL(oldInstallmentTotal)}**\n\n${groupedDetails}\n\n> 💡 Estes lançamentos são selecionados individualmente pela data da cobrança e pela data original da compra. **Não** são estimados pela diferença entre os dois totais mensais.`;
   }
 
   if (asksFinancialSummary && !detailOnly) {
