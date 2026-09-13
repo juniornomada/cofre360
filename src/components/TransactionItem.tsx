@@ -56,6 +56,13 @@ function toIsoDate(value: string | null | undefined, refIso?: string): string | 
   return null;
 }
 
+function formatFullDate(value: string | null | undefined, refIso?: string): string {
+  const isoDate = toIsoDate(value, refIso);
+  if (!isoDate) return value || "";
+  const [year, month, day] = isoDate.split("-");
+  return `${day}/${month}/${year}`;
+}
+
 interface TransactionItemProps {
   id?: string;
   icon: string;
@@ -262,7 +269,7 @@ export function TransactionItem({
                   type="button"
                   onClick={(e) => e.stopPropagation()}
                   className="shrink-0 whitespace-nowrap rounded-md px-1 py-0.5 text-[9px] font-medium tabular-nums text-muted-foreground hover:bg-accent hover:text-foreground"
-                  title="Data original da compra. Não altera o calendário das parcelas."
+                  title={purchaseDate ? `Data da compra: ${formatFullDate(purchaseDate, created_at)}` : "Data da compra não definida"}
                 >
                   ({purchaseDate ? `Compra: ${formatTxDate(purchaseDate)}` : "Compra: definir"}) - {formatTxDate(date, created_at)}
                 </button>
@@ -273,8 +280,15 @@ export function TransactionItem({
                 onClick={(e) => e.stopPropagation()}
               >
                 <p className="text-xs font-semibold text-foreground">Data da compra</p>
+                {purchaseDate ? (
+                  <p className="mt-1 text-sm font-bold tabular-nums text-foreground">
+                    {formatFullDate(purchaseDate, created_at)}
+                  </p>
+                ) : (
+                  <p className="mt-1 text-xs font-medium text-muted-foreground">Não definida</p>
+                )}
                 <p className="mt-1 text-[10px] leading-relaxed text-muted-foreground">
-                  Usada para gastos por categoria. A data da parcela ({formatTxDate(date, created_at)}) não será alterada.
+                  Data da parcela: {formatFullDate(date, created_at)}. A alteração da data da compra não muda o calendário das parcelas.
                 </p>
                 <input
                   type="date"
