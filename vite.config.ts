@@ -8,10 +8,11 @@ import { defineConfig as defineTanstackConfig } from "@lovable.dev/vite-tanstack
 import { mergeConfig, defineConfig } from "vite";
 import { defaultExclude } from 'vitest/config';
 import { categoryConsistencyHotfix } from "./scripts/category-consistency-hotfix";
+import { categoryConsistencyListHotfix } from "./scripts/category-consistency-list-hotfix";
 
 export default defineTanstackConfig({
   vite: {
-    plugins: [categoryConsistencyHotfix()],
+    plugins: [categoryConsistencyHotfix(), categoryConsistencyListHotfix()],
     test: {
       globals: true,
       environment: "jsdom",
