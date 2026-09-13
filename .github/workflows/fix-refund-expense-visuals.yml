@@ -27,7 +27,6 @@ jobs:
                   raise SystemExit(f"missing marker: {label}")
               return text.replace(old, new, 1)
 
-          # 1) Charts: confirmed refunds are expense abatements, never Receita.
           p = Path('src/components/CategoryPieCharts.tsx')
           text = p.read_text()
 
@@ -171,8 +170,6 @@ jobs:
           text = replace_once(text, old_bottom, new_bottom, 'chart rendering')
           p.write_text(text)
 
-          # 2) Transactions: when refunds exceed expenses, present the result as a
-          # positive refund balance rather than a negative expense.
           p = Path('src/routes/transactions.tsx')
           text = p.read_text()
           old_class = '''          className={`rounded-xl border p-3 text-center transition-colors ${
@@ -212,7 +209,6 @@ jobs:
           text = replace_once(text, old_class, new_class, 'transactions negative expenses')
           p.write_text(text)
 
-          # 3) Home: same semantic presentation for a month with net refunds.
           p = Path('src/routes/home.tsx')
           text = p.read_text()
           old_home = '''        <div className="rounded-xl border border-border/30 bg-card p-3">
@@ -243,3 +239,5 @@ jobs:
           git diff --cached --quiet && exit 0
           git commit -m "fix: classify refunds as expense abatements"
           git push
+
+# retry trigger
