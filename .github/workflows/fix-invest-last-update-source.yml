@@ -1,0 +1,65 @@
+name: Fix investment update date source
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/fix-invest-last-update-source.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+      - name: Patch investment screen directly
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          p = Path('src/routes/invest.tsx')
+          s = p.read_text()
+
+          pnl = '  const pnlPct = totalInvested > 0 ? (totalPnL / totalInvested) * 100 : 0;\n'
+          if 'const lastManualUpdateLabel = useMemo' not in s:
+              if pnl not in s:
+                  raise SystemExit('PnL marker not found')
+              s = s.replace(pnl, pnl + '''\n  const lastManualUpdateLabel = useMemo(() => {\n    const timestamps = portfolio\n      .map((inv) => inv.last_manual_update ? new Date(inv.last_manual_update).getTime() : Number.NaN)\n      .filter((value) => Number.isFinite(value));\n    if (timestamps.length === 0) return "Ainda não informado";\n    return new Date(Math.max(...timestamps)).toLocaleDateString("pt-BR");\n  }, [portfolio]);\n''', 1)
+
+          start_marker = '      {/* Data alvo para projeção */}'
+          end_marker = '      {/* Gráfico de alocação */}'
+          start = s.find(start_marker)
+          end = s.find(end_marker, start if start >= 0 else 0)
+          if start < 0 or end < 0:
+              raise SystemExit('Projection section markers not found')
+          replacement = '''      {/* Última atualização manual dos valores da carteira */}\n      <div className="rounded-2xl bg-card p-4">\n        <p className="text-xs text-muted-foreground">Valor atualizado em</p>\n        <p className="mt-1 text-sm font-semibold text-foreground tabular-nums">{lastManualUpdateLabel}</p>\n        <p className="mt-1 text-[10px] text-muted-foreground">\n          Data da última atualização manual dos valores informados na carteira.\n        </p>\n      </div>\n\n'''
+          s = s[:start] + replacement + s[end:]
+
+          old_ts = '        last_manual_update: (manualGross != null || manualNet != null) ? new Date().toISOString() : null,'
+          new_ts = '''        last_manual_update: (() => {\n          if (manualGross == null && manualNet == null) return null;\n          if (!editing) return new Date().toISOString();\n          const grossChanged = Number(editing.current_gross_value ?? 0) !== Number(manualGross ?? 0);\n          const netChanged = Number(editing.current_net_value ?? 0) !== Number(manualNet ?? 0);\n          return grossChanged || netChanged\n            ? new Date().toISOString()\n            : (editing.last_manual_update || new Date().toISOString());\n        })(),'''
+          if old_ts in s:
+              s = s.replace(old_ts, new_ts, 1)
+
+          p.write_text(s)
+
+          v = Path('vite.config.ts')
+          vs = v.read_text()
+          vs = vs.replace('import { investLastUpdateHotfix } from "./scripts/invest-last-update-hotfix";\n', '')
+          vs = vs.replace('plugins: [categoryConsistencyHotfix(), categoryConsistencyListHotfix(), investLastUpdateHotfix()],', 'plugins: [categoryConsistencyHotfix(), categoryConsistencyListHotfix()],')
+          v.write_text(vs)
+
+          Path('scripts/invest-last-update-hotfix.ts').unlink(missing_ok=True)
+          Path('.github/workflows/fix-invest-last-update-source.yml').unlink(missing_ok=True)
+          PY
+          grep -q 'Valor atualizado em' src/routes/invest.tsx
+          ! grep -q 'Projetar valor para a data' src/routes/invest.tsx
+          ! grep -q 'investLastUpdateHotfix' vite.config.ts
+      - name: Commit direct source fix
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git commit -m "fix: show manual investment update date"
+          git push
