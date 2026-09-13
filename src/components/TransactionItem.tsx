@@ -132,6 +132,32 @@ export function TransactionItem({
     }
   };
 
+  const clearPurchaseDate = async () => {
+    if (!purchaseDate || (!installment_group_id && !id)) return;
+    setSavingPurchaseDate(true);
+    try {
+      let query = supabase
+        .from("transactions")
+        .update({ purchase_date: null } as any);
+
+      query = installment_group_id
+        ? query.eq("installment_group_id", installment_group_id)
+        : query.eq("id", id as string);
+
+      const { error } = await query;
+      if (error) throw error;
+      setPurchaseDate("");
+      setPurchaseDateDraft("");
+      setPurchaseDateOpen(false);
+      toast.success("Data da compra removida");
+    } catch (error) {
+      console.error("Erro ao remover data da compra:", error);
+      toast.error("Erro ao remover data da compra");
+    } finally {
+      setSavingPurchaseDate(false);
+    }
+  };
+
   const normalizedName = normalizeCardPaymentLabel(name);
   const displayName = isInstallment
     ? normalizedName.replace(/\s*\(\s*\d{1,2}\s*\/\s*\d{1,2}\s*\)\s*$/, "").trim()
@@ -262,16 +288,16 @@ export function TransactionItem({
               </span>
             )}
           </div>
-          {isInstallment && (installment_group_id || id) ? (
+          {isInstallment && (installment_group_id || id) && purchaseDate ? (
             <Popover open={purchaseDateOpen} onOpenChange={setPurchaseDateOpen}>
               <PopoverTrigger asChild>
                 <button
                   type="button"
                   onClick={(e) => e.stopPropagation()}
                   className="shrink-0 whitespace-nowrap rounded-md px-1 py-0.5 text-[9px] font-medium tabular-nums text-muted-foreground hover:bg-accent hover:text-foreground"
-                  title={purchaseDate ? `Data da compra: ${formatFullDate(purchaseDate, created_at)}` : "Data da compra não definida"}
+                  title={`Data da compra: ${formatFullDate(purchaseDate, created_at)}`}
                 >
-                  ({purchaseDate ? `Compra: ${formatTxDate(purchaseDate)}` : "Compra: definir"}) - {formatTxDate(date, created_at)}
+                  (Compra: {formatTxDate(purchaseDate)}) - {formatTxDate(date, created_at)}
                 </button>
               </PopoverTrigger>
               <PopoverContent
@@ -280,15 +306,11 @@ export function TransactionItem({
                 onClick={(e) => e.stopPropagation()}
               >
                 <p className="text-xs font-semibold text-foreground">Data da compra</p>
-                {purchaseDate ? (
-                  <p className="mt-1 text-sm font-bold tabular-nums text-foreground">
-                    {formatFullDate(purchaseDate, created_at)}
-                  </p>
-                ) : (
-                  <p className="mt-1 text-xs font-medium text-muted-foreground">Não definida</p>
-                )}
+                <p className="mt-1 text-sm font-bold tabular-nums text-foreground">
+                  {formatFullDate(purchaseDate, created_at)}
+                </p>
                 <p className="mt-1 text-[10px] leading-relaxed text-muted-foreground">
-                  Data da parcela: {formatFullDate(date, created_at)}. A alteração da data da compra não muda o calendário das parcelas.
+                  Data da parcela: {formatFullDate(date, created_at)}. A alteração ou remoção da data da compra não muda o calendário das parcelas.
                 </p>
                 <input
                   type="date"
@@ -303,6 +325,15 @@ export function TransactionItem({
                   className="mt-2 h-9 w-full rounded-lg bg-primary px-3 text-xs font-semibold text-primary-foreground disabled:opacity-50"
                 >
                   {savingPurchaseDate ? "Salvando..." : "Salvar data da compra"}
+                </button>
+                <button
+                  type="button"
+                  disabled={savingPurchaseDate}
+                  onClick={(e) => { e.stopPropagation(); void clearPurchaseDate(); }}
+                  className="mt-2 inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-lg border border-destructive/40 bg-destructive/10 px-3 text-xs font-semibold text-destructive transition-colors hover:bg-destructive/15 disabled:opacity-50"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Remover data da compra
                 </button>
               </PopoverContent>
             </Popover>
