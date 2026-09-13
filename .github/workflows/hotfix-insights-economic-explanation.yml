@@ -1,4 +1,4 @@
-name: Fix Insights IA old installment details
+name: Fix refund expense visuals
 on:
   push:
     branches: [main]
@@ -13,123 +13,162 @@ jobs:
       - uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Fix old installment detail answers
+          fetch-depth: 0
+      - name: Correct refund classification and presentation
         run: |
           python - <<'PY'
           from pathlib import Path
-          path = Path('supabase/functions/financial-chat/index.ts')
+
+          def must_replace(text, old, new, label):
+              if old not in text:
+                  raise SystemExit(f'missing marker: {label}')
+              return text.replace(old, new, 1)
+
+          # Charts: refund is an expense abatement, never economic income.
+          path = Path('src/components/CategoryPieCharts.tsx')
           text = path.read_text()
+          text = must_replace(
+              text,
+              '];\n\nfunction aggregateByLevel',
+              '''];
 
-          old_helper_start = text.index('function oldInstallmentCategoryTotals(')
-          old_helper_end = text.index('\n}\n', old_helper_start) + 3
-          new_helper = '''function oldInstallmentDetails(rows: Transaction[], key: string) {
-  const details: Array<{
-    name: string;
-    category: string;
-    amount: number;
-    installmentNumber: number;
-    totalInstallments: number;
-    purchaseDate: Date;
-    chargeDate: Date;
-    card: string;
-  }> = [];
+const isRefundTransaction = (tx: Transaction) =>
+  (tx.category || "").trim() === "Receita > Reembolso";
 
-  for (const tx of rows) {
-    if (tx.is_visible === false || tx.type !== "expense" || !tx.card) continue;
-    if (isTransferOrCardPayment(tx.category) || isAdjustmentCategory(tx.category)) continue;
-
-    const totalInstallments = Number(tx.total_installments || 1);
-    const installmentNumber = Math.max(1, Number(tx.installment_number || 1));
-    if (totalInstallments <= 1) continue;
-
-    const chargeDate = parseTxDate(tx.date, tx.created_at);
-    if (!chargeDate || monthKey(chargeDate) !== key) continue;
-
-    let purchaseDate = parseTxDate(tx.purchase_date, tx.created_at);
-    if (!purchaseDate && installmentNumber > 1) {
-      purchaseDate = shiftMonths(chargeDate, -(installmentNumber - 1));
-    }
-    if (!purchaseDate || monthKey(purchaseDate) === key) continue;
-
-    details.push({
-      name: String(tx.name || "Transação parcelada"),
-      category: rootCategory(tx.category),
-      amount: roundMoney(Number(tx.amount || 0)),
-      installmentNumber,
-      totalInstallments,
-      purchaseDate,
-      chargeDate,
-      card: String(tx.card || "Cartão"),
-    });
-  }
-
-  return details.sort((a, b) => b.amount - a.amount || a.name.localeCompare(b.name));
+function aggregateRefunds(txs: Transaction[]) {
+  const total = txs.reduce((sum, tx) => {
+    const value = Number(tx.amount);
+    return Number.isFinite(value) && value > 0 ? sum + value : sum;
+  }, 0);
+  if (total <= 0) return [];
+  return [{ name: "Reembolso", value: total, percentage: 100 }];
 }
 
-function oldInstallmentCategoryTotals(rows: Transaction[], key: string) {
-  const totals = new Map<string, number>();
-  for (const item of oldInstallmentDetails(rows, key)) {
-    totals.set(item.category, (totals.get(item.category) || 0) + item.amount);
-  }
-  return [...totals.entries()]
-    .map(([category, amount]) => [category, roundMoney(amount)] as [string, number])
-    .filter(([, amount]) => amount !== 0)
-    .sort((a, b) => b[1] - a[1]);
-}
-'''
-          text = text[:old_helper_start] + new_helper + text[old_helper_end:]
+function aggregateByLevel''',
+              'refund helpers',
+          )
+          text = must_replace(
+              text,
+              '() => aggregateByLevel(transactions.filter((t) => t.type === "income"), level),',
+              '() => aggregateByLevel(transactions.filter((t) => t.type === "income" && !isRefundTransaction(t)), level),',
+              'exclude refunds from income chart',
+          )
+          text = must_replace(
+              text,
+              '''  const hasUsefulExpenseBreakdown = expenseData.length > 0;
+  const hasUsefulIncomeBreakdown = incomeData.length > 0;
+  if (!hasUsefulExpenseBreakdown && !hasUsefulIncomeBreakdown) return null;''',
+              '''  const refundData = useMemo(
+    () => aggregateRefunds(transactions.filter(isRefundTransaction)),
+    [transactions],
+  );
 
-          old_intent = '''  const asksOldInstallmentCategories =
-    /(parcelas?.*(compras?|gastos?).*(antig|anterior)|compras? .*antig.*parcelas?|parcelas? .*mes(es)? anterior)/.test(q) &&
-    /(categor|respons|quais|origem|vieram|onde)/.test(q);'''
-          new_intent = '''  const asksOldInstallmentCategories =
-    /(parcelas?.*(compras?|gastos?).*(antig|anterior)|compras? .*antig.*parcelas?|parcelas? .*mes(es)? anterior)/.test(q) &&
-    /(categor|respons|quais|origem|vieram|onde|detalh|somad|compoe|compõem|cobradas?)/.test(q);'''
-          if old_intent not in text:
-              raise SystemExit('Could not find old installment intent')
-          text = text.replace(old_intent, new_intent, 1)
+  const hasUsefulExpenseBreakdown = expenseData.length > 0;
+  const hasUsefulIncomeBreakdown = incomeData.length > 0;
+  const hasUsefulRefundBreakdown = refundData.length > 0;
+  if (!hasUsefulExpenseBreakdown && !hasUsefulIncomeBreakdown && !hasUsefulRefundBreakdown) return null;''',
+              'refund chart data',
+          )
+          text = must_replace(text, 'kind: "expense" | "income",', 'kind: "expense" | "income" | "refund",', 'chart kind union')
+          text = must_replace(
+              text,
+              '''    const kindLabel = kind === "expense" ? "Despesas" : "Receitas";
+    const title = isDrilldown ? (activeCategory || kindLabel) : `${kindLabel} por categoria`;''',
+              '''    const kindLabel = kind === "expense" ? "Despesas" : kind === "income" ? "Receitas" : "Reembolsos";
+    const title = kind === "refund"
+      ? "Reembolsos · abatimento de despesas"
+      : isDrilldown ? (activeCategory || kindLabel) : `${kindLabel} por categoria`;''',
+              'refund chart title',
+          )
+          text = must_replace(
+              text,
+              '''  const onlyExpense = hasUsefulExpenseBreakdown && !hasUsefulIncomeBreakdown;
+  const onlyIncome = hasUsefulIncomeBreakdown && !hasUsefulExpenseBreakdown;''',
+              '''  const visibleChartCount = [hasUsefulExpenseBreakdown, hasUsefulIncomeBreakdown, hasUsefulRefundBreakdown].filter(Boolean).length;
+  const singleChartClass = visibleChartCount === 1 ? "col-span-2 min-w-0" : "min-w-0";
+  const refundChartClass = visibleChartCount === 1 || visibleChartCount === 3 ? "col-span-2 min-w-0" : "min-w-0";''',
+              'chart layout vars',
+          )
+          text = text.replace('className={onlyExpense ? "col-span-2 min-w-0" : "min-w-0"}', 'className={singleChartClass}', 1)
+          text = text.replace('className={onlyIncome ? "col-span-2 min-w-0" : "min-w-0"}', 'className={singleChartClass}', 1)
+          text = must_replace(
+              text,
+              '''        {hasUsefulIncomeBreakdown && (
+          <div className={singleChartClass}>
+            {renderChart(incomeData, "income")}
+          </div>
+        )}
+      </div>''',
+              '''        {hasUsefulIncomeBreakdown && (
+          <div className={singleChartClass}>
+            {renderChart(incomeData, "income")}
+          </div>
+        )}
+        {hasUsefulRefundBreakdown && (
+          <div className={refundChartClass}>
+            {renderChart(refundData, "refund")}
+          </div>
+        )}
+      </div>''',
+              'render refund chart',
+          )
+          path.write_text(text)
 
-          calc_anchor = '  const oldInstallmentCategories = oldInstallmentCategoryTotals(transactions, key);\n  const oldInstallmentTotal = roundMoney(oldInstallmentCategories.reduce((sum, [, value]) => sum + value, 0));'
-          calc_replacement = calc_anchor + '\n  const oldInstallmentRows = oldInstallmentDetails(transactions, key);'
-          if 'const oldInstallmentRows = oldInstallmentDetails' not in text:
-              if calc_anchor not in text:
-                  raise SystemExit('Could not find old installment calculations')
-              text = text.replace(calc_anchor, calc_replacement, 1)
+          # Transactions: if refunds exceed expenses, show a positive refund balance.
+          path = Path('src/routes/transactions.tsx')
+          text = path.read_text()
+          text = must_replace(
+              text,
+              '''          <div className="flex items-center justify-center gap-1 text-[10px] font-semibold uppercase text-muted-foreground">
+            <ArrowDownRight className="h-3.5 w-3.5 text-destructive" />
+            {isYieldView ? "Taxas" : "Despesas"}
+          </div>
+          <p className="mt-1 text-base font-bold text-destructive">
+            {balanceVisible ? `R$ ${formatCurrency(totalExpense)}` : "R$ ••••"}
+          </p>''',
+              '''          <div className="flex items-center justify-center gap-1 text-[10px] font-semibold uppercase text-muted-foreground">
+            <ArrowDownRight className={`h-3.5 w-3.5 ${!isYieldView && totalExpense < 0 ? "text-primary" : "text-destructive"}`} />
+            {isYieldView ? "Taxas" : totalExpense < 0 ? "Saldo reembolsos" : "Despesas"}
+          </div>
+          <p className={`mt-1 text-base font-bold ${!isYieldView && totalExpense < 0 ? "text-primary" : "text-destructive"}`}>
+            {balanceVisible
+              ? (!isYieldView && totalExpense < 0
+                  ? `+ R$ ${formatCurrency(Math.abs(totalExpense))}`
+                  : `R$ ${formatCurrency(totalExpense)}`)
+              : "R$ ••••"}
+          </p>''',
+              'transactions negative expense display',
+          )
+          path.write_text(text)
 
-          answer_start = text.index('  if (asksOldInstallmentCategories && !detailOnly) {')
-          answer_end = text.index('\n  if (asksEconomicVsExpenseConcept', answer_start)
-          new_answer = '''  if (asksOldInstallmentCategories) {
-    const oldInstallmentLines = oldInstallmentRows.length
-      ? oldInstallmentRows.slice(0, 20).map((item) => {
-          const purchase = item.purchaseDate.toLocaleDateString("pt-BR");
-          return `- ${categoryEmoji(item.category)} **${item.name}** — R$ ${formatBRL(item.amount)} · ${item.installmentNumber}/${item.totalInstallments} · ${item.category} · ${item.card} · compra ${purchase}`;
-        }).join("\\n")
-      : "(nenhuma parcela de compra antiga cobrada no período)";
-
-    const categorySummary = oldInstallmentCategories.length
-      ? oldInstallmentCategories.map(([category, amount]) => `${categoryEmoji(category)} ${category}: R$ ${formatBRL(amount)}`).join(" · ")
-      : "nenhuma";
-
-    return `### 💳 Parcelas de compras antigas cobradas em ${label}\\n\\n**Total dessas parcelas: R$ ${formatBRL(oldInstallmentTotal)}**\\n\\n${oldInstallmentLines}\\n\\n**Por categoria:** ${categorySummary}\\n\\n> 💡 Estes valores vêm diretamente das parcelas cobradas em ${label} cuja **data original da compra é de um mês anterior**. Não são calculados pela diferença entre DESPESAS e Gastos por categoria.`;
-  }
-'''
-          text = text[:answer_start] + new_answer + text[answer_end:]
-
-          prompt_old = '- Se o usuário perguntar especificamente quais categorias originaram parcelas de compras antigas cobradas no mês, responda SOMENTE com as parcelas do mês cuja compra original ocorreu em mês anterior, agrupadas pela categoria da compra. Não use a visão geral de "Gastos por categoria" para essa pergunta.'
-          prompt_new = '- Se o usuário perguntar sobre parcelas de compras antigas cobradas no mês, inclusive pedindo detalhe, mostre as parcelas reais individualmente (nome, valor da parcela, número da parcela, total de parcelas, categoria, cartão e data original da compra) e depois resuma por categoria. Selecione somente lançamentos parcelados cobrados no período cuja data original da compra ocorreu em mês anterior. NUNCA estime essas parcelas pela diferença entre DESPESAS e Gastos por categoria.'
-          if prompt_old not in text:
-              raise SystemExit('Could not find old installment prompt rule')
-          text = text.replace(prompt_old, prompt_new, 1)
-
+          # Home uses the same semantic display.
+          path = Path('src/routes/home.tsx')
+          text = path.read_text()
+          text = must_replace(
+              text,
+              '''        <div className="rounded-xl border border-border/30 bg-card p-3">
+          <div className="flex items-center gap-1 text-[10px] font-semibold uppercase text-muted-foreground"><ArrowDownRight className="h-3.5 w-3.5 text-destructive" />Despesas</div>
+          <p className="mt-1 text-base font-bold text-destructive">{balanceVisible ? `R$ ${fmt(monthly.expense)}` : "R$ ••••"}</p>
+        </div>''',
+              '''        <div className="rounded-xl border border-border/30 bg-card p-3">
+          <div className="flex items-center gap-1 text-[10px] font-semibold uppercase text-muted-foreground">
+            <ArrowDownRight className={`h-3.5 w-3.5 ${monthly.expense < 0 ? "text-primary" : "text-destructive"}`} />
+            {monthly.expense < 0 ? "Saldo reembolsos" : "Despesas"}
+          </div>
+          <p className={`mt-1 text-base font-bold ${monthly.expense < 0 ? "text-primary" : "text-destructive"}`}>
+            {balanceVisible
+              ? (monthly.expense < 0 ? `+ R$ ${fmt(Math.abs(monthly.expense))}` : `R$ ${fmt(monthly.expense)}`)
+              : "R$ ••••"}
+          </p>
+        </div>''',
+              'home negative expense display',
+          )
           path.write_text(text)
           PY
-          grep -q 'oldInstallmentDetails' supabase/functions/financial-chat/index.ts
-          grep -q 'Não são calculados pela diferença entre DESPESAS e Gastos por categoria' supabase/functions/financial-chat/index.ts
-          grep -q 'NUNCA estime essas parcelas pela diferença' supabase/functions/financial-chat/index.ts
       - name: Commit result
         run: |
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add supabase/functions/financial-chat/index.ts
-          git commit -m "fix: show exact old installment details in Insights IA"
+          git add src/components/CategoryPieCharts.tsx src/routes/transactions.tsx src/routes/home.tsx
+          git commit -m "fix: classify refunds as expense abatements"
           git push
