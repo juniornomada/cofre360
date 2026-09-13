@@ -1,0 +1,170 @@
+name: Fix card cycle expense summary
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/fix-card-cycle-expense-summary.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Align card billing cycles with DESPESAS
+        shell: bash
+        run: |
+          python <<'PY'
+          from pathlib import Path
+
+          def replace_once(text, old, new, label):
+              if old not in text:
+                  raise SystemExit(f"missing marker: {label}")
+              return text.replace(old, new, 1)
+
+          p = Path('src/lib/invoice-utils.ts')
+          text = p.read_text()
+          if 'export function getBillingCycleMonthKey' not in text:
+              helper = '''export function getBillingCycleMonthKey(dateStr: string, fallback: string, closingDay: number | null | undefined): string {
+            const txDate = parseTxDate(dateStr, fallback);
+            const cDay = closingDay || 1;
+            let cycleEnd = new Date(txDate.getFullYear(), txDate.getMonth(), cDay);
+            if (txDate >= cycleEnd) {
+              cycleEnd = new Date(txDate.getFullYear(), txDate.getMonth() + 1, cDay);
+            }
+            return `${cycleEnd.getFullYear()}-${String(cycleEnd.getMonth() + 1).padStart(2, "0")}`;
+          }
+
+          '''
+              text = replace_once(text, 'export function getCycleDates(referenceDate: Date, closingDay: number, dueDay: number) {', helper + 'export function getCycleDates(referenceDate: Date, closingDay: number, dueDay: number) {', 'invoice helper')
+          p.write_text(text)
+
+          p = Path('src/routes/home.tsx')
+          text = p.read_text()
+          text = replace_once(text, 'import { getCycleDates, groupByBillingCycle, type CardTransaction } from "@/lib/invoice-utils";', 'import { getBillingCycleMonthKey, getCycleDates, groupByBillingCycle, type CardTransaction } from "@/lib/invoice-utils";', 'home import')
+          start = text.index('  const monthly = useMemo(() => {')
+          end_marker = '  }, [selectedMonthTransactions]);'
+          end = text.index(end_marker, start) + len(end_marker)
+          new_block = '''  const monthly = useMemo(() => {
+            let income = 0;
+            let expense = 0;
+            const cardByName = new Map(cards.map((card) => [card.name, card]));
+
+            for (const tx of transactions) {
+              if (tx.is_visible === false) continue;
+              const transactionDate = safeDate(tx.date, tx.created_at);
+              if (!transactionDate) continue;
+
+              let belongsToSelectedMonth =
+                transactionDate.getFullYear() === selectedMonth.getFullYear() &&
+                transactionDate.getMonth() === selectedMonth.getMonth();
+
+              if (tx.card) {
+                const card = cardByName.get(tx.card);
+                if (card) {
+                  belongsToSelectedMonth = getBillingCycleMonthKey(tx.date || "", tx.created_at || "", card.closing_day) === selectedMonthKey;
+                }
+              }
+              if (!belongsToSelectedMonth) continue;
+
+              const mainCategory = (tx.category || "").split(" > ")[0]?.trim() || "";
+              const normalizedCategory = normalizeCategoryLabel(mainCategory);
+              const normalizedFullCategory = normalizeCategoryLabel(tx.category);
+              const isTransfer = normalizedCategory === "transferencia" || normalizedCategory === "transferencias";
+              const isAdjustment = normalizedCategory === "ajustes";
+              const isRefund = normalizedFullCategory === "receita > reembolso";
+
+              if (isTransfer || isAdjustment) continue;
+              if (isRefund) {
+                expense -= Number(tx.amount || 0);
+                continue;
+              }
+              if (tx.type === "income") income += Number(tx.amount || 0);
+              else if (!isCardPaymentCategory(tx.category)) expense += Number(tx.amount || 0);
+            }
+            return { income, expense };
+          }, [transactions, cards, selectedMonth, selectedMonthKey]);'''
+          text = text[:start] + new_block + text[end:]
+          p.write_text(text)
+
+          p = Path('src/routes/transactions.tsx')
+          text = p.read_text()
+          marker = 'import { buildTransferTransactionNames, extractTransferDescription } from "@/lib/transfer-label";'
+          if 'getBillingCycleMonthKey' not in text:
+              text = replace_once(text, marker, marker + '\nimport { getBillingCycleMonthKey } from "@/lib/invoice-utils";', 'transactions import')
+          text = replace_once(text, '''interface CardOption {
+            name: string;
+            brand: string;
+            color?: string | null;
+          }''', '''interface CardOption {
+            name: string;
+            brand: string;
+            color?: string | null;
+            closing_day?: number | null;
+            due_day?: number | null;
+          }''', 'card option')
+          text = replace_once(text, 'supabase.from("cards").select("name, brand, color").order("created_at", { ascending: true })', 'supabase.from("cards").select("name, brand, color, closing_day, due_day").order("created_at", { ascending: true })', 'card query')
+          text = replace_once(text, 'const options = data.map(c => ({ name: c.name, brand: c.brand, color: c.color }));', 'const options = data.map(c => ({ name: c.name, brand: c.brand, color: c.color, closing_day: c.closing_day, due_day: c.due_day }));', 'card mapping')
+          month_marker = '''  const selectedMonthStartUtc = Date.UTC(selectedMonth.getFullYear(), selectedMonth.getMonth(), 1);
+            const selectedMonthEndUtc = Date.UTC(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 1) - 1;'''
+          text = replace_once(text, month_marker, month_marker + '\n  const selectedMonthKey = `${selectedMonth.getFullYear()}-${String(selectedMonth.getMonth() + 1).padStart(2, "0")}`;', 'month key')
+
+          start_marker = '  // Apply every filter except transaction type first. The Receitas/Despesas'
+          end_marker = '  // Receitas/Despesas representam fluxo econômico real.'
+          start = text.index(start_marker)
+          end = text.index(end_marker, start)
+          replacement = '''  // "Todos" keeps calendar-month browsing; the economic summary uses
+            // each card's invoice cycle so DESPESAS closes with the card totals.
+            const matchesBaseFilters = (tx: Transaction, monthMode: "calendar" | "economic") => {
+              const matchesCategory = activeCategory === "Todas" || tx.category === activeCategory || parseCategoryValue(tx.category).group === activeCategory || (activeCategory === "Transferências" && (tx.category === "Transferência" || tx.category === "Transferências"));
+              const matchesSource = activeSource === "all" ? true : activeSource === "card" ? !!tx.card : !!tx.bank_account_id && !tx.card;
+              const matchesAccount = !filterAccountId || tx.bank_account_id === filterAccountId;
+              const matchesMin = minAmt === null || Number(tx.amount) >= minAmt;
+              const matchesMax = maxAmt === null || Number(tx.amount) <= maxAmt;
+              const d = parseTxDate(tx.date, tx.created_at);
+              const timestamp = d?.getTime() ?? NaN;
+              const matchesYieldComponent = !isYieldView || isAccountYieldComponent(tx);
+              let matchesMonth = isYieldView
+                ? (!d || timestamp <= yieldCutoffUtc)
+                : Number.isFinite(timestamp) && timestamp >= selectedMonthStartUtc && timestamp <= selectedMonthEndUtc;
+
+              if (!isYieldView && monthMode === "economic" && tx.card) {
+                const card = cardOptions.find((option) => option.name === tx.card);
+                if (card?.closing_day) {
+                  matchesMonth = getBillingCycleMonthKey(tx.date, tx.created_at || "", card.closing_day) === selectedMonthKey;
+                }
+              }
+
+              let matchesDate = true;
+              if (filterStartDate || filterEndDate) {
+                if (!d) matchesDate = false;
+                else {
+                  if (filterStartDate && d.getTime() < toUtcDay(filterStartDate).getTime()) matchesDate = false;
+                  if (filterEndDate && d.getTime() > toUtcDay(filterEndDate, true).getTime()) matchesDate = false;
+                }
+              }
+              return matchesCategory && matchesSource && matchesAccount && matchesMin && matchesMax && matchesMonth && matchesDate && matchesYieldComponent;
+            };
+
+            const filteredWithoutType = transactions.filter((tx) => matchesBaseFilters(tx, "calendar"));
+            const economicFilteredWithoutType = transactions.filter((tx) => matchesBaseFilters(tx, "economic"));
+
+          '''
+          text = text[:start] + replacement + text[end:]
+          text = replace_once(text, ': filteredWithoutType.filter((tx) => {', ': economicFilteredWithoutType.filter((tx) => {', 'drilldown base')
+          text = replace_once(text, '  const economicSummaryTransactions = filteredWithoutType.filter((tx) => tx.is_visible !== false);', '  const economicSummaryTransactions = economicFilteredWithoutType.filter((tx) => tx.is_visible !== false);', 'summary base')
+          p.write_text(text)
+          PY
+
+          rm .github/workflows/fix-card-cycle-expense-summary.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet && exit 0
+          git commit -m "fix: align card billing cycles with monthly expenses"
+          git push
