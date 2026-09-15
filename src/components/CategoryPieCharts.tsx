@@ -23,16 +23,16 @@ interface CategoryPieChartsProps {
 }
 
 const COLORS = [
-  "hsl(210, 100%, 64%)", // vivid blue
-  "hsl(275, 92%, 68%)",  // vivid purple
-  "hsl(48, 100%, 60%)",  // vivid yellow
-  "hsl(16, 100%, 63%)",  // vivid orange
-  "hsl(337, 92%, 65%)",  // vivid pink
-  "hsl(174, 88%, 52%)",  // vivid teal
-  "hsl(31, 100%, 58%)",  // vivid amber
-  "hsl(248, 94%, 70%)",  // vivid indigo
-  "hsl(0, 94%, 64%)",    // vivid red
-  "hsl(191, 96%, 58%)",  // vivid cyan
+  "hsl(210, 100%, 64%)",
+  "hsl(275, 92%, 68%)",
+  "hsl(48, 100%, 60%)",
+  "hsl(16, 100%, 63%)",
+  "hsl(337, 92%, 65%)",
+  "hsl(174, 88%, 52%)",
+  "hsl(31, 100%, 58%)",
+  "hsl(248, 94%, 70%)",
+  "hsl(0, 94%, 64%)",
+  "hsl(191, 96%, 58%)",
 ];
 
 const isRefundTransaction = (tx: Transaction) =>
@@ -51,9 +51,6 @@ function aggregateByLevel(txs: Transaction[], level: "group" | "sub") {
   const map = new Map<string, number>();
 
   txs.forEach((tx) => {
-    // Category spending represents the economic purchase, not each invoice
-    // installment. Only the first installment contributes to the month and its
-    // value is expanded back to the full purchase amount.
     if (!isCategoryPurchaseRow(tx)) return;
     const val = categoryPurchaseAmount(tx);
     if (!Number.isFinite(val)) return;
@@ -66,9 +63,6 @@ function aggregateByLevel(txs: Transaction[], level: "group" | "sub") {
   const rawTotal = positiveEntries.reduce((sum, [, value]) => sum + value, 0);
   if (rawTotal <= 0) return [];
 
-  // Do not show categories that would be displayed as 0% after rounding.
-  // The donut and legend must use the same visible dataset, so percentages are
-  // recalculated after this filter.
   const visibleEntries = positiveEntries.filter(([, value]) =>
     Math.round((value / rawTotal) * 100) > 0
   );
@@ -108,7 +102,6 @@ export function CategoryPieCharts({ transactions, formatCurrency, onCategoryClic
     () => aggregateByLevel(transactions.filter((t) => t.type === "income" && !isRefundTransaction(t)), level),
     [transactions, level],
   );
-
   const refundData = useMemo(
     () => aggregateRefunds(transactions.filter(isRefundTransaction)),
     [transactions],
@@ -125,7 +118,45 @@ export function CategoryPieCharts({ transactions, formatCurrency, onCategoryClic
     else onCategoryClick(name);
   };
 
-  const renderChart = (
+  const renderBars = (data: ReturnType<typeof aggregateByLevel>) => {
+    const max = Math.max(...data.map((item) => item.value), 1);
+    const title = isDrilldown ? (activeCategory || "Despesas") : "Despesas por categoria";
+    return (
+      <div className="flex h-full min-h-[164px] min-w-0 flex-col rounded-xl border border-border/20 bg-card p-3">
+        <h3 className="text-[12px] font-semibold text-foreground">{title}</h3>
+        <div className="mt-2 flex flex-col gap-1.5">
+          {data.map((item, i) => {
+            const isActive = !isDrilldown && activeCategory === item.name;
+            return (
+              <button
+                key={item.name}
+                type="button"
+                onClick={() => handleSliceClick(item.name)}
+                disabled={isDrilldown || !onCategoryClick}
+                aria-pressed={isActive}
+                className={`group rounded-lg px-1.5 py-1 text-left transition-colors ${isActive ? "bg-primary/10" : "hover:bg-accent/30"}`}
+              >
+                <div className="flex items-center justify-between gap-2 text-[11px]">
+                  <span className="min-w-0 truncate font-medium text-foreground">{item.name}</span>
+                  <span className="shrink-0 font-semibold tabular-nums text-foreground">
+                    {amountVisible ? `R$ ${formatCurrency(item.value)} · ` : ""}{item.percentage.toFixed(1)}%
+                  </span>
+                </div>
+                <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-muted/70">
+                  <div
+                    className="h-full rounded-full transition-[width] duration-300"
+                    style={{ width: `${Math.max(3, (item.value / max) * 100)}%`, backgroundColor: COLORS[i % COLORS.length] }}
+                  />
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  const renderDonut = (
     data: ReturnType<typeof aggregateByLevel>,
     kind: "expense" | "income" | "refund",
   ) => {
@@ -137,14 +168,9 @@ export function CategoryPieCharts({ transactions, formatCurrency, onCategoryClic
     return (
       <div className="flex h-full min-h-[164px] min-w-0 flex-col rounded-xl border border-border/20 bg-card p-2.5 sm:min-h-[176px] sm:p-3">
         <div className="flex h-5 shrink-0 items-center justify-between gap-2">
-          <h3
-            className="min-w-0 truncate whitespace-nowrap text-[11px] font-semibold leading-5 text-foreground sm:text-xs"
-            title={title}
-          >
-            {title}
-          </h3>
+          <h3 className="min-w-0 truncate whitespace-nowrap text-[12px] font-semibold leading-5 text-foreground" title={title}>{title}</h3>
           {isDrilldown && (
-            <span className="shrink-0 rounded-full bg-accent/50 px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wide text-muted-foreground">
+            <span className="shrink-0 rounded-full bg-accent/50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
               {kindLabel}
             </span>
           )}
@@ -165,9 +191,7 @@ export function CategoryPieCharts({ transactions, formatCurrency, onCategoryClic
                     dataKey="value"
                     animationBegin={0}
                     animationDuration={600}
-                    onClick={(payload: { name?: string } | undefined) => {
-                      if (payload?.name) handleSliceClick(payload.name);
-                    }}
+                    onClick={(payload: { name?: string } | undefined) => payload?.name && handleSliceClick(payload.name)}
                   >
                     {data.map((item, i) => {
                       const isDimmed = !isDrilldown && !!activeCategory && activeCategory !== "Todas" && activeCategory !== item.name;
@@ -202,12 +226,7 @@ export function CategoryPieCharts({ transactions, formatCurrency, onCategoryClic
                     onClick={() => handleSliceClick(item.name)}
                     disabled={isDrilldown || !onCategoryClick}
                     aria-pressed={isActive}
-                    aria-label={isDrilldown ? `${item.name}: ${item.percentage.toFixed(0)}%` : `Filtrar por categoria ${item.name}`}
-                    className={`flex w-full min-w-0 items-start gap-1 rounded-md px-1 py-0.5 text-[8px] transition-colors sm:text-[9px] ${
-                      isActive
-                        ? "bg-primary/15 text-foreground"
-                        : "text-muted-foreground"
-                    } ${!isDrilldown && onCategoryClick ? "cursor-pointer hover:bg-accent/40" : "cursor-default"}`}
+                    className={`flex w-full min-w-0 items-start gap-1 rounded-md px-1 py-0.5 text-[10px] transition-colors ${isActive ? "bg-primary/15 text-foreground" : "text-muted-foreground"}`}
                   >
                     <div className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
                     <span className="min-w-0 flex-1 text-left">
@@ -216,9 +235,7 @@ export function CategoryPieCharts({ transactions, formatCurrency, onCategoryClic
                         <span className="shrink-0 font-bold tabular-nums text-foreground">{item.percentage.toFixed(0)}%</span>
                       </span>
                       {amountVisible && (
-                        <span className="block truncate text-[7px] tabular-nums text-muted-foreground sm:text-[8px]">
-                          R$ {formatCurrency(item.value)}
-                        </span>
+                        <span className="block truncate text-[9px] tabular-nums text-muted-foreground">R$ {formatCurrency(item.value)}</span>
                       )}
                     </span>
                   </button>
@@ -238,29 +255,17 @@ export function CategoryPieCharts({ transactions, formatCurrency, onCategoryClic
   return (
     <>
       <style>{`
-        div:has(> .category-summary-donuts) {
-          margin-bottom: 0.5rem !important;
-        }
-        div:has(> .category-summary-donuts) + section {
-          display: none !important;
-        }
+        div:has(> .category-summary-donuts) { margin-bottom: 0.5rem !important; }
+        div:has(> .category-summary-donuts) + section { display: none !important; }
       `}</style>
       <div className="category-summary-donuts grid grid-cols-2 items-stretch gap-2 sm:gap-4">
         {hasUsefulExpenseBreakdown && (
           <div className={singleChartClass}>
-            {renderChart(expenseData, "expense")}
+            {expenseData.length >= 4 ? renderBars(expenseData) : renderDonut(expenseData, "expense")}
           </div>
         )}
-        {hasUsefulIncomeBreakdown && (
-          <div className={singleChartClass}>
-            {renderChart(incomeData, "income")}
-          </div>
-        )}
-        {hasUsefulRefundBreakdown && (
-          <div className={refundChartClass}>
-            {renderChart(refundData, "refund")}
-          </div>
-        )}
+        {hasUsefulIncomeBreakdown && <div className={singleChartClass}>{renderDonut(incomeData, "income")}</div>}
+        {hasUsefulRefundBreakdown && <div className={refundChartClass}>{renderDonut(refundData, "refund")}</div>}
       </div>
     </>
   );
