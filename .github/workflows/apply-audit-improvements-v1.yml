@@ -6,6 +6,7 @@ on:
     paths:
       - .github/workflows/apply-audit-improvements-v1.yml
       - .github/scripts/apply_audit_improvements_v1.py
+      - .github/scripts/run_audit_improvements_v1.py
   workflow_dispatch:
 
 permissions:
@@ -22,7 +23,7 @@ jobs:
         with:
           bun-version: latest
       - name: Apply codemod
-        run: python .github/scripts/apply_audit_improvements_v1.py
+        run: python .github/scripts/run_audit_improvements_v1.py
       - name: Install dependencies
         run: bun install --frozen-lockfile
       - name: Financial invariant tests
