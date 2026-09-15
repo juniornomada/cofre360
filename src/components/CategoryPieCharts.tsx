@@ -100,9 +100,8 @@ export function CategoryPieCharts({ transactions, formatCurrency, onCategoryClic
     [transactions, expenseLevel],
   );
 
-  // Receitas quase sempre compartilham o grupo-raiz "Receita". Exibir o grupo
-  // produziria um donut enganoso de 100%; por isso a visão padrão já usa a
-  // subcategoria (Salário, Juros, Vale alimentação etc.).
+  // Receita precisa abrir a composição imediatamente. Como quase todas as receitas
+  // compartilham o grupo-raiz "Receita", usamos a subcategoria na visão padrão.
   const incomeData = useMemo(
     () => aggregateByLevel(
       transactions.filter((t) => t.type === "income" && !isRefundTransaction(t)),
@@ -116,34 +115,49 @@ export function CategoryPieCharts({ transactions, formatCurrency, onCategoryClic
     [transactions],
   );
 
-  const hasUsefulExpenseBreakdown = expenseData.length > 0;
-  const hasUsefulIncomeBreakdown = incomeData.length > 0;
-  const hasUsefulRefundBreakdown = refundData.length > 0;
-  if (!hasUsefulExpenseBreakdown && !hasUsefulIncomeBreakdown && !hasUsefulRefundBreakdown) return null;
+  const hasExpense = expenseData.length > 0;
+  const hasIncome = incomeData.length > 0;
+  const hasRefund = refundData.length > 0;
+  if (!hasExpense && !hasIncome && !hasRefund) return null;
 
-  const handleSliceClick = (name: string) => {
+  const handleExpenseClick = (name: string) => {
     if (isDrilldown || !onCategoryClick) return;
     if (activeCategory === name) onCategoryClick("Todas");
     else onCategoryClick(name);
   };
 
-  const renderBars = (data: ReturnType<typeof aggregateByLevel>) => {
+  const renderBarCard = (
+    data: ReturnType<typeof aggregateByLevel>,
+    kind: "expense" | "income" | "refund",
+  ) => {
     const max = Math.max(...data.map((item) => item.value), 1);
-    const title = isDrilldown ? (activeCategory || "Despesas") : "Despesas por categoria";
+    const interactive = kind === "expense" && !isDrilldown && !!onCategoryClick;
+    const title = kind === "expense"
+      ? (isDrilldown ? (activeCategory || "Despesas") : "Despesas por categoria")
+      : kind === "income"
+        ? "Receitas por categoria"
+        : "Reembolsos";
+
     return (
-      <div className="flex h-full min-h-[164px] min-w-0 flex-col rounded-xl border border-border/20 bg-card p-3">
-        <h3 className="text-[12px] font-semibold text-foreground">{title}</h3>
-        <div className="mt-2 flex flex-col gap-1.5">
+      <div className="flex h-full min-h-0 min-w-0 flex-col rounded-xl border border-border/20 bg-card p-3">
+        <div className="shrink-0">
+          <h3 className="truncate text-[12px] font-semibold text-foreground" title={title}>{title}</h3>
+          {kind === "refund" && (
+            <p className="mt-0.5 truncate text-[9px] text-muted-foreground">abatimento de despesas</p>
+          )}
+        </div>
+
+        <div className="mt-2 flex min-h-0 flex-1 flex-col justify-center gap-1.5">
           {data.map((item, i) => {
-            const isActive = !isDrilldown && activeCategory === item.name;
+            const isActive = kind === "expense" && !isDrilldown && activeCategory === item.name;
             return (
               <button
                 key={item.name}
                 type="button"
-                onClick={() => handleSliceClick(item.name)}
-                disabled={isDrilldown || !onCategoryClick}
+                onClick={interactive ? (() => handleExpenseClick(item.name)) : undefined}
+                disabled={!interactive}
                 aria-pressed={isActive}
-                className={`group rounded-lg px-1.5 py-1 text-left transition-colors ${isActive ? "bg-primary/10" : "hover:bg-accent/30"}`}
+                className={`group rounded-lg px-1.5 py-1 text-left transition-colors ${isActive ? "bg-primary/10" : interactive ? "hover:bg-accent/30" : ""}`}
               >
                 <div className="flex items-center justify-between gap-2 text-[11px]">
                   <span className="min-w-0 truncate font-medium text-foreground">{item.name}</span>
@@ -154,7 +168,10 @@ export function CategoryPieCharts({ transactions, formatCurrency, onCategoryClic
                 <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-muted/70">
                   <div
                     className="h-full rounded-full transition-[width] duration-300"
-                    style={{ width: `${Math.max(3, (item.value / max) * 100)}%`, backgroundColor: COLORS[i % COLORS.length] }}
+                    style={{
+                      width: `${Math.max(3, (item.value / max) * 100)}%`,
+                      backgroundColor: COLORS[i % COLORS.length],
+                    }}
                   />
                 </div>
               </button>
@@ -165,46 +182,17 @@ export function CategoryPieCharts({ transactions, formatCurrency, onCategoryClic
     );
   };
 
-  const renderSingleCategoryCard = (
-    item: ReturnType<typeof aggregateByLevel>[number],
-    kind: "income" | "refund",
-  ) => {
-    const title = kind === "income" ? "Receitas por categoria" : "Reembolsos · abatimento de despesas";
-    return (
-      <div className="flex h-full min-h-[116px] min-w-0 flex-col justify-between rounded-xl border border-border/20 bg-card p-3">
-        <h3 className="truncate text-[12px] font-semibold text-foreground" title={title}>{title}</h3>
-        <div className="mt-3 flex items-center justify-between gap-3 rounded-lg bg-muted/25 px-3 py-2.5">
-          <div className="flex min-w-0 items-center gap-2">
-            <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: COLORS[0] }} />
-            <span className="truncate text-[11px] font-medium text-foreground">{item.name}</span>
-          </div>
-          <span className="shrink-0 text-right text-[11px] font-semibold tabular-nums text-foreground">
-            {amountVisible ? `R$ ${formatCurrency(item.value)}` : "100%"}
-          </span>
-        </div>
-      </div>
-    );
-  };
-
-  const renderDonut = (
-    data: ReturnType<typeof aggregateByLevel>,
-    kind: "expense" | "income" | "refund",
-  ) => {
-    const kindLabel = kind === "expense" ? "Despesas" : kind === "income" ? "Receitas" : "Reembolsos";
-    const title = kind === "refund"
-      ? "Reembolsos · abatimento de despesas"
-      : kind === "income"
-        ? "Receitas por categoria"
-        : isDrilldown ? (activeCategory || kindLabel) : `${kindLabel} por categoria`;
-    const isInteractive = kind === "expense" && !isDrilldown && !!onCategoryClick;
+  const renderExpenseDonut = (data: ReturnType<typeof aggregateByLevel>) => {
+    const title = isDrilldown ? (activeCategory || "Despesas") : "Despesas por categoria";
+    const interactive = !isDrilldown && !!onCategoryClick;
 
     return (
-      <div className="flex h-full min-h-[164px] min-w-0 flex-col rounded-xl border border-border/20 bg-card p-2.5 sm:min-h-[176px] sm:p-3">
+      <div className="flex h-full min-h-0 min-w-0 flex-col rounded-xl border border-border/20 bg-card p-2.5 sm:p-3">
         <div className="flex h-5 shrink-0 items-center justify-between gap-2">
           <h3 className="min-w-0 truncate whitespace-nowrap text-[12px] font-semibold leading-5 text-foreground" title={title}>{title}</h3>
-          {kind === "expense" && isDrilldown && (
+          {isDrilldown && (
             <span className="shrink-0 rounded-full bg-accent/50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-              {kindLabel}
+              Despesas
             </span>
           )}
         </div>
@@ -224,16 +212,16 @@ export function CategoryPieCharts({ transactions, formatCurrency, onCategoryClic
                     dataKey="value"
                     animationBegin={0}
                     animationDuration={600}
-                    onClick={isInteractive ? ((payload: { name?: string } | undefined) => payload?.name && handleSliceClick(payload.name)) : undefined}
+                    onClick={interactive ? ((payload: { name?: string } | undefined) => payload?.name && handleExpenseClick(payload.name)) : undefined}
                   >
                     {data.map((item, i) => {
-                      const isDimmed = kind === "expense" && !isDrilldown && !!activeCategory && activeCategory !== "Todas" && activeCategory !== item.name;
-                      const isActive = kind === "expense" && !isDrilldown && activeCategory === item.name;
+                      const isDimmed = !isDrilldown && !!activeCategory && activeCategory !== "Todas" && activeCategory !== item.name;
+                      const isActive = !isDrilldown && activeCategory === item.name;
                       return (
                         <Cell
                           key={i}
                           fill={COLORS[i % COLORS.length]}
-                          className={`outline-none ${isInteractive ? "cursor-pointer" : ""}`}
+                          className={`outline-none ${interactive ? "cursor-pointer" : ""}`}
                           fillOpacity={isDimmed ? 0.35 : 1}
                           stroke={isActive ? "hsl(var(--foreground))" : "none"}
                           strokeWidth={isActive ? 2 : 0}
@@ -250,14 +238,14 @@ export function CategoryPieCharts({ transactions, formatCurrency, onCategoryClic
           <div className="min-w-0 py-1">
             <div className="flex flex-col gap-0.5">
               {data.map((item, i) => {
-                const isActive = kind === "expense" && !isDrilldown && activeCategory === item.name;
+                const isActive = !isDrilldown && activeCategory === item.name;
                 return (
                   <button
                     key={item.name}
                     type="button"
                     title={`${item.name}: ${item.percentage.toFixed(0)}%`}
-                    onClick={isInteractive ? (() => handleSliceClick(item.name)) : undefined}
-                    disabled={!isInteractive}
+                    onClick={interactive ? (() => handleExpenseClick(item.name)) : undefined}
+                    disabled={!interactive}
                     aria-pressed={isActive}
                     className={`flex w-full min-w-0 items-start gap-1 rounded-md px-1 py-0.5 text-[10px] transition-colors ${isActive ? "bg-primary/15 text-foreground" : "text-muted-foreground"}`}
                   >
@@ -281,9 +269,8 @@ export function CategoryPieCharts({ transactions, formatCurrency, onCategoryClic
     );
   };
 
-  const visibleChartCount = [hasUsefulExpenseBreakdown, hasUsefulIncomeBreakdown, hasUsefulRefundBreakdown].filter(Boolean).length;
-  const singleChartClass = visibleChartCount === 1 ? "col-span-2 min-w-0" : "min-w-0";
-  const refundChartClass = visibleChartCount === 1 || visibleChartCount === 3 ? "col-span-2 min-w-0" : "min-w-0";
+  const leftHeight = Math.max(300, 72 + expenseData.length * 46);
+  const hasRightColumn = hasIncome || hasRefund;
 
   return (
     <>
@@ -291,23 +278,31 @@ export function CategoryPieCharts({ transactions, formatCurrency, onCategoryClic
         div:has(> .category-summary-donuts) { margin-bottom: 0.5rem !important; }
         div:has(> .category-summary-donuts) + section { display: none !important; }
       `}</style>
-      <div className="category-summary-donuts grid grid-cols-2 items-stretch gap-2 sm:gap-4">
-        {hasUsefulExpenseBreakdown && (
-          <div className={singleChartClass}>
-            {expenseData.length >= 4 ? renderBars(expenseData) : renderDonut(expenseData, "expense")}
+
+      {hasExpense && hasRightColumn ? (
+        <div
+          className="category-summary-donuts grid grid-cols-2 items-stretch gap-2 sm:gap-4"
+          style={{ minHeight: `${leftHeight}px` }}
+        >
+          <div className="min-w-0">
+            {expenseData.length >= 4 ? renderBarCard(expenseData, "expense") : renderExpenseDonut(expenseData)}
           </div>
-        )}
-        {hasUsefulIncomeBreakdown && (
-          <div className={singleChartClass}>
-            {incomeData.length === 1 ? renderSingleCategoryCard(incomeData[0], "income") : renderDonut(incomeData, "income")}
+
+          <div className="flex min-w-0 flex-col gap-2 sm:gap-4">
+            {hasIncome && <div className="min-h-0 flex-1">{renderBarCard(incomeData, "income")}</div>}
+            {hasRefund && <div className="min-h-0 flex-1">{renderBarCard(refundData, "refund")}</div>}
           </div>
-        )}
-        {hasUsefulRefundBreakdown && (
-          <div className={refundChartClass}>
-            {refundData.length === 1 ? renderSingleCategoryCard(refundData[0], "refund") : renderDonut(refundData, "refund")}
-          </div>
-        )}
-      </div>
+        </div>
+      ) : hasExpense ? (
+        <div className="category-summary-donuts">
+          {expenseData.length >= 4 ? renderBarCard(expenseData, "expense") : renderExpenseDonut(expenseData)}
+        </div>
+      ) : (
+        <div className="category-summary-donuts grid grid-cols-2 items-stretch gap-2 sm:gap-4">
+          {hasIncome && <div className={hasRefund ? "min-w-0" : "col-span-2 min-w-0"}>{renderBarCard(incomeData, "income")}</div>}
+          {hasRefund && <div className={hasIncome ? "min-w-0" : "col-span-2 min-w-0"}>{renderBarCard(refundData, "refund")}</div>}
+        </div>
+      )}
     </>
   );
 }
