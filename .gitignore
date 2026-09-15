@@ -16,9 +16,26 @@ dist-ssr
 .nitro
 *.local
 
+# Environment / secrets
+.env
+.env.*
+!.env.example
+.dev.vars
+
+# Financial / database exports
+*-export-*.csv
+transactions-export-*.csv
+bank_accounts-export-*.csv
+card_payments-export-*.csv
+cards-export-*.csv
+budget_categories-export-*.csv
+categories-export-*.csv
+subcategories-export-*.csv
+goals-export-*.csv
+reminders-export-*.csv
+
 # Wrangler / Cloudflare
 .wrangler/
-.dev.vars
 
 # Editor directories and files
 .vscode/*
