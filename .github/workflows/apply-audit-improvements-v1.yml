@@ -1,0 +1,42 @@
+name: Apply audit improvements v1
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/apply-audit-improvements-v1.yml
+      - .github/scripts/apply_audit_improvements_v1.py
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: Apply codemod
+        run: python .github/scripts/apply_audit_improvements_v1.py
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      - name: Financial invariant tests
+        run: bunx vitest run src/lib/__tests__/financial-engine-invariants.test.ts
+      - name: Typecheck
+        run: bunx tsc --noEmit
+      - name: Commit changes
+        run: |
+          if git diff --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          git config user.name "cofre360-bot"
+          git config user.email "cofre360-bot@users.noreply.github.com"
+          git add src
+          git commit -m "feat: apply audited financial UX improvements"
+          git push
