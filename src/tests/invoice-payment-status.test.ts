@@ -1,4 +1,4 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it } from "vitest";
 import { getInvoicePaymentStatus, remainingInvoiceAmount } from "@/lib/invoice-payment-status";
 
 describe("invoice payment status", () => {
