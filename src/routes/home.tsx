@@ -12,12 +12,16 @@ import {
   EyeOff,
   Landmark,
   LogOut,
+  Settings,
   Plus,
 } from "lucide-react";
 import { SmartLink as Link } from "@/components/SmartLink";
 import { BankLogo } from "@/components/BankLogo";
 import { CardIcon } from "@/components/CardIcon";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { FinancialDataHealth } from "@/components/FinancialDataHealth";
+import { useFinancialMonthFacts } from "@/hooks/use-financial-month-facts";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { VoiceTransactionButton } from "@/components/VoiceTransactionButton";
 import { QuickAddTransactionDialog } from "@/components/QuickAddTransactionDialog";
 import type { VoiceTransactionDraft } from "@/lib/voice-transaction";
@@ -229,6 +233,7 @@ function RecoveredHome() {
   }, []);
 
   const selectedMonthKey = `${selectedMonth.getFullYear()}-${String(selectedMonth.getMonth() + 1).padStart(2, "0")}`;
+  const { data: canonicalFacts } = useFinancialMonthFacts(selectedMonthKey);
   const selectedMonthLabel = new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric" })
     .format(selectedMonth)
     .replace(" de ", " ")
@@ -338,6 +343,9 @@ function RecoveredHome() {
   }
   return { income, expense };
 }, [transactions, cards, selectedMonth, selectedMonthKey]);
+  const displayedMonthly = canonicalFacts
+    ? { income: canonicalFacts.income, expense: canonicalFacts.expense }
+    : monthly;
 
   const categorySpending = useMemo(() => {
     const totalsInCents: Record<string, number> = {};
@@ -355,6 +363,9 @@ function RecoveredHome() {
       .filter((item) => item.amount > 0)
       .sort((a, b) => b.amount - a.amount);
   }, [categoryLedgerTransactions, selectedMonth]);
+  const displayedCategorySpending = canonicalFacts?.categories?.length
+    ? canonicalFacts.categories
+    : categorySpending;
 
   const recent = useMemo(() => {
     return [...selectedMonthTransactions]
@@ -470,14 +481,25 @@ function RecoveredHome() {
         </div>
 
         <div className="flex items-center gap-1.5">
-          <button onClick={handleLogout} className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-card" aria-label="Sair">
-            <LogOut className="h-4 w-4 text-muted-foreground" />
-          </button>
           <Link to="/reminders" className="relative flex h-9 w-9 items-center justify-center rounded-full border border-border bg-card">
             <Bell className="h-4 w-4 text-muted-foreground" />
             {reminders.length > 0 && <span className="absolute -right-0.5 -top-0.5 h-3.5 min-w-3.5 rounded-full bg-destructive px-1 text-center text-[8px] font-bold text-destructive-foreground">{reminders.length}</span>}
           </Link>
-          <div className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-card"><ThemeToggle /></div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-card" aria-label="Configurações rápidas">
+                <Settings className="h-4 w-4 text-muted-foreground" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-44">
+              <DropdownMenuItem onSelect={(event) => event.preventDefault()} className="flex items-center justify-between gap-2 text-[12px]">
+                <span>Tema</span><ThemeToggle />
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={handleLogout} className="gap-2 text-[12px] text-destructive focus:text-destructive">
+                <LogOut className="h-4 w-4" /> Sair
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <button onClick={() => updateBalanceVisible(!balanceVisible)} className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-card" aria-label="Alternar saldos">
             {balanceVisible ? <Eye className="h-4 w-4 text-muted-foreground" /> : <EyeOff className="h-4 w-4 text-muted-foreground" />}
           </button>
@@ -516,6 +538,8 @@ function RecoveredHome() {
           <ChevronRight className="h-5 w-5" />
         </button>
       </section>
+
+      <FinancialDataHealth monthKey={selectedMonthKey} />
 
       <section className="rounded-2xl border border-border/40 bg-gradient-to-br from-primary/15 via-card to-card p-5">
         <div className="flex items-center justify-between">
@@ -583,22 +607,22 @@ function RecoveredHome() {
       <section className="grid grid-cols-2 gap-2">
         <div className="rounded-xl border border-border/30 bg-card p-3">
           <div className="flex items-center gap-1 text-[10px] font-semibold uppercase text-muted-foreground"><ArrowUpRight className="h-3.5 w-3.5 text-primary" />Receitas</div>
-          <p className="mt-1 text-base font-bold text-primary">{balanceVisible ? `R$ ${fmt(monthly.income)}` : "R$ ••••"}</p>
+          <p className="mt-1 text-base font-bold text-primary">{balanceVisible ? `R$ ${fmt(displayedMonthly.income)}` : "R$ ••••"}</p>
         </div>
         <div className="rounded-xl border border-border/30 bg-card p-3">
           <div className="flex items-center gap-1 text-[10px] font-semibold uppercase text-muted-foreground">
-            <ArrowDownRight className={`h-3.5 w-3.5 ${monthly.expense < 0 ? "text-primary" : "text-destructive"}`} />
-            {monthly.expense < 0 ? "Saldo reembolsos" : "Despesas"}
+            <ArrowDownRight className={`h-3.5 w-3.5 ${displayedMonthly.expense < 0 ? "text-primary" : "text-destructive"}`} />
+            {displayedMonthly.expense < 0 ? "Saldo reembolsos" : "Despesas"}
           </div>
-          <p className={`mt-1 text-base font-bold ${monthly.expense < 0 ? "text-primary" : "text-destructive"}`}>
+          <p className={`mt-1 text-base font-bold ${displayedMonthly.expense < 0 ? "text-primary" : "text-destructive"}`}>
             {balanceVisible
-              ? (monthly.expense < 0 ? `+ R$ ${fmt(Math.abs(monthly.expense))}` : `R$ ${fmt(monthly.expense)}`)
+              ? (displayedMonthly.expense < 0 ? `+ R$ ${fmt(Math.abs(displayedMonthly.expense))}` : `R$ ${fmt(displayedMonthly.expense)}`)
               : "R$ ••••"}
           </p>
         </div>
       </section>
 
-      {categorySpending.length > 0 && (
+      {displayedCategorySpending.length > 0 && (
         <section className="rounded-2xl border border-border/30 bg-card p-3">
           <div className="grid grid-cols-4 gap-2">
             {categorySpending.slice(0, 4).map((item) => (

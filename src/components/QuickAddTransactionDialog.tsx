@@ -21,11 +21,13 @@ import { sanitizeTransactionWrite, sanitizeTransactionWrites } from "@/lib/norma
 import { inferYieldTransactionFields } from "@/lib/account-yield";
 import { buildTransferTransactionNames, extractTransferDescription } from "@/lib/transfer-label";
 import { voiceAccountNamesMatch, type VoiceTransactionDraft } from "@/lib/voice-transaction";
+import { TransactionTemplates, type TransactionTemplate } from "@/components/TransactionTemplates";
+import { getBillingCycleMonthKey } from "@/lib/invoice-utils";
 
 export type QuickAddInitialType = "expense" | "income" | "transfer";
 
 interface BankAccountOption { id: string; name: string; icon: string | null; color: string | null; balance: number; parent_account_id: string | null; parent_name: string | null }
-interface CardOption { name: string; brand: string; emoji: string | null; color: string | null }
+interface CardOption { id: string; name: string; brand: string; emoji: string | null; color: string | null; closing_day: number | null; due_day: number | null }
 
 interface Props {
   open: boolean;
@@ -160,7 +162,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
         { data: accs, error: accsError },
         { data: txs, error: txsError }
       ] = await Promise.all([
-        supabase.from("cards").select("name, brand, emoji, color").order("created_at", { ascending: true }),
+        supabase.from("cards").select("id, name, brand, emoji, color, closing_day, due_day").order("created_at", { ascending: true }),
         supabase.from("bank_accounts").select("id, name, icon, color, balance, parent_account_id").order("created_at", { ascending: true }),
         supabase.from("transactions").select("bank_account_id, amount, type, is_visible").not("bank_account_id", "is", null),
       ]);
@@ -178,7 +180,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
         else expenseByAccount[id] = (expenseByAccount[id] || 0) + (tx.amount || 0);
       });
 
-      setCardOptions((cards || []).map(c => ({ name: c.name, brand: c.brand, emoji: c.emoji, color: c.color })));
+      setCardOptions((cards || []).map(c => ({ id: c.id, name: c.name, brand: c.brand, emoji: c.emoji, color: c.color, closing_day: c.closing_day, due_day: c.due_day })));
       setBankAccounts((accs || []).map(a => ({
         id: a.id,
         name: a.name,
@@ -384,6 +386,57 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
   const previewRemainingTotal = installmentDetails.valorParcela * previewRemaining;
   const isPartialLaunch = previewStart > 1;
 
+  const selectedPreviewCard = cardOptions.find((card) => card.name === newTx.card);
+  const impactInvoiceKey = selectedPreviewCard && newTx.date
+    ? getBillingCycleMonthKey(newTx.date, new Date().toISOString(), selectedPreviewCard.closing_day)
+    : null;
+  const impactInvoiceLabel = impactInvoiceKey
+    ? new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric" })
+        .format(new Date(`${impactInvoiceKey}-01T12:00:00`))
+        .replace(" de ", " ")
+    : null;
+  const impactEconomicAmount = installmentEnabled && !isTransfer
+    ? (installmentMode === "fixed" ? installmentDetails.totalCalculado : newTx.amount)
+    : newTx.amount;
+  const impactChargeAmount = installmentEnabled && !isTransfer
+    ? installmentDetails.valorParcela
+    : newTx.amount;
+
+  const showUndoToast = (ids: string[], message: string) => {
+    toast.success(message, {
+      duration: 7000,
+      action: ids.length ? {
+        label: "Desfazer",
+        onClick: async () => {
+          const { error } = await supabase.from("transactions").delete().in("id", ids);
+          if (error) {
+            toast.error("Não foi possível desfazer o lançamento.");
+            return;
+          }
+          onSuccess?.();
+          toast.success("Lançamento desfeito");
+        },
+      } : undefined,
+    });
+  };
+
+  const applyTemplate = (template: TransactionTemplate) => {
+    const card = template.card_id ? cardOptions.find((item) => item.id === template.card_id) : null;
+    setIsTransfer(false);
+    setInstallmentEnabled(false);
+    setInstallmentStart(1);
+    setNewTx((previous) => ({
+      ...previous,
+      name: template.name,
+      icon: template.icon || previous.icon,
+      category: template.category,
+      type: template.type === "income" ? "income" : "expense",
+      amount: 0,
+      bank_account_id: template.bank_account_id,
+      card: card?.name || null,
+    }));
+  };
+
   const handleAdd = async () => {
     // Dismiss keyboard on mobile
     (document.activeElement as HTMLElement)?.blur();
@@ -470,7 +523,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
         console.log("QuickAdd: Transfer successful", data);
         onOpenChange(false);
         onSuccess?.();
-        toast.success("Transferência realizada com sucesso!");
+        showUndoToast((data || []).map((row: any) => String(row.id)).filter(Boolean), "Transferência realizada com sucesso!");
         return;
       }
 
@@ -500,6 +553,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
       baseDate = new Date();
     }
 
+    let insertedIds: string[] = [];
     if (installmentEnabled && cardValue && Number(installmentCount) > 1) {
       const groupId = (typeof crypto !== "undefined" && "randomUUID" in crypto)
         ? crypto.randomUUID()
@@ -530,21 +584,23 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
           is_visible: true
         });
        }
-       const { error } = await supabase.from("transactions").insert(sanitizeTransactionWrites(rows));
+       const { error, data } = await supabase.from("transactions").insert(sanitizeTransactionWrites(rows)).select("id");
        if (error) throw error;
+       insertedIds = (data || []).map((row: any) => String(row.id)).filter(Boolean);
      } else {
-       const { error } = await supabase.from("transactions").insert(sanitizeTransactionWrite({
+       const { error, data } = await supabase.from("transactions").insert(sanitizeTransactionWrite({
          icon: newTx.icon, name: newTx.name, category: newTx.category,
          date: newTx.date, purchase_date: newTx.date, amount: newTx.amount, type: finalType,
          card: cardValue, bank_account_id: newTx.bank_account_id || null,
          is_visible: true
-       }));
+       })).select("id");
        if (error) throw error;
+       insertedIds = (data || []).map((row: any) => String(row.id)).filter(Boolean);
      }
     (document.activeElement as HTMLElement)?.blur();
     onOpenChange(false);
     onSuccess?.();
-    toast.success("Transação adicionada com sucesso!");
+    showUndoToast(insertedIds, "Transação adicionada com sucesso!");
     } catch (error: any) {
       console.error("Error adding transaction:", error);
       toast.error("Erro ao adicionar transação: " + getFriendlyErrorMessage(error).message);
@@ -605,7 +661,33 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
             </div>
           </div>
         </DialogHeader>
+        <TransactionTemplates
+          open={!isTransfer}
+          current={{
+            name: newTx.name,
+            icon: newTx.icon,
+            category: newTx.category,
+            type: newTx.type,
+            bank_account_id: newTx.bank_account_id,
+            card_id: cardOptions.find((card) => card.name === newTx.card)?.id || null,
+          }}
+          onApply={applyTemplate}
+        />
         <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-4 flex flex-col gap-2.5">
+          {initialDraft?.transcript && (
+            <div className="rounded-xl border border-primary/20 bg-primary/5 px-3 py-2">
+              <p className="text-[11px] font-semibold text-primary">🎙 Entendi</p>
+              <p className="mt-0.5 text-[12px] leading-snug text-foreground">“{initialDraft.transcript}”</p>
+              <div className="mt-1.5 flex flex-wrap gap-1 text-[10px] text-muted-foreground">
+                <span className="rounded-full bg-background px-2 py-0.5">R$ {Number(initialDraft.amount || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
+                <span className="rounded-full bg-background px-2 py-0.5">{initialDraft.category}</span>
+                {initialDraft.card && <span className="rounded-full bg-background px-2 py-0.5">💳 {initialDraft.card}</span>}
+                {initialDraft.bankAccount && <span className="rounded-full bg-background px-2 py-0.5">🏦 {initialDraft.bankAccount}</span>}
+                {initialDraft.installmentCount && <span className="rounded-full bg-background px-2 py-0.5">{initialDraft.installmentCount}x</span>}
+              </div>
+              <p className="mt-1 text-[10px] text-muted-foreground">Confira os campos inferidos antes de salvar.</p>
+            </div>
+          )}
 
           {isTransfer ? (
             <>
@@ -644,11 +726,11 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                         <div className="relative">
                           <BankLogo icon={a.icon} color={a.color} name={a.name} size="sm" />
                           {a.parent_account_id && (
-                            <span aria-hidden="true" className="absolute -right-1 -top-1 flex h-3.5 min-w-3.5 items-center justify-center rounded-full border border-border bg-background px-0.5 text-[8px] font-black leading-none text-primary">↳</span>
+                            <span aria-hidden="true" className="absolute -right-1 -top-1 flex h-3.5 min-w-3.5 items-center justify-center rounded-full border border-border bg-background px-0.5 text-[9px] font-black leading-none text-primary">↳</span>
                           )}
                         </div>
                         <span className="text-[9px] font-medium text-foreground truncate w-full text-center leading-tight">{a.name}</span>
-                        <span className={cn("w-full truncate text-center text-[7px] leading-tight", a.parent_account_id ? "font-semibold text-primary" : "text-muted-foreground")} title={accountHierarchyLabel(a)}>
+                        <span className={cn("w-full truncate text-center text-[9px] leading-tight", a.parent_account_id ? "font-semibold text-primary" : "text-muted-foreground")} title={accountHierarchyLabel(a)}>
                           {a.parent_account_id ? `Sub · ${a.parent_name || "Principal"}` : "Conta principal"}
                         </span>
                       </button>
@@ -678,11 +760,11 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                         <div className="relative">
                           <BankLogo icon={a.icon} color={a.color} name={a.name} size="sm" />
                           {a.parent_account_id && (
-                            <span aria-hidden="true" className="absolute -right-1 -top-1 flex h-3.5 min-w-3.5 items-center justify-center rounded-full border border-border bg-background px-0.5 text-[8px] font-black leading-none text-primary">↳</span>
+                            <span aria-hidden="true" className="absolute -right-1 -top-1 flex h-3.5 min-w-3.5 items-center justify-center rounded-full border border-border bg-background px-0.5 text-[9px] font-black leading-none text-primary">↳</span>
                           )}
                         </div>
                         <span className="text-[9px] font-medium text-foreground truncate w-full text-center leading-tight">{a.name}</span>
-                        <span className={cn("w-full truncate text-center text-[7px] leading-tight", a.parent_account_id ? "font-semibold text-primary" : "text-muted-foreground")} title={accountHierarchyLabel(a)}>
+                        <span className={cn("w-full truncate text-center text-[9px] leading-tight", a.parent_account_id ? "font-semibold text-primary" : "text-muted-foreground")} title={accountHierarchyLabel(a)}>
                           {a.parent_account_id ? `Sub · ${a.parent_name || "Principal"}` : "Conta principal"}
                         </span>
                       </button>
@@ -840,7 +922,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                       <div className="relative">
                         <BankLogo icon={a.icon} color={a.color} name={a.name} size="sm" />
                       </div>
-                      <span className={cn("font-medium text-foreground truncate w-full text-center leading-tight", a.name.length > 13 ? "text-[8px] tracking-tight" : "text-[9px]")}>{a.name}</span>
+                      <span className={cn("font-medium text-foreground truncate w-full text-center leading-tight", a.name.length > 13 ? "text-[9px] tracking-tight" : "text-[9px]")}>{a.name}</span>
                     </button>
                   ))}
                 </div>
@@ -942,7 +1024,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                           className={`flex-1 rounded-lg py-1.5 px-2 text-[10px] font-medium transition-colors leading-tight ${installmentMode === "divide" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground border border-border"}`}
                         >
                           Valor total da compra
-                          <span className="block text-[8px] opacity-80">(será dividido em Nx)</span>
+                          <span className="block text-[9px] opacity-80">(será dividido em Nx)</span>
                         </button>
                         <button
                           type="button"
@@ -955,7 +1037,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                           className={`flex-1 rounded-lg py-1.5 px-2 text-[10px] font-medium transition-colors leading-tight ${installmentMode === "fixed" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground border border-border"}`}
                         >
                           Valor de cada parcela
-                          <span className="block text-[8px] opacity-80">(total = parcela × Nx)</span>
+                          <span className="block text-[9px] opacity-80">(total = parcela × Nx)</span>
                         </button>
                       </div>
 
@@ -1154,6 +1236,17 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
             </>
           )}
         </div>
+        {!isTransfer && newTx.name && newTx.amount > 0 && (
+          <div className="shrink-0 border-t border-border/40 bg-card/35 px-4 py-2">
+            <p className="text-[11px] font-semibold text-foreground">Impacto deste lançamento</p>
+            <div className="mt-1 space-y-0.5 text-[11px] text-muted-foreground">
+              {newTx.card && impactInvoiceLabel && (
+                <p>💳 {newTx.card} · fatura {impactInvoiceLabel} · {installmentEnabled ? `${previewStart}/${previewTotal} · ` : ""}<strong className="text-foreground">R$ {impactChargeAmount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong></p>
+              )}
+              <p>{newTx.icon} {(newTx.category || "").split(">")[0].trim()} · {newTx.type === "income" ? "receita" : "gasto econômico"} <strong className="text-foreground">{newTx.type === "income" ? "+" : "+"} R$ {impactEconomicAmount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong></p>
+            </div>
+          </div>
+        )}
         <DialogFooter className="shrink-0 border-t border-border/50 bg-background p-4 pt-3 flex-row gap-2 sm:gap-2">
           <Button variant="outline" size="sm" className="flex-1 h-10 text-xs rounded-xl" onClick={() => { (document.activeElement as HTMLElement)?.blur(); onOpenChange(false); }}>Cancelar</Button>
           <Button

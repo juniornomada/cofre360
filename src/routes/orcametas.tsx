@@ -12,6 +12,8 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { parseCategoryValue } from "@/lib/categories";
+import { collapseCategorySpendingRows } from "@/lib/category-spending";
+import { inferTransactionKind } from "@/lib/financial-engine";
 import { formatBRL } from "@/lib/format-brl";
 import { toast } from "sonner";
 import { CalculatorAmountInput } from "@/components/CalculatorAmountInput";
@@ -27,10 +29,19 @@ interface BudgetItem {
 }
 
 interface TxRow {
+  id: string;
   amount: number;
   category: string | null;
   type: string;
   date: string;
+  purchase_date?: string | null;
+  created_at?: string | null;
+  is_visible?: boolean | null;
+  installment_group_id?: string | null;
+  installment_number?: number | null;
+  total_installments?: number | null;
+  installment_source_amount?: number | null;
+  transaction_kind?: string | null;
 }
 
 interface Goal {
@@ -109,13 +120,13 @@ function OrcaMetasPage() {
 
       const [budgets, txs] = await Promise.all([
         supabase.from("budget_categories").select("*").order("created_at", { ascending: true }),
-        supabase.from("transactions").select("amount, category, type, date").eq("type", "expense").neq("is_visible", false),
+        supabase.from("transactions").select("id, amount, category, type, date, purchase_date, created_at, is_visible, installment_group_id, installment_number, total_installments, installment_source_amount, transaction_kind").eq("type", "expense").neq("is_visible", false),
       ]);
       if (budgets.error) throw budgets.error;
       if (txs.error) throw txs.error;
 
       if (budgets.data) setItems(budgets.data as any);
-      if (txs.data) setTransactions(txs.data as any);
+      if (txs.data) setTransactions(collapseCategorySpendingRows(txs.data as any) as TxRow[]);
     } catch (error: any) {
       console.error("Error fetching budget data:", error);
       toast.error("Erro ao carregar dados do orçamento");
@@ -153,6 +164,7 @@ function OrcaMetasPage() {
     const groupMap: Record<string, number> = {};
     const subMap: Record<string, number> = {};
     for (const tx of transactions) {
+      if (inferTransactionKind(tx as any) !== "expense") continue;
       const d = parseTxDate(tx.date);
       if (!d) continue;
       if (d.getMonth() !== currentMonth || d.getFullYear() !== currentYear) continue;

@@ -1744,6 +1744,18 @@ export function TransactionsPage() {
                   style={{ animationDelay: `${i * 40}ms` }} 
                   onEdit={selectionMode ? undefined : () => handleEdit(tx)}
                   onDelete={selectionMode ? undefined : () => { setDeleteTarget(tx); setDeleteScope("single"); setShowDeleteDialog(true); }}
+                  onDuplicate={selectionMode ? undefined : () => {
+                    setCopyTxData({
+                      name: tx.name,
+                      amount: Number(tx.amount),
+                      category: tx.category,
+                      icon: tx.icon,
+                      card: tx.card ?? null,
+                      bank_account_id: tx.bank_account_id ?? null,
+                    });
+                    setQuickAddType(tx.type === "income" ? "income" : "expense");
+                    setShowAddDialog(true);
+                  }}
                   
                 />
               </div>

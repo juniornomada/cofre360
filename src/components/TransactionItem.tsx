@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { getCategoryDisplay, getCategoryIcon } from "@/lib/categories";
 import { restoreAccents } from "@/lib/restore-accents";
 import { formatBRL } from "@/lib/format-brl";
-import { CreditCard, Landmark, ArrowLeftRight, Trash2 } from "lucide-react";
+import { CreditCard, Landmark, ArrowLeftRight, Trash2, Pencil, Copy } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { AutoFitText } from "@/components/AutoFitText";
@@ -85,6 +85,7 @@ interface TransactionItemProps {
   style?: React.CSSProperties;
   onEdit?: () => void;
   onDelete?: () => void;
+  onDuplicate?: () => void;
   is_visible?: boolean;
   amountVisible?: boolean;
 }
@@ -92,7 +93,7 @@ interface TransactionItemProps {
 export function TransactionItem({
   id, icon, name, category, date, purchase_date, created_at, amount, type, card, cardBrand,
   bank_account_id, isTransferPair, transferFromName, transferToName,
-  installment_group_id, installment_number, total_installments, style, onEdit, onDelete, amountVisible = true
+  installment_group_id, installment_number, total_installments, style, onEdit, onDelete, onDuplicate, amountVisible = true
 }: TransactionItemProps) {
   const isInstallment = !!total_installments && total_installments > 1 && !!installment_number;
   const explicitPurchaseDate = toIsoDate(purchase_date, created_at) || "";
@@ -100,6 +101,20 @@ export function TransactionItem({
   const [purchaseDateDraft, setPurchaseDateDraft] = useState<string>(explicitPurchaseDate);
   const [purchaseDateOpen, setPurchaseDateOpen] = useState(false);
   const [savingPurchaseDate, setSavingPurchaseDate] = useState(false);
+  const touchStartX = useRef<number | null>(null);
+  const [swipeActionsOpen, setSwipeActionsOpen] = useState(false);
+  const onTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
+    touchStartX.current = event.touches[0]?.clientX ?? null;
+  };
+  const onTouchEnd = (event: React.TouchEvent<HTMLDivElement>) => {
+    const start = touchStartX.current;
+    touchStartX.current = null;
+    if (start == null) return;
+    const end = event.changedTouches[0]?.clientX ?? start;
+    const delta = end - start;
+    if (delta < -42 && (onEdit || onDuplicate || onDelete)) setSwipeActionsOpen(true);
+    if (delta > 35) setSwipeActionsOpen(false);
+  };
 
   useEffect(() => {
     const next = toIsoDate(purchase_date, created_at) || "";
@@ -169,14 +184,23 @@ export function TransactionItem({
 
   return (
     <div
-      onClick={onEdit}
+      onTouchStart={onTouchStart}
+      onTouchEnd={onTouchEnd}
+      onClick={() => { if (swipeActionsOpen) setSwipeActionsOpen(false); else onEdit?.(); }}
       className={cn(
         "interactive-card flex items-center gap-2.5 rounded-xl p-2.5 cursor-pointer bg-card border border-border/30 transition-all group/item relative overflow-hidden active:scale-[0.98] sm:pr-2.5 pr-[44px]"
       )}
       style={style}
     >
+      {swipeActionsOpen && (onEdit || onDuplicate || onDelete) && (
+        <div className="absolute inset-y-0 right-0 z-20 flex items-center gap-1 rounded-r-xl border-l border-border bg-card/95 px-2 shadow-lg backdrop-blur sm:hidden" onClick={(event) => event.stopPropagation()}>
+          {onEdit && <button type="button" onClick={() => { setSwipeActionsOpen(false); onEdit(); }} className="flex h-9 w-9 items-center justify-center rounded-full bg-accent text-foreground" aria-label="Editar"><Pencil className="h-4 w-4" /></button>}
+          {onDuplicate && <button type="button" onClick={() => { setSwipeActionsOpen(false); onDuplicate(); }} className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-primary" aria-label="Duplicar"><Copy className="h-4 w-4" /></button>}
+          {onDelete && <button type="button" onClick={() => { setSwipeActionsOpen(false); onDelete(); }} className="flex h-9 w-9 items-center justify-center rounded-full bg-destructive/10 text-destructive" aria-label="Excluir"><Trash2 className="h-4 w-4" /></button>}
+        </div>
+      )}
       {onDelete && (
-        <div className="absolute right-2 sm:right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5 sm:opacity-0 group-hover/item:opacity-100 focus-within:opacity-100 transition-all duration-200 sm:translate-x-2 group-hover/item:translate-x-0 focus-within:translate-x-0 z-10 pointer-events-auto sm:pointer-events-none sm:group-hover/item:pointer-events-auto sm:focus-within:pointer-events-auto">
+        <div className="hidden sm:flex absolute right-2 sm:right-2 top-1/2 -translate-y-1/2 items-center gap-1.5 sm:opacity-0 group-hover/item:opacity-100 focus-within:opacity-100 transition-all duration-200 sm:translate-x-2 group-hover/item:translate-x-0 focus-within:translate-x-0 z-10 pointer-events-auto sm:pointer-events-none sm:group-hover/item:pointer-events-auto sm:focus-within:pointer-events-auto">
           <div
             className="flex items-center gap-1 bg-card/90 sm:bg-card/80 backdrop-blur-sm p-1 rounded-full border border-border/50 shadow-sm sm:shadow-none"
             role="group"
