@@ -131,8 +131,11 @@ describe("guarda: ordenação da fatura em /cards não pode ser reintroduzida in
   it("query de transações em cards.tsx mantém a tríade .order(date) → .order(created_at) → .order(id)", () => {
     const src = readFileSync("src/routes/cards.tsx", "utf8");
     // Localiza a chamada `.from("transactions")` que traz cartões (não a de bank_account_id).
-    const fromCalls = src.match(/\.from\(["']transactions["']\)[^;]+;/g) ?? [];
-    const cardTxQuery = fromCalls.find((q) => q.includes('not("card"'));
+    const fromCalls: string[] = Array.from(
+      src.matchAll(/\.from\(["']transactions["']\)[^;]+;/g),
+      (match) => match[0],
+    );
+    const cardTxQuery: string | undefined = fromCalls.find((query) => query.includes('not("card"'));
     expect(cardTxQuery, "query .from(\"transactions\") ... not(\"card\", is, null) deve existir").toBeTruthy();
     expect(cardTxQuery!).toMatch(/\.order\(\s*["']date["']\s*,/);
     expect(cardTxQuery!).toMatch(/\.order\(\s*["']created_at["']\s*,/);
