@@ -16,31 +16,31 @@ export function reconciliationSchemaHotfix(): Plugin {
     transform(code, id) {
       if (!id.includes("/src/lib/reconciliation/reconciliation.functions.ts")) return null;
 
-      const original = code;
+      let next = code;
 
-      let next = code.replace(
-        '.select("id,date,created_at,amount,type,is_visible,bank_account_id,card,category,transfer_direction")',
+      next = next.replace(
+        /\.select\((["'])id,date,created_at,amount,type,is_visible,bank_account_id,card,category,transfer_direction\1\)/g,
         '.select("id,date,transaction_date,created_at,amount,type,is_visible,bank_account_id,card,category,transaction_kind")',
       );
 
       next = next.replace(
-        '.gte("date", periodStart)\n      .lte("date", periodEnd)',
+        /\.gte\((["'])date\1,\s*periodStart\)\s*\.lte\((["'])date\2,\s*periodEnd\)/g,
         '.gte("transaction_date", periodStart)\n      .lte("transaction_date", periodEnd)',
       );
 
       next = next.replace(
-        'date: String(r.date),',
+        /date:\s*String\(r\.date\),/g,
         'date: String(r.transaction_date ?? r.date),',
       );
 
       next = next.replace(
-        'transfer_direction: r.transfer_direction,',
+        /transfer_direction:\s*r\.transfer_direction,/g,
         'transfer_direction: r.transaction_kind === "transfer" ? (r.type === "income" ? "in" : r.type === "expense" ? "out" : null) : null,',
       );
 
-      if (next === original) {
-        throw new Error("Reconciliation schema hotfix did not match the expected source");
-      }
+      // Vite can ask a pre-transform plugin to process the same module more than once.
+      // Keep the transform idempotent instead of failing the build on the second pass.
+      if (next === code) return null;
 
       return { code: next, map: null };
     },
