@@ -3,18 +3,37 @@ import { createMiddleware } from '@tanstack/react-start'
 import { getRequest } from '@tanstack/react-start/server'
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from './types'
+import { supabase as browserSupabase } from './client'
 
 
 
-export const requireSupabaseAuth = createMiddleware({ type: 'function' }).server(
-  async ({ next }) => {
-    
-    const SUPABASE_URL = process.env.SUPABASE_URL;
-    const SUPABASE_PUBLISHABLE_KEY = process.env.SUPABASE_PUBLISHABLE_KEY;
+export const requireSupabaseAuth = createMiddleware({ type: 'function' })
+  .client(async ({ next }) => {
+    // Supabase persists the browser session in localStorage. TanStack Start
+    // server-function requests do not automatically include that JWT, so forward
+    // the current access token explicitly to the same-origin RPC request.
+    const { data: { session }, error } = await browserSupabase.auth.getSession();
+
+    if (error || !session?.access_token) {
+      throw new Error('Unauthorized: No active Supabase session');
+    }
+
+    return next({
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+      },
+    });
+  })
+  .server(async ({ next }) => {
+    // Vercel currently exposes the public Supabase configuration with VITE_
+    // prefixes because the browser also needs these values. Accept both the
+    // server-only and public-prefixed names; the publishable key is not a secret.
+    const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+    const SUPABASE_PUBLISHABLE_KEY = process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
     if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
       throw new Response(
-        'Missing Supabase environment variables. Ensure SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY are set.',
+        'Missing Supabase environment variables. Ensure SUPABASE_URL/SUPABASE_PUBLISHABLE_KEY or their VITE_ equivalents are set.',
         { status: 500 }
       );
     }
@@ -41,8 +60,8 @@ export const requireSupabaseAuth = createMiddleware({ type: 'function' }).server
     }
 
     const supabase = createClient<Database>(
-      SUPABASE_URL!,
-      SUPABASE_PUBLISHABLE_KEY!,
+      SUPABASE_URL,
+      SUPABASE_PUBLISHABLE_KEY,
       {
         global: {
           headers: {
@@ -72,6 +91,5 @@ export const requireSupabaseAuth = createMiddleware({ type: 'function' }).server
         userId: data.claims.sub,
         claims: data.claims,
       },
-    })
-  }
-)
+    });
+  })
