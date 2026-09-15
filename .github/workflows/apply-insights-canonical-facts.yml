@@ -1,0 +1,33 @@
+name: Apply Insights canonical facts
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/scripts/apply_insights_canonical_facts.py
+      - .github/workflows/apply-insights-canonical-facts.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Apply patch
+        run: python .github/scripts/apply_insights_canonical_facts.py
+      - name: Commit
+        run: |
+          if git diff --quiet; then
+            echo "No changes"
+            exit 0
+          fi
+          git config user.name "cofre360-bot"
+          git config user.email "cofre360-bot@users.noreply.github.com"
+          git add supabase/functions/financial-chat/index.ts
+          git commit -m "fix: use canonical financial facts in Insights IA"
+          git push
