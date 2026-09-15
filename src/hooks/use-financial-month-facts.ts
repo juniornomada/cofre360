@@ -7,10 +7,20 @@ export type FinancialMonthFacts = {
   expense: number;
   result: number;
   cardExpenseComponent: number;
+  expenseBreakdown: Array<{ category: string; amount: number }>;
   categories: Array<{ category: string; amount: number }>;
   cards: Array<{ card: string; amount: number }>;
   oldInstallments: { count: number; amount: number };
+  oldInstallmentCategories: Array<{ category: string; amount: number }>;
 };
+
+const normalizeCategoryRows = (value: unknown) =>
+  Array.isArray(value)
+    ? value.map((item: any) => ({
+        category: String(item?.category || "Sem categoria"),
+        amount: Number(item?.amount || 0),
+      }))
+    : [];
 
 export async function fetchFinancialMonthFacts(monthKey: string): Promise<FinancialMonthFacts> {
   const pMonth = `${monthKey}-01`;
@@ -23,9 +33,8 @@ export async function fetchFinancialMonthFacts(monthKey: string): Promise<Financ
     expense: Number(raw.expense || 0),
     result: Number(raw.result || 0),
     cardExpenseComponent: Number(raw.cardExpenseComponent || 0),
-    categories: Array.isArray(raw.categories)
-      ? raw.categories.map((item) => ({ category: String(item.category || "Sem categoria"), amount: Number(item.amount || 0) }))
-      : [],
+    expenseBreakdown: normalizeCategoryRows(raw.expenseBreakdown),
+    categories: normalizeCategoryRows(raw.categories),
     cards: Array.isArray(raw.cards)
       ? raw.cards.map((item) => ({ card: String(item.card || "Cartão"), amount: Number(item.amount || 0) }))
       : [],
@@ -33,6 +42,7 @@ export async function fetchFinancialMonthFacts(monthKey: string): Promise<Financ
       count: Number(raw.oldInstallments?.count || 0),
       amount: Number(raw.oldInstallments?.amount || 0),
     },
+    oldInstallmentCategories: normalizeCategoryRows(raw.oldInstallmentCategories),
   };
 }
 
