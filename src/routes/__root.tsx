@@ -1,4 +1,5 @@
 import { Outlet, Link, createRootRoute, HeadContent, Scripts, useRouter, redirect } from "@tanstack/react-router";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { z } from "zod";
 import { lazy, Suspense, useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
@@ -148,12 +149,19 @@ function RootShell({ children }: { children: React.ReactNode }) {
   );
 }
 
- function RootComponent() {
-  
+function RootComponent() {
   useContrastChecker();
   const router = useRouter();
   const [session, setSession] = useState<any>(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const [queryClient] = useState(() => new QueryClient({
+    defaultOptions: {
+      queries: {
+        staleTime: 30_000,
+        retry: 1,
+      },
+    },
+  }));
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -188,33 +196,34 @@ function RootShell({ children }: { children: React.ReactNode }) {
     );
   }
 
-   const search = router.state.location.search as any;
-   const isComparisonMode = search.compare === 'theme';
+  const search = router.state.location.search as any;
+  const isComparisonMode = search.compare === 'theme';
 
   return (
-    <TooltipProvider>
-      <div className={cn(
-        "mx-auto min-h-dvh bg-background pb-16",
-        !isComparisonMode && "max-w-md"
-      )}>
-        <Outlet />
-        {!isComparisonMode && (
-          <Suspense fallback={
-            <div className="fixed bottom-0 left-0 right-0 h-16 bg-card/80 flex items-center justify-center border-t border-border">
-              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-            </div>
-          }>
-           <BottomNav />
-           
-         </Suspense>
-         )}
-      </div>
-      <Toaster />
-      {import.meta.env.DEV && (
-        <Suspense fallback={null}>
-          <CycleMismatchDevBanner />
-        </Suspense>
-      )}
-    </TooltipProvider>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <div className={cn(
+          "mx-auto min-h-dvh bg-background pb-16",
+          !isComparisonMode && "max-w-md"
+        )}>
+          <Outlet />
+          {!isComparisonMode && (
+            <Suspense fallback={
+              <div className="fixed bottom-0 left-0 right-0 h-16 bg-card/80 flex items-center justify-center border-t border-border">
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              </div>
+            }>
+              <BottomNav />
+            </Suspense>
+          )}
+        </div>
+        <Toaster />
+        {import.meta.env.DEV && (
+          <Suspense fallback={null}>
+            <CycleMismatchDevBanner />
+          </Suspense>
+        )}
+      </TooltipProvider>
+    </QueryClientProvider>
   );
 }
