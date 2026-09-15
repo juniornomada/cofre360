@@ -461,6 +461,47 @@ function deterministicSseResponse(content: string, corsHeaders: Record<string, s
   });
 }
 
+
+type CanonicalMonthFacts = {
+  month?: string;
+  income?: number | string;
+  expense?: number | string;
+  result?: number | string;
+  cardExpenseComponent?: number | string;
+  expenseBreakdown?: Array<{ category?: string; amount?: number | string }>;
+  categories?: Array<{ category?: string; amount?: number | string }>;
+  cards?: Array<{ card?: string; amount?: number | string }>;
+  oldInstallments?: { count?: number | string; amount?: number | string };
+  oldInstallmentCategories?: Array<{ category?: string; amount?: number | string }>;
+};
+
+async function loadCanonicalMonthFacts(supabase: any, key: string): Promise<CanonicalMonthFacts | null> {
+  const { data, error } = await supabase.rpc("financial_month_facts", { p_month: `${key}-01` });
+  if (error) {
+    console.warn("financial-chat canonical facts fallback", key, error.message);
+    return null;
+  }
+  return (data || null) as CanonicalMonthFacts | null;
+}
+
+function canonicalCategoryPairs(
+  rows: CanonicalMonthFacts["categories"] | CanonicalMonthFacts["expenseBreakdown"] | CanonicalMonthFacts["oldInstallmentCategories"],
+): Array<[string, number]> {
+  if (!Array.isArray(rows)) return [];
+  return rows
+    .map((item) => [String(item?.category || "Sem categoria"), roundMoney(Number(item?.amount || 0))] as [string, number])
+    .filter(([, amount]) => amount !== 0);
+}
+
+function monthlyFromCanonical(facts: CanonicalMonthFacts | null, fallback: MonthlyEconomicSummary): MonthlyEconomicSummary {
+  if (!facts) return fallback;
+  return {
+    income: roundMoney(Number(facts.income || 0)),
+    expense: roundMoney(Number(facts.expense || 0)),
+    breakdown: canonicalCategoryPairs(facts.expenseBreakdown),
+  };
+}
+
 async function buildDeterministicFinancialAnswer(
   supabase: any,
   messages: ChatMessage[],
@@ -515,14 +556,28 @@ async function buildDeterministicFinancialAnswer(
   const previousDate = new Date(keyYear, keyMonth - 2, 1);
   const previousKey = monthKey(previousDate);
   const previousLabel = `${MONTHS_LABEL[previousDate.getMonth()]}/${previousDate.getFullYear()}`;
-  const monthly = monthlyEconomicSummary(transactions, key);
-  const categories = categoryTotals(expenses, key);
+  const [canonicalCurrent, canonicalPrevious] = await Promise.all([
+    loadCanonicalMonthFacts(supabase, key),
+    loadCanonicalMonthFacts(supabase, previousKey),
+  ]);
+  const monthly = monthlyFromCanonical(canonicalCurrent, monthlyEconomicSummary(transactions, key));
+  const categories = canonicalCurrent
+    ? canonicalCategoryPairs(canonicalCurrent.categories)
+    : categoryTotals(expenses, key);
   const categoryTotal = roundMoney(categories.reduce((sum, [, value]) => sum + value, 0));
-  const previousCategories = categoryTotals(expenses, previousKey);
+  const previousCategories = canonicalPrevious
+    ? canonicalCategoryPairs(canonicalPrevious.categories)
+    : categoryTotals(expenses, previousKey);
   const previousCategoryTotal = roundMoney(previousCategories.reduce((sum, [, value]) => sum + value, 0));
-  const oldInstallmentCategories = oldInstallmentCategoryTotals(transactions, key);
   const oldInstallmentRows = oldInstallmentDetails(transactions, key);
-  const oldInstallmentTotal = roundMoney(oldInstallmentCategories.reduce((sum, [, value]) => sum + value, 0));
+  // Detailed installment rows are kept transaction-level for the mobile detail view;
+  // the summary/category totals prefer the canonical monthly RPC.
+  const oldInstallmentCategories = canonicalCurrent
+    ? canonicalCategoryPairs(canonicalCurrent.oldInstallmentCategories)
+    : oldInstallmentCategoryTotals(transactions, key);
+  const oldInstallmentTotal = canonicalCurrent
+    ? roundMoney(Number(canonicalCurrent.oldInstallments?.amount || 0))
+    : roundMoney(oldInstallmentCategories.reduce((sum, [, value]) => sum + value, 0));
   const detailedCategories = detailedCategoryTotals(expenses, key);
 
   if (asksOldInstallmentCategories) {
@@ -705,16 +760,25 @@ async function buildFinancialContext(supabase: any, question: string) {
   const currentKey = monthKey(new Date(now.getFullYear(), now.getMonth(), 1));
   const previousDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
   const previousKey = monthKey(previousDate);
-  const currentCategories = categoryTotals(expenses, currentKey);
-  const previousCategories = categoryTotals(expenses, previousKey);
+  const [canonicalCurrent, canonicalPrevious] = await Promise.all([
+    loadCanonicalMonthFacts(supabase, currentKey),
+    loadCanonicalMonthFacts(supabase, previousKey),
+  ]);
+  const currentCategories = canonicalCurrent
+    ? canonicalCategoryPairs(canonicalCurrent.categories)
+    : categoryTotals(expenses, currentKey);
+  const previousCategories = canonicalPrevious
+    ? canonicalCategoryPairs(canonicalPrevious.categories)
+    : categoryTotals(expenses, previousKey);
   const currentDetailedCategories = detailedCategoryTotals(expenses, currentKey);
   const previousDetailedCategories = detailedCategoryTotals(expenses, previousKey);
   const currentCategoryExpense = currentCategories.reduce((sum, [, value]) => sum + value, 0);
   const previousCategoryExpense = previousCategories.reduce((sum, [, value]) => sum + value, 0);
 
-  // Mesma regra dos cards RECEITAS/DESPESAS da Home e de Transações.
-  const currentMonthly = monthlyEconomicSummary(transactions, currentKey);
-  const previousMonthly = monthlyEconomicSummary(transactions, previousKey);
+  // Fonte autoritativa: mesma RPC usada pela Home/monitoramento. O cálculo local
+  // fica apenas como fallback para indisponibilidade transitória da RPC.
+  const currentMonthly = monthlyFromCanonical(canonicalCurrent, monthlyEconomicSummary(transactions, currentKey));
+  const previousMonthly = monthlyFromCanonical(canonicalPrevious, monthlyEconomicSummary(transactions, previousKey));
   const currentIncome = currentMonthly.income;
   const previousIncome = previousMonthly.income;
   const currentExpense = currentMonthly.expense;
@@ -782,8 +846,11 @@ async function buildFinancialContext(supabase: any, question: string) {
   const requested = requestedMonth(question, now);
   let requestedSection = "";
   if (requested && requested.key !== currentKey && requested.key !== previousKey) {
-    const requestedMonthly = monthlyEconomicSummary(transactions, requested.key);
-    const requestedCategories = categoryTotals(expenses, requested.key);
+    const canonicalRequested = await loadCanonicalMonthFacts(supabase, requested.key);
+    const requestedMonthly = monthlyFromCanonical(canonicalRequested, monthlyEconomicSummary(transactions, requested.key));
+    const requestedCategories = canonicalRequested
+      ? canonicalCategoryPairs(canonicalRequested.categories)
+      : categoryTotals(expenses, requested.key);
     const requestedCategoryTotal = requestedCategories.reduce((sum, [, value]) => sum + value, 0);
     requestedSection = `\n### Período solicitado — ${requested.label} — MESMA REGRA DA HOME/TRANSAÇÕES
 - Receitas: R$ ${formatBRL(requestedMonthly.income)}
@@ -864,6 +931,7 @@ const SYSTEM_PROMPT = `Você é o Assistente Financeiro do Cofre360. Responda em
 
 Regras financeiras obrigatórias:
 - Use SOMENTE os dados financeiros fornecidos no contexto; nunca invente valores.
+- Os totais marcados como MESMA REGRA DA HOME/TRANSAÇÕES e Gastos por categoria vêm do motor financeiro canônico do Cofre360 (RPC financial_month_facts). Eles são fatos autoritativos. Use os detalhes item a item somente para explicar esses fatos; nunca recalcule ou substitua os totais canônicos por uma soma improvisada.
 - Quando o usuário perguntar "gasto total", "quanto gastei no mês", "despesas do mês" ou equivalente, use SEMPRE o valor "Despesas" da seção "MESMA REGRA DA HOME/TRANSAÇÕES". Esse é o mesmo número exibido nos cards do app.
 - Se o usuário perguntar "em quais categorias", "gastos por categoria", "quanto gastei com Transporte/Alimentação/etc." ou equivalente, use SEMPRE a seção "Gastos por categoria — compras realizadas no período". Essa visão usa a data original da compra e não repete parcelas nos meses seguintes.
 - NUNCA use a "Composição das DESPESAS pelo mês de cobrança/lançamento" como se fosse gasto novo por categoria. Ela serve apenas para explicar quais parcelas/lançamentos compõem o card mensal de DESPESAS e pode incluir compras de meses anteriores.
