@@ -1,14 +1,20 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { runReconciliation } from "./engine";
-import type { ReconciliationInput, ReconciliationRule, CheckType, RuleKind, ToleranceKind } from "./types";
+import type {
+  ReconciliationInput,
+  ReconciliationRule,
+  CheckType,
+  RuleKind,
+  ToleranceKind,
+  CanonicalMonthFacts,
+} from "./types";
 
 // ------------------------- Rules CRUD -------------------------
 
 export const listRules = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async (ctx: any) => {
-    const $input = ctx.data;
     const $ctx = ctx.context;
     const { data, error } = await $ctx.supabase
       .from("reconciliation_rules")
@@ -73,74 +79,167 @@ export const deleteRule = createServerFn({ method: "POST" })
 
 // ------------------------- Run + persist -------------------------
 
+function dateOnly(value: unknown): string {
+  return String(value || "").slice(0, 10);
+}
+
+function monthStartsBetween(periodStart: string, periodEnd: string): string[] {
+  const [sy, sm] = periodStart.split("-").map(Number);
+  const [ey, em] = periodEnd.split("-").map(Number);
+  const out: string[] = [];
+  let y = sy;
+  let m = sm;
+  while (y < ey || (y === ey && m <= em)) {
+    out.push(`${y}-${String(m).padStart(2, "0")}-01`);
+    m += 1;
+    if (m > 12) {
+      m = 1;
+      y += 1;
+    }
+  }
+  return out;
+}
+
+function normalizeFacts(raw: any): CanonicalMonthFacts {
+  return {
+    month: String(raw?.month || ""),
+    income: Number(raw?.income || 0),
+    expense: Number(raw?.expense || 0),
+    cardExpenseComponent: Number(raw?.cardExpenseComponent || 0),
+    categories: Array.isArray(raw?.categories)
+      ? raw.categories.map((r: any) => ({ category: String(r?.category || "Sem categoria"), amount: Number(r?.amount || 0) }))
+      : [],
+    cards: Array.isArray(raw?.cards)
+      ? raw.cards.map((r: any) => ({ card: String(r?.card || "Cartão"), amount: Number(r?.amount || 0) }))
+      : [],
+  };
+}
+
 async function loadInputData(
   supabase: any,
   userId: string,
   periodStart: string,
-  periodEnd: string
+  periodEnd: string,
 ): Promise<ReconciliationInput> {
-  const [bankRes, txRes, cardRes, payRes, budRes, ruleRes] = await Promise.all([
+  const [bankRes, txRes, cardRes, payRes, refundRes, budRes, ruleRes] = await Promise.all([
     supabase.from("bank_accounts").select("id,name,balance").eq("user_id", userId),
     supabase
       .from("transactions")
-      .select("id,date,created_at,amount,type,is_visible,bank_account_id,card,category,transfer_direction")
-      .eq("user_id", userId)
-      .gte("date", periodStart)
-      .lte("date", periodEnd),
-    supabase.from("cards").select("id,name,used,closing_day,due_day").eq("user_id", userId),
-    supabase.from("card_payments").select("id,card_id,amount,date").eq("user_id", userId),
-    supabase
-      .from("budget_categories")
-      .select("id,category,amount,period_start,period_end")
+      .select("id,date,transaction_date,purchase_date,created_at,amount,type,transaction_kind,is_visible,bank_account_id,card,card_id,category,installment_group_id,installment_number,total_installments,installment_source_amount")
       .eq("user_id", userId),
+    supabase.from("cards").select("id,name,used,closing_day,due_day").eq("user_id", userId),
+    supabase.from("card_payments").select("id,card_id,bank_account_id,amount,paid_at,target_period").eq("user_id", userId),
+    supabase
+      .from("card_refunds")
+      .select("id,transaction_id,card_name,original_amount,refund_amount,status,refund_transaction_id,confirmed_at,created_at")
+      .eq("user_id", userId),
+    supabase.from("budget_categories").select("id,category,budget_limit").eq("user_id", userId),
     supabase.from("reconciliation_rules").select("*").eq("user_id", userId).eq("enabled", true),
   ]);
 
-  const errs = [bankRes, txRes, cardRes, payRes, budRes, ruleRes].map((r) => r.error).filter(Boolean);
+  const errs = [bankRes, txRes, cardRes, payRes, refundRes, budRes, ruleRes].map((r) => r.error).filter(Boolean);
   if (errs.length) throw errs[0];
+
+  const canonicalFacts: CanonicalMonthFacts[] = [];
+  for (const month of monthStartsBetween(periodStart, periodEnd)) {
+    const { data, error } = await supabase.rpc("financial_month_facts", { p_month: month });
+    if (error) throw error;
+    canonicalFacts.push(normalizeFacts(data));
+  }
 
   return {
     bankAccounts: (bankRes.data ?? []).map((r: any) => ({
-      id: r.id,
-      name: r.name,
+      id: String(r.id),
+      name: String(r.name || "Conta"),
       opening_balance: Number(r.balance ?? 0),
     })),
-    transactions: (txRes.data ?? []).map((r: any) => ({
-      id: r.id,
-      date: String(r.date),
-      created_at: r.created_at,
-      amount: Number(r.amount ?? 0),
-      type: r.type,
-      is_visible: r.is_visible,
-      bank_account_id: r.bank_account_id,
-      card: r.card,
-      category: r.category,
-      transfer_direction: r.transfer_direction,
-    })),
+    transactions: (txRes.data ?? []).map((r: any) => {
+      const kind = r.transaction_kind || null;
+      const type = String(r.type || "expense");
+      return {
+        id: String(r.id),
+        date: dateOnly(r.transaction_date || r.date),
+        created_at: r.created_at,
+        purchase_date: r.purchase_date ? dateOnly(r.purchase_date) : null,
+        amount: Number(r.amount ?? 0),
+        type,
+        transaction_kind: kind,
+        is_visible: r.is_visible,
+        bank_account_id: r.bank_account_id,
+        card: r.card,
+        card_id: r.card_id,
+        category: r.category,
+        transfer_direction: kind === "transfer" ? (type === "income" ? "in" : type === "expense" ? "out" : null) : null,
+        installment_group_id: r.installment_group_id,
+        installment_number: r.installment_number == null ? null : Number(r.installment_number),
+        total_installments: r.total_installments == null ? null : Number(r.total_installments),
+        installment_source_amount: r.installment_source_amount == null ? null : Number(r.installment_source_amount),
+      };
+    }),
     cards: (cardRes.data ?? []).map((r: any) => ({
-      id: r.id,
-      name: r.name,
+      id: String(r.id),
+      name: String(r.name || "Cartão"),
       used: Number(r.used ?? 0),
       closing_day: Number(r.closing_day ?? 1),
       due_day: Number(r.due_day ?? 1),
     })),
     cardPayments: (payRes.data ?? []).map((r: any) => ({
-      id: r.id,
-      card_id: r.card_id,
+      id: String(r.id),
+      card_id: String(r.card_id || ""),
+      bank_account_id: r.bank_account_id,
       amount: Number(r.amount ?? 0),
-      date: String(r.date),
+      date: dateOnly(r.paid_at || r.target_period),
+      target_period: r.target_period ? dateOnly(r.target_period) : null,
+    })),
+    cardRefunds: (refundRes.data ?? []).map((r: any) => ({
+      id: String(r.id),
+      transaction_id: String(r.transaction_id || ""),
+      card_name: r.card_name,
+      original_amount: Number(r.original_amount ?? 0),
+      refund_amount: Number(r.refund_amount ?? 0),
+      status: String(r.status || ""),
+      refund_transaction_id: r.refund_transaction_id,
+      date: dateOnly(r.confirmed_at || r.created_at),
     })),
     budgets: (budRes.data ?? []).map((r: any) => ({
-      id: r.id,
-      category: r.category,
-      amount: Number(r.amount ?? 0),
-      period_start: r.period_start ?? periodStart,
-      period_end: r.period_end ?? periodEnd,
+      id: String(r.id),
+      category: String(r.category || "Sem categoria"),
+      amount: Number(r.budget_limit ?? 0),
+      period_start: periodStart,
+      period_end: periodEnd,
     })),
     rules: (ruleRes.data ?? []) as ReconciliationRule[],
+    canonicalFacts,
     periodStart,
     periodEnd,
   };
+}
+
+async function resolvePreviousAutomaticDivergences(
+  supabase: any,
+  userId: string,
+  periodStart: string,
+  periodEnd: string,
+  currentRunId: string,
+) {
+  const { data: oldRuns, error } = await supabase
+    .from("reconciliation_runs")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("period_start", periodStart)
+    .eq("period_end", periodEnd)
+    .neq("id", currentRunId);
+  if (error) throw error;
+  const ids = (oldRuns ?? []).map((r: any) => r.id).filter(Boolean);
+  if (!ids.length) return;
+  const now = new Date().toISOString();
+  const { error: updateError } = await supabase
+    .from("reconciliation_divergences")
+    .update({ status: "resolved", investigated: true, investigated_at: now, resolved_at: now })
+    .in("run_id", ids)
+    .is("rule_id", null)
+    .neq("status", "resolved");
+  if (updateError) throw updateError;
 }
 
 export const runNow = createServerFn({ method: "POST" })
@@ -175,12 +274,14 @@ export const runNow = createServerFn({ method: "POST" })
       const input = await loadInputData(supabase, userId, $input.periodStart, $input.periodEnd);
       const result = runReconciliation(input);
 
+      await resolvePreviousAutomaticDivergences(supabase, userId, $input.periodStart, $input.periodEnd, run.id);
+
       if (result.divergences.length > 0) {
         const rows = result.divergences.map((d) => ({
           run_id: run.id,
           user_id: userId,
           check_type: d.check_type,
-          entity_id: d.entity_id,
+          entity_id: null,
           entity_label: d.entity_label,
           expected: d.expected,
           actual: d.actual,
@@ -221,11 +322,10 @@ export const runNow = createServerFn({ method: "POST" })
 export const listRuns = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async (ctx: any) => {
-    const $input = ctx.data;
     const $ctx = ctx.context;
     const { data, error } = await $ctx.supabase
       .from("reconciliation_runs")
-      .select("id,triggered_by,period_start,period_end,status,divergences_count,total_divergence_amount,started_at,completed_at")
+      .select("id,triggered_by,period_start,period_end,status,divergences_count,total_divergence_amount,started_at,completed_at,payload,error_message")
       .order("started_at", { ascending: false })
       .limit(30);
     if (error) throw error;
@@ -292,9 +392,7 @@ export const updateDivergence = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-// Legacy alias for previous callers
 export const markInvestigated = updateDivergence;
-
 
 export const exportRunCsv = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -315,7 +413,7 @@ export const exportRunCsv = createServerFn({ method: "POST" })
     const header = "tipo,entidade,esperado,real,delta,investigada,nota,data";
     const escape = (v: unknown) => {
       const s = v == null ? "" : String(v);
-      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+      return /[\",\n]/.test(s) ? `\"${s.replace(/\"/g, '\"\"')}\"` : s;
     };
     const lines = (rows ?? []).map((r: any) =>
       [r.check_type, r.entity_label, r.expected, r.actual, r.delta, r.investigated, r.note, r.created_at]
