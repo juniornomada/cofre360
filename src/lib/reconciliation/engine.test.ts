@@ -80,7 +80,7 @@ describe("automatic reconciliation", () => {
     expect(result.divergences.filter((d) => d.check_type === "transfer")).toEqual([]);
   });
 
-  it("detects a missing installment", () => {
+  it("detects an internal gap in an installment sequence", () => {
     const input = baseInput();
     input.transactions.push(
       {
