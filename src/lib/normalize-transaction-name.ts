@@ -1,15 +1,7 @@
 /**
- * Normaliza e valida o campo `name` (descrição) de uma transação antes de
- * gravar no banco. Aplica:
- *   - trim + collapse de whitespace (inclui NBSP / quebras de linha / tabs);
- *   - remoção de caracteres de controle (C0/C1) que entram via colagem;
- *   - `normalizeCardPaymentLabel` para converter rótulos legados de
- *     pagamento de cartão ("Pagamento Parcial fatura cartão X") para o
- *     formato canônico ("Pagamento Parcial cartão X").
- *
- * Se, após normalização, o texto ainda contiver o token legado
- * "fatura cartão" em qualquer capitalização, lança um erro — impede que
- * variações não-cobertas pelo regex escapem para o banco.
+ * Normaliza e valida campos de uma transação antes de gravar no banco.
+ * Além da descrição, mantém os campos DATE canônicos em YYYY-MM-DD,
+ * mesmo quando a UI trabalha com dd-MM-yyyy ou dd/MM/yyyy.
  */
 
 import {
@@ -18,6 +10,12 @@ import {
 } from "./card-payment-label";
 
 const LEGACY_TOKEN_REGEX = /pagamento\s+(?:total|parcial)\s+fatura(?:\s+(?:do|da|de))?\s+cart[aã]o/iu;
+
+type TransactionWriteShape = {
+  name?: string | null;
+  purchase_date?: string | null;
+  transaction_date?: string | null;
+};
 
 export class InvalidTransactionNameError extends Error {
   constructor(message: string) {
@@ -55,20 +53,77 @@ export function sanitizeTransactionName(raw: string | null | undefined): string 
 }
 
 /**
- * Aplica `sanitizeTransactionName` sobre o campo `name` de um payload de
- * insert/update. Retorna uma nova referência (não muta a original).
- * Se o payload não contiver `name`, retorna-o intacto — updates parciais
- * são permitidos.
+ * Converte datas de escrita para o formato aceito por colunas PostgreSQL DATE.
+ * A propriedade legada `date` continua intacta porque ainda é usada para
+ * apresentação/compatibilidade em partes do aplicativo.
  */
-export function sanitizeTransactionWrite<T extends { name?: string | null }>(
+function canonicalizeDateForWrite(
+  raw: string | null | undefined,
+): string | null | undefined {
+  if (raw == null) return raw;
+
+  const value = String(raw).trim();
+  if (!value) return null;
+
+  const iso = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (iso) {
+    const year = Number(iso[1]);
+    const month = Number(iso[2]);
+    const day = Number(iso[3]);
+    const parsed = new Date(Date.UTC(year, month - 1, day));
+    if (
+      parsed.getUTCFullYear() === year &&
+      parsed.getUTCMonth() === month - 1 &&
+      parsed.getUTCDate() === day
+    ) {
+      return value;
+    }
+    return value;
+  }
+
+  const dmy = value.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);
+  if (!dmy) return value;
+
+  const day = Number(dmy[1]);
+  const month = Number(dmy[2]);
+  const year = Number(dmy[3]);
+  const parsed = new Date(Date.UTC(year, month - 1, day));
+  if (
+    parsed.getUTCFullYear() !== year ||
+    parsed.getUTCMonth() !== month - 1 ||
+    parsed.getUTCDate() !== day
+  ) {
+    return value;
+  }
+
+  return `${String(year).padStart(4, "0")}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+/**
+ * Sanitiza o payload de insert/update sem mutar o objeto original.
+ * `purchase_date` e `transaction_date` são colunas DATE no schema atual e
+ * precisam sair da UI no formato canônico YYYY-MM-DD.
+ */
+export function sanitizeTransactionWrite<T extends TransactionWriteShape>(
   row: T,
 ): T {
-  if (!("name" in row) || row.name == null) return row;
-  return { ...row, name: sanitizeTransactionName(row.name) };
+  let next: TransactionWriteShape = { ...row };
+
+  if ("name" in row && row.name != null) {
+    next.name = sanitizeTransactionName(row.name);
+  }
+  if ("purchase_date" in row) {
+    next.purchase_date = canonicalizeDateForWrite(row.purchase_date);
+  }
+  if ("transaction_date" in row) {
+    next.transaction_date = canonicalizeDateForWrite(row.transaction_date);
+  }
+
+  return next as T;
 }
 
 /** Variante para lotes (batch insert). */
-export function sanitizeTransactionWrites<T extends { name?: string | null }>(
+export function sanitizeTransactionWrites<T extends TransactionWriteShape>(
   rows: T[],
 ): T[] {
   return rows.map((r) => sanitizeTransactionWrite(r));
