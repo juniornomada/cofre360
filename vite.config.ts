@@ -9,11 +9,12 @@ import { mergeConfig, defineConfig } from "vite";
 import { defaultExclude } from 'vitest/config';
 import { categoryConsistencyHotfix } from "./scripts/category-consistency-hotfix";
 import { categoryConsistencyListHotfix } from "./scripts/category-consistency-list-hotfix";
+import { reconciliationEngineSafetyHotfix } from "./scripts/reconciliation-engine-safety-hotfix";
 import { reconciliationUiHotfix } from "./scripts/reconciliation-ui-hotfix";
 
 export default defineTanstackConfig({
   vite: {
-    plugins: [categoryConsistencyHotfix(), categoryConsistencyListHotfix(), reconciliationUiHotfix()],
+    plugins: [categoryConsistencyHotfix(), categoryConsistencyListHotfix(), reconciliationEngineSafetyHotfix(), reconciliationUiHotfix()],
     test: {
       globals: true,
       environment: "jsdom",
