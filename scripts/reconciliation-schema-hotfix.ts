@@ -29,8 +29,8 @@ export function reconciliationSchemaHotfix(): Plugin {
       );
 
       next = next.replace(
-        /date:\s*String\(r\.date\),/g,
-        'date: String(r.transaction_date ?? r.date),',
+        /(transactions:\s*\(txRes\.data\s*\?\?\s*\[\]\)\.map\(\(r:\s*any\)\s*=>\s*\(\{[\s\S]*?\bid:\s*r\.id,\s*)date:\s*String\(r\.date\),/,
+        '$1date: String(r.transaction_date ?? r.date),',
       );
 
       next = next.replace(
@@ -45,21 +45,20 @@ export function reconciliationSchemaHotfix(): Plugin {
       );
 
       next = next.replace(
-        /date:\s*String\(r\.date\),/g,
-        'date: String(r.paid_at ?? r.target_period),',
+        /(cardPayments:\s*\(payRes\.data\s*\?\?\s*\[\]\)\.map\(\(r:\s*any\)\s*=>\s*\(\{[\s\S]*?\bamount:\s*Number\(r\.amount\s*\?\?\s*0\),\s*)date:\s*String\(r\.date\),/,
+        '$1date: String(r.paid_at ?? r.target_period),',
       );
 
-      // Budget categories: production stores the limit in budget_limit and does
-      // not persist period_start/period_end on the category row. Reconciliation
-      // applies the currently selected period to the configured monthly limit.
+      // Budget categories: production stores the configured amount in budget_limit
+      // and does not persist period_start/period_end on each category row.
       next = next.replace(
         /\.from\((["'])budget_categories\1\)\s*\.select\((["'])id,category,amount,period_start,period_end\2\)/g,
         '.from("budget_categories")\n      .select("id,category,budget_limit")',
       );
 
       next = next.replace(
-        /amount:\s*Number\(r\.amount\s*\?\?\s*0\),\s*period_start:\s*r\.period_start\s*\?\?\s*periodStart,\s*period_end:\s*r\.period_end\s*\?\?\s*periodEnd,/g,
-        'amount: Number(r.budget_limit ?? 0),\n      period_start: periodStart,\n      period_end: periodEnd,',
+        /(budgets:\s*\(budRes\.data\s*\?\?\s*\[\]\)\.map\(\(r:\s*any\)\s*=>\s*\(\{[\s\S]*?\bcategory:\s*r\.category,\s*)amount:\s*Number\(r\.amount\s*\?\?\s*0\),\s*period_start:\s*r\.period_start\s*\?\?\s*periodStart,\s*period_end:\s*r\.period_end\s*\?\?\s*periodEnd,/,
+        '$1amount: Number(r.budget_limit ?? 0),\n      period_start: periodStart,\n      period_end: periodEnd,',
       );
 
       // Vite can ask a pre-transform plugin to process the same module more than once.
