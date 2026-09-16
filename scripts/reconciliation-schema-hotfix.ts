@@ -46,7 +46,7 @@ export function reconciliationSchemaHotfix(): Plugin {
 
       next = next.replace(
         /(cardPayments:\s*\(payRes\.data\s*\?\?\s*\[\]\)\.map\(\(r:\s*any\)\s*=>\s*\(\{[\s\S]*?\bamount:\s*Number\(r\.amount\s*\?\?\s*0\),\s*)date:\s*String\(r\.date\),/,
-        '$1date: String(r.paid_at ?? r.target_period),',
+        '$1date: String(r.paid_at ?? r.target_period).slice(0, 10),',
       );
 
       // Budget categories: production stores the configured amount in budget_limit
