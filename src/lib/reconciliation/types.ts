@@ -1,4 +1,13 @@
-export type CheckType = "bank_account" | "card" | "invoice" | "budget";
+export type CheckType =
+  | "bank_account"
+  | "card"
+  | "invoice"
+  | "budget"
+  | "transfer"
+  | "installment"
+  | "data_quality"
+  | "refund"
+  | "system";
 export type RuleKind = "equality" | "sum" | "zero";
 export type ToleranceKind = "abs" | "pct";
 export type TriggeredBy = "manual" | "scheduled";
@@ -22,16 +31,34 @@ export interface Divergence {
   entity_label: string;
   expected: number;
   actual: number;
-  delta: number; // actual - expected
+  delta: number;
   rule_id?: string | null;
 }
 
+export interface CheckSummary {
+  check_type: CheckType;
+  label: string;
+  checked: number;
+  issues: number;
+}
+
+export interface CanonicalMonthFacts {
+  month: string;
+  income: number;
+  expense: number;
+  cardExpenseComponent: number;
+  categories: Array<{ category: string; amount: number }>;
+  cards: Array<{ card: string; amount: number }>;
+}
+
 export interface RunResult {
-  period_start: string; // ISO date
+  verification_version: 2;
+  period_start: string;
   period_end: string;
   divergences: Divergence[];
   total_divergence_amount: number;
   counts_by_check: Record<CheckType, number>;
+  checks: CheckSummary[];
 }
 
 export interface ReconciliationInput {
@@ -40,18 +67,43 @@ export interface ReconciliationInput {
     id: string;
     date: string;
     created_at?: string | null;
+    purchase_date?: string | null;
     amount: number;
-    type: "income" | "expense" | "transfer";
+    type: "income" | "expense" | "transfer" | string;
+    transaction_kind?: string | null;
     is_visible?: boolean | null;
     bank_account_id?: string | null;
     card?: string | null;
+    card_id?: string | null;
     category?: string | null;
     transfer_direction?: "in" | "out" | null;
+    installment_group_id?: string | null;
+    installment_number?: number | null;
+    total_installments?: number | null;
+    installment_source_amount?: number | null;
   }>;
   cards: Array<{ id: string; name: string; used: number; closing_day: number; due_day: number }>;
-  cardPayments: Array<{ id: string; card_id: string; amount: number; date: string }>;
+  cardPayments: Array<{
+    id: string;
+    card_id: string;
+    bank_account_id?: string | null;
+    amount: number;
+    date: string;
+    target_period?: string | null;
+  }>;
+  cardRefunds: Array<{
+    id: string;
+    transaction_id: string;
+    card_name?: string | null;
+    original_amount: number;
+    refund_amount: number;
+    status: string;
+    refund_transaction_id?: string | null;
+    date?: string | null;
+  }>;
   budgets: Array<{ id: string; category: string; amount: number; period_start: string; period_end: string }>;
   rules: ReconciliationRule[];
+  canonicalFacts: CanonicalMonthFacts[];
   periodStart: string;
   periodEnd: string;
 }
