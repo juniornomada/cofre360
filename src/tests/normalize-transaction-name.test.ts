@@ -65,13 +65,37 @@ describe("sanitizeTransactionWrite / sanitizeTransactionWrites", () => {
     expect(row).toEqual({ amount: 42 });
   });
 
+  it("converte datas dd-MM-yyyy e dd/MM/yyyy para DATE canônico", () => {
+    const row = sanitizeTransactionWrite({
+      name: "Rendimento",
+      date: "16-09-2026",
+      purchase_date: "16-09-2026",
+      transaction_date: "16/09/2026",
+    });
+    expect(row.date).toBe("16-09-2026");
+    expect(row.purchase_date).toBe("2026-09-16");
+    expect(row.transaction_date).toBe("2026-09-16");
+  });
+
+  it("preserva datas que já estão em ISO", () => {
+    const row = sanitizeTransactionWrite({
+      name: "Rendimento",
+      purchase_date: "2026-09-16",
+      transaction_date: "2026-09-16",
+    });
+    expect(row.purchase_date).toBe("2026-09-16");
+    expect(row.transaction_date).toBe("2026-09-16");
+  });
+
   it("normaliza arrays de payloads", () => {
     const rows = sanitizeTransactionWrites([
-      { name: "  Padaria  " },
-      { name: "Pagamento Total fatura cartão Nubank" },
+      { name: "  Padaria  ", purchase_date: "01-09-2026" },
+      { name: "Pagamento Total fatura cartão Nubank", purchase_date: "02/09/2026" },
     ]);
     expect(rows[0].name).toBe("Padaria");
+    expect(rows[0].purchase_date).toBe("2026-09-01");
     expect(rows[1].name).toBe("Pagamento Total cartão Nubank");
+    expect(rows[1].purchase_date).toBe("2026-09-02");
   });
 
   it("propaga InvalidTransactionNameError em lotes com nome vazio", () => {
