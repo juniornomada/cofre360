@@ -157,9 +157,13 @@ export function collapseCategorySpendingRows<T extends CategorySpendingInstallme
       ...sorted.map((row) => Math.floor(Number(row.total_installments) || 1)),
     );
 
-    const sourceAmount = sorted
+    // Historical/imported groups may contain a per-installment amount in an early
+    // row and the full original purchase amount in later rows. Prefer the largest
+    // positive source amount, matching the canonical SQL ledger.
+    const sourceAmounts = sorted
       .map((row) => finiteAmount(row.installment_source_amount))
-      .find((value): value is number => value !== null && value > 0);
+      .filter((value): value is number => value !== null && value > 0);
+    const sourceAmount = sourceAmounts.length > 0 ? Math.max(...sourceAmounts) : undefined;
 
     const installmentNumbers = new Set(
       sorted
