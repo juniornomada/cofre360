@@ -20,7 +20,7 @@ export function reconciliationUiHotfix(): Plugin {
 
       next = next.replace(
         `<Badge className="bg-green-500 text-white hover:bg-green-500">OK</Badge>`,
-        `{r.payload?.verification_version === 2 ? (\n                          <Badge className="bg-green-500 text-white hover:bg-green-500">Conferido</Badge>\n                        ) : (\n                          <Badge variant="secondary">Legado · não verificado</Badge>\n                        )}`,
+        `r.payload?.verification_version === 2 ? (\n                          <Badge className="bg-green-500 text-white hover:bg-green-500">Conferido</Badge>\n                        ) : (\n                          <Badge variant="secondary">Legado · não verificado</Badge>\n                        )`,
       );
 
       next = next.replace(
@@ -47,7 +47,7 @@ export function reconciliationUiHotfix(): Plugin {
       const resultSuccess = `<div className="flex items-center gap-2 text-green-600">\n              <CheckCircle2 className="h-5 w-5" /> Consistência interna conferida\n            </div>`;
       next = next.replace(
         resultSuccess,
-        `<div>\n              <div className="flex items-center gap-2 text-green-600">\n                <CheckCircle2 className="h-5 w-5" /> Consistência interna conferida\n              </div>\n              <p className="mt-2 text-xs text-muted-foreground">\{lastRun.result.checks?.length ?? 0\} verificações automáticas executadas. Esta confirmação valida a consistência interna do Cofre360; não substitui a comparação com extratos externos do banco.</p>\n            </div>`.replace("\\{lastRun", "{lastRun"),
+        `<div>\n              <div className="flex items-center gap-2 text-green-600">\n                <CheckCircle2 className="h-5 w-5" /> Consistência interna conferida\n              </div>\n              <p className="mt-2 text-xs text-muted-foreground">{lastRun.result.checks?.length ?? 0} verificações automáticas executadas. Esta confirmação valida a consistência interna do Cofre360; não substitui a comparação com extratos externos do banco.</p>\n            </div>`,
       );
 
       if (next === code) return null;
