@@ -13,10 +13,12 @@ export function categoryConsistencyListHotfix(): Plugin {
   const filtered = rawFiltered;
 `;
 
-      const replacement = `  const categoryScopeActive = !isYieldView && activeCategory !== "Todas";
+      const replacement = `  // Category drilldowns and the explicit Card source use the economic purchase
+  // ledger. This keeps the visible list, totals and category chart on the same
+  // purchase-date/full-value basis, including legacy card purchases whose stored
+  // installment rows only start in a later month.
+  const categoryScopeActive = !isYieldView && (activeCategory !== "Todas" || activeSource === "card");
 
-  // When a category is selected, the visible list must close to the exact same
-  // economic total shown by Insights IA, the chart and the summary card.
   const categoryListTransactions: Transaction[] = categoryEconomicRows.map((tx) => {
     const original = transactions.find((item) => item.id === tx.id);
     const categoryValue = String(tx.category || original?.category || "Outros");
