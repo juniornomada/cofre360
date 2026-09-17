@@ -5,6 +5,7 @@ import {
   sanitizeTransactionWrites,
   isValidTransactionName,
   InvalidTransactionNameError,
+  InvalidTransactionDateError,
 } from "@/lib/normalize-transaction-name";
 
 describe("sanitizeTransactionName", () => {
@@ -77,6 +78,16 @@ describe("sanitizeTransactionWrite / sanitizeTransactionWrites", () => {
     expect(row.transaction_date).toBe("2026-09-16");
   });
 
+  it("converte data com pontos para DATE canônico", () => {
+    const row = sanitizeTransactionWrite({
+      name: "Importação CSV",
+      purchase_date: "17.09.2026",
+      transaction_date: "17.09.2026",
+    });
+    expect(row.purchase_date).toBe("2026-09-17");
+    expect(row.transaction_date).toBe("2026-09-17");
+  });
+
   it("deriva transaction_date canônico do campo legado date quando ausente", () => {
     const row = sanitizeTransactionWrite<{
       name: string;
@@ -93,6 +104,37 @@ describe("sanitizeTransactionWrite / sanitizeTransactionWrites", () => {
     expect(row.transaction_date).toBe("2026-09-17");
   });
 
+  it("não injeta texto legado desconhecido em coluna DATE", () => {
+    const row = sanitizeTransactionWrite<{
+      name: string;
+      date: string;
+      transaction_date?: string | null;
+    }>({
+      name: "Extrato antigo",
+      date: "17 set",
+    });
+    expect(row.date).toBe("17 set");
+    expect("transaction_date" in row).toBe(false);
+  });
+
+  it("rejeita data tipada impossível antes de chegar ao PostgreSQL", () => {
+    expect(() =>
+      sanitizeTransactionWrite({
+        name: "Data inválida",
+        purchase_date: "31/02/2026",
+      }),
+    ).toThrow(InvalidTransactionDateError);
+  });
+
+  it("rejeita formato desconhecido em campo DATE explícito", () => {
+    expect(() =>
+      sanitizeTransactionWrite({
+        name: "Data inválida",
+        transaction_date: "17 set",
+      }),
+    ).toThrow(InvalidTransactionDateError);
+  });
+
   it("preserva datas que já estão em ISO", () => {
     const row = sanitizeTransactionWrite({
       name: "Rendimento",
@@ -100,6 +142,14 @@ describe("sanitizeTransactionWrite / sanitizeTransactionWrites", () => {
       transaction_date: "2026-09-16",
     });
     expect(row.purchase_date).toBe("2026-09-16");
+    expect(row.transaction_date).toBe("2026-09-16");
+  });
+
+  it("aceita ISO datetime e persiste somente a parte DATE", () => {
+    const row = sanitizeTransactionWrite({
+      name: "Integração",
+      transaction_date: "2026-09-16T10:30:00.000Z",
+    });
     expect(row.transaction_date).toBe("2026-09-16");
   });
 
