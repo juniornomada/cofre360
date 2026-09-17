@@ -9,7 +9,11 @@ import { restoreAccents } from "@/lib/restore-accents";
 import { parseCardInvoicePdf } from "../server-fns/parse-card-invoice";
 import { PdfPreviewTable } from "@/components/PdfPreviewTable";
 import { expandInstallments } from "@/lib/expand-installments";
-import { sanitizeTransactionWrites, InvalidTransactionNameError } from "@/lib/normalize-transaction-name";
+import {
+  sanitizeTransactionWrites,
+  InvalidTransactionNameError,
+  InvalidTransactionDateError,
+} from "@/lib/normalize-transaction-name";
 
 type Props = {
   open: boolean;
@@ -81,7 +85,7 @@ async function fileToBase64(file: File): Promise<string> {
   return btoa(binary);
 }
 
-export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, cardName, onSuccess }: Props) {
+export function PdfInvoiceImportDialog({ open, onOpenChange, cardId, cardName, onSuccess }: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [fileName, setFileName] = useState("");
   const [parsing, setParsing] = useState(false);
@@ -179,6 +183,7 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
         amount: row.amount,
         type: row.type,
         card: cardName,
+        card_id: cardId,
         bank_account_id: null,
         category,
         icon,
@@ -221,7 +226,11 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId: _cardId, ca
         sanitizedBatch = sanitizeTransactionWrites(batch);
       } catch (err) {
         setSaving(false);
-        setError(err instanceof InvalidTransactionNameError ? err.message : "Descrição inválida em uma das transações.");
+        setError(
+          err instanceof InvalidTransactionNameError || err instanceof InvalidTransactionDateError
+            ? err.message
+            : "Dados inválidos em uma das transações.",
+        );
         return;
       }
       const { error: insErr } = await supabase.from("transactions").insert(sanitizedBatch);
