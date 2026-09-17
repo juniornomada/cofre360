@@ -22,9 +22,7 @@
  * Allowlist (arquivos que citam a wording legada de propósito como
  * regressão-guard):
  *   • scripts/check-payment-wording.mjs (este arquivo)
- *   • src/tests/payment-description-copy.test.ts
- *   • src/tests/card-payment-label-navigation-integration.test.ts
- *   • src/tests/card-payment-label.test.ts
+ *   • testes explícitos de normalização/renderização de labels legadas
  *   • e2e/cards-payment-wording.spec.ts
  *
  * Para adicionar uma nova exceção, edite `ALLOWLIST` abaixo e
@@ -77,6 +75,13 @@ const ALLOWLIST = new Set([
   "src/tests/card-payment-label-navigation-integration.test.ts",
   "src/tests/card-payment-label.test.ts",
   "src/tests/normalize-card-payment-label.test.ts",
+  "src/tests/card-payment-label-edge-cases.test.ts",
+  "src/tests/card-payment-label-punctuation-separators.test.ts",
+  "src/tests/e2e-payment-wording-normalization.test.ts",
+  "src/tests/import-legacy-labels-canonical-render.integration.test.tsx",
+  "src/tests/invoice-dialog-legacy-payment-label.integration.test.tsx",
+  "src/tests/legacy-label-telemetry.test.ts",
+  "src/tests/normalize-transaction-name.test.ts",
   "src/lib/card-payment-label.ts",
   "e2e/cards-payment-wording.spec.ts",
 ]);
