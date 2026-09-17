@@ -103,11 +103,11 @@ serve(async (req) => {
     const type: TransactionType = payload.type === "income" ? "income" : "expense";
 
     if (!name) return json({ error: "name is required" }, 400);
-    if (!Number.isFinite(amount) || amount <= 0) {
-      return json({ error: "amount must be a positive number" }, 400);
+    if (name.length > 240) return json({ error: "name is too long" }, 400);
+    if (!Number.isFinite(amount) || amount <= 0 || amount > 999_999_999) {
+      return json({ error: "amount must be a positive number within the supported range" }, 400);
     }
 
-    // Valida a data antes de qualquer acesso de escrita ao banco.
     const transactionDate = parseDate(payload.date);
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -141,15 +141,34 @@ serve(async (req) => {
         : category.label
       : payload.category?.trim() || (type === "income" ? "Receita" : "Outros");
 
+    if (categoryLabel.length > 240) return json({ error: "category is too long" }, 400);
+
     const bankAccountId = payload.bank_account_id?.trim() || null;
     if (bankAccountId) {
-      const { data: account } = await supabase
+      const { data: account, error: accountError } = await supabase
         .from("bank_accounts")
         .select("id")
         .eq("id", bankAccountId)
         .eq("user_id", userId)
         .maybeSingle();
+      if (accountError) throw accountError;
       if (!account) return json({ error: "bank_account_id not found for configured user" }, 400);
+    }
+
+    const requestedCard = payload.card?.trim() || null;
+    let cardName: string | null = null;
+    if (requestedCard) {
+      if (requestedCard.length > 160) return json({ error: "card is too long" }, 400);
+      const { data: card, error: cardError } = await supabase
+        .from("cards")
+        .select("name")
+        .eq("user_id", userId)
+        .ilike("name", requestedCard)
+        .limit(1)
+        .maybeSingle();
+      if (cardError) throw cardError;
+      if (!card) return json({ error: "card not found for configured user" }, 400);
+      cardName = card.name;
     }
 
     const row = {
@@ -160,9 +179,9 @@ serve(async (req) => {
       category: categoryLabel,
       date: transactionDate,
       transaction_date: transactionDate,
-      icon: payload.icon?.trim() || subcategory?.icon || category?.icon || (type === "income" ? "💰" : "📄"),
+      icon: payload.icon?.trim().slice(0, 32) || subcategory?.icon || category?.icon || (type === "income" ? "💰" : "📄"),
       bank_account_id: bankAccountId,
-      card: payload.card?.trim() || null,
+      card: cardName,
       is_visible: true,
     };
 
@@ -179,9 +198,6 @@ serve(async (req) => {
     if (error instanceof InvalidDateError) {
       return json({ error: error.message }, 400);
     }
-    return json(
-      { error: error instanceof Error ? error.message : "Unexpected error" },
-      500,
-    );
+    return json({ error: "Unexpected server error" }, 500);
   }
 });
