@@ -13,6 +13,7 @@ const LEGACY_TOKEN_REGEX = /pagamento\s+(?:total|parcial)\s+fatura(?:\s+(?:do|da
 
 type TransactionWriteShape = {
   name?: string | null;
+  date?: string | null;
   purchase_date?: string | null;
   transaction_date?: string | null;
 };
@@ -103,11 +104,15 @@ function canonicalizeDateForWrite(
  * Sanitiza o payload de insert/update sem mutar o objeto original.
  * `purchase_date` e `transaction_date` são colunas DATE no schema atual e
  * precisam sair da UI no formato canônico YYYY-MM-DD.
+ *
+ * Em inserts vindos das telas antigas, `transaction_date` pode não existir no
+ * objeto. Nesses casos ele é derivado de `date`, evitando depender do parser
+ * legado do banco para persistir a data canônica.
  */
 export function sanitizeTransactionWrite<T extends TransactionWriteShape>(
   row: T,
 ): T {
-  let next: TransactionWriteShape = { ...row };
+  const next: TransactionWriteShape = { ...row };
 
   if ("name" in row && row.name != null) {
     next.name = sanitizeTransactionName(row.name);
@@ -117,6 +122,8 @@ export function sanitizeTransactionWrite<T extends TransactionWriteShape>(
   }
   if ("transaction_date" in row) {
     next.transaction_date = canonicalizeDateForWrite(row.transaction_date);
+  } else if ("date" in row && row.date != null && String(row.date).trim() !== "") {
+    next.transaction_date = canonicalizeDateForWrite(row.date);
   }
 
   return next as T;
