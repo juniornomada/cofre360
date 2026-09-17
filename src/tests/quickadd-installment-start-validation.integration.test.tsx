@@ -1,13 +1,12 @@
 /**
  * UI test: "Parcela atual" validation.
  *
- * Garante que o botão "Adicionar" fica desabilitado e o envio bloqueado
- * (nenhum insert é disparado) quando "parcela atual" está:
- *   - vazio
- *   - fora do intervalo (< 1)
- *   - fora do intervalo (> total)
+ * O campo protege a faixa 1..total em duas camadas:
+ *   - vazio permanece inválido e bloqueia o envio;
+ *   - números fora da faixa são normalizados imediatamente para o limite válido.
  *
- * Verifica também que a mensagem de erro correta é exibida (role="alert").
+ * Isso evita que um valor inválido chegue ao insert, inclusive em navegadores que
+ * permitem digitar manualmente números fora de min/max em inputs type=number.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
@@ -70,7 +69,6 @@ async function selectCardNubank() {
 function clickParcelarToggle() {
   const label = screen.getByText("Parcelar");
   const buttons = label.parentElement!.querySelectorAll("button");
-  // O toggle é o ÚLTIMO botão do bloco (o botão "Redefinir", quando aparece, vem antes).
   const toggle = buttons[buttons.length - 1] as HTMLButtonElement;
   fireEvent.click(toggle);
 }
@@ -84,7 +82,6 @@ const parcelaAtualLabelMatcher = (_: string, el: Element | null) =>
 
 function getParcelaAtualInput(): HTMLInputElement {
   const label = screen.getByText(parcelaAtualLabelMatcher);
-  // O <label> e o <div> do input são irmãos dentro do mesmo bloco.
   const wrapper = label.parentElement!;
   return wrapper.querySelector('input[type="number"][max]') as HTMLInputElement;
 }
@@ -95,24 +92,18 @@ async function prepareParceladoDialog() {
     target: { value: "Compra parcelada" },
   });
   await selectCardNubank();
-  setAmount(400); // R$ 400,00
+  setAmount(400);
   clickParcelarToggle();
   await waitFor(() => {
     const labels = Array.from(document.querySelectorAll("label")).map((l) => l.textContent);
     const found = labels.some((t) => /Parcela atual/.test(t || ""));
-    if (!found) {
-      // eslint-disable-next-line no-console
-      console.log("labels vistos:", labels);
-      throw new Error("label 'Parcela atual' não apareceu");
-    }
+    if (!found) throw new Error("label 'Parcela atual' não apareceu");
   });
 }
 
 describe("QuickAddTransactionDialog — validação de 'Parcela atual'", () => {
   beforeEach(() => {
     insertMock.mockClear();
-    // Preferências de parcelamento são persistidas em localStorage entre renders;
-    // limpamos para isolar cada caso de teste.
     window.localStorage.clear();
   });
 
@@ -132,63 +123,49 @@ describe("QuickAddTransactionDialog — validação de 'Parcela atual'", () => {
       expect(alert).toHaveTextContent(/Informe a parcela atual.*entre 1 e 2/i);
     });
     expect(getAddButton()).toBeDisabled();
-
-    // Cliques no botão desabilitado NÃO devem disparar insert.
     fireEvent.click(getAddButton());
     expect(insertMock).not.toHaveBeenCalled();
   });
 
-  it("valor < 1 (zero) → mensagem 'não pode ser menor que 1' e botão desabilitado", async () => {
+  it("valor abaixo do mínimo é normalizado para 1", async () => {
     await prepareParceladoDialog();
     const input = getParcelaAtualInput();
     fireEvent.change(input, { target: { value: "0" } });
 
-    await waitFor(() => {
-      expect(screen.getByRole("alert")).toHaveTextContent(/não pode ser menor que 1/i);
-    });
-    expect(getAddButton()).toBeDisabled();
-    fireEvent.click(getAddButton());
-    expect(insertMock).not.toHaveBeenCalled();
+    await waitFor(() => expect(input.value).toBe("1"));
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(getAddButton()).not.toBeDisabled();
   });
 
-  it("valor > total → mensagem 'não pode ser maior que o total' e botão desabilitado", async () => {
+  it("valor acima do total é normalizado para o total", async () => {
     await prepareParceladoDialog();
     const input = getParcelaAtualInput();
-    // total default = 2. Digita 5.
     fireEvent.change(input, { target: { value: "5" } });
 
-    await waitFor(() => {
-      expect(screen.getByRole("alert")).toHaveTextContent(
-        /A parcela atual \(5\) não pode ser maior que o total de parcelas \(2\)/i,
-      );
-    });
-    expect(getAddButton()).toBeDisabled();
-    fireEvent.click(getAddButton());
-    expect(insertMock).not.toHaveBeenCalled();
+    await waitFor(() => expect(input.value).toBe("2"));
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(getAddButton()).not.toBeDisabled();
   });
 
-  it("erro tem role='alert', aria-invalid=true e input com borda destructive", async () => {
+  it("valor fora da faixa nunca permanece como estado inválido", async () => {
     await prepareParceladoDialog();
     const input = getParcelaAtualInput();
     fireEvent.change(input, { target: { value: "9" } });
 
-    await waitFor(() => {
-      expect(screen.getByRole("alert")).toBeInTheDocument();
-    });
-    expect(input.getAttribute("aria-invalid")).toBe("true");
-    expect(input.getAttribute("aria-describedby")).toBe("installment-start-error");
-    expect(input.className).toMatch(/border-destructive/);
+    await waitFor(() => expect(input.value).toBe("2"));
+    expect(input.getAttribute("aria-invalid")).toBe("false");
+    expect(input.getAttribute("aria-describedby")).toBeNull();
+    expect(input.className).not.toMatch(/border-destructive/);
   });
 
-  it("corrigir o valor inválido reabilita o botão e some o alerta", async () => {
+  it("após vazio inválido, informar valor válido reabilita o botão", async () => {
     await prepareParceladoDialog();
     const input = getParcelaAtualInput();
 
-    fireEvent.change(input, { target: { value: "0" } });
+    fireEvent.change(input, { target: { value: "" } });
     await waitFor(() => expect(screen.getByRole("alert")).toBeInTheDocument());
     expect(getAddButton()).toBeDisabled();
 
-    // Corrige para 1 (dentro do intervalo).
     fireEvent.change(input, { target: { value: "1" } });
     await waitFor(() => expect(screen.queryByRole("alert")).not.toBeInTheDocument());
     expect(getAddButton()).not.toBeDisabled();
