@@ -8,8 +8,10 @@ const baseInput = (over: Partial<ReconciliationInput> = {}): ReconciliationInput
   transactions: [],
   cards: [],
   cardPayments: [],
+  cardRefunds: [],
   budgets: [],
   rules: [],
+  canonicalFacts: [],
   periodStart: "2026-07-01",
   periodEnd: "2026-07-31",
   ...over,
@@ -133,7 +135,7 @@ describe("runReconciliation - budgets", () => {
 });
 
 describe("runReconciliation - no rules", () => {
-  it("returns empty when no rules configured", () => {
+  it("returns empty when no rules configured and automatic checks find no issue", () => {
     const r = runReconciliation(
       baseInput({
         cards: [{ id: "c1", name: "VISA", used: 9999, closing_day: 20, due_day: 27 }],
