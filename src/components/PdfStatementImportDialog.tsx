@@ -8,7 +8,11 @@ import { categorizeTransaction } from "@/lib/categorize-transaction";
 import { restoreAccents } from "@/lib/restore-accents";
 import { parseCardInvoicePdf } from "../server-fns/parse-card-invoice";
 import { PdfPreviewTable } from "@/components/PdfPreviewTable";
-import { sanitizeTransactionWrites, InvalidTransactionNameError } from "@/lib/normalize-transaction-name";
+import {
+  sanitizeTransactionWrites,
+  InvalidTransactionNameError,
+  InvalidTransactionDateError,
+} from "@/lib/normalize-transaction-name";
 
 type Props = {
   open: boolean;
@@ -191,7 +195,11 @@ export function PdfStatementImportDialog({ open, onOpenChange, bankAccountId, ba
         sanitizedBatch = sanitizeTransactionWrites(batch);
       } catch (err) {
         setSaving(false);
-        setError(err instanceof InvalidTransactionNameError ? err.message : "Descrição inválida em uma das transações.");
+        setError(
+          err instanceof InvalidTransactionNameError || err instanceof InvalidTransactionDateError
+            ? err.message
+            : "Dados inválidos em uma das transações.",
+        );
         return;
       }
       const { error: insErr } = await supabase.from("transactions").insert(sanitizedBatch);
