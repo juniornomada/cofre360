@@ -128,7 +128,7 @@ export function CalculatorAmountInput({ value, onChange, tone, className, autoFo
           toneClassName,
           className
         )}
-        aria-label={formattedValue ? `Valor: ${formattedValue}` : "Valor vazio"}
+        aria-label={`Valor: ${formattedValue || "vazio"}`}
       />
     </div>
   );
