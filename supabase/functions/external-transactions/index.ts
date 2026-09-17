@@ -15,6 +15,13 @@ interface TransactionRequest {
   icon?: string;
 }
 
+class InvalidDateError extends Error {
+  constructor() {
+    super("date deve ser uma data válida em YYYY-MM-DD ou DD/MM/YYYY");
+    this.name = "InvalidDateError";
+  }
+}
+
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
     status,
@@ -39,18 +46,29 @@ function timingSafeEqual(a: string, b: string): boolean {
   return diff === 0;
 }
 
+function canonicalDate(year: number, month: number, day: number): string {
+  const parsed = new Date(Date.UTC(year, month - 1, day));
+  if (
+    parsed.getUTCFullYear() !== year ||
+    parsed.getUTCMonth() !== month - 1 ||
+    parsed.getUTCDate() !== day
+  ) {
+    throw new InvalidDateError();
+  }
+  return `${String(year).padStart(4, "0")}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
 function parseDate(value?: string): string {
   if (!value) return new Date().toISOString().slice(0, 10);
   const raw = value.trim();
-  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+
+  const iso = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (iso) return canonicalDate(Number(iso[1]), Number(iso[2]), Number(iso[3]));
 
   const br = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-  if (br) {
-    const [, day, month, year] = br;
-    return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
-  }
+  if (br) return canonicalDate(Number(br[3]), Number(br[2]), Number(br[1]));
 
-  throw new Error("date deve estar em YYYY-MM-DD ou DD/MM/YYYY");
+  throw new InvalidDateError();
 }
 
 function chooseBest<T extends { label: string }>(items: T[], wanted?: string): T | null {
@@ -89,6 +107,9 @@ serve(async (req) => {
       return json({ error: "amount must be a positive number" }, 400);
     }
 
+    // Valida a data antes de qualquer acesso de escrita ao banco.
+    const transactionDate = parseDate(payload.date);
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceRoleKey, {
@@ -120,7 +141,7 @@ serve(async (req) => {
         : category.label
       : payload.category?.trim() || (type === "income" ? "Receita" : "Outros");
 
-    let bankAccountId = payload.bank_account_id?.trim() || null;
+    const bankAccountId = payload.bank_account_id?.trim() || null;
     if (bankAccountId) {
       const { data: account } = await supabase
         .from("bank_accounts")
@@ -137,7 +158,8 @@ serve(async (req) => {
       amount: Math.round(amount * 100) / 100,
       type,
       category: categoryLabel,
-      date: parseDate(payload.date),
+      date: transactionDate,
+      transaction_date: transactionDate,
       icon: payload.icon?.trim() || subcategory?.icon || category?.icon || (type === "income" ? "💰" : "📄"),
       bank_account_id: bankAccountId,
       card: payload.card?.trim() || null,
@@ -147,13 +169,16 @@ serve(async (req) => {
     const { data, error } = await supabase
       .from("transactions")
       .insert(row)
-      .select("id,name,amount,type,category,date,icon,bank_account_id,card,created_at")
+      .select("id,name,amount,type,category,date,transaction_date,icon,bank_account_id,card,created_at")
       .single();
     if (error) throw error;
 
     return json({ ok: true, transaction: data }, 201);
   } catch (error) {
     console.error("external-transactions error", error);
+    if (error instanceof InvalidDateError) {
+      return json({ error: error.message }, 400);
+    }
     return json(
       { error: error instanceof Error ? error.message : "Unexpected error" },
       500,
