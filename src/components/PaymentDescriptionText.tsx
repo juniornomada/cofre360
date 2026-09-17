@@ -9,10 +9,9 @@ import { normalizeCardPaymentLabel } from "@/lib/card-payment-label";
  * deve passar por este componente para garantir:
  *
  *  1. **Normalização canônica de wording** — aplica
- *     `normalizeCardPaymentLabel` antes de renderizar, o que reescreve
- *     rótulos legados ("Pagamento Parcial fatura cartão X") para o
- *     formato atual ("Pagamento Parcial cartão X") em runtime, mesmo
- *     que a persistência antiga escape.
+ *     `normalizeCardPaymentLabel` antes de renderizar, reescrevendo
+ *     rótulos antigos de pagamento para o formato canônico em runtime,
+ *     mesmo que algum dado histórico ainda use a forma anterior.
  *  2. **Remoção opcional do sufixo de parcela** ("(3/12)") para
  *     evitar ruído quando o mesmo indicador já é renderizado ao lado
  *     como badge separado. Ativado por `stripInstallmentSuffix`.
