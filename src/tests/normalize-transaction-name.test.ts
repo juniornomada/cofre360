@@ -77,6 +77,22 @@ describe("sanitizeTransactionWrite / sanitizeTransactionWrites", () => {
     expect(row.transaction_date).toBe("2026-09-16");
   });
 
+  it("deriva transaction_date canônico do campo legado date quando ausente", () => {
+    const row = sanitizeTransactionWrite<{
+      name: string;
+      date: string;
+      purchase_date: string;
+      transaction_date?: string | null;
+    }>({
+      name: "Compra online",
+      date: "17-09-2026",
+      purchase_date: "17/09/2026",
+    });
+    expect(row.date).toBe("17-09-2026");
+    expect(row.purchase_date).toBe("2026-09-17");
+    expect(row.transaction_date).toBe("2026-09-17");
+  });
+
   it("preserva datas que já estão em ISO", () => {
     const row = sanitizeTransactionWrite({
       name: "Rendimento",
