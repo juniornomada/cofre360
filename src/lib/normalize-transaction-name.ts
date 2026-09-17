@@ -1,7 +1,7 @@
 /**
  * Normaliza e valida campos de uma transação antes de gravar no banco.
  * Além da descrição, mantém os campos DATE canônicos em YYYY-MM-DD,
- * mesmo quando a UI trabalha com dd-MM-yyyy ou dd/MM/yyyy.
+ * mesmo quando a UI trabalha com formatos legados.
  */
 
 import {
@@ -22,6 +22,13 @@ export class InvalidTransactionNameError extends Error {
   constructor(message: string) {
     super(message);
     this.name = "InvalidTransactionNameError";
+  }
+}
+
+export class InvalidTransactionDateError extends Error {
+  constructor(field: "purchase_date" | "transaction_date", value: string) {
+    super(`Data inválida em ${field}: ${value}. Use uma data válida no formato DD/MM/AAAA.`);
+    this.name = "InvalidTransactionDateError";
   }
 }
 
@@ -53,87 +60,87 @@ export function sanitizeTransactionName(raw: string | null | undefined): string 
   return normalized;
 }
 
-/**
- * Converte datas de escrita para o formato aceito por colunas PostgreSQL DATE.
- * A propriedade legada `date` continua intacta porque ainda é usada para
- * apresentação/compatibilidade em partes do aplicativo.
- */
-function canonicalizeDateForWrite(
-  raw: string | null | undefined,
-): string | null | undefined {
-  if (raw == null) return raw;
-
-  const value = String(raw).trim();
-  if (!value) return null;
-
-  const iso = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (iso) {
-    const year = Number(iso[1]);
-    const month = Number(iso[2]);
-    const day = Number(iso[3]);
-    const parsed = new Date(Date.UTC(year, month - 1, day));
-    if (
-      parsed.getUTCFullYear() === year &&
-      parsed.getUTCMonth() === month - 1 &&
-      parsed.getUTCDate() === day
-    ) {
-      return value;
-    }
-    return value;
+function buildCanonicalDate(year: number, month: number, day: number): string | null {
+  if (!Number.isInteger(year) || !Number.isInteger(month) || !Number.isInteger(day)) {
+    return null;
   }
-
-  const dmy = value.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);
-  if (!dmy) return value;
-
-  const day = Number(dmy[1]);
-  const month = Number(dmy[2]);
-  const year = Number(dmy[3]);
   const parsed = new Date(Date.UTC(year, month - 1, day));
   if (
     parsed.getUTCFullYear() !== year ||
     parsed.getUTCMonth() !== month - 1 ||
     parsed.getUTCDate() !== day
   ) {
-    return value;
+    return null;
   }
-
   return `${String(year).padStart(4, "0")}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
 
 /**
- * Sanitiza o payload de insert/update sem mutar o objeto original.
- * `purchase_date` e `transaction_date` são colunas DATE no schema atual e
- * precisam sair da UI no formato canônico YYYY-MM-DD.
- *
- * Em inserts vindos das telas antigas, `transaction_date` pode não existir no
- * objeto. Nesses casos ele é derivado de `date`, evitando depender do parser
- * legado do banco para persistir a data canônica.
+ * Tenta converter formatos conhecidos para PostgreSQL DATE.
+ * Retorna undefined quando o texto legado não é reconhecido; isso permite
+ * deixar o trigger do banco interpretar formatos históricos mais flexíveis.
  */
-export function sanitizeTransactionWrite<T extends TransactionWriteShape>(
-  row: T,
-): T {
+function tryCanonicalizeDate(raw: string | null | undefined): string | null | undefined {
+  if (raw == null) return raw;
+  const value = String(raw).trim();
+  if (!value) return null;
+
+  const iso = value.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T\s].*)?$/);
+  if (iso) {
+    return buildCanonicalDate(Number(iso[1]), Number(iso[2]), Number(iso[3])) ?? undefined;
+  }
+
+  const dmy = value.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})$/);
+  if (dmy) {
+    return buildCanonicalDate(Number(dmy[3]), Number(dmy[2]), Number(dmy[1])) ?? undefined;
+  }
+
+  return undefined;
+}
+
+function canonicalizeTypedDate(
+  field: "purchase_date" | "transaction_date",
+  raw: string | null | undefined,
+): string | null | undefined {
+  if (raw == null) return raw;
+  const value = String(raw).trim();
+  if (!value) return null;
+  const canonical = tryCanonicalizeDate(value);
+  if (!canonical) throw new InvalidTransactionDateError(field, value);
+  return canonical;
+}
+
+/**
+ * Sanitiza o payload de insert/update sem mutar o objeto original.
+ * Campos PostgreSQL DATE explícitos são validados estritamente antes do banco.
+ *
+ * Quando um fluxo legado fornece apenas `date`, derivamos `transaction_date`
+ * somente se o formato for inequívoco. Textos legados não reconhecidos ficam
+ * intactos para o trigger `cofre_sync_transaction_canonical`, que possui parser
+ * histórico próprio e retorna NULL em vez de provocar erro de cast.
+ */
+export function sanitizeTransactionWrite<T extends TransactionWriteShape>(row: T): T {
   const next: TransactionWriteShape = { ...row };
 
   if ("name" in row && row.name != null) {
     next.name = sanitizeTransactionName(row.name);
   }
   if ("purchase_date" in row) {
-    next.purchase_date = canonicalizeDateForWrite(row.purchase_date);
+    next.purchase_date = canonicalizeTypedDate("purchase_date", row.purchase_date);
   }
   if ("transaction_date" in row) {
-    next.transaction_date = canonicalizeDateForWrite(row.transaction_date);
+    next.transaction_date = canonicalizeTypedDate("transaction_date", row.transaction_date);
   } else if ("date" in row && row.date != null && String(row.date).trim() !== "") {
-    next.transaction_date = canonicalizeDateForWrite(row.date);
+    const derived = tryCanonicalizeDate(row.date);
+    if (derived) next.transaction_date = derived;
   }
 
   return next as T;
 }
 
 /** Variante para lotes (batch insert). */
-export function sanitizeTransactionWrites<T extends TransactionWriteShape>(
-  rows: T[],
-): T[] {
-  return rows.map((r) => sanitizeTransactionWrite(r));
+export function sanitizeTransactionWrites<T extends TransactionWriteShape>(rows: T[]): T[] {
+  return rows.map((row) => sanitizeTransactionWrite(row));
 }
 
 /**
