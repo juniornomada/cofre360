@@ -31,17 +31,10 @@ type ParsedRow = {
   installment_group_id?: string | null;
   installment_number?: number;
   total_installments?: number;
-  isFuture?: boolean; // generated parcela future row, not present in PDF
+  isFuture?: boolean;
 };
 
-type InstallmentMeta = {
-  installment_group_id: string | null;
-  installment_number: number;
-  total_installments: number;
-  isFuture: boolean;
-};
-
-type TransactionInsert = TablesInsert<"transactions">;
+type TransactionInsert = TablesInsert<"transactions"> & { card_id?: string | null };
 type ExistingTransaction = Pick<Tables<"transactions">, "date" | "name" | "amount" | "type" | "card">;
 
 function normalize(str: string): string {
@@ -125,7 +118,6 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId, cardName, o
         amount: Math.abs(Number(t.amount) || 0),
         type: t.type,
       }));
-      // Detect installment markers ("3/12", "3 de 12") and project missing future parcelas.
       const presentKeys = new Set(baseRows.map((r) => `${r.date}|${r.name}|${r.amount.toFixed(2)}|${r.type}`));
       const expanded = expandInstallments(baseRows);
       const rows: ParsedRow[] = expanded.rows.map((r) => ({
@@ -140,9 +132,7 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId, cardName, o
           r.installment_group_id !== null &&
           !presentKeys.has(`${r.date}|${r.name}|${r.amount.toFixed(2)}|${r.type}`),
       }));
-      if (rows.length === 0) {
-        setError("Nenhuma transação detectada no PDF.");
-      }
+      if (rows.length === 0) setError("Nenhuma transação detectada no PDF.");
       setPreview(rows);
     } catch (err: any) {
       setError(err?.message || "Erro ao processar o PDF.");
@@ -217,7 +207,7 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId, cardName, o
     if (!dedupResult) return;
     setSaving(true);
     setError("");
-    const BATCH = 50; // Smaller batch for reliability
+    const BATCH = 50;
     let imported = 0;
     for (let i = 0; i < dedupResult.toImport.length; i += BATCH) {
       const batch = dedupResult.toImport.slice(i, i + BATCH);
@@ -288,17 +278,14 @@ export function PdfInvoiceImportDialog({ open, onOpenChange, cardId, cardName, o
               <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
               <span>{error}</span>
             </div>
-            <Button 
-              variant="outline" 
-              size="sm" 
+            <Button
+              variant="outline"
+              size="sm"
               className="w-full h-8 text-[11px] rounded-lg border-destructive/20 hover:bg-destructive/5 hover:text-destructive"
               onClick={() => {
                 if (preview.length > 0) {
-                  if (dedupResult) {
-                    handleConfirmImport();
-                  } else {
-                    handleCheckDuplicates();
-                  }
+                  if (dedupResult) handleConfirmImport();
+                  else handleCheckDuplicates();
                 } else {
                   fileRef.current?.click();
                 }
