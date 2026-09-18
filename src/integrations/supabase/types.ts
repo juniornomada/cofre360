@@ -10,10 +10,66 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.17"
+    PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
+      ai_chat_conversations: {
+        Row: {
+          created_at: string
+          id: string
+          title: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          title?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          title?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      ai_chat_messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string
+          id: string
+          role: string
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          role: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_chat_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "ai_chat_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_test_runs: {
         Row: {
           avg_accuracy: number
@@ -151,6 +207,7 @@ export type Database = {
           id: string
           paid_at: string | null
           target_period: string | null
+          transaction_id: string | null
           user_id: string
         }
         Insert: {
@@ -161,6 +218,7 @@ export type Database = {
           id?: string
           paid_at?: string | null
           target_period?: string | null
+          transaction_id?: string | null
           user_id?: string
         }
         Update: {
@@ -171,6 +229,63 @@ export type Database = {
           id?: string
           paid_at?: string | null
           target_period?: string | null
+          transaction_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "card_payments_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      card_refunds: {
+        Row: {
+          card_name: string
+          confirmed_at: string | null
+          created_at: string
+          expected_by: string | null
+          id: string
+          note: string | null
+          original_amount: number
+          refund_amount: number
+          refund_transaction_id: string | null
+          status: string
+          transaction_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          card_name: string
+          confirmed_at?: string | null
+          created_at?: string
+          expected_by?: string | null
+          id?: string
+          note?: string | null
+          original_amount?: number
+          refund_amount?: number
+          refund_transaction_id?: string | null
+          status?: string
+          transaction_id: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          card_name?: string
+          confirmed_at?: string | null
+          created_at?: string
+          expected_by?: string | null
+          id?: string
+          note?: string | null
+          original_amount?: number
+          refund_amount?: number
+          refund_transaction_id?: string | null
+          status?: string
+          transaction_id?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
@@ -187,6 +302,7 @@ export type Database = {
           id: string
           is_visible: boolean | null
           last_four: number | null
+          logo_url: string | null
           name: string
           sort_order: number | null
           updated_at: string
@@ -204,6 +320,7 @@ export type Database = {
           id?: string
           is_visible?: boolean | null
           last_four?: number | null
+          logo_url?: string | null
           name: string
           sort_order?: number | null
           updated_at?: string
@@ -221,6 +338,7 @@ export type Database = {
           id?: string
           is_visible?: boolean | null
           last_four?: number | null
+          logo_url?: string | null
           name?: string
           sort_order?: number | null
           updated_at?: string
@@ -299,15 +417,23 @@ export type Database = {
           asset_code: string | null
           change: number
           created_at: string
+          current_gross_value: number | null
+          current_net_value: number | null
           current_price: number | null
           icon: string
           id: string
+          invested_amount: number | null
+          last_manual_update: string | null
           last_quote_at: string | null
           maturity_date: string | null
           name: string
           purchase_date: string | null
           purchase_price: number | null
           quantity: number | null
+          redemption_quote: string | null
+          redemption_settlement: string | null
+          risk_level: string | null
+          risk_score: number | null
           type: string
           updated_at: string
           user_id: string
@@ -320,15 +446,23 @@ export type Database = {
           asset_code?: string | null
           change?: number
           created_at?: string
+          current_gross_value?: number | null
+          current_net_value?: number | null
           current_price?: number | null
           icon?: string
           id?: string
+          invested_amount?: number | null
+          last_manual_update?: string | null
           last_quote_at?: string | null
           maturity_date?: string | null
           name: string
           purchase_date?: string | null
           purchase_price?: number | null
           quantity?: number | null
+          redemption_quote?: string | null
+          redemption_settlement?: string | null
+          risk_level?: string | null
+          risk_score?: number | null
           type?: string
           updated_at?: string
           user_id: string
@@ -341,15 +475,23 @@ export type Database = {
           asset_code?: string | null
           change?: number
           created_at?: string
+          current_gross_value?: number | null
+          current_net_value?: number | null
           current_price?: number | null
           icon?: string
           id?: string
+          invested_amount?: number | null
+          last_manual_update?: string | null
           last_quote_at?: string | null
           maturity_date?: string | null
           name?: string
           purchase_date?: string | null
           purchase_price?: number | null
           quantity?: number | null
+          redemption_quote?: string | null
+          redemption_settlement?: string | null
+          risk_level?: string | null
+          risk_score?: number | null
           type?: string
           updated_at?: string
           user_id?: string
@@ -646,11 +788,51 @@ export type Database = {
         }
         Relationships: []
       }
+      transaction_templates: {
+        Row: {
+          bank_account_id: string | null
+          card_id: string | null
+          category: string
+          created_at: string
+          icon: string | null
+          id: string
+          name: string
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bank_account_id?: string | null
+          card_id?: string | null
+          category: string
+          created_at?: string
+          icon?: string | null
+          id?: string
+          name: string
+          type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bank_account_id?: string | null
+          card_id?: string | null
+          category?: string
+          created_at?: string
+          icon?: string | null
+          id?: string
+          name?: string
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       transactions: {
         Row: {
           amount: number
           bank_account_id: string | null
           card: string | null
+          card_id: string | null
           category: string | null
           created_at: string
           date: string
@@ -662,7 +844,10 @@ export type Database = {
           installment_source_amount: number | null
           is_visible: boolean | null
           name: string
+          purchase_date: string | null
           total_installments: number | null
+          transaction_date: string | null
+          transaction_kind: string | null
           type: string
           updated_at: string
           user_id: string
@@ -671,6 +856,7 @@ export type Database = {
           amount?: number
           bank_account_id?: string | null
           card?: string | null
+          card_id?: string | null
           category?: string | null
           created_at?: string
           date: string
@@ -682,7 +868,10 @@ export type Database = {
           installment_source_amount?: number | null
           is_visible?: boolean | null
           name: string
+          purchase_date?: string | null
           total_installments?: number | null
+          transaction_date?: string | null
+          transaction_kind?: string | null
           type: string
           updated_at?: string
           user_id?: string
@@ -691,6 +880,7 @@ export type Database = {
           amount?: number
           bank_account_id?: string | null
           card?: string | null
+          card_id?: string | null
           category?: string | null
           created_at?: string
           date?: string
@@ -702,7 +892,10 @@ export type Database = {
           installment_source_amount?: number | null
           is_visible?: boolean | null
           name?: string
+          purchase_date?: string | null
           total_installments?: number | null
+          transaction_date?: string | null
+          transaction_kind?: string | null
           type?: string
           updated_at?: string
           user_id?: string
@@ -714,6 +907,33 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cofre_card_cycle_month: {
+        Args: { p_closing_day: number; p_date: string }
+        Returns: string
+      }
+      cofre_infer_transaction_kind: {
+        Args: { p_category: string; p_type: string }
+        Returns: string
+      }
+      cofre_parse_legacy_date: {
+        Args: { p_created_at?: string; p_value: string }
+        Returns: string
+      }
+      create_card_payment_atomic: {
+        Args: {
+          p_card_id: string
+          p_lines: Json
+          p_paid_at: string
+          p_payment_kind: string
+          p_target_period: string
+        }
+        Returns: Json
+      }
+      delete_card_payment_atomic: {
+        Args: { p_payment_id: string }
+        Returns: boolean
+      }
+      financial_month_facts: { Args: { p_month: string }; Returns: Json }
       get_bank_account_balances: {
         Args: { user_id_param: string }
         Returns: {
@@ -730,6 +950,7 @@ export type Database = {
           total_spent: number
         }[]
       }
+      infer_card_logo_url: { Args: { card_name: string }; Returns: string }
       safe_transfer_user_email: {
         Args: { new_email: string; old_email: string }
         Returns: string
@@ -752,12 +973,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -781,11 +1002,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -806,11 +1027,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -831,11 +1052,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -848,11 +1069,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
