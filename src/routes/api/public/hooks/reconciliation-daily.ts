@@ -17,15 +17,34 @@ export const Route = (createFileRoute as any)("/api/public/hooks/reconciliation-
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const authHeader = request.headers.get("apikey") ?? request.headers.get("authorization")?.replace("Bearer ", "");
-        const expected = process.env.SUPABASE_ANON_KEY;
-        if (!authHeader || !expected || authHeader !== expected) {
+        const authHeader = request.headers.get("authorization") ?? "";
+        const suppliedToken = authHeader.toLowerCase().startsWith("bearer ")
+          ? authHeader.slice(7).trim()
+          : "";
+
+        const url = process.env.SUPABASE_URL;
+        const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+        if (!url || !serviceKey) {
+          console.error("reconciliation-daily missing server configuration");
+          return new Response("Server configuration error", { status: 500 });
+        }
+
+        const supa = createClient(url, serviceKey, {
+          auth: { persistSession: false, autoRefreshToken: false },
+        });
+
+        if (!suppliedToken) {
           return new Response("Unauthorized", { status: 401 });
         }
 
-        const url = process.env.SUPABASE_URL!;
-        const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-        const supa = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
+        const { data: isAuthorized, error: authError } = await supa.rpc(
+          "verify_reconciliation_cron_secret",
+          { p_token: suppliedToken },
+        );
+        if (authError || isAuthorized !== true) {
+          if (authError) console.error("reconciliation-daily auth check failed", authError.message);
+          return new Response("Unauthorized", { status: 401 });
+        }
 
         const yesterday = new Date();
         yesterday.setDate(yesterday.getDate() - 1);
