@@ -20,3 +20,8 @@ verify_jwt = true
 # dedicated bearer token before using the service-role client.
 [functions.external-transactions]
 verify_jwt = false
+
+# Scheduled reconciliation authenticates with a dedicated bearer secret stored
+# in Supabase Vault, so the gateway JWT check is intentionally disabled.
+[functions.reconciliation-daily]
+verify_jwt = false
