@@ -3,18 +3,7 @@
 const TOKEN = process.env.SUPABASE_ACCESS_TOKEN;
 const REF = process.env.SUPABASE_PROJECT_REF || "bllqvpnjfpcvujrbrbig";
 const API = `https://api.supabase.com/v1/projects/${REF}/config/auth`;
-const PASSWORD_SYMBOLS =
-  "!@#$%^&*()_+-=[]{};" +
-  String.fromCharCode(39, 92, 58, 34) +
-  "|<>?,./" +
-  String.fromCharCode(96) +
-  "~";
-const PASSWORD_CLASSES = [
-  "abcdefghijklmnopqrstuvwxyz",
-  "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
-  "0123456789",
-  PASSWORD_SYMBOLS,
-].join(":");
+const PASSWORD_CLASSES = "abcdefghijklmnopqrstuvwxyz:ABCDEFGHIJKLMNOPQRSTUVWXYZ:0123456789:!@#$%^&*()_+-=[]{};'\\\\:\"|<>?,./`~";
 
 if (!TOKEN) {
   console.error("SUPABASE_ACCESS_TOKEN is required.");
