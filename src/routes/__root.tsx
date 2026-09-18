@@ -135,11 +135,7 @@ function RootShell({ children }: { children: React.ReactNode }) {
     <html lang="pt-BR" className="light" suppressHydrationWarning>
       <head>
         <HeadContent />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('theme');var c=document.documentElement.classList;c.remove('light','dark');c.add(t==='dark'?'dark':'light');}catch(e){}})();`,
-          }}
-        />
+        <script src="/theme-init.js" />
       </head>
       <body suppressHydrationWarning>
         {children}
