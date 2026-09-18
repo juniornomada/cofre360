@@ -98,12 +98,14 @@ function RootShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const search = router.state.location.search as any;
   const isComparisonMode = search.compare === 'theme';
+  const cspNonce = ((router.options as any).ssr?.nonce as string | undefined) || "";
 
   if (isComparisonMode) {
     return (
       <html lang="pt-BR" suppressHydrationWarning>
         <head>
           <HeadContent />
+          <meta property="csp-nonce" content={cspNonce} />
         </head>
         <body suppressHydrationWarning className="bg-background">
           <div className="flex h-dvh w-dvw overflow-hidden">
@@ -135,7 +137,8 @@ function RootShell({ children }: { children: React.ReactNode }) {
     <html lang="pt-BR" className="light" suppressHydrationWarning>
       <head>
         <HeadContent />
-        <script src="/theme-init.js" />
+        <meta property="csp-nonce" content={cspNonce} />
+        <script src="/theme-init.js" nonce={cspNonce || undefined} />
       </head>
       <body suppressHydrationWarning>
         {children}
