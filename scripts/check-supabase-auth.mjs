@@ -1,48 +1,32 @@
 #!/usr/bin/env node
 /**
- * Pre-deploy Supabase Auth security check.
+ * Production Supabase Auth security gate for Cofre360.
  *
- * Calls the Supabase Management API and fails (exit 1) when known
- * security-relevant Auth settings are misconfigured. Currently checks:
- *
- *   - Leaked password protection (HaveIBeenPwned) is enabled
- *   - Minimum password length >= 8
- *   - OTP expiry <= 3600 seconds (1 hour)
- *
- * Required environment variables:
- *   SUPABASE_ACCESS_TOKEN   Personal access token (https://supabase.com/dashboard/account/tokens)
- *   SUPABASE_PROJECT_REF    Project ref (e.g. bllqvpnjfpcvujrbrbig)
- *
- * Optional:
- *   SKIP_SUPABASE_AUTH_CHECK=1   Skip the check entirely (e.g. for forks/PRs without secrets)
+ * Fails CI when a server-side setting can weaken account security. The
+ * HaveIBeenPwned check is a warning on the Free plan because Supabase exposes
+ * that control only on Pro and above.
  */
-
 const SKIP = process.env.SKIP_SUPABASE_AUTH_CHECK === "1";
 const TOKEN = process.env.SUPABASE_ACCESS_TOKEN;
-const REF = process.env.SUPABASE_PROJECT_REF;
+const REF = process.env.SUPABASE_PROJECT_REF || "bllqvpnjfpcvujrbrbig";
+const STRONGEST_PASSWORD_CLASSES = "abcdefghijklmnopqrstuvwxyz:ABCDEFGHIJKLMNOPQRSTUVWXYZ:0123456789:!@#$%^&*()_+-=[]{};'\\\\:\"|<>?,./`~";
 
 if (SKIP) {
-  console.log("⚠️  SKIP_SUPABASE_AUTH_CHECK=1 — skipping Supabase Auth security check.");
+  console.log("⚠️  Supabase Auth check skipped because the Management API token is unavailable.");
   process.exit(0);
 }
 
-if (!TOKEN || !REF) {
-  console.error(
-    "❌ Supabase Auth security check: SUPABASE_ACCESS_TOKEN and SUPABASE_PROJECT_REF must be set.\n" +
-      "   Add them as repository secrets, or set SKIP_SUPABASE_AUTH_CHECK=1 to bypass.",
-  );
+if (!TOKEN) {
+  console.error("❌ SUPABASE_ACCESS_TOKEN is required for the production Auth security gate.");
   process.exit(1);
 }
 
 const url = `https://api.supabase.com/v1/projects/${REF}/config/auth`;
 let cfg;
 try {
-  const res = await fetch(url, {
-    headers: { Authorization: `Bearer ${TOKEN}` },
-  });
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${TOKEN}` } });
   if (!res.ok) {
-    const body = await res.text();
-    console.error(`❌ Supabase Management API ${res.status}: ${body}`);
+    console.error(`❌ Supabase Management API returned HTTP ${res.status}.`);
     process.exit(1);
   }
   cfg = await res.json();
@@ -52,33 +36,63 @@ try {
 }
 
 const issues = [];
+const warnings = [];
 
-// 1. Leaked password protection (HaveIBeenPwned)
-if (cfg.password_hibp_enabled !== true) {
-  issues.push(
-    "Leaked Password Protection is DISABLED. Enable HaveIBeenPwned in Authentication → Providers → Email.",
-  );
+if (cfg.mailer_autoconfirm !== false) {
+  issues.push("Email confirmation is not required (mailer_autoconfirm must be false).");
+}
+if (cfg.mailer_allow_unverified_email_sign_ins === true) {
+  issues.push("Unverified email sign-ins are enabled.");
+}
+if (cfg.external_anonymous_users_enabled === true) {
+  issues.push("Anonymous sign-ins are enabled.");
 }
 
-// 2. Minimum password length
 const minLen = Number(cfg.password_min_length ?? 0);
-if (!minLen || minLen < 8) {
-  issues.push(`Minimum password length is ${minLen || "unset"}; should be at least 8.`);
+if (minLen < 12) {
+  issues.push(`Minimum password length is ${minLen || "unset"}; Cofre360 requires at least 12.`);
+}
+if (cfg.password_required_characters !== STRONGEST_PASSWORD_CLASSES) {
+  issues.push("Server-side password character requirements are weaker than the Cofre360 policy.");
 }
 
-// 3. OTP expiry should be <= 1 hour
-const otpExp = Number(cfg.mailer_otp_exp ?? cfg.sms_otp_exp ?? 0);
+const otpExp = Number(cfg.mailer_otp_exp ?? 0);
 if (otpExp && otpExp > 3600) {
-  issues.push(`OTP expiry is ${otpExp}s; should be <= 3600s (1 hour).`);
+  issues.push(`Email OTP expiry is ${otpExp}s; maximum allowed is 3600s.`);
 }
 
-if (issues.length > 0) {
-  console.error("❌ Supabase Auth security check failed:\n");
-  for (const i of issues) console.error("  • " + i);
-  console.error(
-    `\nFix at: https://supabase.com/dashboard/project/${REF}/auth/providers`,
-  );
+const jwtExp = Number(cfg.jwt_exp ?? 0);
+if (jwtExp && jwtExp > 3600) {
+  issues.push(`JWT expiry is ${jwtExp}s; maximum allowed is 3600s.`);
+}
+
+if (cfg.mailer_secure_email_change_enabled !== true) {
+  issues.push("Secure/double email-change confirmation is disabled.");
+}
+if (cfg.refresh_token_rotation_enabled !== true) {
+  issues.push("Refresh-token rotation is disabled.");
+}
+const reuse = Number(cfg.security_refresh_token_reuse_interval ?? 0);
+if (reuse > 10) {
+  issues.push(`Refresh-token reuse interval is ${reuse}s; maximum allowed is 10s.`);
+}
+if (cfg.security_manual_linking_enabled === true) {
+  issues.push("Manual identity linking is enabled.");
+}
+if (typeof cfg.site_url !== "string" || !cfg.site_url.startsWith("https://")) {
+  issues.push("Auth Site URL is not HTTPS.");
+}
+
+if (cfg.password_hibp_enabled !== true) {
+  warnings.push("Leaked Password Protection is unavailable/disabled; enable it after upgrading Supabase to Pro.");
+}
+
+for (const warning of warnings) console.warn("⚠️  " + warning);
+
+if (issues.length) {
+  console.error("❌ Supabase Auth security gate failed:");
+  for (const issue of issues) console.error("  • " + issue);
   process.exit(1);
 }
 
-console.log("✅ Supabase Auth security check passed.");
+console.log("✅ Supabase Auth security gate passed.");
