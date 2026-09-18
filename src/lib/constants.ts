@@ -52,7 +52,7 @@ export const ERROR_MESSAGES: Record<string, Omit<FriendlyError, "code">> = {
     type: "auth"
   },
   USER_ALREADY_REGISTERED: {
-    message: "Este e-mail já está cadastrado no sistema.",
+    message: "Não foi possível concluir o cadastro. Se você já possui uma conta, tente entrar.",
     type: "auth"
   },
   EMAIL_NOT_CONFIRMED: {
@@ -60,7 +60,7 @@ export const ERROR_MESSAGES: Record<string, Omit<FriendlyError, "code">> = {
     type: "auth"
   },
   PASSWORD_TOO_SHORT: {
-    message: "A senha deve conter pelo menos 6 caracteres.",
+    message: "A senha não atende aos requisitos mínimos de segurança.",
     type: "auth"
   },
   
@@ -85,7 +85,7 @@ export const ERROR_CODE_MAPPINGS: Array<{ pattern: string; key: keyof typeof ERR
   { pattern: "Invalid login credentials", key: "INVALID_CREDENTIALS" },
   { pattern: "User already registered", key: "USER_ALREADY_REGISTERED" },
   { pattern: "Email not confirmed", key: "EMAIL_NOT_CONFIRMED" },
-  { pattern: "Password should be at least 6 characters", key: "PASSWORD_TOO_SHORT" },
+  { pattern: "Password should be at least", key: "PASSWORD_TOO_SHORT" },
   { pattern: "e-mail de destino", key: "DESTINATION_EMAIL_CONFLICT" },
 ];
 
