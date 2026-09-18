@@ -22,6 +22,49 @@ class InvalidDateError extends Error {
   }
 }
 
+class InvalidJsonError extends Error {}
+class RequestBodyTooLargeError extends Error {}
+
+async function readJsonBody(req: Request, maxBytes: number): Promise<unknown> {
+  if (!req.body) throw new InvalidJsonError();
+
+  const reader = req.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (!value) continue;
+
+      total += value.byteLength;
+      if (total > maxBytes) {
+        await reader.cancel("body too large").catch(() => undefined);
+        throw new RequestBodyTooLargeError();
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+
+  if (total === 0) throw new InvalidJsonError();
+
+  const bytes = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+
+  try {
+    return JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes));
+  } catch {
+    throw new InvalidJsonError();
+  }
+}
+
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
     status,
@@ -106,7 +149,39 @@ serve(async (req) => {
       return json({ error: "Unauthorized" }, 401);
     }
 
-    const payload = (await req.json()) as TransactionRequest;
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    if (!supabaseUrl || !serviceRoleKey) {
+      console.error("external-transactions missing Supabase server configuration");
+      return json({ error: "External transaction API is temporarily unavailable" }, 503);
+    }
+
+    const supabase = createClient(supabaseUrl, serviceRoleKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+
+    const { data: quotaRows, error: quotaError } = await supabase.rpc(
+      "consume_external_transaction_quota",
+      { p_user_id: userId },
+    );
+    if (quotaError) {
+      console.error("external-transactions quota check failed", quotaError.message);
+      return json({ error: "External transaction API is temporarily unavailable" }, 503);
+    }
+
+    const quota = Array.isArray(quotaRows) ? quotaRows[0] : quotaRows;
+    if (!quota?.allowed) {
+      const retryAfter = Math.max(1, Number(quota?.retry_after_seconds) || 60);
+      return new Response(JSON.stringify({ error: "Too many requests" }), {
+        status: 429,
+        headers: {
+          "Content-Type": "application/json; charset=utf-8",
+          "Retry-After": String(retryAfter),
+        },
+      });
+    }
+
+    const payload = (await readJsonBody(req, 32_768)) as TransactionRequest;
     const name = String(payload.name ?? "").trim();
     const amount = Number(payload.amount);
     const type: TransactionType = payload.type === "income" ? "income" : "expense";
@@ -118,12 +193,6 @@ serve(async (req) => {
     }
 
     const transactionDate = parseDate(payload.date);
-
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, serviceRoleKey, {
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
 
     const { data: categories, error: categoriesError } = await supabase
       .from("categories")
@@ -209,6 +278,12 @@ serve(async (req) => {
     return json({ ok: true, transaction: data }, 201);
   } catch (error) {
     console.error("external-transactions error", error);
+    if (error instanceof RequestBodyTooLargeError) {
+      return json({ error: "Request body is too large" }, 413);
+    }
+    if (error instanceof InvalidJsonError) {
+      return json({ error: "Invalid JSON body" }, 400);
+    }
     if (error instanceof InvalidDateError) {
       return json({ error: error.message }, 400);
     }
