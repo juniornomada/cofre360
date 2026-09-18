@@ -1007,6 +1007,21 @@ serve(async (req) => {
   }
 
   try {
+    const contentType = (req.headers.get("Content-Type") || "").toLowerCase();
+    if (!contentType.startsWith("application/json")) {
+      return new Response(JSON.stringify({ error: "Content-Type must be application/json" }), {
+        status: 415,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const contentLength = Number(req.headers.get("Content-Length") || "0");
+    if (Number.isFinite(contentLength) && contentLength > 65_536) {
+      return new Response(JSON.stringify({ error: "Payload muito grande" }), {
+        status: 413,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
     const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
@@ -1041,12 +1056,39 @@ serve(async (req) => {
     }
 
     const body = await req.json();
-    const messages = Array.isArray(body?.messages) ? body.messages as ChatMessage[] : [];
-    if (!messages.length) {
+    const rawMessages = Array.isArray(body?.messages) ? body.messages : [];
+    if (!rawMessages.length) {
       return new Response(JSON.stringify({ error: "Nenhuma mensagem enviada" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+    if (rawMessages.length > 30) {
+      return new Response(JSON.stringify({ error: "Histórico de conversa muito grande" }), {
+        status: 413,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const messages: ChatMessage[] = [];
+    let totalMessageChars = 0;
+    for (const item of rawMessages) {
+      const role = item?.role;
+      const content = typeof item?.content === "string" ? item.content.trim() : "";
+      if ((role !== "user" && role !== "assistant") || !content || content.length > 6_000) {
+        return new Response(JSON.stringify({ error: "Mensagem inválida ou muito grande" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      totalMessageChars += content.length;
+      if (totalMessageChars > 30_000) {
+        return new Response(JSON.stringify({ error: "Histórico de conversa muito grande" }), {
+          status: 413,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      messages.push({ role, content });
     }
 
     const url = new URL(req.url);
@@ -1063,6 +1105,28 @@ serve(async (req) => {
     if (deterministicAnswer) {
       return deterministicSseResponse(deterministicAnswer, corsHeaders);
     }
+
+    const { data: quotaRows, error: quotaError } = await supabase.rpc("consume_financial_chat_quota");
+    if (quotaError) {
+      console.error("financial-chat quota check failed", quotaError.message);
+      return new Response(JSON.stringify({ error: "Assistente temporariamente indisponível" }), {
+        status: 503,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const quota = Array.isArray(quotaRows) ? quotaRows[0] : quotaRows;
+    if (!quota?.allowed) {
+      const retryAfter = Math.max(1, Number(quota?.retry_after_seconds) || 60);
+      return new Response(JSON.stringify({ error: "Muitas solicitações ao assistente. Tente novamente em alguns minutos." }), {
+        status: 429,
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "application/json",
+          "Retry-After": String(retryAfter),
+        },
+      });
+    }
+
     const context = await buildFinancialContext(supabase, question);
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -1106,7 +1170,7 @@ serve(async (req) => {
   } catch (error) {
     console.error("financial-chat error:", error);
     return new Response(JSON.stringify({
-      error: error instanceof Error ? error.message : "Erro desconhecido",
+      error: "Erro interno no assistente",
     }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
