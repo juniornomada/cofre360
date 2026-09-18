@@ -327,7 +327,7 @@ jobs:
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
-          SKIP_SUPABASE_AUTH_CHECK: ${{ secrets.SUPABASE_ACCESS_TOKEN == '' && '1' || '' }}
+          SKIP_SUPABASE_AUTH_CHECK: ${{ github.event_name == 'pull_request' && secrets.SUPABASE_ACCESS_TOKEN == '' && '1' || '' }}
         run: node scripts/check-supabase-auth.mjs
 
   build:

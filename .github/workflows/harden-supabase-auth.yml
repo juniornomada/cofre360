@@ -1,10 +1,6 @@
 name: Harden Supabase Auth
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - .github/workflows/harden-supabase-auth.yml
   workflow_dispatch:
 
 permissions:
