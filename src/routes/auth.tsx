@@ -8,6 +8,17 @@ import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { getFriendlyErrorMessage } from "@/lib/utils";
 
+const PASSWORD_MIN_LENGTH = 12;
+
+function getPasswordPolicyError(password: string): string | null {
+  if (password.length < PASSWORD_MIN_LENGTH) return `Use pelo menos ${PASSWORD_MIN_LENGTH} caracteres na senha.`;
+  if (!/[a-z]/.test(password)) return "Inclua pelo menos uma letra minúscula na senha.";
+  if (!/[A-Z]/.test(password)) return "Inclua pelo menos uma letra maiúscula na senha.";
+  if (!/[0-9]/.test(password)) return "Inclua pelo menos um número na senha.";
+  if (!/[^A-Za-z0-9]/.test(password)) return "Inclua pelo menos um símbolo na senha.";
+  return null;
+}
+
 function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -16,35 +27,42 @@ function AuthPage() {
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const normalizedEmail = email.trim().toLowerCase();
+    if (isSignUp) {
+      const passwordPolicyError = getPasswordPolicyError(password);
+      if (passwordPolicyError) {
+        toast.error(passwordPolicyError);
+        return;
+      }
+    }
+
     setLoading(true);
 
     try {
       if (isSignUp) {
         const { data, error } = await supabase.auth.signUp({
-          email,
+          email: normalizedEmail,
           password,
           options: {
-            emailRedirectTo: window.location.origin,
+            emailRedirectTo: `${window.location.origin}/auth`,
           }
         });
         if (error) throw error;
-        
+
         if (data.user && data.session) {
-          toast.success("Cadastro realizado com sucesso! Você já está logado.");
+          toast.success("Cadastro realizado com sucesso!");
         } else {
-          const friendly = getFriendlyErrorMessage("EMAIL_NOT_CONFIRMED");
-          toast.warning(
-            friendly.message,
-            {
-              description: "Tente entrar manualmente com seu e-mail e senha. Se o problema persistir, verifique se a confirmação de e-mail foi desativada no painel do Supabase.",
-              duration: 8000,
-            }
-          );
+          toast.success("Cadastro criado. Confirme seu e-mail para entrar.", {
+            description: "Enviamos um link de confirmação para o endereço informado.",
+            duration: 8000,
+          });
+          setPassword("");
           setIsSignUp(false);
         }
       } else {
         const { error } = await supabase.auth.signInWithPassword({
-          email,
+          email: normalizedEmail,
           password,
         });
         if (error) throw error;
@@ -88,6 +106,7 @@ function AuthPage() {
                 placeholder="seu@email.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
                 required
                 className="rounded-xl"
               />
@@ -100,9 +119,17 @@ function AuthPage() {
                 placeholder="Sua senha"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                autoComplete={isSignUp ? "new-password" : "current-password"}
+                minLength={isSignUp ? PASSWORD_MIN_LENGTH : undefined}
+                aria-describedby={isSignUp ? "password-requirements" : undefined}
                 required
                 className="rounded-xl"
               />
+              {isSignUp && (
+                <p id="password-requirements" className="text-[11px] leading-relaxed text-muted-foreground">
+                  Use pelo menos 12 caracteres, com letra maiúscula, minúscula, número e símbolo.
+                </p>
+              )}
             </div>
           </div>
 
@@ -125,27 +152,6 @@ function AuthPage() {
               {isSignUp ? "Já tem uma conta? Entre aqui" : "Não tem conta? Cadastre-se agora"}
             </button>
 
-            {isSignUp && (
-              <div className="mt-8 rounded-xl border border-border bg-muted/30 p-4 text-left">
-                <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-                  Checklist para Login Automático
-                </h4>
-                <ul className="space-y-2 text-xs text-muted-foreground">
-                  <li className="flex items-start gap-2">
-                    <div className="mt-1 h-3 w-3 rounded-full border border-primary/50 flex items-center justify-center text-[10px] text-primary font-bold">1</div>
-                    <span>Acesse o <strong>Dashboard do Supabase</strong></span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <div className="mt-1 h-3 w-3 rounded-full border border-primary/50 flex items-center justify-center text-[10px] text-primary font-bold">2</div>
-                    <span>Vá em <strong>Authentication &gt; Providers &gt; Email</strong></span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <div className="mt-1 h-3 w-3 rounded-full border border-primary/50 flex items-center justify-center text-[10px] text-primary font-bold">3</div>
-                    <span>Desative a opção <strong>"Confirm email"</strong> e salve</span>
-                  </li>
-                </ul>
-              </div>
-            )}
           </div>
         </form>
       </div>
