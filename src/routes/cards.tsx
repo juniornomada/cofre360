@@ -843,41 +843,19 @@ function CardsPage() {
     setPaymentToDelete({ payment, cardName });
   };
 
-  const handleDeletePayment = async (payment: { id: string; amount: number; date: string; bank_account_id: string | null }, cardName: string) => {
+  const handleDeletePayment = async (payment: { id: string; amount: number; date: string; bank_account_id: string | null }, _cardName: string) => {
     setDeletingPaymentId(payment.id);
     try {
-      const { error: delErr } = await supabase.from("card_payments").delete().eq("id", payment.id);
-      if (delErr) throw delErr;
-
-      // Tenta localizar e remover a transação espelho criada no pagamento.
-      // Formata a data como em handlePaySubmit: "dd MMM" (pt-BR) quando o paid_at é ISO.
-      try {
-        const dt = new Date(payment.date);
-        const monthsAbbr = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
-        const dateFormatted = `${String(dt.getDate()).padStart(2, "0")} ${monthsAbbr[dt.getMonth()]}`;
-        const baseQuery = supabase
-          .from("transactions")
-          .select("id, name")
-          .eq("category", "Pagamento de Cartão")
-          .eq("amount", payment.amount)
-          .eq("date", dateFormatted)
-          .ilike("name", `%${cardName}%`)
-          .limit(1);
-        const { data: matches } = payment.bank_account_id
-          ? await baseQuery.eq("bank_account_id", payment.bank_account_id)
-          : await baseQuery;
-        if (matches && matches[0]) {
-          await supabase.from("transactions").delete().eq("id", matches[0].id);
-        }
-      } catch (e) {
-        console.warn("Não foi possível remover a transação espelho do pagamento:", e);
-      }
+      const { error } = await (supabase as any).rpc("delete_card_payment_atomic", {
+        p_payment_id: payment.id,
+      });
+      if (error) throw error;
 
       toast.success("Pagamento excluído");
       await fetchAll();
     } catch (e: any) {
       console.error("Erro ao excluir pagamento:", e);
-      toast.error("Erro ao excluir pagamento: " + (e?.message || "desconhecido"));
+      toast.error(mapServerError(e, "Erro ao excluir pagamento"));
     } finally {
       setDeletingPaymentId(null);
     }
@@ -1432,62 +1410,32 @@ function CardsPage() {
         payingCard.name,
       );
 
-       const today = new Date();
-       const monthsAbbr = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
-       const dateFormatted = paymentDate;
-
-       // 1. Create card_payments records — attach target_period so the payment
-       // is attributed to the invoice the user was viewing, not the cycle of paid_at.
+       // Cria o registro de pagamento e a transação bancária espelho em uma
+       // única transação PostgreSQL. Qualquer falha reverte todas as linhas.
        const targetPeriod = activePeriod?.endDate
          ? activePeriod.endDate.toISOString().slice(0, 10)
          : null;
-       const inserts = validLines.map((l) => ({
-         card_id: payingCard.id,
-         bank_account_id: l.accountId,
-         amount: parseFloat(l.amount),
-         paid_at: (() => {
-           try {
-             const parsed = parse(paymentDate, "dd MMM", new Date(), { locale: ptBR });
-             return parsed.toISOString();
-           } catch {
-             return new Date().toISOString();
-           }
-         })(),
-         target_period: targetPeriod,
+       const paidAt = (() => {
+         try {
+           return parse(paymentDate, "dd MMM", new Date(), { locale: ptBR }).toISOString();
+         } catch {
+           return new Date().toISOString();
+         }
+       })();
+       const rpcLines = validLines.map((line) => ({
+         account_id: line.accountId,
+         amount: Math.round(parseFloat(line.amount) * 100) / 100,
        }));
-       const { error: paymentInsertError } = await supabase.from("card_payments").insert(inserts as any);
-       if (paymentInsertError) throw paymentInsertError;
 
-      // 2. Update bank balances and create expense transactions
-      for (const line of validLines) {
-        const account = bankAccounts.find((a) => a.id === line.accountId);
-        const amount = parseFloat(line.amount);
-        if (account) {
-          // The application uses a virtual balance system: virtual_balance = account.balance + total_income - total_expenses
-          // The current `account.balance` in the component already reflects this virtual balance.
-          // Since we are about to create a new expense transaction of `amount`, it will automatically be subtracted 
-          // from the virtual balance during the next `fetchAll()`. 
-          // Therefore, we MUST NOT subtract the amount from the `bank_accounts.balance` column in the DB, 
-          // as that would result in a double deduction (once in the base balance and once in the transactions).
-          // We only update the updated_at timestamp or keep the balance as is.
-          // await supabase.from("bank_accounts").update({ balance: account.balance - amount }).eq("id", line.accountId);
-          
-          // Create transaction for history/debiting from reports
-          const { error: txInsError } = await supabase.from("transactions").insert(sanitizeTransactionWrite({
-            name: paymentName,
-            amount: amount,
-            type: "expense",
-            category: "Pagamento de Cartão",
-            icon: "💳",
-            date: dateFormatted,
-            bank_account_id: line.accountId,
-            created_at: new Date().toISOString()
-          }));
-          
-          if (txInsError) throw txInsError;
-        }
-      }
-      
+       const { error: paymentError } = await (supabase as any).rpc("create_card_payment_atomic", {
+         p_card_id: payingCard.id,
+         p_lines: rpcLines,
+         p_paid_at: paidAt,
+         p_target_period: targetPeriod,
+         p_payment_kind: isTotalPayment ? "total" : "partial",
+       });
+       if (paymentError) throw paymentError;
+
       toast.success(`${paymentName} de R$ ${paymentTotal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} realizado!`);
       setPayDialogOpen(false);
       
