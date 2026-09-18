@@ -919,6 +919,14 @@ export type Database = {
         Args: { p_created_at?: string; p_value: string }
         Returns: string
       }
+      consume_pdf_parse_quota: {
+        Args: never
+        Returns: {
+          allowed: boolean
+          remaining: number
+          retry_after_seconds: number
+        }[]
+      }
       create_card_payment_atomic: {
         Args: {
           p_card_id: string
