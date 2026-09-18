@@ -32,31 +32,29 @@ export const requireSupabaseAuth = createMiddleware({ type: 'function' })
     const SUPABASE_PUBLISHABLE_KEY = process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
     if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
-      throw new Response(
-        'Missing Supabase environment variables. Ensure SUPABASE_URL/SUPABASE_PUBLISHABLE_KEY or their VITE_ equivalents are set.',
-        { status: 500 }
-      );
+      console.error('requireSupabaseAuth missing Supabase server configuration');
+      throw new Response('Server authentication unavailable', { status: 500 });
     }
     
     const request = getRequest();
 
     if (!request?.headers) {
-      throw new Response('Unauthorized: No request headers available', { status: 401 });
+      throw new Response('Unauthorized', { status: 401 });
     }
 
     const authHeader = request.headers.get('authorization');
 
     if (!authHeader) {
-      throw new Response('Unauthorized: No authorization header provided', { status: 401 });
+      throw new Response('Unauthorized', { status: 401 });
     }
 
     if (!authHeader.startsWith('Bearer ')) {
-      throw new Response('Unauthorized: Only Bearer tokens are supported', { status: 401 });
+      throw new Response('Unauthorized', { status: 401 });
     }
 
     const token = authHeader.replace('Bearer ', '');
     if (!token) {
-      throw new Response('Unauthorized: No token provided', { status: 401 });
+      throw new Response('Unauthorized', { status: 401 });
     }
 
     const supabase = createClient<Database>(
@@ -76,20 +74,20 @@ export const requireSupabaseAuth = createMiddleware({ type: 'function' })
       }
     );
 
-    const { data, error } = await supabase.auth.getClaims(token);
-    if (error || !data?.claims) {
-      throw new Response('Unauthorized: Invalid token', { status: 401 });
-    }
-
-    if (!data.claims.sub) {
-      throw new Response('Unauthorized: No user ID found in token', { status: 401 });
+    // getUser validates the token against Supabase Auth instead of relying only
+    // on local JWT claims. This rejects deleted/disabled users as soon as Auth
+    // stops accepting their session.
+    const { data, error } = await supabase.auth.getUser(token);
+    if (error || !data?.user?.id) {
+      if (error) console.warn('requireSupabaseAuth rejected session', error.message);
+      throw new Response('Unauthorized', { status: 401 });
     }
 
     return next({
       context: {
         supabase,
-        userId: data.claims.sub,
-        claims: data.claims,
+        userId: data.user.id,
+        user: data.user,
       },
     });
   })
