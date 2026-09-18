@@ -36,5 +36,6 @@
         }
       ]
     }
-  ]
+  ],
+  "buildCommand": "bun run check:no-sensitive-files && bun run typecheck && bun run build"
 }
