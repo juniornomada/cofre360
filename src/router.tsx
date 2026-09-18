@@ -1,4 +1,5 @@
 import { createRouter, useRouter } from "@tanstack/react-router";
+import { createIsomorphicFn, getGlobalStartContext } from "@tanstack/react-start";
 import { routeTree } from "./routeTree.gen";
 import { installInvoiceTransactionRowInteractions } from "@/lib/invoice-transaction-row-interactions";
 
@@ -63,6 +64,20 @@ function DefaultErrorComponent({
   );
 }
 
+const getCspNonce = createIsomorphicFn()
+  .server(() => {
+    try {
+      const context = getGlobalStartContext() as any;
+      return typeof context?.cspNonce === "string" ? context.cspNonce : "";
+    } catch {
+      return "";
+    }
+  })
+  .client(() => {
+    const meta = document.querySelector('meta[property="csp-nonce"]');
+    return meta?.getAttribute("content") || "";
+  });
+
 export const getRouter = () => {
   installInvoiceTransactionRowInteractions();
 
@@ -72,6 +87,9 @@ export const getRouter = () => {
     scrollRestoration: true,
     defaultPreloadStaleTime: 0,
     defaultErrorComponent: DefaultErrorComponent,
+    ssr: {
+      nonce: getCspNonce() || undefined,
+    },
   });
 
   return router;
