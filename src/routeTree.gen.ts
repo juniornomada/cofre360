@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TransactionsRouteImport } from './routes/transactions'
 import { Route as ShopRouteImport } from './routes/shop'
+import { Route as SecurityRouteImport } from './routes/security'
 import { Route as RemindersRouteImport } from './routes/reminders'
 import { Route as ReconciliationRouteImport } from './routes/reconciliation'
 import { Route as OrcametasRouteImport } from './routes/orcametas'
@@ -35,6 +36,11 @@ const TransactionsRoute = TransactionsRouteImport.update({
 const ShopRoute = ShopRouteImport.update({
   id: '/shop',
   path: '/shop',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SecurityRoute = SecurityRouteImport.update({
+  id: '/security',
+  path: '/security',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RemindersRoute = RemindersRouteImport.update({
@@ -130,6 +136,7 @@ export interface FileRoutesByFullPath {
   '/reconciliation': typeof ReconciliationRoute
   '/reminders': typeof RemindersRoute
   '/shop': typeof ShopRoute
+  '/security': typeof SecurityRoute
   '/transactions': typeof TransactionsRoute
   '/api/public/hooks/reconciliation-daily': typeof ApiPublicHooksReconciliationDailyRoute
 }
@@ -149,6 +156,7 @@ export interface FileRoutesByTo {
   '/reconciliation': typeof ReconciliationRoute
   '/reminders': typeof RemindersRoute
   '/shop': typeof ShopRoute
+  '/security': typeof SecurityRoute
   '/transactions': typeof TransactionsRoute
   '/api/public/hooks/reconciliation-daily': typeof ApiPublicHooksReconciliationDailyRoute
 }
@@ -169,6 +177,7 @@ export interface FileRoutesById {
   '/reconciliation': typeof ReconciliationRoute
   '/reminders': typeof RemindersRoute
   '/shop': typeof ShopRoute
+  '/security': typeof SecurityRoute
   '/transactions': typeof TransactionsRoute
   '/api/public/hooks/reconciliation-daily': typeof ApiPublicHooksReconciliationDailyRoute
 }
@@ -190,6 +199,7 @@ export interface FileRouteTypes {
     | '/reconciliation'
     | '/reminders'
     | '/shop'
+    | '/security'
     | '/transactions'
     | '/api/public/hooks/reconciliation-daily'
   fileRoutesByTo: FileRoutesByTo
@@ -209,6 +219,7 @@ export interface FileRouteTypes {
     | '/reconciliation'
     | '/reminders'
     | '/shop'
+    | '/security'
     | '/transactions'
     | '/api/public/hooks/reconciliation-daily'
   id:
@@ -228,6 +239,7 @@ export interface FileRouteTypes {
     | '/reconciliation'
     | '/reminders'
     | '/shop'
+    | '/security'
     | '/transactions'
     | '/api/public/hooks/reconciliation-daily'
   fileRoutesById: FileRoutesById
@@ -248,6 +260,7 @@ export interface RootRouteChildren {
   ReconciliationRoute: typeof ReconciliationRoute
   RemindersRoute: typeof RemindersRoute
   ShopRoute: typeof ShopRoute
+  SecurityRoute: typeof SecurityRoute
   TransactionsRoute: typeof TransactionsRoute
   ApiPublicHooksReconciliationDailyRoute: typeof ApiPublicHooksReconciliationDailyRoute
 }
@@ -266,6 +279,13 @@ declare module '@tanstack/react-router' {
       path: '/shop'
       fullPath: '/shop'
       preLoaderRoute: typeof ShopRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/security': {
+      id: '/security'
+      path: '/security'
+      fullPath: '/security'
+      preLoaderRoute: typeof SecurityRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reminders': {
@@ -392,6 +412,7 @@ const rootRouteChildren: RootRouteChildren = {
   ReconciliationRoute: ReconciliationRoute,
   RemindersRoute: RemindersRoute,
   ShopRoute: ShopRoute,
+  SecurityRoute: SecurityRoute,
   TransactionsRoute: TransactionsRoute,
   ApiPublicHooksReconciliationDailyRoute:
     ApiPublicHooksReconciliationDailyRoute,
