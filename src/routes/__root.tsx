@@ -155,6 +155,8 @@ function RootComponent() {
   const router = useRouter();
   const [session, setSession] = useState<any>(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const [mfaLoading, setMfaLoading] = useState(true);
+  const [mfaRequired, setMfaRequired] = useState(false);
   const [queryClient] = useState(() => new QueryClient({
     defaultOptions: {
       queries: {
@@ -165,31 +167,63 @@ function RootComponent() {
   }));
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setAuthLoading(false);
+    let cancelled = false;
+
+    const evaluateSession = async (nextSession: any) => {
+      if (cancelled) return;
+      setSession(nextSession);
+
+      if (!nextSession) {
+        setMfaRequired(false);
+        setAuthLoading(false);
+        setMfaLoading(false);
+        return;
+      }
+
+      setMfaLoading(true);
+      try {
+        const { data, error } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+        if (error) throw error;
+        if (!cancelled) {
+          setMfaRequired(data?.currentLevel === "aal1" && data?.nextLevel === "aal2");
+        }
+      } catch (error) {
+        console.error("MFA assurance check failed", error);
+        if (!cancelled) setMfaRequired(false);
+      } finally {
+        if (!cancelled) {
+          setAuthLoading(false);
+          setMfaLoading(false);
+        }
+      }
+    };
+
+    void supabase.auth.getSession().then(({ data: { session } }) => evaluateSession(session));
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      void evaluateSession(nextSession);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setAuthLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
+    return () => {
+      cancelled = true;
+      subscription.unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
-    if (!authLoading) {
+    if (!authLoading && !mfaLoading) {
       const path = router.state.location.pathname;
       if (!session && path !== '/auth') {
         router.navigate({ to: '/auth' });
-      } else if (session && path === '/auth') {
+      } else if (session && mfaRequired && path !== '/security') {
+        router.navigate({ to: '/security' as any, replace: true });
+      } else if (session && !mfaRequired && path === '/auth') {
         router.navigate({ to: '/home', replace: true });
       }
     }
-  }, [session, authLoading, router.state.location.pathname]);
+  }, [session, authLoading, mfaLoading, mfaRequired, router.state.location.pathname]);
 
-  if (authLoading) {
+  if (authLoading || mfaLoading) {
     return (
       <div className="flex min-h-dvh items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -199,6 +233,7 @@ function RootComponent() {
 
   const search = router.state.location.search as any;
   const isComparisonMode = search.compare === 'theme';
+  const isSecurityFlow = router.state.location.pathname === '/security';
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -208,7 +243,7 @@ function RootComponent() {
           !isComparisonMode && "max-w-md"
         )}>
           <Outlet />
-          {!isComparisonMode && (
+          {!isComparisonMode && !isSecurityFlow && (
             <Suspense fallback={
               <div className="fixed bottom-0 left-0 right-0 h-16 bg-card/80 flex items-center justify-center border-t border-border">
                 <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
