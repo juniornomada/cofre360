@@ -25,7 +25,9 @@ function ErrorComponent({ error }: { error: any }) {
     <div className="flex min-h-dvh items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
         <h1 className="text-xl font-bold text-foreground">Ocorreu um erro</h1>
-        <p className="mt-2 text-sm text-muted-foreground">{error?.message || "Algo deu errado."}</p>
+        <p className="mt-2 text-sm text-muted-foreground">
+          {import.meta.env.DEV && error?.message ? error.message : "Algo deu errado. Tente novamente."}
+        </p>
         <div className="mt-6">
           <Button
             onClick={() => window.location.reload()}
