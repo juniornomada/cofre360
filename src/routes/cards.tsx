@@ -846,7 +846,7 @@ function CardsPage() {
   const handleDeletePayment = async (payment: { id: string; amount: number; date: string; bank_account_id: string | null }, _cardName: string) => {
     setDeletingPaymentId(payment.id);
     try {
-      const { error } = await (supabase as any).rpc("delete_card_payment_atomic", {
+      const { error } = await supabase.rpc("delete_card_payment_atomic", {
         p_payment_id: payment.id,
       });
       if (error) throw error;
@@ -1427,7 +1427,7 @@ function CardsPage() {
          amount: Math.round(parseFloat(line.amount) * 100) / 100,
        }));
 
-       const { error: paymentError } = await (supabase as any).rpc("create_card_payment_atomic", {
+       const { error: paymentError } = await supabase.rpc("create_card_payment_atomic", {
          p_card_id: payingCard.id,
          p_lines: rpcLines,
          p_paid_at: paidAt,
