@@ -85,6 +85,15 @@ function chooseBest<T extends { label: string }>(items: T[], wanted?: string): T
 serve(async (req) => {
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
 
+  const contentType = (req.headers.get("Content-Type") ?? "").toLowerCase();
+  if (!contentType.startsWith("application/json")) {
+    return json({ error: "Content-Type must be application/json" }, 415);
+  }
+  const contentLength = Number(req.headers.get("Content-Length") ?? "0");
+  if (Number.isFinite(contentLength) && contentLength > 32_768) {
+    return json({ error: "Request body is too large" }, 413);
+  }
+
   try {
     const expectedToken = Deno.env.get("COFRE360_EXTERNAL_API_TOKEN") ?? "";
     const userId = Deno.env.get("COFRE360_EXTERNAL_USER_ID") ?? "";
@@ -159,16 +168,21 @@ serve(async (req) => {
     let cardName: string | null = null;
     if (requestedCard) {
       if (requestedCard.length > 160) return json({ error: "card is too long" }, 400);
-      const { data: card, error: cardError } = await supabase
+      const { data: userCards, error: cardError } = await supabase
         .from("cards")
         .select("name")
-        .eq("user_id", userId)
-        .ilike("name", requestedCard)
-        .limit(1)
-        .maybeSingle();
+        .eq("user_id", userId);
       if (cardError) throw cardError;
-      if (!card) return json({ error: "card not found for configured user" }, 400);
-      cardName = card.name;
+
+      const targetCard = normalize(requestedCard);
+      const matchingCards = (userCards ?? []).filter((card) => normalize(card.name) === targetCard);
+      if (matchingCards.length === 0) {
+        return json({ error: "card not found for configured user" }, 400);
+      }
+      if (matchingCards.length > 1) {
+        return json({ error: "card name is ambiguous for configured user" }, 409);
+      }
+      cardName = matchingCards[0].name;
     }
 
     const row = {
