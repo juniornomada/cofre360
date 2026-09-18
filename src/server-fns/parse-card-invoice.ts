@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 // Parse a credit-card invoice OR bank-account statement PDF using pdfjs-dist
 // (text extraction) and Lovable AI Gateway (structured transaction extraction).
@@ -60,6 +61,10 @@ async function extractPdfText(base64: string): Promise<string> {
   });
 
   const doc = await loadingTask.promise;
+  if (doc.numPages > 100) {
+    await loadingTask.destroy().catch(() => undefined);
+    throw new Error("PDF com páginas demais para processamento seguro (máx. 100).");
+  }
 
   let full = "";
   for (let p = 1; p <= doc.numPages; p++) {
@@ -99,7 +104,8 @@ async function extractPdfText(base64: string): Promise<string> {
 async function aiExtractTransactions(rawText: string, kind: DocumentKind): Promise<ParsedInvoiceTx[]> {
   const LOVABLE_API_KEY = process.env.LOVABLE_API_KEY;
   if (!LOVABLE_API_KEY) {
-    throw new Error("LOVABLE_API_KEY ausente — não foi possível processar o PDF.");
+    console.error("parse-card-invoice missing LOVABLE_API_KEY");
+    throw new Error("Serviço de processamento temporariamente indisponível.");
   }
 
   // Truncate to keep token usage reasonable
@@ -194,7 +200,8 @@ ${trimmed}
     const body = await response.text();
     if (response.status === 429) throw new Error("Limite de uso da IA atingido. Tente novamente em alguns instantes.");
     if (response.status === 402) throw new Error("Créditos de IA insuficientes. Adicione créditos em Configurações → Lovable AI.");
-    throw new Error(`Falha ao chamar IA (${response.status}): ${body.slice(0, 200)}`);
+    console.error("parse-card-invoice AI gateway error", response.status, body.slice(0, 200));
+    throw new Error("Falha temporária no provedor de IA. Tente novamente.");
   }
 
   const data = await response.json();
@@ -225,20 +232,52 @@ ${trimmed}
 }
 
 export const parseCardInvoicePdf = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((input: { fileBase64: string; fileName: string; kind?: DocumentKind }) => {
     if (!input || typeof input.fileBase64 !== "string" || !input.fileBase64) {
       throw new Error("Arquivo PDF ausente.");
     }
-    if (input.fileBase64.length > 20 * 1024 * 1024) {
-      throw new Error("Arquivo muito grande (máx. ~10MB).");
+
+    const fileName = typeof input.fileName === "string" ? input.fileName.trim() : "";
+    if (!fileName || fileName.length > 255 || !fileName.toLowerCase().endsWith(".pdf")) {
+      throw new Error("Arquivo inválido. Envie um PDF.");
     }
-    return { ...input, kind: input.kind ?? "card_invoice" as DocumentKind };
+
+    const kind = input.kind ?? "card_invoice";
+    if (kind !== "card_invoice" && kind !== "bank_statement") {
+      throw new Error("Tipo de documento inválido.");
+    }
+
+    // Base64 is ~4/3 of the decoded payload. Cap the decoded document at 10 MiB.
+    const padding = input.fileBase64.endsWith("==") ? 2 : input.fileBase64.endsWith("=") ? 1 : 0;
+    const estimatedBytes = Math.floor((input.fileBase64.length * 3) / 4) - padding;
+    if (estimatedBytes <= 0 || estimatedBytes > 10 * 1024 * 1024) {
+      throw new Error("Arquivo muito grande (máx. 10MB).");
+    }
+
+    return { fileBase64: input.fileBase64, fileName, kind };
   })
-  .handler(async ({ data }) => {
+  .handler(async (ctx: any) => {
+    const { data } = ctx;
+    const { supabase } = ctx.context;
+
+    const { data: quotaRows, error: quotaError } = await supabase.rpc("consume_pdf_parse_quota");
+    if (quotaError) {
+      console.error("parse-card-invoice quota check failed", quotaError.message);
+      throw new Error("Processamento de PDF temporariamente indisponível.");
+    }
+
+    const quota = Array.isArray(quotaRows) ? quotaRows[0] : quotaRows;
+    if (!quota?.allowed) {
+      const retry = Math.max(1, Number(quota?.retry_after_seconds) || 60);
+      throw new Error(`Muitas tentativas de processamento. Tente novamente em aproximadamente ${Math.ceil(retry / 60)} minuto(s).`);
+    }
+
     const text = await extractPdfText(data.fileBase64);
     if (!text || text.trim().length < 30) {
       throw new Error("Não foi possível extrair texto deste PDF (talvez seja imagem escaneada).");
     }
+
     const transactions = await aiExtractTransactions(text, data.kind);
     return { transactions, charsExtracted: text.length };
   });
