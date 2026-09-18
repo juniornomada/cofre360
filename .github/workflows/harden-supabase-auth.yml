@@ -2,6 +2,11 @@ name: Harden Supabase Auth
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "scripts/harden-supabase-auth.mjs"
+      - ".github/workflows/harden-supabase-auth.yml"
 
 permissions:
   contents: read
@@ -11,85 +16,9 @@ jobs:
     name: Apply production Auth hardening
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Apply and verify targeted Supabase Auth settings
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-          SUPABASE_PROJECT_REF: bllqvpnjfpcvujrbrbig
-        run: |
-          node <<'NODE'
-          const token = process.env.SUPABASE_ACCESS_TOKEN;
-          const ref = process.env.SUPABASE_PROJECT_REF;
-          if (!token) {
-            console.error("SUPABASE_ACCESS_TOKEN repository secret is not configured.");
-            process.exit(1);
-          }
-
-          const url = `https://api.supabase.com/v1/projects/${ref}/config/auth`;
-          const headers = {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          };
-
-          const beforeRes = await fetch(url, { headers });
-          if (!beforeRes.ok) {
-            console.error(`Unable to read Auth config: HTTP ${beforeRes.status}`);
-            process.exit(1);
-          }
-          const before = await beforeRes.json();
-
-          const strongestPasswordClasses =
-            "abcdefghijklmnopqrstuvwxyz:ABCDEFGHIJKLMNOPQRSTUVWXYZ:0123456789:!@#$%^&*()_+-=[]{};'\\\\:\"|<>?,./`~";
-
-          const existingRedirects = String(before.uri_allow_list || "")
-            .split(",")
-            .map((value) => value.trim())
-            .filter(Boolean);
-          const requiredRedirects = [
-            "https://cofre360.vercel.app/**",
-            "https://cofre360.lovable.app/**",
-            "http://localhost:5173/**",
-            "http://localhost:3000/**",
-          ];
-          const uriAllowList = [...new Set([...existingRedirects, ...requiredRedirects])].join(",");
-
-          const desired = {
-            site_url: "https://cofre360.vercel.app",
-            uri_allow_list: uriAllowList,
-            mailer_autoconfirm: false,
-            mailer_allow_unverified_email_sign_ins: false,
-            mailer_secure_email_change_enabled: true,
-            password_min_length: 12,
-            password_required_characters: strongestPasswordClasses,
-            refresh_token_rotation_enabled: true,
-            security_refresh_token_reuse_interval: 10,
-            security_manual_linking_enabled: false,
-            external_anonymous_users_enabled: false,
-            jwt_exp: 3600,
-            mailer_otp_exp: 3600,
-          };
-
-          const patchRes = await fetch(url, {
-            method: "PATCH",
-            headers,
-            body: JSON.stringify(desired),
-          });
-          if (!patchRes.ok) {
-            console.error(`Unable to update Auth config: HTTP ${patchRes.status}`);
-            process.exit(1);
-          }
-
-          const verifyRes = await fetch(url, { headers });
-          if (!verifyRes.ok) {
-            console.error(`Unable to verify Auth config: HTTP ${verifyRes.status}`);
-            process.exit(1);
-          }
-          const after = await verifyRes.json();
-
-          const mismatches = Object.entries(desired).filter(([key, value]) => after[key] !== value);
-          if (mismatches.length) {
-            console.error("Auth hardening verification failed for:", mismatches.map(([key]) => key).join(", "));
-            process.exit(1);
-          }
-
-          console.log("Supabase Auth hardening applied and verified.");
-          NODE
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+        run: node scripts/harden-supabase-auth.mjs
