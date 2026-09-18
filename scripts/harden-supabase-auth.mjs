@@ -30,8 +30,6 @@ const desired = {
   mfa_totp_enroll_enabled: true,
   mfa_totp_verify_enabled: true,
   mfa_max_enrolled_factors: 3,
-  sessions_inactivity_timeout: 604800,
-  sessions_timebox: 2592000,
 };
 
 const headers = {
@@ -101,4 +99,3 @@ console.log(" - 1-hour JWT and email OTP lifetime");
 console.log(" - secure email changes and refresh-token rotation enabled");
 console.log(" - password changes require current/recent authentication");
 console.log(" - TOTP MFA enabled");
-console.log(" - sessions expire after 7 days inactivity / 30 days maximum");
