@@ -1,14 +1,16 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
+const PROD_ORIGIN = "https://cofre360.vercel.app";
 const ALLOWED_ORIGINS = new Set([
+  PROD_ORIGIN,
   "https://cofre360.lovable.app",
   "https://id-preview--8755cbe4-fc00-44b3-810a-824346dac2f8.lovable.app",
   "http://localhost:5173",
   "http://localhost:3000",
 ]);
 function buildCors(origin: string | null) {
-  const allow = origin && ALLOWED_ORIGINS.has(origin) ? origin : "https://cofre360.lovable.app";
+  const allow = origin && ALLOWED_ORIGINS.has(origin) ? origin : PROD_ORIGIN;
   return {
     "Access-Control-Allow-Origin": allow,
     "Vary": "Origin",
@@ -127,30 +129,42 @@ serve(async (req) => {
     const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 
-    // Require service-role (internal/cron) or an authenticated user.
+    // This endpoint can trigger multiple AI requests, so authentication alone
+    // is not sufficient. Authorization is controlled by trusted app_metadata,
+    // which users cannot edit themselves.
     const authHeader = req.headers.get("Authorization") ?? "";
     const token = authHeader.toLowerCase().startsWith("bearer ")
       ? authHeader.slice(7).trim()
       : "";
-    const isServiceRole = !!token && token === SERVICE_KEY;
-    if (!isServiceRole) {
-      if (!token) {
-        return new Response(JSON.stringify({ error: "Unauthorized" }), {
-          status: 401,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      const userClient = createClient(SUPABASE_URL, ANON_KEY, {
-        global: { headers: { Authorization: `Bearer ${token}` } },
-        auth: { persistSession: false, autoRefreshToken: false },
+    if (!token) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
-      const { data: userData, error: userErr } = await userClient.auth.getUser();
-      if (userErr || !userData?.user) {
-        return new Response(JSON.stringify({ error: "Unauthorized" }), {
-          status: 401,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
+    }
+
+    const userClient = createClient(SUPABASE_URL, ANON_KEY, {
+      global: { headers: { Authorization: `Bearer ${token}` } },
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const { data: userData, error: userErr } = await userClient.auth.getUser();
+    if (userErr || !userData?.user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const appMetadata = userData.user.app_metadata ?? {};
+    const canRunAiTests =
+      appMetadata.run_ai_tests === true ||
+      appMetadata.role === "admin";
+
+    if (!canRunAiTests) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     let trigger = "scheduled";
@@ -191,7 +205,7 @@ serve(async (req) => {
     });
   } catch (e: any) {
     console.error("run-ai-tests error:", e);
-    return new Response(JSON.stringify({ error: e?.message ?? "erro" }), {
+    return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
