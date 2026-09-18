@@ -13,6 +13,7 @@ import {
   Landmark,
   LogOut,
   Settings,
+  ShieldCheck,
   Plus,
 } from "lucide-react";
 import { SmartLink as Link } from "@/components/SmartLink";
@@ -494,6 +495,9 @@ function RecoveredHome() {
             <DropdownMenuContent align="end" className="w-44">
               <DropdownMenuItem onSelect={(event) => event.preventDefault()} className="flex items-center justify-between gap-2 text-[12px]">
                 <span>Tema</span><ThemeToggle />
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => { window.location.href = "/security"; }} className="gap-2 text-[12px]">
+                <ShieldCheck className="h-4 w-4" /> Segurança
               </DropdownMenuItem>
               <DropdownMenuItem onSelect={handleLogout} className="gap-2 text-[12px] text-destructive focus:text-destructive">
                 <LogOut className="h-4 w-4" /> Sair
