@@ -1025,8 +1025,9 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
     const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
+    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
-    if (!LOVABLE_API_KEY || !SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    if (!LOVABLE_API_KEY || !SUPABASE_URL || !SUPABASE_ANON_KEY || !SUPABASE_SERVICE_ROLE_KEY) {
       console.error("financial-chat missing server configuration");
       return new Response(JSON.stringify({ error: "Assistente indisponível por configuração do servidor" }), {
         status: 500,
@@ -1106,7 +1107,13 @@ serve(async (req) => {
       return deterministicSseResponse(deterministicAnswer, corsHeaders);
     }
 
-    const { data: quotaRows, error: quotaError } = await supabase.rpc("consume_financial_chat_quota");
+    const quotaClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const { data: quotaRows, error: quotaError } = await quotaClient.rpc(
+      "consume_financial_chat_quota",
+      { p_user_id: userData.user.id },
+    );
     if (quotaError) {
       console.error("financial-chat quota check failed", quotaError.message);
       return new Response(JSON.stringify({ error: "Assistente temporariamente indisponível" }), {
