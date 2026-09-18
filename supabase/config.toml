@@ -3,7 +3,7 @@ project_id = "bllqvpnjfpcvujrbrbig"
 [auth]
 enable_signup = true
 enable_email_signup = true
-enable_email_confirmations = false
+enable_email_confirmations = true
 
 [functions.financial-chat]
 verify_jwt = true
