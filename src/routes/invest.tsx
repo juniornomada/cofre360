@@ -10,6 +10,8 @@ import {
   RefreshCw,
   Eye,
   EyeOff,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useServerFn } from "@tanstack/react-start";
@@ -135,6 +137,7 @@ function InvestPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
   const [editing, setEditing] = useState<Investment | null>(null);
+  const [detailsExpanded, setDetailsExpanded] = useState(true);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [detail, setDetail] = useState<Investment | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm());
@@ -241,11 +244,13 @@ function InvestPage() {
   const openAdd = (cls?: AssetClass) => {
     setForm(emptyForm(cls));
     setEditing(null);
+    setDetailsExpanded(true);
     setShowAdd(true);
   };
 
   const openEdit = (inv: Investment) => {
     setEditing(inv);
+    setDetailsExpanded(false);
     setForm({
       name: inv.name || "",
       icon: inv.icon || "📈",
@@ -730,94 +735,123 @@ function InvestPage() {
               </p>
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="text-[10px] text-muted-foreground mb-1 block">Risco</label>
-                <input
-                  value={form.risk_level}
-                  onChange={(e) => setForm({ ...form, risk_level: e.target.value })}
-                  placeholder="Baixo, Médio, Alto"
-                  className="w-full rounded-xl bg-card px-3 py-2 text-sm outline-none"
-                />
-              </div>
-              <div>
-                <label className="text-[10px] text-muted-foreground mb-1 block">Nota de risco</label>
-                <input
-                  inputMode="decimal"
-                  value={form.risk_score}
-                  onChange={(e) => setForm({ ...form, risk_score: e.target.value })}
-                  placeholder="Ex: 24"
-                  className="w-full rounded-xl bg-card px-3 py-2 text-sm outline-none"
-                />
-              </div>
-            </div>
+            <div className="overflow-hidden rounded-xl border border-border/60 bg-card/30">
+              <button
+                type="button"
+                onClick={() => setDetailsExpanded((open) => !open)}
+                className="flex w-full items-center justify-between gap-3 px-3 py-3 text-left"
+                aria-expanded={detailsExpanded}
+              >
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold text-foreground">
+                    {detailsExpanded ? "Ocultar detalhes" : "Mais detalhes"}
+                  </p>
+                  {!detailsExpanded && (
+                    <p className="mt-0.5 truncate text-[10px] text-muted-foreground">
+                      Risco, resgate, datas{fixedIncome ? " e rentabilidade" : ""}
+                    </p>
+                  )}
+                </div>
+                {detailsExpanded ? (
+                  <ChevronUp className="h-4 w-4 shrink-0 text-muted-foreground" />
+                ) : (
+                  <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
+                )}
+              </button>
 
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="text-[10px] text-muted-foreground mb-1 block">Cotização de resgate</label>
-                <input
-                  value={form.redemption_quote}
-                  onChange={(e) => setForm({ ...form, redemption_quote: e.target.value })}
-                  placeholder="Ex: D+1"
-                  className="w-full rounded-xl bg-card px-3 py-2 text-sm outline-none"
-                />
-              </div>
-              <div>
-                <label className="text-[10px] text-muted-foreground mb-1 block">Liquidação</label>
-                <input
-                  value={form.redemption_settlement}
-                  onChange={(e) => setForm({ ...form, redemption_settlement: e.target.value })}
-                  placeholder="Ex: D+2 úteis"
-                  className="w-full rounded-xl bg-card px-3 py-2 text-sm outline-none"
-                />
-              </div>
-            </div>
+              {detailsExpanded && (
+                <div className="flex flex-col gap-3 border-t border-border/50 px-3 pb-3 pt-3">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[10px] text-muted-foreground mb-1 block">Risco</label>
+                      <input
+                        value={form.risk_level}
+                        onChange={(e) => setForm({ ...form, risk_level: e.target.value })}
+                        placeholder="Baixo, Médio, Alto"
+                        className="w-full rounded-xl bg-card px-3 py-2 text-sm outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-muted-foreground mb-1 block">Nota de risco</label>
+                      <input
+                        inputMode="decimal"
+                        value={form.risk_score}
+                        onChange={(e) => setForm({ ...form, risk_score: e.target.value })}
+                        placeholder="Ex: 24"
+                        className="w-full rounded-xl bg-card px-3 py-2 text-sm outline-none"
+                      />
+                    </div>
+                  </div>
 
-            <div>
-              <label className="text-xs text-muted-foreground mb-1 block">Data de compra</label>
-              <input
-                type="date"
-                value={form.purchase_date}
-                onChange={(e) => setForm({ ...form, purchase_date: e.target.value })}
-                className="w-full rounded-xl bg-card px-3 py-2 text-sm outline-none"
-              />
-            </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[10px] text-muted-foreground mb-1 block">Cotização de resgate</label>
+                      <input
+                        value={form.redemption_quote}
+                        onChange={(e) => setForm({ ...form, redemption_quote: e.target.value })}
+                        placeholder="Ex: D+1"
+                        className="w-full rounded-xl bg-card px-3 py-2 text-sm outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-muted-foreground mb-1 block">Liquidação</label>
+                      <input
+                        value={form.redemption_settlement}
+                        onChange={(e) => setForm({ ...form, redemption_settlement: e.target.value })}
+                        placeholder="Ex: D+2 úteis"
+                        className="w-full rounded-xl bg-card px-3 py-2 text-sm outline-none"
+                      />
+                    </div>
+                  </div>
 
-            {fixedIncome && (
-              <>
-                <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="text-xs text-muted-foreground mb-1 block">Rentabilidade (% a.a.)</label>
+                    <label className="text-xs text-muted-foreground mb-1 block">Data de compra</label>
                     <input
-                      inputMode="decimal"
-                      value={form.yield_rate}
-                      onChange={(e) => setForm({ ...form, yield_rate: e.target.value })}
-                      placeholder="Ex: 12,5"
+                      type="date"
+                      value={form.purchase_date}
+                      onChange={(e) => setForm({ ...form, purchase_date: e.target.value })}
                       className="w-full rounded-xl bg-card px-3 py-2 text-sm outline-none"
                     />
                   </div>
-                  <div>
-                    <label className="text-xs text-muted-foreground mb-1 block">Taxa adm. (% a.a.)</label>
-                    <input
-                      inputMode="decimal"
-                      value={form.admin_fee}
-                      onChange={(e) => setForm({ ...form, admin_fee: e.target.value })}
-                      placeholder="0"
-                      className="w-full rounded-xl bg-card px-3 py-2 text-sm outline-none"
-                    />
-                  </div>
+
+                  {fixedIncome && (
+                    <>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="text-xs text-muted-foreground mb-1 block">Rentabilidade (% a.a.)</label>
+                          <input
+                            inputMode="decimal"
+                            value={form.yield_rate}
+                            onChange={(e) => setForm({ ...form, yield_rate: e.target.value })}
+                            placeholder="Ex: 12,5"
+                            className="w-full rounded-xl bg-card px-3 py-2 text-sm outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs text-muted-foreground mb-1 block">Taxa adm. (% a.a.)</label>
+                          <input
+                            inputMode="decimal"
+                            value={form.admin_fee}
+                            onChange={(e) => setForm({ ...form, admin_fee: e.target.value })}
+                            placeholder="0"
+                            className="w-full rounded-xl bg-card px-3 py-2 text-sm outline-none"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-xs text-muted-foreground mb-1 block">Vencimento</label>
+                        <input
+                          type="date"
+                          value={form.maturity_date}
+                          onChange={(e) => setForm({ ...form, maturity_date: e.target.value })}
+                          className="w-full rounded-xl bg-card px-3 py-2 text-sm outline-none"
+                        />
+                      </div>
+                    </>
+                  )}
                 </div>
-                <div>
-                  <label className="text-xs text-muted-foreground mb-1 block">Vencimento</label>
-                  <input
-                    type="date"
-                    value={form.maturity_date}
-                    onChange={(e) => setForm({ ...form, maturity_date: e.target.value })}
-                    className="w-full rounded-xl bg-card px-3 py-2 text-sm outline-none"
-                  />
-                </div>
-              </>
-            )}
+              )}
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => { setShowAdd(false); setEditing(null); }}>Cancelar</Button>
