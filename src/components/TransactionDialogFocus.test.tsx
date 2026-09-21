@@ -104,47 +104,31 @@ describe("Transaction Dialog Keyboard Closure and Auto-Focus", () => {
     }, { timeout: 2000 });
   });
 
-  it("should not have any field focused with active keyboard (inputMode != 'none') when opening and re-opening", () => {
-    const { rerender } = render(
+  it("keeps the transaction name as a native text field without auto-focusing it", () => {
+    render(
       <QueryClientProvider client={queryClient}>
         <QuickAddTransactionDialog open={true} onOpenChange={() => {}} />
       </QueryClientProvider>
     );
 
-    // Verify no input has inputMode other than 'none' initially
-    const inputs = screen.getAllByRole("textbox") as HTMLInputElement[];
-    inputs.forEach(input => {
-      expect(input.inputMode).toBe("none");
-    });
+    const nameInput = screen.getByPlaceholderText("Ex: Supermercado") as HTMLInputElement;
 
-    // Check that if something is focused, it's not set to open the keyboard
-    const activeElement = document.activeElement as HTMLInputElement;
-    if (activeElement.tagName === "INPUT") {
-      expect(activeElement.inputMode).toBe("none");
-    }
+    expect(nameInput.inputMode).toBe("text");
+    expect(nameInput.autocomplete).toBe("on");
+    expect(nameInput.spellcheck).toBe(true);
+    expect(document.activeElement).not.toBe(nameInput);
+  });
 
-    // Close and reopen
-    rerender(
-      <QueryClientProvider client={queryClient}>
-        <QuickAddTransactionDialog open={false} onOpenChange={() => {}} />
-      </QueryClientProvider>
-    );
-    
-    rerender(
+  it("preserves accented transaction names while typing", () => {
+    render(
       <QueryClientProvider client={queryClient}>
         <QuickAddTransactionDialog open={true} onOpenChange={() => {}} />
       </QueryClientProvider>
     );
 
-    // Verify again
-    const reInputs = screen.getAllByRole("textbox") as HTMLInputElement[];
-    reInputs.forEach(input => {
-      expect(input.inputMode).toBe("none");
-    });
-    
-    const reActiveElement = document.activeElement as HTMLInputElement;
-    if (reActiveElement.tagName === "INPUT") {
-      expect(reActiveElement.inputMode).toBe("none");
-    }
+    const nameInput = screen.getByPlaceholderText("Ex: Supermercado") as HTMLInputElement;
+    fireEvent.change(nameInput, { target: { value: "Empório Gaudêncio" } });
+
+    expect(nameInput.value).toBe("Empório Gaudêncio");
   });
 });
