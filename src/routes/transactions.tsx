@@ -227,7 +227,6 @@ export function TransactionsPage() {
    const [transferToId, setTransferToId] = useState<string>("");
    const [transferDescription, setTransferDescription] = useState<string>("");
     const [confirmInstallmentDiff, setConfirmInstallmentDiff] = useState(false);
-    const [editNameMode, setEditNameMode] = useState<"none" | "text">("none");
     const [showUpdateScopeDialog, setShowUpdateScopeDialog] = useState(false);
     const UPDATE_SCOPE_PREF_KEY = "installment.updateScope.preference";
     const readSavedScope = (): "single" | "all" => {
@@ -1859,14 +1858,15 @@ export function TransactionsPage() {
               <div className="relative min-w-0">
                 <label className="mb-0.5 block text-[11px] font-semibold text-foreground">Nome</label>
                 <input
-                  autoFocus
-                  inputMode={editNameMode}
+                  inputMode="text"
+                  autoComplete="on"
+                  autoCorrect="on"
+                  autoCapitalize="sentences"
+                  spellCheck={true}
+                  enterKeyHint="next"
                   value={editTx.name}
                   onChange={e => {
-                    let name = e.target.value;
-                    if (name.length > 0) {
-                      name = name.charAt(0).toUpperCase() + name.slice(1);
-                    }
+                    const name = e.target.value;
                     setEditTx({ ...editTx, name });
                     setShowEditSuggestions(name.length >= 2);
                   }}
@@ -1878,13 +1878,7 @@ export function TransactionsPage() {
                     }
                   }}
                   onBlur={() => {
-                    setEditNameMode("none");
                     setTimeout(() => setShowEditSuggestions(false), 200);
-                  }}
-                  onClick={(e) => {
-                    const target = e.currentTarget;
-                    setEditNameMode("text");
-                    setTimeout(() => target.focus(), 0);
                   }}
                   onFocus={() => setShowEditSuggestions(editTx.name.length >= 2)}
                   placeholder="Ex: Supermercado"
