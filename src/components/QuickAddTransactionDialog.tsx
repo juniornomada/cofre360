@@ -129,7 +129,6 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
   const [installmentStart, setInstallmentStart] = useState<number | "">(1);
   const [installmentMode, setInstallmentMode] = useState<"divide" | "fixed">("divide");
   const [installmentFixedValue, setInstallmentFixedValue] = useState(0);
-  const [nameInputMode, setNameInputMode] = useState<"none" | "text">("none");
 
   // In "fixed" mode, the amount typed IS the value per installment.
   useEffect(() => {
@@ -287,7 +286,6 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
         isFirstRender.current = false;
       }
 
-    setNameInputMode("none");
     fetchData();
     fetchHistory();
     setIsTransfer(copyData ? (copyData.category === "Transferência" || copyData.category === "Transferências" || copyData.category.startsWith("Transferências >")) : initialType === "transfer");
@@ -808,28 +806,22 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                <div>
                  <label className="text-[11px] font-semibold text-foreground mb-0.5 block">Nome</label>
                    <input
-                     autoFocus
-                     inputMode={nameInputMode}
+                     inputMode="text"
+                     autoComplete="on"
+                     autoCorrect="on"
+                     autoCapitalize="sentences"
+                     spellCheck={true}
+                     enterKeyHint="next"
                      id="tx-name-input"
                     value={newTx.name}
                     onChange={e => {
-                      let name = e.target.value;
-                      if (name.length > 0) {
-                        name = name.charAt(0).toUpperCase() + name.slice(1);
-                      }
+                      const name = e.target.value;
                       const history = txHistory.get(name.trim().toLowerCase());
                       if (history) {
                         setNewTx({ ...newTx, name, icon: history.icon, category: history.category });
                       } else {
                         setNewTx({ ...newTx, name });
                       }
-                    }}
-
-                    onBlur={() => setNameInputMode("none")}
-                    onClick={(e) => {
-                      const target = e.currentTarget;
-                      setNameInputMode("text");
-                      setTimeout(() => target.focus(), 0);
                     }}
                     onKeyDown={e => {
                       if (e.key === "Enter") {
