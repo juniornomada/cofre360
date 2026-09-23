@@ -270,4 +270,17 @@ describe("parseVoiceTransaction", () => {
     expect(draft.bankAccount).toBe("noventa e nove");
     expect(voiceAccountNamesMatch(draft.bankAccount!, "99")).toBe(true);
   });
+
+  it("mantém o nome antes de referência e valor falado com ponto", () => {
+    const draft = parseVoiceTransaction(
+      "Lanço uma despesa, posto de gasolina, referência Space Fox, valor cento e quarenta ponto noventa e dois na conta Porto Bank.",
+      now,
+    );
+
+    expect(draft.amount).toBe(140.92);
+    expect(draft.name).toBe("Posto de Gasolina (Spacefox)");
+    expect(draft.category).toBe("Transporte > Combustível");
+    expect(draft.bankAccount).toBe("Porto Bank");
+  });
+
 });
