@@ -214,4 +214,25 @@ describe("parseVoiceTransaction", () => {
     expect(draft.name).toBe("Posto de Gasolina (Spacefox)");
     expect(draft.bankAccount).toBe("Banco do Brasil");
   });
+
+
+  it.each([
+    ["Gastei 250,97 em posto de gasolina referência Space Fox categoria transporte combustível conta Porto Bank", "Posto de Gasolina (Spacefox)"],
+    ["Gastei 250 reais e 97 centavos no posto de gasolina referência Space Fox categoria transporte combustível conta Porto Bank", "Posto de Gasolina (Spacefox)"],
+    ["Gastei duzentos e cinquenta ponto noventa e sete em posto de gasolina referência Space Fox categoria transporte combustível conta Porto Bank", "Posto de Gasolina (Spacefox)"],
+  ])("normaliza formas equivalentes de falar R$ 250,97: %s", (spoken, expectedName) => {
+    const draft = parseVoiceTransaction(spoken, now);
+    expect(draft.amount).toBe(250.97);
+    expect(draft.name).toBe(expectedName);
+    expect(draft.category).toBe("Transporte > Combustível");
+    expect(draft.bankAccount).toBe("Porto Bank");
+  });
+
+  it.each([
+    ["Gastei 40 reais em Padaria Central", "Padaria Central"],
+    ["Gastei 40 reais na Padaria Central", "Padaria Central"],
+    ["Gastei 40 reais no Restaurante Central", "Restaurante Central"],
+  ])("usa em/no/na após o valor para identificar o nome: %s", (spoken, expectedName) => {
+    expect(parseVoiceTransaction(spoken, now).name).toBe(expectedName);
+  });
 });
