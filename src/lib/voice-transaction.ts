@@ -32,8 +32,20 @@ export const normalizeVoiceAccountReference = (value: string) =>
     .replace(/\s+/g, " ")
     .trim();
 
-export const voiceAccountNamesMatch = (spoken: string, saved: string) =>
-  normalizeVoiceAccountReference(spoken) === normalizeVoiceAccountReference(saved);
+export const voiceAccountNamesMatch = (
+  spoken: string,
+  saved: string,
+  parentName?: string | null,
+) => {
+  const spokenRef = normalizeVoiceAccountReference(spoken);
+  const savedRef = normalizeVoiceAccountReference(saved);
+
+  if (spokenRef === savedRef) return true;
+  if (!parentName) return false;
+
+  const hierarchicalRef = normalizeVoiceAccountReference(`${parentName} ${saved}`);
+  return spokenRef === hierarchicalRef;
+};
 
 const NUMBER_WORD_VALUES: Record<string, number> = {
   zero: 0,
