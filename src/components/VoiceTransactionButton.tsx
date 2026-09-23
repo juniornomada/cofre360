@@ -12,7 +12,10 @@ type TranscriptionResponse = {
   message?: string;
 };
 
-const COMMAND_WINDOW_MS = 4000;
+const COMMAND_SILENCE_MS = 650;
+const COMMAND_MAX_SEGMENT_MS = 8000;
+const COMMAND_VAD_INTERVAL_MS = 100;
+const COMMAND_VAD_THRESHOLD = 0.025;
 
 function preferredAudioMimeType() {
   if (typeof MediaRecorder === "undefined") return "";
@@ -79,6 +82,12 @@ export function VoiceTransactionButton({ onDraft }: { onDraft: (draft: VoiceTran
   const commandLoopActiveRef = useRef(false);
   const finishingRef = useRef(false);
   const commandCheckSerialRef = useRef(0);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const vadTimerRef = useRef<number | null>(null);
+  const commandSegmentHadSpeechRef = useRef(false);
+  const commandLastVoiceAtRef = useRef(0);
+  const commandSegmentStartedAtRef = useRef(0);
 
   const stopCommandLoop = () => {
     commandLoopActiveRef.current = false;
@@ -87,6 +96,17 @@ export function VoiceTransactionButton({ onDraft }: { onDraft: (draft: VoiceTran
     if (commandTimerRef.current !== null) {
       window.clearTimeout(commandTimerRef.current);
       commandTimerRef.current = null;
+    }
+
+    if (vadTimerRef.current !== null) {
+      window.clearInterval(vadTimerRef.current);
+      vadTimerRef.current = null;
+    }
+
+    analyserRef.current = null;
+    if (audioContextRef.current) {
+      void audioContextRef.current.close().catch(() => undefined);
+      audioContextRef.current = null;
     }
 
     const commandRecorder = commandRecorderRef.current;
@@ -124,7 +144,7 @@ export function VoiceTransactionButton({ onDraft }: { onDraft: (draft: VoiceTran
     finishingRef.current = false;
   };
 
-  const startCommandWindow = (stream: MediaStream, mimeType: string) => {
+  const startCommandSegment = (stream: MediaStream, mimeType: string) => {
     if (!commandLoopActiveRef.current || finishingRef.current || !stream.active) return;
 
     let recorder: MediaRecorder;
@@ -138,6 +158,9 @@ export function VoiceTransactionButton({ onDraft }: { onDraft: (draft: VoiceTran
 
     const parts: Blob[] = [];
     commandRecorderRef.current = recorder;
+    commandSegmentHadSpeechRef.current = false;
+    commandLastVoiceAtRef.current = 0;
+    commandSegmentStartedAtRef.current = performance.now();
 
     recorder.ondataavailable = (event) => {
       if (event.data.size > 0) parts.push(event.data);
@@ -148,11 +171,13 @@ export function VoiceTransactionButton({ onDraft }: { onDraft: (draft: VoiceTran
         commandRecorderRef.current = null;
       }
 
+      const hadSpeech = commandSegmentHadSpeechRef.current;
+
       if (commandLoopActiveRef.current && !finishingRef.current && stream.active) {
-        window.setTimeout(() => startCommandWindow(stream, mimeType), 0);
+        window.setTimeout(() => startCommandSegment(stream, mimeType), 0);
       }
 
-      if (!parts.length || finishingRef.current) return;
+      if (!hadSpeech || !parts.length || finishingRef.current) return;
 
       const blob = new Blob(parts, { type: recorder.mimeType || mimeType || "audio/webm" });
       const serial = commandCheckSerialRef.current;
@@ -173,28 +198,92 @@ export function VoiceTransactionButton({ onDraft }: { onDraft: (draft: VoiceTran
           }
         })
         .catch((error) => {
-          // The command detector is only a convenience. Never interrupt the main
-          // continuous recording if one short transcription window fails.
+          // O detector de comando é apenas um atalho. Uma falha aqui nunca
+          // interrompe a gravação principal contínua.
           console.warn("voice command detection error:", error);
         });
     };
 
     try {
       recorder.start();
-      commandTimerRef.current = window.setTimeout(() => {
-        commandTimerRef.current = null;
-        if (recorder.state !== "inactive") {
-          try {
-            recorder.stop();
-          } catch {
-            // Ignore a race with finishRecording().
-          }
-        }
-      }, COMMAND_WINDOW_MS);
     } catch {
       if (commandRecorderRef.current === recorder) {
         commandRecorderRef.current = null;
       }
+    }
+  };
+
+  const startCommandMonitoring = (stream: MediaStream, mimeType: string) => {
+    startCommandSegment(stream, mimeType);
+
+    try {
+      const AudioContextCtor = window.AudioContext;
+      const audioContext = new AudioContextCtor();
+      const analyser = audioContext.createAnalyser();
+      analyser.fftSize = 512;
+      analyser.smoothingTimeConstant = 0.2;
+
+      const source = audioContext.createMediaStreamSource(stream);
+      source.connect(analyser);
+
+      audioContextRef.current = audioContext;
+      analyserRef.current = analyser;
+      const samples = new Uint8Array(analyser.fftSize);
+
+      vadTimerRef.current = window.setInterval(() => {
+        if (!commandLoopActiveRef.current || finishingRef.current) return;
+
+        const currentRecorder = commandRecorderRef.current;
+        if (!currentRecorder || currentRecorder.state === "inactive") return;
+
+        analyser.getByteTimeDomainData(samples);
+
+        let sumSquares = 0;
+        for (const sample of samples) {
+          const normalized = (sample - 128) / 128;
+          sumSquares += normalized * normalized;
+        }
+        const rms = Math.sqrt(sumSquares / samples.length);
+        const now = performance.now();
+
+        if (rms >= COMMAND_VAD_THRESHOLD) {
+          commandSegmentHadSpeechRef.current = true;
+          commandLastVoiceAtRef.current = now;
+        }
+
+        const silenceAfterSpeech =
+          commandSegmentHadSpeechRef.current &&
+          commandLastVoiceAtRef.current > 0 &&
+          now - commandLastVoiceAtRef.current >= COMMAND_SILENCE_MS;
+
+        const segmentTooLong =
+          now - commandSegmentStartedAtRef.current >= COMMAND_MAX_SEGMENT_MS;
+
+        if (silenceAfterSpeech || segmentTooLong) {
+          try {
+            currentRecorder.stop();
+          } catch {
+            // Ignore a race with manual/voice finalization.
+          }
+        }
+      }, COMMAND_VAD_INTERVAL_MS);
+    } catch (error) {
+      console.warn("voice command VAD unavailable, using timed fallback:", error);
+
+      const rotateFallback = () => {
+        if (!commandLoopActiveRef.current || finishingRef.current) return;
+        const currentRecorder = commandRecorderRef.current;
+        if (currentRecorder && currentRecorder.state !== "inactive") {
+          try {
+            currentRecorder.stop();
+          } catch {
+            // Ignore race with finalization.
+          }
+        }
+        commandTimerRef.current = window.setTimeout(rotateFallback, 2000);
+      };
+
+      commandTimerRef.current = window.setTimeout(rotateFallback, 2000);
     }
   };
 
@@ -294,7 +383,7 @@ export function VoiceTransactionButton({ onDraft }: { onDraft: (draft: VoiceTran
 
       recorder.start();
       setListening(true);
-      startCommandWindow(stream, mimeType);
+      startCommandMonitoring(stream, mimeType);
     } catch (error) {
       console.error("voice transaction error:", error);
       cleanupStream();
