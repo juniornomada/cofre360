@@ -707,7 +707,6 @@ export function TransactionsPage() {
       setEditTx(transferTx);
       setEditInstallmentMode("divide");
       setEditOriginalInstallmentNumber(null);
-      setEditNameMode("none");
       setTransferDescription(extractTransferDescription(tx.name));
 
       const groupId = tx.installment_group_id || null;
@@ -769,7 +768,6 @@ export function TransactionsPage() {
       setEditTx({ ...effectiveTx, amount: baseAmount });
       setEditInstallmentMode(baseMode);
     }
-    setEditNameMode("none");
     setShowEditDialog(true);
   };
 
