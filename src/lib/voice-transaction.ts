@@ -181,6 +181,14 @@ const SPOKEN_DECIMAL_RE = new RegExp(
   `\\b(${FLEXIBLE_NUMBER_PART})\\s+(?:ponto|v[ií]rgula)\\s+(${FLEXIBLE_NUMBER_PART})\\b`,
   "i",
 );
+const VALUE_SPOKEN_DECIMAL_RE = new RegExp(
+  `\\b(?:no\\s+valor\\s+de|valor\\s+de|valor|por)\\s+(${FLEXIBLE_NUMBER_PART})\\s+(?:ponto|v[ií]rgula)\\s+(${FLEXIBLE_NUMBER_PART})\\b`,
+  "i",
+);
+const VALUE_REALS_AND_CENTS_RE = new RegExp(
+  `\\b(?:no\\s+valor\\s+de|valor\\s+de|valor|por)\\s+(${FLEXIBLE_NUMBER_PART})\\s+reais?\\s+e\\s+(${FLEXIBLE_NUMBER_PART})\\s+centavos?\\b`,
+  "i",
+);
 
 
 function parsePortugueseNumberWords(raw: string): number | null {
@@ -243,7 +251,7 @@ function parseSpokenDecimalFraction(raw: string): number | null {
 }
 
 function parseCompositeMoney(text: string): number | null {
-  const reaisAndCents = text.match(REALS_AND_CENTS_RE);
+  const reaisAndCents = text.match(VALUE_REALS_AND_CENTS_RE) || text.match(REALS_AND_CENTS_RE);
   if (reaisAndCents) {
     const reais = parseFlexibleNumber(reaisAndCents[1]);
     const cents = parseFlexibleNumber(reaisAndCents[2]);
@@ -252,7 +260,7 @@ function parseCompositeMoney(text: string): number | null {
     }
   }
 
-  const spokenDecimal = text.match(SPOKEN_DECIMAL_RE);
+  const spokenDecimal = text.match(VALUE_SPOKEN_DECIMAL_RE) || text.match(SPOKEN_DECIMAL_RE);
   if (spokenDecimal) {
     const whole = parseFlexibleNumber(spokenDecimal[1]);
     const fraction = parseSpokenDecimalFraction(spokenDecimal[2]);
@@ -485,6 +493,8 @@ function splitInformalReferenceFromName(name: string): { baseName: string; refer
 
 function findMoneyPosition(text: string): { start: number; end: number } | null {
   const patterns = [
+    VALUE_SPOKEN_DECIMAL_RE,
+    VALUE_REALS_AND_CENTS_RE,
     new RegExp(
       `\\b(?:gastei|paguei|comprei|adquiri|recebi|ganhei|lancei|registrei|adicionei)\\s+(?:r\\$\\s*)?(?:${FLEXIBLE_NUMBER_PART})\\s+(?:ponto|v[ií]rgula)\\s+(?:${FLEXIBLE_NUMBER_PART})\\b`,
       "i",
@@ -512,6 +522,17 @@ function extractName(text: string): string {
     "i",
   ));
   if (explicit?.[1]) return cleanNameCandidate(explicit[1]);
+
+  // Estrutura natural: "lanço uma despesa, posto de gasolina, referência..., valor..."
+  // O trecho entre o tipo da transação e o primeiro metadado é o nome.
+  const prefixedName = text.match(new RegExp(
+    `\\b(?:lan[cç]o|lance|registr(?:o|e)|adicion(?:o|e)|quero\\s+lan[cç]ar)\\s+(?:uma?\\s+)?(?:despesa|receita|transa[cç][aã]o)\\s*(?:[,;:-]\\s*)?(.+?)(?=\\s*(?:[,;.]\\s*)?(?:refer[eê]ncia\\b|categoria\\b|valor\\b|no\\s+valor\\b|conta\\b|cart[aã]o\\b)|[.!?]|$)`,
+    "i",
+  ));
+  if (prefixedName?.[1]) {
+    const cleaned = cleanNameCandidate(prefixedName[1]);
+    if (cleaned !== "Transação por voz") return cleaned;
+  }
 
   const money = findMoneyPosition(text);
   if (money) {
