@@ -86,6 +86,20 @@ describe("parseVoiceTransaction", () => {
     expect(voiceAccountNamesMatch("Cofrinho cento e quarenta", "Cofrinho 140%")).toBe(true);
   });
 
+
+  it.each([
+    "Caixa CA",
+    "Caixa alimentação",
+    "Caixa ticket alimentação",
+    "Caixa vale alimentação",
+  ])("resolve apelido falado da conta Caixa alimentação: %s", (spoken) => {
+    expect(voiceAccountNamesMatch(spoken, "Caixa CA CR (2508)")).toBe(true);
+  });
+
+  it("não transforma Caixa genérico na conta de alimentação", () => {
+    expect(voiceAccountNamesMatch("Caixa", "Caixa CA CR (2508)")).toBe(false);
+  });
+
   it("considera o nome da conta pai ao identificar uma subconta por voz", () => {
     expect(voiceAccountNamesMatch("Mercado Pago Cofrinho 140", "Cofrinho 140%", "Mercado Pago")).toBe(true);
     expect(voiceAccountNamesMatch("Mercado Pago Cofrinho 140%", "Cofrinho 140%", "Mercado Pago")).toBe(true);
