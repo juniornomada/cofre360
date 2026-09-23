@@ -6,6 +6,7 @@ export type VoiceTransactionDraft = {
   amount: number;
   date: string;
   category: string;
+  categorySource?: "spoken" | "inferred";
   icon: string;
   card: string | null;
   bankAccount: string | null;
@@ -452,6 +453,7 @@ export function parseVoiceTransaction(transcript: string, now = new Date()): Voi
     amount: parseAmount(transcript),
     date: parseDate(transcript, now),
     category: inferred.category,
+    categorySource: spokenCategory ? "spoken" : "inferred",
     icon: inferred.icon,
     card: parseCard(transcript),
     bankAccount: parseBankAccount(transcript),
