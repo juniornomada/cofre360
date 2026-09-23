@@ -345,7 +345,9 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
   useEffect(() => {
     if (!open || !initialDraft?.bankAccount || bankAccounts.length === 0) return;
     const spokenAccount = initialDraft.bankAccount;
-    const match = bankAccounts.find(account => voiceAccountNamesMatch(spokenAccount, account.name));
+    const match = bankAccounts.find(account =>
+      voiceAccountNamesMatch(spokenAccount, account.name, account.parent_name),
+    );
     if (!match || newTx.bank_account_id === match.id) return;
     setNewTx(prev => ({ ...prev, bank_account_id: match.id, card: null }));
   }, [open, initialDraft?.bankAccount, bankAccounts, newTx.bank_account_id]);
