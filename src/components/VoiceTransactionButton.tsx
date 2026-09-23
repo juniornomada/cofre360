@@ -51,19 +51,20 @@ async function transcribeAudio(blob: Blob, label: string) {
     new File([blob], `cofre360-${label}.${audioExtension(mimeType)}`, { type: mimeType }),
   );
 
-  const { data, error } = await supabase.functions.invoke<TranscriptionResponse>(
+  const { data, error } = await supabase.functions.invoke(
     "transcribe-voice",
     { body: form },
   );
+  const response = data as TranscriptionResponse | null;
 
   if (error) {
     throw new Error(await transcriptionErrorDetails(error));
   }
-  if (!data?.ok || !data.text?.trim()) {
-    throw new Error(data?.message || data?.error || "Não foi possível transcrever o áudio.");
+  if (!response?.ok || !response.text?.trim()) {
+    throw new Error(response?.message || response?.error || "Não foi possível transcrever o áudio.");
   }
 
-  return data.text.trim();
+  return response.text.trim();
 }
 
 export function VoiceTransactionButton({ onDraft }: { onDraft: (draft: VoiceTransactionDraft) => void }) {
