@@ -226,7 +226,7 @@ function parseBankAccount(text: string): string | null {
   const account = match[1]
     .trim()
     .replace(/[,;]+/g, " ")
-    .replace(/\\s+/g, " ")
+    .replace(/\s+/g, " ")
     .replace(/[.!?]+$/, "")
     .trim();
   return account && account.length <= 80 ? account : null;
@@ -430,7 +430,7 @@ export function parseVoiceTransaction(transcript: string, now = new Date()): Voi
   ));
   const spokenCategory = spokenCategoryMatch?.[1]
     ?.replace(/[,;]+/g, " ")
-    .replace(/\\s+/g, " ")
+    .replace(/\s+/g, " ")
     .trim() || null;
   const extractedName = isYield ? "Rendimento" : extractName(transcript);
   const explicitReference = parseReference(transcript);
