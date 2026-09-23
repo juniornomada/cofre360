@@ -79,18 +79,33 @@ export const normalizeVoiceAccountReference = (value: string) =>
       .trim(),
   );
 
+function canonicalizeVoiceAccountAlias(value: string): string {
+  const normalized = normalizeVoiceAccountReference(value);
+
+  // Conta de benefício/ticket alimentação cadastrada como "Caixa CA CR (2508)".
+  // Aceita formas naturais de fala sem tornar "Caixa" sozinho ambíguo.
+  if (
+    /^caixa\s+(?:ca|alimentacao|ticket\s+alimentacao|vale\s+alimentacao)$/.test(normalized) ||
+    /^caixa\s+ca\s+cr(?:\s+2508)?$/.test(normalized)
+  ) {
+    return "caixa alimentacao";
+  }
+
+  return normalized;
+}
+
 export const voiceAccountNamesMatch = (
   spoken: string,
   saved: string,
   parentName?: string | null,
 ) => {
-  const spokenRef = normalizeVoiceAccountReference(spoken);
-  const savedRef = normalizeVoiceAccountReference(saved);
+  const spokenRef = canonicalizeVoiceAccountAlias(spoken);
+  const savedRef = canonicalizeVoiceAccountAlias(saved);
 
   if (spokenRef === savedRef) return true;
   if (!parentName) return false;
 
-  const hierarchicalRef = normalizeVoiceAccountReference(`${parentName} ${saved}`);
+  const hierarchicalRef = canonicalizeVoiceAccountAlias(`${parentName} ${saved}`);
   return spokenRef === hierarchicalRef;
 };
 
