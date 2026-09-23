@@ -94,6 +94,45 @@ describe("parseVoiceTransaction", () => {
     expect(draft.bankAccount).toBe("Mercado Pago Cofrinho 140%");
   });
 
+  it("interpreta corretamente a frase real com reais com, referência e conta hierárquica pontuada", () => {
+    const draft = parseVoiceTransaction(
+      "Ó, eu gastei 29 reais com almoço referência Carol, na categoria alimentação, padaria. Na conta Mercado Pago, cofrinho, 140. Lançar.",
+      now,
+    );
+
+    expect(draft.amount).toBe(29);
+    expect(draft.name).toBe("Almoço (Carol)");
+    expect(draft.category).toBe("Alimentação > Padaria/Café");
+    expect(draft.bankAccount).toBe("Mercado Pago cofrinho 140");
+    expect(voiceAccountNamesMatch(draft.bankAccount!, "Cofrinho 140%", "Mercado Pago")).toBe(true);
+  });
+
+  it.each([
+    "Mercado Pago Cofrinho 140",
+    "Mercado Pago Cofrinho 140%",
+    "Mercado Pago Cofrinho 140 por cento",
+    "Mercado Pago, Cofrinho, 140",
+    "Mercado Pago, Cofrinho, 140%",
+  ])("resolve variação falada da subconta: %s", (spokenAccount) => {
+    expect(voiceAccountNamesMatch(spokenAccount, "Cofrinho 140%", "Mercado Pago")).toBe(true);
+  });
+
+  it("não confunde cofrinhos com números diferentes", () => {
+    expect(voiceAccountNamesMatch("Mercado Pago Cofrinho 140", "Cofrinho 150%", "Mercado Pago")).toBe(false);
+    expect(voiceAccountNamesMatch("Mercado Pago Cofrinho 150", "Cofrinho 140%", "Mercado Pago")).toBe(false);
+  });
+
+  it("aceita a mesma frase sem pontuação automática do reconhecimento", () => {
+    const draft = parseVoiceTransaction(
+      "eu gastei 29 reais com almoço referência Carol categoria alimentação padaria na conta Mercado Pago cofrinho 140% lançar",
+      now,
+    );
+
+    expect(draft.name).toBe("Almoço (Carol)");
+    expect(draft.category).toBe("Alimentação > Padaria/Café");
+    expect(draft.bankAccount).toBe("Mercado Pago cofrinho 140%");
+  });
+
   it("coloca referência entre parênteses no nome", () => {
     expect(parseVoiceTransaction("Receita, nome Salário Junior, referência mãe, valor 1000 reais", now).name)
       .toBe("Salário Junior (mãe)");
