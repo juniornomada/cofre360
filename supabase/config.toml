@@ -14,6 +14,9 @@ verify_jwt = true
 [functions.validate-agreement]
 verify_jwt = true
 
+[functions.transcribe-voice]
+verify_jwt = true
+
 # External integrations authenticate with COFRE360_EXTERNAL_API_TOKEN.
 # JWT verification is disabled here because callers such as ChatGPT do not
 # have the user's Supabase session token. The function itself validates its
