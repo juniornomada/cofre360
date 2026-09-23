@@ -103,6 +103,7 @@ describe("parseVoiceTransaction", () => {
     expect(draft.amount).toBe(29);
     expect(draft.name).toBe("Almoço (Carol)");
     expect(draft.category).toBe("Alimentação > Padaria/Café");
+    expect(draft.categorySource).toBe("spoken");
     expect(draft.bankAccount).toBe("Mercado Pago cofrinho 140");
     expect(voiceAccountNamesMatch(draft.bankAccount!, "Cofrinho 140%", "Mercado Pago")).toBe(true);
   });
@@ -179,6 +180,7 @@ describe("parseVoiceTransaction", () => {
     expect(toll.icon).toBe("🛣️");
 
     const unknown = parseVoiceTransaction("Despesa, nome, Floricultura Central, valor, 80 reais", now);
+    expect(unknown.categorySource).toBe("inferred");
     expect(unknown.category).toBe("Outros > Outros");
     expect(unknown.icon).toBe("📄");
   });
