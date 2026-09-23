@@ -329,10 +329,15 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
 
   useEffect(() => {
     if (!open || !initialDraft?.name || txHistory.size === 0) return;
+
+    // Se o usuário falou a categoria explicitamente, ela é a fonte autoritativa.
+    // O histórico só deve ajudar quando a categoria foi inferida pelo nome.
+    if (initialDraft.categorySource === "spoken") return;
+
     const history = txHistory.get(initialDraft.name.trim().toLowerCase());
     if (!history) return;
     setNewTx(prev => ({ ...prev, icon: history.icon, category: history.category }));
-  }, [open, initialDraft?.name, txHistory]);
+  }, [open, initialDraft?.name, initialDraft?.categorySource, txHistory]);
 
   useEffect(() => {
     if (!open || !initialDraft?.card || cardOptions.length === 0) return;
