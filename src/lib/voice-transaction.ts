@@ -25,13 +25,59 @@ const normalize = (value: string) =>
     .trim()
     .toLowerCase();
 
+function normalizeSpokenNumberWords(value: string): string {
+  const tokens = value.split(" ").filter(Boolean);
+  const normalizedTokens: string[] = [];
+
+  for (let index = 0; index < tokens.length;) {
+    const token = tokens[index];
+    const isNumberWord = token === "mil" || NUMBER_WORD_VALUES[token] !== undefined;
+
+    if (!isNumberWord) {
+      normalizedTokens.push(token);
+      index += 1;
+      continue;
+    }
+
+    const sequence: string[] = [token];
+    let cursor = index + 1;
+
+    while (cursor < tokens.length) {
+      const next = tokens[cursor];
+      const nextIsNumberWord = next === "mil" || NUMBER_WORD_VALUES[next] !== undefined;
+      if (!nextIsNumberWord && next !== "e") break;
+      sequence.push(next);
+      cursor += 1;
+    }
+
+    while (sequence[sequence.length - 1] === "e") {
+      sequence.pop();
+      cursor -= 1;
+    }
+
+    const parsed = parsePortugueseNumberWords(sequence.join(" "));
+    if (parsed !== null) {
+      normalizedTokens.push(String(parsed));
+      index = cursor;
+      continue;
+    }
+
+    normalizedTokens.push(token);
+    index += 1;
+  }
+
+  return normalizedTokens.join(" ");
+}
+
 export const normalizeVoiceAccountReference = (value: string) =>
-  normalize(value)
-    .replace(/\bpor cento\b/g, "")
-    .replace(/%/g, "")
-    .replace(/[^a-z0-9]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+  normalizeSpokenNumberWords(
+    normalize(value)
+      .replace(/\bpor cento\b/g, "")
+      .replace(/%/g, "")
+      .replace(/[^a-z0-9]+/g, " ")
+      .replace(/\s+/g, " ")
+      .trim(),
+  );
 
 export const voiceAccountNamesMatch = (
   spoken: string,
@@ -466,7 +512,7 @@ function extractName(text: string): string {
 
     const afterMoney = text.slice(money.end);
     const post = afterMoney
-      .split(new RegExp(`\\s+(?=${METADATA_BOUNDARY})|[,.]`, "i"))[0]
+      .split(new RegExp(`\\s+(?=(?:(?:na|no|em)\\s+)?(?:${METADATA_BOUNDARY}|${VOICE_FINALIZATION_BOUNDARY})\\b)|[,.]`, "i"))[0]
       ?.trim();
     if (post) {
       const cleaned = cleanNameCandidate(post);
