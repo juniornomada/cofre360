@@ -79,6 +79,13 @@ describe("parseVoiceTransaction", () => {
     expect(voiceAccountNamesMatch("Cofrinho 140 por cento", "Cofrinho 140%")).toBe(true);
   });
 
+
+  it("considera número falado e número salvo como a mesma conta", () => {
+    expect(voiceAccountNamesMatch("noventa e nove", "99")).toBe(true);
+    expect(voiceAccountNamesMatch("cento e quarenta", "140")).toBe(true);
+    expect(voiceAccountNamesMatch("Cofrinho cento e quarenta", "Cofrinho 140%")).toBe(true);
+  });
+
   it("considera o nome da conta pai ao identificar uma subconta por voz", () => {
     expect(voiceAccountNamesMatch("Mercado Pago Cofrinho 140", "Cofrinho 140%", "Mercado Pago")).toBe(true);
     expect(voiceAccountNamesMatch("Mercado Pago Cofrinho 140%", "Cofrinho 140%", "Mercado Pago")).toBe(true);
@@ -234,5 +241,19 @@ describe("parseVoiceTransaction", () => {
     ["Gastei 40 reais no Restaurante Central", "Restaurante Central"],
   ])("usa em/no/na após o valor para identificar o nome: %s", (spoken, expectedName) => {
     expect(parseVoiceTransaction(spoken, now).name).toBe(expectedName);
+  });
+
+
+  it("separa corretamente nome e conta quando a conta 99 é falada por extenso", () => {
+    const draft = parseVoiceTransaction(
+      "Gastei cem reais no posto de gasolina na conta noventa e nove.",
+      now,
+    );
+
+    expect(draft.amount).toBe(100);
+    expect(draft.name).toBe("Posto de Gasolina");
+    expect(draft.category).toBe("Transporte > Combustível");
+    expect(draft.bankAccount).toBe("noventa e nove");
+    expect(voiceAccountNamesMatch(draft.bankAccount!, "99")).toBe(true);
   });
 });
