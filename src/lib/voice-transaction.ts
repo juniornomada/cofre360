@@ -158,7 +158,7 @@ function moneyToNumber(raw: string): number {
 
 function parseFlexibleNumber(raw: string): number | null {
   const compact = raw.trim();
-  if (/^\\d+(?:[.,]\\d+)?$/.test(compact) || /^\\d{1,3}(?:\\.\\d{3})+$/.test(compact)) {
+  if (/^\d+(?:[.,]\d+)?$/.test(compact) || /^\d{1,3}(?:\.\d{3})+$/.test(compact)) {
     return moneyToNumber(compact);
   }
   return parsePortugueseNumberWords(compact);
@@ -167,7 +167,7 @@ function parseFlexibleNumber(raw: string): number | null {
 function parseSpokenDecimalFraction(raw: string): number | null {
   const compact = normalize(raw);
 
-  if (/^\\d{1,2}$/.test(compact)) {
+  if (/^\d{1,2}$/.test(compact)) {
     const digits = Number(compact);
     return digits / (compact.length === 1 ? 10 : 100);
   }
@@ -177,7 +177,7 @@ function parseSpokenDecimalFraction(raw: string): number | null {
 
   // Em fala monetária, "ponto cinco" equivale a 0,5 e
   // "ponto noventa e sete" equivale a 0,97.
-  if (/^zero\\b/.test(compact)) return value / 100;
+  if (/^zero\b/.test(compact)) return value / 100;
   return value < 10 ? value / 10 : value / 100;
 }
 
@@ -207,23 +207,23 @@ function parseAmount(text: string): number {
   const composite = parseCompositeMoney(text);
   if (composite !== null) return composite;
 
-  const numericCents = text.match(/\\b(?:(?:no\\s+valor\\s+de|valor\\s+de|valor|por)\\s*(?:[,;:=\\-]\\s*)?)?(\\d{1,2})\\s+centavos?\\b/i);
+  const numericCents = text.match(/\b(?:(?:no\s+valor\s+de|valor\s+de|valor|por)\s*(?:[,;:=\-]\s*)?)?(\d{1,2})\s+centavos?\b/i);
   if (numericCents) return Number(numericCents[1]) / 100;
 
-  const wordCents = text.match(new RegExp(`\\\\b(?:(?:no\\\\s+valor\\\\s+de|valor\\\\s+de|valor|por)\\\\s*(?:[,;:=\\\\-]\\\\s*)?)?(${NUMBER_WORD_SEQUENCE})\\\\s+centavos?\\\\b`, "i"));
+  const wordCents = text.match(new RegExp(`\\b(?:(?:no\\s+valor\\s+de|valor\\s+de|valor|por)\\s*(?:[,;:=\\-]\\s*)?)?(${NUMBER_WORD_SEQUENCE})\\s+centavos?\\b`, "i"));
   if (wordCents) {
     const centsValue = parsePortugueseNumberWords(wordCents[1]);
     if (centsValue !== null && centsValue >= 0 && centsValue < 100) return centsValue / 100;
   }
 
   const conversationalNumeric = text.match(
-    /\\b(?:gastei|paguei|comprei|adquiri|recebi|ganhei|lancei|registrei|adicionei)\\s+(?:r\\$\\s*)?(\\d{1,3}(?:\\.\\d{3})+(?:,\\d{1,2})?|\\d+(?:[.,]\\d{1,2})?)\\b/i,
+    /\b(?:gastei|paguei|comprei|adquiri|recebi|ganhei|lancei|registrei|adicionei)\s+(?:r\$\s*)?(\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)\b/i,
   );
   if (conversationalNumeric) return moneyToNumber(conversationalNumeric[1]);
 
-  const numeric = text.match(/(?:r\\$\\s*)(\\d{1,3}(?:\\.\\d{3})+(?:,\\d{1,2})?|\\d+(?:[.,]\\d{1,2})?)/i)
-    || text.match(/(\\d{1,3}(?:\\.\\d{3})+(?:,\\d{1,2})?|\\d+(?:[.,]\\d{1,2})?)\\s*(?:reais?|real)\\b/i)
-    || text.match(/\\b(?:no\\s+valor\\s+de|valor\\s+de|valor)\\s*(?:[,;:=\\-]\\s*)?(\\d{1,3}(?:\\.\\d{3})+(?:,\\d{1,2})?|\\d+(?:[.,]\\d{1,2})?)/i);
+  const numeric = text.match(/(?:r\$\s*)(\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)/i)
+    || text.match(/(\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)\s*(?:reais?|real)\b/i)
+    || text.match(/\b(?:no\s+valor\s+de|valor\s+de|valor)\s*(?:[,;:=\-]\s*)?(\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)/i);
   if (numeric) return moneyToNumber(numeric[1]);
 
   const wordMoney = text.match(NUMBER_WORD_MONEY_RE) || text.match(VALUE_WORDS_RE);
@@ -231,21 +231,21 @@ function parseAmount(text: string): number {
     const whole = parsePortugueseNumberWords(wordMoney[1]);
     if (whole !== null) {
       const after = text.slice((wordMoney.index ?? 0) + wordMoney[0].length);
-      const centsMatch = after.match(/^\\s*(?:e\\s+)?(.+?)\\s+centavos?\\b/i);
+      const centsMatch = after.match(/^\s*(?:e\s+)?(.+?)\s+centavos?\b/i);
       const cents = centsMatch ? parsePortugueseNumberWords(centsMatch[1]) : null;
       return whole + (cents !== null && cents >= 0 && cents < 100 ? cents / 100 : 0);
     }
   }
 
-  if (text.trim().split(/\\s+/).length <= 8) {
-    const candidates = Array.from(text.matchAll(/\\b(\\d+(?:[.,]\\d{1,2})?)\\b/g));
+  if (text.trim().split(/\s+/).length <= 8) {
+    const candidates = Array.from(text.matchAll(/\b(\d+(?:[.,]\d{1,2})?)\b/g));
     for (const candidate of candidates) {
       const raw = candidate[1];
       const index = candidate.index ?? 0;
       const around = text.slice(Math.max(0, index - 4), index + raw.length + 14);
-      if (/\\d+\\s*(?:x|parcelas?)\\b/i.test(around)) continue;
-      if (/\\d{1,2}[\\/-]\\d{1,2}/.test(around)) continue;
-      if (/^\\s*%/.test(text.slice(index + raw.length, index + raw.length + 3))) continue;
+      if (/\d+\s*(?:x|parcelas?)\b/i.test(around)) continue;
+      if (/\d{1,2}[\/-]\d{1,2}/.test(around)) continue;
+      if (/^\s*%/.test(text.slice(index + raw.length, index + raw.length + 3))) continue;
       return moneyToNumber(raw);
     }
   }
@@ -425,15 +425,15 @@ function splitInformalReferenceFromName(name: string): { baseName: string; refer
 function findMoneyPosition(text: string): { start: number; end: number } | null {
   const patterns = [
     new RegExp(
-      `\\\\b(?:gastei|paguei|comprei|adquiri|recebi|ganhei|lancei|registrei|adicionei)\\\\s+(?:r\\\\$\\\\s*)?(?:${FLEXIBLE_NUMBER_PART})\\\\s+(?:ponto|v[ií]rgula)\\\\s+(?:${FLEXIBLE_NUMBER_PART})\\\\b`,
+      `\\b(?:gastei|paguei|comprei|adquiri|recebi|ganhei|lancei|registrei|adicionei)\\s+(?:r\\$\\s*)?(?:${FLEXIBLE_NUMBER_PART})\\s+(?:ponto|v[ií]rgula)\\s+(?:${FLEXIBLE_NUMBER_PART})\\b`,
       "i",
     ),
     REALS_AND_CENTS_RE,
     SPOKEN_DECIMAL_RE,
-    /\\b(?:gastei|paguei|comprei|adquiri|recebi|ganhei|lancei|registrei|adicionei)\\s+(?:r\\$\\s*)?(\\d{1,3}(?:\\.\\d{3})+(?:,\\d{1,2})?|\\d+(?:[.,]\\d{1,2})?)\\b(?:\\s*(?:reais?|real))?/i,
-    /(?:r\\$\\s*)(\\d{1,3}(?:\\.\\d{3})+(?:,\\d{1,2})?|\\d+(?:[.,]\\d{1,2})?)/i,
-    /(\\d{1,3}(?:\\.\\d{3})+(?:,\\d{1,2})?|\\d+(?:[.,]\\d{1,2})?)\\s*(?:reais?|real)\\b/i,
-    /\\b(?:no\\s+valor\\s+de|valor\\s+de|valor)\\s+(\\d{1,3}(?:\\.\\d{3})+(?:,\\d{1,2})?|\\d+(?:[.,]\\d{1,2})?)/i,
+    /\b(?:gastei|paguei|comprei|adquiri|recebi|ganhei|lancei|registrei|adicionei)\s+(?:r\$\s*)?(\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)\b(?:\s*(?:reais?|real))?/i,
+    /(?:r\$\s*)(\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)/i,
+    /(\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)\s*(?:reais?|real)\b/i,
+    /\b(?:no\s+valor\s+de|valor\s+de|valor)\s+(\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)/i,
     NUMBER_WORD_MONEY_RE,
     VALUE_WORDS_RE,
   ];
