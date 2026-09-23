@@ -48,19 +48,38 @@ export function extractVoiceFinalizationCommand(value: string): {
   command: VoiceFinalizationCommand | null;
 } {
   const compact = value.replace(/\s+/g, " ").trim();
-  const match = compact.match(/(?:^|\s)(confirmar|lan[cç]ar|finalizar)\s*[.!?,;:]*$/i);
-  if (!match) return { transcript: compact, command: null };
 
-  const spoken = match[1]
+  // Transcritores costumam variar o infinitivo "lançar" para formas naturais
+  // como "lança" e "lance", especialmente quando a palavra aparece isolada.
+  // Mantemos a detecção restrita ao FIM da fala para não confundir frases
+  // como "quero lançar uma despesa amanhã" com um comando de finalização.
+  const finalCommand = compact.match(
+    /(?:^|\s)(?:(?:pode\s+)?(confirmar|finalizar|lan[cç]ar|lan[cç]a|lance)(?:\s+(?:a\s+)?transa[cç][aã]o)?)(?:\s*[.!?,;:]*)$/i,
+  );
+  if (!finalCommand) return { transcript: compact, command: null };
+
+  const spoken = finalCommand[1]
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase();
 
   const command: VoiceFinalizationCommand =
-    spoken === "lancar" ? "lançar" : spoken === "finalizar" ? "finalizar" : "confirmar";
+    spoken.startsWith("lanc") || spoken === "lance"
+      ? "lançar"
+      : spoken === "finalizar"
+        ? "finalizar"
+        : "confirmar";
 
-  return {
-    transcript: compact.slice(0, match.index).trim(),
-    command,
-  };
+  let transcript = compact.slice(0, finalCommand.index).trim();
+
+  // Se o usuário precisou repetir o comando ("lançar, lançar"), remova também
+  // qualquer comando de finalização imediatamente anterior, para ele não virar
+  // parte do nome/conta/categoria da transação.
+  const trailingRepeatedCommand =
+    /(?:^|\s)(?:(?:pode\s+)?(?:confirmar|finalizar|lan[cç]ar|lan[cç]a|lance)(?:\s+(?:a\s+)?transa[cç][aã]o)?)\s*[.!?,;:]*$/i;
+  while (trailingRepeatedCommand.test(transcript)) {
+    transcript = transcript.replace(trailingRepeatedCommand, "").trim();
+  }
+
+  return { transcript, command };
 }
