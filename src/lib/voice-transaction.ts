@@ -215,13 +215,20 @@ function parseCard(text: string): string | null {
   return card && card.length <= 50 ? card : null;
 }
 
+const VOICE_FINALIZATION_BOUNDARY = String.raw`(?:confirmar|finalizar|lan[cç]ar|ok)`;
+
 function parseBankAccount(text: string): string | null {
   const match = text.match(new RegExp(
-    `\\bconta(?:\\s+banc[aá]ria)?\\s*(?:[,;:=\\-]\\s*)?(?:(?:do|da|de)\\s+)?(.+?)(?=\\s+(?:${METADATA_BOUNDARY})|[,.]|$)`,
+    `\\bconta(?:\\s+banc[aá]ria)?\\s*(?:[,;:=\\-]\\s*)?(?:(?:do|da|de)\\s+)?(.+?)(?=\\s*(?:[,;.]\\s*)?(?:(?:na|no|em)\\s+)?(?:${METADATA_BOUNDARY}|${VOICE_FINALIZATION_BOUNDARY})\\b|[.!?]|$)`,
     "i",
   ));
   if (!match) return null;
-  const account = match[1].trim().replace(/[,.]+$/, "");
+  const account = match[1]
+    .trim()
+    .replace(/[,;]+/g, " ")
+    .replace(/\\s+/g, " ")
+    .replace(/[.!?]+$/, "")
+    .trim();
   return account && account.length <= 80 ? account : null;
 }
 
@@ -320,7 +327,7 @@ function cleanNameCandidate(raw: string): string {
     .replace(/^[,.!?;:\s]+/g, "")
     .replace(/[,.!?;:]+$/g, "")
     .replace(/^\s*(?:uma?\s+)?(?:transa[cç][aã]o|despesa|compra|gasto|receita)\s+(?:chamad[ao]\s+|com\s+o\s+nome\s+)?/i, "")
-    .replace(/^\s*(?:no|na|em|do|da|para|por)\s+/i, "")
+    .replace(/^\s*(?:no|na|em|do|da|para|por|com)\s+/i, "")
     .replace(/\s+/g, " ")
     .trim();
 
@@ -356,7 +363,7 @@ function splitInformalReferenceFromName(name: string): { baseName: string; refer
 
 function findMoneyPosition(text: string): { start: number; end: number } | null {
   const patterns = [
-    /\b(?:gastei|paguei|comprei|adquiri|recebi|ganhei|lancei|registrei|adicionei)\s+(?:r\$\s*)?(\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)\b/i,
+    /\b(?:gastei|paguei|comprei|adquiri|recebi|ganhei|lancei|registrei|adicionei)\s+(?:r\$\s*)?(\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)\b(?:\s*(?:reais?|real))?/i,
     /(?:r\$\s*)(\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)/i,
     /(\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)\s*(?:reais?|real)\b/i,
     /\b(?:no\s+valor\s+de|valor\s+de|valor)\s+(\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)/i,
@@ -418,10 +425,13 @@ export function parseVoiceTransaction(transcript: string, now = new Date()): Voi
     : "expense";
 
   const spokenCategoryMatch = transcript.match(new RegExp(
-    `\\bcategoria\\s+(?:é|e|:)?\\s*(.+?)(?=\\s+(?:${METADATA_BOUNDARY})|[,.]|$)`,
+    `\\bcategoria\\s+(?:é|e|:)?\\s*(.+?)(?=\\s*(?:[,;.]\\s*)?(?:(?:na|no|em)\\s+)?(?:${METADATA_BOUNDARY}|${VOICE_FINALIZATION_BOUNDARY})\\b|[.!?]|$)`,
     "i",
   ));
-  const spokenCategory = spokenCategoryMatch?.[1]?.trim() || null;
+  const spokenCategory = spokenCategoryMatch?.[1]
+    ?.replace(/[,;]+/g, " ")
+    .replace(/\\s+/g, " ")
+    .trim() || null;
   const extractedName = isYield ? "Rendimento" : extractName(transcript);
   const explicitReference = parseReference(transcript);
   const informalReference = explicitReference
