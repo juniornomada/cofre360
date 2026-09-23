@@ -23,11 +23,25 @@ describe("extractVoiceFinalizationCommand", () => {
     ["Despesa nome XPTO valor 250 confirmar", "confirmar"],
     ["Despesa nome XPTO valor 250 lançar", "lançar"],
     ["Despesa nome XPTO valor 250 lancar", "lançar"],
+    ["Despesa nome XPTO valor 250 lança", "lançar"],
+    ["Despesa nome XPTO valor 250 lanca", "lançar"],
+    ["Despesa nome XPTO valor 250 lance", "lançar"],
+    ["Despesa nome XPTO valor 250 pode lançar", "lançar"],
+    ["Despesa nome XPTO valor 250 lançar a transação", "lançar"],
     ["Despesa nome XPTO valor 250 finalizar.", "finalizar"],
   ])("encerra somente quando o comando aparece no fim: %s", (spoken, command) => {
     expect(extractVoiceFinalizationCommand(spoken)).toEqual({
       transcript: "Despesa nome XPTO valor 250",
       command,
+    });
+  });
+
+  it("remove repetição do comando lançar do fim da transcrição", () => {
+    expect(extractVoiceFinalizationCommand(
+      "Despesa nome XPTO valor 250 lançar. Lançar.",
+    )).toEqual({
+      transcript: "Despesa nome XPTO valor 250",
+      command: "lançar",
     });
   });
 
