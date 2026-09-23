@@ -79,6 +79,21 @@ describe("parseVoiceTransaction", () => {
     expect(voiceAccountNamesMatch("Cofrinho 140 por cento", "Cofrinho 140%")).toBe(true);
   });
 
+  it("considera o nome da conta pai ao identificar uma subconta por voz", () => {
+    expect(voiceAccountNamesMatch("Mercado Pago Cofrinho 140", "Cofrinho 140%", "Mercado Pago")).toBe(true);
+    expect(voiceAccountNamesMatch("Mercado Pago Cofrinho 140%", "Cofrinho 140%", "Mercado Pago")).toBe(true);
+    expect(voiceAccountNamesMatch("Mercado Pago Cofrinho 150", "Cofrinho 140%", "Mercado Pago")).toBe(false);
+  });
+
+  it("extrai conta hierárquica com percentual da fala completa", () => {
+    const draft = parseVoiceTransaction(
+      "Gastei 29 reais com almoço, referência Carol, categoria alimentação restaurante, na conta Mercado Pago Cofrinho 140%.",
+      now,
+    );
+
+    expect(draft.bankAccount).toBe("Mercado Pago Cofrinho 140%");
+  });
+
   it("coloca referência entre parênteses no nome", () => {
     expect(parseVoiceTransaction("Receita, nome Salário Junior, referência mãe, valor 1000 reais", now).name)
       .toBe("Salário Junior (mãe)");
