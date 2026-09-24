@@ -235,10 +235,16 @@ export function VoiceTransactionButton({ onDraft, floating = false }: VoiceTrans
             return;
           }
 
-          // O detector curto só pode encerrar a gravação quando o trecho
-          // transcrito é praticamente apenas o comando de finalização.
-          const command = extractStandaloneVoiceFinalizationCommand(text);
-          if (command) {
+          // O trecho curto pode conter o final da descrição junto com o comando
+          // (ex.: "... conta Mercado Pago, lançar"). Primeiro tentamos o comando
+          // isolado; se não vier isolado, aceitamos o mesmo comando no fim do trecho.
+          // Assim "lançar", "confirmar" e "finalizar" têm o mesmo efeito prático.
+          const standaloneCommand = extractStandaloneVoiceFinalizationCommand(text);
+          const trailingCommand = standaloneCommand
+            ? standaloneCommand
+            : extractVoiceFinalizationCommand(text).command;
+
+          if (trailingCommand) {
             finishRecording();
           }
         })

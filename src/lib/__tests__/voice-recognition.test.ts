@@ -61,6 +61,27 @@ describe("extractVoiceFinalizationCommand", () => {
   });
 });
 
+describe("finalização no monitor contínuo", () => {
+  it.each([
+    ["... conta Mercado Pago lançar", "lançar"],
+    ["... conta Mercado Pago confirmar", "confirmar"],
+    ["... conta Mercado Pago finalizar", "finalizar"],
+    ["categoria alimentação padaria, lançar.", "lançar"],
+    ["valor 29 reais confirmar!", "confirmar"],
+    ["referência Carol finalizar", "finalizar"],
+  ])("detecta o comando mesmo quando ele vem colado ao fim do trecho: %s", (spoken, command) => {
+    expect(extractVoiceFinalizationCommand(spoken).command).toBe(command);
+  });
+
+  it.each([
+    "quero lançar uma despesa amanhã",
+    "preciso confirmar a categoria antes de continuar",
+    "vou finalizar os dados depois",
+  ])("não encerra quando a palavra aparece no meio da fala: %s", (spoken) => {
+    expect(extractVoiceFinalizationCommand(spoken).command).toBeNull();
+  });
+});
+
 describe("extractStandaloneVoiceFinalizationCommand", () => {
   it.each([
     ["lançar", "lançar"],
