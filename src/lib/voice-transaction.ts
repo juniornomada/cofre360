@@ -362,13 +362,12 @@ type StructuredVoiceFieldKey =
   | "value"
   | "bankAccount"
   | "card"
-  | "date"
-  | "installments";
+  | "date";
 
 type StructuredVoiceFields = Partial<Record<StructuredVoiceFieldKey, string>>;
 
 const STRUCTURED_FIELD_LABEL_RE =
-  /\b(nome(?:\s+da\s+transa[cç][aã]o)?|descri[cç][aã]o|refer[eê]ncia|categoria|no\s+valor(?:\s+de)?|valor(?:\s+de)?|conta(?:\s+banc[aá]ria)?|cart[aã]o(?:\s+de\s+cr[eé]dito)?|data|parcelas?)\b\s*(?:[,;:=\-]\s*)?/gi;
+  /\b(nome(?:\s+da\s+transa[cç][aã]o)?|descri[cç][aã]o|refer[eê]ncia|categoria|no\s+valor(?:\s+de)?|valor(?:\s+de)?|conta(?:\s+banc[aá]ria)?|cart[aã]o(?:\s+de\s+cr[eé]dito)?|data)\b\s*(?:[,;:=\-]\s*)?/gi;
 
 function structuredVoiceFieldKey(label: string): StructuredVoiceFieldKey | null {
   const normalized = normalize(label);
@@ -379,7 +378,6 @@ function structuredVoiceFieldKey(label: string): StructuredVoiceFieldKey | null 
   if (normalized.startsWith("conta")) return "bankAccount";
   if (normalized.startsWith("cartao")) return "card";
   if (normalized === "data") return "date";
-  if (normalized.startsWith("parcela")) return "installments";
   return null;
 }
 
@@ -395,7 +393,11 @@ function cleanStructuredVoiceFieldValue(raw: string, key: StructuredVoiceFieldKe
     .trim();
 
   if (key === "card" || key === "bankAccount") {
-    value = value.replace(/^\s*(?:do|da|de)\s+/i, "").trim();
+    value = value
+      .replace(/^\s*(?:do|da|de)\s+/i, "")
+      .replace(/[,;]+/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
   }
 
   return value;
@@ -426,19 +428,6 @@ function extractStructuredVoiceFields(text: string): StructuredVoiceFields {
   }
 
   return fields;
-}
-
-function parseStructuredInstallments(value: string): number | null {
-  const numeric = value.match(/\b(\d{1,2})\b/);
-  if (numeric) {
-    const count = Number(numeric[1]);
-    return Number.isInteger(count) && count >= 2 && count <= 48 ? count : null;
-  }
-
-  const count = parsePortugueseNumberWords(value);
-  return count !== null && Number.isInteger(count) && count >= 2 && count <= 48
-    ? count
-    : null;
 }
 
 function parseBankAccount(text: string): string | null {
@@ -480,13 +469,17 @@ function parseReference(text: string): string | null {
 }
 
 function parseInstallments(text: string): number | null {
-  const numeric = text.match(/\b(?:em\s+)?(\d{1,2})\s*(?:x|parcelas?)\b/i);
+  const numeric =
+    text.match(/\b(?:em\s+)?(\d{1,2})\s*(?:x|parcelas?)\b/i) ||
+    text.match(/\bparcelas?\s*(?:[,;:=\-]\s*)?(\d{1,2})\b/i);
   if (numeric) {
     const count = Number(numeric[1]);
     return Number.isInteger(count) && count >= 2 && count <= 48 ? count : null;
   }
 
-  const words = text.match(new RegExp(`\\b(?:em\\s+)?(${NUMBER_WORD_SEQUENCE})\\s+parcelas?\\b`, "i"));
+  const words =
+    text.match(new RegExp(`\\b(?:em\\s+)?(${NUMBER_WORD_SEQUENCE})\\s+parcelas?\\b`, "i")) ||
+    text.match(new RegExp(`\\bparcelas?\\s*(?:[,;:=\\-]\\s*)?(${NUMBER_WORD_SEQUENCE})\\b`, "i"));
   if (!words) return null;
   const count = parsePortugueseNumberWords(words[1]);
   return count !== null && Number.isInteger(count) && count >= 2 && count <= 48 ? count : null;
@@ -586,28 +579,36 @@ function splitInformalReferenceFromName(name: string): { baseName: string; refer
 }
 
 function findMoneyPosition(text: string): { start: number; end: number } | null {
-  const patterns = [
+  const completeMoneyPatterns = [
     VALUE_SPOKEN_DECIMAL_RE,
     VALUE_REALS_AND_CENTS_RE,
-    new RegExp(
-      `\\b(?:gastei|paguei|comprei|adquiri|recebi|ganhei|lancei|registrei|adicionei)\\s+(?:r\\$\\s*)?(?:${FLEXIBLE_NUMBER_PART})\\s+(?:pontos?|v[ií]rgulas?)\\s+(?:${FLEXIBLE_NUMBER_PART})\\b`,
-      "i",
-    ),
     REALS_AND_CENTS_RE,
     SPOKEN_DECIMAL_RE,
-    /\b(?:gastei|paguei|comprei|adquiri|recebi|ganhei|lancei|registrei|adicionei)\s+(?:r\$\s*)?(\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)\b(?:\s*(?:reais?|real))?/i,
     /(?:r\$\s*)(\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)/i,
     /(\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)\s*(?:reais?|real)\b/i,
     /\b(?:no\s+valor\s+de|valor\s+de|valor)\s+(\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)/i,
     NUMBER_WORD_MONEY_RE,
     VALUE_WORDS_RE,
   ];
-  const found = patterns
+
+  const complete = completeMoneyPatterns
     .map((pattern) => text.match(pattern))
     .filter((match): match is RegExpMatchArray => !!match && match.index !== undefined)
     .sort((a, b) => (a.index ?? 0) - (b.index ?? 0))[0];
-  if (!found || found.index === undefined) return null;
-  return { start: found.index, end: found.index + found[0].length };
+
+  if (complete?.index !== undefined) {
+    return { start: complete.index, end: complete.index + complete[0].length };
+  }
+
+  const conversational = text.match(
+    /\b(?:gastei|paguei|comprei|adquiri|recebi|ganhei|lancei|registrei|adicionei)\s+(?:r\$\s*)?(\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)\b/i,
+  );
+  if (!conversational || conversational.index === undefined) return null;
+
+  return {
+    start: conversational.index,
+    end: conversational.index + conversational[0].length,
+  };
 }
 
 function extractName(text: string): string {
@@ -715,9 +716,7 @@ export function parseVoiceTransaction(transcript: string, now = new Date()): Voi
     icon: inferred.icon,
     card: structured.card ? structured.card.replace(/[.!?]+$/, "").trim() : parseCard(transcript),
     bankAccount: structured.bankAccount ? structured.bankAccount.replace(/[.!?]+$/, "").trim() : parseBankAccount(transcript),
-    installmentCount: structured.installments
-      ? parseStructuredInstallments(structured.installments)
-      : parseInstallments(transcript),
+    installmentCount: parseInstallments(transcript),
     transcript: transcript.trim(),
   };
 }
