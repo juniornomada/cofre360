@@ -296,4 +296,19 @@ describe("parseVoiceTransaction", () => {
     expect(draft.card).toBe("Mercado Pago");
   });
 
+
+  it.each([
+    "Despesa, nome: Max Atacadista, categoria: Alimentação, Supermercado, valor: duzentos e seis pontos sessenta e seis, cartão: Mercado Pago.",
+    "Despesa, nome Max Atacadista, categoria Alimentação, Supermercado, valor duzentos e seis pontos sessenta e seis, cartão Mercado Pago.",
+    "Despesa, nome - Max Atacadista, categoria - Alimentação, Supermercado, valor - duzentos e seis pontos sessenta e seis, cartão - Mercado Pago.",
+  ])("aceita separadores estruturados na categoria, valor e cartão: %s", (spoken) => {
+    const draft = parseVoiceTransaction(spoken, now);
+
+    expect(draft.name).toBe("Max Atacadista");
+    expect(draft.amount).toBe(206.66);
+    expect(draft.category).toBe("Alimentação > Supermercado");
+    expect(draft.categorySource).toBe("spoken");
+    expect(draft.card).toBe("Mercado Pago");
+  });
+
 });
