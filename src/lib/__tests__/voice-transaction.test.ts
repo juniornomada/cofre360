@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseVoiceTransaction, voiceAccountNamesMatch } from "@/lib/voice-transaction";
+import { parseVoiceTransaction, voiceAccountNamesMatch, voiceCardNamesMatch } from "@/lib/voice-transaction";
 
 // Regressões do fluxo de voz: valores, conta, referência e categoria inferida.
 describe("parseVoiceTransaction", () => {
@@ -407,6 +407,43 @@ describe("parseVoiceTransaction", () => {
     expect(draft.amount).toBe(3000);
     expect(draft.card).toBe("Porto Bank");
     expect(draft.installmentCount).toBe(10);
+  });
+
+
+  it("interpreta compra parcelada natural com valor total", () => {
+    const draft = parseVoiceTransaction(
+      "Comprei uma TV Samsung de 65 polegadas, categoria compras eletrônicos, valor quatro mil quinhentos e noventa, cartão PortoBank parcelado em dez vezes. Lançar.",
+      now,
+    );
+
+    expect(draft.name).toBe("TV Samsung de 65 polegadas");
+    expect(draft.category).toBe("Compras > Eletrônicos");
+    expect(draft.categorySource).toBe("spoken");
+    expect(draft.amount).toBe(4590);
+    expect(draft.card).toBe("PortoBank");
+    expect(draft.installmentCount).toBe(10);
+  });
+
+  it.each([
+    "parcelado em dez vezes",
+    "parcelado em 10 vezes",
+    "em dez vezes",
+    "10x",
+    "dez parcelas",
+  ])("entende variação de parcelamento: %s", (installmentPhrase) => {
+    const draft = parseVoiceTransaction(
+      `Despesa nome TV Samsung valor 4590 cartão Porto Bank ${installmentPhrase}`,
+      now,
+    );
+
+    expect(draft.amount).toBe(4590);
+    expect(draft.card).toBe("Porto Bank");
+    expect(draft.installmentCount).toBe(10);
+  });
+
+  it("considera PortoBank e Porto Bank o mesmo cartão", () => {
+    expect(voiceCardNamesMatch("PortoBank", "Porto Bank")).toBe(true);
+    expect(voiceCardNamesMatch("PORTO-BANK", "Porto Bank")).toBe(true);
   });
 
 });
