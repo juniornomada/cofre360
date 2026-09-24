@@ -3,7 +3,7 @@ import { Loader2, Mic } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { parseVoiceTransaction, type VoiceTransactionDraft } from "@/lib/voice-transaction";
-import { extractVoiceFinalizationCommand } from "@/lib/voice-recognition";
+import { extractStandaloneVoiceFinalizationCommand, extractVoiceFinalizationCommand } from "@/lib/voice-recognition";
 
 type TranscriptionResponse = {
   ok?: boolean;
@@ -230,8 +230,8 @@ export function VoiceTransactionButton({ onDraft }: { onDraft: (draft: VoiceTran
             return;
           }
 
-          const detected = extractVoiceFinalizationCommand(text);
-          if (detected.command) {
+          const command = extractStandaloneVoiceFinalizationCommand(text);
+          if (command) {
             finishRecording();
           }
         })
