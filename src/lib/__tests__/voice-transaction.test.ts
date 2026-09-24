@@ -311,4 +311,102 @@ describe("parseVoiceTransaction", () => {
     expect(draft.card).toBe("Mercado Pago");
   });
 
+
+  it.each([
+    [
+      "Despesa, nome: Max Atacadista, categoria: Alimentação, Supermercado, valor: duzentos e seis pontos sessenta e seis, cartão: Mercado Pago.",
+      {
+        name: "Max Atacadista",
+        amount: 206.66,
+        category: "Alimentação > Supermercado",
+        card: "Mercado Pago",
+      },
+    ],
+    [
+      "Despesa nome Max Atacadista categoria Alimentação Supermercado valor duzentos e seis pontos sessenta e seis cartão Mercado Pago",
+      {
+        name: "Max Atacadista",
+        amount: 206.66,
+        category: "Alimentação > Supermercado",
+        card: "Mercado Pago",
+      },
+    ],
+    [
+      "Despesa; nome - Max Atacadista; categoria - Alimentação, Supermercado; valor - duzentos e seis pontos sessenta e seis; cartão - Mercado Pago.",
+      {
+        name: "Max Atacadista",
+        amount: 206.66,
+        category: "Alimentação > Supermercado",
+        card: "Mercado Pago",
+      },
+    ],
+  ])("mantém campos estruturados estáveis apesar da pontuação: %s", (spoken, expected) => {
+    const draft = parseVoiceTransaction(spoken, now);
+
+    expect(draft.name).toBe(expected.name);
+    expect(draft.amount).toBe(expected.amount);
+    expect(draft.category).toBe(expected.category);
+    expect(draft.categorySource).toBe("spoken");
+    expect(draft.card).toBe(expected.card);
+  });
+
+  it("aceita campos estruturados em outra ordem", () => {
+    const draft = parseVoiceTransaction(
+      "Despesa cartão Mercado Pago valor 206,66 categoria Alimentação Supermercado nome Max Atacadista",
+      now,
+    );
+
+    expect(draft.name).toBe("Max Atacadista");
+    expect(draft.amount).toBe(206.66);
+    expect(draft.category).toBe("Alimentação > Supermercado");
+    expect(draft.categorySource).toBe("spoken");
+    expect(draft.card).toBe("Mercado Pago");
+  });
+
+  it("categoria explicitamente falada prevalece sobre a inferência pelo nome", () => {
+    const draft = parseVoiceTransaction(
+      "Despesa, nome Restaurante Central, categoria Transporte Combustível, valor 100 reais, conta Porto Bank",
+      now,
+    );
+
+    expect(draft.name).toBe("Restaurante Central");
+    expect(draft.category).toBe("Transporte > Combustível");
+    expect(draft.categorySource).toBe("spoken");
+    expect(draft.bankAccount).toBe("Porto Bank");
+  });
+
+  it("valor explicitamente rotulado não é confundido com números da conta", () => {
+    const draft = parseVoiceTransaction(
+      "Despesa nome Teste valor cento e vinte reais conta 99",
+      now,
+    );
+
+    expect(draft.amount).toBe(120);
+    expect(draft.bankAccount).toBe("99");
+  });
+
+  it("separa referência, conta e cartão pelos rótulos sem depender de vírgulas", () => {
+    const draft = parseVoiceTransaction(
+      "Despesa nome Posto de Gasolina referência Space Fox categoria Transporte Combustível valor 140,92 conta Porto Bank",
+      now,
+    );
+
+    expect(draft.name).toBe("Posto de Gasolina (Spacefox)");
+    expect(draft.amount).toBe(140.92);
+    expect(draft.category).toBe("Transporte > Combustível");
+    expect(draft.bankAccount).toBe("Porto Bank");
+    expect(draft.card).toBeNull();
+  });
+
+  it("interpreta parcelas explicitamente rotuladas", () => {
+    const draft = parseVoiceTransaction(
+      "Despesa nome Notebook valor 3000 cartão Porto Bank parcelas 10",
+      now,
+    );
+
+    expect(draft.amount).toBe(3000);
+    expect(draft.card).toBe("Porto Bank");
+    expect(draft.installmentCount).toBe(10);
+  });
+
 });
