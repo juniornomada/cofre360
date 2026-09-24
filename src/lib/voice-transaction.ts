@@ -394,7 +394,7 @@ function cleanStructuredVoiceFieldValue(raw: string, key: StructuredVoiceFieldKe
 
   if (key === "card" || key === "bankAccount") {
     const installmentTail = new RegExp(
-      `\\s+(?=(?:em\\s+)?(?:\\d{1,2}|${NUMBER_WORD_SEQUENCE})\\s*(?:x|parcelas?)\\b|parcelas?\\s*(?:[,;:=\\-]\\s*)?(?:\\d{1,2}|${NUMBER_WORD_SEQUENCE})\\b)`,
+      `\\s+(?=(?:parcelad[oa]\\s+em\\s+|em\\s+)?(?:\\d{1,2}|${NUMBER_WORD_SEQUENCE})\\s*(?:x|vezes?|parcelas?)\\b|parcelas?\\s*(?:[,;:=\\-]\\s*)?(?:\\d{1,2}|${NUMBER_WORD_SEQUENCE})\\b)`,
       "i",
     );
 
@@ -476,7 +476,9 @@ function parseReference(text: string): string | null {
 
 function parseInstallments(text: string): number | null {
   const numeric =
-    text.match(/\b(?:em\s+)?(\d{1,2})\s*(?:x|parcelas?)\b/i) ||
+    text.match(/\bparcelad[oa]\s+em\s+(\d{1,2})\s*(?:x|vezes?|parcelas?)\b/i) ||
+    text.match(/\bem\s+(\d{1,2})\s*(?:x|vezes?|parcelas?)\b/i) ||
+    text.match(/\b(\d{1,2})\s*(?:x|vezes?|parcelas?)\b/i) ||
     text.match(/\bparcelas?\s*(?:[,;:=\-]\s*)?(\d{1,2})\b/i);
   if (numeric) {
     const count = Number(numeric[1]);
@@ -484,7 +486,9 @@ function parseInstallments(text: string): number | null {
   }
 
   const words =
-    text.match(new RegExp(`\\b(?:em\\s+)?(${NUMBER_WORD_SEQUENCE})\\s+parcelas?\\b`, "i")) ||
+    text.match(new RegExp(`\\bparcelad[oa]\\s+em\\s+(${NUMBER_WORD_SEQUENCE})\\s+(?:vezes?|parcelas?)\\b`, "i")) ||
+    text.match(new RegExp(`\\bem\\s+(${NUMBER_WORD_SEQUENCE})\\s+(?:vezes?|parcelas?)\\b`, "i")) ||
+    text.match(new RegExp(`\\b(${NUMBER_WORD_SEQUENCE})\\s+(?:vezes?|parcelas?)\\b`, "i")) ||
     text.match(new RegExp(`\\bparcelas?\\s*(?:[,;:=\\-]\\s*)?(${NUMBER_WORD_SEQUENCE})\\b`, "i"));
   if (!words) return null;
   const count = parsePortugueseNumberWords(words[1]);
@@ -524,6 +528,7 @@ function inferCategory(name: string, spokenCategory: string | null, type: VoiceT
     if (/\bagua\b/.test(spoken)) return { category: "Moradia > Água", icon: "💧" };
     if (/internet|telefone/.test(spoken)) return { category: "Moradia > Internet/Telefone", icon: "📶" };
     if (spoken.includes("moradia")) return { category: "Moradia > Outros", icon: "🏠" };
+    if (/eletronicos?|eletronica/.test(spoken)) return { category: "Compras > Eletrônicos", icon: "📱" };
     if (spoken.includes("compra")) return { category: "Compras > Outros", icon: "🛍️" };
   }
 
@@ -632,6 +637,16 @@ function extractName(text: string): string {
   ));
   if (prefixedName?.[1]) {
     const cleaned = cleanNameCandidate(prefixedName[1]);
+    if (cleaned !== "Transação por voz") return cleaned;
+  }
+
+  const naturalPurchaseName = text.match(new RegExp(
+    `\\b(?:comprei|adquiri)\\s+(.+?)(?=\\s*(?:[,;.]\\s*)?(?:categoria\\b|valor\\b|no\\s+valor\\b|conta\\b|cart[aã]o\\b|refer[eê]ncia\\b|parcelad[oa]\\b|em\\s+(?:\\d{1,2}|${NUMBER_WORD_TOKEN})\\s*(?:x|vezes?|parcelas?)\\b)|[.!?]|$)`,
+    "i",
+  ));
+  if (naturalPurchaseName?.[1]) {
+    const candidate = naturalPurchaseName[1].replace(/^\\s*(?:um|uma)\\s+/i, "").trim();
+    const cleaned = cleanNameCandidate(candidate);
     if (cleaned !== "Transação por voz") return cleaned;
   }
 
