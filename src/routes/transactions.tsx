@@ -12,6 +12,8 @@ const CsvImportDialog = lazy(() => import("@/components/CsvImportDialog").then(m
 const CategoryPieCharts = lazy(() => import("@/components/CategoryPieCharts").then(m => ({ default: m.CategoryPieCharts })));
 const CategoryPicker = lazy(() => import("@/components/CategoryPicker").then(m => ({ default: m.CategoryPicker })));
 import { QuickAddTransactionDialog } from "@/components/QuickAddTransactionDialog";
+import { VoiceTransactionButton } from "@/components/VoiceTransactionButton";
+import type { VoiceTransactionDraft } from "@/lib/voice-transaction";
 import { CalculatorAmountInput } from "@/components/CalculatorAmountInput";
 import { BankLogo } from "@/components/BankLogo";
 import { CardIcon } from "@/components/CardIcon";
@@ -194,6 +196,7 @@ export function TransactionsPage() {
   const [deleteTarget, setDeleteTarget] = useState<Transaction | null>(null);
   const [deleteScope, setDeleteScope] = useState<"single" | "future" | "all">("single");
    const [showAddDialog, setShowAddDialog] = useState(false);
+   const [voiceDraft, setVoiceDraft] = useState<VoiceTransactionDraft | null>(null);
    const [showAddTypeDialog, setShowAddTypeDialog] = useState(false);
    const [quickAddType, setQuickAddType] = useState<"expense" | "income" | "transfer">("expense");
    const [copyTxData, setCopyTxData] = useState<{ name: string; amount: number; category: string; icon: string; card: string | null; bank_account_id: string | null } | null>(null);
@@ -2467,6 +2470,27 @@ export function TransactionsPage() {
 
 
 
+      {!showEditDialog &&
+        !showDeleteDialog &&
+        !showAddDialog &&
+        !showAddTypeDialog &&
+        !showCsvImport &&
+        !showBatchDeleteDialog &&
+        !showGlobalSearch &&
+        !showUpdateScopeDialog &&
+        !selectionMode && (
+          <VoiceTransactionButton
+            floating
+            onDraft={(draft) => {
+              setVoiceDraft(draft);
+              setQuickAddType(draft.type);
+              setCopyTxData(null);
+              setShowAddTypeDialog(false);
+              setShowAddDialog(true);
+            }}
+          />
+        )}
+
       {/* Choose transaction type before opening Quick Add */}
       <Dialog open={showAddTypeDialog} onOpenChange={setShowAddTypeDialog}>
         <DialogContent className="max-w-[360px] rounded-2xl bg-background">
@@ -2519,10 +2543,14 @@ export function TransactionsPage() {
         {showAddDialog && (
           <QuickAddTransactionDialog 
             open={showAddDialog} 
-            onOpenChange={setShowAddDialog}
+            onOpenChange={(open) => {
+              setShowAddDialog(open);
+              if (!open) setVoiceDraft(null);
+            }}
             initialType={quickAddType}
             initialCardName={searchParams.card}
             initialDate={searchParams.date}
+            initialDraft={voiceDraft}
             copyData={copyTxData}
             onSuccess={fetchTransactions}
           />
