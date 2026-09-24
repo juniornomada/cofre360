@@ -416,7 +416,7 @@ describe("parseVoiceTransaction", () => {
       now,
     );
 
-    expect(draft.name).toBe("TV Samsung de 65 polegadas");
+    expect(draft.name).toBe('TV Samsung 65"');
     expect(draft.category).toBe("Compras > Eletrônicos");
     expect(draft.categorySource).toBe("spoken");
     expect(draft.amount).toBe(4590);
@@ -453,7 +453,7 @@ describe("parseVoiceTransaction", () => {
       now,
     );
 
-    expect(draft.name).toBe("TV Samsung 65 polegadas (Magalu)");
+    expect(draft.name).toBe('TV Samsung 65" (Magalu)');
     expect(draft.category).toBe("Compras > Eletrônicos");
     expect(draft.categorySource).toBe("spoken");
     expect(draft.amount).toBe(3497.75);
@@ -468,12 +468,26 @@ describe("parseVoiceTransaction", () => {
       now,
     );
 
-    expect(draft.name).toBe("TV Samsung 65 polegadas QHD LED (Magalu)");
+    expect(draft.name).toBe('TV Samsung 65" QHD LED (Magalu)');
     expect(draft.category).toBe("Compras > Eletrônicos");
     expect(draft.categorySource).toBe("spoken");
     expect(draft.amount).toBe(3749.67);
     expect(draft.card).toBe("PortoBank");
     expect(draft.installmentCount).toBe(7);
+  });
+
+
+  it("normaliza polegadas faladas no nome do produto", () => {
+    const draft = parseVoiceTransaction(
+      "Comprei uma TV Samsung de setenta polegadas QHD LED Smart Technology, referência Magalu. Categoria: Compras, eletrônicos. Valor: três mil novecentos e noventa e dois ponto vinte e cinco. Cartão: Porto Bank, em nove vezes. Lançar.",
+      now,
+    );
+
+    expect(draft.name).toBe('TV Samsung 70" QHD LED Smart Technology (Magalu)');
+    expect(draft.category).toBe("Compras > Eletrônicos");
+    expect(draft.amount).toBe(3992.25);
+    expect(draft.card).toBe("Porto Bank");
+    expect(draft.installmentCount).toBe(9);
   });
 
 });
