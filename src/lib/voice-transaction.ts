@@ -171,7 +171,7 @@ const NUMBER_WORD_TOKEN = [
 
 const NUMBER_WORD_SEQUENCE = `(?:(?:${NUMBER_WORD_TOKEN})(?:\\s+e\\s+|\\s+)){0,10}(?:${NUMBER_WORD_TOKEN})`;
 const NUMBER_WORD_MONEY_RE = new RegExp(`\\b(${NUMBER_WORD_SEQUENCE})\\s+reais?\\b`, "i");
-const VALUE_WORDS_RE = new RegExp(`\\b(?:no\\s+valor\\s+de|valor\\s+de|valor|por)\\s+(${NUMBER_WORD_SEQUENCE})(?:\\s+reais?)?\\b`, "i");
+const VALUE_WORDS_RE = new RegExp(`\\b(?:no\\s+valor\\s+de|valor\\s+de|valor|por)\\s*(?:[,;:=\\-]\\s*)?(${NUMBER_WORD_SEQUENCE})(?:\\s+reais?)?\\b`, "i");
 const FLEXIBLE_NUMBER_PART = `(?:${NUMBER_WORD_SEQUENCE}|\\d{1,3}(?:\\.\\d{3})*|\\d+)`;
 const REALS_AND_CENTS_RE = new RegExp(
   `\\b(${FLEXIBLE_NUMBER_PART})\\s+reais?\\s+e\\s+(${FLEXIBLE_NUMBER_PART})\\s+centavos?\\b`,
@@ -182,11 +182,11 @@ const SPOKEN_DECIMAL_RE = new RegExp(
   "i",
 );
 const VALUE_SPOKEN_DECIMAL_RE = new RegExp(
-  `\\b(?:no\\s+valor\\s+de|valor\\s+de|valor|por)\\s+(${FLEXIBLE_NUMBER_PART})\\s+(?:pontos?|v[ií]rgulas?)\\s+(${FLEXIBLE_NUMBER_PART})\\b`,
+  `\\b(?:no\\s+valor\\s+de|valor\\s+de|valor|por)\\s*(?:[,;:=\\-]\\s*)?(${FLEXIBLE_NUMBER_PART})\\s+(?:pontos?|v[ií]rgulas?)\\s+(${FLEXIBLE_NUMBER_PART})\\b`,
   "i",
 );
 const VALUE_REALS_AND_CENTS_RE = new RegExp(
-  `\\b(?:no\\s+valor\\s+de|valor\\s+de|valor|por)\\s+(${FLEXIBLE_NUMBER_PART})\\s+reais?\\s+e\\s+(${FLEXIBLE_NUMBER_PART})\\s+centavos?\\b`,
+  `\\b(?:no\\s+valor\\s+de|valor\\s+de|valor|por)\\s*(?:[,;:=\\-]\\s*)?(${FLEXIBLE_NUMBER_PART})\\s+reais?\\s+e\\s+(${FLEXIBLE_NUMBER_PART})\\s+centavos?\\b`,
   "i",
 );
 
@@ -339,9 +339,17 @@ function parseDate(text: string, now = new Date()): string {
 const METADATA_BOUNDARY = String.raw`(?:no\s+valor\b|valor\b|por\s+(?:r\$|\d)|cart[aã]o\b|conta(?:\s+banc[aá]ria)?\b|categoria\b|refer[eê]ncia\b|em\s+(?:\d+|${NUMBER_WORD_TOKEN})\s*(?:x|parcelas?)\b|hoje\b|ontem\b|anteontem\b|data\b|dia\s+\d)`;
 
 function parseCard(text: string): string | null {
-  const match = text.match(new RegExp(`\\bcart[aã]o(?:\\s+de\\s+cr[eé]dito)?\\s+(?:do|da|é|e)?\\s*(.+?)(?=\\s+(?:${METADATA_BOUNDARY})|[,.]|$)`, "i"));
+  const match = text.match(new RegExp(
+    `\\bcart[aã]o(?:\\s+de\\s+cr[eé]dito)?\\s*(?:[,;:=\\-]\\s*)?(?:(?:do|da|de|é|e)\\s+)?(.+?)(?=\\s*(?:[,;.]\\s*)?(?:${METADATA_BOUNDARY}|${VOICE_FINALIZATION_BOUNDARY})\\b|[.!?]|$)`,
+    "i",
+  ));
   if (!match) return null;
-  const card = match[1].trim().replace(/[,.]+$/, "");
+  const card = match[1]
+    .trim()
+    .replace(/[,;]+/g, " ")
+    .replace(/\\s+/g, " ")
+    .replace(/[.!?]+$/, "")
+    .trim();
   return card && card.length <= 50 ? card : null;
 }
 
@@ -574,7 +582,7 @@ export function parseVoiceTransaction(transcript: string, now = new Date()): Voi
     : "expense";
 
   const spokenCategoryMatch = transcript.match(new RegExp(
-    `\\bcategoria\\s+(?:é|e|:)?\\s*(.+?)(?=\\s*(?:[,;.]\\s*)?(?:(?:na|no|em)\\s+)?(?:${METADATA_BOUNDARY}|${VOICE_FINALIZATION_BOUNDARY})\\b|[.!?]|$)`,
+    `\\bcategoria\\s*(?:[,;:=\\-]\\s*)?(?:é|e)?\\s*(.+?)(?=\\s*(?:[,;.]\\s*)?(?:(?:na|no|em)\\s+)?(?:${METADATA_BOUNDARY}|${VOICE_FINALIZATION_BOUNDARY})\\b|[.!?]|$)`,
     "i",
   ));
   const spokenCategory = spokenCategoryMatch?.[1]
