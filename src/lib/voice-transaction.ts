@@ -393,7 +393,13 @@ function cleanStructuredVoiceFieldValue(raw: string, key: StructuredVoiceFieldKe
     .trim();
 
   if (key === "card" || key === "bankAccount") {
+    const installmentTail = new RegExp(
+      `\\s+(?=(?:em\\s+)?(?:\\d{1,2}|${NUMBER_WORD_SEQUENCE})\\s*(?:x|parcelas?)\\b|parcelas?\\s*(?:[,;:=\\-]\\s*)?(?:\\d{1,2}|${NUMBER_WORD_SEQUENCE})\\b)`,
+      "i",
+    );
+
     value = value
+      .split(installmentTail)[0]
       .replace(/^\s*(?:do|da|de)\s+/i, "")
       .replace(/[,;]+/g, " ")
       .replace(/\s+/g, " ")
