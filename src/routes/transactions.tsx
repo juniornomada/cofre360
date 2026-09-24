@@ -1526,6 +1526,26 @@ export function TransactionsPage() {
                 {balanceVisible ? <Eye className="h-5 w-5 text-muted-foreground" /> : <EyeOff className="h-5 w-5 text-muted-foreground" />}
               </button>
 
+              {!showEditDialog &&
+                !showDeleteDialog &&
+                !showAddDialog &&
+                !showAddTypeDialog &&
+                !showCsvImport &&
+                !showBatchDeleteDialog &&
+                !showGlobalSearch &&
+                !showUpdateScopeDialog &&
+                !selectionMode && (
+                  <VoiceTransactionButton
+                    onDraft={(draft) => {
+                      setVoiceDraft(draft);
+                      setQuickAddType(draft.type);
+                      setCopyTxData(null);
+                      setShowAddTypeDialog(false);
+                      setShowAddDialog(true);
+                    }}
+                  />
+                )}
+
               <button
                 onClick={() => {
                   setCopyTxData(null);
@@ -2469,27 +2489,6 @@ export function TransactionsPage() {
       </Dialog>
 
 
-
-      {!showEditDialog &&
-        !showDeleteDialog &&
-        !showAddDialog &&
-        !showAddTypeDialog &&
-        !showCsvImport &&
-        !showBatchDeleteDialog &&
-        !showGlobalSearch &&
-        !showUpdateScopeDialog &&
-        !selectionMode && (
-          <VoiceTransactionButton
-            floating
-            onDraft={(draft) => {
-              setVoiceDraft(draft);
-              setQuickAddType(draft.type);
-              setCopyTxData(null);
-              setShowAddTypeDialog(false);
-              setShowAddDialog(true);
-            }}
-          />
-        )}
 
       {/* Choose transaction type before opening Quick Add */}
       <Dialog open={showAddTypeDialog} onOpenChange={setShowAddTypeDialog}>
