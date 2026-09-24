@@ -504,4 +504,21 @@ describe("parseVoiceTransaction", () => {
     expect(draft.installmentCount).toBe(12);
   });
 
+
+  it("padroniza capitalização de referências comerciais", () => {
+    expect(
+      parseVoiceTransaction(
+        "Comprei uma TV Samsung 50 polegadas, referência ponto frio, categoria compras eletrônicos, valor 2500 reais, cartão Porto Bank.",
+        now,
+      ).name,
+    ).toBe('TV Samsung 50" (Ponto Frio)');
+
+    expect(
+      parseVoiceTransaction(
+        "Comprei uma TV Samsung 50 polegadas, referência casas bahia, categoria compras eletrônicos, valor 2500 reais, cartão Porto Bank.",
+        now,
+      ).name,
+    ).toBe('TV Samsung 50" (Casas Bahia)');
+  });
+
 });
