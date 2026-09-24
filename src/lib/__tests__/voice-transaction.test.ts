@@ -461,4 +461,19 @@ describe("parseVoiceTransaction", () => {
     expect(draft.installmentCount).toBe(10);
   });
 
+
+  it("interpreta o comando natural do print com PortoBank em 7 vezes", () => {
+    const draft = parseVoiceTransaction(
+      "Comprei uma TV Samsung 65 polegadas QHD LED, referência Magalu, categoria Compras, eletrônicos, valor R$ 3.749,67, cartão PortoBank em 7 vezes.",
+      now,
+    );
+
+    expect(draft.name).toBe("TV Samsung 65 polegadas QHD LED (Magalu)");
+    expect(draft.category).toBe("Compras > Eletrônicos");
+    expect(draft.categorySource).toBe("spoken");
+    expect(draft.amount).toBe(3749.67);
+    expect(draft.card).toBe("PortoBank");
+    expect(draft.installmentCount).toBe(7);
+  });
+
 });
