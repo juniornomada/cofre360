@@ -43,6 +43,26 @@ export function selectPreferredVoiceTranscript(alternatives: string[]): string {
 
 export type VoiceFinalizationCommand = "confirmar" | "lançar" | "finalizar";
 
+
+export function extractStandaloneVoiceFinalizationCommand(
+  value: string,
+): VoiceFinalizationCommand | null {
+  const compact = value.replace(/\s+/g, " ").trim();
+  const match = compact.match(
+    /^(?:(?:pode\s+)?(confirmar|finalizar|lan[cç]ar|lan[cç]a|lance)(?:\s+(?:a\s+)?transa[cç][aã]o)?)\s*[.!?,;:]*$/i,
+  );
+  if (!match) return null;
+
+  const spoken = match[1]
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+
+  if (spoken.startsWith("lanc") || spoken === "lance") return "lançar";
+  if (spoken === "finalizar") return "finalizar";
+  return "confirmar";
+}
+
 export function extractVoiceFinalizationCommand(value: string): {
   transcript: string;
   command: VoiceFinalizationCommand | null;
