@@ -230,6 +230,8 @@ export function VoiceTransactionButton({ onDraft }: { onDraft: (draft: VoiceTran
             return;
           }
 
+          // O detector curto só pode encerrar a gravação quando o trecho
+          // transcrito é praticamente apenas o comando de finalização.
           const command = extractStandaloneVoiceFinalizationCommand(text);
           if (command) {
             finishRecording();
