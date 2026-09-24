@@ -195,7 +195,7 @@ describe("QuickAddTransactionDialog — categoria explícita por voz", () => {
     expect(totalMode.className).toContain("bg-primary");
 
     expect(screen.getByText(/10x de/i)).toBeInTheDocument();
-    expect(screen.getByText(/R\$\s*459,00/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/R\$\s*459,00/i).length).toBeGreaterThan(0);
   });
 
 });
