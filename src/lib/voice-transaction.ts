@@ -355,7 +355,6 @@ function parseCard(text: string): string | null {
 
 const VOICE_FINALIZATION_BOUNDARY = String.raw`(?:confirmar|finalizar|lan[cç]ar|lan[cç]a|lance|ok)`;
 
-
 type StructuredVoiceFieldKey =
   | "name"
   | "reference"
@@ -384,371 +383,10 @@ function structuredVoiceFieldKey(label: string): StructuredVoiceFieldKey | null 
   return null;
 }
 
-function cleanStructuredVoiceFieldValue(
-  raw: string,
-  key: StructuredVoiceFieldKey,
-): string {
+function cleanStructuredVoiceFieldValue(raw: string, key: StructuredVoiceFieldKey): string {
   let value = raw
     .replace(
-      new RegExp(
-        `\\s+(?:(?:pode\\s+)?${VOICE_FINALIZATION_BOUNDARY})(?:\\s+(?:a\\s+)?transa[cç][aã]o)?\\s*[.!?,;:]*export type VoiceTransactionType = "expense" | "income";
-
-export type VoiceTransactionDraft = {
-  type: VoiceTransactionType;
-  name: string;
-  amount: number;
-  date: string;
-  category: string;
-  categorySource?: "spoken" | "inferred";
-  icon: string;
-  card: string | null;
-  bankAccount: string | null;
-  installmentCount: number | null;
-  transcript: string;
-};
-
-const pad = (value: number) => String(value).padStart(2, "0");
-const formatDate = (date: Date) => `${pad(date.getDate())}-${pad(date.getMonth() + 1)}-${date.getFullYear()}`;
-
-const normalize = (value: string) =>
-  value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/\s+/g, " ")
-    .trim()
-    .toLowerCase();
-
-function normalizeSpokenNumberWords(value: string): string {
-  const tokens = value.split(" ").filter(Boolean);
-  const normalizedTokens: string[] = [];
-
-  for (let index = 0; index < tokens.length;) {
-    const token = tokens[index];
-    const isNumberWord = token === "mil" || NUMBER_WORD_VALUES[token] !== undefined;
-
-    if (!isNumberWord) {
-      normalizedTokens.push(token);
-      index += 1;
-      continue;
-    }
-
-    const sequence: string[] = [token];
-    let cursor = index + 1;
-
-    while (cursor < tokens.length) {
-      const next = tokens[cursor];
-      const nextIsNumberWord = next === "mil" || NUMBER_WORD_VALUES[next] !== undefined;
-      if (!nextIsNumberWord && next !== "e") break;
-      sequence.push(next);
-      cursor += 1;
-    }
-
-    while (sequence[sequence.length - 1] === "e") {
-      sequence.pop();
-      cursor -= 1;
-    }
-
-    const parsed = parsePortugueseNumberWords(sequence.join(" "));
-    if (parsed !== null) {
-      normalizedTokens.push(String(parsed));
-      index = cursor;
-      continue;
-    }
-
-    normalizedTokens.push(token);
-    index += 1;
-  }
-
-  return normalizedTokens.join(" ");
-}
-
-export const normalizeVoiceAccountReference = (value: string) =>
-  normalizeSpokenNumberWords(
-    normalize(value)
-      .replace(/\bpor cento\b/g, "")
-      .replace(/%/g, "")
-      .replace(/[^a-z0-9]+/g, " ")
-      .replace(/\s+/g, " ")
-      .trim(),
-  );
-
-function canonicalizeVoiceAccountAlias(value: string): string {
-  const normalized = normalizeVoiceAccountReference(value);
-
-  // Conta de benefício/ticket alimentação cadastrada como "Caixa CA CR (2508)".
-  // Aceita formas naturais de fala sem tornar "Caixa" sozinho ambíguo.
-  if (
-    /^caixa\s+(?:ca|alimentacao|ticket\s+alimentacao|vale\s+alimentacao)$/.test(normalized) ||
-    /^caixa\s+ca\s+cr(?:\s+2508)?$/.test(normalized)
-  ) {
-    return "caixa alimentacao";
-  }
-
-  return normalized;
-}
-
-export const voiceAccountNamesMatch = (
-  spoken: string,
-  saved: string,
-  parentName?: string | null,
-) => {
-  const spokenRef = canonicalizeVoiceAccountAlias(spoken);
-  const savedRef = canonicalizeVoiceAccountAlias(saved);
-
-  if (spokenRef === savedRef) return true;
-  if (!parentName) return false;
-
-  const hierarchicalRef = canonicalizeVoiceAccountAlias(`${parentName} ${saved}`);
-  return spokenRef === hierarchicalRef;
-};
-
-const NUMBER_WORD_VALUES: Record<string, number> = {
-  zero: 0,
-  um: 1,
-  uma: 1,
-  dois: 2,
-  duas: 2,
-  tres: 3,
-  quatro: 4,
-  cinco: 5,
-  seis: 6,
-  sete: 7,
-  oito: 8,
-  nove: 9,
-  dez: 10,
-  onze: 11,
-  doze: 12,
-  treze: 13,
-  catorze: 14,
-  quatorze: 14,
-  quinze: 15,
-  dezesseis: 16,
-  dezassete: 17,
-  dezessete: 17,
-  dezoito: 18,
-  dezenove: 19,
-  vinte: 20,
-  trinta: 30,
-  quarenta: 40,
-  cinquenta: 50,
-  sessenta: 60,
-  setenta: 70,
-  oitenta: 80,
-  noventa: 90,
-  cem: 100,
-  cento: 100,
-  duzentos: 200,
-  duzentas: 200,
-  trezentos: 300,
-  trezentas: 300,
-  quatrocentos: 400,
-  quatrocentas: 400,
-  quinhentos: 500,
-  quinhentas: 500,
-  seiscentos: 600,
-  seiscentas: 600,
-  setecentos: 700,
-  setecentas: 700,
-  oitocentos: 800,
-  oitocentas: 800,
-  novecentos: 900,
-  novecentas: 900,
-};
-
-const NUMBER_WORD_TOKEN = [
-  "zero", "um", "uma", "dois", "duas", "tr[eê]s", "quatro", "cinco", "seis", "sete", "oito", "nove",
-  "dez", "onze", "doze", "treze", "catorze", "quatorze", "quinze", "dezesseis", "dezassete", "dezessete", "dezoito", "dezenove",
-  "vinte", "trinta", "quarenta", "cinquenta", "sessenta", "setenta", "oitenta", "noventa",
-  "cem", "cento", "duzent[oa]s", "trezent[oa]s", "quatrocent[oa]s", "quinhent[oa]s", "seiscent[oa]s", "setecent[oa]s", "oitocent[oa]s", "novecent[oa]s", "mil",
-].join("|");
-
-const NUMBER_WORD_SEQUENCE = `(?:(?:${NUMBER_WORD_TOKEN})(?:\\s+e\\s+|\\s+)){0,10}(?:${NUMBER_WORD_TOKEN})`;
-const NUMBER_WORD_MONEY_RE = new RegExp(`\\b(${NUMBER_WORD_SEQUENCE})\\s+reais?\\b`, "i");
-const VALUE_WORDS_RE = new RegExp(`\\b(?:no\\s+valor\\s+de|valor\\s+de|valor|por)\\s*(?:[,;:=\\-]\\s*)?(${NUMBER_WORD_SEQUENCE})(?:\\s+reais?)?\\b`, "i");
-const FLEXIBLE_NUMBER_PART = `(?:${NUMBER_WORD_SEQUENCE}|\\d{1,3}(?:\\.\\d{3})*|\\d+)`;
-const REALS_AND_CENTS_RE = new RegExp(
-  `\\b(${FLEXIBLE_NUMBER_PART})\\s+reais?\\s+e\\s+(${FLEXIBLE_NUMBER_PART})\\s+centavos?\\b`,
-  "i",
-);
-const SPOKEN_DECIMAL_RE = new RegExp(
-  `\\b(${FLEXIBLE_NUMBER_PART})\\s+(?:pontos?|v[ií]rgulas?)\\s+(${FLEXIBLE_NUMBER_PART})\\b`,
-  "i",
-);
-const VALUE_SPOKEN_DECIMAL_RE = new RegExp(
-  `\\b(?:no\\s+valor\\s+de|valor\\s+de|valor|por)\\s*(?:[,;:=\\-]\\s*)?(${FLEXIBLE_NUMBER_PART})\\s+(?:pontos?|v[ií]rgulas?)\\s+(${FLEXIBLE_NUMBER_PART})\\b`,
-  "i",
-);
-const VALUE_REALS_AND_CENTS_RE = new RegExp(
-  `\\b(?:no\\s+valor\\s+de|valor\\s+de|valor|por)\\s*(?:[,;:=\\-]\\s*)?(${FLEXIBLE_NUMBER_PART})\\s+reais?\\s+e\\s+(${FLEXIBLE_NUMBER_PART})\\s+centavos?\\b`,
-  "i",
-);
-
-
-function parsePortugueseNumberWords(raw: string): number | null {
-  const tokens = normalize(raw).split(" ").filter(Boolean);
-  if (!tokens.length) return null;
-
-  let total = 0;
-  let current = 0;
-  let recognized = 0;
-
-  for (const token of tokens) {
-    if (token === "e") continue;
-    if (token === "mil") {
-      current = current || 1;
-      total += current * 1000;
-      current = 0;
-      recognized += 1;
-      continue;
-    }
-    const value = NUMBER_WORD_VALUES[token];
-    if (value === undefined) return null;
-    current += value;
-    recognized += 1;
-  }
-
-  return recognized ? total + current : null;
-}
-
-function moneyToNumber(raw: string): number {
-  const normalized = raw.includes(",")
-    ? raw.replace(/\./g, "").replace(",", ".")
-    : raw;
-  const amount = Number(normalized);
-  return Number.isFinite(amount) ? amount : 0;
-}
-
-function parseFlexibleNumber(raw: string): number | null {
-  const compact = raw.trim();
-  if (/^\d+(?:[.,]\d+)?$/.test(compact) || /^\d{1,3}(?:\.\d{3})+$/.test(compact)) {
-    return moneyToNumber(compact);
-  }
-  return parsePortugueseNumberWords(compact);
-}
-
-function parseSpokenDecimalFraction(raw: string): number | null {
-  const compact = normalize(raw);
-
-  if (/^\d{1,2}$/.test(compact)) {
-    const digits = Number(compact);
-    return digits / (compact.length === 1 ? 10 : 100);
-  }
-
-  const value = parsePortugueseNumberWords(compact);
-  if (value === null || value < 0 || value > 99) return null;
-
-  // Em fala monetária, "ponto cinco" equivale a 0,5 e
-  // "ponto noventa e sete" equivale a 0,97.
-  if (/^zero\b/.test(compact)) return value / 100;
-  return value < 10 ? value / 10 : value / 100;
-}
-
-function parseCompositeMoney(text: string): number | null {
-  const reaisAndCents = text.match(VALUE_REALS_AND_CENTS_RE) || text.match(REALS_AND_CENTS_RE);
-  if (reaisAndCents) {
-    const reais = parseFlexibleNumber(reaisAndCents[1]);
-    const cents = parseFlexibleNumber(reaisAndCents[2]);
-    if (reais !== null && cents !== null && cents >= 0 && cents < 100) {
-      return reais + cents / 100;
-    }
-  }
-
-  const spokenDecimal = text.match(VALUE_SPOKEN_DECIMAL_RE) || text.match(SPOKEN_DECIMAL_RE);
-  if (spokenDecimal) {
-    const whole = parseFlexibleNumber(spokenDecimal[1]);
-    const fraction = parseSpokenDecimalFraction(spokenDecimal[2]);
-    if (whole !== null && fraction !== null) {
-      return whole + fraction;
-    }
-  }
-
-  return null;
-}
-
-function parseAmount(text: string): number {
-  const composite = parseCompositeMoney(text);
-  if (composite !== null) return composite;
-
-  const numericCents = text.match(/\b(?:(?:no\s+valor\s+de|valor\s+de|valor|por)\s*(?:[,;:=\-]\s*)?)?(\d{1,2})\s+centavos?\b/i);
-  if (numericCents) return Number(numericCents[1]) / 100;
-
-  const wordCents = text.match(new RegExp(`\\b(?:(?:no\\s+valor\\s+de|valor\\s+de|valor|por)\\s*(?:[,;:=\\-]\\s*)?)?(${NUMBER_WORD_SEQUENCE})\\s+centavos?\\b`, "i"));
-  if (wordCents) {
-    const centsValue = parsePortugueseNumberWords(wordCents[1]);
-    if (centsValue !== null && centsValue >= 0 && centsValue < 100) return centsValue / 100;
-  }
-
-  const conversationalNumeric = text.match(
-    /\b(?:gastei|paguei|comprei|adquiri|recebi|ganhei|lancei|registrei|adicionei)\s+(?:r\$\s*)?(\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)\b/i,
-  );
-  if (conversationalNumeric) return moneyToNumber(conversationalNumeric[1]);
-
-  const numeric = text.match(/(?:r\$\s*)(\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)/i)
-    || text.match(/(\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)\s*(?:reais?|real)\b/i)
-    || text.match(/\b(?:no\s+valor\s+de|valor\s+de|valor)\s*(?:[,;:=\-]\s*)?(\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)/i);
-  if (numeric) return moneyToNumber(numeric[1]);
-
-  const wordMoney = text.match(NUMBER_WORD_MONEY_RE) || text.match(VALUE_WORDS_RE);
-  if (wordMoney) {
-    const whole = parsePortugueseNumberWords(wordMoney[1]);
-    if (whole !== null) {
-      const after = text.slice((wordMoney.index ?? 0) + wordMoney[0].length);
-      const centsMatch = after.match(/^\s*(?:e\s+)?(.+?)\s+centavos?\b/i);
-      const cents = centsMatch ? parsePortugueseNumberWords(centsMatch[1]) : null;
-      return whole + (cents !== null && cents >= 0 && cents < 100 ? cents / 100 : 0);
-    }
-  }
-
-  if (text.trim().split(/\s+/).length <= 8) {
-    const candidates = Array.from(text.matchAll(/\b(\d+(?:[.,]\d{1,2})?)\b/g));
-    for (const candidate of candidates) {
-      const raw = candidate[1];
-      const index = candidate.index ?? 0;
-      const around = text.slice(Math.max(0, index - 4), index + raw.length + 14);
-      if (/\d+\s*(?:x|parcelas?)\b/i.test(around)) continue;
-      if (/\d{1,2}[\/-]\d{1,2}/.test(around)) continue;
-      if (/^\s*%/.test(text.slice(index + raw.length, index + raw.length + 3))) continue;
-      return moneyToNumber(raw);
-    }
-  }
-  return 0;
-}
-
-function parseDate(text: string, now = new Date()): string {
-  const normalized = normalize(text);
-  const explicit = text.match(/\b(\d{1,2})[\/-](\d{1,2})(?:[\/-](\d{2,4}))?\b/);
-  if (explicit) {
-    let year = explicit[3] ? Number(explicit[3]) : now.getFullYear();
-    if (year < 100) year += 2000;
-    return `${pad(Number(explicit[1]))}-${pad(Number(explicit[2]))}-${year}`;
-  }
-
-  const date = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  if (normalized.includes("anteontem")) date.setDate(date.getDate() - 2);
-  else if (normalized.includes("ontem")) date.setDate(date.getDate() - 1);
-  return formatDate(date);
-}
-
-const METADATA_BOUNDARY = String.raw`(?:no\s+valor\b|valor\b|por\s+(?:r\$|\d)|cart[aã]o\b|conta(?:\s+banc[aá]ria)?\b|categoria\b|refer[eê]ncia\b|em\s+(?:\d+|${NUMBER_WORD_TOKEN})\s*(?:x|parcelas?)\b|hoje\b|ontem\b|anteontem\b|data\b|dia\s+\d)`;
-
-function parseCard(text: string): string | null {
-  const match = text.match(new RegExp(
-    `\\bcart[aã]o(?:\\s+de\\s+cr[eé]dito)?\\s*(?:[,;:=\\-]\\s*)?(?:(?:do|da|de|é|e)\\s+)?(.+?)(?=\\s*(?:[,;.]\\s*)?(?:${METADATA_BOUNDARY}|${VOICE_FINALIZATION_BOUNDARY})\\b|[.!?]|$)`,
-    "i",
-  ));
-  if (!match) return null;
-  const card = match[1]
-    .trim()
-    .replace(/[,;]+/g, " ")
-    .replace(/\\s+/g, " ")
-    .replace(/[.!?]+$/, "")
-    .trim();
-  return card && card.length <= 50 ? card : null;
-}
-
-,
-        "i",
-      ),
+      /\s+(?:(?:pode\s+)?(?:confirmar|finalizar|lan[cç]ar|lan[cç]a|lance|ok))(?:\s+(?:a\s+)?transa[cç][aã]o)?\s*[.!?,;:]*$/i,
       "",
     )
     .replace(/^[\s,;:.=\-]+|[\s,;:.=\-]+$/g, "")
@@ -778,7 +416,11 @@ function extractStructuredVoiceFields(text: string): StructuredVoiceFields {
 
     const start = match.index + match[0].length;
     const end = matches[index + 1]?.index ?? text.length;
-    const value = cleanStructuredVoiceFieldValue(text.slice(start, end), key);
+    let value = cleanStructuredVoiceFieldValue(text.slice(start, end), key);
+
+    if (index + 1 < matches.length) {
+      value = value.replace(/\s+(?:na|no|em)$/i, "").trim();
+    }
 
     if (value) fields[key] = value;
   }
@@ -1021,36 +663,28 @@ function extractName(text: string): string {
 export function parseVoiceTransaction(transcript: string, now = new Date()): VoiceTransactionDraft {
   const normalized = normalize(transcript);
   const structured = extractStructuredVoiceFields(transcript);
-
   const isYield = /\b(rendimentos?|juros?|rentabilidade)\b/.test(normalized);
-  const type: VoiceTransactionType =
-    isYield || /\b(recebi|ganhei|entrou|caiu|receita|salario|reembolso)\b/.test(normalized)
-      ? "income"
-      : "expense";
+  const type: VoiceTransactionType = isYield || /\b(recebi|ganhei|entrou|caiu|receita|salario|reembolso)\b/.test(normalized)
+    ? "income"
+    : "expense";
 
-  // Campos rotulados explicitamente são autoritativos. A regex legada abaixo
-  // existe apenas como fallback para frases antigas que não foram segmentadas.
-  const legacySpokenCategoryMatch = transcript.match(new RegExp(
+  const spokenCategoryMatch = transcript.match(new RegExp(
     `\\bcategoria\\s*(?:[,;:=\\-]\\s*)?(?:é|e)?\\s*(.+?)(?=\\s*(?:[,;.]\\s*)?(?:(?:na|no|em)\\s+)?(?:${METADATA_BOUNDARY}|${VOICE_FINALIZATION_BOUNDARY})\\b|[.!?]|$)`,
     "i",
   ));
-  const spokenCategory =
-    structured.category ||
-    legacySpokenCategoryMatch?.[1]
-      ?.replace(/[,;]+/g, " ")
-      .replace(/\s+/g, " ")
-      .trim() ||
-    null;
-
-  const structuredName = structured.name
-    ? cleanNameCandidate(structured.name)
-    : null;
+  const legacySpokenCategory = spokenCategoryMatch?.[1]
+    ?.replace(/[,;]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim() || null;
+  const spokenCategory = structured.category
+    ? structured.category.replace(/[,;]+/g, " ").replace(/\s+/g, " ").trim()
+    : legacySpokenCategory;
+  const structuredName = structured.name ? cleanNameCandidate(structured.name) : null;
   const extractedName = isYield
     ? "Rendimento"
     : structuredName && structuredName !== "Transação por voz"
       ? structuredName
       : extractName(transcript);
-
   const explicitReference = structured.reference
     ? canonicalizeKnownReference(
         structured.reference
@@ -1059,7 +693,6 @@ export function parseVoiceTransaction(transcript: string, now = new Date()): Voi
           .trim(),
       )
     : parseReference(transcript);
-
   const informalReference = explicitReference
     ? { baseName: extractedName, reference: null }
     : splitInformalReferenceFromName(extractedName);
@@ -1068,17 +701,9 @@ export function parseVoiceTransaction(transcript: string, now = new Date()): Voi
   const name = reference && !baseName.endsWith(`(${reference})`)
     ? `${baseName} (${reference})`
     : baseName;
-
   const inferred = isYield
     ? { category: "Receita > Juros", icon: "📈" }
     : inferCategory(name, spokenCategory, type);
-
-  const card = structured.card
-    ? structured.card.replace(/[.!?]+$/, "").trim()
-    : parseCard(transcript);
-  const bankAccount = structured.bankAccount
-    ? structured.bankAccount.replace(/[.!?]+$/, "").trim()
-    : parseBankAccount(transcript);
 
   return {
     type,
@@ -1088,12 +713,11 @@ export function parseVoiceTransaction(transcript: string, now = new Date()): Voi
     category: inferred.category,
     categorySource: spokenCategory ? "spoken" : "inferred",
     icon: inferred.icon,
-    card,
-    bankAccount,
+    card: structured.card ? structured.card.replace(/[.!?]+$/, "").trim() : parseCard(transcript),
+    bankAccount: structured.bankAccount ? structured.bankAccount.replace(/[.!?]+$/, "").trim() : parseBankAccount(transcript),
     installmentCount: structured.installments
       ? parseStructuredInstallments(structured.installments)
       : parseInstallments(transcript),
     transcript: transcript.trim(),
   };
 }
-
