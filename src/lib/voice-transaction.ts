@@ -333,13 +333,81 @@ function parseAmount(text: string): number {
   return 0;
 }
 
+const PORTUGUESE_MONTHS: Record<string, number> = {
+  janeiro: 0,
+  fevereiro: 1,
+  marco: 2,
+  abril: 3,
+  maio: 4,
+  junho: 5,
+  julho: 6,
+  agosto: 7,
+  setembro: 8,
+  outubro: 9,
+  novembro: 10,
+  dezembro: 11,
+};
+
+function validCalendarDate(day: number, month: number, year: number): Date | null {
+  const candidate = new Date(year, month, day);
+  if (
+    candidate.getFullYear() !== year ||
+    candidate.getMonth() !== month ||
+    candidate.getDate() !== day
+  ) {
+    return null;
+  }
+  return candidate;
+}
+
+function resolveSpokenCalendarDate(
+  day: number,
+  month: number,
+  explicitYear: number | null,
+  now: Date,
+): Date | null {
+  if (explicitYear !== null) {
+    const year = explicitYear < 100 ? explicitYear + 2000 : explicitYear;
+    return validCalendarDate(day, month, year);
+  }
+
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  // Transaction dates without a year mean the most recent occurrence that
+  // is not in the future. This also naturally handles Jan -> previous Dec.
+  for (let year = today.getFullYear(); year >= today.getFullYear() - 4; year -= 1) {
+    const candidate = validCalendarDate(day, month, year);
+    if (candidate && candidate <= today) return candidate;
+  }
+
+  return null;
+}
+
 function parseDate(text: string, now = new Date()): string {
   const normalized = normalize(text);
-  const explicit = text.match(/\b(\d{1,2})[\/-](\d{1,2})(?:[\/-](\d{2,4}))?\b/);
-  if (explicit) {
-    let year = explicit[3] ? Number(explicit[3]) : now.getFullYear();
-    if (year < 100) year += 2000;
-    return `${pad(Number(explicit[1]))}-${pad(Number(explicit[2]))}-${year}`;
+
+  const numeric = normalized.match(/\b(\d{1,2})[\/-](\d{1,2})(?:[\/-](\d{2,4}))?\b/);
+  if (numeric) {
+    const candidate = resolveSpokenCalendarDate(
+      Number(numeric[1]),
+      Number(numeric[2]) - 1,
+      numeric[3] ? Number(numeric[3]) : null,
+      now,
+    );
+    if (candidate) return formatDate(candidate);
+  }
+
+  const namedMonth = normalized.match(
+    /\b(?:data\s+|dia\s+)?(\d{1,2})\s+(?:de\s+)?(janeiro|fevereiro|marco|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro)(?:\s+(?:de\s+)?(\d{2,4}))?\b/,
+  );
+  if (namedMonth) {
+    const candidate = resolveSpokenCalendarDate(
+      Number(namedMonth[1]),
+      PORTUGUESE_MONTHS[namedMonth[2]],
+      namedMonth[3] ? Number(namedMonth[3]) : null,
+      now,
+    );
+    if (candidate) return formatDate(candidate);
   }
 
   const date = new Date(now.getFullYear(), now.getMonth(), now.getDate());

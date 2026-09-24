@@ -155,6 +155,49 @@ describe("parseVoiceTransaction", () => {
     expect(draft.bankAccount).toBe("Mercado Pago cofrinho 140%");
   });
 
+  it("interpreta data falada no mesmo ano quando ela já ocorreu", () => {
+    const reference = new Date(2026, 8, 24, 15, 0, 0);
+    const draft = parseVoiceTransaction(
+      "Gastei 29 reais com almoço data 23 de setembro conta Porto Bank",
+      reference,
+    );
+
+    expect(draft.date).toBe("23-09-2026");
+  });
+
+  it("usa o último dia/mês ocorrido quando o ano não é falado", () => {
+    const reference = new Date(2026, 0, 10, 12, 0, 0);
+
+    expect(
+      parseVoiceTransaction("Despesa nome Presente valor 100 data 25 de dezembro", reference).date,
+    ).toBe("25-12-2025");
+
+    expect(
+      parseVoiceTransaction("Despesa nome Presente valor 100 data 25/12", reference).date,
+    ).toBe("25-12-2025");
+  });
+
+  it("mantém o ano explicitamente falado mesmo quando é anterior", () => {
+    const reference = new Date(2026, 0, 10, 12, 0, 0);
+    expect(
+      parseVoiceTransaction("Despesa nome Presente valor 100 data 25 de dezembro de 2024", reference).date,
+    ).toBe("25-12-2024");
+  });
+
+  it("continua entendendo hoje, ontem e anteontem", () => {
+    const reference = new Date(2026, 8, 24, 15, 0, 0);
+    expect(parseVoiceTransaction("Despesa nome Café valor 10 hoje", reference).date).toBe("24-09-2026");
+    expect(parseVoiceTransaction("Despesa nome Café valor 10 ontem", reference).date).toBe("23-09-2026");
+    expect(parseVoiceTransaction("Despesa nome Café valor 10 anteontem", reference).date).toBe("22-09-2026");
+  });
+
+  it("resolve 29 de fevereiro para a ocorrência válida mais recente", () => {
+    const reference = new Date(2025, 2, 1, 12, 0, 0);
+    expect(
+      parseVoiceTransaction("Despesa nome Teste valor 10 data 29 de fevereiro", reference).date,
+    ).toBe("29-02-2024");
+  });
+
   it("coloca referência entre parênteses no nome", () => {
     expect(parseVoiceTransaction("Receita, nome Salário Junior, referência mãe, valor 1000 reais", now).name)
       .toBe("Salário Junior (mãe)");
