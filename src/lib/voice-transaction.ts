@@ -562,6 +562,25 @@ function inferCategory(name: string, spokenCategory: string | null, type: VoiceT
   return { category: "Outros > Outros", icon: "📄" };
 }
 
+function normalizeProductMeasurements(value: string): string {
+  const inchesPattern = new RegExp(
+    \`\\b(?:de\\s+)?(\\d{1,3}|\${NUMBER_WORD_SEQUENCE})\\s+polegadas?\\b\`,
+    "gi",
+  );
+
+  return value.replace(inchesPattern, (_match, rawSize: string) => {
+    const numericSize = /^\\d+$/.test(rawSize.trim())
+      ? Number(rawSize)
+      : parsePortugueseNumberWords(rawSize);
+
+    if (numericSize === null || !Number.isFinite(numericSize) || numericSize <= 0) {
+      return _match;
+    }
+
+    return \`\${numericSize}"\`;
+  });
+}
+
 function cleanNameCandidate(raw: string): string {
   let value = raw
     .replace(/^[,.!?;:\s]+/g, "")
@@ -573,6 +592,7 @@ function cleanNameCandidate(raw: string): string {
 
   if (!value || value.split(" ").length > 12 || value.length > 80) return "Transação por voz";
   value = value.replace(/^posto de gasolina\b/i, "Posto de Gasolina");
+  value = normalizeProductMeasurements(value);
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
