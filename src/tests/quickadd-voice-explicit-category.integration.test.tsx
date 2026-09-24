@@ -8,7 +8,20 @@ vi.mock("@/integrations/supabase/client", () => ({
       if (table === "cards") {
         return {
           select: () => ({
-            order: () => Promise.resolve({ data: [], error: null }),
+            order: () => Promise.resolve({
+              data: [
+                {
+                  id: "card-mercado-pago",
+                  name: "Mercado Pago",
+                  brand: "mastercard",
+                  emoji: null,
+                  color: null,
+                  closing_day: 10,
+                  due_day: 17,
+                },
+              ],
+              error: null,
+            }),
           }),
         };
       }
@@ -98,4 +111,40 @@ describe("QuickAddTransactionDialog — categoria explícita por voz", () => {
       screen.queryByRole("button", { name: /Alimentação.*Restaurante/i }),
     ).not.toBeInTheDocument();
   });
+
+  it("seleciona o cartão explicitamente informado por voz", async () => {
+    const initialDraft: VoiceTransactionDraft = {
+      type: "expense",
+      name: "Max Atacadista",
+      amount: 206.66,
+      date: "23-09-2026",
+      category: "Alimentação > Supermercado",
+      categorySource: "spoken",
+      icon: "🛒",
+      card: "Mercado Pago",
+      bankAccount: null,
+      installmentCount: null,
+      transcript:
+        "Despesa, nome: Max Atacadista, categoria: Alimentação, Supermercado, valor: duzentos e seis pontos sessenta e seis, cartão: Mercado Pago.",
+    };
+
+    render(
+      <QuickAddTransactionDialog
+        open
+        onOpenChange={vi.fn()}
+        initialType="expense"
+        initialDraft={initialDraft}
+      />,
+    );
+
+    await waitFor(() => {
+      const cardButton = screen.getByRole("button", { name: /Mercado Pago/i });
+      expect(cardButton.className).toContain("ring-primary");
+    });
+
+    expect(
+      screen.getByRole("button", { name: /Alimentação.*Supermercado/i }),
+    ).toBeInTheDocument();
+  });
+
 });
