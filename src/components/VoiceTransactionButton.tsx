@@ -108,12 +108,7 @@ async function reloadIfVoiceClientIsStale(): Promise<boolean> {
   }
 }
 
-type VoiceTransactionButtonProps = {
-  onDraft: (draft: VoiceTransactionDraft) => void;
-  floating?: boolean;
-};
-
-export function VoiceTransactionButton({ onDraft, floating = false }: VoiceTransactionButtonProps) {
+export function VoiceTransactionButton({ onDraft }: { onDraft: (draft: VoiceTransactionDraft) => void }) {
   const [listening, setListening] = useState(false);
   const [transcribing, setTranscribing] = useState(false);
 
@@ -460,10 +455,7 @@ export function VoiceTransactionButton({ onDraft, floating = false }: VoiceTrans
       type="button"
       onClick={() => void start()}
       disabled={transcribing}
-      className={`flex items-center justify-center rounded-full border transition-all ${floating
-        ? "fixed bottom-[calc(5.75rem+env(safe-area-inset-bottom))] right-4 z-40 h-14 w-14 shadow-xl shadow-black/20 backdrop-blur sm:bottom-6 sm:right-6"
-        : "h-9 w-9"
-      } ${
+      className={`flex h-9 w-9 items-center justify-center rounded-full border transition-all ${
         listening
           ? "border-destructive/50 bg-destructive/15 text-destructive shadow-[0_0_0_4px_hsl(var(--destructive)/0.08)]"
           : "border-primary/30 bg-primary/10 text-primary hover:bg-primary/15"
@@ -484,9 +476,9 @@ export function VoiceTransactionButton({ onDraft, floating = false }: VoiceTrans
       }
     >
       {transcribing ? (
-        <Loader2 className={floating ? "h-5 w-5 animate-spin" : "h-4 w-4 animate-spin"} />
+        <Loader2 className="h-4 w-4 animate-spin" />
       ) : (
-        <Mic className={`${floating ? "h-5 w-5" : "h-4 w-4"} ${busy ? "animate-pulse" : ""}`} />
+        <Mic className={`h-4 w-4 ${busy ? "animate-pulse" : ""}`} />
       )}
     </button>
   );

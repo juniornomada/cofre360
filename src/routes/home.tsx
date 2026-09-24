@@ -507,14 +507,12 @@ function RecoveredHome() {
           <button onClick={() => updateBalanceVisible(!balanceVisible)} className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-card" aria-label="Alternar saldos">
             {balanceVisible ? <Eye className="h-4 w-4 text-muted-foreground" /> : <EyeOff className="h-4 w-4 text-muted-foreground" />}
           </button>
-          {!voiceDialogOpen && (
-            <VoiceTransactionButton
-              onDraft={(draft) => {
-                setVoiceDraft(draft);
-                setVoiceDialogOpen(true);
-              }}
-            />
-          )}
+          <VoiceTransactionButton
+            onDraft={(draft) => {
+              setVoiceDraft(draft);
+              setVoiceDialogOpen(true);
+            }}
+          />
           <Link to="/transactions" search={{ action: "add" } as any} className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground" aria-label="Adicionar transação">
             <Plus className="h-4 w-4" />
           </Link>
