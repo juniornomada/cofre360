@@ -564,7 +564,7 @@ function inferCategory(name: string, spokenCategory: string | null, type: VoiceT
 
 function normalizeProductMeasurements(value: string): string {
   const inchesPattern = new RegExp(
-    \`\\b(?:de\\s+)?(\\d{1,3}|\${NUMBER_WORD_SEQUENCE})\\s+polegadas?\\b\`,
+    `\\b(?:de\\s+)?(\\d{1,3}|${NUMBER_WORD_SEQUENCE})\\s+polegadas?\\b`,
     "gi",
   );
 
@@ -577,7 +577,7 @@ function normalizeProductMeasurements(value: string): string {
       return _match;
     }
 
-    return \`\${numericSize}"\`;
+    return `${numericSize}"`;
   });
 }
 
