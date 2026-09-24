@@ -155,6 +155,35 @@ describe("parseVoiceTransaction", () => {
     expect(draft.bankAccount).toBe("Mercado Pago cofrinho 140%");
   });
 
+  it("interpreta nome direto antes de dia, valor e conta", () => {
+    const reference = new Date(2026, 8, 24, 20, 30, 0);
+    const draft = parseVoiceTransaction(
+      "posto de gasolina, dia 20/09, valor 150.70, conta Banco do Brasil,",
+      reference,
+    );
+
+    expect(draft.name).toBe("Posto de Gasolina");
+    expect(draft.category).toBe("Transporte > Combustível");
+    expect(draft.icon).toBe("⛽");
+    expect(draft.date).toBe("20-09-2026");
+    expect(draft.amount).toBe(150.70);
+    expect(draft.bankAccount).toBe("Banco do Brasil");
+  });
+
+  it("interpreta nome direto mesmo sem pontuação automática", () => {
+    const reference = new Date(2026, 8, 24, 20, 30, 0);
+    const draft = parseVoiceTransaction(
+      "posto de gasolina dia 20/09 valor 150,70 conta Banco do Brasil",
+      reference,
+    );
+
+    expect(draft.name).toBe("Posto de Gasolina");
+    expect(draft.category).toBe("Transporte > Combustível");
+    expect(draft.date).toBe("20-09-2026");
+    expect(draft.amount).toBe(150.70);
+    expect(draft.bankAccount).toBe("Banco do Brasil");
+  });
+
   it("interpreta data falada no mesmo ano quando ela já ocorreu", () => {
     const reference = new Date(2026, 8, 24, 15, 0, 0);
     const draft = parseVoiceTransaction(

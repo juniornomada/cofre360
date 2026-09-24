@@ -797,6 +797,18 @@ function extractName(text: string): string {
     }
   }
 
+  // Comando direto sem verbo/rótulo de nome:
+  // "posto de gasolina, dia 20/09, valor 150,70, conta Banco do Brasil".
+  // Tudo antes do primeiro metadado explícito é a descrição da transação.
+  const directLeadingName = text.match(new RegExp(
+    `^\\s*(.+?)(?=\\s*(?:[,;.]\\s*)?(?:(?:${METADATA_BOUNDARY}|${VOICE_FINALIZATION_BOUNDARY})\\b|\\d{1,2}[\\/-]\\d{1,2}\\b))`,
+    "i",
+  ));
+  if (directLeadingName?.[1]) {
+    const cleaned = cleanNameCandidate(directLeadingName[1]);
+    if (cleaned !== "Transação por voz") return cleaned;
+  }
+
   const compact = text.trim().replace(/\s+/g, " ");
   if (compact.split(" ").length <= 7 && compact.length <= 80) {
     const short = compact
