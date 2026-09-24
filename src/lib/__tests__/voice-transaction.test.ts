@@ -490,4 +490,18 @@ describe("parseVoiceTransaction", () => {
     expect(draft.installmentCount).toBe(9);
   });
 
+
+  it("normaliza medida numérica em polegadas no comando do print", () => {
+    const draft = parseVoiceTransaction(
+      "Comprei uma TV Samsung de 29 polegadas, QHD LED, Dual Technology, referência Casas Bahia. Categoria: compras, outros, valor R$ 1.712,95, cartão PortoBank, em 12 vezes.",
+      now,
+    );
+
+    expect(draft.name).toBe('TV Samsung 29" QHD LED Dual Technology (Casas Bahia)');
+    expect(draft.category).toBe("Compras > Outros");
+    expect(draft.amount).toBe(1712.95);
+    expect(draft.card).toBe("PortoBank");
+    expect(draft.installmentCount).toBe(12);
+  });
+
 });
