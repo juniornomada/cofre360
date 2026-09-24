@@ -178,11 +178,11 @@ const REALS_AND_CENTS_RE = new RegExp(
   "i",
 );
 const SPOKEN_DECIMAL_RE = new RegExp(
-  `\\b(${FLEXIBLE_NUMBER_PART})\\s+(?:ponto|v[ií]rgula)\\s+(${FLEXIBLE_NUMBER_PART})\\b`,
+  `\\b(${FLEXIBLE_NUMBER_PART})\\s+(?:pontos?|v[ií]rgulas?)\\s+(${FLEXIBLE_NUMBER_PART})\\b`,
   "i",
 );
 const VALUE_SPOKEN_DECIMAL_RE = new RegExp(
-  `\\b(?:no\\s+valor\\s+de|valor\\s+de|valor|por)\\s+(${FLEXIBLE_NUMBER_PART})\\s+(?:ponto|v[ií]rgula)\\s+(${FLEXIBLE_NUMBER_PART})\\b`,
+  `\\b(?:no\\s+valor\\s+de|valor\\s+de|valor|por)\\s+(${FLEXIBLE_NUMBER_PART})\\s+(?:pontos?|v[ií]rgulas?)\\s+(${FLEXIBLE_NUMBER_PART})\\b`,
   "i",
 );
 const VALUE_REALS_AND_CENTS_RE = new RegExp(
@@ -496,7 +496,7 @@ function findMoneyPosition(text: string): { start: number; end: number } | null 
     VALUE_SPOKEN_DECIMAL_RE,
     VALUE_REALS_AND_CENTS_RE,
     new RegExp(
-      `\\b(?:gastei|paguei|comprei|adquiri|recebi|ganhei|lancei|registrei|adicionei)\\s+(?:r\\$\\s*)?(?:${FLEXIBLE_NUMBER_PART})\\s+(?:ponto|v[ií]rgula)\\s+(?:${FLEXIBLE_NUMBER_PART})\\b`,
+      `\\b(?:gastei|paguei|comprei|adquiri|recebi|ganhei|lancei|registrei|adicionei)\\s+(?:r\\$\\s*)?(?:${FLEXIBLE_NUMBER_PART})\\s+(?:pontos?|v[ií]rgulas?)\\s+(?:${FLEXIBLE_NUMBER_PART})\\b`,
       "i",
     ),
     REALS_AND_CENTS_RE,
