@@ -70,6 +70,44 @@ async function transcribeAudio(blob: Blob, label: string) {
   return response.text.trim();
 }
 
+function appEntryAssetFromDocument(doc: Document): string | null {
+  const script = doc.querySelector<HTMLScriptElement>(
+    'script[type="module"][src*="/assets/index-"]',
+  );
+  return script?.getAttribute("src") || null;
+}
+
+async function reloadIfVoiceClientIsStale(): Promise<boolean> {
+  if (typeof window === "undefined" || import.meta.env.DEV) return false;
+
+  const currentAsset = appEntryAssetFromDocument(document);
+  if (!currentAsset) return false;
+
+  try {
+    const checkUrl = new URL(window.location.href);
+    checkUrl.searchParams.set("__cofre_build_check", String(Date.now()));
+
+    const response = await fetch(checkUrl.toString(), {
+      cache: "no-store",
+      headers: { "x-cofre-build-check": "1" },
+    });
+    if (!response.ok) return false;
+
+    const html = await response.text();
+    const latestDocument = new DOMParser().parseFromString(html, "text/html");
+    const latestAsset = appEntryAssetFromDocument(latestDocument);
+
+    if (!latestAsset || latestAsset === currentAsset) return false;
+
+    toast.info("Nova versão do Cofre360 disponível. Atualizando antes do lançamento por voz…");
+    window.location.reload();
+    return true;
+  } catch (error) {
+    console.warn("voice build freshness check failed:", error);
+    return false;
+  }
+}
+
 export function VoiceTransactionButton({ onDraft }: { onDraft: (draft: VoiceTransactionDraft) => void }) {
   const [listening, setListening] = useState(false);
   const [transcribing, setTranscribing] = useState(false);
@@ -294,6 +332,8 @@ export function VoiceTransactionButton({ onDraft }: { onDraft: (draft: VoiceTran
       finishRecording();
       return;
     }
+
+    if (await reloadIfVoiceClientIsStale()) return;
 
     if (
       !navigator.mediaDevices?.getUserMedia ||
