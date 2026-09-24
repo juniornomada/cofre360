@@ -469,7 +469,19 @@ function canonicalizeKnownReference(value: string): string {
   if (normalized === "pai") return "pai";
   if (normalized === "creta") return "Creta";
   if (normalized === "spacefox" || normalized === "space fox") return "Spacefox";
-  return value;
+
+  const lowercaseConnectors = new Set(["de", "da", "do", "das", "dos", "e"]);
+  return value
+    .trim()
+    .split(/\s+/)
+    .map((word, index) => {
+      const lower = word.toLocaleLowerCase("pt-BR");
+      if (index > 0 && lowercaseConnectors.has(lower)) return lower;
+      if (/^[A-Z0-9]{2,5}$/.test(word)) return word;
+      if (/[a-záéíóúâêôãõç][A-Z]/.test(word)) return word;
+      return lower.charAt(0).toLocaleUpperCase("pt-BR") + lower.slice(1);
+    })
+    .join(" ");
 }
 
 function parseReference(text: string): string | null {
