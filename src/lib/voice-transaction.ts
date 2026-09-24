@@ -569,7 +569,7 @@ function normalizeProductMeasurements(value: string): string {
   );
 
   return value.replace(inchesPattern, (_match, rawSize: string) => {
-    const numericSize = /^\\d+$/.test(rawSize.trim())
+    const numericSize = /^\d+$/.test(rawSize.trim())
       ? Number(rawSize)
       : parsePortugueseNumberWords(rawSize);
 
