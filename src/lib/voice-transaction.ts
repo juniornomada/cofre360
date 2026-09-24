@@ -313,6 +313,11 @@ function parseAmount(text: string): number {
     }
   }
 
+  // Quando o conteúdo já veio do campo explícito "valor", a transcrição pode
+  // trazer apenas o número por extenso, sem repetir "reais".
+  const bareWordAmount = parsePortugueseNumberWords(text);
+  if (bareWordAmount !== null) return bareWordAmount;
+
   if (text.trim().split(/\s+/).length <= 8) {
     const candidates = Array.from(text.matchAll(/\b(\d+(?:[.,]\d{1,2})?)\b/g));
     for (const candidate of candidates) {
