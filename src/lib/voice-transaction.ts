@@ -79,6 +79,13 @@ export const normalizeVoiceAccountReference = (value: string) =>
       .trim(),
   );
 
+export const normalizeVoiceCardReference = (value: string) =>
+  normalize(value)
+    .replace(/[^a-z0-9]+/g, "");
+
+export const voiceCardNamesMatch = (spoken: string, saved: string) =>
+  normalizeVoiceCardReference(spoken) === normalizeVoiceCardReference(saved);
+
 function canonicalizeVoiceAccountAlias(value: string): string {
   const normalized = normalizeVoiceAccountReference(value);
 
