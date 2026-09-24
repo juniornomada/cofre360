@@ -283,4 +283,17 @@ describe("parseVoiceTransaction", () => {
     expect(draft.bankAccount).toBe("Porto Bank");
   });
 
+
+  it("aceita 'pontos' no plural no valor falado", () => {
+    const draft = parseVoiceTransaction(
+      "Despesa, nome Max Atacadista, categoria Alimentação, Supermercado, valor duzentos e seis pontos sessenta e seis, cartão Mercado Pago.",
+      now,
+    );
+
+    expect(draft.name).toBe("Max Atacadista");
+    expect(draft.amount).toBe(206.66);
+    expect(draft.category).toBe("Alimentação > Supermercado");
+    expect(draft.card).toBe("Mercado Pago");
+  });
+
 });
