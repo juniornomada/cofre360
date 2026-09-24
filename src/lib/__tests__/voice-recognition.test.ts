@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { extractVoiceFinalizationCommand, selectPreferredVoiceTranscript } from "@/lib/voice-recognition";
+import { extractStandaloneVoiceFinalizationCommand, extractVoiceFinalizationCommand, selectPreferredVoiceTranscript } from "@/lib/voice-recognition";
 
 describe("selectPreferredVoiceTranscript", () => {
   it("prefere alternativa que preserva centavos", () => {
@@ -60,3 +60,27 @@ describe("extractVoiceFinalizationCommand", () => {
     ).command).toBeNull();
   });
 });
+
+describe("extractStandaloneVoiceFinalizationCommand", () => {
+  it.each([
+    ["lançar", "lançar"],
+    ["Lançar.", "lançar"],
+    ["pode lançar", "lançar"],
+    ["lançar a transação", "lançar"],
+    ["confirmar", "confirmar"],
+    ["finalizar!", "finalizar"],
+  ])("aceita comando isolado: %s", (spoken, command) => {
+    expect(extractStandaloneVoiceFinalizationCommand(spoken)).toBe(command);
+  });
+
+  it.each([
+    "Comprei uma TV Samsung 70 polegadas QHD LED referência Magalu",
+    "Comprei uma TV Samsung 70 polegadas QHD LED, referência Magalu, categoria Compras eletrônicos",
+    "Despesa nome XPTO valor 250",
+    "quero lançar uma despesa amanhã",
+    "categoria compras eletrônicos cartão PortoBank em sete vezes",
+  ])("não encerra gravação com conteúdo de transação sem comando isolado: %s", (spoken) => {
+    expect(extractStandaloneVoiceFinalizationCommand(spoken)).toBeNull();
+  });
+});
+
