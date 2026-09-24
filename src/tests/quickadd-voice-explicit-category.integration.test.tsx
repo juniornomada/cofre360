@@ -34,6 +34,17 @@ vi.mock("@/integrations/supabase/client", () => ({
         };
       }
 
+      if (table === "transaction_templates") {
+        return {
+          select: () => ({
+            order: () => ({
+              limit: () => Promise.resolve({ data: [], error: null }),
+            }),
+          }),
+          insert: vi.fn().mockResolvedValue({ data: null, error: null }),
+        };
+      }
+
       if (table === "transactions") {
         return {
           select: (columns: string) => {
