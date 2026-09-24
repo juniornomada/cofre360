@@ -446,4 +446,19 @@ describe("parseVoiceTransaction", () => {
     expect(voiceCardNamesMatch("PORTO-BANK", "Porto Bank")).toBe(true);
   });
 
+
+  it("interpreta exatamente o comando parcelado do print com referência Magalu", () => {
+    const draft = parseVoiceTransaction(
+      "Comprei uma TV Samsung 65 polegadas, referência Magalu, categoria Compras, eletrônicos, valor R$ 3.497,75, cartão Mercado Pago, 10 parcelas.",
+      now,
+    );
+
+    expect(draft.name).toBe("TV Samsung 65 polegadas (Magalu)");
+    expect(draft.category).toBe("Compras > Eletrônicos");
+    expect(draft.categorySource).toBe("spoken");
+    expect(draft.amount).toBe(3497.75);
+    expect(draft.card).toBe("Mercado Pago");
+    expect(draft.installmentCount).toBe(10);
+  });
+
 });
