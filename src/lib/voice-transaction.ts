@@ -653,11 +653,11 @@ function extractName(text: string): string {
   }
 
   const naturalPurchaseName = text.match(new RegExp(
-    `\\b(?:comprei|adquiri)\\s+(.+?)(?=\\s*(?:[,;.]\\s*)?(?:categoria\\b|valor\\b|no\\s+valor\\b|conta\\b|cart[aã]o\\b|refer[eê]ncia\\b|parcelad[oa]\\b|em\\s+(?:\\d{1,2}|${NUMBER_WORD_TOKEN})\\s*(?:x|vezes?|parcelas?)\\b)|[.!?]|$)`,
+    `\\b(?:comprei|adquiri)\\s+(.+?)(?=\\s*(?:[,;.]\\s*)?(?:categoria\\b|valor\\b|no\\s+valor\\b|conta\\b|cart[aã]o\\b|refer[eê]ncia\\b|parcelad[oa]\\b|por\\s+(?:r\\$\\s*)?\\d|em\\s+(?:\\d{1,2}|${NUMBER_WORD_TOKEN})\\s*(?:x|vezes?|parcelas?)\\b)|[!?]|$)`,
     "i",
   ));
   if (naturalPurchaseName?.[1]) {
-    const candidate = naturalPurchaseName[1].replace(/^\\s*(?:um|uma)\\s+/i, "").trim();
+    const candidate = naturalPurchaseName[1].replace(/^\s*(?:um|uma)\s+/i, "").trim();
     const cleaned = cleanNameCandidate(candidate);
     if (cleaned !== "Transação por voz") return cleaned;
   }
