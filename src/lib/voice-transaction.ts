@@ -397,6 +397,19 @@ function parseDate(text: string, now = new Date()): string {
     if (candidate) return formatDate(candidate);
   }
 
+  const spokenNumeric = normalized.match(
+    /\b(?:data\s+|dia\s+)?(\d{1,2})\s+(?:do|de)\s+(\d{1,2})(?:\s+(?:de\s+)?(\d{2,4}))?\b/,
+  );
+  if (spokenNumeric) {
+    const candidate = resolveSpokenCalendarDate(
+      Number(spokenNumeric[1]),
+      Number(spokenNumeric[2]) - 1,
+      spokenNumeric[3] ? Number(spokenNumeric[3]) : null,
+      now,
+    );
+    if (candidate) return formatDate(candidate);
+  }
+
   const namedMonth = normalized.match(
     /\b(?:data\s+|dia\s+)?(\d{1,2})\s+(?:de\s+)?(janeiro|fevereiro|marco|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro)(?:\s+(?:de\s+)?(\d{2,4}))?\b/,
   );

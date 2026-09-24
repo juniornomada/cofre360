@@ -177,6 +177,19 @@ describe("parseVoiceTransaction", () => {
     ).toBe("25-12-2025");
   });
 
+  it.each([
+    "data 25 do 12",
+    "data 25 de 12",
+    "dia 25 do 12",
+    "25 do 12",
+  ])("entende data numérica falada: %s", (spokenDate) => {
+    const reference = new Date(2026, 0, 10, 12, 0, 0);
+    expect(
+      parseVoiceTransaction(`Despesa nome Presente valor 100 ${spokenDate}`, reference).date,
+    ).toBe("25-12-2025");
+  });
+
+
   it("mantém o ano explicitamente falado mesmo quando é anterior", () => {
     const reference = new Date(2026, 0, 10, 12, 0, 0);
     expect(
