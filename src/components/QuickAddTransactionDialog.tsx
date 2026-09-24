@@ -20,7 +20,7 @@ import { getFriendlyErrorMessage } from "@/lib/utils";
 import { sanitizeTransactionWrite, sanitizeTransactionWrites } from "@/lib/normalize-transaction-name";
 import { inferYieldTransactionFields } from "@/lib/account-yield";
 import { buildTransferTransactionNames, extractTransferDescription } from "@/lib/transfer-label";
-import { voiceAccountNamesMatch, type VoiceTransactionDraft } from "@/lib/voice-transaction";
+import { voiceAccountNamesMatch, voiceCardNamesMatch, type VoiceTransactionDraft } from "@/lib/voice-transaction";
 import { TransactionTemplates, type TransactionTemplate } from "@/components/TransactionTemplates";
 import { getBillingCycleMonthKey } from "@/lib/invoice-utils";
 
@@ -341,8 +341,9 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
 
   useEffect(() => {
     if (!open || !initialDraft?.card || cardOptions.length === 0) return;
-    const spoken = initialDraft.card.trim().toLowerCase();
-    const match = cardOptions.find(card => card.name.trim().toLowerCase() === spoken);
+    const match = cardOptions.find(card =>
+      voiceCardNamesMatch(initialDraft.card!, card.name),
+    );
     if (!match || newTx.card === match.name) return;
     setNewTx(prev => ({ ...prev, card: match.name, bank_account_id: null }));
   }, [open, initialDraft?.card, cardOptions, newTx.card]);
