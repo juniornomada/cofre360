@@ -26,6 +26,34 @@ function normalizedName(name: string): string {
     .trim();
 }
 
+function compactLetters(value: string): string {
+  return value.replace(/[^a-z0-9]/g, "");
+}
+
+function acronym(value: string): string {
+  return value
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((word) => word[0] || "")
+    .join("");
+}
+
+function consonantSkeleton(value: string): string {
+  return compactLetters(value).replace(/[aeiou]/g, "");
+}
+
+function abbreviationMatch(candidate: string, query: string): boolean {
+  const compactQuery = compactLetters(query);
+  if (compactQuery.length < 2) return false;
+
+  const candidateAcronym = acronym(candidate);
+  if (candidateAcronym.length >= 2 && candidateAcronym.startsWith(compactQuery)) {
+    return true;
+  }
+
+  return consonantSkeleton(candidate).startsWith(compactQuery);
+}
+
 function isReusable(entry: ReusableTransactionHistoryEntry): boolean {
   if (entry.is_visible === false) return false;
   if (entry.type !== "income" && entry.type !== "expense") return false;
@@ -83,7 +111,9 @@ export function getTransactionHistorySuggestions(
           ? 1
           : candidate.includes(normalizedQuery)
             ? 2
-            : 99;
+            : abbreviationMatch(candidate, normalizedQuery)
+              ? 3
+              : 99;
       return { entry, score, index };
     })
     .filter((item) => item.score < 99)
