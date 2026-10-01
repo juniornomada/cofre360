@@ -129,7 +129,7 @@ import { formatCardPaymentLabel, normalizeCardPaymentLabel } from "@/lib/card-pa
 import { recordLegacyLabelDetection } from "@/lib/legacy-label-telemetry";
 import { sanitizeTransactionWrite, sanitizeTransactionWrites } from "@/lib/normalize-transaction-name";
 import { sortInvoiceChronoAsc } from "@/lib/invoice-chrono-sort";
-import { getInvoicePaymentStatus, remainingInvoiceAmount } from "@/lib/invoice-payment-status";
+import { getInvoicePaymentStatus, remainingInvoiceAmount, shouldAutoAdvanceInvoiceMonth } from "@/lib/invoice-payment-status";
 import { mapServerError } from "@/lib/map-server-error";
 import { AutoFitText } from "@/components/AutoFitText";
 import { PaymentDescriptionText, normalizePaymentDescription } from "@/components/PaymentDescriptionText";
@@ -443,14 +443,41 @@ function CardsPage() {
     return (y - now.getFullYear()) * 12 + (m - 1 - now.getMonth());
   })();
   const setMonthOffset = (nextOffset: number) => {
-    if (nextOffset === 0) {
-      navigate({ search: ((prev: Record<string, unknown>) => ({ ...prev, mes: undefined })) as never, replace: true });
-      return;
-    }
+    // Month navigation is always explicit. Keeping ?mes even for offset 0 is
+    // important: returning manually to the current calendar month must not
+    // immediately trigger the automatic "paid + overdue" advance again.
     const now = new Date();
     const target = new Date(now.getFullYear(), now.getMonth() + nextOffset, 1);
     const mes = `${target.getFullYear()}-${String(target.getMonth() + 1).padStart(2, "0")}`;
     navigate({ search: ((prev: Record<string, unknown>) => ({ ...prev, mes })) as never, replace: true });
+  };
+
+  const getAutomaticInvoiceMonthOffset = (
+    card: CardData,
+    transactions: CardTransaction[],
+    today: Date = new Date(),
+  ) => {
+    if (searchParams.mes) return 0;
+
+    const periods = includeOpeningInvoiceAmount(
+      groupByBillingCycle(transactions, card.closing_day, card.due_day, today),
+      card,
+    );
+    const currentPeriod = periods.find((period) => period.key === "current") || periods[1] || periods[0];
+    if (!currentPeriod) return 0;
+
+    const periodKey = currentPeriod.endDate.toISOString().split("T")[0];
+    const paid = cardPaymentsByPeriod[card.id]?.[periodKey] || 0;
+
+    return shouldAutoAdvanceInvoiceMonth({
+      total: currentPeriod.total || 0,
+      paid,
+      dueDate: currentPeriod.dueDate,
+      today,
+      hasExplicitMonthSelection: false,
+    })
+      ? 1
+      : 0;
   };
 
   const openAddDialog = () => {
@@ -723,9 +750,16 @@ function CardsPage() {
 
 
 
+  const invoiceCardAutoOffset = invoiceCard
+    ? getAutomaticInvoiceMonthOffset(
+        invoiceCard,
+        cardTransactions.filter((tx) => tx.card === invoiceCard.name),
+      )
+    : 0;
+  const invoiceEffectiveMonthOffset = globalMonthOffset + invoiceCardAutoOffset;
   const invoiceReferenceDate = (() => {
     const now = new Date();
-    return new Date(now.getFullYear(), now.getMonth() + globalMonthOffset, 15);
+    return new Date(now.getFullYear(), now.getMonth() + invoiceEffectiveMonthOffset, 15);
   })();
   const invoicePeriods = invoiceCard
     ? includeOpeningInvoiceAmount(
@@ -1371,9 +1405,10 @@ function CardsPage() {
       // Update local state and trigger re-calculation of invoicePeriods
       const txs = (latestTxs as CardTransaction[]) || [];
       setCardTransactions(txs);
+      const paymentAutoOffset = getAutomaticInvoiceMonthOffset(payingCard, txs);
       const paymentReferenceDate = (() => {
         const now = new Date();
-        return new Date(now.getFullYear(), now.getMonth() + globalMonthOffset, 15);
+        return new Date(now.getFullYear(), now.getMonth() + globalMonthOffset + paymentAutoOffset, 15);
       })();
       const updatedPeriods = includeOpeningInvoiceAmount(
         groupByBillingCycle(
@@ -1598,7 +1633,8 @@ function CardsPage() {
 
       // === Navegação por mês da fatura ===========================================
       // offset 0 = fatura vigente no mês atual; -1 = mês anterior; +1 = próximo, etc.
-      const monthOffset = globalMonthOffset;
+      const autoMonthOffset = getAutomaticInvoiceMonthOffset(card, cardTransactionsFiltered, today);
+      const monthOffset = globalMonthOffset + autoMonthOffset;
       const refDate = new Date(today.getFullYear(), today.getMonth() + monthOffset, 15);
       const selCycle = getCycleDates(refDate, card.closing_day, card.due_day);
       const selClose = selCycle.currentClose;
@@ -1841,7 +1877,7 @@ function CardsPage() {
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
-                              setMonthOffset(globalMonthOffset - 1);
+                              setMonthOffset(monthOffset - 1);
                             }}
                             data-on-card="true"
                             className="icon-btn-on-card-solid h-6 w-6"
@@ -1858,7 +1894,7 @@ function CardsPage() {
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
-                              setMonthOffset(globalMonthOffset + 1);
+                              setMonthOffset(monthOffset + 1);
                             }}
                             data-on-card="true"
                             className="icon-btn-on-card-solid h-6 w-6"
@@ -2019,7 +2055,7 @@ function CardsPage() {
                   type="button"
                   onClick={() => {
                     setActiveInvoiceIdx(1);
-                    setMonthOffset(globalMonthOffset - 1);
+                    setMonthOffset(invoiceEffectiveMonthOffset - 1);
                   }}
                   className="interactive-button flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent text-muted-foreground hover:bg-accent/80 transition-colors"
                   aria-label="Fatura do mês anterior"
@@ -2045,7 +2081,7 @@ function CardsPage() {
                   type="button"
                   onClick={() => {
                     setActiveInvoiceIdx(1);
-                    setMonthOffset(globalMonthOffset + 1);
+                    setMonthOffset(invoiceEffectiveMonthOffset + 1);
                   }}
                   className="interactive-button flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent text-muted-foreground hover:bg-accent/80 transition-colors"
                   aria-label="Fatura do próximo mês"

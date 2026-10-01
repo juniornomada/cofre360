@@ -31,7 +31,8 @@ import { useUserPreferences } from "@/hooks/use-user-preferences";
 import { cn } from "@/lib/utils";
 import { getCategoryDisplay, getCategoryIcon } from "@/lib/categories";
 import { addCurrencyCents, fetchAllCategoryLedgerTransactions, type CategoryLedgerTransaction } from "@/lib/category-spending-ledger";
-import { getBillingCycleMonthKey, getCycleDates, groupByBillingCycle, type CardTransaction } from "@/lib/invoice-utils";
+import { getBillingCycleMonthKey, getCycleDates, groupByBillingCycle, monthNames, type CardTransaction } from "@/lib/invoice-utils";
+import { remainingInvoiceAmount, shouldAutoAdvanceInvoiceMonth } from "@/lib/invoice-payment-status";
 
 type Account = {
   id: string;
@@ -166,6 +167,7 @@ function RecoveredHome() {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
   });
+  const [selectedMonthIsExplicit, setSelectedMonthIsExplicit] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -253,6 +255,7 @@ function RecoveredHome() {
   }, [selectedMonth, isCurrentSelectedMonth]);
 
   const shiftSelectedMonth = (delta: number) => {
+    setSelectedMonthIsExplicit(true);
     setSelectedMonth((current) => new Date(current.getFullYear(), current.getMonth() + delta, 1));
   };
 
@@ -383,38 +386,22 @@ function RecoveredHome() {
       .slice(0, 8);
   }, [selectedMonthTransactions, isCurrentSelectedMonth, selectedCutoff]);
 
-  const cardTotals = useMemo(() => {
-    const result: Record<string, number> = {};
+  const cardInvoiceSummaries = useMemo(() => {
+    const result: Record<string, { remaining: number; monthKey: string; monthLabel: string }> = {};
 
-    for (const card of cards) {
-      const cycleKey = getCycleDates(
-        selectedMonth,
+    const buildSummary = (card: Card, cardTxs: CardTransaction[], referenceDate: Date) => {
+      const cycle = getCycleDates(
+        referenceDate,
         card.closing_day || 1,
         card.due_day || 10,
-      ).currentClose.toISOString().slice(0, 10);
-
-      const cardTxs: CardTransaction[] = transactions
-        .filter((tx) => tx.is_visible !== false && tx.card === card.name)
-        .map((tx) => ({
-          id: tx.id,
-          name: tx.name,
-          icon: tx.icon,
-          category: tx.category || "",
-          card: tx.card,
-          date: tx.date || "",
-          amount: Number(tx.amount || 0),
-          type: tx.type,
-          created_at: tx.created_at || "",
-          total_installments: null,
-          installment_number: null,
-          installment_group_id: null,
-        }));
+      );
+      const cycleKey = cycle.currentClose.toISOString().slice(0, 10);
 
       const period = groupByBillingCycle(
         cardTxs,
         card.closing_day,
         card.due_day,
-        selectedMonth,
+        referenceDate,
       ).find((item) => item.endDate.toISOString().slice(0, 10) === cycleKey);
 
       let invoiceTotal = Number(period?.total || 0);
@@ -449,11 +436,70 @@ function RecoveredHome() {
         if (paymentKey === cycleKey) paid += Number(payment.amount || 0);
       }
 
-      result[card.name] = Math.max(0, Math.round((invoiceTotal - paid) * 100) / 100);
+      return {
+        total: Math.round(invoiceTotal * 100) / 100,
+        paid: Math.round(paid * 100) / 100,
+        remaining: remainingInvoiceAmount(invoiceTotal, paid),
+        dueDate: period?.dueDate || cycle.currentDue,
+        monthKey: `${cycle.currentDue.getFullYear()}-${String(cycle.currentDue.getMonth() + 1).padStart(2, "0")}`,
+        monthLabel: monthNames[cycle.currentDue.getMonth()],
+      };
+    };
+
+    for (const card of cards) {
+      const cardTxs: CardTransaction[] = transactions
+        .filter((tx) => tx.is_visible !== false && tx.card === card.name)
+        .map((tx) => ({
+          id: tx.id,
+          name: tx.name,
+          icon: tx.icon,
+          category: tx.category || "",
+          card: tx.card,
+          date: tx.date || "",
+          amount: Number(tx.amount || 0),
+          type: tx.type,
+          created_at: tx.created_at || "",
+          total_installments: null,
+          installment_number: null,
+          installment_group_id: null,
+        }));
+
+      const selectedSummary = buildSummary(card, cardTxs, selectedMonth);
+      const autoAdvance = isCurrentSelectedMonth && shouldAutoAdvanceInvoiceMonth({
+        total: selectedSummary.total,
+        paid: selectedSummary.paid,
+        dueDate: selectedSummary.dueDate,
+        today: now,
+        hasExplicitMonthSelection: selectedMonthIsExplicit,
+      });
+
+      const displaySummary = autoAdvance
+        ? buildSummary(
+            card,
+            cardTxs,
+            new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 1),
+          )
+        : selectedSummary;
+
+      result[card.id] = {
+        remaining: displaySummary.remaining,
+        monthKey: displaySummary.monthKey,
+        monthLabel: displaySummary.monthLabel,
+      };
     }
 
     return result;
-  }, [cards, transactions, cardPayments, selectedMonth]);
+  }, [
+    cards,
+    transactions,
+    cardPayments,
+    selectedMonth,
+    isCurrentSelectedMonth,
+    selectedMonthIsExplicit,
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate(),
+  ]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -597,13 +643,31 @@ function RecoveredHome() {
           <Link to="/cards" className="text-[10px] font-semibold text-primary">Ver todos</Link>
         </div>
         <div className="flex flex-col gap-1">
-          {cards.filter((card) => card.is_visible !== false).map((card) => (
-            <Link key={card.id} to="/cards" className="flex items-center gap-2.5 rounded-xl bg-background/40 px-2.5 py-2">
-              <CardIcon color={card.color || ""} name={card.name} size="sm" />
-              <span className="min-w-0 flex-1 text-xs font-medium text-foreground">{card.name}</span>
-              <span className="text-xs font-bold tabular-nums text-foreground">{balanceVisible ? `R$ ${fmt(cardTotals[card.name] || 0)}` : "R$ ••••"}</span>
-            </Link>
-          ))}
+          {cards.filter((card) => card.is_visible !== false).map((card) => {
+            const summary = cardInvoiceSummaries[card.id];
+            const summaryMonthDiffers = !!summary && summary.monthKey !== selectedMonthKey;
+            return (
+              <Link
+                key={card.id}
+                to="/cards"
+                search={summary?.monthKey ? { mes: summary.monthKey } as any : undefined}
+                className="flex items-center gap-2.5 rounded-xl bg-background/40 px-2.5 py-2"
+              >
+                <CardIcon color={card.color || ""} name={card.name} size="sm" />
+                <div className="min-w-0 flex-1">
+                  <span className="block truncate text-xs font-medium text-foreground">{card.name}</span>
+                  {summaryMonthDiffers && (
+                    <span className="block text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      Fatura {summary.monthLabel}
+                    </span>
+                  )}
+                </div>
+                <span className="text-xs font-bold tabular-nums text-foreground">
+                  {balanceVisible ? `R$ ${fmt(summary?.remaining || 0)}` : "R$ ••••"}
+                </span>
+              </Link>
+            );
+          })}
           {!loading && cards.length === 0 && <p className="py-5 text-center text-xs text-muted-foreground">Você ainda não tem cartões cadastrados.</p>}
         </div>
       </section>
