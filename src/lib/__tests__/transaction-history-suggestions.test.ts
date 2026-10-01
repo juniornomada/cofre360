@@ -67,6 +67,43 @@ describe("transaction history suggestions", () => {
     expect(entry.card).toBe("Porto Bank");
   });
 
+  it("finds income history by initials, such as RN for Rendimento Nubank", () => {
+    const entries = [
+      base({
+        name: "Rendimento Nubank",
+        type: "income",
+        category: "Receita > Juros",
+        icon: "📈",
+        bank_account_id: "nubank-account",
+      }),
+      base({
+        name: "Salário",
+        type: "income",
+        category: "Receita > Salário",
+        created_at: "2026-10-01T09:00:00Z",
+      }),
+    ];
+
+    const suggestions = getTransactionHistorySuggestions(entries, "RN", "income");
+
+    expect(suggestions.map((item) => item.name)).toEqual(["Rendimento Nubank"]);
+    expect(suggestions[0]?.category).toBe("Receita > Juros");
+  });
+
+  it("accepts a compact abbreviation for a single-word income name", () => {
+    const entries = [
+      base({
+        name: "Rendimento",
+        type: "income",
+        category: "Receita > Juros",
+        icon: "📈",
+      }),
+    ];
+
+    expect(getTransactionHistorySuggestions(entries, "RN", "income").map((item) => item.name))
+      .toEqual(["Rendimento"]);
+  });
+
   it("does not mix income history into expense suggestions", () => {
     const entries = [
       base({ name: "Internet Way", type: "expense" }),
