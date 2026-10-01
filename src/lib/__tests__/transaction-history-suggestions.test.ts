@@ -55,7 +55,7 @@ describe("transaction history suggestions", () => {
       base({
         name: "Notebook (2/10)",
         category: "Compras > Outros",
-        card: "Cartão antigo",
+        card: "Porto Bank",
         bank_account_id: null,
         created_at: "2026-09-01T10:00:00Z",
       }),
@@ -75,12 +75,14 @@ describe("transaction history suggestions", () => {
         category: "Receita > Juros",
         icon: "📈",
         bank_account_id: "nubank-account",
+        transaction_kind: "yield",
       }),
       base({
         name: "Salário",
         type: "income",
         category: "Receita > Salário",
         created_at: "2026-10-01T09:00:00Z",
+        transaction_kind: "income",
       }),
     ];
 
@@ -97,10 +99,67 @@ describe("transaction history suggestions", () => {
         type: "income",
         category: "Receita > Juros",
         icon: "📈",
+        transaction_kind: "yield",
       }),
     ];
 
     expect(getTransactionHistorySuggestions(entries, "RN", "income").map((item) => item.name))
+      .toEqual(["Rendimento"]);
+  });
+
+  it("accepts production yield rows as reusable income history", () => {
+    const entries = [
+      base({
+        name: "Rendimento",
+        type: "income",
+        category: "Receita > Juros",
+        icon: null,
+        bank_account_id: "mercado-pago",
+        transaction_kind: "yield",
+        created_at: "2026-10-01T10:23:28Z",
+      }),
+    ];
+
+    const [suggestion] = getTransactionHistorySuggestions(entries, "Ren", "income");
+
+    expect(suggestion?.name).toBe("Rendimento");
+    expect(suggestion?.category).toBe("Receita > Juros");
+    expect(suggestion?.bank_account_id).toBe("mercado-pago");
+  });
+
+  it("keeps same-name income suggestions separate when they belong to different accounts", () => {
+    const entries = [
+      base({
+        name: "Rendimento",
+        type: "income",
+        category: "Receita > Juros",
+        bank_account_id: "mercado-pago",
+        transaction_kind: "yield",
+        created_at: "2026-10-01T10:23:28Z",
+      }),
+      base({
+        name: "Rendimento",
+        type: "income",
+        category: "Receita > Juros",
+        bank_account_id: "cofrinho-140",
+        transaction_kind: "yield",
+        created_at: "2026-10-01T10:23:37Z",
+      }),
+    ];
+
+    expect(getTransactionHistorySuggestions(entries, "Ren", "income").map((item) => item.bank_account_id))
+      .toEqual(["mercado-pago", "cofrinho-140"]);
+  });
+
+  it("continues excluding refunds, adjustments and transfers from income autocomplete", () => {
+    const entries = [
+      base({ name: "Rendimento", type: "income", transaction_kind: "yield" }),
+      base({ name: "Reembolso", type: "income", transaction_kind: "refund" }),
+      base({ name: "Ajuste", type: "income", transaction_kind: "adjustment" }),
+      base({ name: "Transferência", type: "income", transaction_kind: "transfer" }),
+    ];
+
+    expect(getTransactionHistorySuggestions(entries, "Re", "income").map((item) => item.name))
       .toEqual(["Rendimento"]);
   });
 
