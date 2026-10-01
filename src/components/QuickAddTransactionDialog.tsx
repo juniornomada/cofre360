@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,11 @@ import { buildTransferTransactionNames, extractTransferDescription } from "@/lib
 import { voiceAccountNamesMatch, voiceCardNamesMatch, type VoiceTransactionDraft } from "@/lib/voice-transaction";
 import { TransactionTemplates, type TransactionTemplate } from "@/components/TransactionTemplates";
 import { getBillingCycleMonthKey } from "@/lib/invoice-utils";
+import {
+  findExactTransactionHistoryMatch,
+  getTransactionHistorySuggestions,
+  type ReusableTransactionHistoryEntry,
+} from "@/lib/transaction-history-suggestions";
 
 export type QuickAddInitialType = "expense" | "income" | "transfer";
 
@@ -197,27 +202,63 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
     }
   }, []);
 
-  // Build a memory map from transactions
-  const [txHistory, setTxHistory] = useState<Map<string, { icon: string; category: string }>>(new Map());
+  // Histórico reutilizável: alimenta autocomplete manual e também ajuda o
+  // fluxo de voz quando o usuário não informou categoria explicitamente.
+  const [txHistory, setTxHistory] = useState<ReusableTransactionHistoryEntry[]>([]);
+  const [nameHistoryFocused, setNameHistoryFocused] = useState(false);
 
   const fetchHistory = useCallback(async () => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("transactions")
-      .select("name, icon, category")
+      .select("name, icon, category, card, bank_account_id, type, amount, date, created_at, transaction_kind, is_visible")
       .order("created_at", { ascending: false })
-      .limit(100);
+      .limit(500);
 
-    if (data) {
-      const map = new Map<string, { icon: string; category: string }>();
-      data.forEach(tx => {
-        const cleanName = tx.name.replace(/\s*\(\d+\/\d+\)\s*$/, "").trim().toLowerCase();
-        if (!map.has(cleanName)) {
-          map.set(cleanName, { icon: tx.icon, category: tx.category });
-        }
-      });
-      setTxHistory(map);
+    if (error) {
+      console.error("Error fetching transaction history:", error);
+      return;
     }
+
+    setTxHistory((data || []) as ReusableTransactionHistoryEntry[]);
   }, []);
+
+  const historySuggestions = useMemo(
+    () => getTransactionHistorySuggestions(txHistory, newTx.name, newTx.type, 5),
+    [txHistory, newTx.name, newTx.type],
+  );
+
+  const applyHistorySuggestion = (history: ReusableTransactionHistoryEntry) => {
+    const historicalCard = history.card
+      ? cardOptions.find((card) => card.name.toLocaleLowerCase("pt-BR") === history.card!.toLocaleLowerCase("pt-BR"))
+      : null;
+    const historicalAccount = history.bank_account_id
+      ? bankAccounts.find((account) => account.id === history.bank_account_id)
+      : null;
+
+    setNewTx((previous) => ({
+      ...previous,
+      name: history.name,
+      icon: history.icon || previous.icon,
+      category: history.category || previous.category,
+      type: history.type,
+      card: historicalCard?.name || null,
+      bank_account_id: historicalAccount?.id || null,
+      // Valor e data são intencionalmente preservados: histórico serve como
+      // preenchimento estrutural, nunca como novo lançamento automático.
+      amount: previous.amount,
+      date: previous.date,
+    }));
+    setNameHistoryFocused(false);
+  };
+
+  const historyOriginLabel = (history: ReusableTransactionHistoryEntry) => {
+    if (history.card) return `💳 ${history.card}`;
+    if (history.bank_account_id) {
+      const account = bankAccounts.find((item) => item.id === history.bank_account_id);
+      if (account) return `🏦 ${account.name}`;
+    }
+    return null;
+  };
 
   const isFirstRender = useRef(true);
 
@@ -328,16 +369,21 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
   }, [open, initialType, initialDate, initialDraft, fetchData, fetchHistory]);
 
   useEffect(() => {
-    if (!open || !initialDraft?.name || txHistory.size === 0) return;
+    if (!open || !initialDraft?.name || txHistory.length === 0) return;
 
     // Se o usuário falou a categoria explicitamente, ela é a fonte autoritativa.
     // O histórico só deve ajudar quando a categoria foi inferida pelo nome.
     if (initialDraft.categorySource === "spoken") return;
 
-    const history = txHistory.get(initialDraft.name.trim().toLowerCase());
+    const draftType = initialDraft.type === "income" ? "income" : "expense";
+    const history = findExactTransactionHistoryMatch(txHistory, initialDraft.name, draftType);
     if (!history) return;
-    setNewTx(prev => ({ ...prev, icon: history.icon, category: history.category }));
-  }, [open, initialDraft?.name, initialDraft?.categorySource, txHistory]);
+    setNewTx(prev => ({
+      ...prev,
+      icon: history.icon || prev.icon,
+      category: history.category || prev.category,
+    }));
+  }, [open, initialDraft?.name, initialDraft?.type, initialDraft?.categorySource, txHistory]);
 
   useEffect(() => {
     if (!open || !initialDraft?.card || cardOptions.length === 0) return;
@@ -811,27 +857,44 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
             </>
           ) : (
             <>
-               <div>
+               <div className="relative">
                  <label className="text-[11px] font-semibold text-foreground mb-0.5 block">Nome</label>
                    <input
                      inputMode="text"
-                     autoComplete="on"
+                     autoComplete="off"
                      autoCorrect="on"
                      autoCapitalize="sentences"
                      spellCheck={true}
                      enterKeyHint="next"
                      id="tx-name-input"
+                     role="combobox"
+                     aria-autocomplete="list"
+                     aria-expanded={nameHistoryFocused && historySuggestions.length > 0}
+                     aria-controls="tx-name-history-suggestions"
                     value={newTx.name}
+                    onFocus={() => setNameHistoryFocused(true)}
+                    onBlur={() => setNameHistoryFocused(false)}
                     onChange={e => {
                       const name = e.target.value;
-                      const history = txHistory.get(name.trim().toLowerCase());
-                      if (history) {
-                        setNewTx({ ...newTx, name, icon: history.icon, category: history.category });
-                      } else {
-                        setNewTx({ ...newTx, name });
-                      }
+                      const exactHistory = findExactTransactionHistoryMatch(txHistory, name, newTx.type);
+                      setNewTx(prev => ({
+                        ...prev,
+                        name,
+                        ...(exactHistory
+                          ? {
+                              icon: exactHistory.icon || prev.icon,
+                              category: exactHistory.category || prev.category,
+                            }
+                          : {}),
+                      }));
+                      setNameHistoryFocused(true);
                     }}
                     onKeyDown={e => {
+                      if (e.key === "Escape" && historySuggestions.length > 0) {
+                        e.preventDefault();
+                        setNameHistoryFocused(false);
+                        return;
+                      }
                       if (e.key === "Enter") {
                         e.preventDefault();
                         // Avançar para o seletor de categoria
@@ -848,6 +911,42 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                     placeholder="Ex: Supermercado"
                     className="w-full rounded-lg bg-card px-2.5 py-1.5 text-xs text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary/30"
                   />
+                  {nameHistoryFocused && historySuggestions.length > 0 && (
+                    <div
+                      id="tx-name-history-suggestions"
+                      role="listbox"
+                      aria-label="Sugestões do histórico"
+                      className="mt-1 overflow-hidden rounded-xl border border-border/60 bg-popover shadow-lg"
+                    >
+                      {historySuggestions.map((history) => {
+                        const origin = historyOriginLabel(history);
+                        return (
+                          <button
+                            key={`${history.type}::${history.name.toLocaleLowerCase("pt-BR")}`}
+                            type="button"
+                            role="option"
+                            aria-selected={false}
+                            onPointerDown={(event) => event.preventDefault()}
+                            onClick={() => applyHistorySuggestion(history)}
+                            className="flex w-full items-center gap-2 border-b border-border/40 px-2.5 py-2 text-left last:border-b-0 hover:bg-accent/70 focus:bg-accent/70 focus:outline-none"
+                          >
+                            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-accent text-sm">
+                              {history.icon || (history.type === "income" ? "💰" : "💸")}
+                            </span>
+                            <span className="min-w-0 flex-1">
+                              <span className="block truncate text-xs font-semibold text-foreground">{history.name}</span>
+                              <span className="block truncate text-[10px] text-muted-foreground">
+                                {history.category || "Sem categoria"}{origin ? ` · ${origin}` : ""}
+                              </span>
+                            </span>
+                            <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground">
+                              último R$ {Number(history.amount || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               <CategoryPicker
                 value={newTx.category}
