@@ -59,7 +59,10 @@ function isReusable(entry: ReusableTransactionHistoryEntry): boolean {
   if (entry.type !== "income" && entry.type !== "expense") return false;
 
   const kind = normalizeText(entry.transaction_kind || "").replace(/[_-]+/g, " ").trim();
-  if (kind && kind !== "expense" && kind !== "income") return false;
+  if (kind) {
+    if (entry.type === "expense" && kind !== "expense") return false;
+    if (entry.type === "income" && kind !== "income" && kind !== "yield") return false;
+  }
 
   const category = normalizeText(entry.category || "");
   if (
@@ -83,7 +86,12 @@ export function dedupeReusableTransactionHistory(
   for (const entry of entries) {
     if (!isReusable(entry)) continue;
     const baseName = stripInstallmentSuffix(entry.name);
-    const key = `${entry.type}::${normalizedName(baseName)}`;
+    const originKey = entry.card
+      ? `card:${normalizeText(entry.card)}`
+      : entry.bank_account_id
+        ? `account:${entry.bank_account_id}`
+        : "origin:none";
+    const key = `${entry.type}::${normalizedName(baseName)}::${originKey}`;
     if (latest.has(key)) continue;
     latest.set(key, { ...entry, name: baseName });
   }
