@@ -130,6 +130,7 @@ import { recordLegacyLabelDetection } from "@/lib/legacy-label-telemetry";
 import { sanitizeTransactionWrite, sanitizeTransactionWrites } from "@/lib/normalize-transaction-name";
 import { sortInvoiceChronoAsc } from "@/lib/invoice-chrono-sort";
 import { getInvoicePaymentStatus, remainingInvoiceAmount, shouldAutoAdvanceInvoiceMonth } from "@/lib/invoice-payment-status";
+import { getCardAvailableLimit, getCurrentAndFutureOutstanding } from "@/lib/card-available-limit";
 import { mapServerError } from "@/lib/map-server-error";
 import { AutoFitText } from "@/components/AutoFitText";
 import { PaymentDescriptionText, normalizePaymentDescription } from "@/components/PaymentDescriptionText";
@@ -1512,14 +1513,7 @@ function CardsPage() {
       card,
     );
 
-    return periods
-      .filter(p => p.key === "current" || p.key.startsWith("future_"))
-      .reduce((sum, period) => {
-        const periodKey = period.endDate?.toISOString().split("T")[0] || "";
-        const paid = periodKey ? (cardPaymentsByPeriod[card.id]?.[periodKey] || 0) : 0;
-        const remaining = Math.max(0, Number(period.total || 0) - Number(paid || 0));
-        return sum + remaining;
-      }, 0);
+    return getCurrentAndFutureOutstanding(periods, cardPaymentsByPeriod[card.id]);
   };
 
   const totalAllInvoices = cards.reduce((sum, card) => sum + remainingCurrentAndFuture(card), 0);
@@ -1608,12 +1602,14 @@ function CardsPage() {
       const periodKeyForPayment = currentPeriod?.endDate?.toISOString().split("T")[0];
       const paidThisPeriod = periodKeyForPayment ? (cardPaymentsByPeriod[card.id]?.[periodKeyForPayment] || 0) : 0;
       const outstandingBalance = Math.max(0, (totalUsed + initialUsed) - totalPaid);
-      // Disponível considera apenas lançamentos da fatura ATUAL + FUTURAS (sem deduzir pagamentos)
-      const currentAndFutureTotal = invoicePeriodsCard
-        .filter(p => p.key === "current" || p.key.startsWith("future_"))
-        .reduce((s, p) => s + (p.total || 0), 0);
-      // Pagamentos (parciais ou totais) restauram o limite disponível
-      const availableLimit = card.card_limit - (currentAndFutureTotal + initialUsed) + totalPaid;
+      // O limite disponível usa exatamente a mesma base do resumo superior:
+      // limite - saldo restante das faturas atual e futuras.
+      // Pagamentos antigos NÃO podem restaurar novamente o limite atual.
+      const availableLimit = getCardAvailableLimit(
+        card.card_limit,
+        invoicePeriodsCard,
+        cardPaymentsByPeriod[card.id],
+      );
       const pct = card.card_limit > 0 ? Math.round((outstandingBalance / card.card_limit) * 100) : 0;
       const isEditing = editingId === card.id;
       const today = new Date();
