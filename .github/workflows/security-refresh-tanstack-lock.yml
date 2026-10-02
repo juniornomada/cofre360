@@ -1,0 +1,59 @@
+name: Security - refresh TanStack lockfile
+
+on:
+  push:
+    branches:
+      - security/patch-tanstack-start-xss
+
+permissions:
+  contents: write
+
+jobs:
+  update-lock:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+      - name: Install Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
+
+      - name: Refresh dependencies and lockfile
+        run: bun install
+
+      - name: Verify patched TanStack versions
+        run: |
+          node <<'NODE'
+          const fs = require('fs')
+          const readVersion = (name) => JSON.parse(fs.readFileSync(`node_modules/${name}/package.json`, 'utf8')).version
+          const gte = (actual, minimum) => {
+            const a = actual.split('.').map(Number)
+            const b = minimum.split('.').map(Number)
+            for (let i = 0; i < Math.max(a.length, b.length); i++) {
+              const av = a[i] || 0
+              const bv = b[i] || 0
+              if (av > bv) return true
+              if (av < bv) return false
+            }
+            return true
+          }
+          const reactStart = readVersion('@tanstack/react-start')
+          const serverCore = readVersion('@tanstack/start-server-core')
+          console.log({ reactStart, serverCore })
+          if (!gte(reactStart, '1.168.60')) throw new Error(`@tanstack/react-start still vulnerable: ${reactStart}`)
+          if (!gte(serverCore, '1.169.39')) throw new Error(`@tanstack/start-server-core still vulnerable: ${serverCore}`)
+          NODE
+
+      - name: Commit regenerated lockfile
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json
+          [ ! -f bun.lockb ] || git add bun.lockb
+          [ ! -f bun.lock ] || git add bun.lock
+          if git diff --cached --quiet; then
+            echo "Lockfile already current."
+            exit 0
+          fi
+          git commit -m "security: refresh Bun lockfile for TanStack XSS fix"
+          git push
