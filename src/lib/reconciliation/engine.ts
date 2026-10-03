@@ -14,7 +14,8 @@ import {
   inferTransactionKind,
   normalizeFinancialText,
 } from "@/lib/financial-engine";
-import { getBillingCycleMonthKey } from "@/lib/invoice-utils";
+import { getBillingCycleMonthKey, getCycleDates, groupByBillingCycle, type CardTransaction } from "@/lib/invoice-utils";
+import { getCardAvailableLimit } from "@/lib/card-available-limit";
 
 function round2(n: number): number {
   return Math.round((n + Number.EPSILON) * 100) / 100;
@@ -58,6 +59,167 @@ function pushIssue(
 
 function summary(check_type: CheckType, label: string, checked: number, issues: number): CheckSummary {
   return { check_type, label, checked, issues };
+}
+
+
+function parseIsoDateAtNoon(value: string): Date {
+  const [year, month, day] = String(value || "").slice(0, 10).split("-").map(Number);
+  if (!year || !month || !day) return new Date(NaN);
+  return new Date(year, month - 1, day, 12, 0, 0, 0);
+}
+
+function localDateKey(value: Date): string {
+  return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(value.getDate()).padStart(2, "0")}`;
+}
+
+function transactionBelongsToCard(
+  tx: ReconciliationInput["transactions"][number],
+  card: ReconciliationInput["cards"][number],
+): boolean {
+  if (tx.card_id) return tx.card_id === card.id;
+  return normalizeFinancialText(tx.card || "") === normalizeFinancialText(card.name);
+}
+
+function paymentPeriodKey(
+  payment: ReconciliationInput["cardPayments"][number],
+  card: ReconciliationInput["cards"][number],
+): string {
+  if (payment.target_period) return String(payment.target_period).slice(0, 10);
+  const paidAt = parseIsoDateAtNoon(payment.date);
+  if (Number.isNaN(paidAt.getTime())) return "";
+  return localDateKey(getCycleDates(paidAt, card.closing_day, card.due_day).currentClose);
+}
+
+function openingInvoicePeriodKey(card: ReconciliationInput["cards"][number]): string {
+  if (Number(card.used || 0) <= 0 || !card.created_at) return "";
+  const createdAt = new Date(card.created_at);
+  if (Number.isNaN(createdAt.getTime())) return "";
+  return localDateKey(getCycleDates(createdAt, card.closing_day, card.due_day).currentClose);
+}
+
+function displayedAvailableLimit(
+  input: ReconciliationInput,
+  card: ReconciliationInput["cards"][number],
+  referenceDate: Date,
+): number {
+  const txs: CardTransaction[] = input.transactions
+    .filter((tx) => tx.is_visible !== false && transactionBelongsToCard(tx, card))
+    .map((tx) => ({
+      id: tx.id,
+      name: tx.id,
+      icon: null,
+      category: tx.category || "",
+      card: card.name,
+      date: tx.date,
+      purchase_date: tx.purchase_date || null,
+      amount: Number(tx.amount || 0),
+      type: tx.type,
+      created_at: tx.created_at || `${tx.date}T12:00:00`,
+      total_installments: tx.total_installments ?? null,
+      installment_number: tx.installment_number ?? null,
+      installment_group_id: tx.installment_group_id ?? null,
+    }));
+
+  let periods = groupByBillingCycle(txs, card.closing_day, card.due_day, referenceDate);
+  const openingKey = openingInvoicePeriodKey(card);
+  if (openingKey) {
+    periods = periods.map((period) =>
+      localDateKey(period.endDate) === openingKey
+        ? { ...period, total: round2(Number(period.total || 0) + Math.max(0, Number(card.used || 0))) }
+        : period
+    );
+  }
+
+  const paymentsByPeriod: Record<string, number> = {};
+  for (const payment of input.cardPayments) {
+    if (payment.card_id !== card.id) continue;
+    const key = paymentPeriodKey(payment, card);
+    if (!key) continue;
+    paymentsByPeriod[key] = round2((paymentsByPeriod[key] || 0) + Number(payment.amount || 0));
+  }
+
+  return getCardAvailableLimit(card.card_limit, periods, paymentsByPeriod);
+}
+
+export function computeAuditedCardAvailableLimit(
+  input: ReconciliationInput,
+  card: ReconciliationInput["cards"][number],
+  referenceDate: Date,
+): number {
+  const currentCloseKey = localDateKey(
+    getCycleDates(referenceDate, card.closing_day, card.due_day).currentClose,
+  );
+  const totalsByPeriod = new Map<string, number>();
+
+  for (const tx of input.transactions) {
+    if (tx.is_visible === false || !transactionBelongsToCard(tx, card)) continue;
+    const txDate = parseIsoDateAtNoon(tx.date);
+    if (Number.isNaN(txDate.getTime())) continue;
+
+    let cycleClose = new Date(txDate.getFullYear(), txDate.getMonth(), card.closing_day || 1, 12);
+    if (txDate >= cycleClose) {
+      cycleClose = new Date(txDate.getFullYear(), txDate.getMonth() + 1, card.closing_day || 1, 12);
+    }
+    const key = localDateKey(cycleClose);
+    const signed = tx.type === "income" ? -Number(tx.amount || 0) : Number(tx.amount || 0);
+    totalsByPeriod.set(key, round2((totalsByPeriod.get(key) || 0) + signed));
+  }
+
+  const openingKey = openingInvoicePeriodKey(card);
+  if (openingKey) {
+    totalsByPeriod.set(
+      openingKey,
+      round2((totalsByPeriod.get(openingKey) || 0) + Math.max(0, Number(card.used || 0))),
+    );
+  }
+
+  const paymentsByPeriod = new Map<string, number>();
+  for (const payment of input.cardPayments) {
+    if (payment.card_id !== card.id) continue;
+    const key = paymentPeriodKey(payment, card);
+    if (!key) continue;
+    paymentsByPeriod.set(key, round2((paymentsByPeriod.get(key) || 0) + Number(payment.amount || 0)));
+  }
+
+  let outstanding = 0;
+  for (const [periodKey, total] of totalsByPeriod) {
+    if (periodKey < currentCloseKey) continue;
+    const paid = paymentsByPeriod.get(periodKey) || 0;
+    outstanding += Math.max(0, Number(total || 0) - paid);
+  }
+
+  return round2(Number(card.card_limit || 0) - outstanding);
+}
+
+function checkCardAvailableLimits(input: ReconciliationInput): { divergences: Divergence[]; check: CheckSummary } {
+  const divs: Divergence[] = [];
+  const referenceDate = parseIsoDateAtNoon(input.periodEnd);
+
+  if (Number.isNaN(referenceDate.getTime())) {
+    return {
+      divergences: divs,
+      check: summary("card", "Limite disponível dos cartões", 0, 0),
+    };
+  }
+
+  for (const card of input.cards) {
+    const expected = computeAuditedCardAvailableLimit(input, card, referenceDate);
+    const actual = displayedAvailableLimit(input, card, referenceDate);
+    if (Math.abs(actual - expected) > 0.009) {
+      pushIssue(
+        divs,
+        "card",
+        `Limite disponível · ${card.name}`,
+        expected,
+        actual,
+      );
+    }
+  }
+
+  return {
+    divergences: divs,
+    check: summary("card", "Limite disponível dos cartões (tela × auditoria independente)", input.cards.length, divs.length),
+  };
 }
 
 // -----------------------------------------------------------------------------
@@ -449,6 +611,7 @@ export function runReconciliation(input: ReconciliationInput): RunResult {
     checkInstallments(input),
     checkRefunds(input),
     checkCanonicalSystem(input),
+    checkCardAvailableLimits(input),
   ];
 
   const custom = [
