@@ -82,7 +82,7 @@ export interface ReconciliationInput {
     total_installments?: number | null;
     installment_source_amount?: number | null;
   }>;
-  cards: Array<{ id: string; name: string; used: number; closing_day: number; due_day: number }>;
+  cards: Array<{ id: string; name: string; card_limit: number; used: number; closing_day: number; due_day: number; created_at?: string | null }>;
   cardPayments: Array<{
     id: string;
     card_id: string;
