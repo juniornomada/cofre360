@@ -49,7 +49,7 @@ describe("runReconciliation - cards", () => {
   it("detects cards.used != 0 with zero rule", () => {
     const r = runReconciliation(
       baseInput({
-        cards: [{ id: "c1", name: "VISA", used: 500, closing_day: 20, due_day: 27 }],
+        cards: [{ id: "c1", name: "VISA", card_limit: 5000, used: 500, closing_day: 20, due_day: 27 }],
         rules: [rule({ id: "r1", check_type: "card", rule_kind: "zero", target_ids: ["c1"] })],
       })
     );
@@ -60,7 +60,7 @@ describe("runReconciliation - cards", () => {
   it("passes when cards.used == 0", () => {
     const r = runReconciliation(
       baseInput({
-        cards: [{ id: "c1", name: "VISA", used: 0, closing_day: 20, due_day: 27 }],
+        cards: [{ id: "c1", name: "VISA", card_limit: 5000, used: 0, closing_day: 20, due_day: 27 }],
         rules: [rule({ check_type: "card", rule_kind: "zero", target_ids: ["c1"] })],
       })
     );
@@ -69,7 +69,7 @@ describe("runReconciliation - cards", () => {
   it("equality: cards.used vs derived (spent - paid)", () => {
     const r = runReconciliation(
       baseInput({
-        cards: [{ id: "c1", name: "VISA", used: 100, closing_day: 20, due_day: 27 }],
+        cards: [{ id: "c1", name: "VISA", card_limit: 5000, used: 100, closing_day: 20, due_day: 27 }],
         transactions: [
           { id: "t1", date: "2026-07-10", amount: 300, type: "expense", card: "VISA" },
         ],
@@ -86,7 +86,7 @@ describe("runReconciliation - invoices", () => {
   it("flags month where Σ tx ≠ Σ pagamentos", () => {
     const r = runReconciliation(
       baseInput({
-        cards: [{ id: "c1", name: "VISA", used: 0, closing_day: 20, due_day: 27 }],
+        cards: [{ id: "c1", name: "VISA", card_limit: 5000, used: 0, closing_day: 20, due_day: 27 }],
         transactions: [{ id: "t1", date: "2026-07-05", amount: 1000, type: "expense", card: "VISA" }],
         cardPayments: [{ id: "p1", card_id: "c1", amount: 800, date: "2026-07-20" }],
         rules: [rule({ check_type: "invoice", rule_kind: "zero", target_ids: ["c1"] })],
@@ -138,7 +138,7 @@ describe("runReconciliation - no rules", () => {
   it("returns empty when no rules configured and automatic checks find no issue", () => {
     const r = runReconciliation(
       baseInput({
-        cards: [{ id: "c1", name: "VISA", used: 9999, closing_day: 20, due_day: 27 }],
+        cards: [{ id: "c1", name: "VISA", card_limit: 5000, used: 9999, closing_day: 20, due_day: 27 }],
       })
     );
     expect(r.divergences).toHaveLength(0);
