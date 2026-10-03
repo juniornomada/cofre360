@@ -127,7 +127,7 @@ async function loadInputData(
       .from("transactions")
       .select("id,date,transaction_date,purchase_date,created_at,amount,type,transaction_kind,is_visible,bank_account_id,card,card_id,category,installment_group_id,installment_number,total_installments,installment_source_amount")
       .eq("user_id", userId),
-    supabase.from("cards").select("id,name,used,closing_day,due_day").eq("user_id", userId),
+    supabase.from("cards").select("id,name,card_limit,used,closing_day,due_day,created_at").eq("user_id", userId),
     supabase.from("card_payments").select("id,card_id,bank_account_id,amount,paid_at,target_period").eq("user_id", userId),
     supabase
       .from("card_refunds")
@@ -179,9 +179,11 @@ async function loadInputData(
     cards: (cardRes.data ?? []).map((r: any) => ({
       id: String(r.id),
       name: String(r.name || "Cartão"),
+      card_limit: Number(r.card_limit ?? 0),
       used: Number(r.used ?? 0),
       closing_day: Number(r.closing_day ?? 1),
       due_day: Number(r.due_day ?? 1),
+      created_at: r.created_at ?? null,
     })),
     cardPayments: (payRes.data ?? []).map((r: any) => ({
       id: String(r.id),
