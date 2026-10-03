@@ -159,6 +159,7 @@ export function TransactionsPage() {
     }
     if (isYieldView) {
       setActiveCategory("Todas");
+      setActiveSubcategory(null);
       setActiveSource("account");
       setFilterStartDate(undefined);
       setFilterEndDate(undefined);
