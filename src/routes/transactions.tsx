@@ -45,6 +45,7 @@ import { getBillingCycleMonthKey } from "@/lib/invoice-utils";
 import { useFinancialMonthFacts } from "@/hooks/use-financial-month-facts";
 import { countsTowardCurrentBalance } from "@/lib/transaction-status";
 import { getTransactionListDisplayAmounts } from "@/lib/transaction-list-display";
+import { matchesTransactionCategoryDrilldown } from "@/lib/transaction-subcategory-filter";
 
 
 
@@ -111,6 +112,7 @@ export function TransactionsPage() {
   const [cardNameToBrand, setCardNameToBrand] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState(searchParams.category || "Todas");
+  const [activeSubcategory, setActiveSubcategory] = useState<string | null>(null);
   const initialMonthParam = typeof searchParams.month === "string" && /^\d{4}-\d{2}$/.test(searchParams.month)
     ? searchParams.month
     : null;
@@ -136,6 +138,7 @@ export function TransactionsPage() {
   useEffect(() => {
     if (!searchParams.category) return;
     setActiveCategory(searchParams.category);
+    setActiveSubcategory(null);
     setActiveSource("all");
     setFilterAccountId(null);
     setFilterStartDate(undefined);
@@ -163,6 +166,7 @@ export function TransactionsPage() {
     }
     if (isYieldView) {
       setActiveCategory("Todas");
+      setActiveSubcategory(null);
       setActiveSource("account");
       setFilterStartDate(undefined);
       setFilterEndDate(undefined);
@@ -520,6 +524,7 @@ export function TransactionsPage() {
   const selectedMonthLabel = selectedMonthLabelRaw.charAt(0).toUpperCase() + selectedMonthLabelRaw.slice(1);
   const shiftSelectedMonth = (delta: number) => {
     setActiveCategory("Todas");
+    setActiveSubcategory(null);
     setSelectedMonth((current) => new Date(current.getFullYear(), current.getMonth() + delta, 1));
   };
 
@@ -597,7 +602,9 @@ export function TransactionsPage() {
 
   // Single source of truth for economic category/card drilldowns:
   // original purchase month + full purchase value, counted once.
-  const categoryEconomicRows = categoryLedgerTransactions.filter((tx) => {
+  // Keep a group-level base so the subcategory chart preserves all percentages
+  // while the list/total can drill into one selected subcategory.
+  const categoryEconomicBaseRows = categoryLedgerTransactions.filter((tx) => {
     if (tx.is_visible === false) return false;
 
     const categoryValue = String(tx.category || "Outros");
@@ -643,9 +650,19 @@ export function TransactionsPage() {
     return true;
   });
 
+  const categoryEconomicRows = activeSubcategory
+    ? categoryEconomicBaseRows.filter((tx) =>
+        matchesTransactionCategoryDrilldown(
+          tx.category,
+          activeCategory,
+          activeSubcategory,
+        ),
+      )
+    : categoryEconomicBaseRows;
+
   // The ledger is already collapsed. Strip installment metadata before sending
   // rows to category charts so a purchase cannot be expanded a second time.
-  const categoryChartTransactions = categoryEconomicRows.map((tx) => ({
+  const categoryChartTransactions = categoryEconomicBaseRows.map((tx) => ({
     id: tx.id,
     category: String(tx.category || "Outros"),
     amount: Number(tx.amount || 0),
@@ -761,6 +778,7 @@ export function TransactionsPage() {
 
   const hasEconomicDrilldown =
     activeCategory !== "Todas" ||
+    !!activeSubcategory ||
     activeSource !== "all" ||
     !!filterAccountId ||
     !!filterStartDate ||
@@ -1761,7 +1779,10 @@ export function TransactionsPage() {
                 aria-label={`Filtrar por ${category}`}
                 aria-pressed={isActive}
                 title={category}
-                onClick={() => setActiveCategory(isActive ? "Todas" : category)}
+                onClick={() => {
+                  setActiveCategory(isActive ? "Todas" : category);
+                  setActiveSubcategory(null);
+                }}
                 className={`interactive-button flex h-9 w-12 shrink-0 items-center justify-center rounded-xl border text-base transition-all ${
                   isActive
                     ? "border-primary bg-primary text-primary-foreground shadow-sm ring-1 ring-primary/30"
@@ -1807,6 +1828,7 @@ export function TransactionsPage() {
             setFilterType(nextType);
             if (nextType !== "all") {
               setActiveCategory("Todas");
+              setActiveSubcategory(null);
               setActiveSource("all");
               setFilterAccountId(null);
               setFilterStartDate(undefined);
@@ -1841,6 +1863,7 @@ export function TransactionsPage() {
             setFilterType(nextType);
             if (nextType !== "all") {
               setActiveCategory("Todas");
+              setActiveSubcategory(null);
               setActiveSource("all");
               setFilterAccountId(null);
               setFilterStartDate(undefined);
@@ -1882,6 +1905,33 @@ export function TransactionsPage() {
           )}>
             {balanceVisible ? `${totalIncome - totalExpense >= 0 ? "+" : ""}R$ ${formatCurrency(totalIncome - totalExpense)}` : "R$ ••••"}
           </span>
+        </div>
+      )}
+
+      {!isYieldView && activeSubcategory && (
+        <div className="flex items-center justify-between gap-3 rounded-xl border border-destructive/20 bg-destructive/5 px-3 py-2">
+          <div className="min-w-0">
+            <p className="truncate text-xs font-semibold text-foreground">
+              {activeCategory} › {activeSubcategory}
+            </p>
+            <p className="text-[10px] text-muted-foreground">
+              Total no mês selecionado
+            </p>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <span className="text-sm font-bold tabular-nums text-destructive">
+              {balanceVisible ? `R$ ${formatCurrency(displayTotalExpense)}` : "R$ ••••"}
+            </span>
+            <button
+              type="button"
+              onClick={() => setActiveSubcategory(null)}
+              className="rounded-lg p-1 text-muted-foreground hover:bg-accent"
+              aria-label="Limpar filtro de subcategoria"
+              title="Limpar filtro de subcategoria"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
         </div>
       )}
 
@@ -1974,8 +2024,27 @@ export function TransactionsPage() {
           transactions={categoryChartTransactions}
           formatCurrency={formatCurrency}
           activeCategory={activeCategory}
+          activeSubcategory={activeSubcategory}
           onCategoryClick={(cat) => {
             setActiveCategory(cat);
+            setActiveSubcategory(null);
+            if (typeof window !== "undefined") {
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }
+          }}
+          onSubcategoryClick={(subcategory) => {
+            setActiveSubcategory(subcategory || null);
+            setFilterType("all");
+            setActiveSource("all");
+            setFilterAccountId(null);
+            setFilterStartDate(undefined);
+            setFilterEndDate(undefined);
+            setFilterMinAmount("");
+            setFilterMaxAmount("");
+            setSortBy("date-desc");
+            setShowAdvancedFilters(false);
+            localStorage.removeItem("transactions_filter_accountId");
+            localStorage.setItem("transactions_filter_source", "all");
             if (typeof window !== "undefined") {
               window.scrollTo({ top: 0, behavior: "smooth" });
             }
