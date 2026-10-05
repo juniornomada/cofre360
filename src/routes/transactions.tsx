@@ -42,6 +42,7 @@ import { sanitizeTransactionName } from "@/lib/normalize-transaction-name";
 import { inferDebitInstallmentContext } from "@/lib/debit-installment-history-sync";
 import { buildTransferTransactionNames, extractTransferDescription } from "@/lib/transfer-label";
 import { getBillingCycleMonthKey } from "@/lib/invoice-utils";
+import { useFinancialMonthFacts } from "@/hooks/use-financial-month-facts";
 
 
 
@@ -115,6 +116,8 @@ export function TransactionsPage() {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
   });
+  const selectedMonthFactsKey = `${selectedMonth.getFullYear()}-${String(selectedMonth.getMonth() + 1).padStart(2, "0")}`;
+  const { data: canonicalFacts } = useFinancialMonthFacts(selectedMonthFactsKey, !isYieldView);
 
   useEffect(() => {
     if (typeof searchParams.month !== "string" || !/^\d{4}-\d{2}$/.test(searchParams.month)) return;
@@ -493,7 +496,7 @@ export function TransactionsPage() {
 
   const selectedMonthStartUtc = Date.UTC(selectedMonth.getFullYear(), selectedMonth.getMonth(), 1);
   const selectedMonthEndUtc = Date.UTC(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 1) - 1;
-  const selectedMonthKey = `${selectedMonth.getFullYear()}-${String(selectedMonth.getMonth() + 1).padStart(2, "0")}`;
+  const selectedMonthKey = selectedMonthFactsKey;
   const nowForYield = new Date();
   const isCurrentYieldMonth =
     selectedMonth.getFullYear() === nowForYield.getFullYear() &&
@@ -531,9 +534,9 @@ export function TransactionsPage() {
     .sort((a, b) => b.count - a.count || a.category.localeCompare(b.category, "pt-BR"));
 
 
-  // "Todos" keeps calendar-month browsing; the economic summary uses
-  // each card's invoice cycle so DESPESAS closes with the card totals.
-  const matchesBaseFilters = (tx: Transaction, monthMode: "calendar" | "economic") => {
+  // Transaction browsing is calendar-month based. Economic DESPESAS is
+  // calculated separately from the collapsed purchase ledger below.
+  const matchesBaseFilters = (tx: Transaction) => {
     const matchesCategory = activeCategory === "Todas" || tx.category === activeCategory || parseCategoryValue(tx.category).group === activeCategory || (activeCategory === "Transferências" && (tx.category === "Transferência" || tx.category === "Transferências"));
     const matchesSource = activeSource === "all" ? true : activeSource === "card" ? !!tx.card : !!tx.bank_account_id && !tx.card;
     const matchesAccount = !filterAccountId || tx.bank_account_id === filterAccountId;
@@ -546,13 +549,6 @@ export function TransactionsPage() {
       ? (!d || timestamp <= yieldCutoffUtc)
       : Number.isFinite(timestamp) && timestamp >= selectedMonthStartUtc && timestamp <= selectedMonthEndUtc;
 
-    if (!isYieldView && monthMode === "economic" && tx.card) {
-      const card = cardOptions.find((option) => option.name === tx.card);
-      if (card?.closing_day) {
-        matchesMonth = getBillingCycleMonthKey(tx.date, tx.created_at || "", card.closing_day) === selectedMonthKey;
-      }
-    }
-
     let matchesDate = true;
     if (filterStartDate || filterEndDate) {
       if (!d) matchesDate = false;
@@ -564,13 +560,12 @@ export function TransactionsPage() {
     return matchesCategory && matchesSource && matchesAccount && matchesMin && matchesMax && matchesMonth && matchesDate && matchesYieldComponent;
   };
 
-  const filteredWithoutType = transactions.filter((tx) => matchesBaseFilters(tx, "calendar"));
-  const economicFilteredWithoutType = transactions.filter((tx) => matchesBaseFilters(tx, "economic"));
+  const filteredWithoutType = transactions.filter((tx) => matchesBaseFilters(tx));
 
   // Receitas/Despesas representam fluxo econômico real. Transferências entre
   // contas e pagamentos de cartão continuam visíveis em "Todos", mas não são
   // classificados como nova receita ou nova despesa.
-  const getEconomicSummaryKind = (tx: Transaction): "income" | "expense" | "refund" | "ignore" => {
+  const getEconomicSummaryKind = (tx: Pick<Transaction, "category" | "type"> | CategoryLedgerTransaction): "income" | "expense" | "refund" | "ignore" => {
     const group = parseCategoryValue(tx.category || "").group;
     if (group === "Transferências" || group === "Pagamento de Cartão" || group === "Ajustes") return "ignore";
     if ((tx.category || "").trim() === "Receita > Reembolso") return "refund";
@@ -579,7 +574,7 @@ export function TransactionsPage() {
 
   const filtered = filterType === "all"
     ? filteredWithoutType
-    : economicFilteredWithoutType.filter((tx) => {
+    : filteredWithoutType.filter((tx) => {
         const kind = getEconomicSummaryKind(tx);
         if (filterType === "income") return kind === "income";
         return kind === "expense" || kind === "refund";
@@ -641,17 +636,73 @@ export function TransactionsPage() {
     localStorage.setItem("transactions_filter_source", "all");
   };
 
-  const economicSummaryTransactions = economicFilteredWithoutType.filter((tx) => tx.is_visible !== false);
-  const totalIncome = economicSummaryTransactions
+  const economicSummaryTransactions = categoryLedgerTransactions.filter((tx) => {
+    if (tx.is_visible === false) return false;
+
+    const parsed = parseCategoryValue(tx.category || "");
+    const matchesCategory =
+      activeCategory === "Todas" ||
+      tx.category === activeCategory ||
+      parsed.group === activeCategory ||
+      (activeCategory === "Transferências" &&
+        (tx.category === "Transferência" || tx.category === "Transferências"));
+    if (!matchesCategory) return false;
+
+    const matchesSource =
+      activeSource === "all"
+        ? true
+        : activeSource === "card"
+          ? !!tx.card
+          : !!tx.bank_account_id && !tx.card;
+    if (!matchesSource) return false;
+    if (filterAccountId && tx.bank_account_id !== filterAccountId) return false;
+
+    const amount = Number(tx.amount || 0);
+    if (minAmt !== null && amount < minAmt) return false;
+    if (maxAmt !== null && amount > maxAmt) return false;
+
+    const d = parseTxDate(tx.date || "", tx.created_at || undefined);
+    const timestamp = d?.getTime() ?? NaN;
+    if (!Number.isFinite(timestamp)) return false;
+
+    const matchesMonth = isYieldView
+      ? timestamp <= yieldCutoffUtc
+      : timestamp >= selectedMonthStartUtc && timestamp <= selectedMonthEndUtc;
+    if (!matchesMonth) return false;
+
+    if (filterStartDate && timestamp < toUtcDay(filterStartDate).getTime()) return false;
+    if (filterEndDate && timestamp > toUtcDay(filterEndDate, true).getTime()) return false;
+
+    return true;
+  });
+
+  const localTotalIncome = economicSummaryTransactions
     .filter((tx) => getEconomicSummaryKind(tx) === "income")
-    .reduce((sum, tx) => sum + Number(tx.amount), 0);
-  const grossExpense = economicSummaryTransactions
+    .reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
+  const localGrossExpense = economicSummaryTransactions
     .filter((tx) => getEconomicSummaryKind(tx) === "expense")
-    .reduce((sum, tx) => sum + Number(tx.amount), 0);
-  const refundAmount = economicSummaryTransactions
+    .reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
+  const localRefundAmount = economicSummaryTransactions
     .filter((tx) => getEconomicSummaryKind(tx) === "refund")
-    .reduce((sum, tx) => sum + Number(tx.amount), 0);
-  const totalExpense = grossExpense - refundAmount;
+    .reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
+
+  const hasEconomicDrilldown =
+    activeCategory !== "Todas" ||
+    activeSource !== "all" ||
+    !!filterAccountId ||
+    !!filterStartDate ||
+    !!filterEndDate ||
+    minAmt !== null ||
+    maxAmt !== null;
+
+  const totalIncome =
+    !isYieldView && !hasEconomicDrilldown && canonicalFacts
+      ? Number(canonicalFacts.income || 0)
+      : localTotalIncome;
+  const totalExpense =
+    !isYieldView && !hasEconomicDrilldown && canonicalFacts
+      ? Number(canonicalFacts.expense || 0)
+      : localGrossExpense - localRefundAmount;
 
   const generatePDF = () => {
     try {
