@@ -1,5 +1,6 @@
 import { collapseCategorySpendingRows } from "@/lib/category-spending";
 import { getBillingCycleMonthKey, parseTxDate } from "@/lib/invoice-utils";
+import { isPendingTransaction } from "@/lib/transaction-status";
 
 export type TransactionKind =
   | "expense"
@@ -21,6 +22,8 @@ export type FinancialTransaction = {
   amount: number | string | null;
   type?: string | null;
   transaction_kind?: TransactionKind | string | null;
+  transaction_status?: string | null;
+  posted_at?: string | null;
   card?: string | null;
   card_id?: string | null;
   bank_account_id?: string | null;
@@ -117,7 +120,7 @@ function cardForTransaction(tx: FinancialTransaction, cards: FinancialCard[]) {
  * Card invoice cycles remain a separate cash-flow perspective.
  */
 export function belongsToExpenseMonth(tx: FinancialTransaction, targetMonthKey: string, cards: FinancialCard[]) {
-  if (tx.is_visible === false) return false;
+  if (tx.is_visible === false || isPendingTransaction(tx.transaction_status)) return false;
   const date = canonicalTransactionDate(tx);
   if (!date) return false;
 
@@ -147,7 +150,7 @@ export function computeMonthlyFinancialSummary(
   // Income/yield and confirmed refunds are recognized in their transaction
   // month. Refunds reduce DESPESAS and never become revenue.
   for (const tx of transactions) {
-    if (tx.is_visible === false) continue;
+    if (tx.is_visible === false || isPendingTransaction(tx.transaction_status)) continue;
     const kind = inferTransactionKind(tx);
     if (kind !== "income" && kind !== "yield" && kind !== "refund") continue;
 
@@ -170,7 +173,11 @@ export function computeMonthlyFinancialSummary(
   // one row carrying the full original purchase amount, so future installments
   // never become new spending again.
   const expenseRows = collapseCategorySpendingRows(
-    transactions.filter((tx) => tx.is_visible !== false && inferTransactionKind(tx) === "expense"),
+    transactions.filter((tx) =>
+      tx.is_visible !== false &&
+      !isPendingTransaction(tx.transaction_status) &&
+      inferTransactionKind(tx) === "expense"
+    ),
   );
 
   for (const tx of expenseRows) {
@@ -204,7 +211,7 @@ export function computeMonthlyCategoryTotals(
   targetMonthKey: string,
 ): CategoryTotal[] {
   const expenseRows = transactions.filter((tx) => {
-    if (tx.is_visible === false) return false;
+    if (tx.is_visible === false || isPendingTransaction(tx.transaction_status)) return false;
     return inferTransactionKind(tx) === "expense";
   });
   const collapsed = collapseCategorySpendingRows(expenseRows);
@@ -237,7 +244,11 @@ export function computeCardConsistency(
   const byCard = new Map<string, number>();
 
   const economicExpenses = collapseCategorySpendingRows(
-    transactions.filter((tx) => tx.is_visible !== false && inferTransactionKind(tx) === "expense"),
+    transactions.filter((tx) =>
+      tx.is_visible !== false &&
+      !isPendingTransaction(tx.transaction_status) &&
+      inferTransactionKind(tx) === "expense"
+    ),
   );
 
   for (const tx of economicExpenses) {
@@ -258,7 +269,11 @@ export function computeCardConsistency(
 
   // Card refunds are current-month abatements of economic spending.
   for (const tx of transactions) {
-    if (tx.is_visible === false || inferTransactionKind(tx) !== "refund") continue;
+    if (
+      tx.is_visible === false ||
+      isPendingTransaction(tx.transaction_status) ||
+      inferTransactionKind(tx) !== "refund"
+    ) continue;
     if (!tx.card && !tx.card_id) continue;
     const date = canonicalTransactionDate(tx);
     if (!date || monthKeyFromDate(date) !== targetMonthKey) continue;
