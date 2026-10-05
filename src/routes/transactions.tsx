@@ -207,6 +207,7 @@ export function TransactionsPage() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Transaction | null>(null);
   const [deleteScope, setDeleteScope] = useState<"single" | "future" | "all">("single");
+  const [deleteOpenedFromEdit, setDeleteOpenedFromEdit] = useState(false);
    const [showAddDialog, setShowAddDialog] = useState(false);
    const [voiceDraft, setVoiceDraft] = useState<VoiceTransactionDraft | null>(null);
    const [showAddTypeDialog, setShowAddTypeDialog] = useState(false);
@@ -1386,6 +1387,29 @@ export function TransactionsPage() {
   };
 
 
+  const openDeleteFromEdit = () => {
+    if (!editTx) return;
+    (document.activeElement as HTMLElement)?.blur();
+    setDeleteTarget(editTx);
+    setDeleteScope("single");
+    setDeleteOpenedFromEdit(true);
+    setShowEditDialog(false);
+    setShowDeleteDialog(true);
+  };
+
+  const closeDeleteDialog = () => {
+    setShowDeleteDialog(false);
+    setDeleteTarget(null);
+    setDeleteScope("single");
+    if (deleteOpenedFromEdit && editTx) {
+      setDeleteOpenedFromEdit(false);
+      setShowEditDialog(true);
+      return;
+    }
+    setDeleteOpenedFromEdit(false);
+  };
+
+
   const handleDeleteConfirm = async () => {
     if (!deleteTarget) return;
     try {
@@ -1401,9 +1425,11 @@ export function TransactionsPage() {
       toast.error("Erro ao excluir transação");
     } finally {
       (document.activeElement as HTMLElement)?.blur();
+      setDeleteOpenedFromEdit(false);
       setShowDeleteDialog(false);
       setDeleteTarget(null);
       setDeleteScope("single");
+      setEditTx(null);
       fetchTransactions();
       fetchBankAccounts(); // Refresh balances
     }
@@ -1914,7 +1940,7 @@ export function TransactionsPage() {
                   amountVisible={balanceVisible}
                   style={{ animationDelay: `${i * 40}ms` }} 
                   onEdit={selectionMode ? undefined : () => handleEdit(tx)}
-                  onDelete={selectionMode ? undefined : () => { setDeleteTarget(tx); setDeleteScope("single"); setShowDeleteDialog(true); }}
+                  onDelete={selectionMode ? undefined : () => { setDeleteOpenedFromEdit(false); setDeleteTarget(tx); setDeleteScope("single"); setShowDeleteDialog(true); }}
                   onPost={selectionMode || tx.transaction_status !== "pending" ? undefined : () => openPostTransaction(tx)}
                   onDuplicate={selectionMode ? undefined : () => {
                     setCopyTxData({
@@ -2540,6 +2566,15 @@ export function TransactionsPage() {
           )}
           </div>
           <DialogFooter className="shrink-0 border-t border-border/50 bg-background p-4 pt-3 flex-row gap-2 sm:gap-2">
+            <Button
+              variant="destructive"
+              size="sm"
+              className="flex-1 h-10 text-xs rounded-xl"
+              onClick={openDeleteFromEdit}
+            >
+              <Trash2 className="mr-1 h-3.5 w-3.5" />
+              Excluir
+            </Button>
             <Button variant="outline" size="sm" className="flex-1 h-10 text-xs rounded-xl" onClick={() => { (document.activeElement as HTMLElement)?.blur(); setShowEditDialog(false); if (shouldReturnHome) window.location.assign("/home"); }}>Cancelar</Button>
             <Button
               size="sm"
@@ -2556,7 +2591,16 @@ export function TransactionsPage() {
       </Dialog>
 
       {/* Delete */}
-      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+      <Dialog
+        open={showDeleteDialog}
+        onOpenChange={(open) => {
+          if (open) {
+            setShowDeleteDialog(true);
+            return;
+          }
+          closeDeleteDialog();
+        }}
+      >
         <DialogContent className="max-w-[90vw] rounded-2xl bg-background">
           <DialogHeader><DialogTitle>Excluir Transação</DialogTitle></DialogHeader>
           {isInstallmentTx(deleteTarget) ? (
@@ -2610,7 +2654,7 @@ export function TransactionsPage() {
             <p className="text-sm text-muted-foreground">Tem certeza que deseja excluir esta transação?</p>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>Cancelar</Button>
+            <Button variant="outline" onClick={closeDeleteDialog}>Cancelar</Button>
             <Button variant="destructive" onClick={handleDeleteConfirm}>Excluir</Button>
           </DialogFooter>
         </DialogContent>
