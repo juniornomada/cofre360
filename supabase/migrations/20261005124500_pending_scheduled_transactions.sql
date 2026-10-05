@@ -42,8 +42,7 @@ set
   installment_mode = 'divide',
   purchase_date = date '2026-10-03',
   transaction_status = case when name = 'Droga Raia 1/4' then 'posted' else 'pending' end,
-  posted_at = case when name = 'Droga Raia 1/4' then posted_at else null end,
-  bank_account_id = case when name = 'Droga Raia 1/4' then bank_account_id else null end
+  posted_at = case when name = 'Droga Raia 1/4' then posted_at else null end
 where name in ('Droga Raia 1/4','Droga Raia 2/4','Droga Raia 3/4','Droga Raia 4/4')
   and amount = 178.15
   and coalesce(card,'') = '';
