@@ -44,6 +44,7 @@ import { buildTransferTransactionNames, extractTransferDescription } from "@/lib
 import { getBillingCycleMonthKey } from "@/lib/invoice-utils";
 import { useFinancialMonthFacts } from "@/hooks/use-financial-month-facts";
 import { countsTowardCurrentBalance } from "@/lib/transaction-status";
+import { getTransactionListDisplayAmounts } from "@/lib/transaction-list-display";
 
 
 
@@ -69,6 +70,7 @@ interface Transaction {
   transaction_status?: "posted" | "pending" | string | null;
   posted_at?: string | null;
   transaction_date?: string | null;
+  economic_amount?: number | null;
 }
 
 interface BankAccountOption {
@@ -662,6 +664,12 @@ export function TransactionsPage() {
     const original = transactions.find((item) => item.id === tx.id);
     const categoryValue = String(tx.category || original?.category || "Outros");
     const group = parseCategoryValue(categoryValue).group || categoryValue;
+    const displayedAmounts = getTransactionListDisplayAmounts({
+      economicAmount: tx.amount,
+      originalAmount: original?.amount,
+      installmentNumber: tx.installment_number ?? original?.installment_number,
+      totalInstallments: tx.total_installments ?? original?.total_installments,
+    });
     return {
       id: tx.id,
       icon: original?.icon || getCategoryIcon(group),
@@ -669,7 +677,8 @@ export function TransactionsPage() {
       category: categoryValue,
       date: tx.date || tx.purchase_date || original?.date || "",
       purchase_date: tx.purchase_date ?? tx.date ?? original?.purchase_date ?? null,
-      amount: Number(tx.amount || 0),
+      amount: displayedAmounts.displayAmount,
+      economic_amount: displayedAmounts.economicAmount,
       type: tx.type === "income" ? "income" : "expense",
       card: tx.card ?? original?.card ?? null,
       cardBrand: tx.card ? (cardNameToBrand[tx.card] || original?.cardBrand || null) : null,
@@ -1900,7 +1909,8 @@ export function TransactionsPage() {
                   {...tx} 
                   card={tx.card ?? undefined} 
                   cardBrand={tx.cardBrand ?? undefined} 
-                  amount={Number(tx.amount)} 
+                  amount={Number(tx.amount)}
+                  economicAmount={tx.economic_amount}
                   amountVisible={balanceVisible}
                   style={{ animationDelay: `${i * 40}ms` }} 
                   onEdit={selectionMode ? undefined : () => handleEdit(tx)}
@@ -2831,7 +2841,7 @@ export function TransactionsPage() {
                   onClick={() => { setShowGlobalSearch(false); handleEdit(tx); }}
                   className="text-left"
                 >
-                  <TransactionItem {...tx} card={tx.card ?? undefined} cardBrand={tx.cardBrand ?? undefined} amount={Number(tx.amount)} is_visible={tx.is_visible !== false} amountVisible={balanceVisible} />
+                  <TransactionItem {...tx} card={tx.card ?? undefined} cardBrand={tx.cardBrand ?? undefined} amount={Number(tx.amount)} economicAmount={tx.economic_amount} is_visible={tx.is_visible !== false} amountVisible={balanceVisible} />
                 </button>
               ));
             })()}
