@@ -11,6 +11,7 @@ export type ReusableTransactionHistoryEntry = {
   date: string | null;
   created_at: string | null;
   transaction_kind?: string | null;
+  transaction_status?: string | null;
   is_visible?: boolean | null;
 };
 
@@ -55,7 +56,7 @@ function abbreviationMatch(candidate: string, query: string): boolean {
 }
 
 function isReusable(entry: ReusableTransactionHistoryEntry): boolean {
-  if (entry.is_visible === false) return false;
+  if (entry.is_visible === false || entry.transaction_status === "pending") return false;
   if (entry.type !== "income" && entry.type !== "expense") return false;
 
   const kind = normalizeText(entry.transaction_kind || "").replace(/[_-]+/g, " ").trim();
