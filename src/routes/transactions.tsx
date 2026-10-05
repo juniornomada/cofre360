@@ -645,7 +645,7 @@ export function TransactionsPage() {
 
   // Category drilldowns and explicit Card source show the economic purchase
   // ledger, so the visible list and totals stay on the same full-value basis.
-  const categoryScopeActive = !isYieldView && (activeCategory !== "Todas" || activeSource === "card");
+  const categoryScopeActive = !isYieldView && (activeCategory !== "Todas" || activeSource === "card" || filterType !== "all");
 
   const categoryListTransactions: Transaction[] = categoryEconomicRows.map((tx) => {
     const original = transactions.find((item) => item.id === tx.id);
