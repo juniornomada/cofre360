@@ -126,7 +126,8 @@ async function loadInputData(
     supabase
       .from("transactions")
       .select("id,date,transaction_date,purchase_date,created_at,amount,type,transaction_kind,is_visible,bank_account_id,card,card_id,category,installment_group_id,installment_number,total_installments,installment_source_amount")
-      .eq("user_id", userId),
+      .eq("user_id", userId)
+      .eq("transaction_status", "posted"),
     supabase.from("cards").select("id,name,used,closing_day,due_day").eq("user_id", userId),
     supabase.from("card_payments").select("id,card_id,bank_account_id,amount,paid_at,target_period").eq("user_id", userId),
     supabase
