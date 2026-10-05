@@ -43,6 +43,7 @@ import { inferDebitInstallmentContext } from "@/lib/debit-installment-history-sy
 import { buildTransferTransactionNames, extractTransferDescription } from "@/lib/transfer-label";
 import { getBillingCycleMonthKey } from "@/lib/invoice-utils";
 import { useFinancialMonthFacts } from "@/hooks/use-financial-month-facts";
+import { countsTowardCurrentBalance } from "@/lib/transaction-status";
 
 
 
@@ -65,6 +66,9 @@ interface Transaction {
   installment_mode?: "divide" | "fixed" | null;
   installment_source_amount?: number | null;
   is_visible?: boolean;
+  transaction_status?: "posted" | "pending" | string | null;
+  posted_at?: string | null;
+  transaction_date?: string | null;
 }
 
 interface BankAccountOption {
@@ -179,6 +183,9 @@ export function TransactionsPage() {
   
   const [editTx, setEditTx] = useState<Transaction | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [postTarget, setPostTarget] = useState<Transaction | null>(null);
+  const [postAccountId, setPostAccountId] = useState("");
+  const [postingPending, setPostingPending] = useState(false);
   useEffect(() => {
     if (!editTx || isTransferTransaction(editTx) || !editTx.name.trim()) return;
     const inferred = inferYieldTransactionFields(editTx.name);
@@ -317,7 +324,10 @@ export function TransactionsPage() {
         { data: txs, error: txsError }
       ] = await Promise.all([
         supabase.from("bank_accounts").select("id, name, balance, icon, color").order("created_at", { ascending: true }),
-        supabase.from("transactions").select("bank_account_id, amount, type, is_visible").not("bank_account_id", "is", null),
+        supabase
+          .from("transactions")
+          .select("bank_account_id, amount, type, is_visible, transaction_status, posted_at, transaction_date, date, created_at")
+          .not("bank_account_id", "is", null),
       ]);
 
       if (acctsError) throw acctsError;
@@ -327,7 +337,7 @@ export function TransactionsPage() {
         const incMap: Record<string, number> = {};
         const expMap: Record<string, number> = {};
         for (const tx of (txs || [])) {
-          if (tx.is_visible === false) continue;
+          if (tx.is_visible === false || !countsTowardCurrentBalance(tx)) continue;
           const id = tx.bank_account_id as string;
           if (tx.type === "income") {
             incMap[id] = (incMap[id] || 0) + Number(tx.amount);
@@ -577,6 +587,7 @@ export function TransactionsPage() {
   const rawFiltered = filterType === "all"
     ? filteredWithoutType
     : filteredWithoutType.filter((tx) => {
+        if (tx.transaction_status === "pending") return false;
         const kind = getEconomicSummaryKind(tx);
         if (filterType === "income") return kind === "income";
         return kind === "expense" || kind === "refund";
@@ -671,6 +682,9 @@ export function TransactionsPage() {
       installment_source_amount: tx.installment_source_amount == null
         ? (original?.installment_source_amount ?? null)
         : Number(tx.installment_source_amount),
+      transaction_status: original?.transaction_status ?? "posted",
+      posted_at: original?.posted_at ?? null,
+      transaction_date: original?.transaction_date ?? null,
       is_visible: true,
     };
   });
@@ -1330,6 +1344,39 @@ export function TransactionsPage() {
   };
 
 
+  const openPostTransaction = (tx: Transaction) => {
+    setPostTarget(tx);
+    setPostAccountId(tx.bank_account_id || "");
+  };
+
+  const handlePostTransaction = async () => {
+    if (!postTarget || !postAccountId || postingPending) return;
+    setPostingPending(true);
+    try {
+      const { error } = await supabase
+        .from("transactions")
+        .update({
+          transaction_status: "posted",
+          bank_account_id: postAccountId,
+          posted_at: new Date().toISOString(),
+        })
+        .eq("id", postTarget.id)
+        .eq("transaction_status", "pending");
+      if (error) throw error;
+
+      toast.success("Lançamento efetivado com sucesso");
+      setPostTarget(null);
+      setPostAccountId("");
+      await Promise.all([fetchTransactions(), fetchBankAccounts()]);
+    } catch (error: any) {
+      console.error("Erro ao efetivar lançamento pendente:", error);
+      toast.error(mapServerError(error, "Erro ao efetivar lançamento"));
+    } finally {
+      setPostingPending(false);
+    }
+  };
+
+
   const handleDeleteConfirm = async () => {
     if (!deleteTarget) return;
     try {
@@ -1858,6 +1905,7 @@ export function TransactionsPage() {
                   style={{ animationDelay: `${i * 40}ms` }} 
                   onEdit={selectionMode ? undefined : () => handleEdit(tx)}
                   onDelete={selectionMode ? undefined : () => { setDeleteTarget(tx); setDeleteScope("single"); setShowDeleteDialog(true); }}
+                  onPost={selectionMode || tx.transaction_status !== "pending" ? undefined : () => openPostTransaction(tx)}
                   onDuplicate={selectionMode ? undefined : () => {
                     setCopyTxData({
                       name: tx.name,
@@ -1924,6 +1972,72 @@ export function TransactionsPage() {
           }}
         />
       </div>}
+
+      {/* Efetivar lançamento pendente */}
+      <Dialog
+        open={!!postTarget}
+        onOpenChange={(open) => {
+          if (!open && !postingPending) {
+            setPostTarget(null);
+            setPostAccountId("");
+          }
+        }}
+      >
+        <DialogContent className="max-w-[92vw] rounded-2xl bg-background sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Efetivar lançamento</DialogTitle>
+          </DialogHeader>
+          {postTarget && (
+            <div className="space-y-4 py-2">
+              <div className="rounded-xl border border-amber-500/25 bg-amber-500/10 p-3">
+                <p className="text-sm font-semibold text-foreground">{postTarget.name}</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Previsto para {formatEditorTxDate(postTarget.date, postTarget.created_at)} · R$ {formatCurrency(Number(postTarget.amount))}
+                </p>
+              </div>
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold text-foreground">
+                  {postTarget.type === "expense" ? "Conta que será debitada" : "Conta que receberá o valor"}
+                </label>
+                <Select value={postAccountId} onValueChange={setPostAccountId}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Selecione a conta" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {bankAccounts.map((account) => (
+                      <SelectItem key={account.id} value={account.id}>
+                        {account.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="mt-1 text-[10px] leading-relaxed text-muted-foreground">
+                  O lançamento só movimentará o saldo e as despesas realizadas depois da confirmação.
+                </p>
+              </div>
+            </div>
+          )}
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              disabled={postingPending}
+              onClick={() => {
+                setPostTarget(null);
+                setPostAccountId("");
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button
+              disabled={!postAccountId || postingPending}
+              onClick={() => void handlePostTransaction()}
+            >
+              {postingPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Efetivar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Edit Dialog */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>

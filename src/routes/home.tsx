@@ -33,6 +33,7 @@ import { getCategoryDisplay, getCategoryIcon } from "@/lib/categories";
 import { addCurrencyCents, fetchAllCategoryLedgerTransactions, type CategoryLedgerTransaction } from "@/lib/category-spending-ledger";
 import { getBillingCycleMonthKey, getCycleDates, groupByBillingCycle, monthNames, type CardTransaction } from "@/lib/invoice-utils";
 import { remainingInvoiceAmount, shouldAutoAdvanceInvoiceMonth } from "@/lib/invoice-payment-status";
+import { countsTowardCurrentBalance } from "@/lib/transaction-status";
 
 type Account = {
   id: string;
@@ -75,6 +76,9 @@ type Tx = {
   card: string | null;
   bank_account_id: string | null;
   is_visible: boolean | null;
+  transaction_status: string | null;
+  posted_at: string | null;
+  transaction_date: string | null;
   created_at: string | null;
 };
 
@@ -190,7 +194,7 @@ function RecoveredHome() {
             .eq("user_id", session.user.id),
           supabase
             .from("transactions")
-            .select("id,name,icon,category,date,amount,type,card,bank_account_id,is_visible,created_at")
+            .select("id,name,icon,category,date,transaction_date,amount,type,card,bank_account_id,is_visible,transaction_status,posted_at,created_at")
             .eq("user_id", session.user.id)
             .order("created_at", { ascending: false }),
           supabase
@@ -266,8 +270,7 @@ function RecoveredHome() {
     for (const tx of transactions) {
       if (tx.is_visible === false || !tx.bank_account_id) continue;
       if (tx.type === "expense" && tx.card) continue;
-      const transactionDate = safeDate(tx.date, tx.created_at);
-      if (transactionDate && transactionDate > selectedCutoff) continue;
+      if (!countsTowardCurrentBalance(tx, selectedCutoff)) continue;
       const amount = Number(tx.amount || 0);
       if (tx.type === "income") incomeByAccount[tx.bank_account_id] = (incomeByAccount[tx.bank_account_id] || 0) + amount;
       else expenseByAccount[tx.bank_account_id] = (expenseByAccount[tx.bank_account_id] || 0) + amount;

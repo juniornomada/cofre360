@@ -24,6 +24,10 @@ import { voiceAccountNamesMatch, voiceCardNamesMatch, type VoiceTransactionDraft
 import { TransactionTemplates, type TransactionTemplate } from "@/components/TransactionTemplates";
 import { getBillingCycleMonthKey } from "@/lib/invoice-utils";
 import {
+  countsTowardCurrentBalance,
+  shouldAutoPendScheduledTransaction,
+} from "@/lib/transaction-status";
+import {
   findExactTransactionHistoryMatch,
   getTransactionHistorySuggestions,
   type ReusableTransactionHistoryEntry,
@@ -168,7 +172,10 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
       ] = await Promise.all([
         supabase.from("cards").select("id, name, brand, emoji, color, closing_day, due_day").order("created_at", { ascending: true }),
         supabase.from("bank_accounts").select("id, name, icon, color, balance, parent_account_id").order("created_at", { ascending: true }),
-        supabase.from("transactions").select("bank_account_id, amount, type, is_visible").not("bank_account_id", "is", null),
+        supabase
+          .from("transactions")
+          .select("bank_account_id, amount, type, is_visible, transaction_status, posted_at, transaction_date, date, created_at")
+          .not("bank_account_id", "is", null),
       ]);
 
       if (cardsError) throw cardsError;
@@ -178,7 +185,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
       const incomeByAccount: Record<string, number> = {};
       const expenseByAccount: Record<string, number> = {};
       (txs || []).forEach(tx => {
-        if (tx.is_visible === false) return;
+        if (tx.is_visible === false || !countsTowardCurrentBalance(tx)) return;
         const id = tx.bank_account_id!;
         if (tx.type === "income") incomeByAccount[id] = (incomeByAccount[id] || 0) + (tx.amount || 0);
         else expenseByAccount[id] = (expenseByAccount[id] || 0) + (tx.amount || 0);
@@ -210,7 +217,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
   const fetchHistory = useCallback(async () => {
     const { data, error } = await supabase
       .from("transactions")
-      .select("name, icon, category, card, bank_account_id, type, amount, date, created_at, transaction_kind, is_visible")
+      .select("name, icon, category, card, bank_account_id, type, amount, date, created_at, transaction_kind, transaction_status, is_visible")
       .order("created_at", { ascending: false })
       .limit(500);
 
@@ -580,7 +587,12 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
       }
 
       console.log("QuickAdd: Standard transaction validation", { bank_account_id: newTx.bank_account_id, card: newTx.card });
-      if (!newTx.bank_account_id && !newTx.card) {
+      const pendingCardValue = newTx.card === "Nenhum" ? null : newTx.card;
+      const willCreatePending = shouldAutoPendScheduledTransaction(
+        newTx.date,
+        pendingCardValue,
+      );
+      if (!newTx.bank_account_id && !pendingCardValue && !willCreatePending) {
         setIsSubmitting(false);
         return;
       }
@@ -606,6 +618,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
     }
 
     let insertedIds: string[] = [];
+    let createdPending = false;
     if (installmentEnabled && cardValue && Number(installmentCount) > 1) {
       const groupId = (typeof crypto !== "undefined" && "randomUUID" in crypto)
         ? crypto.randomUUID()
@@ -640,10 +653,13 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
        if (error) throw error;
        insertedIds = (data || []).map((row: any) => String(row.id)).filter(Boolean);
      } else {
+       createdPending = willCreatePending;
        const { error, data } = await supabase.from("transactions").insert(sanitizeTransactionWrite({
          icon: newTx.icon, name: newTx.name, category: newTx.category,
          date: newTx.date, purchase_date: newTx.date, amount: newTx.amount, type: finalType,
          card: cardValue, bank_account_id: newTx.bank_account_id || null,
+         transaction_status: createdPending ? "pending" : "posted",
+         posted_at: null,
          is_visible: true
        })).select("id");
        if (error) throw error;
@@ -652,7 +668,10 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
     (document.activeElement as HTMLElement)?.blur();
     onOpenChange(false);
     onSuccess?.();
-    showUndoToast(insertedIds, "Transação adicionada com sucesso!");
+    showUndoToast(
+      insertedIds,
+      createdPending ? "Lançamento agendado como pendente!" : "Transação adicionada com sucesso!",
+    );
     } catch (error: any) {
       console.error("Error adding transaction:", error);
       toast.error("Erro ao adicionar transação: " + getFriendlyErrorMessage(error).message);

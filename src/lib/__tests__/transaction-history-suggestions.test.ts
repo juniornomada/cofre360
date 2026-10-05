@@ -151,6 +151,28 @@ describe("transaction history suggestions", () => {
       .toEqual(["mercado-pago", "cofrinho-140"]);
   });
 
+  it("ignores pending scheduled transactions in autocomplete history", () => {
+    const entries = [
+      base({
+        name: "Droga Raia",
+        type: "expense",
+        category: "Saúde > Farmácia",
+        transaction_kind: "expense",
+        transaction_status: "pending",
+      }),
+      base({
+        name: "Drogaria Real",
+        type: "expense",
+        category: "Saúde > Farmácia",
+        transaction_kind: "expense",
+        transaction_status: "posted",
+      }),
+    ];
+
+    expect(getTransactionHistorySuggestions(entries, "Dro", "expense").map((item) => item.name))
+      .toEqual(["Drogaria Real"]);
+  });
+
   it("continues excluding refunds, adjustments and transfers from income autocomplete", () => {
     const entries = [
       base({ name: "Rendimento", type: "income", transaction_kind: "yield" }),

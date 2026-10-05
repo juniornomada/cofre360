@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 import { getCategoryDisplay, getCategoryIcon } from "@/lib/categories";
 import { restoreAccents } from "@/lib/restore-accents";
 import { formatBRL } from "@/lib/format-brl";
-import { CreditCard, Landmark, ArrowLeftRight, Trash2, Pencil, Copy } from "lucide-react";
+import { CreditCard, Landmark, ArrowLeftRight, Trash2, Pencil, Copy, Clock3 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { AutoFitText } from "@/components/AutoFitText";
@@ -87,13 +87,16 @@ interface TransactionItemProps {
   onDelete?: () => void;
   onDuplicate?: () => void;
   is_visible?: boolean;
+  transaction_status?: string | null;
   amountVisible?: boolean;
+  onPost?: () => void;
 }
 
 export function TransactionItem({
   id, icon, name, category, date, purchase_date, created_at, amount, type, card, cardBrand,
   bank_account_id, isTransferPair, transferFromName, transferToName,
-  installment_group_id, installment_number, total_installments, style, onEdit, onDelete, onDuplicate, amountVisible = true
+  installment_group_id, installment_number, total_installments, style, onEdit, onDelete, onDuplicate,
+  transaction_status, amountVisible = true, onPost
 }: TransactionItemProps) {
   const isInstallment = !!total_installments && total_installments > 1 && !!installment_number;
   const explicitPurchaseDate = toIsoDate(purchase_date, created_at) || "";
@@ -181,6 +184,7 @@ export function TransactionItem({
   const isCard = !!card;
   const isTransfer = category === "Transferência" || category === "Transferências" || category.startsWith("Transferências >") || isTransferPair;
   const isBank = !card && !!bank_account_id && !isTransfer;
+  const isPending = transaction_status === "pending";
 
   return (
     <div
@@ -311,6 +315,12 @@ export function TransactionItem({
                 {installment_number}/{total_installments}
               </span>
             )}
+            {isPending && (
+              <span className="inline-flex shrink-0 items-center gap-1 rounded border border-amber-500/30 bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-300">
+                <Clock3 className="h-2.5 w-2.5" />
+                Pendente
+              </span>
+            )}
           </div>
           {isInstallment && (installment_group_id || id) && purchaseDate ? (
             <Popover open={purchaseDateOpen} onOpenChange={setPurchaseDateOpen}>
@@ -362,9 +372,24 @@ export function TransactionItem({
               </PopoverContent>
             </Popover>
           ) : (
-            <span className="shrink-0 whitespace-nowrap text-right text-[10px] font-medium tabular-nums text-muted-foreground">
-              {formatTxDate(date, created_at)}
-            </span>
+            <div className="flex shrink-0 items-center gap-1.5">
+              <span className="whitespace-nowrap text-right text-[10px] font-medium tabular-nums text-muted-foreground">
+                {formatTxDate(date, created_at)}
+              </span>
+              {isPending && onPost && (
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onPost();
+                  }}
+                  className="rounded-md border border-primary/30 bg-primary/10 px-1.5 py-0.5 text-[9px] font-bold text-primary hover:bg-primary/15"
+                  aria-label="Efetivar lançamento pendente"
+                >
+                  Efetivar
+                </button>
+              )}
+            </div>
           )}
         </div>
       </div>

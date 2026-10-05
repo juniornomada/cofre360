@@ -848,6 +848,8 @@ export type Database = {
           total_installments: number | null
           transaction_date: string | null
           transaction_kind: string | null
+          transaction_status: string
+          posted_at: string | null
           type: string
           updated_at: string
           user_id: string
@@ -872,6 +874,8 @@ export type Database = {
           total_installments?: number | null
           transaction_date?: string | null
           transaction_kind?: string | null
+          transaction_status?: string
+          posted_at?: string | null
           type: string
           updated_at?: string
           user_id?: string
@@ -896,6 +900,8 @@ export type Database = {
           total_installments?: number | null
           transaction_date?: string | null
           transaction_kind?: string | null
+          transaction_status?: string
+          posted_at?: string | null
           type?: string
           updated_at?: string
           user_id?: string

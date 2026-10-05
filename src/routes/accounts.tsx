@@ -42,6 +42,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { mapServerError } from "@/lib/map-server-error";
+import { countsTowardCurrentBalance } from "@/lib/transaction-status";
 
 
 type BankAccount = {
@@ -513,7 +514,7 @@ function AccountsPage() {
       // Buscar transações visíveis vinculadas a contas bancárias (exclui card e ocultas/soft-deleted).
       const { data: txData, error: txError } = await supabase
         .from("transactions")
-        .select("bank_account_id, amount, type, is_visible, card, date, created_at, name, category")
+        .select("bank_account_id, amount, type, is_visible, card, date, transaction_date, created_at, posted_at, transaction_status, name, category")
         .eq("user_id", session.user.id)
         .not("bank_account_id", "is", null);
       if (txError) throw txError;
@@ -530,7 +531,7 @@ function AccountsPage() {
         const selectedCutoff = isCurrentSelectedMonth ? today : selectedMonthEnd;
 
         for (const tx of txData) {
-          if (tx.is_visible === false) continue; // ignora transações ocultas/removidas logicamente
+          if (tx.is_visible === false || tx.transaction_status === "pending") continue;
           // Mesma regra da Home: despesas de cartão não afetam saldo bancário.
           if (tx.type === "expense" && tx.card) continue;
 
@@ -539,13 +540,13 @@ function AccountsPage() {
           const amt = Number(tx.amount) || 0;
 
           // Mapas atuais continuam alimentando ações administrativas (recalcular/ajustar saldo).
-          if (!transactionDate || transactionDate <= today) {
+          if (countsTowardCurrentBalance(tx, today)) {
             if (tx.type === "income") incMap[id] = (incMap[id] || 0) + amt;
             else expMap[id] = (expMap[id] || 0) + amt;
           }
 
           // Mapas do mês servem apenas para exibição do saldo histórico selecionado.
-          if (!transactionDate || transactionDate <= selectedCutoff) {
+          if (countsTowardCurrentBalance(tx, selectedCutoff)) {
             if (tx.type === "income") monthIncMap[id] = (monthIncMap[id] || 0) + amt;
             else monthExpMap[id] = (monthExpMap[id] || 0) + amt;
 
@@ -854,7 +855,7 @@ function AccountsPage() {
     try {
       const { data, error } = await supabase
         .from("transactions")
-        .select("id, date, description:name, amount, type, is_visible, card")
+        .select("id, date, transaction_date, description:name, amount, type, is_visible, card, transaction_status, posted_at")
         .eq("bank_account_id", a.id)
         .order("date", { ascending: false });
       if (error) throw error;
@@ -866,6 +867,7 @@ function AccountsPage() {
 
       for (const tx of data || []) {
         const amt = Number(tx.amount) || 0;
+        if (tx.transaction_status === "pending") continue;
         if (tx.card) {
           cardLinked.push(tx);
           cardSum += amt;
