@@ -217,8 +217,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
   const fetchHistory = useCallback(async () => {
     const { data, error } = await supabase
       .from("transactions")
-      .select("name, icon, category, card, bank_account_id, type, amount, date, created_at, transaction_kind, is_visible")
-      .eq("transaction_status", "posted")
+      .select("name, icon, category, card, bank_account_id, type, amount, date, created_at, transaction_kind, transaction_status, is_visible")
       .order("created_at", { ascending: false })
       .limit(500);
 
