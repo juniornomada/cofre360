@@ -569,7 +569,7 @@ export function TransactionsPage() {
     const group = parseCategoryValue(tx.category || "").group;
     if (group === "Transferências" || group === "Pagamento de Cartão" || group === "Ajustes") return "ignore";
     if ((tx.category || "").trim() === "Receita > Reembolso") return "refund";
-    return tx.type;
+    return tx.type === "income" ? "income" : "expense";
   };
 
   const filtered = filterType === "all"
