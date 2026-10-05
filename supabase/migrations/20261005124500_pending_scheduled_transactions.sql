@@ -55,7 +55,7 @@ begin
     group by bank_account_id
   )
   select
-    ba.id as account_id,
+    ba.id::uuid as account_id,
     (coalesce(ba.balance, 0) + coalesce(ts.tx_total, 0))::numeric as current_balance
   from public.bank_accounts ba
   left join tx_sums ts on ts.bank_account_id = ba.id
