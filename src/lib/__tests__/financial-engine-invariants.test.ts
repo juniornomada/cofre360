@@ -72,6 +72,36 @@ describe("financial engine invariants", () => {
     expect(computeMonthlyCategoryTotals(rows, "2026-09")).toEqual([]);
   });
 
+  it("excludes pending scheduled transactions from realized monthly facts", () => {
+    const rows: FinancialTransaction[] = [
+      tx({
+        id: "pending-pix",
+        amount: 178.15,
+        date: "2026-10-18",
+        transaction_date: "2026-10-18",
+        purchase_date: "2026-10-18",
+        bank_account_id: "checking",
+        category: "Saúde > Farmácia",
+        transaction_status: "pending",
+      }),
+      tx({
+        id: "posted-pix",
+        amount: 100,
+        date: "2026-10-03",
+        transaction_date: "2026-10-03",
+        purchase_date: "2026-10-03",
+        bank_account_id: "checking",
+        category: "Saúde > Farmácia",
+        transaction_status: "posted",
+      }),
+    ];
+
+    expect(computeMonthlyFinancialSummary(rows, cards, "2026-10").expense).toBe(100);
+    expect(computeMonthlyCategoryTotals(rows, "2026-10")).toEqual([
+      { category: "Saúde", amount: 100 },
+    ]);
+  });
+
   it("does not count old installment rows again as new monthly expenses", () => {
     const rows: FinancialTransaction[] = [
       tx({
