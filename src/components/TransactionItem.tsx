@@ -88,6 +88,7 @@ interface TransactionItemProps {
   onDuplicate?: () => void;
   is_visible?: boolean;
   transaction_status?: string | null;
+  economicAmount?: number | null;
   amountVisible?: boolean;
   onPost?: () => void;
 }
@@ -96,7 +97,7 @@ export function TransactionItem({
   id, icon, name, category, date, purchase_date, created_at, amount, type, card, cardBrand,
   bank_account_id, isTransferPair, transferFromName, transferToName,
   installment_group_id, installment_number, total_installments, style, onEdit, onDelete, onDuplicate,
-  transaction_status, amountVisible = true, onPost
+  transaction_status, economicAmount, amountVisible = true, onPost
 }: TransactionItemProps) {
   const isInstallment = !!total_installments && total_installments > 1 && !!installment_number;
   const explicitPurchaseDate = toIsoDate(purchase_date, created_at) || "";
@@ -293,13 +294,25 @@ export function TransactionItem({
               </AutoFitText>
             )}
           </p>
-          <span className={cn(
-            "text-sm font-bold tabular-nums shrink-0",
-            isTransferPair ? "text-foreground" : type === "income" ? "text-primary" : "text-destructive"
-          )}>
-            {isTransferPair ? "" : type === "expense" ? "- " : "+ "}
-            {amountVisible ? `R$ ${formatBRL(Math.abs(amount))}` : "R$ ••••"}
-          </span>
+          <div className="shrink-0 text-right">
+            <span className={cn(
+              "block text-sm font-bold tabular-nums",
+              isTransferPair ? "text-foreground" : type === "income" ? "text-primary" : "text-destructive"
+            )}>
+              {isTransferPair ? "" : type === "expense" ? "- " : "+ "}
+              {amountVisible ? `R$ ${formatBRL(Math.abs(amount))}` : "R$ ••••"}
+            </span>
+            {economicAmount != null && Math.abs(economicAmount - amount) >= 0.005 && (
+              <span
+                className="block text-[9px] font-medium tabular-nums text-muted-foreground"
+                title="Valor econômico total reconhecido nas despesas do mês"
+              >
+                {amountVisible
+                  ? `Despesa do mês: R$ ${formatBRL(Math.abs(economicAmount))}`
+                  : "Despesa do mês: R$ ••••"}
+              </span>
+            )}
+          </div>
         </div>
         <div className="flex items-center justify-between gap-2 mt-0.5">
           <div className="flex items-center gap-2 min-w-0">
