@@ -72,6 +72,42 @@ describe("financial engine invariants", () => {
     expect(computeMonthlyCategoryTotals(rows, "2026-09")).toEqual([]);
   });
 
+  it("counts a Pix installment purchase once at full value while future settlements stay pending", () => {
+    const rows: FinancialTransaction[] = [
+      tx({
+        id: "pix-1", amount: 178.15, date: "2026-10-03", transaction_date: "2026-10-03",
+        purchase_date: "2026-10-03", bank_account_id: "checking", category: "Saúde > Farmácia",
+        installment_group_id: "pix-group", installment_number: 1, total_installments: 4,
+        installment_source_amount: 712.60, installment_mode: "divide", transaction_status: "posted",
+      }),
+      tx({
+        id: "pix-2", amount: 178.15, date: "2026-10-18", transaction_date: "2026-10-18",
+        purchase_date: "2026-10-03", bank_account_id: null, category: "Saúde > Farmácia",
+        installment_group_id: "pix-group", installment_number: 2, total_installments: 4,
+        installment_source_amount: 712.60, installment_mode: "divide", transaction_status: "pending",
+      }),
+      tx({
+        id: "pix-3", amount: 178.15, date: "2026-11-02", transaction_date: "2026-11-02",
+        purchase_date: "2026-10-03", bank_account_id: null, category: "Saúde > Farmácia",
+        installment_group_id: "pix-group", installment_number: 3, total_installments: 4,
+        installment_source_amount: 712.60, installment_mode: "divide", transaction_status: "pending",
+      }),
+      tx({
+        id: "pix-4", amount: 178.15, date: "2026-11-17", transaction_date: "2026-11-17",
+        purchase_date: "2026-10-03", bank_account_id: null, category: "Saúde > Farmácia",
+        installment_group_id: "pix-group", installment_number: 4, total_installments: 4,
+        installment_source_amount: 712.60, installment_mode: "divide", transaction_status: "pending",
+      }),
+    ];
+
+    expect(computeMonthlyFinancialSummary(rows, cards, "2026-10").expense).toBe(712.60);
+    expect(computeMonthlyFinancialSummary(rows, cards, "2026-11").expense).toBe(0);
+
+    rows[1] = { ...rows[1], transaction_status: "posted", bank_account_id: "checking" };
+    expect(computeMonthlyFinancialSummary(rows, cards, "2026-10").expense).toBe(712.60);
+    expect(computeMonthlyFinancialSummary(rows, cards, "2026-11").expense).toBe(0);
+  });
+
   it("excludes pending scheduled transactions from realized monthly facts", () => {
     const rows: FinancialTransaction[] = [
       tx({
