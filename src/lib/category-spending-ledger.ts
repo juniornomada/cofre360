@@ -12,6 +12,7 @@ export type CategoryLedgerTransaction = {
   card: string | null;
   bank_account_id: string | null;
   is_visible: boolean | null;
+  transaction_status: string | null;
   created_at: string | null;
   installment_group_id: string | null;
   installment_number: number | null;
@@ -32,6 +33,7 @@ export async function fetchAllCategoryLedgerTransactions(userId: string): Promis
       // keeps the ledger compatible until the next schema type refresh.
       .select("*")
       .eq("user_id", userId)
+      .eq("transaction_status", "posted")
       .order("created_at", { ascending: false })
       .range(from, from + LEDGER_PAGE_SIZE - 1);
 
