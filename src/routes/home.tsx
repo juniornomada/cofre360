@@ -309,44 +309,38 @@ function RecoveredHome() {
   }, [transactions, selectedMonth]);
 
   const monthly = useMemo(() => {
-  let income = 0;
-  let expense = 0;
-  const cardByName = new Map(cards.map((card) => [card.name, card]));
+    let income = 0;
+    let expense = 0;
 
-  for (const tx of transactions) {
-    if (tx.is_visible === false) continue;
-    const transactionDate = safeDate(tx.date, tx.created_at);
-    if (!transactionDate) continue;
+    // Fallback uses the same purchase-date economic ledger as the canonical RPC.
+    // Installments are collapsed to one full purchase in the original month.
+    for (const tx of categoryLedgerTransactions) {
+      if (tx.is_visible === false) continue;
+      const transactionDate = safeDate(tx.date, tx.created_at);
+      if (!transactionDate) continue;
+      if (
+        transactionDate.getFullYear() !== selectedMonth.getFullYear() ||
+        transactionDate.getMonth() !== selectedMonth.getMonth()
+      ) continue;
 
-    let belongsToSelectedMonth =
-      transactionDate.getFullYear() === selectedMonth.getFullYear() &&
-      transactionDate.getMonth() === selectedMonth.getMonth();
+      const mainCategory = (tx.category || "").split(" > ")[0]?.trim() || "";
+      const normalizedCategory = normalizeCategoryLabel(mainCategory);
+      const normalizedFullCategory = normalizeCategoryLabel(tx.category);
+      const isTransfer = normalizedCategory === "transferencia" || normalizedCategory === "transferencias";
+      const isAdjustment = normalizedCategory === "ajustes";
+      const isRefund = normalizedFullCategory === "receita > reembolso";
 
-    if (tx.card) {
-      const card = cardByName.get(tx.card);
-      if (card) {
-        belongsToSelectedMonth = getBillingCycleMonthKey(tx.date || "", tx.created_at || "", card.closing_day) === selectedMonthKey;
+      if (isTransfer || isAdjustment || isCardPaymentCategory(tx.category)) continue;
+      if (isRefund) {
+        expense -= Number(tx.amount || 0);
+        continue;
       }
+      if (tx.type === "income") income += Number(tx.amount || 0);
+      else expense += Number(tx.amount || 0);
     }
-    if (!belongsToSelectedMonth) continue;
 
-    const mainCategory = (tx.category || "").split(" > ")[0]?.trim() || "";
-    const normalizedCategory = normalizeCategoryLabel(mainCategory);
-    const normalizedFullCategory = normalizeCategoryLabel(tx.category);
-    const isTransfer = normalizedCategory === "transferencia" || normalizedCategory === "transferencias";
-    const isAdjustment = normalizedCategory === "ajustes";
-    const isRefund = normalizedFullCategory === "receita > reembolso";
-
-    if (isTransfer || isAdjustment) continue;
-    if (isRefund) {
-      expense -= Number(tx.amount || 0);
-      continue;
-    }
-    if (tx.type === "income") income += Number(tx.amount || 0);
-    else if (!isCardPaymentCategory(tx.category)) expense += Number(tx.amount || 0);
-  }
-  return { income, expense };
-}, [transactions, cards, selectedMonth, selectedMonthKey]);
+    return { income, expense };
+  }, [categoryLedgerTransactions, selectedMonth]);
   const displayedMonthly = canonicalFacts
     ? { income: canonicalFacts.income, expense: canonicalFacts.expense }
     : monthly;

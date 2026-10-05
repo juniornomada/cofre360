@@ -42,12 +42,12 @@ describe("financial engine invariants", () => {
     expect(computeMonthlyFinancialSummary(rows, cards, "2026-09")).toMatchObject({ income: 0, expense: 75, refunds: 25 });
   });
 
-  it("puts a card purchase on the closing day into the next invoice month", () => {
+  it("keeps economic spending in the purchase month even when the card invoice rolls forward", () => {
     const rows: FinancialTransaction[] = [
       tx({ id: "card", amount: 90, date: "2026-09-03", transaction_date: "2026-09-03", card: "Porto Bank", card_id: "porto" }),
     ];
-    expect(computeMonthlyFinancialSummary(rows, cards, "2026-09").expense).toBe(0);
-    expect(computeMonthlyFinancialSummary(rows, cards, "2026-10").expense).toBe(90);
+    expect(computeMonthlyFinancialSummary(rows, cards, "2026-09").expense).toBe(90);
+    expect(computeMonthlyFinancialSummary(rows, cards, "2026-10").expense).toBe(0);
   });
 
   it("counts an installment purchase once by purchase date and full economic value", () => {
@@ -70,6 +70,30 @@ describe("financial engine invariants", () => {
     ];
     expect(computeMonthlyCategoryTotals(rows, "2026-08")).toEqual([{ category: "Compras", amount: 300 }]);
     expect(computeMonthlyCategoryTotals(rows, "2026-09")).toEqual([]);
+  });
+
+  it("does not count old installment rows again as new monthly expenses", () => {
+    const rows: FinancialTransaction[] = [
+      tx({
+        id: "p1", amount: 100, card: "Porto Bank", card_id: "porto",
+        category: "Compras > Online", date: "2026-08-10", transaction_date: "2026-08-10", purchase_date: "2026-08-10",
+        installment_group_id: "g-old", installment_number: 1, total_installments: 3, installment_source_amount: 300,
+      }),
+      tx({
+        id: "p2", amount: 100, card: "Porto Bank", card_id: "porto",
+        category: "Compras > Online", date: "2026-09-10", transaction_date: "2026-09-10", purchase_date: "2026-08-10",
+        installment_group_id: "g-old", installment_number: 2, total_installments: 3, installment_source_amount: 300,
+      }),
+      tx({
+        id: "p3", amount: 100, card: "Porto Bank", card_id: "porto",
+        category: "Compras > Online", date: "2026-10-10", transaction_date: "2026-10-10", purchase_date: "2026-08-10",
+        installment_group_id: "g-old", installment_number: 3, total_installments: 3, installment_source_amount: 300,
+      }),
+    ];
+
+    expect(computeMonthlyFinancialSummary(rows, cards, "2026-08").expense).toBe(300);
+    expect(computeMonthlyFinancialSummary(rows, cards, "2026-09").expense).toBe(0);
+    expect(computeMonthlyFinancialSummary(rows, cards, "2026-10").expense).toBe(0);
   });
 
   it("keeps the card sum equal to the card component of DESPESAS", () => {

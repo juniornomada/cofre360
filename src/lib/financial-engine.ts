@@ -110,9 +110,11 @@ function cardForTransaction(tx: FinancialTransaction, cards: FinancialCard[]) {
 }
 
 /**
- * Economic DESPESAS uses the invoice cycle for credit-card movements and
- * calendar month for account/cash movements. This is the canonical rule used
- * across Home, Transactions, Insights and consistency checks.
+ * Invoice/cash-flow helper kept for card-cycle views.
+ *
+ * IMPORTANT: economic DESPESAS does NOT use this helper. Economic spending is
+ * recognized once, in the original purchase month, for the full purchase value.
+ * Card invoice cycles remain a separate cash-flow perspective.
  */
 export function belongsToExpenseMonth(tx: FinancialTransaction, targetMonthKey: string, cards: FinancialCard[]) {
   if (tx.is_visible === false) return false;
@@ -142,9 +144,16 @@ export function computeMonthlyFinancialSummary(
   let cardExpenseComponent = 0;
   let refunds = 0;
 
+  // Income/yield and confirmed refunds are recognized in their transaction
+  // month. Refunds reduce DESPESAS and never become revenue.
   for (const tx of transactions) {
-    if (!belongsToExpenseMonth(tx, targetMonthKey, cards)) continue;
+    if (tx.is_visible === false) continue;
     const kind = inferTransactionKind(tx);
+    if (kind !== "income" && kind !== "yield" && kind !== "refund") continue;
+
+    const date = canonicalTransactionDate(tx);
+    if (!date || monthKeyFromDate(date) !== targetMonthKey) continue;
+
     const amount = Number(tx.amount || 0);
     if (!Number.isFinite(amount)) continue;
 
@@ -152,14 +161,28 @@ export function computeMonthlyFinancialSummary(
       expense -= amount;
       refunds += amount;
       if (tx.card || tx.card_id) cardExpenseComponent -= amount;
-      continue;
-    }
-    if (kind === "income" || kind === "yield") {
+    } else {
       income += amount;
-      continue;
     }
-    if (kind !== "expense") continue;
+  }
 
+  // Economic expenses are purchase-date based. Installment groups collapse to
+  // one row carrying the full original purchase amount, so future installments
+  // never become new spending again.
+  const expenseRows = collapseCategorySpendingRows(
+    transactions.filter((tx) => tx.is_visible !== false && inferTransactionKind(tx) === "expense"),
+  );
+
+  for (const tx of expenseRows) {
+    const date = canonicalTransactionDate({
+      transaction_date: tx.purchase_date || tx.date || null,
+      date: tx.purchase_date || tx.date || null,
+      created_at: tx.created_at || null,
+    });
+    if (!date || monthKeyFromDate(date) !== targetMonthKey) continue;
+
+    const amount = Number(tx.amount || 0);
+    if (!Number.isFinite(amount)) continue;
     expense += amount;
     if (tx.card || tx.card_id) cardExpenseComponent += amount;
   }
@@ -212,21 +235,49 @@ export function computeCardConsistency(
   targetMonthKey: string,
 ) {
   const byCard = new Map<string, number>();
-  for (const tx of transactions) {
-    if (!belongsToExpenseMonth(tx, targetMonthKey, cards)) continue;
+
+  const economicExpenses = collapseCategorySpendingRows(
+    transactions.filter((tx) => tx.is_visible !== false && inferTransactionKind(tx) === "expense"),
+  );
+
+  for (const tx of economicExpenses) {
+    const date = canonicalTransactionDate({
+      transaction_date: tx.purchase_date || tx.date || null,
+      date: tx.purchase_date || tx.date || null,
+      created_at: tx.created_at || null,
+    });
+    if (!date || monthKeyFromDate(date) !== targetMonthKey) continue;
     if (!tx.card && !tx.card_id) continue;
-    const kind = inferTransactionKind(tx);
-    if (kind !== "expense" && kind !== "refund") continue;
+
     const card = cardForTransaction(tx, cards);
     const label = card?.name || tx.card || "Cartão";
-    const amount = Number(tx.amount || 0) * (kind === "refund" ? -1 : 1);
+    const amount = Number(tx.amount || 0);
+    if (!Number.isFinite(amount)) continue;
     byCard.set(label, (byCard.get(label) || 0) + amount);
   }
+
+  // Card refunds are current-month abatements of economic spending.
+  for (const tx of transactions) {
+    if (tx.is_visible === false || inferTransactionKind(tx) !== "refund") continue;
+    if (!tx.card && !tx.card_id) continue;
+    const date = canonicalTransactionDate(tx);
+    if (!date || monthKeyFromDate(date) !== targetMonthKey) continue;
+
+    const card = cardForTransaction(tx, cards);
+    const label = card?.name || tx.card || "Cartão";
+    const amount = Number(tx.amount || 0);
+    if (!Number.isFinite(amount)) continue;
+    byCard.set(label, (byCard.get(label) || 0) - amount);
+  }
+
   const cardsTotal = [...byCard.values()].reduce((sum, value) => sum + value, 0);
   const expected = computeMonthlyFinancialSummary(transactions, cards, targetMonthKey).cardExpenseComponent;
   const round = (value: number) => Math.round((value + Number.EPSILON) * 100) / 100;
   return {
-    cards: [...byCard.entries()].map(([card, amount]) => ({ card, amount: round(amount) })).sort((a, b) => b.amount - a.amount),
+    cards: [...byCard.entries()]
+      .map(([card, amount]) => ({ card, amount: round(amount) }))
+      .filter((item) => Math.abs(item.amount) >= 0.005)
+      .sort((a, b) => b.amount - a.amount),
     cardsTotal: round(cardsTotal),
     expenseCardComponent: round(expected),
     delta: round(cardsTotal - expected),
