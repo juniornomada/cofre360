@@ -18,7 +18,9 @@ interface CategoryPieChartsProps {
   transactions: Transaction[];
   formatCurrency: (value: number) => string;
   onCategoryClick?: (categoryGroup: string) => void;
+  onSubcategoryClick?: (subcategory: string) => void;
   activeCategory?: string;
+  activeSubcategory?: string | null;
   amountVisible?: boolean;
 }
 
@@ -91,7 +93,15 @@ const CustomTooltip = ({ active, payload, formatCurrency }: any) => {
   );
 };
 
-export function CategoryPieCharts({ transactions, formatCurrency, onCategoryClick, activeCategory, amountVisible = false }: CategoryPieChartsProps) {
+export function CategoryPieCharts({
+  transactions,
+  formatCurrency,
+  onCategoryClick,
+  onSubcategoryClick,
+  activeCategory,
+  activeSubcategory,
+  amountVisible = false,
+}: CategoryPieChartsProps) {
   const isDrilldown = !!activeCategory && activeCategory !== "Todas";
   const expenseLevel: "group" | "sub" = isDrilldown ? "sub" : "group";
 
@@ -126,12 +136,19 @@ export function CategoryPieCharts({ transactions, formatCurrency, onCategoryClic
     else onCategoryClick(name);
   };
 
+  const handleSubcategoryClick = (name: string) => {
+    if (!isDrilldown || !onSubcategoryClick) return;
+    onSubcategoryClick(activeSubcategory === name ? "" : name);
+  };
+
   const renderBarCard = (
     data: ReturnType<typeof aggregateByLevel>,
     kind: "expense" | "income" | "refund",
   ) => {
     const max = Math.max(...data.map((item) => item.value), 1);
-    const interactive = kind === "expense" && !isDrilldown && !!onCategoryClick;
+    const interactive =
+      kind === "expense" &&
+      ((!isDrilldown && !!onCategoryClick) || (isDrilldown && !!onSubcategoryClick));
     const title = kind === "expense"
       ? (isDrilldown ? (activeCategory || "Despesas") : "Despesas por categoria")
       : kind === "income"
@@ -149,12 +166,18 @@ export function CategoryPieCharts({ transactions, formatCurrency, onCategoryClic
 
         <div className="mt-2 flex min-h-0 flex-1 flex-col justify-center gap-1.5">
           {data.map((item, i) => {
-            const isActive = kind === "expense" && !isDrilldown && activeCategory === item.name;
+            const isActive =
+              kind === "expense" &&
+              (isDrilldown ? activeSubcategory === item.name : activeCategory === item.name);
             return (
               <button
                 key={item.name}
                 type="button"
-                onClick={interactive ? (() => handleExpenseClick(item.name)) : undefined}
+                onClick={
+                  interactive
+                    ? (() => isDrilldown ? handleSubcategoryClick(item.name) : handleExpenseClick(item.name))
+                    : undefined
+                }
                 disabled={!interactive}
                 aria-pressed={isActive}
                 className={`group rounded-lg px-1.5 py-1 text-left transition-colors ${isActive ? "bg-primary/10" : interactive ? "hover:bg-accent/30" : ""}`}
@@ -184,7 +207,7 @@ export function CategoryPieCharts({ transactions, formatCurrency, onCategoryClic
 
   const renderExpenseDonut = (data: ReturnType<typeof aggregateByLevel>) => {
     const title = isDrilldown ? (activeCategory || "Despesas") : "Despesas por categoria";
-    const interactive = !isDrilldown && !!onCategoryClick;
+    const interactive = isDrilldown ? !!onSubcategoryClick : !!onCategoryClick;
 
     return (
       <div className="flex h-full min-h-0 min-w-0 flex-col rounded-xl border border-border/20 bg-card p-2.5 sm:p-3">
@@ -212,11 +235,23 @@ export function CategoryPieCharts({ transactions, formatCurrency, onCategoryClic
                     dataKey="value"
                     animationBegin={0}
                     animationDuration={600}
-                    onClick={interactive ? ((payload: { name?: string } | undefined) => payload?.name && handleExpenseClick(payload.name)) : undefined}
+                    onClick={
+                      interactive
+                        ? ((payload: { name?: string } | undefined) => {
+                            if (!payload?.name) return;
+                            if (isDrilldown) handleSubcategoryClick(payload.name);
+                            else handleExpenseClick(payload.name);
+                          })
+                        : undefined
+                    }
                   >
                     {data.map((item, i) => {
-                      const isDimmed = !isDrilldown && !!activeCategory && activeCategory !== "Todas" && activeCategory !== item.name;
-                      const isActive = !isDrilldown && activeCategory === item.name;
+                      const isDimmed = isDrilldown
+                        ? !!activeSubcategory && activeSubcategory !== item.name
+                        : !!activeCategory && activeCategory !== "Todas" && activeCategory !== item.name;
+                      const isActive = isDrilldown
+                        ? activeSubcategory === item.name
+                        : activeCategory === item.name;
                       return (
                         <Cell
                           key={i}
@@ -238,13 +273,19 @@ export function CategoryPieCharts({ transactions, formatCurrency, onCategoryClic
           <div className="min-w-0 py-1">
             <div className="flex flex-col gap-0.5">
               {data.map((item, i) => {
-                const isActive = !isDrilldown && activeCategory === item.name;
+                const isActive = isDrilldown
+                  ? activeSubcategory === item.name
+                  : activeCategory === item.name;
                 return (
                   <button
                     key={item.name}
                     type="button"
                     title={`${item.name}: ${item.percentage.toFixed(0)}%`}
-                    onClick={interactive ? (() => handleExpenseClick(item.name)) : undefined}
+                    onClick={
+                      interactive
+                        ? (() => isDrilldown ? handleSubcategoryClick(item.name) : handleExpenseClick(item.name))
+                        : undefined
+                    }
                     disabled={!interactive}
                     aria-pressed={isActive}
                     className={`flex w-full min-w-0 items-start gap-1 rounded-md px-1 py-0.5 text-[10px] transition-colors ${isActive ? "bg-primary/15 text-foreground" : "text-muted-foreground"}`}
