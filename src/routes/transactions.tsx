@@ -604,7 +604,7 @@ export function TransactionsPage() {
   // original purchase month + full purchase value, counted once.
   // Keep a group-level base so the subcategory chart preserves all percentages
   // while the list/total can drill into one selected subcategory.
-  const categoryEconomicBaseRows = categoryLedgerTransactions.filter((tx) => {
+  const categoryEconomicRows = categoryLedgerTransactions.filter((tx) => {
     if (tx.is_visible === false) return false;
 
     const categoryValue = String(tx.category || "Outros");
@@ -650,19 +650,19 @@ export function TransactionsPage() {
     return true;
   });
 
-  const categoryEconomicRows = activeSubcategory
-    ? categoryEconomicBaseRows.filter((tx) =>
+  const subcategoryEconomicRows = activeSubcategory
+    ? categoryEconomicRows.filter((tx) =>
         matchesTransactionCategoryDrilldown(
           tx.category,
           activeCategory,
           activeSubcategory,
         ),
       )
-    : categoryEconomicBaseRows;
+    : categoryEconomicRows;
 
   // The ledger is already collapsed. Strip installment metadata before sending
   // rows to category charts so a purchase cannot be expanded a second time.
-  const categoryChartTransactions = categoryEconomicBaseRows.map((tx) => ({
+  const categoryChartTransactions = categoryEconomicRows.map((tx) => ({
     id: tx.id,
     category: String(tx.category || "Outros"),
     amount: Number(tx.amount || 0),
@@ -677,7 +677,7 @@ export function TransactionsPage() {
   // ledger, so the visible list and totals stay on the same full-value basis.
   const categoryScopeActive = !isYieldView && (activeCategory !== "Todas" || activeSource === "card" || filterType !== "all");
 
-  const categoryListTransactions: Transaction[] = categoryEconomicRows.map((tx) => {
+  const categoryListTransactions: Transaction[] = subcategoryEconomicRows.map((tx) => {
     const original = transactions.find((item) => item.id === tx.id);
     const categoryValue = String(tx.category || original?.category || "Outros");
     const group = parseCategoryValue(categoryValue).group || categoryValue;
@@ -766,13 +766,13 @@ export function TransactionsPage() {
     localStorage.setItem("transactions_filter_source", "all");
   };
 
-  const localTotalIncome = categoryEconomicRows
+  const localTotalIncome = subcategoryEconomicRows
     .filter((tx) => getEconomicSummaryKind(tx) === "income")
     .reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
-  const localGrossExpense = categoryEconomicRows
+  const localGrossExpense = subcategoryEconomicRows
     .filter((tx) => getEconomicSummaryKind(tx) === "expense")
     .reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
-  const localRefundAmount = categoryEconomicRows
+  const localRefundAmount = subcategoryEconomicRows
     .filter((tx) => getEconomicSummaryKind(tx) === "refund")
     .reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
 
