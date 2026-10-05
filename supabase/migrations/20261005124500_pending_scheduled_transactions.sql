@@ -23,6 +23,32 @@ $$;
 create index if not exists transactions_user_status_date_idx
   on public.transactions (user_id, transaction_status, transaction_date);
 
+
+-- Existing Droga Raia 4x Pix schedule: one economic purchase on 2026-10-03
+-- (R$ 712,60), with the remaining Pix installments acting only as cash
+-- settlements. The first installment was already paid; the future ones must
+-- wait for explicit posting and account selection.
+update public.transactions
+set
+  installment_group_id = '85a36adc-fa2d-470d-8841-df66bc1d3694'::uuid,
+  installment_number = case
+    when name = 'Droga Raia 1/4' then 1
+    when name = 'Droga Raia 2/4' then 2
+    when name = 'Droga Raia 3/4' then 3
+    when name = 'Droga Raia 4/4' then 4
+  end,
+  total_installments = 4,
+  installment_source_amount = 712.60,
+  installment_mode = 'divide',
+  purchase_date = date '2026-10-03',
+  transaction_status = case when name = 'Droga Raia 1/4' then 'posted' else 'pending' end,
+  posted_at = case when name = 'Droga Raia 1/4' then posted_at else null end,
+  bank_account_id = case when name = 'Droga Raia 1/4' then bank_account_id else null end
+where name in ('Droga Raia 1/4','Droga Raia 2/4','Droga Raia 3/4','Droga Raia 4/4')
+  and amount = 178.15
+  and coalesce(card,'') = '';
+
+
 create or replace function public.get_bank_account_balances(user_id_param uuid)
 returns table(account_id uuid, current_balance numeric)
 language plpgsql
