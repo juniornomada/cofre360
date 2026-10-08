@@ -77,13 +77,9 @@ function getAddButton(): HTMLButtonElement {
   return screen.getByRole("button", { name: /^Adicionar$/ }) as HTMLButtonElement;
 }
 
-const parcelaAtualLabelMatcher = (_: string, el: Element | null) =>
-  el?.tagName === "LABEL" && /Parcela atual/.test(el.textContent || "");
-
 function getParcelaAtualInput(): HTMLInputElement {
-  const label = screen.getByText(parcelaAtualLabelMatcher);
-  const wrapper = label.parentElement!;
-  return wrapper.querySelector('input[type="number"][max]') as HTMLInputElement;
+  // Identifica o campo pelo rótulo acessível, sem depender da estrutura visual.
+  return screen.getByRole("spinbutton", { name: "Parcela atual" }) as HTMLInputElement;
 }
 
 async function prepareParceladoDialog() {
