@@ -1250,10 +1250,14 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                               type="button"
                               aria-label="Diminuir total de parcelas"
                               onClick={() => {
-                                const current = Math.max(2, Number(installmentCount) || 2);
-                                const next = Math.max(2, current - 1);
-                                setInstallmentCount(next);
-                                setInstallmentStart(prev => Math.min(Math.max(1, Number(prev) || 1), next));
+                                setInstallmentCount((previous) => {
+                                  const current = Math.max(2, Number(previous) || 2);
+                                  const next = Math.max(2, current - 1);
+                                  setInstallmentStart((start) =>
+                                    Math.min(Math.max(1, Number(start) || 1), next),
+                                  );
+                                  return next;
+                                });
                               }}
                               disabled={(Number(installmentCount) || 2) <= 2}
                               className="h-10 rounded-xl border border-border bg-card text-lg font-bold text-foreground transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-35"
@@ -1292,8 +1296,10 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                               type="button"
                               aria-label="Aumentar total de parcelas"
                               onClick={() => {
-                                const current = Math.max(2, Number(installmentCount) || 2);
-                                setInstallmentCount(Math.min(48, current + 1));
+                                setInstallmentCount((previous) => {
+                                  const current = Math.max(2, Number(previous) || 2);
+                                  return Math.min(48, current + 1);
+                                });
                               }}
                               disabled={(Number(installmentCount) || 2) >= 48}
                               className="h-10 rounded-xl border border-primary/40 bg-primary/10 text-lg font-bold text-primary transition-colors hover:bg-primary/20 disabled:cursor-not-allowed disabled:opacity-35"
