@@ -109,6 +109,24 @@ describe("QuickAddTransactionDialog — validação de 'Parcela atual'", () => {
     expect(getAddButton()).not.toBeDisabled();
   });
 
+  it("identifica visualmente o início e a quantidade de parcelas", async () => {
+    await prepareParceladoDialog();
+
+    const start = getParcelaAtualInput();
+    const count = screen.getByRole("spinbutton", { name: "Total de parcelas" }) as HTMLInputElement;
+
+    expect(screen.getByText("Em qual parcela começar?")).toBeInTheDocument();
+    expect(screen.getByText("Quantidade de parcelas")).toBeInTheDocument();
+    expect(screen.getByText("Parcela atual").closest("label")).toHaveAttribute("for", "quickadd-installment-start");
+    expect(screen.getByText("Total de parcelas").closest("label")).toHaveAttribute("for", "quickadd-installment-count");
+    expect(start).toHaveAttribute("id", "quickadd-installment-start");
+    expect(count).toHaveAttribute("id", "quickadd-installment-count");
+
+    fireEvent.click(screen.getByRole("button", { name: "Aumentar total de parcelas" }));
+    expect(count.value).toBe("3");
+    expect(start.value).toBe("1");
+  });
+
   it("vazio → mensagem 'Informe a parcela atual' e botão desabilitado", async () => {
     await prepareParceladoDialog();
     const input = getParcelaAtualInput();
