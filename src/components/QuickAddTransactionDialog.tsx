@@ -1245,6 +1245,31 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                         </div>
                         <div>
                           <label className="text-[11px] font-semibold text-foreground mb-1 block">Total de parcelas</label>
+                          <div className="mb-2 grid grid-cols-7 gap-1" aria-label="Atalhos de total de parcelas">
+                            {[2, 3, 4, 5, 6, 10, 12].map((count) => {
+                              const active = Number(installmentCount) === count;
+                              return (
+                                <button
+                                  key={count}
+                                  type="button"
+                                  aria-label={`${count}x`}
+                                  onClick={() => {
+                                    setInstallmentCount(count);
+                                    setInstallmentStart((previous) =>
+                                      Math.min(Math.max(1, Number(previous) || 1), count),
+                                    );
+                                  }}
+                                  className={`h-8 rounded-lg border text-[10px] font-bold tabular-nums transition-colors ${
+                                    active
+                                      ? "border-primary bg-primary text-primary-foreground"
+                                      : "border-border bg-card text-foreground hover:bg-accent"
+                                  }`}
+                                >
+                                  {count}x
+                                </button>
+                              );
+                            })}
+                          </div>
                           <div className="grid grid-cols-[44px_1fr_44px] items-center gap-2">
                             <button
                               type="button"
