@@ -5,7 +5,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { parseCategoryValue, getCategoryIcon, categoryTree } from "@/lib/categories";
 import { inferYieldTransactionFields, isAccountYieldComponent } from "@/lib/account-yield";
 import { fetchAllCategoryLedgerTransactions, type CategoryLedgerTransaction } from "@/lib/category-spending-ledger";
-import { Search, Pencil, Trash2, Plus, CalendarIcon, Loader2, Upload, CheckSquare, Square, X, SlidersHorizontal, ArrowLeftRight, ArrowRight, Eye, EyeOff, FileText, GripVertical, ArrowLeft, Landmark, CreditCard, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { Search, Pencil, Trash2, Plus, CalendarIcon, Loader2, Upload, CheckSquare, Square, X, SlidersHorizontal, ArrowLeftRight, ArrowRight, Eye, EyeOff, FileText, GripVertical, ArrowLeft, Landmark, CreditCard, ArrowUpRight, ArrowDownRight, CirclePlay, Info, Layers } from "lucide-react";
 import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react";
 
 const CsvImportDialog = lazy(() => import("@/components/CsvImportDialog").then(m => ({ default: m.CsvImportDialog })));
@@ -33,7 +33,6 @@ import { toDivideMode, toFixedMode, validateInstallmentInputs, changeInstallment
 import { deleteTransactionScope, isInstallmentTx } from "@/lib/installment-delete";
 import { loadEditDraft, saveEditDraft, clearEditDraft } from "@/lib/edit-transaction-draft";
 import { toast } from "sonner";
-import { Layers } from "lucide-react";
 import { useUserPreferences } from "@/hooks/use-user-preferences";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -2450,8 +2449,73 @@ export function TransactionsPage() {
                   <span className="text-xs font-medium text-foreground">Parcelamento</span>
                 </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-[10px] text-muted-foreground block">Quantidade de parcelas</label>
+                {(Number(editTx.total_installments) || 1) > 1 && (
+                    <div className="space-y-2 rounded-xl border border-blue-500/70 bg-blue-500/5 p-2.5 ring-1 ring-blue-500/15">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <CirclePlay className="h-4 w-4 shrink-0 text-blue-400" aria-hidden="true" />
+                        <label htmlFor="edit-installment-current" className="inline-flex flex-wrap items-baseline gap-x-1.5 rounded-lg bg-blue-700 px-2.5 py-1.5 text-xs font-bold leading-tight text-white">
+                          Parcela atual <span className="text-[11px] font-medium text-blue-100">(lançar a partir de)</span>
+                        </label>
+                        <span className="inline-flex items-center gap-1 text-[10px] font-medium text-blue-300">
+                          <Info className="h-3 w-3 shrink-0" aria-hidden="true" /> Em qual parcela começar?
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-[48px_1fr_48px] items-center gap-2">
+                        <button
+                          type="button"
+                          aria-label="Diminuir parcela atual"
+                          onClick={() => {
+                            const total = Math.max(1, Number(editTx.total_installments) || 1);
+                            const current = Math.max(1, Math.min(total, Number(editTx.installment_number) || 1));
+                            setEditTx({ ...editTx, installment_number: Math.max(1, current - 1) });
+                          }}
+                          disabled={(Number(editTx.installment_number) || 1) <= 1}
+                          className="h-10 rounded-xl border border-border bg-background text-lg font-bold text-foreground transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-35"
+                        >
+                          −
+                        </button>
+                        <input
+                          id="edit-installment-current"
+                          type="number"
+                          inputMode="numeric"
+                          min={1}
+                          max={Number(editTx.total_installments) || 1}
+                          value={editTx.installment_number ?? ""}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            setEditTx({ ...editTx, installment_number: value === "" ? null : Number(value) });
+                          }}
+                          aria-label="Parcela atual"
+                          className="h-10 min-w-0 rounded-xl border border-blue-500/30 bg-background px-3 text-center text-sm font-bold tabular-nums text-foreground outline-none focus:border-blue-400"
+                        />
+                        <button
+                          type="button"
+                          aria-label="Aumentar parcela atual"
+                          onClick={() => {
+                            const total = Math.max(1, Number(editTx.total_installments) || 1);
+                            const current = Math.max(1, Math.min(total, Number(editTx.installment_number) || 1));
+                            setEditTx({ ...editTx, installment_number: Math.min(total, current + 1) });
+                          }}
+                          disabled={(Number(editTx.installment_number) || 1) >= (Number(editTx.total_installments) || 1)}
+                          className="h-10 rounded-xl border border-primary/40 bg-primary/10 text-lg font-bold text-primary transition-colors hover:bg-primary/20 disabled:cursor-not-allowed disabled:opacity-35"
+                        >
+                          +
+                        </button>
+                      </div>
+                      <p className="text-[9px] leading-relaxed text-muted-foreground">
+                        Ex.: altere 3 de 4 para 2 de 4. A sequência futura e as datas serão corrigidas automaticamente.
+                      </p>
+                    </div>
+                )}
+
+                <div className="space-y-2 rounded-xl border border-violet-500/70 bg-violet-500/5 p-2.5 ring-1 ring-violet-500/15">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <Layers className="h-4 w-4 shrink-0 text-violet-400" aria-hidden="true" />
+                    <span className="rounded-lg bg-violet-700 px-2.5 py-1.5 text-xs font-bold leading-tight text-white">Total de parcelas</span>
+                    <span className="inline-flex items-center gap-1 text-[10px] font-medium text-violet-300">
+                      <Info className="h-3 w-3 shrink-0" aria-hidden="true" /> Quantidade de parcelas
+                    </span>
+                  </div>
                   <div className="grid grid-cols-[48px_1fr_48px] items-center gap-2">
                     <button
                       type="button"
@@ -2482,7 +2546,7 @@ export function TransactionsPage() {
                     </button>
                     <div
                       aria-live="polite"
-                      className="flex h-10 items-center justify-center rounded-xl border border-border bg-background px-3 text-sm font-bold tabular-nums text-foreground"
+                      className="flex h-10 items-center justify-center rounded-xl border border-violet-500/30 bg-background px-3 text-sm font-bold tabular-nums text-foreground"
                     >
                       {(Number(editTx.total_installments) || 1) > 1 ? Number(editTx.total_installments) : "—"}
                     </div>
@@ -2514,53 +2578,6 @@ export function TransactionsPage() {
 
                 {(Number(editTx.total_installments) || 1) > 1 && (
                   <>
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] text-muted-foreground block">Parcela atual <span className="font-normal">(lançar a partir de)</span></label>
-                      <div className="grid grid-cols-[48px_1fr_48px] items-center gap-2">
-                        <button
-                          type="button"
-                          aria-label="Diminuir parcela atual"
-                          onClick={() => {
-                            const total = Math.max(1, Number(editTx.total_installments) || 1);
-                            const current = Math.max(1, Math.min(total, Number(editTx.installment_number) || 1));
-                            setEditTx({ ...editTx, installment_number: Math.max(1, current - 1) });
-                          }}
-                          disabled={(Number(editTx.installment_number) || 1) <= 1}
-                          className="h-10 rounded-xl border border-border bg-background text-lg font-bold text-foreground transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-35"
-                        >
-                          −
-                        </button>
-                        <input
-                          type="number"
-                          inputMode="numeric"
-                          min={1}
-                          max={Number(editTx.total_installments) || 1}
-                          value={editTx.installment_number ?? ""}
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            setEditTx({ ...editTx, installment_number: value === "" ? null : Number(value) });
-                          }}
-                          aria-label="Parcela atual"
-                          className="h-10 min-w-0 rounded-xl border border-border bg-background px-3 text-center text-sm font-bold tabular-nums text-foreground outline-none focus:border-primary/60"
-                        />
-                        <button
-                          type="button"
-                          aria-label="Aumentar parcela atual"
-                          onClick={() => {
-                            const total = Math.max(1, Number(editTx.total_installments) || 1);
-                            const current = Math.max(1, Math.min(total, Number(editTx.installment_number) || 1));
-                            setEditTx({ ...editTx, installment_number: Math.min(total, current + 1) });
-                          }}
-                          disabled={(Number(editTx.installment_number) || 1) >= (Number(editTx.total_installments) || 1)}
-                          className="h-10 rounded-xl border border-primary/40 bg-primary/10 text-lg font-bold text-primary transition-colors hover:bg-primary/20 disabled:cursor-not-allowed disabled:opacity-35"
-                        >
-                          +
-                        </button>
-                      </div>
-                      <p className="text-[9px] leading-relaxed text-muted-foreground">
-                        Ex.: altere 3 de 4 para 2 de 4. A sequência futura e as datas serão corrigidas automaticamente.
-                      </p>
-                    </div>
                     <div>
                       <label className="text-[10px] text-muted-foreground mb-1 block">Modo de cálculo</label>
                       <div className="flex gap-2">
