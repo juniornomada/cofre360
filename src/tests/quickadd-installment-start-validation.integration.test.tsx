@@ -77,13 +77,9 @@ function getAddButton(): HTMLButtonElement {
   return screen.getByRole("button", { name: /^Adicionar$/ }) as HTMLButtonElement;
 }
 
-const parcelaAtualLabelMatcher = (_: string, el: Element | null) =>
-  el?.tagName === "LABEL" && /Parcela atual/.test(el.textContent || "");
-
 function getParcelaAtualInput(): HTMLInputElement {
-  const label = screen.getByText(parcelaAtualLabelMatcher);
-  const wrapper = label.parentElement!;
-  return wrapper.querySelector('input[type="number"][max]') as HTMLInputElement;
+  // Identifica o campo pelo rótulo acessível, sem depender da estrutura visual.
+  return screen.getByRole("spinbutton", { name: "Parcela atual" }) as HTMLInputElement;
 }
 
 async function prepareParceladoDialog() {
@@ -111,6 +107,24 @@ describe("QuickAddTransactionDialog — validação de 'Parcela atual'", () => {
     await prepareParceladoDialog();
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
     expect(getAddButton()).not.toBeDisabled();
+  });
+
+  it("identifica visualmente o início e a quantidade de parcelas", async () => {
+    await prepareParceladoDialog();
+
+    const start = getParcelaAtualInput();
+    const count = screen.getByRole("spinbutton", { name: "Total de parcelas" }) as HTMLInputElement;
+
+    expect(screen.getByText("Em qual parcela começar?")).toBeInTheDocument();
+    expect(screen.getByText("Quantidade de parcelas")).toBeInTheDocument();
+    expect(screen.getByText("Parcela atual").closest("label")).toHaveAttribute("for", "quickadd-installment-start");
+    expect(screen.getByText("Total de parcelas").closest("label")).toHaveAttribute("for", "quickadd-installment-count");
+    expect(start).toHaveAttribute("id", "quickadd-installment-start");
+    expect(count).toHaveAttribute("id", "quickadd-installment-count");
+
+    fireEvent.click(screen.getByRole("button", { name: "Aumentar total de parcelas" }));
+    expect(count.value).toBe("3");
+    expect(start.value).toBe("1");
   });
 
   it("vazio → mensagem 'Informe a parcela atual' e botão desabilitado", async () => {

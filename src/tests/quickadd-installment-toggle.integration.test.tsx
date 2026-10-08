@@ -110,6 +110,8 @@ describe("QuickAddTransactionDialog — alternância divide ↔ fixed", () => {
   beforeEach(() => {
     insertMock.mockClear();
     insertMock.mockResolvedValue({ data: null, error: null });
+    // O Quick Add persiste a escolha de parcelas; cada teste deve começar sem preferências antigas.
+    window.localStorage.clear();
   });
 
   it("mantém o total ao alternar de divide (R$ 1.000 em 2x) para fixed", async () => {
@@ -222,6 +224,39 @@ describe("QuickAddTransactionDialog — alternância divide ↔ fixed", () => {
     // Soma bate com o total econômico
     const sum = rows.reduce((s, r) => s + r.amount, 0);
     expect(sum).toBe(750);
+  });
+
+  it("permite aumentar pelo + de 2 até 10 parcelas mantendo parcela atual 2", async () => {
+    await setup();
+
+    fireEvent.change(screen.getByPlaceholderText(/Ex: Supermercado/), {
+      target: { value: "Microondas" },
+    });
+    await selectCardNubank();
+
+    clickParcelarToggle();
+    clickMode("fixed");
+    setAmount(2151);
+
+    const currentInput = screen.getByRole("spinbutton", { name: "Parcela atual" }) as HTMLInputElement;
+    fireEvent.change(currentInput, { target: { value: "2" } });
+
+    const increaseTotal = screen.getByRole("button", { name: "Aumentar total de parcelas" });
+    for (let i = 0; i < 8; i += 1) {
+      fireEvent.click(increaseTotal);
+    }
+
+    const totalInput = screen.getByRole("spinbutton", { name: "Total de parcelas" }) as HTMLInputElement;
+    await waitFor(() => {
+      expect(totalInput.value).toBe("10");
+      expect(currentInput.value).toBe("2");
+      expect(screen.getByText(/Lançamento retroativo: serão criadas 9 parcelas \(2\/10 → 10\/10\)/)).toBeInTheDocument();
+      expect(screen.getByText(/10x de/)).toBeInTheDocument();
+      expect(screen.getByText(/Total da compra: R\$ 21\.510,00/)).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Diminuir total de parcelas" }));
+    await waitFor(() => expect(totalInput.value).toBe("9"));
   });
 
   it("persiste installment_source_amount igual ao total digitado no modo divide", async () => {

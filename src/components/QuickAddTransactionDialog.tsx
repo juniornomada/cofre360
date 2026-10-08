@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CategoryPicker } from "@/components/CategoryPicker";
-import { CalendarIcon, ArrowLeftRight, ArrowRight, CreditCard, Landmark, Loader2, RotateCcw } from "lucide-react";
+import { CalendarIcon, ArrowLeftRight, ArrowRight, CreditCard, Landmark, Loader2, RotateCcw, CirclePlay, Layers, Info } from "lucide-react";
 import { BankLogo } from "@/components/BankLogo";
 import { CardIcon } from "@/components/CardIcon";
 import { CalculatorAmountInput } from "@/components/CalculatorAmountInput";
@@ -1159,11 +1159,17 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                         </button>
                       </div>
 
-                      <div className="space-y-2.5">
-                        <div>
-                          <label className="text-[11px] font-semibold text-foreground mb-1 block">
-                            Parcela atual <span className="text-muted-foreground font-normal">(lançar a partir de)</span>
-                          </label>
+                      <div className="space-y-3">
+                        <div className="rounded-xl border border-blue-500/70 bg-blue-500/5 p-2.5 ring-1 ring-blue-500/15">
+                          <div className="mb-2 flex flex-wrap items-center gap-1.5">
+                            <CirclePlay className="h-4 w-4 shrink-0 text-blue-400" aria-hidden="true" />
+                            <label htmlFor="quickadd-installment-start" className="inline-flex flex-wrap items-baseline gap-x-1.5 rounded-lg bg-blue-700 px-2.5 py-1.5 text-xs font-bold leading-tight text-white">
+                              Parcela atual <span className="text-[11px] font-medium text-blue-100">(lançar a partir de)</span>
+                            </label>
+                            <span className="inline-flex items-center gap-1 text-[10px] font-medium text-blue-300">
+                              <Info className="h-3 w-3 shrink-0" aria-hidden="true" /> Em qual parcela começar?
+                            </span>
+                          </div>
                           <div className="grid grid-cols-[44px_1fr_44px] items-center gap-2">
                             <button
                               type="button"
@@ -1179,6 +1185,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                             </button>
                             <div className="relative">
                               <input
+                                id="quickadd-installment-start"
                                 type="number"
                                 inputMode="numeric"
                                 min={1}
@@ -1201,7 +1208,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                                 onBlur={() => {
                                   if (installmentStart === "") setInstallmentStart(1);
                                 }}
-                                className={`h-10 w-full rounded-xl bg-card px-12 text-center text-sm font-bold tabular-nums text-foreground outline-none border ${installmentStartError ? "border-destructive focus:border-destructive" : "border-border focus:border-primary/60"}`}
+                                className={`h-10 w-full rounded-xl bg-card px-12 text-center text-sm font-bold tabular-nums text-foreground outline-none border ${installmentStartError ? "border-destructive focus:border-destructive" : "border-blue-500/30 focus:border-blue-400"}`}
                               />
                               <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-[10px] font-medium text-muted-foreground">
                                 de {Number(installmentCount) || 2}
@@ -1243,17 +1250,29 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                             </p>
                           )}
                         </div>
-                        <div>
-                          <label className="text-[11px] font-semibold text-foreground mb-1 block">Total de parcelas</label>
+                        <div className="rounded-xl border border-violet-500/70 bg-violet-500/5 p-2.5 ring-1 ring-violet-500/15">
+                          <div className="mb-2 flex flex-wrap items-center gap-1.5">
+                            <Layers className="h-4 w-4 shrink-0 text-violet-400" aria-hidden="true" />
+                            <label htmlFor="quickadd-installment-count" className="rounded-lg bg-violet-700 px-2.5 py-1.5 text-xs font-bold leading-tight text-white">
+                              Total de parcelas
+                            </label>
+                            <span className="inline-flex items-center gap-1 text-[10px] font-medium text-violet-300">
+                              <Info className="h-3 w-3 shrink-0" aria-hidden="true" /> Quantidade de parcelas
+                            </span>
+                          </div>
                           <div className="grid grid-cols-[44px_1fr_44px] items-center gap-2">
                             <button
                               type="button"
                               aria-label="Diminuir total de parcelas"
                               onClick={() => {
-                                const current = Math.max(2, Number(installmentCount) || 2);
-                                const next = Math.max(2, current - 1);
-                                setInstallmentCount(next);
-                                setInstallmentStart(prev => Math.min(Math.max(1, Number(prev) || 1), next));
+                                setInstallmentCount((previous) => {
+                                  const current = Math.max(2, Number(previous) || 2);
+                                  const next = Math.max(2, current - 1);
+                                  setInstallmentStart((start) =>
+                                    Math.min(Math.max(1, Number(start) || 1), next),
+                                  );
+                                  return next;
+                                });
                               }}
                               disabled={(Number(installmentCount) || 2) <= 2}
                               className="h-10 rounded-xl border border-border bg-card text-lg font-bold text-foreground transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-35"
@@ -1261,6 +1280,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                               −
                             </button>
                             <input
+                              id="quickadd-installment-count"
                               type="number"
                               inputMode="numeric"
                               min={2}
@@ -1286,14 +1306,16 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                                   setInstallmentStart(prev => Math.min(Math.max(1, Number(prev) || 1), 2));
                                 }
                               }}
-                              className="h-10 w-full rounded-xl border border-border bg-card px-3 text-center text-sm font-bold tabular-nums text-foreground outline-none focus:border-primary/60"
+                              className="h-10 w-full rounded-xl border border-violet-500/30 bg-card px-3 text-center text-sm font-bold tabular-nums text-foreground outline-none focus:border-violet-400"
                             />
                             <button
                               type="button"
                               aria-label="Aumentar total de parcelas"
                               onClick={() => {
-                                const current = Math.max(2, Number(installmentCount) || 2);
-                                setInstallmentCount(Math.min(48, current + 1));
+                                setInstallmentCount((previous) => {
+                                  const current = Math.max(2, Number(previous) || 2);
+                                  return Math.min(48, current + 1);
+                                });
                               }}
                               disabled={(Number(installmentCount) || 2) >= 48}
                               className="h-10 rounded-xl border border-primary/40 bg-primary/10 text-lg font-bold text-primary transition-colors hover:bg-primary/20 disabled:cursor-not-allowed disabled:opacity-35"
