@@ -1,7 +1,8 @@
 import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
-const source = readFileSync(new URL("../routes/transactions.tsx", import.meta.url), "utf8");
+const source = readFileSync(resolve(process.cwd(), "src/routes/transactions.tsx"), "utf8");
 const start = source.indexOf("{/* Parcelamento — apenas para despesas no cartão de crédito */}");
 const end = source.indexOf('Modo de cálculo</label>', start);
 const editInstallmentUI = source.slice(start, end);
