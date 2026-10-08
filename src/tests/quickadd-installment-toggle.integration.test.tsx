@@ -110,6 +110,8 @@ describe("QuickAddTransactionDialog — alternância divide ↔ fixed", () => {
   beforeEach(() => {
     insertMock.mockClear();
     insertMock.mockResolvedValue({ data: null, error: null });
+    // O Quick Add persiste a escolha de parcelas; cada teste deve começar sem preferências antigas.
+    window.localStorage.clear();
   });
 
   it("mantém o total ao alternar de divide (R$ 1.000 em 2x) para fixed", async () => {
