@@ -224,6 +224,33 @@ describe("QuickAddTransactionDialog — alternância divide ↔ fixed", () => {
     expect(sum).toBe(750);
   });
 
+  it("permite parcela atual 2 de um total de 10 parcelas", async () => {
+    await setup();
+
+    fireEvent.change(screen.getByPlaceholderText(/Ex: Supermercado/), {
+      target: { value: "Microondas" },
+    });
+    await selectCardNubank();
+
+    clickParcelarToggle();
+    clickMode("fixed");
+    setAmount(2151);
+
+    const currentInput = screen.getByRole("spinbutton", { name: "Parcela atual" }) as HTMLInputElement;
+    fireEvent.change(currentInput, { target: { value: "2" } });
+
+    fireEvent.click(screen.getByRole("button", { name: "10x" }));
+
+    const totalInput = screen.getByRole("spinbutton", { name: "Total de parcelas" }) as HTMLInputElement;
+    await waitFor(() => {
+      expect(totalInput.value).toBe("10");
+      expect(currentInput.value).toBe("2");
+      expect(screen.getByText(/Lançamento retroativo: serão criadas 9 parcelas \(2\/10 → 10\/10\)/)).toBeInTheDocument();
+      expect(screen.getByText(/10x de/)).toBeInTheDocument();
+      expect(screen.getByText(/Total da compra: R\$ 21\.510,00/)).toBeInTheDocument();
+    });
+  });
+
   it("persiste installment_source_amount igual ao total digitado no modo divide", async () => {
     await setup();
 
