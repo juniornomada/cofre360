@@ -224,6 +224,27 @@ describe("QuickAddTransactionDialog — alternância divide ↔ fixed", () => {
     expect(sum).toBe(750);
   });
 
+  it("distingue visualmente início e quantidade de parcelas com rótulos acessíveis", async () => {
+    await setup();
+    await selectCardNubank();
+    clickParcelarToggle();
+
+    const start = screen.getByRole("spinbutton", { name: "Parcela atual" });
+    const count = screen.getByRole("spinbutton", { name: "Total de parcelas" });
+
+    expect(screen.getByText("Em qual parcela começar?")).toBeInTheDocument();
+    expect(screen.getByText("Quantidade de parcelas")).toBeInTheDocument();
+    expect(screen.getByText("Parcela atual").closest("label")).toHaveAttribute("for", "quickadd-installment-start");
+    expect(screen.getByText("Total de parcelas").closest("label")).toHaveAttribute("for", "quickadd-installment-count");
+    expect(start).toHaveAttribute("id", "quickadd-installment-start");
+    expect(count).toHaveAttribute("id", "quickadd-installment-count");
+
+    // A distinção é apenas visual: os steppers seguem independentes.
+    fireEvent.click(screen.getByRole("button", { name: "Aumentar total de parcelas" }));
+    expect((count as HTMLInputElement).value).toBe("3");
+    expect((start as HTMLInputElement).value).toBe("1");
+  });
+
   it("permite aumentar pelo + de 2 até 10 parcelas mantendo parcela atual 2", async () => {
     await setup();
 
