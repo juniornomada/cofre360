@@ -121,7 +121,7 @@ describe("Transaction Dialog Keyboard Closure and Auto-Focus", () => {
     expect(nameInput.autocomplete).toBe("off");
     expect(nameInput).toHaveAttribute("role", "combobox");
     expect(nameInput).toHaveAttribute("aria-autocomplete", "list");
-    expect(nameInput.spellcheck).toBe(true);
+    expect(nameInput).toHaveAttribute("spellcheck", "true");
     expect(document.activeElement).not.toBe(nameInput);
   });
 
