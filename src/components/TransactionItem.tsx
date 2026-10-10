@@ -277,9 +277,16 @@ export function TransactionItem({
             {isTransferPair && transferFromName && transferToName ? (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <AutoFitText className="transition-colors hover:text-primary">
-                    {transferFromName} → {transferToName}
-                  </AutoFitText>
+                  {/* Radix precisa de um elemento DOM real para receber ref e eventos. */}
+                  <span
+                    tabIndex={0}
+                    aria-label={`Transferência de ${transferFromName} para ${transferToName}`}
+                    className="block min-w-0 cursor-help rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  >
+                    <AutoFitText className="transition-colors hover:text-primary">
+                      {transferFromName} → {transferToName}
+                    </AutoFitText>
+                  </span>
                 </TooltipTrigger>
                 <TooltipContent>
                   <div className="flex flex-col items-center">
