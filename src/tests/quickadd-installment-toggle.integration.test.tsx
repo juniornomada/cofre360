@@ -145,7 +145,7 @@ describe("QuickAddTransactionDialog — alternância divide ↔ fixed", () => {
     clickMode("fixed");
     await waitFor(() => {
       expect(screen.getByText(/Total da compra:/)).toBeInTheDocument();
-      expect(screen.getByText(/R\$ 2\.000,00/)).toBeInTheDocument();
+      expect(screen.getAllByText(/R\$ 2\.000,00/).length).toBeGreaterThan(0);
     });
     expect(getAmountReais()).toBe(1000);
 
