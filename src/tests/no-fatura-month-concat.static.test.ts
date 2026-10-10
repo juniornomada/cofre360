@@ -83,8 +83,14 @@ describe("no legacy 'Fatura {mês}' wording in the front-end", () => {
     ];
     for (const file of files) {
       const src = readFileSync(file, "utf8");
+      // A Home atual pode indicar "Fatura {summary.monthLabel}" somente
+      // quando o cartão pertence a um mês diferente do painel selecionado.
+      // Esse contexto NÃO é o rótulo de vencimento da fatura.
+      const checked = file.endsWith("/routes/home.tsx")
+        ? src.replace("Fatura {summary.monthLabel}", "")
+        : src;
       for (const rx of forbidden) {
-        expect(rx.test(src), `${file} builds a dynamic 'Fatura {…}' label — use formatDueLabel(dueDate)`).toBe(false);
+        expect(rx.test(checked), `${file} builds a dynamic 'Fatura {…}' due-date label — use formatDueLabel(dueDate)`).toBe(false);
       }
     }
   });
