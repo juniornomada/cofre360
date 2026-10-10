@@ -119,7 +119,7 @@ describe("QuickAddTransactionDialog — restoração de preferências ao reabrir
     window.localStorage.clear();
   });
 
-  it("restaura modo fixed, N=4 e valor por parcela ao reabrir", async () => {
+  it("restaura modo fixed e N=4 sem guardar o valor financeiro no navegador", async () => {
     render(<Harness />);
     await waitForOpen();
 
@@ -140,7 +140,8 @@ describe("QuickAddTransactionDialog — restoração de preferências ao reabrir
       const raw = window.localStorage.getItem(PREFS_KEY);
       expect(raw).toBeTruthy();
       const p = JSON.parse(raw!);
-      expect(p).toMatchObject({ enabled: true, mode: "fixed", count: 4, amount: 250 });
+      expect(p).toEqual({ enabled: true, mode: "fixed", count: 4 });
+      expect(raw).not.toContain("250");
     });
 
     // Fecha e reabre
@@ -162,7 +163,7 @@ describe("QuickAddTransactionDialog — restoração de preferências ao reabrir
     });
   });
 
-  it("restaura modo divide, N=6 e valor total ao reabrir", async () => {
+  it("restaura modo divide e N=6 sem restaurar o valor total", async () => {
     render(<Harness />);
     await waitForOpen();
 
@@ -255,6 +256,28 @@ describe("QuickAddTransactionDialog — restoração de preferências ao reabrir
     expect(getAmountReais()).toBe(0);
     // A UI de parcelamento nem sequer aparece em receita — sanity check:
     expect(screen.queryByText("Parcelar")).toBeNull();
+  });
+
+  it("migra preferências antigas removendo o valor monetário persistido", async () => {
+    window.localStorage.setItem(
+      PREFS_KEY,
+      JSON.stringify({ enabled: true, mode: "fixed", count: 5, amount: 999 }),
+    );
+
+    render(<Harness />);
+    await waitForOpen();
+
+    await waitFor(() => {
+      const raw = window.localStorage.getItem(PREFS_KEY);
+      expect(raw).toBeTruthy();
+      expect(JSON.parse(raw!)).toEqual({ enabled: true, mode: "fixed", count: 5 });
+    });
+
+    expect(getAmountReais()).toBe(0);
+    await selectCardNubank();
+    expect(parcelarIsOn()).toBe(true);
+    expect(isModeActive("fixed")).toBe(true);
+    expect(isCountActive(5)).toBe(true);
   });
 
   it("recupera de storage corrompido sem crashar (fallback aos defaults)", async () => {
