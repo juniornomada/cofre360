@@ -60,8 +60,8 @@ function Harness({ initialType = "expense", copyData = null as any }: { initialT
 
 function setAmount(reais: number) {
   const input = screen.getByLabelText(/^Valor:/) as HTMLInputElement;
-  const digits = String(Math.round(reais * 100));
-  fireEvent.change(input, { target: { value: digits } });
+  // O campo usa reais e separador decimal, não digitação por centavos.
+  fireEvent.change(input, { target: { value: reais.toFixed(2).replace(".", ",") } });
 }
 function getAmountReais(): number {
   const input = screen.getByLabelText(/^Valor:/) as HTMLInputElement;
