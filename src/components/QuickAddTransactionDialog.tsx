@@ -365,7 +365,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
       name: initialDraft?.name || (copyData ? copyData.name : ""),
       category: initialDraft?.category || (copyData ? copyData.category : (initialType === "income" ? "Renda > Salário" : "Alimentação > Outros")),
       date: normalizeQuickAddDate(initialDraft?.date || initialDate),
-      amount: initialDraft?.amount || 0,
+      amount: initialDraft?.amount ?? copyData?.amount ?? 0,
       type: initialDraft?.type || (copyData ? (copyData.category.startsWith("Receita") || (copyData.category !== "Transferência" && !copyData.category.startsWith("Transferências") && !copyData.category.startsWith("Alimentação") && initialType === "income") ? "income" : "expense") : (initialType === "income" ? "income" : "expense")),
       card: initialDraft?.card ?? (copyData ? copyData.card : null),
       bank_account_id: copyData ? copyData.bank_account_id : null,
