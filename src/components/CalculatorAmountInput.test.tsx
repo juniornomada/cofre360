@@ -1,59 +1,74 @@
-import { render, screen, cleanup } from "@testing-library/react";
+import { useState } from "react";
+import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import { CalculatorAmountInput } from "./CalculatorAmountInput";
 import { describe, it, expect, vi, afterEach } from "vitest";
-import userEvent from "@testing-library/user-event";
 
-describe("CalculatorAmountInput", () => {
-    afterEach(() => {
-      cleanup();
-    });
+function ControlledAmount({ initial = 0, onChange = vi.fn() }: {
+  initial?: number;
+  onChange?: (value: number) => void;
+}) {
+  const [value, setValue] = useState(initial);
+  return (
+    <CalculatorAmountInput
+      value={value}
+      onChange={(next) => {
+        setValue(next);
+        onChange(next);
+      }}
+    />
+  );
+}
 
-    it("should display formatted currency value", () => {
-      render(<CalculatorAmountInput value={12.34} onChange={() => {}} />);
-      const input = screen.getByRole("textbox");
-      expect(input).toHaveValue("R$ 12,34");
-    });
+describe("CalculatorAmountInput — edição em reais", () => {
+  afterEach(() => cleanup());
 
-    it("should handle digit input and format as currency", async () => {
-      const onChange = vi.fn();
-      const user = userEvent.setup();
-      render(<CalculatorAmountInput value={0} onChange={onChange} />);
-      
-      const input = screen.getByRole("textbox");
-      
-      // Clear initial value and type
-      await user.clear(input);
-      await user.type(input, "1");
-      expect(input).toHaveValue("R$ 0,01");
-      expect(onChange).toHaveBeenCalledWith(0.01);
+  it("exibe o valor inicial formatado como moeda", () => {
+    render(<CalculatorAmountInput value={12.34} onChange={() => {}} />);
+    expect(screen.getByRole("textbox")).toHaveValue("R$ 12,34");
+  });
 
-      await user.type(input, "2");
-      expect(input).toHaveValue("R$ 0,12");
-      expect(onChange).toHaveBeenCalledWith(0.12);
+  it("permite centavos e vírgula decimal sem multiplicar os reais por 100", () => {
+    const onChange = vi.fn();
+    render(<ControlledAmount onChange={onChange} />);
+    const input = screen.getByRole("textbox") as HTMLInputElement;
 
-      await user.type(input, "3");
-      expect(input).toHaveValue("R$ 1,23");
-      expect(onChange).toHaveBeenCalledWith(1.23);
-    });
+    fireEvent.focus(input);
+    fireEvent.change(input, { target: { value: "0,01" } });
+    expect(onChange).toHaveBeenLastCalledWith(0.01);
 
-    it("should handle backspace", async () => {
-      const onChange = vi.fn();
-      const user = userEvent.setup();
-      render(<CalculatorAmountInput value={1.23} onChange={onChange} />);
-      
-      const input = screen.getByRole("textbox");
-      
-      await user.type(input, "{Backspace}");
-      expect(input).toHaveValue("R$ 0,12");
-      expect(onChange).toHaveBeenCalledWith(0.12);
-    });
+    fireEvent.change(input, { target: { value: "0,12" } });
+    expect(onChange).toHaveBeenLastCalledWith(0.12);
 
-    it("should respect max limit", async () => {
-      const user = userEvent.setup();
-      render(<CalculatorAmountInput value={9999999.99} onChange={() => {}} />);
-      const input = screen.getByRole("textbox");
-      
-      await user.type(input, "1");
-      expect(input).toHaveValue("R$ 9.999.999,99");
-    });
+    fireEvent.change(input, { target: { value: "1,23" } });
+    expect(onChange).toHaveBeenLastCalledWith(1.23);
+    expect(input).toHaveValue("1,23");
+
+    fireEvent.blur(input);
+    expect(input).toHaveValue("R$ 1,23");
+  });
+
+  it("permite apagar um centavo sem deslocar os demais dígitos", () => {
+    const onChange = vi.fn();
+    render(<ControlledAmount initial={1.23} onChange={onChange} />);
+    const input = screen.getByRole("textbox") as HTMLInputElement;
+
+    fireEvent.focus(input);
+    fireEvent.change(input, { target: { value: "1,2" } });
+    expect(input).toHaveValue("1,2");
+    expect(onChange).toHaveBeenLastCalledWith(1.2);
+
+    fireEvent.blur(input);
+    expect(input).toHaveValue("R$ 1,20");
+  });
+
+  it("limita a nove dígitos inteiros e dois decimais", () => {
+    const onChange = vi.fn();
+    render(<ControlledAmount onChange={onChange} />);
+    const input = screen.getByRole("textbox") as HTMLInputElement;
+
+    fireEvent.focus(input);
+    fireEvent.change(input, { target: { value: "1234567890123,987" } });
+    expect(input).toHaveValue("123456789,98");
+    expect(onChange).toHaveBeenLastCalledWith(123456789.98);
+  });
 });
