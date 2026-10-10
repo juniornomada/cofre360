@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { inferDebitInstallmentContext, type InstallmentHistoryTransaction } from "@/lib/debit-installment-history-sync";
 import {
@@ -102,7 +103,7 @@ describe("debit expense date edit feedback", () => {
   });
 
   it("guards the real transactions UI against routing debit metadata edits through installment removal", () => {
-    const source = readFileSync(new URL("../routes/transactions.tsx", import.meta.url), "utf8");
+    const source = readFileSync(resolve(process.cwd(), "src/routes/transactions.tsx"), "utf8");
 
     // The production edit flow must classify a plain debit expense as having
     // no owned installment plan and use a non-cleared fallback result.

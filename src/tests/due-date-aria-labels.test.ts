@@ -4,7 +4,7 @@
  * The visible label reads "Venc. dd/mm" (abbreviated), but the accessibility
  * tree must expose the expanded form "Vencimento em dd/mm" — no legacy
  * "Fatura {mês}" wording is allowed in aria-labels, titles, or sr-only spans
- * near the due-date paragraph.
+ * near the due-date paragraph. Home now lives at /home and shows balances, not this invoice label.
  */
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
@@ -13,7 +13,6 @@ import { formatDueAriaLabel, formatDueLabel } from "@/lib/format-due-date";
 
 const ROUTES = [
   resolve(__dirname, "../routes/cards.tsx"),
-  resolve(__dirname, "../routes/index.tsx"),
 ] as const;
 
 const MONTH_NAMES_PT = [
@@ -92,11 +91,9 @@ describe("Due-date a11y wiring — /cards and / (Home)", () => {
       expect(offenders).toEqual([]);
     });
 
-    it(`${label}: month-navigation buttons no longer say "Fatura anterior/próxima"`, () => {
-      expect(src).not.toMatch(/aria-label=["']Fatura anterior["']/);
-      expect(src).not.toMatch(/aria-label=["']Próxima fatura["']/);
-      expect(src).not.toMatch(/aria-label=["']Fatura do mês anterior["']/);
-      expect(src).not.toMatch(/aria-label=["']Fatura do próximo mês["']/);
-    });
+    it(`${label}: labels both invoice month navigation buttons accessibly`, () => {
+      expect(src).toMatch(/aria-label="Fatura do mês anterior"/);
+      expect(src).toMatch(/aria-label="Fatura do próximo mês"/);
+    });;
   }
 });
