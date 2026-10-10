@@ -59,7 +59,7 @@ vi.mock("sonner", () => ({
 import { QuickAddTransactionDialog } from "@/components/QuickAddTransactionDialog";
 
 // --- Helpers -------------------------------------------------------------
-async function setup() {
+async function setup(initialDate?: string) {
   const user = userEvent.setup();
   const onOpenChange = vi.fn();
   const onSuccess = vi.fn();
@@ -68,6 +68,7 @@ async function setup() {
       open
       onOpenChange={onOpenChange}
       initialType="expense"
+      initialDate={initialDate}
       onSuccess={onSuccess}
     />,
   );
@@ -259,6 +260,42 @@ describe("QuickAddTransactionDialog — alternância divide ↔ fixed", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Diminuir total de parcelas" }));
     await waitFor(() => expect(totalInput.value).toBe("9"));
+  });
+
+  it.each([
+    {
+      initialDate: "31-01-2026",
+      expectedDates: ["31-01-2026", "28-02-2026", "31-03-2026"],
+    },
+    {
+      initialDate: "31-01-2028",
+      expectedDates: ["31-01-2028", "29-02-2028", "31-03-2028"],
+    },
+  ])("mantém parcelas em meses consecutivos a partir de $initialDate", async ({ initialDate, expectedDates }) => {
+    await setup(initialDate);
+    fireEvent.change(screen.getByPlaceholderText(/Ex: Supermercado/), {
+      target: { value: "Compra no fim do mês" },
+    });
+    await selectCardNubank();
+    setAmount(900);
+    clickParcelarToggle();
+    setInstallmentCount(3);
+
+    fireEvent.click(screen.getByRole("button", { name: /^Adicionar$/ }));
+    await waitFor(() => expect(insertMock).toHaveBeenCalledTimes(1));
+
+    const rows = insertMock.mock.calls[0][0] as Array<{
+      date: string;
+      installment_number: number;
+      amount: number;
+      purchase_date: string | null;
+    }>;
+
+    expect(rows).toHaveLength(3);
+    expect(rows.map(row => row.date)).toEqual(expectedDates);
+    expect(rows.map(row => row.installment_number)).toEqual([1, 2, 3]);
+    expect(rows.map(row => row.amount)).toEqual([300, 300, 300]);
+    expect(rows[0].purchase_date).toBe(initialDate);
   });
 
   it("persiste installment_source_amount igual ao total digitado no modo divide", async () => {
