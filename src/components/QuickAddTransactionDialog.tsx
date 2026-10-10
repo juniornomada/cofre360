@@ -268,6 +268,8 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
   };
 
   const isFirstRender = useRef(true);
+  // Evita sobrescrever as preferências salvas antes da hidratação ao abrir.
+  const skipNextPreferencesWrite = useRef(false);
 
   const PREFS_KEY = "quickadd:card-installment-prefs:v1";
   type Prefs = {
@@ -345,8 +347,9 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
         : "",
     );
 
-    // Restaurar preferências de parcelamento (modo/N) da última abertura.
-    // O valor nunca é reaproveitado em uma nova transação.
+    // Restaurar somente modo/N da última abertura; nunca reutilizar valor.
+    // O primeiro efeito de persistência ocorre antes dos estados restaurados.
+    skipNextPreferencesWrite.current = true;
     // quando não estamos duplicando uma transação existente e o tipo é despesa.
     const voiceInstallments = initialDraft?.installmentCount && initialDraft.installmentCount >= 2
       ? initialDraft.installmentCount
@@ -355,14 +358,14 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
     setInstallmentEnabled(voiceInstallments ? true : (prefs?.enabled ?? false));
     setInstallmentCount(voiceInstallments ?? prefs?.count ?? 2);
     setInstallmentStart(1);
-    setInstallmentMode("divide");
+    setInstallmentMode(prefs?.mode ?? "divide");
 
     setNewTx({
       icon: initialDraft?.icon || (copyData ? copyData.icon : (initialType === "income" ? "💰" : "🍔")),
       name: initialDraft?.name || (copyData ? copyData.name : ""),
       category: initialDraft?.category || (copyData ? copyData.category : (initialType === "income" ? "Renda > Salário" : "Alimentação > Outros")),
       date: normalizeQuickAddDate(initialDraft?.date || initialDate),
-      amount: initialDraft?.amount || 0,
+      amount: initialDraft?.amount ?? copyData?.amount ?? 0,
       type: initialDraft?.type || (copyData ? (copyData.category.startsWith("Receita") || (copyData.category !== "Transferência" && !copyData.category.startsWith("Transferências") && !copyData.category.startsWith("Alimentação") && initialType === "income") ? "income" : "expense") : (initialType === "income" ? "income" : "expense")),
       card: initialDraft?.card ?? (copyData ? copyData.card : null),
       bank_account_id: copyData ? copyData.bank_account_id : null,
@@ -411,16 +414,21 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
     setNewTx(prev => ({ ...prev, bank_account_id: match.id, card: null }));
   }, [open, initialDraft?.bankAccount, bankAccounts, newTx.bank_account_id]);
 
-  // Persistir preferências de parcelamento ao alterar.
+  // Persistir apenas edições do usuário; não sobrescrever preferências
+  // com o estado transitório da abertura, nem com transações copiadas/por voz.
   useEffect(() => {
-    if (!open) return;
+    if (!open || copyData || initialDraft || initialType !== "expense") return;
+    if (skipNextPreferencesWrite.current) {
+      skipNextPreferencesWrite.current = false;
+      return;
+    }
     writePrefs({
       enabled: installmentEnabled,
       mode: installmentMode,
       count: Number(installmentCount) || 1,
       amount: newTx.amount || 0,
     });
-  }, [open, installmentEnabled, installmentMode, installmentCount, newTx.amount]);
+  }, [open, copyData, initialDraft, initialType, installmentEnabled, installmentMode, installmentCount, newTx.amount]);
 
 
   const [confirmInstallmentDiff, setConfirmInstallmentDiff] = useState(false);
@@ -1100,6 +1108,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                           type="button"
                           onClick={() => {
                             clearPrefs();
+                            skipNextPreferencesWrite.current = true;
                             setInstallmentEnabled(false);
                             setInstallmentMode("divide");
                             setInstallmentCount(2);
@@ -1116,6 +1125,8 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                       <button
                         type="button"
                         onClick={() => setInstallmentEnabled(!installmentEnabled)}
+                        aria-label="Alternar parcelamento"
+                        aria-pressed={installmentEnabled}
                         className={`relative h-4 w-8 rounded-full transition-colors ${installmentEnabled ? "bg-primary" : "bg-muted"}`}
                       >
                         <span className={`absolute top-0.5 left-0.5 h-3 w-3 rounded-full bg-white transition-transform ${installmentEnabled ? "translate-x-4" : ""}`} />

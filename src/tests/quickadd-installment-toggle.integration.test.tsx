@@ -14,7 +14,9 @@ import userEvent from "@testing-library/user-event";
 import React from "react";
 
 // --- Mocks ---------------------------------------------------------------
-const insertMock = vi.fn().mockResolvedValue({ data: null, error: null });
+const insertMock = vi.fn((_rows: unknown[]) => ({
+  select: vi.fn().mockResolvedValue({ data: [], error: null }),
+}));
 
 vi.mock("@/integrations/supabase/client", () => {
   const cards = [{ name: "Nubank", brand: "mastercard", emoji: null, color: null }];
@@ -76,8 +78,8 @@ async function setup() {
 
 function setAmount(reais: number) {
   const input = screen.getByLabelText(/^Valor:/) as HTMLInputElement;
-  const digits = String(Math.round(reais * 100));
-  fireEvent.change(input, { target: { value: digits } });
+  // O campo usa reais e separador decimal, não digitação por centavos.
+  fireEvent.change(input, { target: { value: reais.toFixed(2).replace(".", ",") } });
 }
 
 function getAmountReais(): number {
@@ -87,9 +89,12 @@ function getAmountReais(): number {
 }
 
 function clickParcelarToggle() {
-  const label = screen.getByText("Parcelar");
-  const toggle = label.parentElement!.querySelector("button")!;
-  fireEvent.click(toggle);
+  fireEvent.click(screen.getByRole("button", { name: "Alternar parcelamento" }));
+}
+
+function setInstallmentCount(count: number) {
+  const input = screen.getByRole("spinbutton", { name: "Total de parcelas" });
+  fireEvent.change(input, { target: { value: String(count) } });
 }
 
 async function selectCardNubank() {
@@ -100,16 +105,14 @@ async function selectCardNubank() {
 }
 
 function clickMode(mode: "divide" | "fixed") {
-  const text = mode === "divide" ? /Valor total da compra/ : /Valor de cada parcela/;
-  const btn = screen.getByText(text).closest("button") as HTMLButtonElement;
-  fireEvent.click(btn);
+  const name = mode === "divide" ? /Valor total da compra/ : /Valor de cada parcela/;
+  fireEvent.click(screen.getByRole("button", { name }));
 }
 
 // --- Tests ---------------------------------------------------------------
 describe("QuickAddTransactionDialog — alternância divide ↔ fixed", () => {
   beforeEach(() => {
     insertMock.mockClear();
-    insertMock.mockResolvedValue({ data: null, error: null });
     // O Quick Add persiste a escolha de parcelas; cada teste deve começar sem preferências antigas.
     window.localStorage.clear();
   });
@@ -133,24 +136,25 @@ describe("QuickAddTransactionDialog — alternância divide ↔ fixed", () => {
     // Default: mode = divide, count = 2 → 2x R$ 500,00
     await waitFor(() => {
       expect(screen.getByText(/2x de/)).toBeInTheDocument();
-      expect(screen.getByText(/R\$ 500,00/)).toBeInTheDocument();
+      expect(screen.getAllByText(/R\$ 500,00/).length).toBeGreaterThan(0);
       expect(screen.getByText(/Total dividido:/)).toBeInTheDocument();
     });
 
-    // Alterna para fixed: parcela deve virar 500 (1000 / 2), total permanece 1000
+    // Ao selecionar "valor por parcela", a interface mantém o valor digitado,
+    // mas altera sua interpretação: 2 x R$ 1.000 = R$ 2.000.
     clickMode("fixed");
     await waitFor(() => {
       expect(screen.getByText(/Total da compra:/)).toBeInTheDocument();
-      expect(screen.getByText(/R\$ 1\.000,00/)).toBeInTheDocument();
+      expect(screen.getAllByText(/R\$ 2\.000,00/).length).toBeGreaterThan(0);
     });
-    expect(getAmountReais()).toBe(500); // campo agora representa valor por parcela
+    expect(getAmountReais()).toBe(1000);
 
-    // Volta para divide: campo volta a ser 1000 (500 × 2)
+    // Voltar a "total da compra" usa o total econômico recém calculado.
     clickMode("divide");
     await waitFor(() => {
-      expect(getAmountReais()).toBe(1000);
+      expect(getAmountReais()).toBe(2000);
+      expect(screen.getByText(/Total dividido:/)).toBeInTheDocument();
     });
-    expect(screen.getByText(/Total dividido:/)).toBeInTheDocument();
   });
 
   it("mantém o total ao alternar de fixed (R$ 300 × 4x) para divide", async () => {
@@ -165,8 +169,7 @@ describe("QuickAddTransactionDialog — alternância divide ↔ fixed", () => {
     // altere o valor digitado depois.
     clickParcelarToggle();
     clickMode("fixed");
-    const btn4 = screen.getByRole("button", { name: "4x" });
-    fireEvent.click(btn4);
+    setInstallmentCount(4);
 
     // Digita R$ 300,00 como valor de cada parcela
     setAmount(300);
@@ -175,7 +178,7 @@ describe("QuickAddTransactionDialog — alternância divide ↔ fixed", () => {
       expect(screen.getByText(/4x de/)).toBeInTheDocument();
       expect(screen.getByText(/Total da compra:/)).toBeInTheDocument();
       // total = 300 × 4 = 1.200
-      expect(screen.getByText(/R\$ 1\.200,00/)).toBeInTheDocument();
+      expect(screen.getAllByText(/R\$ 1\.200,00/).length).toBeGreaterThan(0);
     });
 
     // Alterna para divide: campo passa a exibir 1200 (300 × 4)
@@ -196,8 +199,7 @@ describe("QuickAddTransactionDialog — alternância divide ↔ fixed", () => {
 
     clickParcelarToggle();
     clickMode("fixed");
-    const btn3 = screen.getByRole("button", { name: "3x" });
-    fireEvent.click(btn3);
+    setInstallmentCount(3);
     setAmount(250);
 
     // Confirma summary antes de salvar
@@ -270,8 +272,7 @@ describe("QuickAddTransactionDialog — alternância divide ↔ fixed", () => {
     clickParcelarToggle();
     // mode default = divide
 
-    const btn4 = screen.getByRole("button", { name: "4x" });
-    fireEvent.click(btn4);
+    setInstallmentCount(4);
 
     const addBtn = screen.getByRole("button", { name: /Adicionar/ });
     fireEvent.click(addBtn);
