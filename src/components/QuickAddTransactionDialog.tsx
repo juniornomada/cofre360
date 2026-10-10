@@ -9,7 +9,7 @@ import { CalendarIcon, ArrowLeftRight, ArrowRight, CreditCard, Landmark, Loader2
 import { BankLogo } from "@/components/BankLogo";
 import { CardIcon } from "@/components/CardIcon";
 import { CalculatorAmountInput } from "@/components/CalculatorAmountInput";
-import { format, parse } from "date-fns";
+import { addMonths, format, parse } from "date-fns";
 import { calculateInstallmentDetails } from "@/lib/installment-utils";
 import { validateInstallmentInputs } from "@/lib/installment-mode-toggle";
 import { ptBR } from "date-fns/locale";
@@ -638,8 +638,9 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
       const count = Number(installmentCount) || 1;
       const startAt = Math.min(Math.max(1, installmentStart || 1), count);
       for (let i = startAt; i <= count; i++) {
-        const installDate = new Date(baseDate);
-        installDate.setMonth(installDate.getMonth() + (i - startAt));
+        // addMonths limita o dia ao último dia do mês seguinte.
+        // Date#setMonth deslocaria 31/jan para março, pulando fevereiro.
+        const installDate = addMonths(baseDate, i - startAt);
          const { valorParcela: parcela } = calculateInstallmentDetails(
            newTx.amount,
            count,
