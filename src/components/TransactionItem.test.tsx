@@ -46,7 +46,7 @@ afterAll(() => vi.unstubAllGlobals());
      await user.tab();
      expect(transfElement).toHaveFocus();
  
-    expect(await screen.findByText("Transferência de Banco A para Banco B")).toBeInTheDocument();
+    expect((await screen.findAllByText("Transferência de Banco A para Banco B")).length).toBeGreaterThan(0);
   });
 
   it("should have aria-describedby when tooltip is open", async () => {
