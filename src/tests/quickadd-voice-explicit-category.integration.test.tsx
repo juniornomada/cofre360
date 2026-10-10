@@ -57,26 +57,33 @@ vi.mock("@/integrations/supabase/client", () => ({
       if (table === "transactions") {
         return {
           select: (columns: string) => {
-            if (columns.includes("bank_account_id")) {
+            // Both queries select bank_account_id. Only the account-balance
+            // query starts with it and chains .not(...); the autocomplete
+            // history query starts with name and chains .order(...).limit(...).
+            if (columns.trimStart().startsWith("bank_account_id,")) {
               return {
                 not: () => Promise.resolve({ data: [], error: null }),
               };
             }
 
-            return {
-              order: () => ({
-                limit: () => Promise.resolve({
-                  data: [
-                    {
-                      name: "Almoço (Carol)",
-                      icon: "🍽️",
-                      category: "Alimentação > Restaurante",
-                    },
-                  ],
-                  error: null,
+            if (columns.trimStart().startsWith("name,")) {
+              return {
+                order: () => ({
+                  limit: () => Promise.resolve({
+                    data: [
+                      {
+                        name: "Almoço (Carol)",
+                        icon: "🍽️",
+                        category: "Alimentação > Restaurante",
+                      },
+                    ],
+                    error: null,
+                  }),
                 }),
-              }),
-            };
+              };
+            }
+
+            throw new Error(`Unexpected transactions columns: ${columns}`);
           },
           insert: vi.fn().mockResolvedValue({ data: null, error: null }),
         };
