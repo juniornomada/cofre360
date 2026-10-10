@@ -69,7 +69,8 @@ describe("getFriendlyErrorMessage", () => {
         const result = getFriendlyErrorMessage(input);
         expect(result.message).not.toContain("Error:");
         expect(result.message).not.toContain("Exception");
-        expect(result.message).toMatch(/^(O|H|V|E|P|A|I|U)/);
+        // Mensagens em português podem começar com qualquer maiúscula, inclusive N ou É.
+        expect(result.message).toMatch(/^\p{Lu}/u);
       });
     });
 
