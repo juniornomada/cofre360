@@ -1,9 +1,20 @@
- import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+ import { render, screen, waitFor } from "@testing-library/react";
  import { TransactionItem } from "./TransactionItem";
  import { TooltipProvider } from "./ui/tooltip";
- import { describe, it, expect, vi } from "vitest";
+ import { describe, it, expect, vi, beforeAll, afterAll } from "vitest";
  import userEvent from "@testing-library/user-event";
  
+// JSDOM não implementa ResizeObserver, usado apenas para ajuste visual de texto.
+beforeAll(() => {
+  vi.stubGlobal("ResizeObserver", class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  });
+});
+
+afterAll(() => vi.unstubAllGlobals());
+
  describe("TransactionItem Accessibility", () => {
    const defaultProps = {
      icon: "💰",
@@ -35,9 +46,7 @@
      await user.tab();
      expect(transfElement).toHaveFocus();
  
-    // Wait for tooltip to appear - searching for the visible text specifically
-    const tooltips = await screen.findAllByText("Transferência");
-    expect(tooltips.length).toBeGreaterThan(0);
+    expect(await screen.findByText("Transferência de Banco A para Banco B")).toBeInTheDocument();
   });
 
   it("should have aria-describedby when tooltip is open", async () => {
@@ -56,7 +65,7 @@
     const trigger = screen.getByLabelText("Transferência");
     await user.tab();
     
-    expect(trigger).toHaveAttribute("aria-describedby");
+    await waitFor(() => expect(trigger).toHaveAttribute("aria-describedby"));
    });
  
    it("should have correct ARIA labels for screen readers", () => {
