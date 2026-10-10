@@ -276,7 +276,6 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
     enabled: boolean;
     mode: "divide" | "fixed";
     count: number;
-    amount: number;
   };
   const readPrefs = (): Prefs | null => {
     try {
@@ -284,12 +283,17 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
       if (!raw) return null;
       const p = JSON.parse(raw);
       if (typeof p !== "object" || p === null) return null;
-      return {
+      const prefs: Prefs = {
         enabled: !!p.enabled,
         mode: p.mode === "fixed" ? "fixed" : "divide",
         count: Number.isFinite(p.count) && p.count >= 1 ? Math.floor(p.count) : 2,
-        amount: Number.isFinite(p.amount) ? p.amount : 0,
       };
+      // Compatibilidade com preferências antigas: eliminar imediatamente
+      // qualquer valor monetário gravado nesta chave, sem perder modo/N.
+      if (Object.prototype.hasOwnProperty.call(p, "amount")) {
+        window.localStorage.setItem(PREFS_KEY, JSON.stringify(prefs));
+      }
+      return prefs;
     } catch {
       return null;
     }
@@ -426,9 +430,8 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
       enabled: installmentEnabled,
       mode: installmentMode,
       count: Number(installmentCount) || 1,
-      amount: newTx.amount || 0,
     });
-  }, [open, copyData, initialDraft, initialType, installmentEnabled, installmentMode, installmentCount, newTx.amount]);
+  }, [open, copyData, initialDraft, initialType, installmentEnabled, installmentMode, installmentCount]);
 
 
   const [confirmInstallmentDiff, setConfirmInstallmentDiff] = useState(false);
