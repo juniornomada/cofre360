@@ -44,6 +44,7 @@ import { getBillingCycleMonthKey } from "@/lib/invoice-utils";
 import { useFinancialMonthFacts } from "@/hooks/use-financial-month-facts";
 import { countsTowardCurrentBalance } from "@/lib/transaction-status";
 import { getTransactionListDisplayAmounts } from "@/lib/transaction-list-display";
+import { includeMissingMonthlyCardPurchases } from "@/lib/transaction-month-default";
 import { matchesTransactionCategoryDrilldown } from "@/lib/transaction-subcategory-filter";
 
 
@@ -148,11 +149,13 @@ export function TransactionsPage() {
     localStorage.removeItem("transactions_filter_accountId");
     localStorage.setItem("transactions_filter_source", "all");
   }, [searchParams.category]);
+  // Entering /transactions without a scoped URL must start in "Todos".
+  // A saved account/card selection from a prior visit must not hide other sources.
   const [activeSource, setActiveSource] = useState<"all" | "account" | "card">(
-    searchParams.accountId ? "account" : (((typeof window !== "undefined" ? window.localStorage.getItem("transactions_filter_source") : null) as any) || "all")
+    searchParams.accountId ? "account" : "all"
   );
   const [filterAccountId, setFilterAccountId] = useState<string | null>(
-    searchParams.accountId || (typeof window !== "undefined" ? window.localStorage.getItem("transactions_filter_accountId") : null) || null
+    searchParams.accountId || null
   );
 
   useEffect(() => {
@@ -715,7 +718,14 @@ export function TransactionsPage() {
     };
   });
 
-  const filtered = categoryScopeActive ? categoryListTransactions : rawFiltered;
+  // A plain monthly visit includes account rows AND card purchases, even if
+  // the first created_at page omits the card's purchase-month anchor. Explicit
+  // card/category/type drilldowns keep their existing economic-ledger behavior.
+  const filtered = categoryScopeActive
+    ? categoryListTransactions
+    : isYieldView || activeSource !== "all" || filterAccountId
+      ? rawFiltered
+      : includeMissingMonthlyCardPurchases(rawFiltered, categoryListTransactions);
 
   const activeFilterCount = (filterStartDate || filterEndDate ? 1 : 0) + (minAmt !== null || maxAmt !== null ? 1 : 0) + (filterType !== "all" ? 1 : 0) + (sortBy !== "date-desc" ? 1 : 0) + (filterAccountId ? 1 : 0);
 
