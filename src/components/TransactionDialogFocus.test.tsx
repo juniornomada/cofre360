@@ -6,24 +6,25 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 // Mock the dependencies that are not relevant for the focus test
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
-    from: () => ({
-      select: () => ({
-        eq: () => ({
-          single: () => Promise.resolve({ data: null, error: null }),
+    from: (table: string) => {
+      if (table === "cards") {
+        return { select: () => ({ order: () => Promise.resolve({
+          data: [{ id: "nubank", name: "Nubank", brand: "mastercard", closing_day: 5, due_day: 12 }],
+          error: null,
+        }) }) };
+      }
+      if (table === "bank_accounts") {
+        return { select: () => ({ order: () => Promise.resolve({ data: [], error: null }) }) };
+      }
+      return {
+        select: () => ({
+          eq: () => ({ single: () => Promise.resolve({ data: null, error: null }) }),
+          order: () => ({ limit: () => Promise.resolve({ data: [], error: null }) }),
+          not: () => Promise.resolve({ data: [], error: null }),
         }),
-        order: () => ({
-          limit: () => Promise.resolve({ data: [], error: null }),
-        }),
-        not: () => ({
-          order: () => ({
-            limit: () => Promise.resolve({ data: [], error: null }),
-          }),
-        }),
-      }),
-      insert: () => ({
-        select: () => Promise.resolve({ data: [{}], error: null }),
-      }),
-    }),
+        insert: () => ({ select: () => Promise.resolve({ data: [{ id: "created" }], error: null }) }),
+      };
+    },
   },
 }));
 
@@ -84,18 +85,20 @@ describe("Transaction Dialog Keyboard Closure and Auto-Focus", () => {
       </QueryClientProvider>
     );
 
-    // Fill required fields to allow submission
-    const nameInput = screen.getByPlaceholderText("Ex: Supermercado");
-    fireEvent.change(nameInput, { target: { value: "Teste" } });
-    
-    // Fill amount (CalculatorAmountInput is an input with aria-label)
+    // Adicionar exige uma origem financeira válida: selecione o cartão.
+    const cards = await screen.findAllByText("Nubank");
+    const selectCard = cards.map((node) => node.closest("button")).find(Boolean);
+    expect(selectCard).toBeTruthy();
+    fireEvent.click(selectCard!);
+
+    fireEvent.change(screen.getByPlaceholderText("Ex: Supermercado"), {
+      target: { value: "Teste" },
+    });
     const amountInput = screen.getByLabelText(/Valor:/i);
-    fireEvent.change(amountInput, { target: { value: "100" } });
-    
-    // Find the save button
-    const salvarButton = screen.getByText("Adicionar");
-    
-    // Click it
+    fireEvent.change(amountInput, { target: { value: "100,00" } });
+
+    const salvarButton = screen.getByRole("button", { name: "Adicionar" });
+    expect(salvarButton).toBeEnabled();
     fireEvent.click(salvarButton);
 
     // handleAdd is async and calls blur() at the end
@@ -114,7 +117,10 @@ describe("Transaction Dialog Keyboard Closure and Auto-Focus", () => {
     const nameInput = screen.getByPlaceholderText("Ex: Supermercado") as HTMLInputElement;
 
     expect(nameInput.inputMode).toBe("text");
-    expect(nameInput.autocomplete).toBe("on");
+    // Sugestões do histórico substituem autocomplete nativo do navegador.
+    expect(nameInput.autocomplete).toBe("off");
+    expect(nameInput).toHaveAttribute("role", "combobox");
+    expect(nameInput).toHaveAttribute("aria-autocomplete", "list");
     expect(nameInput.spellcheck).toBe(true);
     expect(document.activeElement).not.toBe(nameInput);
   });
