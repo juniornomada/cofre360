@@ -16,6 +16,6 @@ describe("QuickAdd expense with insufficient account balance", () => {
     expect(source).toContain("const fromAcc = bankAccounts.find(a => a.id === transferFromId)");
     expect(source).toContain("if (!transferFromId || !transferToId || transferFromId === transferToId)");
     expect(source).toContain('toast.error("Selecione contas diferentes para a transferência.")');
-    expect(source).not.toMatch(/fromAcc[\\s\\S]{0,500}Saldo insuficiente/);
+    expect(source).not.toContain("Saldo insuficiente");
   });
 });
