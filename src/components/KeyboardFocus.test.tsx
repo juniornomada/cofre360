@@ -1,38 +1,30 @@
 import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import { CalculatorAmountInput } from "./CalculatorAmountInput";
-import { describe, it, expect, vi, afterEach } from "vitest";
-import userEvent from "@testing-library/user-event";
+import { describe, it, expect, afterEach } from "vitest";
 
-describe("CalculatorAmountInput Keyboard Focus", () => {
-    afterEach(() => {
-      cleanup();
-    });
+describe("CalculatorAmountInput — teclado e foco", () => {
+  afterEach(() => cleanup());
 
-    it("should start with inputMode 'none' and change to 'numeric' only on click/touch", async () => {
-      render(<CalculatorAmountInput value={12.34} onChange={() => {}} />);
-      const input = screen.getByRole("textbox") as HTMLInputElement;
-      
-      // Initially should be "none" to prevent keyboard
-      expect(input.inputMode).toBe("none");
+  it("usa o teclado decimal nativo sem focar automaticamente", () => {
+    render(<CalculatorAmountInput value={12.34} onChange={() => {}} />);
+    const input = screen.getByRole("textbox") as HTMLInputElement;
 
-      // Clicking should enable numeric keyboard
-      fireEvent.click(input);
-      expect(input.inputMode).toBe("numeric");
+    expect(input.inputMode).toBe("decimal");
+    expect(document.activeElement).not.toBe(input);
 
-      // Blurring should reset to "none"
-      fireEvent.blur(input);
-      expect(input.inputMode).toBe("none");
+    fireEvent.focus(input);
+    expect(input.inputMode).toBe("decimal");
+    fireEvent.blur(input);
+    expect(input.inputMode).toBe("decimal");
+  });
 
-      // Touch should also enable numeric keyboard
-      fireEvent.touchStart(input);
-      expect(input.inputMode).toBe("numeric");
-    });
+  it("aceita foco programático sem trocar o tipo de entrada", () => {
+    render(<CalculatorAmountInput value={12.34} onChange={() => {}} />);
+    const input = screen.getByRole("textbox") as HTMLInputElement;
 
-    it("should not open keyboard if just focused programmatically (without click)", () => {
-        render(<CalculatorAmountInput value={12.34} onChange={() => {}} />);
-        const input = screen.getByRole("textbox") as HTMLInputElement;
-        
-        input.focus();
-        expect(input.inputMode).toBe("none");
-    });
+    input.focus();
+    expect(input).toHaveFocus();
+    expect(input.inputMode).toBe("decimal");
+    expect(input.type).toBe("text");
+  });
 });
