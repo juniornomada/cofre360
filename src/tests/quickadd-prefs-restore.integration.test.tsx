@@ -1,6 +1,6 @@
 /**
  * Integration tests for QuickAddTransactionDialog covering the restoration
- * of the user's last installment preferences (enabled, mode, count, amount)
+ * of the user's last installment preferences (enabled, mode, count)
  * when the dialog is closed and reopened.
  *
  * Preferences are persisted under `quickadd:card-installment-prefs:v1` in
@@ -69,9 +69,13 @@ function getAmountReais(): number {
   return digits ? parseInt(digits, 10) / 100 : 0;
 }
 function clickParcelarToggle() {
-  const label = screen.getByText("Parcelar");
-  const toggle = label.parentElement!.querySelector("button")!;
-  fireEvent.click(toggle);
+  fireEvent.click(screen.getByRole("button", { name: "Alternar parcelamento" }));
+}
+
+function setInstallmentCount(count: number) {
+  fireEvent.change(screen.getByRole("spinbutton", { name: "Total de parcelas" }), {
+    target: { value: String(count) },
+  });
 }
 async function selectCardNubank() {
   const nodes = await screen.findAllByText("Nubank");
@@ -79,24 +83,21 @@ async function selectCardNubank() {
   fireEvent.click(btn);
 }
 function clickMode(mode: "divide" | "fixed") {
-  const text = mode === "divide" ? /Valor total da compra/ : /Valor de cada parcela/;
-  const btn = screen.getByText(text).closest("button") as HTMLButtonElement;
-  fireEvent.click(btn);
+  const name = mode === "divide" ? /Valor total da compra/ : /Valor de cada parcela/;
+  fireEvent.click(screen.getByRole("button", { name }));
 }
 function parcelarIsOn(): boolean {
-  const label = screen.queryByText("Parcelar");
-  if (!label) return false;
-  const btn = label.parentElement!.querySelector("button") as HTMLButtonElement;
-  return /bg-primary/.test(btn.className);
+  const toggle = screen.queryByRole("button", { name: "Alternar parcelamento" });
+  return toggle?.getAttribute("aria-pressed") === "true";
 }
 function isModeActive(mode: "divide" | "fixed"): boolean {
-  const text = mode === "divide" ? /Valor total da compra/ : /Valor de cada parcela/;
-  const btn = screen.getByText(text).closest("button") as HTMLButtonElement;
+  const name = mode === "divide" ? /Valor total da compra/ : /Valor de cada parcela/;
+  const btn = screen.getByRole("button", { name });
   return /bg-primary/.test(btn.className);
 }
 function isCountActive(n: number): boolean {
-  const btn = screen.getByRole("button", { name: `${n}x` });
-  return /bg-primary/.test(btn.className);
+  const count = screen.getByRole("spinbutton", { name: "Total de parcelas" }) as HTMLInputElement;
+  return count.value === String(n);
 }
 async function waitForOpen() {
   await screen.findAllByText("Nubank");
@@ -126,7 +127,7 @@ describe("QuickAddTransactionDialog — restoração de preferências ao reabrir
     await selectCardNubank();
     clickParcelarToggle();
     clickMode("fixed");
-    fireEvent.click(screen.getByRole("button", { name: "4x" }));
+    setInstallmentCount(4);
     setAmount(250);
 
     await waitFor(() => {
@@ -147,8 +148,8 @@ describe("QuickAddTransactionDialog — restoração de preferências ao reabrir
     reopenDialog();
     await waitForOpen();
 
-    // Valor e estado interno de parcelamento restaurados antes da seleção de cartão
-    expect(getAmountReais()).toBe(250);
+    // Valor NÃO é reaproveitado em outra transação para evitar duplicidade.
+    expect(getAmountReais()).toBe(0);
 
     // Ao reselecionar o cartão, a UI de parcelamento reflete o estado restaurado
     await selectCardNubank();
@@ -167,7 +168,7 @@ describe("QuickAddTransactionDialog — restoração de preferências ao reabrir
 
     await selectCardNubank();
     clickParcelarToggle(); // default mode = divide
-    fireEvent.click(screen.getByRole("button", { name: "6x" }));
+    setInstallmentCount(6);
     setAmount(1200);
 
     await waitFor(() => {
@@ -179,7 +180,7 @@ describe("QuickAddTransactionDialog — restoração de preferências ao reabrir
     reopenDialog();
     await waitForOpen();
 
-    expect(getAmountReais()).toBe(1200);
+    expect(getAmountReais()).toBe(0);
 
     await selectCardNubank();
     expect(parcelarIsOn()).toBe(true);
@@ -206,8 +207,8 @@ describe("QuickAddTransactionDialog — restoração de preferências ao reabrir
     reopenDialog();
     await waitForOpen();
 
-    // Valor persistido; parcelamento desligado
-    expect(getAmountReais()).toBe(500);
+    // Apenas a preferência desativada persiste; valor financeiro volta a zero.
+    expect(getAmountReais()).toBe(0);
     await selectCardNubank();
     expect(parcelarIsOn()).toBe(false);
   });
