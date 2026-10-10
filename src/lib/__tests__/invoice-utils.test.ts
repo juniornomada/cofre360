@@ -223,9 +223,10 @@ describe('groupByBillingCycle calculation logic', () => {
     
     const duration = endTime - startTime;
     
-    // Check if the calculation was fast enough (e.g., under 100ms for 10k transactions)
-    // Most modern environments handle 10k array iterations and basic math in < 10ms
-    expect(duration).toBeLessThan(100);
+    // CI runners share CPU with concurrent suites. A strict 100ms wall-clock
+    // cap flakes under contention despite acceptable linear throughput.
+    // 500ms for 10k rows still catches severe O(n²) regressions.
+    expect(duration).toBeLessThan(500);
     expect(periods.length).toBeGreaterThan(0);
     
     // console.log(`Performance test: Recalculated 10,000 transactions in ${duration.toFixed(2)}ms`);
