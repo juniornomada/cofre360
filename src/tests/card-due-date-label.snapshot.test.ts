@@ -13,7 +13,7 @@ import { resolve } from "node:path";
  */
 
 const cardsSrc = readFileSync(resolve(__dirname, "../routes/cards.tsx"), "utf8");
-const indexSrc = readFileSync(resolve(__dirname, "../routes/index.tsx"), "utf8");
+const indexSrc = readFileSync(resolve(__dirname, "../routes/home.tsx"), "utf8");
 
 // Extract the summary "status row" block on /cards, from the opening
 // `<div className="flex justify-between items-start gap-2 mb-1.5">` down to
@@ -29,12 +29,11 @@ function extractCardsSummaryRow(src: string): string {
 
 // Extract the Home per-card summary block from the `Venc.` line context.
 function extractHomeCardSummary(src: string): string {
-  const marker = 'data-testid="fatura-atual-valor"';
-  const idx = src.indexOf(marker);
-  if (idx === -1) throw new Error("index.tsx summary block not found");
-  // Widen window ~1500 chars back / 200 forward to include the status pills
-  // and the Venc. line above.
-  return src.slice(Math.max(0, idx - 1500), idx + 200);
+  const start = src.indexOf('className="mb-2 flex items-center justify-between"');
+  if (start === -1) throw new Error("Home card section header not found");
+  const end = src.indexOf("</section>", start);
+  if (end === -1) throw new Error("Home card section end not found");
+  return src.slice(start, end);
 }
 
 const monthNames = [
@@ -53,12 +52,12 @@ describe("Card summary · due-date label", () => {
     ).toBe(true);
   });
 
-  it("renders 'Venc. dd/mm' in the Home card summary", () => {
+  it("Home lists cards with their monthly balances and a link to full invoices", () => {
     const block = extractHomeCardSummary(indexSrc);
-    expect(
-      /formatDueLabel\s*\(/.test(block) ||
-        /Venc\.\s*\{formatDueDate\(selDue\)\}/.test(block),
-    ).toBe(true);
+    expect(block).toContain("CARTÕES");
+    expect(block).toContain('to="/cards"');
+    expect(block).toContain("Ver todos");
+    expect(block).toContain("summary?.remaining");
   });
 
 
@@ -74,13 +73,11 @@ describe("Card summary · due-date label", () => {
     expect(block).not.toMatch(/Fatura\s*\$\{[^}]*month/i);
   });
 
-  it("does NOT render 'Fatura {mês}' in the Home card summary", () => {
+  it("Home labels a different invoice month only when it differs from the selected month", () => {
     const block = extractHomeCardSummary(indexSrc);
-    for (const m of monthNames) {
-      expect(block).not.toMatch(new RegExp(`Fatura\\s+${m}`, "i"));
-    }
-    expect(block).not.toMatch(/Fatura\s*\{[^}]*month/i);
-    expect(block).not.toMatch(/Fatura\s*\$\{[^}]*month/i);
+    expect(block).toContain("summaryMonthDiffers &&");
+    expect(block).toContain("Fatura {summary.monthLabel}");
+    expect(block).not.toMatch(/Venc\.\s*\{/);
   });
 
   it("formatDueDate emits a zero-padded dd/MM string", () => {
