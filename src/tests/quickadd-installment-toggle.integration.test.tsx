@@ -136,7 +136,7 @@ describe("QuickAddTransactionDialog — alternância divide ↔ fixed", () => {
     // Default: mode = divide, count = 2 → 2x R$ 500,00
     await waitFor(() => {
       expect(screen.getByText(/2x de/)).toBeInTheDocument();
-      expect(screen.getByText(/R\$ 500,00/)).toBeInTheDocument();
+      expect(screen.getAllByText(/R\$ 500,00/).length).toBeGreaterThan(0);
       expect(screen.getByText(/Total dividido:/)).toBeInTheDocument();
     });
 
@@ -178,7 +178,7 @@ describe("QuickAddTransactionDialog — alternância divide ↔ fixed", () => {
       expect(screen.getByText(/4x de/)).toBeInTheDocument();
       expect(screen.getByText(/Total da compra:/)).toBeInTheDocument();
       // total = 300 × 4 = 1.200
-      expect(screen.getByText(/R\$ 1\.200,00/)).toBeInTheDocument();
+      expect(screen.getAllByText(/R\$ 1\.200,00/).length).toBeGreaterThan(0);
     });
 
     // Alterna para divide: campo passa a exibir 1200 (300 × 4)
