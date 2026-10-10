@@ -6,7 +6,7 @@
  *
  * Strategy:
  *  1. Static-source assertions on the two routes that own the label
- *     (src/routes/cards.tsx and src/routes/index.tsx):
+ *     (src/routes/cards.tsx and src/routes/home.tsx):
  *      - each file imports `formatDueLabel` from `@/lib/format-due-date`;
  *      - each file uses `formatDueLabel(...)` for the invoice header;
  *      - no inline "Venc. " literal is concatenated with a raw expression
@@ -23,7 +23,6 @@ import { formatDueLabel } from "@/lib/format-due-date";
 
 const ROUTES = [
   resolve(__dirname, "../routes/cards.tsx"),
-  resolve(__dirname, "../routes/index.tsx"),
 ] as const;
 
 const MONTH_NAMES_PT = [
