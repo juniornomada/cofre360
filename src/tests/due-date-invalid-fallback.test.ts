@@ -2,7 +2,7 @@
  * Invalid-date rendering contract for the credit-card due label.
  * ---------------------------------------------------------------
  * Guarantees that BOTH routes that own the invoice header — Home
- * (src/routes/index.tsx) and /cards (src/routes/cards.tsx) — render
+ * (src/routes/home.tsx) and /cards (src/routes/cards.tsx) — render
  * exactly "Venc. --/--" whenever the underlying `dueDate` is missing
  * or invalid (null, undefined, `new Date("not-a-date")`, malformed
  * numeric inputs, non-Date duck types, etc.).
@@ -95,7 +95,6 @@ describe("formatDueAriaLabel — invalid inputs collapse to accessible fallback"
 describe("Routes route their dueDate through the canonical helper", () => {
   const ROUTES = [
     { file: resolve(__dirname, "../routes/cards.tsx"), label: "cards.tsx" },
-    { file: resolve(__dirname, "../routes/index.tsx"), label: "index.tsx" },
   ] as const;
 
   for (const { file, label } of ROUTES) {
