@@ -429,7 +429,7 @@ function parseDate(text: string, now = new Date()): string {
   return formatDate(date);
 }
 
-const METADATA_BOUNDARY = String.raw`(?:no\s+valor\b|valor\b|por\s+(?:r\$|\d)|cart[aã]o\b|conta(?:\s+banc[aá]ria)?\b|categoria\b|refer[eê]ncia\b|em\s+(?:\d+|${NUMBER_WORD_TOKEN})\s*(?:x|parcelas?)\b|hoje\b|ontem\b|anteontem\b|data\b|dia\s+\d)`;
+const METADATA_BOUNDARY = String.raw`(?:no\s+valor\b|valor\b|por\s+(?:r\$|\d)|cart[aã]o\b|conta(?:\s+banc[aá]ria)?\b|categoria\b|refer[eê]ncia\b|em\s+(?:\d+|${NUMBER_WORD_TOKEN})\s*(?:x|parcelas?)\b|hoje\b|ontem\b|anteontem\b|data\b|dia\s+\d{1,2}(?:[/-]\d{1,2}(?:[/-]\d{2,4})?)?)`;
 
 function parseCard(text: string): string | null {
   const match = text.match(new RegExp(
@@ -686,6 +686,9 @@ function cleanNameCandidate(raw: string): string {
   if (!value || value.split(" ").length > 12 || value.length > 80) return "Transação por voz";
   value = value.replace(/^posto de gasolina\b/i, "Posto de Gasolina");
   value = normalizeProductMeasurements(value);
+  // Listas de especificações ditadas após polegadas ("29 polegadas, QHD, LED")
+  // devem formar um nome limpo, sem vírgulas da pontuação automática.
+  if (/\d{1,3}"/.test(value)) value = value.replace(/,\s*/g, " ").replace(/\s+/g, " ").trim();
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
