@@ -11,10 +11,13 @@ import { getCycleDates } from "@/lib/invoice-utils";
  * Esperado: JÁ PAGO R$ 1.300,00 e FALTAM R$ 653,50.
  */
 
-type Payment = { card_id: string; amount: number; paid_at: string };
+type Payment = { card_id: string; amount: number; paid_at: string; target_period?: string | null };
 type Card = { id: string; closing_day: number; due_day: number };
 
-function periodKeyForPayment(paidAt: Date, card: Card): string {
+function periodKeyForPayment(paidAt: Date, card: Card, targetPeriod?: string | null): string {
+  // A rota de cartões prioriza a fatura selecionada pelo usuário.
+  if (targetPeriod) return targetPeriod.slice(0, 10);
+  // Pagamentos antigos (sem target_period) usam a referência do mês calendário.
   const { currentClose } = getCycleDates(paidAt, card.closing_day, card.due_day);
   return currentClose.toISOString().split("T")[0];
 }
@@ -24,7 +27,7 @@ function buildPaymentsByPeriod(card: Card, payments: Payment[]) {
   const detailedByPeriod: Record<string, { amount: number; date: string }[]> = {};
 
   for (const p of payments.filter((x) => x.card_id === card.id)) {
-    const key = periodKeyForPayment(new Date(p.paid_at), card);
+    const key = periodKeyForPayment(new Date(p.paid_at), card, p.target_period);
     totalByPeriod[key] = (totalByPeriod[key] || 0) + p.amount;
     if (!detailedByPeriod[key]) detailedByPeriod[key] = [];
     detailedByPeriod[key].push({ amount: p.amount, date: p.paid_at });
@@ -42,9 +45,9 @@ function computeInvoiceStatus(invoiceTotal: number, paidInPeriod: number) {
 }
 
 /**
- * Chave do período "Atual" para um cartão dado um "hoje" — replica
- * groupByBillingCycle: endDate do período current = currentClose
- * calculado a partir da referência de hoje.
+ * Chave do período "Atual": replica groupByBillingCycle.
+ * A fatura Atual permanece ancorada no mês calendário, mesmo após vencer.
+ * Não deve ser deslocada automaticamente para a fatura seguinte.
  */
 function activePeriodKey(card: Card, today: Date): string {
   const { currentClose } = getCycleDates(today, card.closing_day, card.due_day);
@@ -54,12 +57,12 @@ function activePeriodKey(card: Card, today: Date): string {
 describe("Pagamento parcial — Já pago e Faltam", () => {
   const portoBank: Card = { id: "porto-1", closing_day: 3, due_day: 10 };
   const invoiceTotal = 1953.5;
-  // Hoje fixo: 12/06/2026 → "Atual" fecha em 03/07/2026.
+  // Hoje fixo: 12/06/2026 → "Atual" fecha em 03/06/2026.
   const today = new Date(2026, 5, 12);
   const keyAtual = activePeriodKey(portoBank, today);
 
-  it("ancoragem: período Atual referente a 12/06/2026 fecha em 03/07/2026", () => {
-    expect(keyAtual).toBe("2026-07-03");
+  it("ancoragem: período Atual de junho mantém fechamento em 03/06 mesmo após vencimento", () => {
+    expect(keyAtual).toBe("2026-06-03");
   });
 
   it("R$ 1.300,00 pagos em 12/06/2026 → JÁ PAGO 1300,00 e FALTAM 653,50 na fatura Atual", () => {
@@ -129,22 +132,45 @@ describe("Pagamento parcial — Já pago e Faltam", () => {
   });
 
 
-  it("pagamento entre fechamento e vencimento (05/06) credita à fatura que acabou de fechar (key 03/06)", () => {
-    // 05/06/2026: fechou em 03/06 e vence em 10/06. Pela lógica de getCycleDates,
-    // currentClose permanece 03/06, portanto o pagamento é atribuído ao período
-    // cuja endDate = 03/06 (a fatura recém-fechada). NÃO entra na "Atual" (03/07).
-    const keyRecemFechada = "2026-06-03";
+  it("pagamento entre fechamento e vencimento (05/06) credita à fatura Atual de junho", () => {
+    // 05/06: fechamento 03/06, vencimento 10/06, referência do mês = 03/06.
     const payments: Payment[] = [
       { card_id: portoBank.id, amount: 1300, paid_at: new Date(2026, 5, 5, 10).toISOString() },
     ];
     const { totalByPeriod } = buildPaymentsByPeriod(portoBank, payments);
 
-    expect(totalByPeriod[keyRecemFechada]).toBeCloseTo(1300, 2);
-    expect(totalByPeriod[keyAtual]).toBeUndefined();
+    expect(totalByPeriod[keyAtual]).toBeCloseTo(1300, 2);
+    expect(totalByPeriod["2026-07-03"]).toBeUndefined();
 
-    const { jaPago, faltam } = computeInvoiceStatus(invoiceTotal, totalByPeriod[keyAtual] || 0);
-    expect(jaPago).toBe(0);
-    expect(faltam).toBeCloseTo(invoiceTotal, 2);
+    const { jaPago, faltam } = computeInvoiceStatus(invoiceTotal, totalByPeriod[keyAtual]);
+    expect(jaPago).toBe(1300);
+    expect(faltam).toBeCloseTo(653.5, 2);
+  });
+
+  it("pagamento com fatura de destino explícita não migra para o mês de pagamento", () => {
+    const payments: Payment[] = [
+      {
+        card_id: portoBank.id,
+        amount: 150.75,
+        paid_at: new Date(2026, 5, 12, 10).toISOString(),
+        target_period: "2026-07-03",
+      },
+    ];
+    const { totalByPeriod, detailedByPeriod } = buildPaymentsByPeriod(portoBank, payments);
+
+    expect(totalByPeriod["2026-07-03"]).toBeCloseTo(150.75, 2);
+    expect(totalByPeriod[keyAtual]).toBeUndefined();
+    expect(detailedByPeriod["2026-07-03"]).toHaveLength(1);
+  });
+
+  it("agrupa pagamentos legados e pagamentos direcionados na fatura correta", () => {
+    const payments: Payment[] = [
+      { card_id: portoBank.id, amount: 100, paid_at: new Date(2026, 5, 12, 10).toISOString() },
+      { card_id: portoBank.id, amount: 50, paid_at: new Date(2026, 5, 12, 10).toISOString(), target_period: "2026-07-03" },
+    ];
+    const { totalByPeriod } = buildPaymentsByPeriod(portoBank, payments);
+    expect(totalByPeriod["2026-06-03"]).toBe(100);
+    expect(totalByPeriod["2026-07-03"]).toBe(50);
   });
 
   describe("PORTO BANK — campo 'PAGO R$' não pode aparecer como R$ 0,00 quando há pagamentos", () => {
@@ -153,12 +179,12 @@ describe("Pagamento parcial — Já pago e Faltam", () => {
 
     it("fatura 08/2024 com pagamento de R$ 150,75 → 'PAGO R$' = 'R$ 150,75' (≠ 'R$ 0,00')", () => {
       const card: Card = { id: "porto-1", closing_day: 3, due_day: 10 };
-      // Hoje fixo após o vencimento (10/08) → currentClose = 03/09/2024.
+      // A fatura Atual de agosto não migra para setembro após o vencimento.
       const today = new Date(2024, 7, 15);
       const keyAtual = activePeriodKey(card, today);
-      expect(keyAtual).toBe("2024-09-03");
+      expect(keyAtual).toBe("2024-08-03");
 
-      // Pagamento em 12/08 (após vencimento) cai no próximo ciclo (03/09).
+      // Pagamento legado sem fatura de destino acompanha o mês do pagamento.
       const payments: Payment[] = [
         { card_id: card.id, amount: 150.75, paid_at: new Date(2024, 7, 12, 10).toISOString() },
       ];
@@ -186,7 +212,7 @@ describe("Pagamento parcial — Já pago e Faltam", () => {
       const card: Card = { id: "porto-1", closing_day: 3, due_day: 10 };
       const today = new Date(2024, 7, 15);
       const keyAtual = activePeriodKey(card, today);
-      // Ambos os pagamentos após vencimento (10/08) → mesmo ciclo (03/09).
+      // Ambos os pagamentos legados em agosto → mesma fatura de agosto.
       const payments: Payment[] = [
         { card_id: card.id, amount: 100.25, paid_at: new Date(2024, 7, 12, 10).toISOString() },
         { card_id: card.id, amount: 50.5, paid_at: new Date(2024, 7, 20, 10).toISOString() },

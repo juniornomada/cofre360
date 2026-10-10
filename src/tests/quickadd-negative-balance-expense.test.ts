@@ -10,8 +10,12 @@ describe("QuickAdd expense with insufficient account balance", () => {
     expect(source).not.toMatch(/newTx\.type === ["']expense["'][\s\S]{0,500}Saldo insuficiente/);
   });
 
-  it("keeps insufficient-balance protection for transfers", () => {
+  it("allows transfers to overdraw while requiring two distinct accounts", () => {
+    // O app registra saldos reais, inclusive negativos. Validar a origem e
+    // o destino continua obrigatório, mas não bloquear a operação por saldo.
     expect(source).toContain("const fromAcc = bankAccounts.find(a => a.id === transferFromId)");
-    expect(source).toMatch(/fromAcc[\s\S]{0,300}Saldo insuficiente/);
+    expect(source).toContain("if (!transferFromId || !transferToId || transferFromId === transferToId)");
+    expect(source).toContain('toast.error("Selecione contas diferentes para a transferência.")');
+    expect(source).not.toContain("Saldo insuficiente");
   });
 });
