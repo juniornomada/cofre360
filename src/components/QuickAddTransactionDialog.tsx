@@ -11,6 +11,7 @@ import { CardIcon } from "@/components/CardIcon";
 import { CalculatorAmountInput } from "@/components/CalculatorAmountInput";
 import { format, parse } from "date-fns";
 import { calculateInstallmentDetails } from "@/lib/installment-utils";
+import { addCalendarMonthsClamped } from "@/lib/installment-schedule-date";
 import { validateInstallmentInputs } from "@/lib/installment-mode-toggle";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -638,8 +639,9 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
       const count = Number(installmentCount) || 1;
       const startAt = Math.min(Math.max(1, installmentStart || 1), count);
       for (let i = startAt; i <= count; i++) {
-        const installDate = new Date(baseDate);
-        installDate.setMonth(installDate.getMonth() + (i - startAt));
+        // Jan 31 + 1 month must land on Feb 28/29, not Mar 2/3.
+        // Always offset from the original date to avoid cumulative day drift.
+        const installDate = addCalendarMonthsClamped(baseDate, i - startAt);
          const { valorParcela: parcela } = calculateInstallmentDetails(
            newTx.amount,
            count,

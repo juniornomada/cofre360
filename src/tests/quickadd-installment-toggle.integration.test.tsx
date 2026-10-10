@@ -261,6 +261,68 @@ describe("QuickAddTransactionDialog — alternância divide ↔ fixed", () => {
     await waitFor(() => expect(totalInput.value).toBe("9"));
   });
 
+  it("persiste compras de 31/jan em jan, fev, mar e abr sem pular fevereiro", async () => {
+    render(
+      <QuickAddTransactionDialog
+        open
+        initialDate="2026-01-31"
+        initialType="expense"
+        onOpenChange={vi.fn()}
+      />,
+    );
+    fireEvent.change(screen.getByPlaceholderText(/Ex: Supermercado/), {
+      target: { value: "Compra no fim do mês" },
+    });
+    await selectCardNubank();
+    setAmount(1200);
+    clickParcelarToggle();
+    setInstallmentCount(4);
+    fireEvent.click(screen.getByRole("button", { name: /Adicionar/ }));
+
+    await waitFor(() => expect(insertMock).toHaveBeenCalled());
+    const rows = insertMock.mock.calls[0][0] as Array<{
+      date: string; amount: number; installment_number: number;
+    }>;
+    expect(rows.map((row) => row.date)).toEqual([
+      "31-01-2026", "28-02-2026", "31-03-2026", "30-04-2026",
+    ]);
+    expect(rows.map((row) => row.installment_number)).toEqual([1, 2, 3, 4]);
+    expect(rows.map((row) => row.amount)).toEqual([300, 300, 300, 300]);
+  });
+
+  it("respeita parcela atual 3/5 no dia 31, incluindo fevereiro bissexto", async () => {
+    render(
+      <QuickAddTransactionDialog
+        open
+        initialDate="2028-01-31"
+        initialType="expense"
+        onOpenChange={vi.fn()}
+      />,
+    );
+    fireEvent.change(screen.getByPlaceholderText(/Ex: Supermercado/), {
+      target: { value: "Compra retroativa" },
+    });
+    await selectCardNubank();
+    setAmount(1000);
+    clickParcelarToggle();
+    setInstallmentCount(5);
+    fireEvent.change(screen.getByRole("spinbutton", { name: "Parcela atual" }), {
+      target: { value: "3" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /Adicionar/ }));
+
+    await waitFor(() => expect(insertMock).toHaveBeenCalled());
+    const rows = insertMock.mock.calls[0][0] as Array<{
+      date: string; amount: number; installment_number: number; total_installments: number;
+    }>;
+    expect(rows.map((row) => row.date)).toEqual([
+      "31-01-2028", "29-02-2028", "31-03-2028",
+    ]);
+    expect(rows.map((row) => row.installment_number)).toEqual([3, 4, 5]);
+    expect(rows.map((row) => row.amount)).toEqual([200, 200, 200]);
+    expect(rows.map((row) => row.total_installments)).toEqual([5, 5, 5]);
+  });
+
   it("persiste installment_source_amount igual ao total digitado no modo divide", async () => {
     await setup();
 
