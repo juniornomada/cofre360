@@ -44,8 +44,10 @@ describe("exclusão financeira de transferência", () => {
   it("exclui entrada e saída com uma única instrução após confirmar o vínculo", async () => {
     await expect(deleteTransferPair({ id: "out", installment_group_id: "transfer-1" }))
       .resolves.toEqual({ deletedCount: 2 });
-    expect(db.findPair).toHaveBeenCalledExactlyOnceWith("installment_group_id", "transfer-1");
-    expect(db.deletePair).toHaveBeenCalledExactlyOnceWith(
+    expect(db.findPair).toHaveBeenCalledTimes(1);
+    expect(db.findPair).toHaveBeenCalledWith("installment_group_id", "transfer-1");
+    expect(db.deletePair).toHaveBeenCalledTimes(1);
+    expect(db.deletePair).toHaveBeenCalledWith(
       "id", ["out", "in"], "installment_group_id", "transfer-1", "id",
     );
   });
