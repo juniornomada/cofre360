@@ -22,4 +22,20 @@ describe("transaction edit delete action guard", () => {
     expect(source).toContain("deleteOpenedFromEdit");
     expect(source).toContain("setShowEditDialog(true)");
   });
+
+  it("deletes both transfer legs through the validated helper, never by single id", () => {
+    expect(source).toContain("isTransferTransaction(deleteTarget)");
+    expect(source).toContain("deleteTransferPair(deleteTarget)");
+    expect(source).toContain("As duas serão excluídas juntas");
+  });
+
+  it("blocks batch deletion whenever the selection contains a bank transfer", () => {
+    expect(source).toContain("filtered.some((tx) => selectedIds.has(tx.id) && isTransferTransaction(tx))");
+    expect(source).toContain("exclua transferências individualmente");
+  });
+
+  it("keeps the deletion confirmation open if validation or deletion fails", () => {
+    expect(source).toContain("let deletedSuccessfully = false");
+    expect(source).toContain("if (deletedSuccessfully) {");
+  });
 });
