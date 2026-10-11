@@ -1496,7 +1496,14 @@ export function TransactionsPage() {
   const handleBatchDelete = async () => {
     const count = selectedIds.size;
     if (count === 0) return;
-    
+
+    // Batch selection may contain only one leg of a transfer (for example,
+    // when browsing one bank account). Never delete it without its mate.
+    if (filtered.some((tx) => selectedIds.has(tx.id) && isTransferTransaction(tx))) {
+      toast.error("Para preservar os saldos, exclua transferências individualmente. As duas pontas serão verificadas.");
+      return;
+    }
+
     setDeleting(true);
     const promise = async () => {
       const ids = Array.from(selectedIds);
