@@ -23,6 +23,15 @@ describe("transaction edit delete action guard", () => {
     expect(source).toContain("setShowEditDialog(true)");
   });
 
+  it("validates the exact transfer pair before performing either edit update", () => {
+    const saveStart = source.indexOf("const handleSaveEdit = async");
+    const fromUpdate = source.indexOf('name: transferNames.outgoing', saveStart);
+    const guard = source.indexOf("isCompleteTransferEditPair(pairRows || [], editTx.id)", saveStart);
+    expect(guard).toBeGreaterThan(saveStart);
+    expect(fromUpdate).toBeGreaterThan(guard);
+    expect(source).toContain("Nenhum lançamento foi alterado.");
+  });
+
   it("deletes both transfer legs through the validated helper, never by single id", () => {
     expect(source).toContain("isTransferTransaction(deleteTarget)");
     expect(source).toContain("deleteTransferPair(deleteTarget)");

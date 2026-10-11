@@ -32,6 +32,7 @@ import { saveInstallmentPlan, stripInstallmentSuffix, detectInstallmentChanges, 
 import { toDivideMode, toFixedMode, validateInstallmentInputs, changeInstallmentCount } from "@/lib/installment-mode-toggle";
 import { deleteTransactionScope, isInstallmentTx } from "@/lib/installment-delete";
 import { deleteTransferPair } from "@/lib/transfer-delete";
+import { isCompleteTransferEditPair } from "@/lib/transfer-edit-validation";
 import { loadEditDraft, saveEditDraft, clearEditDraft } from "@/lib/edit-transaction-draft";
 import { toast } from "sonner";
 import { useUserPreferences } from "@/hooks/use-user-preferences";
@@ -1026,7 +1027,13 @@ export function TransactionsPage() {
              .select("id,icon,name,category,date,amount,type,card,bank_account_id,installment_group_id,created_at")
              .eq("installment_group_id", editTx.installment_group_id);
            if (pairError) throw pairError;
-           transferRows = (pairRows || []).filter(row => isTransferTransaction(row as Transaction)) as Transaction[];
+           // Um grupo vinculado precisa conter EXATAMENTE uma saída e uma entrada.
+           // Não procurar uma "outra ponta" por valor/data se o grupo estiver quebrado.
+           if (!isCompleteTransferEditPair(pairRows || [], editTx.id)) {
+             toast.error("Não foi possível confirmar as duas pontas desta transferência. Nenhum lançamento foi alterado.");
+             return;
+           }
+           transferRows = pairRows as Transaction[];
          }
 
          let fromRow = transferRows.find(row => row.type === "expense");
