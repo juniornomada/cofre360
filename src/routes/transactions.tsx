@@ -31,6 +31,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { saveInstallmentPlan, stripInstallmentSuffix, detectInstallmentChanges, splitInstallmentChanges, propagateCosmeticFieldsToGroup } from "@/lib/installment-edit";
 import { toDivideMode, toFixedMode, validateInstallmentInputs, changeInstallmentCount } from "@/lib/installment-mode-toggle";
 import { deleteTransactionScope, isInstallmentTx } from "@/lib/installment-delete";
+import { deleteTransferPair } from "@/lib/transfer-delete";
 import { loadEditDraft, saveEditDraft, clearEditDraft } from "@/lib/edit-transaction-draft";
 import { toast } from "sonner";
 import { useUserPreferences } from "@/hooks/use-user-preferences";
@@ -1439,8 +1440,12 @@ export function TransactionsPage() {
 
   const handleDeleteConfirm = async () => {
     if (!deleteTarget) return;
+    let deletedSuccessfully = false;
     try {
-      const { deletedCount } = await deleteTransactionScope(deleteTarget, deleteScope);
+      const { deletedCount } = isTransferTransaction(deleteTarget)
+        ? await deleteTransferPair(deleteTarget)
+        : await deleteTransactionScope(deleteTarget, deleteScope);
+      deletedSuccessfully = true;
       if (deleteTarget?.id) clearEditDraft(deleteTarget.id);
       if (deletedCount > 1) {
         toast.success(`${deletedCount} transações excluídas`);
@@ -1449,16 +1454,18 @@ export function TransactionsPage() {
       }
     } catch (e) {
       console.error(e);
-      toast.error("Erro ao excluir transação");
+      toast.error(e instanceof Error ? e.message : "Erro ao excluir transação");
     } finally {
-      (document.activeElement as HTMLElement)?.blur();
-      setDeleteOpenedFromEdit(false);
-      setShowDeleteDialog(false);
-      setDeleteTarget(null);
-      setDeleteScope("single");
-      setEditTx(null);
-      fetchTransactions();
-      fetchBankAccounts(); // Refresh balances
+      if (deletedSuccessfully) {
+        (document.activeElement as HTMLElement)?.blur();
+        setDeleteOpenedFromEdit(false);
+        setShowDeleteDialog(false);
+        setDeleteTarget(null);
+        setDeleteScope("single");
+        setEditTx(null);
+        fetchTransactions();
+        fetchBankAccounts(); // Refresh balances
+      }
     }
   };
 
@@ -2746,6 +2753,11 @@ export function TransactionsPage() {
                 </label>
               </div>
             </div>
+          ) : isTransferTransaction(deleteTarget) ? (
+            <p className="text-sm text-muted-foreground">
+              Esta transferência possui uma saída e uma entrada. As duas serão excluídas juntas
+              somente se o vínculo entre elas puder ser confirmado com segurança.
+            </p>
           ) : (
             <p className="text-sm text-muted-foreground">Tem certeza que deseja excluir esta transação?</p>
           )}
