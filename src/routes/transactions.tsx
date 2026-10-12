@@ -2781,6 +2781,9 @@ export function TransactionsPage() {
             confirmOrphanTransferDeletion ? (
               <div role="alert" className="space-y-2 rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm">
                 <p className="font-semibold">Transferência sem par identificado</p>
+                <p className="font-medium text-foreground">
+                  {deleteTarget?.name} — R$ {formatCurrency(Number(deleteTarget?.amount || 0))}
+                </p>
                 <p>
                   O banco confirmou que somente este lançamento permanece no grupo.
                   Se confirmar, apenas esta entrada ou saída será excluída e o saldo
