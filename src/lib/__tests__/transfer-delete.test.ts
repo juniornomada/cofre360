@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const db = vi.hoisted(() => ({
   findPair: vi.fn(),
   deletePair: vi.fn(),
+  deleteOrphan: vi.fn(),
 }));
 
 vi.mock("@/integrations/supabase/client", () => ({
@@ -20,13 +21,18 @@ vi.mock("@/integrations/supabase/client", () => ({
               select: (columns: string) => db.deletePair(column, ids, groupColumn, group, columns),
             }),
           }),
+          eq: (idColumn: string, id: string) => ({
+            eq: (groupColumn: string, group: string) => ({
+              select: (columns: string) => db.deleteOrphan(idColumn, id, groupColumn, group, columns),
+            }),
+          }),
         }),
       };
     },
   },
 }));
 
-import { deleteTransferPair } from "@/lib/transfer-delete";
+import { deleteTransferPair, OrphanedTransferError } from "@/lib/transfer-delete";
 
 const validRows = [
   { id: "out", type: "expense", category: "Transferências > Outros" },
@@ -38,6 +44,9 @@ describe("exclusão financeira de transferência", () => {
     db.findPair.mockReset().mockResolvedValue({ data: validRows, error: null });
     db.deletePair.mockReset().mockResolvedValue({
       data: [{ id: "out" }, { id: "in" }], error: null,
+    });
+    db.deleteOrphan.mockReset().mockResolvedValue({
+      data: [{ id: "out" }], error: null,
     });
   });
 
@@ -59,8 +68,63 @@ describe("exclusão financeira de transferência", () => {
     expect(db.deletePair).not.toHaveBeenCalled();
   });
 
+  it("identifica uma transferência órfã e exige confirmação adicional", async () => {
+    db.findPair.mockResolvedValue({ data: [validRows[0]], error: null });
+    await expect(deleteTransferPair({ id: "out", installment_group_id: "transfer-1" }))
+      .rejects.toBeInstanceOf(OrphanedTransferError);
+    expect(db.deletePair).not.toHaveBeenCalled();
+    expect(db.deleteOrphan).not.toHaveBeenCalled();
+  });
+
+  it("exclui somente a ponta órfã após confirmação explícita", async () => {
+    db.findPair.mockResolvedValue({ data: [validRows[0]], error: null });
+    await expect(deleteTransferPair(
+      { id: "out", installment_group_id: "transfer-1" },
+      { allowOrphan: true },
+    )).resolves.toEqual({ deletedCount: 1 });
+    expect(db.deletePair).not.toHaveBeenCalled();
+    expect(db.deleteOrphan).toHaveBeenCalledWith(
+      "id", "out", "installment_group_id", "transfer-1", "id",
+    );
+  });
+
+  it("revalida o grupo e não exclui apenas uma ponta se o par reapareceu", async () => {
+    await expect(deleteTransferPair(
+      { id: "out", installment_group_id: "transfer-1" },
+      { allowOrphan: true },
+    )).resolves.toEqual({ deletedCount: 2 });
+    expect(db.deletePair).toHaveBeenCalledOnce();
+    expect(db.deleteOrphan).not.toHaveBeenCalled();
+  });
+
+  it("não exclui uma ponta diferente da selecionada, mesmo com confirmação", async () => {
+    db.findPair.mockResolvedValue({ data: [{ ...validRows[0], id: "unrelated" }], error: null });
+    await expect(deleteTransferPair(
+      { id: "out", installment_group_id: "transfer-1" },
+      { allowOrphan: true },
+    )).rejects.toThrow(/confirmar as duas pontas/);
+    expect(db.deleteOrphan).not.toHaveBeenCalled();
+  });
+
+  it("não confirma sucesso se o DELETE da transferência órfã atingir zero linhas", async () => {
+    db.findPair.mockResolvedValue({ data: [validRows[0]], error: null });
+    db.deleteOrphan.mockResolvedValue({ data: [], error: null });
+    await expect(deleteTransferPair(
+      { id: "out", installment_group_id: "transfer-1" },
+      { allowOrphan: true },
+    )).rejects.toThrow(/não foi confirmada/);
+  });
+
+  it("propaga erro do banco na exclusão da transferência órfã", async () => {
+    db.findPair.mockResolvedValue({ data: [validRows[0]], error: null });
+    db.deleteOrphan.mockResolvedValue({ data: null, error: { message: "Falha na exclusão" } });
+    await expect(deleteTransferPair(
+      { id: "out", installment_group_id: "transfer-1" },
+      { allowOrphan: true },
+    )).rejects.toMatchObject({ message: "Falha na exclusão" });
+  });
+
   it.each([
-    ["somente uma ponta", [validRows[0]]],
     ["três registros no grupo", [...validRows, { id: "extra", type: "expense", category: "Transferências > Outros" }]],
     ["duas saídas", [validRows[0], { ...validRows[1], type: "expense" }]],
     ["uma compra indevida no grupo", [validRows[0], { ...validRows[1], category: "Alimentação > Outros" }]],

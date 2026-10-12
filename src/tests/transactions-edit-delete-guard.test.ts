@@ -32,10 +32,18 @@ describe("transaction edit delete action guard", () => {
     expect(source).toContain("Nenhum lançamento foi alterado.");
   });
 
-  it("deletes both transfer legs through the validated helper, never by single id", () => {
+  it("deletes complete transfer pairs through the validated helper", () => {
     expect(source).toContain("isTransferTransaction(deleteTarget)");
-    expect(source).toContain("deleteTransferPair(deleteTarget)");
-    expect(source).toContain("As duas serão excluídas juntas");
+    expect(source).toContain("deleteTransferPair(deleteTarget, { allowOrphan: confirmOrphanTransferDeletion })");
+    expect(source).toContain("Transferências completas são excluídas pelas duas pontas");
+  });
+
+  it("requires a separate, explicit confirmation for a verified orphaned transfer", () => {
+    expect(source).toContain("e instanceof OrphanedTransferError");
+    expect(source).toContain("setConfirmOrphanTransferDeletion(true)");
+    expect(source).toContain("Excluir somente este lançamento");
+    expect(source).toContain("O banco confirmou que somente este lançamento permanece no grupo");
+    expect(source).toContain("setConfirmOrphanTransferDeletion(false)");
   });
 
   it("blocks batch deletion whenever the selection contains a bank transfer", () => {
