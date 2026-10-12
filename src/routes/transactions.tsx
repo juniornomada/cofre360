@@ -31,7 +31,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { saveInstallmentPlan, stripInstallmentSuffix, detectInstallmentChanges, splitInstallmentChanges, propagateCosmeticFieldsToGroup } from "@/lib/installment-edit";
 import { toDivideMode, toFixedMode, validateInstallmentInputs, changeInstallmentCount } from "@/lib/installment-mode-toggle";
 import { deleteTransactionScope, isInstallmentTx } from "@/lib/installment-delete";
-import { deleteTransferPair } from "@/lib/transfer-delete";
+import { deleteTransferPair, OrphanedTransferError } from "@/lib/transfer-delete";
 import { isCompleteTransferEditPair } from "@/lib/transfer-edit-validation";
 import { loadEditDraft, saveEditDraft, clearEditDraft } from "@/lib/edit-transaction-draft";
 import { toast } from "sonner";
@@ -216,6 +216,7 @@ export function TransactionsPage() {
   const [deleteTarget, setDeleteTarget] = useState<Transaction | null>(null);
   const [deleteScope, setDeleteScope] = useState<"single" | "future" | "all">("single");
   const [deleteOpenedFromEdit, setDeleteOpenedFromEdit] = useState(false);
+  const [confirmOrphanTransferDeletion, setConfirmOrphanTransferDeletion] = useState(false);
    const [showAddDialog, setShowAddDialog] = useState(false);
    const [voiceDraft, setVoiceDraft] = useState<VoiceTransactionDraft | null>(null);
    const [showAddTypeDialog, setShowAddTypeDialog] = useState(false);
@@ -1427,6 +1428,7 @@ export function TransactionsPage() {
     (document.activeElement as HTMLElement)?.blur();
     setDeleteTarget(editTx);
     setDeleteScope("single");
+    setConfirmOrphanTransferDeletion(false);
     setDeleteOpenedFromEdit(true);
     setShowEditDialog(false);
     setShowDeleteDialog(true);
@@ -1436,6 +1438,7 @@ export function TransactionsPage() {
     setShowDeleteDialog(false);
     setDeleteTarget(null);
     setDeleteScope("single");
+    setConfirmOrphanTransferDeletion(false);
     if (deleteOpenedFromEdit && editTx) {
       setDeleteOpenedFromEdit(false);
       setShowEditDialog(true);
@@ -1450,7 +1453,7 @@ export function TransactionsPage() {
     let deletedSuccessfully = false;
     try {
       const { deletedCount } = isTransferTransaction(deleteTarget)
-        ? await deleteTransferPair(deleteTarget)
+        ? await deleteTransferPair(deleteTarget, { allowOrphan: confirmOrphanTransferDeletion })
         : await deleteTransactionScope(deleteTarget, deleteScope);
       deletedSuccessfully = true;
       if (deleteTarget?.id) clearEditDraft(deleteTarget.id);
@@ -1460,8 +1463,14 @@ export function TransactionsPage() {
         toast.success("Transação excluída");
       }
     } catch (e) {
-      console.error(e);
-      toast.error(e instanceof Error ? e.message : "Erro ao excluir transação");
+      if (e instanceof OrphanedTransferError) {
+        // Apenas um registro foi encontrado: pedir uma segunda confirmação
+        // antes de excluir a ponta órfã. O helper verifica o grupo de novo.
+        setConfirmOrphanTransferDeletion(true);
+      } else {
+        console.error(e);
+        toast.error(e instanceof Error ? e.message : "Erro ao excluir transação");
+      }
     } finally {
       if (deletedSuccessfully) {
         (document.activeElement as HTMLElement)?.blur();
@@ -1469,6 +1478,7 @@ export function TransactionsPage() {
         setShowDeleteDialog(false);
         setDeleteTarget(null);
         setDeleteScope("single");
+        setConfirmOrphanTransferDeletion(false);
         setEditTx(null);
         fetchTransactions();
         fetchBankAccounts(); // Refresh balances
@@ -2020,7 +2030,7 @@ export function TransactionsPage() {
                   amountVisible={balanceVisible}
                   style={{ animationDelay: `${i * 40}ms` }} 
                   onEdit={selectionMode ? undefined : () => handleEdit(tx)}
-                  onDelete={selectionMode ? undefined : () => { setDeleteOpenedFromEdit(false); setDeleteTarget(tx); setDeleteScope("single"); setShowDeleteDialog(true); }}
+                  onDelete={selectionMode ? undefined : () => { setDeleteOpenedFromEdit(false); setDeleteTarget(tx); setDeleteScope("single"); setConfirmOrphanTransferDeletion(false); setShowDeleteDialog(true); }}
                   onPost={selectionMode || tx.transaction_status !== "pending" ? undefined : () => openPostTransaction(tx)}
                   onDuplicate={selectionMode ? undefined : () => {
                     setCopyTxData({
@@ -2768,16 +2778,33 @@ export function TransactionsPage() {
               </div>
             </div>
           ) : isTransferTransaction(deleteTarget) ? (
-            <p className="text-sm text-muted-foreground">
-              Esta transferência possui uma saída e uma entrada. As duas serão excluídas juntas
-              somente se o vínculo entre elas puder ser confirmado com segurança.
-            </p>
+            confirmOrphanTransferDeletion ? (
+              <div role="alert" className="space-y-2 rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm">
+                <p className="font-semibold">Transferência sem par identificado</p>
+                <p>
+                  O banco confirmou que somente este lançamento permanece no grupo.
+                  Se confirmar, apenas esta entrada ou saída será excluída e o saldo
+                  da conta vinculada será atualizado.
+                </p>
+                <p className="font-medium">
+                  Outros resgates e transferências não serão excluídos.
+                </p>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Transferências completas são excluídas pelas duas pontas.
+                Se faltar uma ponta, será necessária uma confirmação adicional
+                antes de excluir somente o lançamento restante.
+              </p>
+            )
           ) : (
             <p className="text-sm text-muted-foreground">Tem certeza que deseja excluir esta transação?</p>
           )}
           <DialogFooter>
             <Button variant="outline" onClick={closeDeleteDialog}>Cancelar</Button>
-            <Button variant="destructive" onClick={handleDeleteConfirm}>Excluir</Button>
+            <Button variant="destructive" onClick={handleDeleteConfirm}>
+              {confirmOrphanTransferDeletion ? "Excluir somente este lançamento" : "Excluir"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
