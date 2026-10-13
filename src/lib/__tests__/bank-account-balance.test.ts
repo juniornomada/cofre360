@@ -94,7 +94,8 @@ describe("financial balance guard across routes", () => {
   const homeSrc = readFileSync(resolve(process.cwd(), "src/routes/home.tsx"), "utf8");
 
   it("computes invoice payment account options with the shared banking rules", () => {
-    expect(cardsSrc).toContain("calculateBankAccountBalances(accountsRes.data, allTxRes.data || [], today)");
+    expect(cardsSrc).toContain("const balances = calculateBankAccountBalances(accountsRes.data, allTxRes.data || [], today)");
+    expect(cardsSrc).toContain("balance: balances[index].balance");
     expect(cardsSrc).toContain("if (allTxRes.error) throw allTxRes.error");
     expect(cardsSrc).toContain("is_visible, card, transaction_status, posted_at, transaction_date, date");
   });
