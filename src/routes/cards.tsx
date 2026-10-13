@@ -132,6 +132,7 @@ import { sanitizeTransactionWrite, sanitizeTransactionWrites } from "@/lib/norma
 import { sortInvoiceChronoAsc } from "@/lib/invoice-chrono-sort";
 import { getInvoicePaymentStatus, remainingInvoiceAmount, shouldAutoAdvanceInvoiceMonth } from "@/lib/invoice-payment-status";
 import { getCardAvailableLimit, getCurrentAndFutureOutstanding } from "@/lib/card-available-limit";
+import { replaceCardTransactionsInLedger } from "@/lib/card-scoped-ledger";
 import { mapServerError } from "@/lib/map-server-error";
 import { AutoFitText } from "@/components/AutoFitText";
 import { PaymentDescriptionText, normalizePaymentDescription } from "@/components/PaymentDescriptionText";
@@ -609,7 +610,8 @@ function CardsPage() {
       ]);
       if (txResult.error) throw txResult.error;
       if (refundsResult.error) throw refundsResult.error;
-      setCardTransactions((txResult.data as CardTransaction[]) || []);
+      // Scoped invoice query: preserve the transactions of every other card.
+      setCardTransactions((previous) => replaceCardTransactionsInLedger(previous, card.name, (txResult.data as CardTransaction[]) || []));
       setCardRefunds((refundsResult.data as CardRefund[]) || []);
     } catch (error: any) {
       console.error("Error fetching card transactions:", error);
@@ -647,7 +649,8 @@ function CardsPage() {
       ]);
       if (txResult.error) throw txResult.error;
       if (refundsResult.error) throw refundsResult.error;
-      setCardTransactions((txResult.data as CardTransaction[]) || []);
+      // Scoped invoice query: preserve the transactions of every other card.
+      setCardTransactions((previous) => replaceCardTransactionsInLedger(previous, card.name, (txResult.data as CardTransaction[]) || []));
       setCardRefunds((refundsResult.data as CardRefund[]) || []);
     } catch (error: any) {
       console.error("Error refreshing card transactions:", error);
@@ -1373,7 +1376,8 @@ function CardsPage() {
         .eq("card", card.name)
         .order("created_at", { ascending: false });
       if (error) throw error;
-      setCardTransactions((data as CardTransaction[]) || []);
+      // A card-only response must never erase the other cards\u0027 invoice rows.
+      setCardTransactions((previous) => replaceCardTransactionsInLedger(previous, card.name, (data as CardTransaction[]) || []));
      } catch (error: any) {
        console.error("Error fetching card transactions for payment:", error);
      } finally {
@@ -1403,9 +1407,9 @@ function CardsPage() {
 
       if (txError) throw txError;
       
-      // Update local state and trigger re-calculation of invoicePeriods
+      // Validate against fresh rows for the paying card without replacing the
+      // full multi-card ledger used by the summary and the other cards.
       const txs = (latestTxs as CardTransaction[]) || [];
-      setCardTransactions(txs);
       const paymentAutoOffset = getAutomaticInvoiceMonthOffset(payingCard, txs);
       const paymentReferenceDate = (() => {
         const now = new Date();
@@ -1478,16 +1482,8 @@ function CardsPage() {
       // Force immediate re-fetch of everything to update status indicators
       await fetchAll();
       
-      // Update specific card transactions to ensure they are consistent in all views
-      const { data: updatedTxs } = await supabase
-        .from("transactions")
-        .select("id, name, icon, category, date, purchase_date, amount, type, card, created_at, total_installments, installment_number, installment_group_id")
-        .eq("card", payingCard.name)
-        .order("created_at", { ascending: false });
-      
-      if (updatedTxs) {
-        setCardTransactions((updatedTxs as CardTransaction[]) || []);
-      }
+      // fetchAll above already refreshed transactions for ALL cards. Do not
+      // overwrite the complete ledger again with the paying card alone.
     } catch (error) {
       console.error("Payment error:", error);
       toast.error("Erro ao processar pagamento");
