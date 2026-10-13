@@ -204,6 +204,22 @@ export function TransactionItem({
           {onDelete && <button type="button" onClick={() => { setSwipeActionsOpen(false); onDelete(); }} className="flex h-9 w-9 items-center justify-center rounded-full bg-destructive/10 text-destructive" aria-label="Excluir"><Trash2 className="h-4 w-4" /></button>}
         </div>
       )}
+      {/* Mobile: a ação manual não deve depender de descobrir o gesto de deslizar.
+          A exclusão efetiva continua protegida pela confirmação do diálogo. */}
+      {onDelete && !swipeActionsOpen && (
+        <button
+          type="button"
+          aria-label={`Excluir transação: ${displayName}`}
+          title="Excluir transação"
+          onClick={(event) => {
+            event.stopPropagation();
+            onDelete();
+          }}
+          className="absolute right-2 top-1/2 z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive sm:hidden"
+        >
+          <Trash2 className="h-4 w-4" aria-hidden="true" />
+        </button>
+      )}
       {onDelete && (
         <div className="hidden sm:flex absolute right-2 sm:right-2 top-1/2 -translate-y-1/2 items-center gap-1.5 sm:opacity-0 group-hover/item:opacity-100 focus-within:opacity-100 transition-all duration-200 sm:translate-x-2 group-hover/item:translate-x-0 focus-within:translate-x-0 z-10 pointer-events-auto sm:pointer-events-none sm:group-hover/item:pointer-events-auto sm:focus-within:pointer-events-auto">
           <div
