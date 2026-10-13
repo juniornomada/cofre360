@@ -326,7 +326,12 @@ function CardsPage() {
         // lançamentos pendentes/ocultos nem lançamentos futuros.
         const today = new Date();
         today.setHours(23, 59, 59, 999);
-        setBankAccounts(calculateBankAccountBalances(accountsRes.data, allTxRes.data || [], today));
+        const balances = calculateBankAccountBalances(accountsRes.data, allTxRes.data || [], today);
+        // Preserve all Supabase account metadata (name/icon/color) for the picker.
+        setBankAccounts(accountsRes.data.map((account, index) => ({
+          ...account,
+          balance: balances[index].balance,
+        })));
       }
       if (txRes.data) {
         const totals: Record<string, number> = {};
