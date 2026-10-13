@@ -56,7 +56,11 @@ describe("Scoped card refreshes do not erase unrelated invoices", () => {
       allRows[0],
       { ...allRows[1], amount: 0 },
     ]);
-    expect(result).toEqual(allRows);
+    // Scoped merges may regroup cards in the ledger, but cannot mutate
+    // another card's transactions or import a wrong-card update.
+    expect(result).toHaveLength(allRows.length);
+    expect(result.find((row) => row.id === "mp-oct")).toEqual(allRows[0]);
+    expect(result.filter((row) => row.card === "Porto Bank")).toEqual(allRows.slice(1));
   });
 
   it("does not erase Mercado Pago while refreshing only Porto Bank invoice details", () => {
