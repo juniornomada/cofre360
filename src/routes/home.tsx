@@ -33,7 +33,7 @@ import { getCategoryDisplay, getCategoryIcon } from "@/lib/categories";
 import { addCurrencyCents, fetchAllCategoryLedgerTransactions, type CategoryLedgerTransaction } from "@/lib/category-spending-ledger";
 import { getBillingCycleMonthKey, getCycleDates, groupByBillingCycle, monthNames, type CardTransaction } from "@/lib/invoice-utils";
 import { remainingInvoiceAmount, shouldAutoAdvanceInvoiceMonth } from "@/lib/invoice-payment-status";
-import { countsTowardCurrentBalance } from "@/lib/transaction-status";
+import { countsTowardBankAccountBalance } from "@/lib/bank-account-balance";
 
 type Account = {
   id: string;
@@ -268,9 +268,7 @@ function RecoveredHome() {
     const expenseByAccount: Record<string, number> = {};
 
     for (const tx of transactions) {
-      if (tx.is_visible === false || !tx.bank_account_id) continue;
-      if (tx.type === "expense" && tx.card) continue;
-      if (!countsTowardCurrentBalance(tx, selectedCutoff)) continue;
+      if (!countsTowardBankAccountBalance(tx, selectedCutoff)) continue;
       const amount = Number(tx.amount || 0);
       if (tx.type === "income") incomeByAccount[tx.bank_account_id] = (incomeByAccount[tx.bank_account_id] || 0) + amount;
       else expenseByAccount[tx.bank_account_id] = (expenseByAccount[tx.bank_account_id] || 0) + amount;
