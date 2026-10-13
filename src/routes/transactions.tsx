@@ -217,6 +217,7 @@ export function TransactionsPage() {
   const [deleteScope, setDeleteScope] = useState<"single" | "future" | "all">("single");
   const [deleteOpenedFromEdit, setDeleteOpenedFromEdit] = useState(false);
   const [confirmOrphanTransferDeletion, setConfirmOrphanTransferDeletion] = useState(false);
+  const [deletingSingleTransaction, setDeletingSingleTransaction] = useState(false);
    const [showAddDialog, setShowAddDialog] = useState(false);
    const [voiceDraft, setVoiceDraft] = useState<VoiceTransactionDraft | null>(null);
    const [showAddTypeDialog, setShowAddTypeDialog] = useState(false);
@@ -1449,7 +1450,8 @@ export function TransactionsPage() {
 
 
   const handleDeleteConfirm = async () => {
-    if (!deleteTarget) return;
+    if (!deleteTarget || deletingSingleTransaction) return;
+    setDeletingSingleTransaction(true);
     let deletedSuccessfully = false;
     try {
       const { deletedCount } = isTransferTransaction(deleteTarget)
@@ -1472,6 +1474,7 @@ export function TransactionsPage() {
         toast.error(e instanceof Error ? e.message : "Erro ao excluir transação");
       }
     } finally {
+      setDeletingSingleTransaction(false);
       if (deletedSuccessfully) {
         (document.activeElement as HTMLElement)?.blur();
         setDeleteOpenedFromEdit(false);
@@ -2804,9 +2807,9 @@ export function TransactionsPage() {
             <p className="text-sm text-muted-foreground">Tem certeza que deseja excluir esta transação?</p>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={closeDeleteDialog}>Cancelar</Button>
-            <Button variant="destructive" onClick={handleDeleteConfirm}>
-              {confirmOrphanTransferDeletion ? "Excluir somente este lançamento" : "Excluir"}
+            <Button variant="outline" onClick={closeDeleteDialog} disabled={deletingSingleTransaction}>Cancelar</Button>
+            <Button variant="destructive" onClick={handleDeleteConfirm} disabled={deletingSingleTransaction}>
+              {deletingSingleTransaction ? "Verificando exclusão..." : confirmOrphanTransferDeletion ? "Excluir somente este lançamento" : "Excluir"}
             </Button>
           </DialogFooter>
         </DialogContent>
