@@ -51,6 +51,15 @@ describe("transaction edit delete action guard", () => {
     expect(source).toContain("exclua transferências individualmente");
   });
 
+  it("prevents repeat taps while an orphan transfer is being checked/deleted", () => {
+    expect(source).toContain("if (!deleteTarget || deletingSingleTransaction) return;");
+    expect(source).toContain("setDeletingSingleTransaction(true)");
+    expect(source).toContain("setDeletingSingleTransaction(false)");
+    expect(source).toContain('disabled={deletingSingleTransaction}');
+    expect(source).toContain("Verificando exclusão...");
+    expect(source).toContain("Excluir somente este lançamento");
+  });
+
   it("keeps the deletion confirmation open if validation or deletion fails", () => {
     expect(source).toContain("let deletedSuccessfully = false");
     expect(source).toContain("if (deletedSuccessfully) {");

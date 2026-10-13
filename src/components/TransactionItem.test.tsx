@@ -25,7 +25,49 @@ afterAll(() => vi.unstubAllGlobals());
      type: "income" as const,
    };
  
-   it("should show full transfer name in tooltip when focused via keyboard", async () => {
+   it("permite excluir um resgate órfão manualmente pelo botão visível no celular", async () => {
+    const user = userEvent.setup();
+    const onDelete = vi.fn();
+    const onEdit = vi.fn();
+    render(
+      <TooltipProvider>
+        <TransactionItem
+          {...defaultProps}
+          id="transfer-orphan"
+          icon="🔄"
+          name="Resgate CDB ← Cofrinho 140%"
+          category="Transferências > Outros"
+          date="10-10-2026"
+          amount={564.69}
+          bank_account_id="bank-account"
+          installment_group_id="orphan-group"
+          type="income"
+          onDelete={onDelete}
+          onEdit={onEdit}
+        />
+      </TooltipProvider>,
+    );
+
+    const deleteButton = screen.getByRole("button", {
+      name: "Excluir transação: Resgate CDB ← Cofrinho 140%",
+    });
+    expect(deleteButton).toHaveAttribute("title", "Excluir transação");
+    expect(deleteButton.className).toContain("sm:hidden");
+    await user.click(deleteButton);
+    expect(onDelete).toHaveBeenCalledTimes(1);
+    expect(onEdit).not.toHaveBeenCalled();
+  });
+
+  it("não oferece exclusão manual se o fluxo não fornece onDelete", () => {
+    render(
+      <TooltipProvider>
+        <TransactionItem {...defaultProps} onEdit={vi.fn()} />
+      </TooltipProvider>,
+    );
+    expect(screen.queryByRole("button", { name: /Excluir transação:/ })).not.toBeInTheDocument();
+  });
+
+  it("should show full transfer name in tooltip when focused via keyboard", async () => {
      const user = userEvent.setup();
      render(
        <TooltipProvider>
