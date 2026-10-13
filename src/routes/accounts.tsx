@@ -42,7 +42,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { mapServerError } from "@/lib/map-server-error";
-import { countsTowardCurrentBalance } from "@/lib/transaction-status";
+import { countsTowardBankAccountBalance } from "@/lib/bank-account-balance";
 
 
 type BankAccount = {
@@ -531,22 +531,19 @@ function AccountsPage() {
         const selectedCutoff = isCurrentSelectedMonth ? today : selectedMonthEnd;
 
         for (const tx of txData) {
-          if (tx.is_visible === false || tx.transaction_status === "pending") continue;
-          // Mesma regra da Home: despesas de cartão não afetam saldo bancário.
-          if (tx.type === "expense" && tx.card) continue;
-
+          // Regras compartilhadas com a Home e o seletor de pagamento de faturas.
           const transactionDate = parseAccountTxDate(typeof tx.date === "string" ? tx.date.trim() : "", tx.created_at || undefined);
           const id = tx.bank_account_id as string;
           const amt = Number(tx.amount) || 0;
 
           // Mapas atuais continuam alimentando ações administrativas (recalcular/ajustar saldo).
-          if (countsTowardCurrentBalance(tx, today)) {
+          if (countsTowardBankAccountBalance(tx, today)) {
             if (tx.type === "income") incMap[id] = (incMap[id] || 0) + amt;
             else expMap[id] = (expMap[id] || 0) + amt;
           }
 
           // Mapas do mês servem apenas para exibição do saldo histórico selecionado.
-          if (countsTowardCurrentBalance(tx, selectedCutoff)) {
+          if (countsTowardBankAccountBalance(tx, selectedCutoff)) {
             if (tx.type === "income") monthIncMap[id] = (monthIncMap[id] || 0) + amt;
             else monthExpMap[id] = (monthExpMap[id] || 0) + amt;
 
