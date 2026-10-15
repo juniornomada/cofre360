@@ -85,9 +85,29 @@ describe("Fatura — alternância de ordem de exibição", () => {
     expect(screen.getByTestId("invoice-total").textContent).toBe(beforeTotal);
   });
 
+  it("ordena pela data da compra exibida, mesmo quando a data da parcela é posterior", () => {
+    const sourceRows = [
+      // Parcela da compra de setembro foi lançada na fatura de novembro.
+      { id: "parcela-set", date: "2026-11-03", purchase_date: "2026-09-03", amount: 130.50, created_at: "2026-09-03T12:00:00Z" },
+      { id: "compra-out", date: "2026-10-06", purchase_date: "2026-10-06", amount: 204.42, created_at: "2026-10-06T12:00:00Z" },
+    ];
+    const chronological = sortInvoiceChronoAsc(sourceRows.map((row) => ({
+      id: row.id,
+      date: row.purchase_date,
+      created_at: row.created_at,
+    })));
+    expect(chronological.map((row) => row.id)).toEqual(["parcela-set", "compra-out"]);
+    expect(applyInvoiceDisplayDirection(chronological, "desc").map((row) => row.id))
+      .toEqual(["compra-out", "parcela-set"]);
+    // Nenhum campo financeiro ou de competência é sobrescrito pelo sort.
+    expect(sourceRows.map((row) => row.date)).toEqual(["2026-11-03", "2026-10-06"]);
+    expect(sourceRows.reduce((total, row) => total + row.amount, 0)).toBeCloseTo(334.92);
+  });
+
   it("a rota real aplica a direção somente na lista da fatura, não no cálculo financeiro", () => {
     const source = readFileSync(resolve(process.cwd(), "src/routes/cards.tsx"), "utf8");
     expect(source).toContain('data-testid="invoice-sort-controls"');
+    expect(source).toContain("date: getInvoicePurchaseDate(tx, cardTransactions) ?? tx.date");
     expect(source).toContain('aria-label="Ordem dos lançamentos da fatura"');
     expect(source).toContain('aria-pressed={invoiceListDirection === "asc"}');
     expect(source).toContain('aria-pressed={invoiceListDirection === "desc"}');
