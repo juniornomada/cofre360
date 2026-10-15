@@ -227,12 +227,31 @@ describe("Cards /cards — direção de ordenação escolhida pelo usuário", ()
     }
   });
 
+  it("ordena pela data da compra que a fatura mostra, não pelo mês da parcela", () => {
+    const records = [
+      // A compra de setembro tem parcela em novembro.
+      { id: "setembro", date: "2026-11-03", purchase_date: "2026-09-03", created_at: "2026-09-03T09:00:00Z", amount: 130.5 },
+      // A compra posterior foi feita em outubro e lançada na mesma fatura.
+      { id: "outubro", date: "2026-10-06", purchase_date: "2026-10-06", created_at: "2026-10-06T09:00:00Z", amount: 204.42 },
+    ];
+    const displayDates = sortInvoiceChronoAsc(records.map((record) => ({
+      id: record.id,
+      date: record.purchase_date,
+      created_at: record.created_at,
+    })));
+    expect(displayDates.map((item) => item.id)).toEqual(["setembro", "outubro"]);
+    expect(applyInvoiceSortDirection(displayDates, "desc").map((item) => item.id))
+      .toEqual(["outubro", "setembro"]);
+    expect(records.map((item) => item.date)).toEqual(["2026-11-03", "2026-10-06"]);
+  });
+
   it("conecta os botões acessíveis à mesma direção usada na lista de /cards", async () => {
     const { readFileSync } = await import("node:fs");
     const { join } = await import("node:path");
     const src = readFileSync(join(process.cwd(), "src/routes/cards.tsx"), "utf8");
     expect(src).toContain('useState<InvoiceSortDirection>("asc")');
     expect(src).toContain('applyInvoiceSortDirection(sortedTxs, invoiceSortDirection)');
+    expect(src).toContain('date: getInvoicePurchaseDate(tx, cardTransactions) ?? tx.date');
     expect(src).toContain('aria-label="Ordenar lançamentos da fatura"');
     expect(src).toContain('aria-pressed={invoiceSortDirection === "asc"}');
     expect(src).toContain('aria-pressed={invoiceSortDirection === "desc"}');
