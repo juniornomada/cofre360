@@ -115,3 +115,18 @@ export function sortInvoiceChronoAsc<T extends ChronoSortable>(
 ): T[] {
   return [...txs].sort(compareInvoiceChrono);
 }
+
+/**
+ * Display-only direction for an already chronological invoice snapshot.
+ * The caller is responsible for keeping the snapshot stable across refetches.
+ * Never mutate the snapshot or use this to recalculate totals/payments.
+ */
+export type InvoiceDisplayDirection = "asc" | "desc";
+
+export function applyInvoiceDisplayDirection<T>(
+  snapshotRows: readonly T[],
+  direction: InvoiceDisplayDirection,
+): T[] {
+  const rows = [...snapshotRows];
+  return direction === "desc" ? rows.reverse() : rows;
+}

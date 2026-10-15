@@ -129,7 +129,7 @@ import { reportCycleSnapshot } from "@/lib/cycle-consistency";
 import { formatCardPaymentLabel, normalizeCardPaymentLabel } from "@/lib/card-payment-label";
 import { recordLegacyLabelDetection } from "@/lib/legacy-label-telemetry";
 import { sanitizeTransactionWrite, sanitizeTransactionWrites } from "@/lib/normalize-transaction-name";
-import { sortInvoiceChronoAsc } from "@/lib/invoice-chrono-sort";
+import { sortInvoiceChronoAsc, applyInvoiceDisplayDirection, type InvoiceDisplayDirection } from "@/lib/invoice-chrono-sort";
 import { getInvoicePaymentStatus, remainingInvoiceAmount, shouldAutoAdvanceInvoiceMonth } from "@/lib/invoice-payment-status";
 import { getCardAvailableLimit, getCurrentAndFutureOutstanding } from "@/lib/card-available-limit";
 import { replaceCardTransactionsInLedger } from "@/lib/card-scoped-ledger";
@@ -210,6 +210,7 @@ function CardsPage() {
   // Invoice dialog state
   const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
   const [invoiceOrderTick, setInvoiceOrderTick] = useState(0);
+  const [invoiceListDirection, setInvoiceListDirection] = useState<InvoiceDisplayDirection>("asc");
 
   const [invoiceCard, setInvoiceCard] = useState<CardData | null>(null);
   const [cardTransactions, setCardTransactions] = useState<CardTransaction[]>([]);
@@ -588,6 +589,7 @@ function CardsPage() {
   // Open invoice dialog
   const openInvoiceDialog = async (card: CardData) => {
     setInvoiceCard(card);
+    setInvoiceListDirection("asc");
     setInvoiceDialogOpen(true);
     setActiveInvoiceIdx(1);
     setLoadingTx(true);
@@ -811,6 +813,8 @@ function CardsPage() {
     ...stableActivePeriod,
     label: stableActivePeriod.label.split("|")[0]
   } : null;
+  // Change only display order. Frozen snapshot, invoice totals and payments remain untouched.
+  const displayedInvoiceTransactions = applyInvoiceDisplayDirection(activePeriod?.transactions ?? [], invoiceListDirection);
   const getInvoicePeriodKey = (period?: InvoicePeriod | null) => period?.endDate?.toISOString().split("T")[0] || "";
   const getPaymentsForPeriod = (cardId: string | undefined, period?: InvoicePeriod | null) => {
     const periodKey = getInvoicePeriodKey(period);
@@ -2087,6 +2091,7 @@ function CardsPage() {
                     if (!invoiceCard || !rawActivePeriod) return;
                     const key = `${invoiceCard.id}::${rawActivePeriod.endDate.toISOString().split("T")[0]}`;
                     invoiceOrderRef.current.delete(key);
+                    setInvoiceListDirection("asc");
                     setInvoiceOrderTick((t) => t + 1);
                   }}
                   aria-label="Restaurar ordem original da fatura"
@@ -2229,6 +2234,38 @@ function CardsPage() {
                 </div>
               )}
 
+              {activePeriod && activePeriod.transactions.length > 1 && (
+                <div className="shrink-0 mx-5 mb-2 flex items-center justify-between gap-2" data-testid="invoice-sort-controls">
+                  <span className="text-[11px] text-muted-foreground">Ordenar por data</span>
+                  <div role="group" aria-label="Ordem dos lançamentos da fatura" className="flex items-center rounded-lg border border-border bg-accent/40 p-0.5">
+                    <button
+                      type="button"
+                      aria-label="Mais antigos primeiro"
+                      aria-pressed={invoiceListDirection === "asc"}
+                      onClick={() => setInvoiceListDirection("asc")}
+                      className={cn(
+                        "rounded-md px-2.5 py-1.5 text-[11px] font-semibold transition-colors",
+                        invoiceListDirection === "asc" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
+                      )}
+                    >
+                      Antigos ↑
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="Mais recentes primeiro"
+                      aria-pressed={invoiceListDirection === "desc"}
+                      onClick={() => setInvoiceListDirection("desc")}
+                      className={cn(
+                        "rounded-md px-2.5 py-1.5 text-[11px] font-semibold transition-colors",
+                        invoiceListDirection === "desc" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
+                      )}
+                    >
+                      Recentes ↓
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <div
                 ref={invoiceScrollRef}
                 data-testid="invoice-scroll"
@@ -2304,7 +2341,7 @@ function CardsPage() {
                         </span>
                       </div>
                     )}
-                    {activePeriod?.transactions.map((tx) => (
+                    {displayedInvoiceTransactions.map((tx) => (
                       <div
                         key={tx.id}
                         data-testid="invoice-transaction-item"
