@@ -792,7 +792,15 @@ function CardsPage() {
     // Order invoice transactions chronologically ascending (oldest first),
     // so users read the invoice like a statement. Ties break by created_at,
     // then by id, to keep the order deterministic across refetches.
-    const chronoAsc = sortInvoiceChronoAsc(rawActivePeriod.transactions);
+    // Ordenar pela mesma data de compra exibida ao usuário. Em uma compra
+    // parcelada, tx.date pode representar o mês da parcela (não a data da
+    // compra original), o que deixaria a lista fora da ordem visível.
+    // Projetamos apenas chaves: não alteramos datas contábeis nem transações.
+    const chronoAsc = sortInvoiceChronoAsc(rawActivePeriod.transactions.map(tx => ({
+      id: tx.id,
+      date: getInvoicePurchaseDate(tx, cardTransactions) ?? tx.date,
+      created_at: tx.created_at,
+    })));
     const currentIds = chronoAsc.map(t => t.id);
     const prior = invoiceOrderRef.current.get(orderKey);
     const { orderedIds, nextSnapshot } = resolveInvoiceOrder({
