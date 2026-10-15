@@ -129,7 +129,7 @@ import { reportCycleSnapshot } from "@/lib/cycle-consistency";
 import { formatCardPaymentLabel, normalizeCardPaymentLabel } from "@/lib/card-payment-label";
 import { recordLegacyLabelDetection } from "@/lib/legacy-label-telemetry";
 import { sanitizeTransactionWrite, sanitizeTransactionWrites } from "@/lib/normalize-transaction-name";
-import { sortInvoiceChronoAsc } from "@/lib/invoice-chrono-sort";
+import { applyInvoiceSortDirection, sortInvoiceChronoAsc, type InvoiceSortDirection } from "@/lib/invoice-chrono-sort";
 import { getInvoicePaymentStatus, remainingInvoiceAmount, shouldAutoAdvanceInvoiceMonth } from "@/lib/invoice-payment-status";
 import { getCardAvailableLimit, getCurrentAndFutureOutstanding } from "@/lib/card-available-limit";
 import { replaceCardTransactionsInLedger } from "@/lib/card-scoped-ledger";
@@ -210,6 +210,8 @@ function CardsPage() {
   // Invoice dialog state
   const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
   const [invoiceOrderTick, setInvoiceOrderTick] = useState(0);
+  // Afeta apenas a exibição: o snapshot canônico da fatura permanece crescente.
+  const [invoiceSortDirection, setInvoiceSortDirection] = useState<InvoiceSortDirection>("asc");
 
   const [invoiceCard, setInvoiceCard] = useState<CardData | null>(null);
   const [cardTransactions, setCardTransactions] = useState<CardTransaction[]>([]);
@@ -803,7 +805,10 @@ function CardsPage() {
 
     const byId = new Map(rawActivePeriod.transactions.map(t => [t.id, t]));
     const sortedTxs = orderedIds.map(id => byId.get(id)!).filter(Boolean);
-    stableActivePeriod = { ...rawActivePeriod, transactions: sortedTxs };
+    stableActivePeriod = {
+      ...rawActivePeriod,
+      transactions: applyInvoiceSortDirection(sortedTxs, invoiceSortDirection),
+    };
   }
 
 
@@ -2234,6 +2239,41 @@ function CardsPage() {
                 data-testid="invoice-scroll"
                 className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-5"
               >
+                {activePeriod && activePeriod.transactions.length > 1 && (
+                  <div
+                    role="group"
+                    aria-label="Ordenar lançamentos da fatura"
+                    data-testid="invoice-sort-controls"
+                    className="mb-3 flex items-center justify-end gap-1.5"
+                  >
+                    <button
+                      type="button"
+                      aria-pressed={invoiceSortDirection === "asc"}
+                      onClick={() => setInvoiceSortDirection("asc")}
+                      className={cn(
+                        "rounded-lg border px-2.5 py-1.5 text-[10px] font-semibold transition-colors",
+                        invoiceSortDirection === "asc"
+                          ? "border-primary/40 bg-primary/10 text-primary"
+                          : "border-border bg-accent/50 text-muted-foreground hover:text-foreground",
+                      )}
+                    >
+                      Antigos primeiro
+                    </button>
+                    <button
+                      type="button"
+                      aria-pressed={invoiceSortDirection === "desc"}
+                      onClick={() => setInvoiceSortDirection("desc")}
+                      className={cn(
+                        "rounded-lg border px-2.5 py-1.5 text-[10px] font-semibold transition-colors",
+                        invoiceSortDirection === "desc"
+                          ? "border-primary/40 bg-primary/10 text-primary"
+                          : "border-border bg-accent/50 text-muted-foreground hover:text-foreground",
+                      )}
+                    >
+                      Recentes primeiro
+                    </button>
+                  </div>
+                )}
                 {activePeriod && activePeriod.transactions.length === 0 && activeOpeningInvoiceAmount <= 0 && carriedPendingRefunds.length === 0 ? (
                   <InvoiceEmptyState
                     startDate={activePeriod.startDate}
