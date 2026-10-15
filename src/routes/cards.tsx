@@ -789,10 +789,15 @@ function CardsPage() {
   let stableActivePeriod = rawActivePeriod;
   if (rawActivePeriod && invoiceCard) {
     const orderKey = `${invoiceCard.id}::${rawActivePeriod.endDate.toISOString().split("T")[0]}`;
-    // Order invoice transactions chronologically ascending (oldest first),
-    // so users read the invoice like a statement. Ties break by created_at,
-    // then by id, to keep the order deterministic across refetches.
-    const chronoAsc = sortInvoiceChronoAsc(rawActivePeriod.transactions);
+    // Ordene pela mesma data de compra que aparece ao lado do lançamento.
+    // Para parcelas, tx.date pode ser o mês da parcela (e não da compra).
+    // Projete somente a chave de ordenação: nunca modifique as transações.
+    // Os desempates continuam determinísticos (created_at e id).
+    const chronoAsc = sortInvoiceChronoAsc(rawActivePeriod.transactions.map(tx => ({
+      id: tx.id,
+      date: getInvoicePurchaseDate(tx, cardTransactions) ?? tx.date,
+      created_at: tx.created_at,
+    })));
     const currentIds = chronoAsc.map(t => t.id);
     const prior = invoiceOrderRef.current.get(orderKey);
     const { orderedIds, nextSnapshot } = resolveInvoiceOrder({
