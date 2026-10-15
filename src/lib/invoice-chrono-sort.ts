@@ -115,3 +115,25 @@ export function sortInvoiceChronoAsc<T extends ChronoSortable>(
 ): T[] {
   return [...txs].sort(compareInvoiceChrono);
 }
+
+/** Direção escolhida somente para a exibição dos lançamentos da fatura. */
+export type InvoiceSortDirection = "asc" | "desc";
+
+/**
+ * Inverte a ordem visível sem alterar a ordem canônica congelada no snapshot
+ * da fatura. Datas desconhecidas permanecem ao final nas duas direções.
+ * Não muta as transações nem o snapshot recebidos.
+ */
+export function applyInvoiceSortDirection<T extends ChronoSortable>(
+  frozenAscendingRows: readonly T[],
+  direction: InvoiceSortDirection,
+): T[] {
+  if (direction === "asc") return [...frozenAscendingRows];
+
+  const withDate: T[] = [];
+  const withoutDate: T[] = [];
+  for (const tx of frozenAscendingRows) {
+    (Number.isFinite(invoiceChronoKey(tx)) ? withDate : withoutDate).push(tx);
+  }
+  return [...withDate.reverse(), ...withoutDate];
+}
