@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   compareInvoiceChrono,
   sortInvoiceChronoAsc,
+  applyInvoiceSortDirection,
   type ChronoSortable,
 } from "@/lib/invoice-chrono-sort";
 
@@ -149,5 +150,95 @@ describe("Cards /cards — call site usa o helper canônico", () => {
     expect(src).not.toMatch(
       /\.sort\(\s*\(\s*a\s*,\s*b\s*\)\s*=>\s*\{[^}]*parseTxDate\(a\.date/,
     );
+  });
+});
+
+describe("Cards /cards — direção de ordenação escolhida pelo usuário", () => {
+  const rows = sortInvoiceChronoAsc([
+    tx("late", "2026-10-15", "2026-10-15T10:00:00Z"),
+    tx("early", "2026-09-03", "2026-09-03T10:00:00Z"),
+    tx("mid", "2026-10-06", "2026-10-06T10:00:00Z"),
+  ]);
+
+  it("mantém o mais antigo primeiro como padrão crescente", () => {
+    expect(applyInvoiceSortDirection(rows, "asc").map((t) => t.id)).toEqual([
+      "early", "mid", "late",
+    ]);
+  });
+
+  it("inverte para mais recente primeiro e permite voltar sem perder a ordem", () => {
+    const desc = applyInvoiceSortDirection(rows, "desc");
+    expect(desc.map((t) => t.id)).toEqual(["late", "mid", "early"]);
+    expect(applyInvoiceSortDirection(rows, "asc").map((t) => t.id)).toEqual([
+      "early", "mid", "late",
+    ]);
+  });
+
+  it("não muta os dados originais nem o snapshot", () => {
+    const ids = rows.map((t) => t.id);
+    const sorted = applyInvoiceSortDirection(rows, "desc");
+    expect(rows.map((t) => t.id)).toEqual(ids);
+    expect(sorted).not.toBe(rows);
+    expect(sorted[0]).toBe(rows[2]);
+  });
+
+  it("mantém datas desconhecidas no final em ambas as direções", () => {
+    const source = sortInvoiceChronoAsc([
+      tx("unknown-b", "invalid"),
+      tx("latest", "2026-10-06"),
+      tx("oldest", "2026-09-03"),
+      tx("unknown-a", ""),
+    ]);
+    expect(applyInvoiceSortDirection(source, "asc").map((t) => t.id)).toEqual([
+      "oldest", "latest", "unknown-a", "unknown-b",
+    ]);
+    expect(applyInvoiceSortDirection(source, "desc").map((t) => t.id)).toEqual([
+      "latest", "oldest", "unknown-a", "unknown-b",
+    ]);
+  });
+
+  it("só muda a posição das compras, não valores ou contagem", () => {
+    const invoices = [
+      { id: "a", date: "2026-09-03", amount: 130.50 },
+      { id: "b", date: "2026-10-06", amount: 204.42 },
+      { id: "c", date: "2026-10-09", amount: 92.60 },
+    ];
+    const asc = applyInvoiceSortDirection(invoices, "asc");
+    const desc = applyInvoiceSortDirection(invoices, "desc");
+    expect(asc).toHaveLength(desc.length);
+    expect(asc.reduce((sum, tx) => sum + tx.amount, 0)).toBeCloseTo(
+      desc.reduce((sum, tx) => sum + tx.amount, 0),
+    );
+  });
+
+  it("mantém a ordem de desempate previsível ao alternar repetidamente", () => {
+    const source = sortInvoiceChronoAsc([
+      tx("id-z", "2026-10-06", "2026-10-06T12:00:00Z"),
+      tx("id-a", "2026-10-06", "2026-10-06T09:00:00Z"),
+      tx("id-b", "2026-10-06", "2026-10-06T09:00:00Z"),
+    ]);
+    for (let n = 0; n < 3; n += 1) {
+      expect(applyInvoiceSortDirection(source, "asc").map((t) => t.id)).toEqual([
+        "id-a", "id-b", "id-z",
+      ]);
+      expect(applyInvoiceSortDirection(source, "desc").map((t) => t.id)).toEqual([
+        "id-z", "id-b", "id-a",
+      ]);
+    }
+  });
+
+  it("conecta os botões acessíveis à mesma direção usada na lista de /cards", async () => {
+    const { readFileSync } = await import("node:fs");
+    const { join } = await import("node:path");
+    const src = readFileSync(join(process.cwd(), "src/routes/cards.tsx"), "utf8");
+    expect(src).toContain('useState<InvoiceSortDirection>("asc")');
+    expect(src).toContain('applyInvoiceSortDirection(sortedTxs, invoiceSortDirection)');
+    expect(src).toContain('aria-label="Ordenar lançamentos da fatura"');
+    expect(src).toContain('aria-pressed={invoiceSortDirection === "asc"}');
+    expect(src).toContain('aria-pressed={invoiceSortDirection === "desc"}');
+    expect(src).toContain('onClick={() => setInvoiceSortDirection("asc")}');
+    expect(src).toContain('onClick={() => setInvoiceSortDirection("desc")}');
+    expect(src).toContain("Antigos primeiro");
+    expect(src).toContain("Recentes primeiro");
   });
 });
