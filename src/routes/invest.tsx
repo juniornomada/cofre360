@@ -339,6 +339,25 @@ function InvestPage() {
     }
   };
 
+  // Update just the visual identity, never recomputing the investment's
+  // amounts, quote, yield or other financial information.
+  const handleSaveColorOnly = async () => {
+    if (!editing) return;
+    try {
+      const { error } = await supabase
+        .from("investments")
+        .update({ color: normalizeInvestmentColor(form.color) })
+        .eq("id", editing.id);
+      if (error) throw error;
+      toast.success("Cor do investimento atualizada");
+      setShowAdd(false);
+      setEditing(null);
+      await fetchInvestments();
+    } catch (error: any) {
+      toast.error(error?.message || "Erro ao salvar cor");
+    }
+  };
+
   const handleDelete = async () => {
     if (!deleteId) return;
     const { error } = await supabase.from("investments").delete().eq("id", deleteId);
@@ -665,6 +684,11 @@ function InvestPage() {
               <p className="text-[10px] text-muted-foreground">
                 A cor vale somente para este investimento. Automática mantém a cor da classe.
               </p>
+              {editing && (
+                <Button type="button" variant="outline" size="sm" onClick={handleSaveColorOnly}>
+                  Salvar somente a cor
+                </Button>
+              )}
             </div>
 
             <div>
