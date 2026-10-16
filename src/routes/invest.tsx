@@ -618,6 +618,55 @@ function InvestPage() {
               </select>
             </div>
 
+            <div className="space-y-2 rounded-xl border border-border/60 bg-card/30 p-3">
+              <div className="flex items-center justify-between gap-2">
+                <label className="text-xs font-medium text-foreground">Cor de identificação</label>
+                <span className="text-[10px] text-muted-foreground">Diferencie seus fundos na lista</span>
+              </div>
+              <div role="group" aria-label="Cores do investimento" className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  aria-label="Cor automática da classe"
+                  aria-pressed={form.color === null}
+                  onClick={() => setForm({ ...form, color: null })}
+                  className={form.color === null
+                    ? "min-h-9 rounded-lg border border-primary px-2 text-[10px] font-medium ring-2 ring-primary"
+                    : "min-h-9 rounded-lg border border-border px-2 text-[10px] font-medium"}
+                >
+                  Automática
+                </button>
+                {INVESTMENT_COLOR_OPTIONS.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    title={option.label}
+                    aria-label={"Cor " + option.label}
+                    aria-pressed={form.color === option.value}
+                    onClick={() => setForm({ ...form, color: option.value })}
+                    className={form.color === option.value
+                      ? "h-9 w-9 scale-110 rounded-full border-2 border-background ring-2 ring-primary focus-visible:outline-none focus-visible:ring-2"
+                      : "h-9 w-9 rounded-full border-2 border-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"}
+                    style={{ backgroundColor: option.value }}
+                  />
+                ))}
+              </div>
+              <label htmlFor="investment-custom-color" className="flex items-center gap-2 text-xs text-muted-foreground">
+                Cor personalizada
+                <input
+                  id="investment-custom-color"
+                  type="color"
+                  aria-label="Escolher cor personalizada"
+                  value={getInvestmentColor(form.color, form.asset_class)}
+                  onChange={(event) => setForm({ ...form, color: normalizeInvestmentColor(event.target.value) })}
+                  className="h-9 w-12 cursor-pointer rounded-lg border border-border bg-transparent p-0.5"
+                />
+                <span className="font-mono text-[11px]">{getInvestmentColor(form.color, form.asset_class)}</span>
+              </label>
+              <p className="text-[10px] text-muted-foreground">
+                A cor vale somente para este investimento. Automática mantém a cor da classe.
+              </p>
+            </div>
+
             <div>
               <label className="text-xs text-muted-foreground mb-1 block">Nome</label>
               <input
