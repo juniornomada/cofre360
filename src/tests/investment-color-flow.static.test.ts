@@ -35,9 +35,27 @@ describe("Investment color flow", () => {
   });
 
   it("uses personalized colors in investment cards but class colors in the allocation chart", () => {
-    expect(investSrc).toContain("borderLeftColor: getInvestmentColor(inv.color, inv.asset_class)");
-    expect(investSrc).toContain("backgroundColor: getInvestmentColor(inv.color, inv.asset_class)");
+    expect(investSrc).not.toContain("borderLeftColor: getInvestmentColor(inv.color, inv.asset_class)");
+    expect(investSrc).not.toContain("border-l-4");
+    expect(investSrc).toContain("backgroundColor: investmentColor");
+    expect(investSrc).toContain("<InvestmentIcon assetClass={inv.asset_class} color={investmentColor} />");
     expect(investSrc).toContain("color: getAssetClassColor(key)");
+  });
+
+  it("moves deletion into edit mode and requires named confirmation", () => {
+    expect(investSrc).not.toContain('aria-label={`Excluir ${inv.name}`}');
+    expect(investSrc).toContain('onClick={() => openEdit(inv)}');
+    expect(investSrc).toContain("onClick={requestDelete}>Excluir");
+    expect(investSrc).toContain("setDeleteId(editing.id)");
+    expect(investSrc).toContain('editing?.name || "este investimento"');
+    expect(investSrc).toContain("onClick={cancelDelete} disabled={deleting}");
+    expect(investSrc).toContain("onClick={handleDelete} disabled={deleting}");
+  });
+
+  it("renders class icons in the selected investment color", () => {
+    expect(investSrc).toContain("const INVESTMENT_ICONS: Record<AssetClass, LucideIcon>");
+    expect(investSrc).toContain('className="h-5 w-5" style={{ color }}');
+    expect(investSrc).toContain("const investmentColor = getInvestmentColor(inv.color, inv.asset_class)");
   });
 
   it("adds a nullable validated column without weakening RLS or rewriting existing data", () => {
