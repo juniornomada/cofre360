@@ -13,6 +13,19 @@ describe("Investment color flow", () => {
     expect(investSrc).toContain(".insert([{ ...payload, user_id: user.id }])");
   });
 
+  it("offers a color-only update that never sends investment amounts", () => {
+    expect(investSrc).toContain("Salvar somente a cor");
+    expect(investSrc).toContain("onClick={handleSaveColorOnly}");
+    const start = investSrc.indexOf("const handleSaveColorOnly = async");
+    const end = investSrc.indexOf("const handleDelete = async", start);
+    const block = investSrc.slice(start, end);
+    expect(block).toContain(".update({ color: normalizeInvestmentColor(form.color) })");
+    expect(block).not.toContain("payload");
+    expect(block).not.toContain("derivedInvested");
+    expect(block).not.toContain("current_gross_value");
+    expect(block).toContain('toast.success("Cor do investimento atualizada")');
+  });
+
   it("supports palette, custom colors and restoring the automatic category color", () => {
     expect(investSrc).toContain('aria-label="Cores do investimento"');
     expect(investSrc).toContain('aria-label="Cor automática da classe"');
