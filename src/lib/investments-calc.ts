@@ -49,6 +49,7 @@ export interface Investment {
   id: string;
   name: string;
   icon: string;
+  color?: string | null;
   value: number;
   change: number;
   type: string;
