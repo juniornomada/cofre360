@@ -25,6 +25,7 @@ import {
   type AssetClass,
 } from "@/lib/investments-calc";
 import { toast } from "sonner";
+import { getAssetClassColor, getInvestmentColor, INVESTMENT_COLOR_OPTIONS, normalizeInvestmentColor } from "@/lib/investment-colors";
 import {
   Dialog,
   DialogContent,
@@ -67,26 +68,10 @@ const parseNum = (s: string) => {
 const fmtBRL = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
-const ASSET_CLASS_COLORS: Partial<Record<AssetClass, string>> = {
-  pos_fixado: "#FACC15",
-  alternativos: "#A855F7",
-  renda_variavel_global: "#EF4444",
-  renda_variavel_brasil: "#06B6D4",
-  tesouro: "#EAB308",
-  cdb: "#22C55E",
-  cripto: "#F97316",
-  acao: "#3B82F6",
-  fii: "#14B8A6",
-  etf: "#6366F1",
-  outro: "#94A3B8",
-};
-
-const getAssetClassColor = (assetClass: string | null | undefined) =>
-  ASSET_CLASS_COLORS[(assetClass || "outro") as AssetClass] || "#94A3B8";
-
 type FormState = {
   name: string;
   icon: string;
+  color: string | null;
   asset_class: AssetClass;
   asset_code: string;
   quantity: string;
@@ -108,6 +93,7 @@ type FormState = {
 const emptyForm = (cls: AssetClass = "tesouro"): FormState => ({
   name: "",
   icon: ASSET_CLASS_OPTIONS.find((o) => o.value === cls)?.icon || "📈",
+  color: null,
   asset_class: cls,
   asset_code: "",
   quantity: "",
@@ -254,6 +240,7 @@ function InvestPage() {
     setForm({
       name: inv.name || "",
       icon: inv.icon || "📈",
+      color: normalizeInvestmentColor(inv.color),
       asset_class: (inv.asset_class as AssetClass) || "outro",
       asset_code: inv.asset_code || "",
       quantity: inv.quantity != null ? String(inv.quantity).replace(".", ",") : "",
@@ -296,6 +283,7 @@ function InvestPage() {
       const payload: any = {
         name: form.name,
         icon: form.icon,
+        color: normalizeInvestmentColor(form.color),
         type: ASSET_CLASS_LABELS[form.asset_class] || "Outro",
         asset_class: form.asset_class,
         asset_code: form.asset_code || null,
@@ -541,11 +529,12 @@ function InvestPage() {
               <div
       key={inv.id}
       onClick={() => openEdit(inv)}
-      className="interactive-card cursor-pointer rounded-2xl bg-card p-3 animate-stagger-in"
-      style={{ animationDelay: `${i * 40}ms` }}
+      className="interactive-card cursor-pointer rounded-2xl border-l-4 bg-card p-3 animate-stagger-in"
+      style={{ animationDelay: `${i * 40}ms`, borderLeftColor: getInvestmentColor(inv.color, inv.asset_class) }}
     >
       <div className="flex items-start gap-2.5">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent text-base">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-base"
+          style={{ backgroundColor: `${getInvestmentColor(inv.color, inv.asset_class)}26` }}>
           {inv.icon}
         </div>
         <div className="min-w-0 flex-1">
@@ -555,7 +544,7 @@ function InvestPage() {
           <div className="mt-0.5 flex min-w-0 items-center gap-1.5">
             <span
               className="h-2 w-2 shrink-0 rounded-full"
-              style={{ backgroundColor: getAssetClassColor(inv.asset_class) }}
+              style={{ backgroundColor: getInvestmentColor(inv.color, inv.asset_class) }}
             />
             <p className="min-w-0 truncate text-[9px] text-muted-foreground">
               {ASSET_CLASS_LABELS[(inv.asset_class as AssetClass) || "outro"] || inv.type}
@@ -885,6 +874,7 @@ function InvestPage() {
               <>
                 <DialogHeader>
                   <DialogTitle className="flex items-center gap-2">
+                    <span className="h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: getInvestmentColor(detail.color, detail.asset_class) }} />
                     <span className="text-xl">{detail.icon}</span>
                     {detail.name}
                   </DialogTitle>
