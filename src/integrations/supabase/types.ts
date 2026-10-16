@@ -412,6 +412,7 @@ export type Database = {
       }
       investments: {
         Row: {
+          color: string | null
           admin_fee: number | null
           asset_class: string | null
           asset_code: string | null
@@ -441,6 +442,7 @@ export type Database = {
           yield_rate: number | null
         }
         Insert: {
+          color?: string | null
           admin_fee?: number | null
           asset_class?: string | null
           asset_code?: string | null
@@ -470,6 +472,7 @@ export type Database = {
           yield_rate?: number | null
         }
         Update: {
+          color?: string | null
           admin_fee?: number | null
           asset_class?: string | null
           asset_code?: string | null
