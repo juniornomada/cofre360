@@ -5,7 +5,17 @@ import {
   TrendingUp,
   TrendingDown,
   Plus,
-  Trash2,
+  Landmark,
+  Wallet,
+  Bitcoin,
+  Building2,
+  ChartPie,
+  Gem,
+  Globe2,
+  Flag,
+  CircleDollarSign,
+  Shapes,
+  type LucideIcon,
   Loader2,
   RefreshCw,
   Eye,
@@ -56,6 +66,26 @@ const ASSET_CLASS_OPTIONS: { value: AssetClass; label: string; icon: string }[] 
   { value: "renda_variavel_brasil", label: "Renda Variável Brasil", icon: "🇧🇷" },
   { value: "outro", label: "Outro", icon: "💎" },
 ];
+
+// Class-specific icons use each investment's selected color.
+const INVESTMENT_ICONS: Record<AssetClass, LucideIcon> = {
+  tesouro: Landmark,
+  cdb: Wallet,
+  cripto: Bitcoin,
+  acao: TrendingUp,
+  fii: Building2,
+  etf: ChartPie,
+  pos_fixado: CircleDollarSign,
+  alternativos: Gem,
+  renda_variavel_global: Globe2,
+  renda_variavel_brasil: Flag,
+  outro: Shapes,
+};
+
+function InvestmentIcon({ assetClass, color }: { assetClass: string | null | undefined; color: string }) {
+  const Icon = INVESTMENT_ICONS[(assetClass || "outro") as AssetClass] || INVESTMENT_ICONS.outro;
+  return <Icon aria-hidden="true" className="h-5 w-5" style={{ color }} />;
+}
 
 const CRYPTO_CODES = Object.keys(CRYPTO_COINGECKO_IDS);
 
@@ -125,6 +155,7 @@ function InvestPage() {
   const [editing, setEditing] = useState<Investment | null>(null);
   const [detailsExpanded, setDetailsExpanded] = useState(true);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [detail, setDetail] = useState<Investment | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm());
   const [targetDate, setTargetDate] = useState<string>(
@@ -358,15 +389,34 @@ function InvestPage() {
     }
   };
 
-  const handleDelete = async () => {
-    if (!deleteId) return;
-    const { error } = await supabase.from("investments").delete().eq("id", deleteId);
-    if (error) toast.error("Erro ao excluir");
-    else {
-      toast.success("Investimento excluído");
-      fetchInvestments();
-    }
+  const requestDelete = () => {
+    if (!editing) return;
+    setDeleteId(editing.id);
+    setShowAdd(false);
+  };
+
+  const cancelDelete = () => {
     setDeleteId(null);
+    if (editing) setShowAdd(true);
+  };
+
+  const handleDelete = async () => {
+    if (!deleteId || deleting) return;
+    setDeleting(true);
+    try {
+      const { error } = await supabase.from("investments").delete().eq("id", deleteId);
+      if (error) throw error;
+      setDeleteId(null);
+      setEditing(null);
+      toast.success("Investimento excluído");
+      await fetchInvestments();
+    } catch (error: any) {
+      toast.error(error?.message || "Erro ao excluir");
+      setDeleteId(null);
+      if (editing) setShowAdd(true);
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const variable = isVariable(form.asset_class);
@@ -544,17 +594,18 @@ function InvestPage() {
         ) : (
           valuations.map(({ inv, val }, i) => {
             const positive = val.grossPnL >= 0;
+            const investmentColor = getInvestmentColor(inv.color, inv.asset_class);
             return (
               <div
       key={inv.id}
       onClick={() => openEdit(inv)}
-      className="interactive-card cursor-pointer rounded-2xl border-l-4 bg-card p-3 animate-stagger-in"
-      style={{ animationDelay: `${i * 40}ms`, borderLeftColor: getInvestmentColor(inv.color, inv.asset_class) }}
+      className="interactive-card cursor-pointer rounded-2xl bg-card p-3 animate-stagger-in"
+      style={{ animationDelay: `${i * 40}ms` }}
     >
       <div className="flex items-start gap-2.5">
         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-base"
-          style={{ backgroundColor: `${getInvestmentColor(inv.color, inv.asset_class)}26` }}>
-          {inv.icon}
+          style={{ backgroundColor: `${investmentColor}26` }}>
+          <InvestmentIcon assetClass={inv.asset_class} color={investmentColor} />
         </div>
         <div className="min-w-0 flex-1">
           <p className="line-clamp-2 break-words pr-1 text-[12px] font-semibold leading-[1.15] text-foreground sm:text-[13px]">
@@ -563,7 +614,7 @@ function InvestPage() {
           <div className="mt-0.5 flex min-w-0 items-center gap-1.5">
             <span
               className="h-2 w-2 shrink-0 rounded-full"
-              style={{ backgroundColor: getInvestmentColor(inv.color, inv.asset_class) }}
+              style={{ backgroundColor: investmentColor }}
             />
             <p className="min-w-0 truncate text-[9px] text-muted-foreground">
               {ASSET_CLASS_LABELS[(inv.asset_class as AssetClass) || "outro"] || inv.type}
@@ -571,17 +622,6 @@ function InvestPage() {
             </p>
           </div>
         </div>
-        <button
-          type="button"
-          onClick={(event) => {
-            event.stopPropagation();
-            setDeleteId(inv.id);
-          }}
-          className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-destructive/10 text-destructive hover:bg-destructive/20"
-          aria-label={`Excluir ${inv.name}`}
-        >
-          <Trash2 className="h-3.5 w-3.5" />
-        </button>
       </div>
       <div className="mt-2 flex items-end justify-between gap-2 pl-[46px]">
         <div className="min-w-0">
@@ -632,7 +672,7 @@ function InvestPage() {
                 className="w-full rounded-xl bg-card px-3 py-2 text-sm text-foreground outline-none"
               >
                 {ASSET_CLASS_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>{o.icon} {o.label}</option>
+                  <option key={o.value} value={o.value}>{o.label}</option>
                 ))}
               </select>
             </div>
@@ -915,8 +955,9 @@ function InvestPage() {
               )}
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="flex-row flex-wrap justify-end gap-2 sm:space-x-0">
             <Button variant="outline" onClick={() => { setShowAdd(false); setEditing(null); }}>Cancelar</Button>
+            {editing && <Button type="button" variant="destructive" onClick={requestDelete}>Excluir</Button>}
             <Button onClick={handleSave} disabled={!form.name}>
               {editing ? "Salvar" : "Adicionar"}
             </Button>
@@ -925,15 +966,15 @@ function InvestPage() {
       </Dialog>
 
       {/* Delete Confirm */}
-      <Dialog open={!!deleteId} onOpenChange={(o) => !o && setDeleteId(null)}>
+      <Dialog open={!!deleteId} onOpenChange={(o) => { if (!o && !deleting) cancelDelete(); }}>
         <DialogContent className="max-w-[90vw] rounded-2xl bg-background">
           <DialogHeader>
             <DialogTitle>Excluir Investimento</DialogTitle>
           </DialogHeader>
-          <p className="text-sm text-muted-foreground">Tem certeza? Essa ação não pode ser desfeita.</p>
+          <p className="text-sm text-muted-foreground">Deseja realmente excluir <strong className="text-foreground">{editing?.name || "este investimento"}</strong>? Essa ação não pode ser desfeita.</p>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteId(null)}>Cancelar</Button>
-            <Button variant="destructive" onClick={handleDelete}>Excluir</Button>
+            <Button variant="outline" onClick={cancelDelete} disabled={deleting}>Cancelar</Button>
+            <Button variant="destructive" onClick={handleDelete} disabled={deleting}>{deleting ? "Excluindo..." : "Confirmar exclusão"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -948,7 +989,7 @@ function InvestPage() {
                 <DialogHeader>
                   <DialogTitle className="flex items-center gap-2">
                     <span className="h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: getInvestmentColor(detail.color, detail.asset_class) }} />
-                    <span className="text-xl">{detail.icon}</span>
+                    <InvestmentIcon assetClass={detail.asset_class} color={getInvestmentColor(detail.color, detail.asset_class)} />
                     {detail.name}
                   </DialogTitle>
                 </DialogHeader>
