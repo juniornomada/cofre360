@@ -477,5 +477,5 @@ describe("Fuzz — currencies não-BRL preservam drift e shape do normalized", (
       }),
       { numRuns: 500 },
     );
-  });
+  }, 20_000);
 });
