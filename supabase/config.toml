@@ -8,8 +8,10 @@ enable_email_confirmations = true
 [functions.financial-chat]
 verify_jwt = true
 
+# Validates either a trusted user JWT (manual) or a Vault bearer (scheduled).
+# The Edge Function verifies these itself and fails closed for other requests.
 [functions.run-ai-tests]
-verify_jwt = true
+verify_jwt = false
 
 [functions.validate-agreement]
 verify_jwt = true
