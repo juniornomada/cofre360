@@ -72,8 +72,8 @@ async function runOne(test: TestCase, chatUrl: string, authKey: string, anonKey:
       buffer += decoder.decode(value, { stream: true });
       if (buffer.length > 150_000) throw new Error("Resposta maior que o limite");
       let newlineIndex: number;
-      while ((newlineIndex = buffer.indexOf("\\n")) !== -1) {
-        const line = buffer.slice(0, newlineIndex).replace(/\\r$/, "");
+      while ((newlineIndex = buffer.indexOf("\n")) !== -1) {
+        const line = buffer.slice(0, newlineIndex).replace(/\r$/, "");
         buffer = buffer.slice(newlineIndex + 1);
         if (!line.startsWith("data: ")) continue;
         const chunk = line.slice(6).trim();
@@ -232,7 +232,7 @@ serve(async (req) => {
     const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
     if (!SUPABASE_URL || !SERVICE_KEY || !ANON_KEY) return json({ error: "Serviço indisponível" }, 503);
 
-    const suppliedToken = (req.headers.get("Authorization") || "").replace(/^Bearer\\s+/i, "").trim();
+    const suppliedToken = (req.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "").trim();
     if (!suppliedToken) return json({ error: "Unauthorized" }, 401);
     const service = createClient(SUPABASE_URL, SERVICE_KEY, {
       auth: { persistSession: false, autoRefreshToken: false },
