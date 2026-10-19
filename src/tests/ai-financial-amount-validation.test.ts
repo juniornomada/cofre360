@@ -14,6 +14,20 @@ describe("Avaliação objetiva de valores do consultor financeiro", () => {
     expect(moneyBR(0)).toBe("R$ 0,00");
   });
 
+  it("aceita apenas sinônimos explícitos da soma de parcelas antigas, mantendo o valor exato", () => {
+    const check = {
+      label: "Total cobrado no mês vindo de compras anteriores",
+      alternativeLabels: ["Total dessas parcelas"],
+      amount: 3670.73,
+    };
+    expect(checkFinancialAmounts("**Total dessas parcelas: R$ 3.670,73**", [check])).toMatchObject({ passed: 1, total: 1 });
+    expect(checkFinancialAmounts("**Total cobrado no mês vindo de compras anteriores: R$ 3.670,73**", [check]).passed).toBe(1);
+    expect(checkFinancialAmounts("**Total dessas parcelas: R$ 3.670,72**", [check]).passed).toBe(0);
+    expect(checkFinancialAmounts("**Total de despesas: R$ 3.670,73**", [check]).passed).toBe(0);
+    expect(checkFinancialAmounts("**Subtotal dessas parcelas: R$ 3.670,73**", [check]).passed).toBe(0);
+    expect(checkFinancialAmounts("**Total dessas parcelas: R$ 3.670,730**", [check]).passed).toBe(0);
+  });
+
   it("não aceita valor correto associado ao conceito errado", () => {
     const answer = "**Receitas: R$ 90,00** **Despesas: R$ 10,00**";
     expect(checkFinancialAmounts(answer, [{ label: "Receitas", amount: 10 }]).passed).toBe(0);
