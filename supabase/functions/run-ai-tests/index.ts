@@ -106,7 +106,7 @@ async function runOne(test: TestCase, chatUrl: string, authKey: string, anonKey:
         matches = Math.max(0, matches - 1);
       }
     }
-    const accuracy = Math.round((matches / test.expectedKeywords.length) * 100);
+    let accuracy = Math.round((matches / test.expectedKeywords.length) * 100);
 
     let consistency = 100;
     if (!fullText.includes("R$")) { consistency -= 20; findings.push("⚠️ sem R$"); }
