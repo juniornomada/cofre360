@@ -640,12 +640,14 @@ async function buildDeterministicFinancialAnswer(
     let currentValue = categoryTotal;
     let previousValue = previousCategoryTotal;
     let subject = "Compras realizadas";
-    if (matchedFullCategory) {
+    // An explicit "compras realizadas" asks for all purchases, not the category "Compras".
+    const entirePurchases = /compras realizadas/.test(q);
+    if (matchedFullCategory && !entirePurchases) {
       currentValue = roundMoney(detailedCategories.find(([category]) => norm(category) === norm(matchedFullCategory))?.[1] || 0);
       const previousDetailed = detailedCategoryTotals(expenses, previousKey);
       previousValue = roundMoney(previousDetailed.find(([category]) => norm(category) === norm(matchedFullCategory))?.[1] || 0);
       subject = matchedFullCategory;
-    } else if (matchedCategory) {
+    } else if (matchedCategory && !entirePurchases) {
       currentValue = roundMoney(categories.find(([category]) => norm(category) === norm(matchedCategory))?.[1] || 0);
       previousValue = roundMoney(previousCategories.find(([category]) => norm(category) === norm(matchedCategory))?.[1] || 0);
       subject = matchedCategory;

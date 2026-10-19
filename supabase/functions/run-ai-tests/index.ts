@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { checkFinancialAmounts, moneyBR, type MoneyCheck } from "./accuracy.ts";
+import { checkFinancialAmounts, checkSubcategorySum, moneyBR, type MoneyCheck } from "./accuracy.ts";
 
 const PROD_ORIGIN = "https://cofre360.vercel.app";
 const ALLOWED_ORIGINS = new Set([
@@ -114,6 +114,13 @@ async function runOne(test: TestCase, chatUrl: string, authKey: string, anonKey:
     if (!fullText.match(/\*\*/)) { consistency -= 10; findings.push("⚠️ sem negrito"); }
 
     const numeric = checkFinancialAmounts(fullText, expected);
+    if (test.id === "4" || test.id === "9") {
+      const subcategoryTotal = expected.find((item) => item.label === "Total")?.amount;
+      const subtotal = checkSubcategorySum(fullText, subcategoryTotal ?? Number.NaN);
+      numeric.passed += subtotal.passed;
+      numeric.total += subtotal.total;
+      numeric.findings.push(...subtotal.findings);
+    }
     findings.push(...numeric.findings);
     const numericOk = numeric.passed === numeric.total;
     if (!numericOk) accuracy = Math.min(accuracy, 69);
@@ -146,45 +153,92 @@ function monthFirstDayInBrazil(now = new Date()) {
   return `${year}-${month}-01`;
 }
 
+type CategoryAmount = { category?: string; amount?: number | string };
 type Facts = {
   income?: number | string;
   expense?: number | string;
   result?: number | string;
+  categories?: CategoryAmount[];
   oldInstallments?: { amount?: number | string };
+  oldInstallmentCategories?: CategoryAmount[];
 };
 
+function finiteMoney(value: unknown): number {
+  if (value === undefined || value === null || value === "") throw new Error("Valor canônico ausente");
+  const number = Number(value);
+  if (!Number.isFinite(number)) throw new Error("Valor canônico inválido");
+  return Math.round((number + Number.EPSILON) * 100) / 100;
+}
+
+function canonicalRows(rows: unknown): Array<{ category: string; amount: number }> {
+  if (!Array.isArray(rows)) throw new Error("Categorias canônicas indisponíveis");
+  return rows.map((row: CategoryAmount) => ({
+    category: String(row?.category || "").trim(), amount: finiteMoney(row?.amount),
+  })).filter((row) => row.category.length > 0 && row.amount !== 0);
+}
+
+function canonicalMonthLabel(date: Date) {
+  const months = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+  return months[date.getUTCMonth()] + "/" + date.getUTCFullYear();
+}
+
 async function manualMoneyExpectations(userClient: any): Promise<Record<string, MoneyCheck[]>> {
-  // The same per-user canonical RPC powers the Home and the deterministic AI
-  // answers. Missing facts must fail closed: never publish a fake 100% score.
-  const { data, error } = await userClient.rpc("financial_month_facts", {
-    p_month: monthFirstDayInBrazil(),
-  });
-  if (error || !data) throw new Error("Valores canônicos indisponíveis para auditoria");
-  const facts = data as Facts;
-  const finite = (value: unknown) => {
-    if (value === undefined || value === null || value === "") {
-      throw new Error("Valor canônico ausente");
-    }
-    const number = Number(value);
-    if (!Number.isFinite(number)) throw new Error("Valor canônico inválido");
-    return Math.round((number + Number.EPSILON) * 100) / 100;
-  };
-  const income = finite(facts.income);
-  const expense = finite(facts.expense);
-  const result = finite(facts.result);
-  const oldInstallments = finite(facts.oldInstallments?.amount);
+  // Two calls use the SAME per-user canonical RPC as financial-chat.
+  // Never fall back to fabricated values or another user\'s data.
+  const month = monthFirstDayInBrazil();
+  const currentDate = new Date(month + "T00:00:00Z");
+  const previousDate = new Date(Date.UTC(currentDate.getUTCFullYear(), currentDate.getUTCMonth() - 1, 1));
+  const previousMonth = previousDate.toISOString().slice(0, 10);
+  const [currentResult, previousResult] = await Promise.all([
+    userClient.rpc("financial_month_facts", { p_month: month }),
+    userClient.rpc("financial_month_facts", { p_month: previousMonth }),
+  ]);
+  if (currentResult.error || !currentResult.data || previousResult.error || !previousResult.data) {
+    throw new Error("Valores canônicos de ambos os meses indisponíveis para auditoria");
+  }
+  const facts = currentResult.data as Facts;
+  const previous = previousResult.data as Facts;
+  const income = finiteMoney(facts.income);
+  const expense = finiteMoney(facts.expense);
+  const result = finiteMoney(facts.result);
+  const oldAmount = finiteMoney(facts.oldInstallments?.amount);
+  const categories = canonicalRows(facts.categories).sort((a, b) => b.amount - a.amount);
+  const oldCategories = canonicalRows(facts.oldInstallmentCategories);
+  const previousCategories = canonicalRows(previous.categories);
+  const categoryTotal = finiteMoney(categories.reduce((total, row) => total + row.amount, 0));
+  const previousTotal = finiteMoney(previousCategories.reduce((total, row) => total + row.amount, 0));
+  const difference = finiteMoney(categoryTotal - previousTotal);
+  const food = categories.find((row) => row.category.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase() === "alimentacao")?.amount ?? 0;
+  const categoryChecks = categories.slice(0, 12).map((row) => ({ label: row.category, amount: row.amount, separator: "dash" as const }));
+  const installmentCategoryChecks = oldCategories.map((row) => ({ label: row.category, amount: row.amount }));
+  const installmentTotal: MoneyCheck = { label: "Total cobrado no mês vindo de compras anteriores", alternativeLabels: ["Total dessas parcelas"], amount: oldAmount };
   return {
     "1": [
       { label: "Receitas", amount: income },
       { label: "Despesas", amount: expense },
       { label: "Resultado", amount: result },
+      { label: "Compras realizadas no período, pela data original da compra", amount: categoryTotal },
     ],
     "2": [{ label: "Total", amount: expense }],
-    "5": [{ label: "Total cobrado no mês vindo de compras anteriores", alternativeLabels: ["Total dessas parcelas"], amount: oldInstallments }],
+    "3": [{ label: "Compras realizadas no período", amount: categoryTotal }, ...categoryChecks],
+    "4": [{ label: "Total", amount: food }],
+    "5": [installmentTotal, ...installmentCategoryChecks],
     "6": [{ label: "Total", amount: income }],
+    "7": [
+      { label: canonicalMonthLabel(currentDate), amount: categoryTotal },
+      { label: canonicalMonthLabel(previousDate), amount: previousTotal },
+      { label: "Diferença", amount: difference, allowPositivePlus: true },
+    ],
+    "8": [{ label: "DESPESAS", amount: expense }],
+    "9": [{ label: "Total", amount: food }],
+    "10": [installmentTotal, ...installmentCategoryChecks],
+    "11": [
+      { label: "DESPESAS do mês", amount: expense },
+      { label: "Compras realizadas no mês", amount: categoryTotal },
+      { label: "Parcelas de compras antigas identificadas no mês", amount: oldAmount, separator: "dash" },
+    ],
   };
 }
-
 function smokeCase(id: string, name: string, passed: boolean, finding: string, duration = 0) {
   return {
     testId: id, name, category: "Integridade", status: passed ? "passed" : "failed",
