@@ -6,8 +6,8 @@ const source = (path: string) => readFileSync(resolve(process.cwd(), path), "utf
 const qa = source("supabase/functions/run-ai-tests/index.ts");
 const client = source("src/components/AITestHistory.tsx");
 const config = source("supabase/config.toml");
-const vault = source("supabase/migrations/20261018120000_ai_qa_cron_secret.sql");
-const cron = source("supabase/migrations/20261018120100_ai_qa_daily_smoke.sql");
+const vault = source("supabase/migrations/20261019173944_ai_qa_cron_secret.sql");
+const cron = source("supabase/migrations/20261019174731_ai_qa_daily_smoke.sql");
 
 describe("Fase 1: segurança e diagnóstico do consultor IA", () => {
   it("usa JWT da sessão ativa e jamais a chave pública como Bearer manual", () => {
