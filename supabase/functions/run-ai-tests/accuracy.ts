@@ -14,7 +14,7 @@ export function checkFinancialAmounts(
   answer: string,
   expectations: MoneyCheck[],
 ): { passed: number; total: number; findings: string[] } {
-  const normalized = answer.replace(/\*\*/g, "").replace(/[\u00a0\u202f]/g, " ").replace(/\s+/g, " ");
+  const lines = answer.split(/\r?\n/).map((line) => line.replace(/\*\*/g, "").replace(/[\u00a0\u202f]/g, " ").replace(/\s+/g, " "));
   const findings: string[] = [];
   let passed = 0;
   for (const { label, amount, alternativeLabels = [], separator = "colon", allowPositivePlus = false } of expectations) {
@@ -32,7 +32,7 @@ export function checkFinancialAmounts(
     const matchesLabeledAmount = [label, ...alternativeLabels].some((candidate) => {
       const safeLabel = candidate.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       const matcher = new RegExp("\\b" + safeLabel + "\\s*" + separatorRegex + "\\s*" + amountRegex + "(?![\\d.,])", "i");
-      return matcher.test(normalized);
+      return lines.some((line) => matcher.test(line));
     });
     if (matchesLabeledAmount) {
       passed++;
