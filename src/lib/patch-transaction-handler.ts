@@ -39,12 +39,18 @@ const ALLOWED_KEYS = [
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
+// Guard the exact-cent representation for up to 360 installments. At
+// trillions-per-installment magnitudes, IEEE-754 arithmetic cannot preserve
+// cents, so accepting the payload could produce a misleading 200 response.
+const MAX_TRANSACTION_AMOUNT = 10_000_000_000;
+
 export const patchSchema = z
   .object({
     name: z.string().trim().min(1).max(200).optional(),
     amount: z
       .number()
       .positive()
+      .max(MAX_TRANSACTION_AMOUNT, { message: "amount exceeds safe monetary precision" })
       .refine((n) => Number.isFinite(n), { message: "amount must be finite" })
       .transform(round2)
       .optional(),
