@@ -180,7 +180,7 @@ async function manualMoneyExpectations(userClient: any): Promise<Record<string, 
       { label: "Resultado", amount: result },
     ],
     "2": [{ label: "Total", amount: expense }],
-    "5": [{ label: "Total cobrado no mês vindo de compras anteriores", amount: oldInstallments }],
+    "5": [{ label: "Total cobrado no mês vindo de compras anteriores", alternativeLabels: ["Total dessas parcelas"], amount: oldInstallments }],
     "6": [{ label: "Total", amount: income }],
   };
 }
