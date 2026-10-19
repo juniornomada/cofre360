@@ -25,18 +25,11 @@ export function checkFinancialAmounts(
     const expected = moneyBR(amount);
     // Match a label and amount together, avoiding a false positive when the
     // correct number is present under a different financial concept.
-    const safeAmount = expected.replace(/[.*+?^${}()|[\]\\]/g, "\\    const safeLabel = label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const safeAmount = expected.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/ /g, "\\s*");
-    const matcher = new RegExp(`${safeLabel}\\s*:\\s*${safeAmount}(?![\\d.,])`, "i");
-    if (matcher.test(normalized)) {").replace(/ /g, "\\s*");
-    // Allow explicitly approved wording variants for the SAME financial concept,
-    // never a generic "Total" that could belong to a different category.
+    // Accept only explicitly approved aliases for the SAME financial concept.
     const matchesLabeledAmount = [label, ...alternativeLabels].some((candidate) => {
-      const safeLabel = candidate.replace(/[.*+?^${}()|[\]\\]/g, "\\    const safeLabel = label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const safeAmount = expected.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/ /g, "\\s*");
-    const matcher = new RegExp(`${safeLabel}\\s*:\\s*${safeAmount}(?![\\d.,])`, "i");
-    if (matcher.test(normalized)) {");
-      const matcher = new RegExp(`\\b${safeLabel}\\s*:\\s*${safeAmount}(?![\\d.,])`, "i");
+      const safeLabel = candidate.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const matcher = new RegExp("\\b" + safeLabel + "\\s*:\\s*" + safeAmount + "(?![\\d.,])", "i");
       return matcher.test(normalized);
     });
     if (matchesLabeledAmount) {
