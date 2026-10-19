@@ -38,6 +38,10 @@ describe("Auditoria histórica do Supabase (somente leitura)", () => {
     expect(report.counts.sameVersion + report.counts.remoteVersionWithoutLocalVersion)
       .toBe(report.counts.remoteVersions);
     expect(report.sameSqlDifferentVersion).toHaveLength(report.counts.sameSqlDifferentVersion);
+    // SQL contents verified against the 19/10 snapshot must now carry
+    // their exact remote migration versions. No DB write is involved.
+    expect(report.counts.sameSqlDifferentVersion).toBe(0);
+    expect(report.counts.sameVersionSameSql).toBeGreaterThanOrEqual(56);
     expect(report.noMatchingSqlFile).toHaveLength(report.counts.remoteWithoutIdenticalSql);
   });
 });
