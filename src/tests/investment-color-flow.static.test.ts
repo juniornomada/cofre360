@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const investSrc = readFileSync(resolve(process.cwd(), "src/routes/invest.tsx"), "utf8");
-const migrationSrc = readFileSync(resolve(process.cwd(), "supabase/migrations/20261016090000_investment_custom_color.sql"), "utf8");
+const migrationSrc = readFileSync(resolve(process.cwd(), "supabase/migrations/20261016115454_investment_custom_color.sql"), "utf8");
 
 describe("Investment color flow", () => {
   it("loads saved color when editing and writes validated color when saving", () => {
