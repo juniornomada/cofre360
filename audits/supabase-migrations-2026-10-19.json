@@ -1,0 +1,614 @@
+{
+  "kind": "supabase_migrations.schema_migrations SQL Git blob fingerprints",
+  "capture_date": "2026-10-19",
+  "project_ref": "bllqvpnjfpcvujrbrbig",
+  "note": "Read-only forensic metadata. Hashes reference SQL text already applied to Supabase, not credentials, SQL bodies, or application data. Captured snapshot; not a live health check.",
+  "entries": [
+    {
+      "version": "20260428112559",
+      "name": "",
+      "git_hash_exact": "f81e811d35a9c3ecadef51fb0415b8a246d8780a",
+      "git_hash_with_newline": "a07020fe093b6c51f4f7ca43e069e85ab8557e83"
+    },
+    {
+      "version": "20260429003552",
+      "name": "",
+      "git_hash_exact": "7c73d3ce790aa5b1f91318306b990044698060c0",
+      "git_hash_with_newline": "95eaf90513531464742d9297115fe47d1a10ab9c"
+    },
+    {
+      "version": "20260429003729",
+      "name": "",
+      "git_hash_exact": "2cd65e5d48edb4d0f95cf89a83c4c81c4796d1ef",
+      "git_hash_with_newline": "825f63520a78f80c7c8746b41399dd37fd7c2726"
+    },
+    {
+      "version": "20260429012327",
+      "name": "",
+      "git_hash_exact": "cc507c83b0e3a7a5784b4560567da5355b8273dd",
+      "git_hash_with_newline": "0b844225075d1bce998554b8d21571246bf8a5ed"
+    },
+    {
+      "version": "20260429014309",
+      "name": "",
+      "git_hash_exact": "3521e0e4a1a342eeb61673baaa17fc885f38dee4",
+      "git_hash_with_newline": "a659315ba17def5cf6f52dca5801145cec24b346"
+    },
+    {
+      "version": "20260429014922",
+      "name": "",
+      "git_hash_exact": "455bfb22fd7be067f8a715b2c18a205df099ea99",
+      "git_hash_with_newline": "738ff827c7fa9ceddb853bbc041226d2eed3e575"
+    },
+    {
+      "version": "20260429015547",
+      "name": "",
+      "git_hash_exact": "424fbfd5a69817984ddef68106f0e1e938647735",
+      "git_hash_with_newline": "34267c99db904e0b360f6afa2c776389ece08711"
+    },
+    {
+      "version": "20260429021954",
+      "name": "",
+      "git_hash_exact": "edc2c199d13d164a01371ef83d8e6f0eb72d5144",
+      "git_hash_with_newline": "71ee1c89a726495dff547b676e9e349148590929"
+    },
+    {
+      "version": "20260429022628",
+      "name": "",
+      "git_hash_exact": "0ba6954345d912235a9f6ed2b6d16cd8e7ebe00b",
+      "git_hash_with_newline": "352e0650b1bf3b347ded336ab44fdc23876ea3b4"
+    },
+    {
+      "version": "20260519185352",
+      "name": "",
+      "git_hash_exact": "cd60210f0267e7fb7b59f16cb5bedac8d09d0da0",
+      "git_hash_with_newline": "55d8075558babd5590cdf7573d348869e3f663dc"
+    },
+    {
+      "version": "20260520141543",
+      "name": "",
+      "git_hash_exact": "db765789ff047aa0f14b9672add58fc28f22bc2e",
+      "git_hash_with_newline": "3fb5d12d7679d98c1d502dc3af60eab260a47d38"
+    },
+    {
+      "version": "20260520141630",
+      "name": "",
+      "git_hash_exact": "f870d0c14c20a8130864bfc45a592d2d47138ce3",
+      "git_hash_with_newline": "7c6a3d34d7ee1d95eaaaf19dc872d29c215d91e1"
+    },
+    {
+      "version": "20260520143119",
+      "name": "",
+      "git_hash_exact": "36458b68121b663d92a311693324b0ec44b0171c",
+      "git_hash_with_newline": "490b15910e8a7aefa7b9b67979b219f4bc784893"
+    },
+    {
+      "version": "20260520143147",
+      "name": "",
+      "git_hash_exact": "c9336d2c80ce0f1aa69a8e1cc242d3729bd9df49",
+      "git_hash_with_newline": "5e05f06c99fcf315d2ee273bee8dcf1b3b6e6d50"
+    },
+    {
+      "version": "20260520204720",
+      "name": "",
+      "git_hash_exact": "8aca48e62797414cad4bd4c28ada12e428a232e8",
+      "git_hash_with_newline": "82d5b8fa013164f3047422ebd65b6530e0f40b0e"
+    },
+    {
+      "version": "20260523122725",
+      "name": "",
+      "git_hash_exact": "45d83f002fa0c1f953e0008c623f12e81364f802",
+      "git_hash_with_newline": "2bfda44927cece667733d5b1fb6a6071488c753b"
+    },
+    {
+      "version": "20260523123553",
+      "name": "",
+      "git_hash_exact": "5c179e46aea3b58f393b7bd6d126951b9a1fd68b",
+      "git_hash_with_newline": "ec0383e58850428cbbcc8f6e82e61a80bf7415bc"
+    },
+    {
+      "version": "20260524015242",
+      "name": "",
+      "git_hash_exact": "a3cb3ad3760438f21914f567ed87d23bd35665e9",
+      "git_hash_with_newline": "bd7f273944c68c4d463140016f8bce01f716a156"
+    },
+    {
+      "version": "20260524142052",
+      "name": "",
+      "git_hash_exact": "0405bce94f4207d95c5375e728c044bc5a9abacd",
+      "git_hash_with_newline": "0a2aadfef8c24508bbfe19fcb0eca75017bb53ec"
+    },
+    {
+      "version": "20260525025508",
+      "name": "",
+      "git_hash_exact": "88fdd367f8822d7ab753a4ecbaf681c4861c4d71",
+      "git_hash_with_newline": "e7a57dabe40d3e890fc322388b14a1afad52a119"
+    },
+    {
+      "version": "20260525140923",
+      "name": "",
+      "git_hash_exact": "f4fb7424601606f51ec8dbf7087e9ab73b3e5bfc",
+      "git_hash_with_newline": "a4122056a4d8961165ecd24fcd04409a0942a981"
+    },
+    {
+      "version": "20260525141013",
+      "name": "",
+      "git_hash_exact": "54427c2e266ddece96682909062e846cbf0f7ce3",
+      "git_hash_with_newline": "ca5be8e4eec362400fd7a0002eee89cd64dd92d6"
+    },
+    {
+      "version": "20260525181749",
+      "name": "",
+      "git_hash_exact": "f3716c3fd1da524043fb285927e9b6b643bada3e",
+      "git_hash_with_newline": "a6eea5328fda1f1215d2415f6fef6dfa2c2adcee"
+    },
+    {
+      "version": "20260525181816",
+      "name": "",
+      "git_hash_exact": "54633f31c0b3240415dab8a44d5638d3f0ee0582",
+      "git_hash_with_newline": "7088543396c1f18108c43f018158f6d1eeab37ec"
+    },
+    {
+      "version": "20260525181900",
+      "name": "",
+      "git_hash_exact": "b801184b8df148be6c9c6ae2de0267a0b7536cd4",
+      "git_hash_with_newline": "7431591a8a03563478c75f30f2d695da38fff92d"
+    },
+    {
+      "version": "20260525182058",
+      "name": "",
+      "git_hash_exact": "00dde5ca563c0f265f177cac60214facbd11f6d3",
+      "git_hash_with_newline": "b11ce4e2eade828f80ba3baa415b07e8ed3413bf"
+    },
+    {
+      "version": "20260525182211",
+      "name": "",
+      "git_hash_exact": "4916aebd32b9ab6d70dedd8fbf50a2ba0fc1bbed",
+      "git_hash_with_newline": "1f71559aa10092746045779d68ecbb4c59b8f313"
+    },
+    {
+      "version": "20260530115417",
+      "name": "",
+      "git_hash_exact": "821918ae0fb0b7ab7e66e043cdbbd11641af36f0",
+      "git_hash_with_newline": "344246c21cf4a8cb850556fe67f71c966105175f"
+    },
+    {
+      "version": "20260530115517",
+      "name": "",
+      "git_hash_exact": "a9342717e37042c9a4fff7f9314ef75d325270cf",
+      "git_hash_with_newline": "ddc96860c8383fcb010e99b4b1a98c319baecdb4"
+    },
+    {
+      "version": "20260530123129",
+      "name": "",
+      "git_hash_exact": "3af111af7cb9fda75422a7151eb65466120c4c54",
+      "git_hash_with_newline": "b3763a5c9b5240599e674cca7710e133ac745e8a"
+    },
+    {
+      "version": "20260530123330",
+      "name": "",
+      "git_hash_exact": "a8c6218c8f449f5351f6000d9059e4da0b8cabb7",
+      "git_hash_with_newline": "7b7ebc0728f3ca2a40c52061e591dfb879e39892"
+    },
+    {
+      "version": "20260531115818",
+      "name": "",
+      "git_hash_exact": "a65db0c750d365bfdeb015c6b03797c2cfb6af07",
+      "git_hash_with_newline": "cdfb1209098838ceeca61e786253c48db0b2104b"
+    },
+    {
+      "version": "20260531120752",
+      "name": "",
+      "git_hash_exact": "5a34cdaf7ddfe420cec18ff6dc3959d4c051031e",
+      "git_hash_with_newline": "1dfd33f82d65a5a507d5574b39fa677cfb2832c6"
+    },
+    {
+      "version": "20260531185500",
+      "name": "",
+      "git_hash_exact": "8b0d1b8dd9b7e77a88b5237422a3f2854fab29c5",
+      "git_hash_with_newline": "e6a76c52925cc84fb33372a20751dcdf7de60bd5"
+    },
+    {
+      "version": "20260531185606",
+      "name": "",
+      "git_hash_exact": "5097d725e6d7dc2896b4c1e0d28727af977c6ce8",
+      "git_hash_with_newline": "42e83aff89005e40b1751ed428ccb6f2b713aaf8"
+    },
+    {
+      "version": "20260531185750",
+      "name": "",
+      "git_hash_exact": "b1ebb886617059b1edbdd8fb7313f558cc2fb2a8",
+      "git_hash_with_newline": "d45ff7cc07b1b818ecd71f22b6ef7919505a898e"
+    },
+    {
+      "version": "20260531210120",
+      "name": "",
+      "git_hash_exact": "a8f971ce4fcb629960f070fdadb8d097d5b4e094",
+      "git_hash_with_newline": "99b4ed32b6eebc49af79e098296c3f5f6de67729"
+    },
+    {
+      "version": "20260531210200",
+      "name": "",
+      "git_hash_exact": "6e363ad396c0b1f0e19b3ac72a009ec8e0c30910",
+      "git_hash_with_newline": "94ef4f894be496d4b790c0d7a90bd4164dc529b0"
+    },
+    {
+      "version": "20260531210239",
+      "name": "",
+      "git_hash_exact": "bcf973df9793094ff1880b23a508174653dbc30e",
+      "git_hash_with_newline": "c3b763704b7815ee071372c87d5b81ddb5b488d9"
+    },
+    {
+      "version": "20260531220820",
+      "name": "",
+      "git_hash_exact": "d59a9cf10c5f5b6441ee490435b678582b0f1fba",
+      "git_hash_with_newline": "03d16a0fb03979461dff2b547eb02d2e306db0ee"
+    },
+    {
+      "version": "20260531222213",
+      "name": "",
+      "git_hash_exact": "2e475081715d03329f8974f164ee1c253cfd0670",
+      "git_hash_with_newline": "b3d3ddeb9ddc9efa724892f66955bd4605d527b2"
+    },
+    {
+      "version": "20260531222247",
+      "name": "",
+      "git_hash_exact": "1636cd44b685e9771391b1f996a8ca43072a230a",
+      "git_hash_with_newline": "755a13ddee308991db13b9eba2e259c6e9bb70e0"
+    },
+    {
+      "version": "20260531222359",
+      "name": "",
+      "git_hash_exact": "507e48bc174ff6571cd9757d3e9bdf3ed223801f",
+      "git_hash_with_newline": "fc971fd73ee0f13514d576f3086d58e2032a68b4"
+    },
+    {
+      "version": "20260531222722",
+      "name": "",
+      "git_hash_exact": "cf918d1998424b77d098a1764665ada2f033be92",
+      "git_hash_with_newline": "a06bb2166ea15b17a6e2262f214715010b1b7b56"
+    },
+    {
+      "version": "20260531223030",
+      "name": "",
+      "git_hash_exact": "8c3260c46bf6f336f1ab8d6d121ee7782095072c",
+      "git_hash_with_newline": "1c352fe984521607f92b99c6b3d9203700ac47f6"
+    },
+    {
+      "version": "20260601011152",
+      "name": "",
+      "git_hash_exact": "0f118867a304dd6b9b286c06bf618ba73c024fdd",
+      "git_hash_with_newline": "645c567fafc8d4ed94814fedb0262211ba8dc614"
+    },
+    {
+      "version": "20260601012305",
+      "name": "",
+      "git_hash_exact": "a10938a4e0c1736198779a021597bc9d1872c308",
+      "git_hash_with_newline": "133b8ae65be642eb2735bb1bc30211583b069cb9"
+    },
+    {
+      "version": "20260601013029",
+      "name": "",
+      "git_hash_exact": "4598733d6c8245e9ccaff895d249b17d33fc4d4b",
+      "git_hash_with_newline": "7667a357dbab8693f556985f7b2b38e8c506dfc7"
+    },
+    {
+      "version": "20260601212541",
+      "name": "",
+      "git_hash_exact": "e33f1379e5fc35bbc2f81a14904d815feb7bc502",
+      "git_hash_with_newline": "e509a858dd7fe7edeed48a8fc36e01b73d8dc7f0"
+    },
+    {
+      "version": "20260602021316",
+      "name": "",
+      "git_hash_exact": "817c65952064ac596933c2a51c09f37a13a68228",
+      "git_hash_with_newline": "c854c317a1d5a3319e41e37565b1c4f566b59804"
+    },
+    {
+      "version": "20260602114833",
+      "name": "",
+      "git_hash_exact": "43e64efe4f795ed601108c72f9d1db93ce1e1605",
+      "git_hash_with_newline": "c2b358901b734d21d57365210455bd03b3168d8e"
+    },
+    {
+      "version": "20260606005537",
+      "name": "",
+      "git_hash_exact": "ae2f4d78487fd5a0dc148089ea92b97d7a0ba2db",
+      "git_hash_with_newline": "2370967c8ad716a5370d8c5f0965985471fdf050"
+    },
+    {
+      "version": "20260606024445",
+      "name": "",
+      "git_hash_exact": "ca9dcd4ed53cef311f05c9745adaeefb9cbaaf8c",
+      "git_hash_with_newline": "30e5b355198b0189a93db2206ab06d0b9b7657d1"
+    },
+    {
+      "version": "20260611135037",
+      "name": "",
+      "git_hash_exact": "baf5c3fcc88ce46cefeaa75f44e6ed638daff5ee",
+      "git_hash_with_newline": "ada74483aa6e8baf0135dd73976eeeb11a9d3ab4"
+    },
+    {
+      "version": "20260611170846",
+      "name": "",
+      "git_hash_exact": "b56ff1a8901774dd2f6c1aa7cce885b2510bc479",
+      "git_hash_with_newline": "22972d39e00eae1650d563ca798e7688e9576aff"
+    },
+    {
+      "version": "20260612021542",
+      "name": "",
+      "git_hash_exact": "2c61d7a2d2c09a61081688b76741f3fb00499252",
+      "git_hash_with_newline": "e005805beac7b6ca255ac31259a610a20a951f85"
+    },
+    {
+      "version": "20260613105314",
+      "name": "",
+      "git_hash_exact": "7711a3c0dc434ae088766cabe1bc3dea4e932606",
+      "git_hash_with_newline": "ce529293d4612c53ad3be5237b05286a38d261f2"
+    },
+    {
+      "version": "20260613105739",
+      "name": "",
+      "git_hash_exact": "a92659e4af4c79ce895410057ef9482ef92d56b6",
+      "git_hash_with_newline": "ba2c12ba1c7338b185136addbe81faa536358cb6"
+    },
+    {
+      "version": "20260613150734",
+      "name": "",
+      "git_hash_exact": "3aeceff65a5a5b90f7572457f7475e5fe861463a",
+      "git_hash_with_newline": "7284316feecd1556f9bf6624545843d834c404fa"
+    },
+    {
+      "version": "20260613152024",
+      "name": "",
+      "git_hash_exact": "028745d2f4d61289d5926898c61a3f81b945a586",
+      "git_hash_with_newline": "d3530b6a8681d79f44bd7dc4be4be6265a718d86"
+    },
+    {
+      "version": "20260615035817",
+      "name": "",
+      "git_hash_exact": "27d43a362e34692b43dd29e5cc578cf7811965db",
+      "git_hash_with_newline": "fc838e18a9fd537a3d54fd2906670751143692e1"
+    },
+    {
+      "version": "20260615042318",
+      "name": "",
+      "git_hash_exact": "d33cc1e68110c27fccc46eda4c0440b12795200d",
+      "git_hash_with_newline": "73a1f64532dda42398ad27a2d0472355e64651d7"
+    },
+    {
+      "version": "20260711144151",
+      "name": "20260711144146_2c42b9a7-710b-45a7-8f39-620fb9158e1c",
+      "git_hash_exact": "46841e8430a6aebd024321044c75455ee1328046",
+      "git_hash_with_newline": "0d4ffd540f78688ac1351ea39288a7881f5f5124"
+    },
+    {
+      "version": "20260711145607",
+      "name": "20260711145605_0d34ece2-5cae-45ff-8b85-98b6fc761c00",
+      "git_hash_exact": "51139f05869ecc88dab2f33eeee7d9dfe2e0580d",
+      "git_hash_with_newline": "60af2cf3875da82c8163600f3c3054805d936fa3"
+    },
+    {
+      "version": "20260712124644",
+      "name": "20260712124643_bf3a71e9-3a8a-4149-9098-1cccea008f87",
+      "git_hash_exact": "12865e68da92b1fb9df891a2e2f93c44bbd746db",
+      "git_hash_with_newline": "b82007715ffe34435d39fd1658e1eca8818f7666"
+    },
+    {
+      "version": "20260712144557",
+      "name": "20260712144550_5105c269-d61d-4cc2-b4c0-afb7f6284056",
+      "git_hash_exact": "33c2e81dccdfdfc9504a9a3a25cef97155b192b6",
+      "git_hash_with_newline": "c87e83e2a59984f68da116afbe2433363d01166b"
+    },
+    {
+      "version": "20260828143849",
+      "name": "add_bank_account_subaccounts_v2",
+      "git_hash_exact": "eaae0f2349372a0a3cb58c9576ee1dae57b3ef38",
+      "git_hash_with_newline": "6a7f6e8c1454f4ba6840a29e249a8ff9bd340391"
+    },
+    {
+      "version": "20260831002212",
+      "name": "add_card_logo_url",
+      "git_hash_exact": "a79327e7e7ec1f1d6432a73af0f302432589ae00",
+      "git_hash_with_newline": "d9f16176cc88a4b6eaf1d24fd3b15cbabbae5cf5"
+    },
+    {
+      "version": "20260831180146",
+      "name": "auto_assign_credit_card_institution_logos",
+      "git_hash_exact": "d030f975b9b4c1302de550164cbc2cdc81420ff5",
+      "git_hash_with_newline": "bc8fe314adf535c882646a2175f514948ed542e4"
+    },
+    {
+      "version": "20260903122139",
+      "name": "add_transaction_purchase_date",
+      "git_hash_exact": "93d797b376d8dc14cc1b9a286017514a5e43303b",
+      "git_hash_with_newline": "ff3aad434f1cf64564b7c73d615fae19a88ca635"
+    },
+    {
+      "version": "20260903222839",
+      "name": "collapse_installment_group_when_converted_to_single",
+      "git_hash_exact": "0918703793e17037b5ba817ed85ccb70b3177188",
+      "git_hash_with_newline": "0764f447cb8b707ddc14c679033789a30fd5ee7f"
+    },
+    {
+      "version": "20260903222927",
+      "name": "normalize_installment_group_when_converted_to_single",
+      "git_hash_exact": "438d71e7b38c5c19f66cdb41fadb9688c7efb1cb",
+      "git_hash_with_newline": "3f749c4eed262fa8459434e43af14c93cc235514"
+    },
+    {
+      "version": "20260909171558",
+      "name": "create_card_refunds_tracking",
+      "git_hash_exact": "6620fbd314bece9bea6df6499298135c8336809c",
+      "git_hash_with_newline": "f5c526e06ffb2911ff22c459e12434af3466c229"
+    },
+    {
+      "version": "20260909220015",
+      "name": "add_manual_investment_valuation_fields",
+      "git_hash_exact": "e23e0c739b4d8e9882114eecc2fed0f46918b0ea",
+      "git_hash_with_newline": "235742ca95757a1d075800e6d0263a5e597f371b"
+    },
+    {
+      "version": "20260911225721",
+      "name": "set_card_refund_purchase_date",
+      "git_hash_exact": "26f1af988ff9a25e4eba48b21bf64cd0428e2331",
+      "git_hash_with_newline": "18874a9ffe0acf2788f59abf944e1b0f39f249f2"
+    },
+    {
+      "version": "20260912001433",
+      "name": "add_ai_chat_history",
+      "git_hash_exact": "47f1c6a4ddfb4c455390ed614150dd3375118be1",
+      "git_hash_with_newline": "edf9263717ed7ac99d180a3eb28f1d0f833f1fdc"
+    },
+    {
+      "version": "20260915193846",
+      "name": "canonical_transaction_foundation",
+      "git_hash_exact": "1beec0717461d241b7aa8dbcd1f0dd55ad9a7f9a",
+      "git_hash_with_newline": "0d21b0e33b87c364e75492a7737c28f94ac56bc9"
+    },
+    {
+      "version": "20260915193950",
+      "name": "canonical_purchase_date",
+      "git_hash_exact": "9dca468813f28c30ce4bf0a73d2d718c44395e98",
+      "git_hash_with_newline": "eed0f77f4ac2080e61a0cc93d4b3bcaf6c67ae41"
+    },
+    {
+      "version": "20260915194006",
+      "name": "financial_month_facts_rpc_v3",
+      "git_hash_exact": "4792bb02a3904f6649230ae963e2821aab5eef0e",
+      "git_hash_with_newline": "384c183f7505c9360f343b970dd20f093a1bb75e"
+    },
+    {
+      "version": "20260915195114",
+      "name": "financial_month_facts_rpc_v4",
+      "git_hash_exact": "a3b0d8dda2eb94840ab11b17f4f1c69fa5b04170",
+      "git_hash_with_newline": "351c4095ff788386aee5e25e55780f78adf5257b"
+    },
+    {
+      "version": "20260916105439",
+      "name": "expand_reconciliation_check_types",
+      "git_hash_exact": "5700c56fecb153c04e2e65f8a7788b5051a62bfd",
+      "git_hash_with_newline": "4711c892dfb3088b4e4588fb35152b3ef40f524b"
+    },
+    {
+      "version": "20260917212221",
+      "name": "harden_function_execution_and_search_path",
+      "git_hash_exact": "58b1e9a841e241e1949403acf15fd988c4a3be9f",
+      "git_hash_with_newline": "96baf12a1266d9494b18aff6dcbc1cc5d4ebeed0"
+    },
+    {
+      "version": "20260917212440",
+      "name": "minimize_public_table_grants",
+      "git_hash_exact": "71cc057758ee4236ce42b5d66d2fc97849fec045",
+      "git_hash_with_newline": "31495193dadfc62f82c821c6f2852c529c588319"
+    },
+    {
+      "version": "20260918000605",
+      "name": "atomic_card_payments",
+      "git_hash_exact": "14b084dcbbd4cbaa18a6f468257bef8558bf8517",
+      "git_hash_with_newline": "8e4b990db349aa24612a07f6c7568d927cebbfcc"
+    },
+    {
+      "version": "20260918000956",
+      "name": "safe_delete_legacy_card_payments",
+      "git_hash_exact": "e68e3e054c0b40ca2db7ade99e0f45304b6256c4",
+      "git_hash_with_newline": "04daa08eccccae6d2b604967b34ab45e12c8929a"
+    },
+    {
+      "version": "20260918005026",
+      "name": "disable_unauthorized_ai_test_cron",
+      "git_hash_exact": "322c28db908e3b78555d1f56402415cda68bfafc",
+      "git_hash_with_newline": "afb0c1dceffe90c9e98c3bbae65daf05d8b5480f"
+    },
+    {
+      "version": "20260918005847",
+      "name": "secure_reconciliation_cron_secret",
+      "git_hash_exact": "6563d6b117596a27d952f6376fd3ccbeb27a1eb5",
+      "git_hash_with_newline": "f6507d533ecfcac57e4d8a6231ae0342411d8112"
+    },
+    {
+      "version": "20260918010354",
+      "name": "secure_reconciliation_cron_job",
+      "git_hash_exact": "950b22dd4a9080f92ef5eedf9e73b0e73afe9385",
+      "git_hash_with_newline": "7b16c971e7ab6c7dc1d664f12ddfa0aad261f457"
+    },
+    {
+      "version": "20260918010732",
+      "name": "rate_limit_financial_chat",
+      "git_hash_exact": "c7dfa5a689aa2a002c3e4ba44bd1d3ade232dcc4",
+      "git_hash_with_newline": "0fd9a000552d1982944c1ea96c729807cf96a4a1"
+    },
+    {
+      "version": "20260918010905",
+      "name": "restrict_financial_chat_quota_rpc",
+      "git_hash_exact": "ca615dd5c79f34c2d862b70e9c0383641452e74f",
+      "git_hash_with_newline": "fea961d2f20a9bc0f0a9c36c8254905a03098339"
+    },
+    {
+      "version": "20260918013810",
+      "name": "tighten_rls_roles_and_admin_function_paths",
+      "git_hash_exact": "c176ad1de945c38e5dbc88f0f3a181a702faa52a",
+      "git_hash_with_newline": "21495686a026ad890173651c397f8fc2cbf8549c"
+    },
+    {
+      "version": "20260918014040",
+      "name": "enforce_owned_financial_references",
+      "git_hash_exact": "64bb40a8af253a14636f696cc12a1dc9fa6e7747",
+      "git_hash_with_newline": "f84dd01df99b3316aee072a0010ce9e9f5193ec6"
+    },
+    {
+      "version": "20260918014337",
+      "name": "rate_limit_pdf_parsing",
+      "git_hash_exact": "ba56fe8f2aa371d43c28156739273c2bd84a0587",
+      "git_hash_with_newline": "565a2be3c52fe70d0ffa01f7a1fb04dd82efa7fd"
+    },
+    {
+      "version": "20260918014635",
+      "name": "rate_limit_external_transactions",
+      "git_hash_exact": "3e93aae5f405c44ae19940ace519d0c1eff05234",
+      "git_hash_with_newline": "7a2dd6bf4557a987cebb74d34f1d2a5608fd0e68"
+    },
+    {
+      "version": "20260918020909",
+      "name": "minimize_remaining_function_execute_grants",
+      "git_hash_exact": "f0932ee95b67acf492c46813ca6ff5e04405c579",
+      "git_hash_with_newline": "998b6a92fd092f2c62cd504f01ec003b4dd77d40"
+    },
+    {
+      "version": "20260918021157",
+      "name": "enforce_mfa_for_opted_in_users",
+      "git_hash_exact": "21565d3eb5aed0bc59d376054e27dc2f64f0faea",
+      "git_hash_with_newline": "93b413e9e15d95edff68af463ade58808a17702a"
+    },
+    {
+      "version": "20261005122718",
+      "name": "financial_month_facts_economic_purchase_month",
+      "git_hash_exact": "ff4aae874926b90fb8e7fef3929fa999e29e214b",
+      "git_hash_with_newline": "fcecc240c3ce7e19310d0976ebb66961f5e0de74"
+    },
+    {
+      "version": "20261005133909",
+      "name": "pending_scheduled_transactions",
+      "git_hash_exact": "6b25468f2a7de6ddbacbc61d3f7483c41238b126",
+      "git_hash_with_newline": "a08d479af4b04e04d9cc6bf42debb422d697379f"
+    },
+    {
+      "version": "20261016115454",
+      "name": "investment_custom_color",
+      "git_hash_exact": "d2601c59befc0f6fb464a47c82e640c549de7d2e",
+      "git_hash_with_newline": "1d57b1eb9a3c65ddce3288979c36ee2d202419ae"
+    },
+    {
+      "version": "20261019173944",
+      "name": "ai_qa_cron_secret",
+      "git_hash_exact": "f5ae3e97d5cc5e93f26e1e744357d458ca32f5c2",
+      "git_hash_with_newline": "f15ab464c10106956150e171ff4a1660f7d34dae"
+    },
+    {
+      "version": "20261019174731",
+      "name": "ai_qa_daily_smoke",
+      "git_hash_exact": "51c90e8a5c7a200a155a0928cba0ee0b1e6f63d8",
+      "git_hash_with_newline": "e9f42d9b4dbfdd5397f11d965d790ae34b054750"
+    }
+  ]
+}
