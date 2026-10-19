@@ -209,6 +209,16 @@ describe("Contrato PATCH — fuzz (fast-check)", () => {
     );
   });
 
+  it("rejeita valores acima da precisão financeira segura sem persistir", async () => {
+    const persist = vi.fn(async (id: string, patch: Record<string, unknown>) => ({ id, ...patch }));
+    const response = await handlePatchTransactionContract(
+      req({ amount: 22_736_824_852_406.094, total_installments: 14 }),
+      { currentRow: null, persist },
+    );
+    expect(response.status).toBe(422);
+    expect(persist).not.toHaveBeenCalled();
+  });
+
   it("Idempotência — dois PATCHes com o mesmo payload aleatório produzem o mesmo contrato", async () => {
     await fcAssertWithRepro(
       fc.asyncProperty(amountArb, NArb, async (amount, N) => {

@@ -30,6 +30,8 @@ interface TestResultDetail {
   duration: number;
   response?: string;
   findings: string[];
+  numericPassed?: number;
+  numericTotal?: number;
 }
 
 interface TestRun {
@@ -51,24 +53,45 @@ export function AITestHistory() {
   const [runs, setRuns] = useState<TestRun[]>([]);
   const [loading, setLoading] = useState(true);
   const [running, setRunning] = useState(false);
+  const [authorized, setAuthorized] = useState(false);
+  const [accessError, setAccessError] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [accuracyThreshold, setAccuracyThreshold] = useState(80);
   const [consistencyThreshold, setConsistencyThreshold] = useState(80);
   const [showSettings, setShowSettings] = useState(false);
 
+  const getHeaders = async () => {
+    const { data: { session }, error } = await supabase.auth.getSession();
+    if (error || !session?.access_token) throw new Error("Entre na sua conta para consultar a auditoria.");
+    return {
+      "Content-Type": "application/json",
+      apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+      Authorization: `Bearer ${session.access_token}`,
+    };
+  };
+
   const load = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("ai_test_runs")
-      .select("*")
-      .order("run_at", { ascending: false })
-      .limit(30);
-    if (error) {
-      toast.error("Erro ao carregar histórico: " + error.message);
-    } else {
-      setRuns((data ?? []) as TestRun[]);
+    try {
+      const headers = await getHeaders();
+      const resp = await fetch(FN_URL, { method: "GET", headers });
+      if (resp.status === 401 || resp.status === 403) {
+        setAuthorized(false);
+        setRuns([]);
+        setAccessError("Auditoria restrita a contas autorizadas pelo administrador.");
+        return;
+      }
+      if (!resp.ok) throw new Error("Falha ao buscar histórico de auditorias");
+      const payload = await resp.json();
+      setRuns(Array.isArray(payload.runs) ? payload.runs as TestRun[] : []);
+      setAuthorized(true);
+      setAccessError(null);
+    } catch (error: any) {
+      setAuthorized(false);
+      setAccessError(error?.message || "Não foi possível carregar o histórico.");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -88,22 +111,24 @@ export function AITestHistory() {
   };
 
   const runNow = async () => {
+    if (!authorized || running) return;
     setRunning(true);
     try {
+      const headers = await getHeaders();
       const resp = await fetch(FN_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
+        method: "POST", headers,
         body: JSON.stringify({ trigger: "manual-server" }),
       });
-      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-      toast.success("Execução concluída e salva no histórico");
+      if (resp.status === 401 || resp.status === 403) {
+        setAuthorized(false);
+        throw new Error("Sua conta não tem autorização para executar esta auditoria.");
+      }
+      const result = await resp.json().catch(() => null);
+      if (!resp.ok) throw new Error(result?.error || `HTTP ${resp.status}`);
+      toast.success("Auditoria manual concluída e registrada");
       await load();
-    } catch (e: any) {
-      toast.error("Falha: " + (e?.message ?? "desconhecido"));
+    } catch (error: any) {
+      toast.error(error?.message || "Falha ao executar auditoria");
     } finally {
       setRunning(false);
     }
@@ -126,7 +151,7 @@ export function AITestHistory() {
           </h2>
           <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
             <Calendar className="h-3 w-3" />
-            Execução automática diária às 09:00 UTC (06:00 BRT)
+            Verificação automática diária: 06h (Brasília). Auditoria de valores reais: somente manual e autorizada.
           </p>
         </div>
         <div className="flex gap-2">
@@ -138,7 +163,7 @@ export function AITestHistory() {
             <RefreshCw className={cn("h-4 w-4 mr-2", loading && "animate-spin")} />
             Atualizar
           </Button>
-          <Button size="sm" onClick={runNow} disabled={running}>
+          <Button size="sm" onClick={runNow} disabled={running || !authorized}>
             <Play className={cn("h-4 w-4 mr-2", running && "animate-pulse")} />
             {running ? "Executando..." : "Rodar agora"}
           </Button>
@@ -182,6 +207,10 @@ export function AITestHistory() {
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {accessError && !loading && (
+        <p role="status" className="rounded-lg border border-border p-3 text-sm text-muted-foreground">{accessError}</p>
       )}
 
       {/* Daily report banner */}
@@ -287,8 +316,8 @@ export function AITestHistory() {
                   <div>
                     <div className="text-sm font-medium flex items-center gap-2">
                       {fmtDate(r.run_at)}
-                      <Badge variant={r.trigger === "scheduled" ? "default" : "secondary"} className="text-[10px]">
-                        {r.trigger}
+                      <Badge variant={r.trigger.startsWith("scheduled") ? "default" : "secondary"} className="text-[10px]">
+                        {r.trigger === "scheduled-smoke" ? "Integridade automática" : r.trigger === "manual-server" ? "Auditoria manual" : r.trigger}
                       </Badge>
                       {isBelowThreshold && (
                         <Badge variant="destructive" className="text-[9px] h-4">ALERTA</Badge>
@@ -320,6 +349,9 @@ export function AITestHistory() {
                           {res.status} · {res.accuracy}%/{res.consistency}%
                         </span>
                       </div>
+                      {(res.numericTotal ?? 0) > 0 && (
+                        <p className="mt-1 font-medium">Valores conferidos: {res.numericPassed ?? 0}/{res.numericTotal}</p>
+                      )}
                       {res.findings && res.findings.length > 0 && (
                         <ul className="mt-1 text-muted-foreground space-y-0.5">
                           {res.findings.slice(0, 4).map((f, i) => <li key={i}>{f}</li>)}
