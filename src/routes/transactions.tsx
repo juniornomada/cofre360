@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { SmartLink as Link } from "@/components/SmartLink";
 import { TransactionItem } from "@/components/TransactionItem";
+import { NonBlockingErrorBoundary } from "@/components/NonBlockingErrorBoundary";
 import { EmptyState } from "@/components/EmptyState";
 import { parseCategoryValue, getCategoryIcon, categoryTree } from "@/lib/categories";
 import { inferYieldTransactionFields, isAccountYieldComponent } from "@/lib/account-yield";
@@ -2089,7 +2090,22 @@ export function TransactionsPage() {
 
       {/* Pie Charts */}
       {!isYieldView && <div className="mt-8 mb-8">
-        <CategoryPieCharts
+        <NonBlockingErrorBoundary
+          fallback={
+            <div role="status" className="rounded-xl border border-border bg-card p-4 text-center">
+              <p className="text-sm font-semibold text-foreground">Gráficos temporariamente indisponíveis</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                A lista de transações continua disponível. Atualize o aplicativo para tentar carregar os gráficos novamente.
+              </p>
+              <button type="button" className="mt-3 rounded-lg border border-border px-3 py-2 text-xs font-medium"
+                onClick={() => window.location.reload()}>
+                Recarregar aplicativo
+              </button>
+            </div>
+          }
+        >
+          <Suspense fallback={<p className="py-3 text-center text-xs text-muted-foreground">Carregando gráficos…</p>}>
+            <CategoryPieCharts
           transactions={categoryChartTransactions}
           formatCurrency={formatCurrency}
           activeCategory={activeCategory}
@@ -2118,7 +2134,9 @@ export function TransactionsPage() {
               window.scrollTo({ top: 0, behavior: "smooth" });
             }
           }}
-        />
+            />
+          </Suspense>
+        </NonBlockingErrorBoundary>
       </div>}
 
       {/* Efetivar lançamento pendente */}
