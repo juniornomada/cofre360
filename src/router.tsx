@@ -2,6 +2,7 @@ import { createRouter, useRouter } from "@tanstack/react-router";
 import { createIsomorphicFn, getGlobalStartContext } from "@tanstack/react-start";
 import { routeTree } from "./routeTree.gen";
 import { installInvoiceTransactionRowInteractions } from "@/lib/invoice-transaction-row-interactions";
+import { isStaleAppChunkError } from "@/lib/route-error-recovery";
 
 function DefaultErrorComponent({
   error,
@@ -11,6 +12,18 @@ function DefaultErrorComponent({
   reset: () => void;
 }) {
   const router = useRouter();
+  const staleChunk = isStaleAppChunkError(error);
+
+  const retry = () => {
+    if (staleChunk) {
+      // A versão atual do navegador pode apontar para um chunk removido.
+      // Nesse cenário, resetar o boundary não baixa o shell atualizado.
+      window.location.reload();
+      return;
+    }
+    void router.invalidate();
+    reset();
+  };
 
   return (
     <div className="flex min-h-dvh items-center justify-center bg-background px-4">
@@ -27,36 +40,45 @@ function DefaultErrorComponent({
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
-              d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z"
+              d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 1.948-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z"
             />
           </svg>
         </div>
         <h1 className="text-2xl font-bold tracking-tight text-foreground">
-          Something went wrong
+          {staleChunk ? "Aplicativo atualizado" : "Não foi possível abrir esta página"}
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          An unexpected error occurred. Please try again.
+          {staleChunk
+            ? "Uma versão nova foi publicada. Recarregue a página para carregar os arquivos atualizados."
+            : "Ocorreu um erro na interface. Você pode tentar novamente ou recarregar a página."}
         </p>
-        {import.meta.env.DEV && error.message && (
+        {import.meta.env.DEV && error?.message && (
           <pre className="mt-4 max-h-40 overflow-auto rounded-md bg-muted p-3 text-left font-mono text-xs text-destructive">
             {error.message}
           </pre>
         )}
-        <div className="mt-6 flex items-center justify-center gap-3">
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
           <button
-            onClick={() => {
-              router.invalidate();
-              reset();
-            }}
+            type="button"
+            onClick={retry}
             className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
-            Try again
+            {staleChunk ? "Atualizar aplicativo" : "Tentar novamente"}
           </button>
+          {!staleChunk && (
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+            >
+              Recarregar página
+            </button>
+          )}
           <a
-            href="/"
+            href="/home"
             className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
           >
-            Go home
+            Voltar ao início
           </a>
         </div>
       </div>
