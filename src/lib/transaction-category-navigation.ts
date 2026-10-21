@@ -45,7 +45,7 @@ export const isTechnicalTransactionCategory = (group: string): boolean =>
  * Never depend on the currently active category: switching categories must
  * remain possible without clearing filters first.
  */
-export function getVisibleMonthlyCategoryRanking({
+export function getBrowseableMonthlyCategoryRows({
   economicRows,
   rawRows,
   selectedMonthStartUtc,
@@ -58,10 +58,10 @@ export function getVisibleMonthlyCategoryRanking({
   endDateUtc,
   filterType,
   parseDate,
-}: CategoryNavigationFilters): { category: string; count: number }[] {
+}: CategoryNavigationFilters): MonthlyCategoryRow[] {
   if (filterType === "income") return [];
 
-  const uniqueIdsByCategory = new Map<string, Set<string>>();
+  const uniqueRows = new Map<string, MonthlyCategoryRow>();
 
   const addEligibleRow = (tx: MonthlyCategoryRow, fromRaw: boolean) => {
     if (tx.is_visible === false) return;
@@ -91,9 +91,7 @@ export function getVisibleMonthlyCategoryRanking({
         (startDateUtc !== undefined && timestamp < startDateUtc) ||
         (endDateUtc !== undefined && timestamp > endDateUtc)) return;
 
-    const ids = uniqueIdsByCategory.get(category) ?? new Set<string>();
-    ids.add(tx.id);
-    uniqueIdsByCategory.set(category, ids);
+    if (!uniqueRows.has(tx.id)) uniqueRows.set(tx.id, tx);
   };
 
   for (const tx of economicRows) addEligibleRow(tx, false);
@@ -109,8 +107,20 @@ export function getVisibleMonthlyCategoryRanking({
     }
   }
 
-  return [...uniqueIdsByCategory.entries()]
-    .map(([category, ids]) => ({ category, count: ids.size }))
-    .filter(({ count }) => count > 0)
+  return [...uniqueRows.values()];
+}
+
+export function rankMonthlyCategoryRows(rows: MonthlyCategoryRow[]): { category: string; count: number }[] {
+  const counts = new Map<string, number>();
+  for (const tx of rows) {
+    const group = parseCategoryValue(tx.category || "").group;
+    counts.set(group, (counts.get(group) ?? 0) + 1);
+  }
+  return [...counts.entries()]
+    .map(([category, count]) => ({ category, count }))
     .sort((a, b) => b.count - a.count || a.category.localeCompare(b.category, "pt-BR"));
+}
+
+export function getVisibleMonthlyCategoryRanking(filters: CategoryNavigationFilters) {
+  return rankMonthlyCategoryRows(getBrowseableMonthlyCategoryRows(filters));
 }
