@@ -264,7 +264,8 @@ export function TransactionsPage() {
     };
     const [updateScope, setUpdateScope] = useState<"single" | "all">(readSavedScope);
     const [rememberScopeChoice, setRememberScopeChoice] = useState<boolean>(true);
-    const [scopeConfirmed, setScopeConfirmed] = useState(false);
+    const savingEditRef = useRef(false);
+    const [savingEdit, setSavingEdit] = useState(false);
     const [scopeChanges, setScopeChanges] = useState<string[]>([]);
  
  
@@ -1055,8 +1056,8 @@ export function TransactionsPage() {
     toast.success("Dados copiados para nova transação!");
   };
 
-   const handleSaveEdit = async () => {
-     if (!editTx) return;
+   const handleSaveEdit = async (approvedScope?: { scope: "single" | "all"; changes: string[] }) => {
+     if (!editTx || savingEditRef.current) return;
 
      if (isTransferTransaction(editTx)) {
        if (!transferFromId || !transferToId || transferFromId === transferToId) {
@@ -1248,7 +1249,7 @@ export function TransactionsPage() {
      }
  
      // If it's part of an installment group and we haven't asked for scope yet
-     if (editTx.installment_group_id && !scopeConfirmed) {
+     if (editTx.installment_group_id && !approvedScope) {
        const originalTx = transactions.find(t => t.id === editTx.id);
        if (originalTx) {
          const effectiveAmount = editInstallmentMode === "fixed"
@@ -1324,6 +1325,11 @@ export function TransactionsPage() {
         editInstallmentMode === "fixed" ? editTx.amount : 0
       );
 
+    // A confirmed scope is passed directly rather than read from a stale render.
+    const applyToAll = (approvedScope?.scope ?? updateScope) === "all";
+    const confirmedChanges = approvedScope?.changes ?? scopeChanges;
+    savingEditRef.current = true;
+    setSavingEdit(true);
     let savedSuccessfully = false;
 
     try {
@@ -1371,8 +1377,8 @@ export function TransactionsPage() {
             installmentAmount: perInstallment,
             installmentMode: editInstallmentMode,
             installmentSourceAmount: editTx.amount,
-            updateAllInGroup: updateScope === "all",
-            syncDates: updateScope === "all" && !!scopeChanges.includes("Data"),
+            updateAllInGroup: applyToAll,
+            syncDates: applyToAll && confirmedChanges.includes("Data"),
           })
         : { cleared: false, futureRowsAdded: 0 };
 
@@ -1426,7 +1432,8 @@ export function TransactionsPage() {
       (document.activeElement as HTMLElement)?.blur();
       setShowEditDialog(false);
       setShowUpdateScopeDialog(false);
-      setScopeConfirmed(false);
+      savingEditRef.current = false;
+      setSavingEdit(false);
       // Reload preference (in case another tab/instance changed it) but keep the current session's choice
       setUpdateScope(readSavedScope());
       setEditTx(null);
@@ -2275,7 +2282,9 @@ export function TransactionsPage() {
       </Dialog>
 
       {/* Edit Dialog */}
-      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+      <Dialog open={showEditDialog} onOpenChange={(open) => {
+         if (!savingEditRef.current) setShowEditDialog(open);
+       }}>
         <DialogContent className="w-[calc(100dvw-24px)] max-w-[calc(100dvw-24px)] h-[calc(100dvh-24px)] max-h-[calc(100dvh-24px)] min-h-0 rounded-2xl bg-background overflow-hidden p-0 gap-0 flex flex-col sm:h-auto sm:max-h-[88dvh] sm:min-h-[640px] sm:!w-[28rem] sm:!max-w-[28rem]">
           <DialogHeader className="shrink-0 space-y-0 border-b border-border/50 p-4 pb-3 pr-10">
             <div className="flex items-center gap-1.5">
@@ -2815,16 +2824,16 @@ export function TransactionsPage() {
               <Trash2 className="mr-1 h-3.5 w-3.5" />
               Excluir
             </Button>
-            <Button variant="outline" size="sm" className="flex-1 h-10 text-xs rounded-xl" onClick={() => { (document.activeElement as HTMLElement)?.blur(); setShowEditDialog(false); if (shouldReturnHome) window.location.assign("/home"); }}>Cancelar</Button>
+            <Button variant="outline" size="sm" className="flex-1 h-10 text-xs rounded-xl" disabled={savingEdit} onClick={() => { (document.activeElement as HTMLElement)?.blur(); setShowEditDialog(false); if (shouldReturnHome) window.location.assign("/home"); }}>Cancelar</Button>
             <Button
               size="sm"
               className="flex-1 h-10 text-xs rounded-xl"
-              onClick={handleSaveEdit}
-              disabled={!!editTx && !isTransferTransaction(editTx) &&
-                !editTx.bank_account_id && (!editTx.card || editTx.card === "Nenhum")
+              onClick={() => { void handleSaveEdit(); }}
+              disabled={savingEdit || (!!editTx && !isTransferTransaction(editTx) &&
+                !editTx.bank_account_id && (!editTx.card || editTx.card === "Nenhum"))
               }
             >
-              Salvar alterações
+              {savingEdit ? "Salvando..." : "Salvar alterações"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -2985,15 +2994,15 @@ export function TransactionsPage() {
             <Button variant="ghost" onClick={() => {
               setShowUpdateScopeDialog(false);
             }}>Cancelar</Button>
-            <Button onClick={() => {
+            <Button disabled={savingEdit} onClick={() => {
+              if (savingEditRef.current) return;
               if (rememberScopeChoice && typeof window !== "undefined") {
                 window.localStorage.setItem(UPDATE_SCOPE_PREF_KEY, updateScope);
               }
-              setScopeConfirmed(true);
               setShowUpdateScopeDialog(false);
-              // handleSaveEdit will now proceed because scopeConfirmed=true
-              setTimeout(() => { handleSaveEdit(); }, 0);
-            }}>Confirmar e Salvar</Button>
+              // Avoid a queued handler bound to the old scope confirmation state.
+              void handleSaveEdit({ scope: updateScope, changes: [...scopeChanges] });
+            }}>{savingEdit ? "Salvando..." : "Confirmar e Salvar"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
