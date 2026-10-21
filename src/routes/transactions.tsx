@@ -4,7 +4,7 @@ import { TransactionItem } from "@/components/TransactionItem";
 import { NonBlockingErrorBoundary } from "@/components/NonBlockingErrorBoundary";
 import { EmptyState } from "@/components/EmptyState";
 import { parseCategoryValue, getCategoryIcon } from "@/lib/categories";
-import { getVisibleMonthlyCategoryRanking, isTechnicalTransactionCategory } from "@/lib/transaction-category-navigation";
+import { getBrowseableMonthlyCategoryRows, rankMonthlyCategoryRows, isTechnicalTransactionCategory } from "@/lib/transaction-category-navigation";
 import { inferYieldTransactionFields, isAccountYieldComponent } from "@/lib/account-yield";
 import { fetchAllCategoryLedgerTransactions, type CategoryLedgerTransaction } from "@/lib/category-spending-ledger";
 import { Search, Pencil, Trash2, Plus, CalendarIcon, Loader2, Upload, CheckSquare, Square, X, SlidersHorizontal, ArrowLeftRight, ArrowRight, Eye, EyeOff, FileText, GripVertical, ArrowLeft, Landmark, CreditCard, ArrowUpRight, ArrowDownRight, CirclePlay, Info, Layers } from "lucide-react";
@@ -543,7 +543,7 @@ export function TransactionsPage() {
   // Category shortcuts reflect the currently browseable month/source, not
   // every category ever used. They are calculated independently of the active
   // category so another category can be selected with one tap.
-  const monthCategoryRanking = getVisibleMonthlyCategoryRanking({
+  const categoryNavigationRows = getBrowseableMonthlyCategoryRows({
     economicRows: categoryLedgerTransactions,
     rawRows: transactions,
     selectedMonthStartUtc,
@@ -557,6 +557,7 @@ export function TransactionsPage() {
     filterType,
     parseDate: parseTxDate,
   });
+  const monthCategoryRanking = rankMonthlyCategoryRows(categoryNavigationRows);
 
 
   // Transaction browsing is calendar-month based. Economic DESPESAS is
@@ -728,13 +729,52 @@ export function TransactionsPage() {
     };
   });
 
+  // Technical categories (transfers/card payments) are not part of the
+  // economic purchase ledger. Materialize their full posted-month list from
+  // the paginated category ledger, so a shortcut never leads to an empty list
+  // just because the first page of raw transactions does not include its rows.
+  const technicalCategoryActive = !isYieldView && isTechnicalTransactionCategory(activeCategory);
+  const technicalPostedTransactions: Transaction[] = technicalCategoryActive
+    ? categoryNavigationRows
+        .filter((tx) =>
+          parseCategoryValue(tx.category || "").group === activeCategory &&
+          tx.transaction_status !== "pending",
+        )
+        .map((tx) => {
+          const original = transactions.find((item) => item.id === tx.id);
+          const ledger = categoryLedgerTransactions.find((item) => item.id === tx.id);
+          return {
+            id: tx.id,
+            name: ledger?.name || original?.name || "Transação",
+            icon: original?.icon || getCategoryIcon(activeCategory),
+            category: tx.category || activeCategory,
+            date: tx.date || original?.date || "",
+            purchase_date: ledger?.purchase_date ?? original?.purchase_date ?? null,
+            amount: Number(tx.amount || 0),
+            type: tx.type === "income" ? "income" : "expense",
+            card: tx.card ?? original?.card ?? null,
+            cardBrand: tx.card ? (cardNameToBrand[tx.card] || original?.cardBrand || null) : null,
+            bank_account_id: tx.bank_account_id ?? original?.bank_account_id ?? null,
+            created_at: tx.created_at ?? original?.created_at,
+            installment_group_id: ledger?.installment_group_id ?? original?.installment_group_id ?? null,
+            installment_number: ledger?.installment_number ?? original?.installment_number ?? null,
+            total_installments: ledger?.total_installments ?? original?.total_installments ?? null,
+            transaction_status: "posted",
+            is_visible: true,
+          };
+        })
+    : [];
+  const technicalPostedIds = new Set(technicalPostedTransactions.map((tx) => tx.id));
+
   // A plain monthly visit includes account rows AND card purchases, even if
   // the first created_at page omits the card's purchase-month anchor. Explicit
   // card/category/type drilldowns keep their existing economic-ledger behavior.
   const pendingCategoryTransactions = activeCategory !== "Todas" && filterType === "all"
     ? rawFiltered.filter((tx) => tx.transaction_status === "pending" && tx.is_visible !== false)
     : [];
-  const filtered = categoryScopeActive
+  const filtered = technicalCategoryActive && filterType === "all"
+    ? [...technicalPostedTransactions, ...rawFiltered.filter((tx) => tx.is_visible !== false && !technicalPostedIds.has(tx.id))]
+    : categoryScopeActive
     ? [...categoryListTransactions, ...pendingCategoryTransactions]
     : isYieldView || activeSource !== "all" || filterAccountId
       ? rawFiltered
