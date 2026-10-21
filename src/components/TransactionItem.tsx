@@ -358,75 +358,75 @@ export function TransactionItem({
               </span>
             )}
           </div>
-          {isInstallment && (installment_group_id || id) && purchaseDate ? (
-            <Popover open={purchaseDateOpen} onOpenChange={setPurchaseDateOpen}>
-              <PopoverTrigger asChild>
-                <button
-                  type="button"
+          <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
+            {isInstallment && (installment_group_id || id) && purchaseDate ? (
+              <Popover open={purchaseDateOpen} onOpenChange={setPurchaseDateOpen}>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={(e) => e.stopPropagation()}
+                    className="shrink-0 whitespace-nowrap rounded-md px-1 py-0.5 text-[9px] font-medium tabular-nums text-muted-foreground hover:bg-accent hover:text-foreground"
+                    title={`Data da compra: ${formatFullDate(purchaseDate, created_at)}`}
+                  >
+                    (Compra: {formatTxDate(purchaseDate)}) - {formatTxDate(date, created_at)}
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent
+                  align="end"
+                  className="w-64 p-3"
                   onClick={(e) => e.stopPropagation()}
-                  className="shrink-0 whitespace-nowrap rounded-md px-1 py-0.5 text-[9px] font-medium tabular-nums text-muted-foreground hover:bg-accent hover:text-foreground"
-                  title={`Data da compra: ${formatFullDate(purchaseDate, created_at)}`}
                 >
-                  (Compra: {formatTxDate(purchaseDate)}) - {formatTxDate(date, created_at)}
-                </button>
-              </PopoverTrigger>
-              <PopoverContent
-                align="end"
-                className="w-64 p-3"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <p className="text-xs font-semibold text-foreground">Data da compra</p>
-                <p className="mt-1 text-sm font-bold tabular-nums text-foreground">
-                  {formatFullDate(purchaseDate, created_at)}
-                </p>
-                <p className="mt-1 text-[10px] leading-relaxed text-muted-foreground">
-                  Data da parcela: {formatFullDate(date, created_at)}. A alteração ou remoção da data da compra não muda o calendário das parcelas.
-                </p>
-                <input
-                  type="date"
-                  value={purchaseDateDraft}
-                  onChange={(e) => setPurchaseDateDraft(e.target.value)}
-                  className="mt-2 h-9 w-full rounded-lg border border-border bg-background px-2 text-xs text-foreground outline-none focus:border-primary/60"
-                />
-                <button
-                  type="button"
-                  disabled={!purchaseDateDraft || savingPurchaseDate}
-                  onClick={(e) => { e.stopPropagation(); void savePurchaseDate(); }}
-                  className="mt-2 h-9 w-full rounded-lg bg-primary px-3 text-xs font-semibold text-primary-foreground disabled:opacity-50"
-                >
-                  {savingPurchaseDate ? "Salvando..." : "Salvar data da compra"}
-                </button>
-                <button
-                  type="button"
-                  disabled={savingPurchaseDate}
-                  onClick={(e) => { e.stopPropagation(); void clearPurchaseDate(); }}
-                  className="mt-2 inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-lg border border-destructive/40 bg-destructive/10 px-3 text-xs font-semibold text-destructive transition-colors hover:bg-destructive/15 disabled:opacity-50"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                  Remover data da compra
-                </button>
-              </PopoverContent>
-            </Popover>
-          ) : (
-            <div className="flex shrink-0 items-center gap-1.5">
+                  <p className="text-xs font-semibold text-foreground">Data da compra</p>
+                  <p className="mt-1 text-sm font-bold tabular-nums text-foreground">
+                    {formatFullDate(purchaseDate, created_at)}
+                  </p>
+                  <p className="mt-1 text-[10px] leading-relaxed text-muted-foreground">
+                    Data da parcela: {formatFullDate(date, created_at)}. A alteração ou remoção da data da compra não muda o calendário das parcelas.
+                  </p>
+                  <input
+                    type="date"
+                    value={purchaseDateDraft}
+                    onChange={(e) => setPurchaseDateDraft(e.target.value)}
+                    className="mt-2 h-9 w-full rounded-lg border border-border bg-background px-2 text-xs text-foreground outline-none focus:border-primary/60"
+                  />
+                  <button
+                    type="button"
+                    disabled={!purchaseDateDraft || savingPurchaseDate}
+                    onClick={(e) => { e.stopPropagation(); void savePurchaseDate(); }}
+                    className="mt-2 h-9 w-full rounded-lg bg-primary px-3 text-xs font-semibold text-primary-foreground disabled:opacity-50"
+                  >
+                    {savingPurchaseDate ? "Salvando..." : "Salvar data da compra"}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={savingPurchaseDate}
+                    onClick={(e) => { e.stopPropagation(); void clearPurchaseDate(); }}
+                    className="mt-2 inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-lg border border-destructive/40 bg-destructive/10 px-3 text-xs font-semibold text-destructive transition-colors hover:bg-destructive/15 disabled:opacity-50"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    Remover data da compra
+                  </button>
+                </PopoverContent>
+              </Popover>
+            ) : (
               <span className="whitespace-nowrap text-right text-[10px] font-medium tabular-nums text-muted-foreground">
                 {formatTxDate(date, created_at)}
               </span>
-              {isPending && onPost && (
-                <button
-                  type="button"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    onPost();
-                  }}
-                  className="rounded-md border border-primary/30 bg-primary/10 px-1.5 py-0.5 text-[9px] font-bold text-primary hover:bg-primary/15"
-                  aria-label="Efetivar lançamento pendente"
-                >
-                  Efetivar
-                </button>
-              )}
-            </div>
-          )}
+            )}
+            {isPending && onPost && (
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onPost();
+                }}
+                className="rounded-md border border-primary/30 bg-primary/10 px-1.5 py-0.5 text-[9px] font-bold text-primary hover:bg-primary/15"
+                aria-label="Efetivar lançamento pendente"
+              >
+                Efetivar
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>
