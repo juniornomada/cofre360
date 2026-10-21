@@ -3095,6 +3095,7 @@ export function TransactionsPage() {
               return results.map(tx => (
                 <div key={tx.id} className="min-w-0 text-left">
                   <TransactionItem
+                    searchLayout
                     {...tx}
                     card={tx.card ?? undefined}
                     cardBrand={tx.cardBrand ?? undefined}
