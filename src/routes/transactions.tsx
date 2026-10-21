@@ -2263,6 +2263,29 @@ export function TransactionsPage() {
               )}
             </div>
           </DialogHeader>
+          {editTx?.transaction_status === "pending" && (
+            <div className="mx-4 mt-3 flex shrink-0 flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-500/40 bg-amber-500/10 p-3">
+              <p className="min-w-0 flex-1 text-xs text-foreground">
+                Parcela pendente: para debitar sem recalcular o parcelamento, use <strong>Efetivar</strong>.
+              </p>
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => {
+                  const original = transactions.find((row) => row.id === editTx.id);
+                  if (!original || original.transaction_status !== "pending") {
+                    toast.error("Atualize a lista: esta parcela não está mais pendente.");
+                    return;
+                  }
+                  setShowEditDialog(false);
+                  setEditTx(null);
+                  openPostTransaction(original);
+                }}
+              >
+                Efetivar esta parcela
+              </Button>
+            </div>
+          )}
           <div className="flex min-h-0 flex-1 flex-col gap-2.5 overflow-x-hidden overflow-y-auto overscroll-contain p-4">
           {editTx && (
             <div className="flex min-w-0 flex-col gap-2.5">
@@ -3079,7 +3102,13 @@ export function TransactionsPage() {
                     economicAmount={tx.economic_amount}
                     is_visible={tx.is_visible !== false}
                     amountVisible={balanceVisible}
-                    onEdit={() => { setShowGlobalSearch(false); handleEdit(tx); }}
+                    onEdit={() => {
+                      setShowGlobalSearch(false);
+                      // A tocar numa parcela pendente, a intenção mais comum
+                      // é efetivar o débito, não editar/recalcular o plano.
+                      if (tx.transaction_status === "pending") openPostTransaction(tx);
+                      else handleEdit(tx);
+                    }}
                     onPost={tx.transaction_status === "pending"
                       ? () => { setShowGlobalSearch(false); openPostTransaction(tx); }
                       : undefined}
