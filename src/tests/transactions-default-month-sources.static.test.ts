@@ -18,6 +18,7 @@ describe("/transactions default monthly source", () => {
   it("uses the monthly credit purchase ledger only for the default all-sources view", () => {
     expect(source).toContain('includeMissingMonthlyCardPurchases(rawFiltered, categoryListTransactions)');
     expect(source).toContain('isYieldView || activeSource !== "all" || filterAccountId');
-    expect(source).toContain('categoryScopeActive\n    ? categoryListTransactions');
+    expect(source).toContain('categoryScopeActive\n    ? [...categoryListTransactions, ...pendingCategoryTransactions]');
+    expect(source).toContain('!isTechnicalTransactionCategory(activeCategory)');
   });
 });
