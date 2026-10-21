@@ -3,7 +3,8 @@ import { SmartLink as Link } from "@/components/SmartLink";
 import { TransactionItem } from "@/components/TransactionItem";
 import { NonBlockingErrorBoundary } from "@/components/NonBlockingErrorBoundary";
 import { EmptyState } from "@/components/EmptyState";
-import { parseCategoryValue, getCategoryIcon, categoryTree } from "@/lib/categories";
+import { parseCategoryValue, getCategoryIcon } from "@/lib/categories";
+import { getVisibleMonthlyCategoryRanking, isTechnicalTransactionCategory } from "@/lib/transaction-category-navigation";
 import { inferYieldTransactionFields, isAccountYieldComponent } from "@/lib/account-yield";
 import { fetchAllCategoryLedgerTransactions, type CategoryLedgerTransaction } from "@/lib/category-spending-ledger";
 import { Search, Pencil, Trash2, Plus, CalendarIcon, Loader2, Upload, CheckSquare, Square, X, SlidersHorizontal, ArrowLeftRight, ArrowRight, Eye, EyeOff, FileText, GripVertical, ArrowLeft, Landmark, CreditCard, ArrowUpRight, ArrowDownRight, CirclePlay, Info, Layers } from "lucide-react";
@@ -539,24 +540,23 @@ export function TransactionsPage() {
   const minAmt = filterMinAmount ? parseFloat(filterMinAmount) : null;
   const maxAmt = filterMaxAmount ? parseFloat(filterMaxAmount) : null;
 
-  // Keep category navigation stable for the selected month. Rank by number of
-  // real, visible launches, not by amount, using the full paginated ledger.
-  const monthCategoryRanking = Object.entries(
-    categoryLedgerTransactions.reduce<Record<string, number>>((counts, tx) => {
-      if (tx.is_visible === false || tx.type !== "expense") return counts;
-      const d = parseTxDate(tx.date || "", tx.created_at || undefined);
-      const timestamp = d?.getTime() ?? NaN;
-      if (!Number.isFinite(timestamp) || timestamp < selectedMonthStartUtc || timestamp > selectedMonthEndUtc) return counts;
-      const category = parseCategoryValue(tx.category || "").group || "Outros";
-      const categoryGroup = categoryTree.find((group) => group.label === category);
-      if (!categoryGroup || categoryGroup.type !== "expense") return counts;
-      counts[category] = (counts[category] || 0) + 1;
-      return counts;
-    }, {}),
-  )
-    .map(([category, count]) => ({ category, count }))
-    .filter((item) => item.count > 0)
-    .sort((a, b) => b.count - a.count || a.category.localeCompare(b.category, "pt-BR"));
+  // Category shortcuts reflect the currently browseable month/source, not
+  // every category ever used. They are calculated independently of the active
+  // category so another category can be selected with one tap.
+  const monthCategoryRanking = getVisibleMonthlyCategoryRanking({
+    economicRows: categoryLedgerTransactions,
+    rawRows: transactions,
+    selectedMonthStartUtc,
+    selectedMonthEndUtc,
+    source: activeSource,
+    accountId: filterAccountId,
+    minAmount: minAmt,
+    maxAmount: maxAmt,
+    startDateUtc: filterStartDate ? toUtcDay(filterStartDate).getTime() : undefined,
+    endDateUtc: filterEndDate ? toUtcDay(filterEndDate, true).getTime() : undefined,
+    filterType,
+    parseDate: parseTxDate,
+  });
 
 
   // Transaction browsing is calendar-month based. Economic DESPESAS is
@@ -683,7 +683,12 @@ export function TransactionsPage() {
 
   // Category drilldowns and explicit Card source show the economic purchase
   // ledger, so the visible list and totals stay on the same full-value basis.
-  const categoryScopeActive = !isYieldView && (activeCategory !== "Todas" || activeSource === "card" || filterType !== "all");
+  // Transfers and card payments are real monthly transactions, but are
+  // intentionally excluded from the economic spending ledger. Show their
+  // actual transaction rows when their category shortcut is selected.
+  const categoryScopeActive = !isYieldView &&
+    !isTechnicalTransactionCategory(activeCategory) &&
+    (activeCategory !== "Todas" || activeSource === "card" || filterType !== "all");
 
   const categoryListTransactions: Transaction[] = subcategoryEconomicRows.map((tx) => {
     const original = transactions.find((item) => item.id === tx.id);
@@ -726,8 +731,11 @@ export function TransactionsPage() {
   // A plain monthly visit includes account rows AND card purchases, even if
   // the first created_at page omits the card's purchase-month anchor. Explicit
   // card/category/type drilldowns keep their existing economic-ledger behavior.
+  const pendingCategoryTransactions = activeCategory !== "Todas" && filterType === "all"
+    ? rawFiltered.filter((tx) => tx.transaction_status === "pending" && tx.is_visible !== false)
+    : [];
   const filtered = categoryScopeActive
-    ? categoryListTransactions
+    ? [...categoryListTransactions, ...pendingCategoryTransactions]
     : isYieldView || activeSource !== "all" || filterAccountId
       ? rawFiltered
       : includeMissingMonthlyCardPurchases(rawFiltered, categoryListTransactions);
@@ -1850,7 +1858,7 @@ export function TransactionsPage() {
         </div>
       )}
 
-      {/* 2. Categorias: todas as categorias do mês visíveis por ícone */}
+      {/* 2. Categorias: mostrar somente categorias com lançamentos no recorte atual */}
       {!isYieldView && monthCategoryRanking.length > 0 && (
         <div className="flex flex-wrap justify-center gap-1.5">
           {monthCategoryRanking.map(({ category }) => {
@@ -1890,7 +1898,11 @@ export function TransactionsPage() {
             <button
               key={src.key}
               type="button"
-              onClick={() => setActiveSource(isActive ? "all" : src.key)}
+              onClick={() => {
+                setActiveSource(isActive ? "all" : src.key);
+                setActiveCategory("Todas");
+                setActiveSubcategory(null);
+              }}
               className={`interactive-button flex h-9 items-center justify-center gap-1.5 rounded-xl text-xs font-medium transition-colors duration-200 ${
                 isActive ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground border border-border"
               }`}
