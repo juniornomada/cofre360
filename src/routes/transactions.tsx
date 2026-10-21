@@ -1393,15 +1393,21 @@ export function TransactionsPage() {
 
 
   const openPostTransaction = (tx: Transaction) => {
+    if (tx.transaction_status !== "pending") return;
     setPostTarget(tx);
-    setPostAccountId(tx.bank_account_id || "");
+    // Never silently preselect an old account: posting moves real money.
+    // The user must explicitly confirm the account to be debited.
+    setPostAccountId("");
   };
 
   const handlePostTransaction = async () => {
     if (!postTarget || !postAccountId || postingPending) return;
     setPostingPending(true);
     try {
-      const { error } = await supabase
+      if (!bankAccounts.some((account) => account.id === postAccountId)) {
+        throw new Error("Conta bancária selecionada não está disponível.");
+      }
+      const { data, error } = await supabase
         .from("transactions")
         .update({
           transaction_status: "posted",
@@ -1409,8 +1415,15 @@ export function TransactionsPage() {
           posted_at: new Date().toISOString(),
         })
         .eq("id", postTarget.id)
-        .eq("transaction_status", "pending");
+        .eq("transaction_status", "pending")
+        .select("id, transaction_status, bank_account_id")
+        .maybeSingle();
       if (error) throw error;
+      // Supabase can return no error when RLS excludes the row, or when
+      // another session has already posted the same transaction.
+      if (!data || data.transaction_status !== "posted" || data.bank_account_id !== postAccountId) {
+        throw new Error("A parcela não foi efetivada. Atualize a lista e confira o status antes de tentar novamente.");
+      }
 
       toast.success("Lançamento efetivado com sucesso");
       setPostTarget(null);
@@ -2178,7 +2191,11 @@ export function TransactionsPage() {
                   </SelectContent>
                 </Select>
                 <p className="mt-1 text-[10px] leading-relaxed text-muted-foreground">
-                  O lançamento só movimentará o saldo e as despesas realizadas depois da confirmação.
+                  A conta é obrigatória. O valor de R$ {formatCurrency(Number(postTarget.amount))} só será
+                  {postTarget.type === "expense" ? " debitado" : " creditado"} após a confirmação.
+                  {postAccountId && (
+                    <> Conta selecionada: <strong>{bankAccounts.find((account) => account.id === postAccountId)?.name || "Conta indisponível"}</strong>.</>
+                  )}
                 </p>
               </div>
             </div>
@@ -3053,13 +3070,21 @@ export function TransactionsPage() {
                 <p className="text-center text-xs text-muted-foreground py-6">Nenhuma transação encontrada</p>
               );
               return results.map(tx => (
-                <button
-                  key={tx.id}
-                  onClick={() => { setShowGlobalSearch(false); handleEdit(tx); }}
-                  className="text-left"
-                >
-                  <TransactionItem {...tx} card={tx.card ?? undefined} cardBrand={tx.cardBrand ?? undefined} amount={Number(tx.amount)} economicAmount={tx.economic_amount} is_visible={tx.is_visible !== false} amountVisible={balanceVisible} />
-                </button>
+                <div key={tx.id} className="min-w-0 text-left">
+                  <TransactionItem
+                    {...tx}
+                    card={tx.card ?? undefined}
+                    cardBrand={tx.cardBrand ?? undefined}
+                    amount={Number(tx.amount)}
+                    economicAmount={tx.economic_amount}
+                    is_visible={tx.is_visible !== false}
+                    amountVisible={balanceVisible}
+                    onEdit={() => { setShowGlobalSearch(false); handleEdit(tx); }}
+                    onPost={tx.transaction_status === "pending"
+                      ? () => { setShowGlobalSearch(false); openPostTransaction(tx); }
+                      : undefined}
+                  />
+                </div>
               ));
             })()}
           </div>
