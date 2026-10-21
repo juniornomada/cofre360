@@ -91,13 +91,15 @@ interface TransactionItemProps {
   economicAmount?: number | null;
   amountVisible?: boolean;
   onPost?: () => void;
+  /** Uses a multi-row layout only inside the global transaction search dialog. */
+  searchLayout?: boolean;
 }
 
 export function TransactionItem({
   id, icon, name, category, date, purchase_date, created_at, amount, type, card, cardBrand,
   bank_account_id, isTransferPair, transferFromName, transferToName,
   installment_group_id, installment_number, total_installments, style, onEdit, onDelete, onDuplicate,
-  transaction_status, economicAmount, amountVisible = true, onPost
+  transaction_status, economicAmount, amountVisible = true, onPost, searchLayout = false
 }: TransactionItemProps) {
   const isInstallment = !!total_installments && total_installments > 1 && !!installment_number;
   const explicitPurchaseDate = toIsoDate(purchase_date, created_at) || "";
@@ -193,7 +195,8 @@ export function TransactionItem({
       onTouchEnd={onTouchEnd}
       onClick={() => { if (swipeActionsOpen) setSwipeActionsOpen(false); else onEdit?.(); }}
       className={cn(
-        "interactive-card flex items-center gap-2.5 rounded-xl p-2.5 cursor-pointer bg-card border border-border/30 transition-all group/item relative overflow-hidden active:scale-[0.98] sm:pr-2.5 pr-[44px]"
+        "interactive-card flex items-center gap-2.5 rounded-xl p-2.5 cursor-pointer bg-card border border-border/30 transition-all group/item relative overflow-hidden active:scale-[0.98]",
+        searchLayout ? "pr-2.5" : "sm:pr-2.5 pr-[44px]"
       )}
       style={style}
     >
@@ -337,8 +340,13 @@ export function TransactionItem({
             )}
           </div>
         </div>
-        <div className="flex items-center justify-between gap-2 mt-0.5">
-          <div className="flex items-center gap-2 min-w-0">
+        <div className={cn(
+          "flex gap-2 mt-0.5",
+          searchLayout ? "mt-1.5 flex-col items-stretch gap-1.5" : "items-center justify-between"
+        )}>
+          <div data-testid={searchLayout ? "search-transaction-badges" : undefined}
+            className={cn("flex items-center gap-2 min-w-0", searchLayout && "flex-wrap gap-x-1.5 gap-y-1")}>
+
             <span className="text-[10px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded truncate max-w-[120px]">
               {getCategoryDisplay(category)}
             </span>
@@ -358,7 +366,11 @@ export function TransactionItem({
               </span>
             )}
           </div>
-          <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
+          <div data-testid={searchLayout ? "search-transaction-actions" : undefined}
+            className={cn(
+              "flex shrink-0 flex-wrap items-center justify-end gap-1.5",
+              searchLayout && "w-full min-w-0 justify-between gap-x-2 gap-y-2"
+            )}>
             {isInstallment && (installment_group_id || id) && purchaseDate ? (
               <Popover open={purchaseDateOpen} onOpenChange={setPurchaseDateOpen}>
                 <PopoverTrigger asChild>
@@ -420,7 +432,10 @@ export function TransactionItem({
                   event.stopPropagation();
                   onPost();
                 }}
-                className="rounded-md border border-primary/30 bg-primary/10 px-1.5 py-0.5 text-[9px] font-bold text-primary hover:bg-primary/15"
+                className={cn(
+                  "shrink-0 rounded-md border border-primary/30 bg-primary/10 px-1.5 py-0.5 text-[9px] font-bold text-primary hover:bg-primary/15",
+                  searchLayout && "px-2.5 py-1.5 text-[11px]"
+                )}
                 aria-label="Efetivar lançamento pendente"
               >
                 Efetivar
