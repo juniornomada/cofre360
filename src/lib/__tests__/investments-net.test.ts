@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  daysBetween,
   iofRateForDays,
   irRateForDays,
   valuate,
@@ -30,6 +31,11 @@ const makeInvestment = (overrides: Partial<Investment> = {}): Investment => ({
 });
 
 describe("Invest — patrimônio líquido após impostos", () => {
+  it("uses calendar days, not rounded fractional hours, for tax brackets", () => {
+    expect(daysBetween(new Date("2026-10-01T00:00:00Z"), new Date("2026-10-16T12:00:00Z"))).toBe(15);
+    expect(daysBetween(new Date("2026-10-01T00:00:00Z"), new Date("2026-10-31T12:00:00Z"))).toBe(30);
+  });
+
   it("uses the official day-by-day IOF rates, then zero from day 30", () => {
     expect(iofRateForDays(1)).toBe(0.96);
     expect(iofRateForDays(2)).toBe(0.93);
