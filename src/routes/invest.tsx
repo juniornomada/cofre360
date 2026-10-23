@@ -230,8 +230,9 @@ function InvestPage() {
   const totalInvested = valuations.reduce((s, v) => s + v.val.invested, 0);
   const totalGross = valuations.reduce((s, v) => s + v.val.grossValue, 0);
   const totalNet = valuations.reduce((s, v) => s + v.val.netValue, 0);
-  const totalPnL = totalGross - totalInvested;
-  const pnlPct = totalInvested > 0 ? (totalPnL / totalInvested) * 100 : 0;
+  const totalNetPnL = totalNet - totalInvested;
+  const netPnlPct = totalInvested > 0 ? (totalNetPnL / totalInvested) * 100 : 0;
+  const netEstimateIncomplete = valuations.some(({ val }) => !val.netEstimateComplete);
 
   const lastManualUpdateLabel = useMemo(() => {
     const timestamps = portfolio
@@ -465,24 +466,29 @@ function InvestPage() {
 
       {/* Resumo */}
       <div className="interactive-card rounded-2xl bg-gradient-to-br from-primary/20 to-card p-5 animate-stagger-in">
-        <p className="text-sm text-muted-foreground">Patrimônio bruto</p>
-        <p className="text-2xl font-bold text-foreground tabular-nums mt-1">{balanceVisible ? fmtBRL(totalGross) : "R$ ••••"}</p>
+        <p className="text-sm text-muted-foreground">Patrimônio líquido estimado</p>
+        <p className="text-2xl font-bold text-foreground tabular-nums mt-1">{balanceVisible ? fmtBRL(totalNet) : "R$ ••••"}</p>
         <div className="mt-2 flex items-center gap-2 flex-wrap text-xs">
-          <span className="text-muted-foreground">Investido: <strong className="text-foreground">{balanceVisible ? fmtBRL(totalInvested) : "R$ ••••"}</strong></span>
+          <span className="text-muted-foreground">Bruto: <strong className="text-foreground">{balanceVisible ? fmtBRL(totalGross) : "R$ ••••"}</strong></span>
           <span className="text-muted-foreground">•</span>
-          <span className="text-muted-foreground">Líquido: <strong className="text-foreground">{balanceVisible ? fmtBRL(totalNet) : "R$ ••••"}</strong></span>
+          <span className="text-muted-foreground">Investido: <strong className="text-foreground">{balanceVisible ? fmtBRL(totalInvested) : "R$ ••••"}</strong></span>
         </div>
         {totalInvested > 0 && (
           <div className="mt-2 flex items-center gap-1">
-            {totalPnL >= 0 ? (
+            {totalNetPnL >= 0 ? (
               <TrendingUp className="h-3 w-3 text-primary" />
             ) : (
               <TrendingDown className="h-3 w-3 text-destructive" />
             )}
-            <span className={`text-xs font-medium ${totalPnL >= 0 ? "text-primary" : "text-destructive"}`}>
-              {balanceVisible ? `${totalPnL >= 0 ? "+" : ""}${fmtBRL(totalPnL)} (${pnlPct.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%)` : "R$ ••••"}
+            <span className={`text-xs font-medium ${totalNetPnL >= 0 ? "text-primary" : "text-destructive"}`}>
+              {balanceVisible ? `Resultado líquido: ${totalNetPnL >= 0 ? "+" : ""}${fmtBRL(totalNetPnL)} (${netPnlPct.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%)` : "Resultado líquido: R$ ••••"}
             </span>
           </div>
+        )}
+        {netEstimateIncomplete && (
+          <p className="mt-2 text-[10px] leading-relaxed text-muted-foreground">
+            Estimativa parcial: há investimentos sem valor líquido informado ou sem dados suficientes para calcular todos os tributos e taxas de resgate.
+          </p>
         )}
       </div>
 
@@ -1022,12 +1028,18 @@ function InvestPage() {
                       <p className="font-semibold tabular-nums">{fmtBRL(v.netValue)}</p>
                     </div>
                   </div>
-                  {(v.estimatedTax > 0 || v.estimatedAdminFee > 0) && (
+                  {(v.estimatedTax > 0 || v.estimatedIOF > 0 || v.estimatedAdminFee > 0) && (
                     <div className="rounded-xl bg-accent/30 p-3 text-xs space-y-1">
                       {v.estimatedAdminFee > 0 && (
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">Taxa de administração</span>
                           <span className="tabular-nums">-{fmtBRL(v.estimatedAdminFee)}</span>
+                        </div>
+                      )}
+                      {v.estimatedIOF > 0 && (
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">IOF estimado</span>
+                          <span className="tabular-nums">-{fmtBRL(v.estimatedIOF)}</span>
                         </div>
                       )}
                       {v.estimatedTax > 0 && (

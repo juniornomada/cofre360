@@ -36,9 +36,25 @@ export function irRateForDays(days: number): number {
   return 0.15;
 }
 
+/** IOF regressivo sobre o ganho bruto, somente para resgate antes de 30 dias. */
+const IOF_PERCENT_BY_DAY = [
+  0, 96, 93, 90, 86, 83, 80, 76, 73, 70, 66,
+  63, 60, 56, 53, 50, 46, 43, 40, 36, 33,
+  30, 26, 23, 20, 16, 13, 10, 6, 3,
+] as const;
+
+export function iofRateForDays(days: number): number {
+  if (!Number.isFinite(days) || days <= 0 || days >= 30) return 0;
+  return (IOF_PERCENT_BY_DAY[Math.floor(days)] ?? 0) / 100;
+}
+
 export function daysBetween(a: Date, b: Date): number {
-  const ms = b.getTime() - a.getTime();
-  return Math.max(0, Math.round(ms / (1000 * 60 * 60 * 24)));
+  // Tax brackets use calendar days, not fractional elapsed days. The app
+  // evaluates at midday while purchase dates are stored at midnight UTC;
+  // rounding elapsed milliseconds would push a 15-day hold into day 16.
+  const startDay = Date.UTC(a.getUTCFullYear(), a.getUTCMonth(), a.getUTCDate());
+  const endDay = Date.UTC(b.getUTCFullYear(), b.getUTCMonth(), b.getUTCDate());
+  return Math.max(0, Math.round((endDay - startDay) / (1000 * 60 * 60 * 24)));
 }
 
 export function yearsBetween(a: Date, b: Date): number {
@@ -84,12 +100,39 @@ export interface ValuationResult {
   pctChange: number;
   /** IR estimado sobre o lucro (apenas renda fixa / quando aplicável). */
   estimatedTax: number;
+  /** IOF estimado sobre ganhos em resgate dentro de 30 dias. */
+  estimatedIOF: number;
   /** Taxa de administração descontada. */
   estimatedAdminFee: number;
+  /** Indica se o valor líquido foi informado ou tem tributos conhecidos calculáveis. */
+  netEstimateComplete: boolean;
   /** Valor líquido após IR e taxa adm. */
   netValue: number;
   /** Data usada na valoração (string ISO). */
   asOf: string;
+}
+
+function fixedIncomeDeductions(
+  cls: string,
+  purchaseDate: string | null,
+  targetDate: Date,
+  grossValue: number,
+  invested: number,
+  adminFeePercent: number | null,
+) {
+  if ((cls !== "tesouro" && cls !== "cdb") || !purchaseDate) return null;
+  const purchase = new Date(purchaseDate);
+  if (!Number.isFinite(purchase.getTime()) || purchase.getTime() > targetDate.getTime()) return null;
+
+  const days = daysBetween(purchase, targetDate);
+  const years = yearsBetween(purchase, targetDate);
+  const grossGain = Math.max(0, grossValue - invested);
+  const estimatedIOF = grossGain * iofRateForDays(days);
+  // IOF is deducted from the yield before the IR taxable base is calculated.
+  const estimatedTax = Math.max(0, grossGain - estimatedIOF) * irRateForDays(days);
+  const adminRate = Math.max(0, Number(adminFeePercent) || 0);
+  const estimatedAdminFee = grossValue * (adminRate / 100) * years;
+  return { estimatedIOF, estimatedTax, estimatedAdminFee };
 }
 
 /**
@@ -106,15 +149,25 @@ export function valuate(inv: Investment, targetDate: Date = new Date()): Valuati
   if (inv.current_gross_value != null) {
     const invested = manualInvested;
     const grossValue = Number(inv.current_gross_value) || 0;
-    const netValue = inv.current_net_value != null ? Number(inv.current_net_value) : grossValue;
+    const hasManualNet = inv.current_net_value != null;
+    // An explicitly supplied net balance from the provider takes precedence.
+    // A difference between two manually supplied values must not be mislabeled as IR.
+    const deductions = !hasManualNet
+      ? fixedIncomeDeductions(cls, inv.purchase_date, targetDate, grossValue, invested, inv.admin_fee)
+      : null;
+    const netValue = hasManualNet
+      ? Number(inv.current_net_value)
+      : grossValue - (deductions?.estimatedIOF ?? 0) - (deductions?.estimatedTax ?? 0) - (deductions?.estimatedAdminFee ?? 0);
     const grossPnL = grossValue - invested;
     return {
       grossValue,
       invested,
       grossPnL,
       pctChange: invested > 0 ? (grossPnL / invested) * 100 : 0,
-      estimatedTax: Math.max(0, grossValue - netValue),
-      estimatedAdminFee: 0,
+      estimatedTax: deductions?.estimatedTax ?? 0,
+      estimatedIOF: deductions?.estimatedIOF ?? 0,
+      estimatedAdminFee: deductions?.estimatedAdminFee ?? 0,
+      netEstimateComplete: hasManualNet || deductions !== null,
       netValue,
       asOf,
     };
@@ -134,7 +187,9 @@ export function valuate(inv: Investment, targetDate: Date = new Date()): Valuati
       grossPnL,
       pctChange: invested > 0 ? (grossPnL / invested) * 100 : 0,
       estimatedTax: 0,
+      estimatedIOF: 0,
       estimatedAdminFee: 0,
+      netEstimateComplete: false, // taxes on sale cannot be inferred from asset class alone
       netValue: grossValue,
       asOf,
     };
@@ -147,20 +202,22 @@ export function valuate(inv: Investment, targetDate: Date = new Date()): Valuati
     const ratePct = Number(inv.yield_rate) || 0;
     const adminPct = Number(inv.admin_fee) || 0;
     const years = Math.max(0, yearsBetween(purchase, targetDate));
-    const days = daysBetween(purchase, targetDate);
     const grossValue = principal * Math.pow(1 + ratePct / 100, years);
     const grossPnL = grossValue - principal;
-    const irRate = irRateForDays(days);
-    const estimatedAdminFee = grossValue * (adminPct / 100) * years;
-    const estimatedTax = Math.max(0, grossPnL) * irRate;
-    const netValue = grossValue - estimatedAdminFee - estimatedTax;
+    const deductions = fixedIncomeDeductions(cls, inv.purchase_date, targetDate, grossValue, principal, adminPct);
+    const estimatedIOF = deductions?.estimatedIOF ?? 0;
+    const estimatedTax = deductions?.estimatedTax ?? 0;
+    const estimatedAdminFee = deductions?.estimatedAdminFee ?? 0;
+    const netValue = grossValue - estimatedAdminFee - estimatedIOF - estimatedTax;
     return {
       grossValue,
       invested: principal,
       grossPnL,
       pctChange: principal > 0 ? (grossPnL / principal) * 100 : 0,
       estimatedTax,
+      estimatedIOF,
       estimatedAdminFee,
+      netEstimateComplete: deductions !== null,
       netValue,
       asOf,
     };
@@ -176,7 +233,9 @@ export function valuate(inv: Investment, targetDate: Date = new Date()): Valuati
     grossPnL: grossValue - invested,
     pctChange: pct,
     estimatedTax: 0,
+    estimatedIOF: 0,
     estimatedAdminFee: 0,
+    netEstimateComplete: false,
     netValue: grossValue,
     asOf,
   };
