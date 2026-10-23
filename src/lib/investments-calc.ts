@@ -198,7 +198,6 @@ export function valuate(inv: Investment, targetDate: Date = new Date()): Valuati
     const ratePct = Number(inv.yield_rate) || 0;
     const adminPct = Number(inv.admin_fee) || 0;
     const years = Math.max(0, yearsBetween(purchase, targetDate));
-    const days = daysBetween(purchase, targetDate);
     const grossValue = principal * Math.pow(1 + ratePct / 100, years);
     const grossPnL = grossValue - principal;
     const deductions = fixedIncomeDeductions(cls, inv.purchase_date, targetDate, grossValue, principal, adminPct);
