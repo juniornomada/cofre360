@@ -49,8 +49,12 @@ export function iofRateForDays(days: number): number {
 }
 
 export function daysBetween(a: Date, b: Date): number {
-  const ms = b.getTime() - a.getTime();
-  return Math.max(0, Math.round(ms / (1000 * 60 * 60 * 24)));
+  // Tax brackets use calendar days, not fractional elapsed days. The app
+  // evaluates at midday while purchase dates are stored at midnight UTC;
+  // rounding elapsed milliseconds would push a 15-day hold into day 16.
+  const startDay = Date.UTC(a.getUTCFullYear(), a.getUTCMonth(), a.getUTCDate());
+  const endDay = Date.UTC(b.getUTCFullYear(), b.getUTCMonth(), b.getUTCDate());
+  return Math.max(0, Math.round((endDay - startDay) / (1000 * 60 * 60 * 24)));
 }
 
 export function yearsBetween(a: Date, b: Date): number {
