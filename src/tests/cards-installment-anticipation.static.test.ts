@@ -24,6 +24,6 @@ describe("Cartões — antecipação dentro do editor da fatura", () => {
   });
 
   it("distingue o controle financeiro interno da antecipação bancária", () => {
-    expect(route).toContain("Não solicita antecipação ao Porto Bank nem paga a fatura.");
+    expect(route).toContain("Não solicita antecipação ao banco emissor nem paga a fatura.");
   });
 });
