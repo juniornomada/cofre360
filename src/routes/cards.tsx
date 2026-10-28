@@ -1138,6 +1138,21 @@ function CardsPage() {
 
   const openAnticipationDialog = async () => {
     if (!editOriginalTx?.installment_group_id || !invoiceCard || anticipationLoading) return;
+    // Anticipation is an independent date-only operation; do not silently
+    // discard unsaved edits to names, amounts, category or installment count.
+    if (editTx && (
+      editTx.name !== editOriginalTx.name ||
+      editTx.category !== editOriginalTx.category ||
+      editTx.icon !== editOriginalTx.icon ||
+      Number(editTx.amount) !== Number(editOriginalTx.amount) ||
+      editTx.date !== editOriginalTx.date ||
+      (editTx.purchase_date || null) !== (editOriginalTx.purchase_date || null) ||
+      Number(installmentCurrent) !== Math.max(1, Number(editOriginalTx.installment_number) || 1) ||
+      Number(installmentTotal) !== Math.max(1, Number(editOriginalTx.total_installments) || 1)
+    )) {
+      toast.error("Salve ou descarte as outras alterações antes de antecipar parcelas.");
+      return;
+    }
     setAnticipationLoading(true);
     try {
       const { data: group, error } = await supabase
