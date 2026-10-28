@@ -13,6 +13,21 @@ describe("Cartões — registrar desconto de antecipação diretamente da fatura
     expect(cards).toContain("Confirmar desconto");
   });
 
+  it("destaca a ação de desconto com contraste nos temas claro e escuro", () => {
+    const start = cards.indexOf('data-testid="invoice-discount-action"');
+    const end = cards.indexOf("</button>", start);
+    const action = cards.slice(start, end);
+    expect(action).toContain("onClick={openDiscountDialog}");
+    expect(action).toContain("border-amber-500/70 bg-amber-50");
+    expect(action).toContain("dark:border-amber-400/70 dark:bg-amber-500/15");
+    expect(action).toContain("dark:text-amber-100");
+    expect(action).toContain("focus-visible:ring-2");
+    expect(action).toContain("Abater desconto concedido pelo banco");
+    expect(action).toContain("ChevronRight");
+    expect(action).toContain("h-10 w-10"); // Touch-friendly icon and descriptive action
+    expect(action).not.toContain('variant="outline"');
+  });
+
   it("contabiliza o desconto como crédito do próprio cartão, não receita bancária nem despesa", () => {
     expect(cards).toContain('type: "income",');
     expect(cards).toContain('category: ANTICIPATION_DISCOUNT_CATEGORY');
