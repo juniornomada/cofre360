@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { SmartLink as Link } from "@/components/SmartLink";
-import { ArrowLeft, Plus, CreditCard, Trash2, X, Check, Loader2, Wallet, Landmark, ChevronLeft, ChevronRight, Receipt, FileUp, GripVertical, Layers, Pencil, MoreVertical, Eye, EyeOff, Copy, AlertCircle, CheckCircle2, Info, Search, SlidersHorizontal, CalendarIcon, Trash, ChevronDown, ChevronUp, RotateCcw, Inbox } from "lucide-react";
+import { ArrowLeft, Plus, CreditCard, Trash2, X, Check, Loader2, Wallet, Landmark, ChevronLeft, ChevronRight, Receipt, FileUp, GripVertical, Layers, Pencil, MoreVertical, Eye, EyeOff, Copy, AlertCircle, CheckCircle2, Info, Search, SlidersHorizontal, CalendarIcon, Trash, ChevronDown, ChevronUp, RotateCcw, Inbox, BadgePercent } from "lucide-react";
 import { useUserPreferences } from "@/hooks/use-user-preferences";
 import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
@@ -97,6 +97,7 @@ type CardRefund = {
 
 import { groupByBillingCycle, parseTxDate, getCycleDates, getBillingCycleMonthKey, monthNames, type CardTransaction, type InvoicePeriod } from "@/lib/invoice-utils";
 import { buildAnticipationPlan, isSameAnticipationPlan, validateAnticipationGroup } from "@/lib/installment-anticipation";
+import { ANTICIPATION_DISCOUNT_CATEGORY, discountCreditName, discountDateForInvoice, isAnticipationDiscountCredit, parseBrazilianDiscountCents, validateAnticipationDiscount } from "@/lib/card-anticipation-discount";
 
 // `cards.used` is the invoice amount informed when a card is first registered.
 // It is an opening invoice balance, not a timeless aggregate. Associate it with
@@ -268,6 +269,13 @@ function CardsPage() {
   const [anticipationLoading, setAnticipationLoading] = useState(false);
   const [anticipationSaving, setAnticipationSaving] = useState(false);
   const anticipationSavingRef = useRef(false);
+  const [discountDialogOpen, setDiscountDialogOpen] = useState(false);
+  const [discountPeriodKey, setDiscountPeriodKey] = useState("");
+  const [discountDescription, setDiscountDescription] = useState("");
+  const [discountAmount, setDiscountAmount] = useState("");
+  const [discountSaving, setDiscountSaving] = useState(false);
+  const discountSavingRef = useRef(false);
+  const discountIdRef = useRef<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showInvoiceDetails, setShowInvoiceDetails] = useState(false);
 
@@ -678,6 +686,86 @@ function CardsPage() {
     }
   };
 
+  const saveAnticipationDiscount = async () => {
+    if (discountSavingRef.current || !invoiceCard || !discountPeriod || discountValidation || !discountIdRef.current) return;
+    discountSavingRef.current = true;
+    setDiscountSaving(true);
+    try {
+      const cents = parseBrazilianDiscountCents(discountAmount);
+      if (!cents) throw new Error("Informe um valor válido de desconto.");
+      const creditDate = discountDateForInvoice(discountPeriod);
+      const { data: auth, error: authError } = await supabase.auth.getUser();
+      if (authError || !auth.user) throw new Error("Sessão expirada. Entre novamente para registrar o desconto.");
+
+      const [txResult, paymentResult] = await Promise.all([
+        supabase.from("transactions")
+          .select("id, date, created_at, amount, type")
+          .eq("user_id", auth.user.id)
+          .eq("card", invoiceCard.name)
+          .limit(10000),
+        supabase.from("card_payments")
+          .select("amount, paid_at, target_period")
+          .eq("user_id", auth.user.id)
+          .eq("card_id", invoiceCard.id),
+      ]);
+      if (txResult.error) throw txResult.error;
+      if (paymentResult.error) throw paymentResult.error;
+      const paidCents = (paymentResult.data || []).reduce((sum, payment) => {
+        if (Number(payment.amount) <= 0) return sum;
+        const periodKey = payment.target_period
+          ? String(payment.target_period).slice(0, 10)
+          : (() => {
+              if (!payment.paid_at) return "";
+              const paidAt = new Date(payment.paid_at);
+              if (!Number.isFinite(paidAt.getTime())) return "";
+              return format(getCycleDates(
+                paidAt, invoiceCard.closing_day || 1, invoiceCard.due_day || 10,
+              ).currentClose, "yyyy-MM-dd");
+            })();
+        return periodKey === discountPeriodKey ? sum + Math.round(Number(payment.amount) * 100) : sum;
+      }, 0);
+      const totalCents = (txResult.data || []).reduce((sum, row) => {
+        const date = parseTxDate(row.date, row.created_at);
+        if (date < discountPeriod.startDate || date >= discountPeriod.endDate) return sum;
+        const amount = Math.round(Number(row.amount) * 100);
+        return sum + (row.type === "income" ? -amount : amount);
+      }, 0);
+      const validation = validateAnticipationDiscount(cents, totalCents, paidCents);
+      if (validation) throw new Error(validation);
+
+      // Use a stable UUID and conflict-ignore so retrying an uncertain network
+      // response cannot create the same credit twice. No bank account is debited.
+      const { error } = await supabase.from("transactions").upsert(
+        sanitizeTransactionWrite({
+          id: discountIdRef.current,
+          user_id: auth.user.id,
+          name: discountCreditName(discountDescription),
+          category: ANTICIPATION_DISCOUNT_CATEGORY,
+          icon: "🏷️",
+          type: "income",
+          card: invoiceCard.name,
+          bank_account_id: null,
+          amount: cents / 100,
+          date: creditDate,
+        }),
+        { onConflict: "id", ignoreDuplicates: true },
+      );
+      if (error) throw error;
+      setDiscountDialogOpen(false);
+      setDiscountDescription("");
+      setDiscountAmount("");
+      discountIdRef.current = null;
+      toast.success(`Desconto de R$ ${(cents / 100).toLocaleString("pt-BR", { minimumFractionDigits: 2 })} abatido da fatura.`);
+      await refreshInvoiceSilently(invoiceCard);
+    } catch (error) {
+      console.error("Error saving anticipation discount:", error);
+      toast.error(error instanceof Error ? error.message : "Erro ao registrar o desconto.");
+    } finally {
+      discountSavingRef.current = false;
+      setDiscountSaving(false);
+    }
+  };
+
   const confirmCardRefund = async (refund: CardRefund, tx: CardTransaction) => {
     if (refund.status !== "pending" || confirmingRefundId) return;
     setConfirmingRefundId(refund.id);
@@ -885,6 +973,35 @@ function CardsPage() {
   const activePeriodKey = getInvoicePeriodKey(activePeriod);
   const activeOpeningInvoiceAmount = invoiceCard ? getOpeningInvoiceAmountForPeriod(invoiceCard, activePeriodKey) : 0;
   const activePeriodPayments = getPaymentsForPeriod(invoiceCard?.id, activePeriod);
+  const discountPeriod = invoicePeriods.find((period) => getInvoicePeriodKey(period) === discountPeriodKey);
+  const discountCents = parseBrazilianDiscountCents(discountAmount);
+  const discountValidation = discountPeriod && invoiceCard
+    ? validateAnticipationDiscount(
+        discountCents,
+        Math.round(discountPeriod.total * 100),
+        Math.round(getPaidTotalForPeriod(invoiceCard.id, discountPeriod) * 100),
+      )
+    : "Selecione uma fatura válida.";
+  const openDiscountDialog = () => {
+    if (!activePeriod || !invoiceCard) return;
+    if (activePeriod.endDate <= new Date()) {
+      toast.error("A fatura já está fechada. Registre o desconto na fatura em que o banco o concedeu.");
+      return;
+    }
+    if (getPaidTotalForPeriod(invoiceCard.id, activePeriod) > 0) {
+      toast.error("Esta fatura já tem pagamento registrado. Confira primeiro como o banco lançou o desconto.");
+      return;
+    }
+    if (activePeriod.total <= 0) {
+      toast.error("A fatura não tem saldo positivo para abater.");
+      return;
+    }
+    setDiscountPeriodKey(getInvoicePeriodKey(activePeriod));
+    setDiscountAmount("");
+    setDiscountDescription("");
+    discountIdRef.current = crypto.randomUUID();
+    setDiscountDialogOpen(true);
+  };
   const carriedPendingRefunds = getCarriedPendingRefundsForPeriod(activePeriod);
 
   // Aviso sutil: quando o rótulo canônico é aplicado no momento da renderização
@@ -2314,26 +2431,36 @@ function CardsPage() {
 
               {activePeriod && (
                 <div className="shrink-0 mx-5 mb-4 flex flex-col gap-3">
-                  <div className="rounded-xl bg-accent/50 p-3 flex justify-between items-center gap-3">
-                    <div className="flex-1">
-                      <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider block">Total da fatura</span>
-                      <span className="text-sm font-bold text-destructive tabular-nums" data-testid="total-da-fatura-valor">
-                        R$ {activePeriod.total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                      </span>
+                  <div className="rounded-xl bg-accent/50 p-3 flex flex-col gap-2">
+                    <div className="flex justify-between items-center gap-3">
+                      <div className="flex-1">
+                        <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider block">Total da fatura</span>
+                        <span className="text-sm font-bold text-destructive tabular-nums" data-testid="total-da-fatura-valor">
+                          R$ {activePeriod.total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                      {activePeriod.total > 0 && (
+                        <Button
+                          size="sm"
+                          className="h-8 rounded-lg text-[11px] font-bold gap-1.5"
+                          onClick={() => {
+                            setInvoiceDialogOpen(false);
+                            openPayDialog(invoiceCard!, activeInvoiceIdx);
+                          }}
+                        >
+                          <Wallet className="h-3.5 w-3.5" />
+                          Pagar
+                        </Button>
+                      )}
                     </div>
-                    {activePeriod.total > 0 && (
-                      <Button 
-                        size="sm" 
-                        className="h-8 rounded-lg text-[11px] font-bold gap-1.5"
-                        onClick={() => {
-                          setInvoiceDialogOpen(false);
-                          openPayDialog(invoiceCard!, activeInvoiceIdx);
-                        }}
-                      >
-                        <Wallet className="h-3.5 w-3.5" />
-                        Pagar
-                      </Button>
-                    )}
+                    <Button type="button" variant="outline" size="sm"
+                      data-testid="invoice-discount-action"
+                      className="w-full h-8 rounded-lg text-[11px] gap-1.5"
+                      onClick={openDiscountDialog}
+                    >
+                      <BadgePercent className="h-3.5 w-3.5" />
+                      Registrar desconto de antecipação
+                    </Button>
                   </div>
 
                   {(() => {
@@ -2583,7 +2710,7 @@ function CardsPage() {
                             </span>
                           </p>
                           <p className="flex min-w-0 items-center gap-1.5 text-[10px] text-muted-foreground">
-                            <span className="min-w-0 truncate">{tx.category}</span>
+                            <span className="min-w-0 truncate">{isAnticipationDiscountCredit(tx) ? "Crédito de antecipação" : tx.category}</span>
                             <span className="shrink-0 whitespace-nowrap">· {getInvoicePurchaseDate(tx, cardTransactions) || "definir"}</span>
                           </p>
                           {(() => {
@@ -3469,6 +3596,65 @@ function CardsPage() {
            )}
          </DialogContent>
        </Dialog>
+
+      {/* Dedicated invoice credit: a discount is not a bank payment or cash income. */}
+      <Dialog open={discountDialogOpen} onOpenChange={(open) => {
+        if (!discountSavingRef.current) setDiscountDialogOpen(open);
+      }}>
+        <DialogContent data-testid="invoice-discount-dialog" className="max-w-[calc(100vw-1rem)] sm:max-w-sm mx-auto rounded-2xl p-4 sm:p-6">
+          <DialogHeader>
+            <DialogTitle>Registrar desconto de antecipação</DialogTitle>
+          </DialogHeader>
+          {invoiceCard && discountPeriod && (
+            <div className="flex flex-col gap-3">
+              <p className="text-xs text-muted-foreground">
+                O desconto concedido pelo banco será registrado como crédito na fatura de
+                {" "}{monthNames[discountPeriod.dueDate.getMonth()]} {discountPeriod.dueDate.getFullYear()} do cartão {invoiceCard.name}.
+              </p>
+              <div className="space-y-1">
+                <Label htmlFor="discount-detail" className="text-xs">Compra ou motivo (opcional)</Label>
+                <Input
+                  id="discount-detail"
+                  placeholder="Ex.: Coxins do Creta"
+                  value={discountDescription}
+                  onChange={(event) => setDiscountDescription(event.target.value.slice(0, 110))}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="discount-amount" className="text-xs">Valor do desconto (R$)</Label>
+                <Input
+                  id="discount-amount"
+                  inputMode="decimal"
+                  placeholder="0,00"
+                  value={discountAmount}
+                  onChange={(event) => setDiscountAmount(event.target.value)}
+                />
+              </div>
+              {discountCents && !discountValidation ? (
+                <div className="rounded-xl border border-primary/30 bg-primary/5 p-3 text-xs space-y-1">
+                  <div className="flex justify-between gap-2"><span>Total atual</span><strong>R$ {discountPeriod.total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong></div>
+                  <div className="flex justify-between gap-2 text-emerald-600"><span>Desconto</span><strong>- R$ {(discountCents / 100).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong></div>
+                  <div className="flex justify-between gap-2 border-t border-border pt-1"><span>Total após desconto</span><strong>R$ {(discountPeriod.total - discountCents / 100).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong></div>
+                </div>
+              ) : discountAmount ? (
+                <p className="text-xs text-destructive">{discountValidation}</p>
+              ) : null}
+              <p className="text-[11px] text-muted-foreground">
+                Informe somente o desconto efetivamente concedido pelo emissor.
+                Este registro não solicita desconto ao banco e não altera o saldo da conta.
+              </p>
+              <DialogFooter className="gap-2 sm:gap-2 flex-row">
+                <Button type="button" variant="outline" className="flex-1" disabled={discountSaving}
+                  onClick={() => setDiscountDialogOpen(false)}>Cancelar</Button>
+                <Button type="button" className="flex-1" disabled={!!discountValidation || discountSaving}
+                  onClick={() => { void saveAnticipationDiscount(); }}>
+                  {discountSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Confirmar desconto"}
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Delete Dialog */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
