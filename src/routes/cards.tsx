@@ -95,7 +95,8 @@ type CardRefund = {
   refund_transaction_id: string | null;
 };
 
-import { groupByBillingCycle, parseTxDate, getCycleDates, monthNames, type CardTransaction, type InvoicePeriod } from "@/lib/invoice-utils";
+import { groupByBillingCycle, parseTxDate, getCycleDates, getBillingCycleMonthKey, monthNames, type CardTransaction, type InvoicePeriod } from "@/lib/invoice-utils";
+import { buildAnticipationPlan, isSameAnticipationPlan, validateAnticipationGroup } from "@/lib/installment-anticipation";
 
 // `cards.used` is the invoice amount informed when a card is first registered.
 // It is an opening invoice balance, not a timeless aggregate. Associate it with
@@ -259,6 +260,14 @@ function CardsPage() {
   const [showEditSuggestions, setShowEditSuggestions] = useState(false);
   const [editInstallmentMode, setEditInstallmentMode] = useState<"divide" | "fixed">("divide");
   const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [anticipationDialogOpen, setAnticipationDialogOpen] = useState(false);
+  const [anticipationTx, setAnticipationTx] = useState<CardTransaction | null>(null);
+  const [anticipationRows, setAnticipationRows] = useState<CardTransaction[]>([]);
+  const [anticipationPeriodKey, setAnticipationPeriodKey] = useState("");
+  const [anticipationCount, setAnticipationCount] = useState("1");
+  const [anticipationLoading, setAnticipationLoading] = useState(false);
+  const [anticipationSaving, setAnticipationSaving] = useState(false);
+  const anticipationSavingRef = useRef(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showInvoiceDetails, setShowInvoiceDetails] = useState(false);
 
@@ -830,6 +839,49 @@ function CardsPage() {
   };
   const getPaidTotalForPeriod = (cardId: string | undefined, period?: InvoicePeriod | null) =>
     getPaymentsForPeriod(cardId, period).reduce((sum, p) => sum + p.amount, 0);
+  const anticipationOptions = anticipationTx && invoiceCard
+    ? invoicePeriods.filter((period) => {
+        if (period.endDate <= new Date() || getPaidTotalForPeriod(invoiceCard.id, period) > 0) return false;
+        try {
+          buildAnticipationPlan(anticipationRows, anticipationTx, invoiceCard.name, period, 1);
+          return true;
+        } catch {
+          return false;
+        }
+      })
+    : [];
+  const chosenAnticipationPeriod = anticipationOptions.find(
+    (period) => getInvoicePeriodKey(period) === anticipationPeriodKey,
+  );
+  let currentAnticipationPlan: ReturnType<typeof buildAnticipationPlan> | null = null;
+  if (anticipationTx && invoiceCard && chosenAnticipationPeriod) {
+    try {
+      currentAnticipationPlan = buildAnticipationPlan(
+        anticipationRows,
+        anticipationTx,
+        invoiceCard.name,
+        chosenAnticipationPeriod,
+        Number(anticipationCount),
+      );
+    } catch {
+      // The UI shows the correct count limit and prevents invalid confirmation.
+    }
+  }
+  const anticipationAvailable = anticipationTx && invoiceCard && chosenAnticipationPeriod
+    ? (() => {
+        try {
+          return buildAnticipationPlan(
+            anticipationRows,
+            anticipationTx,
+            invoiceCard.name,
+            chosenAnticipationPeriod,
+            1,
+          ).available;
+        } catch {
+          return 0;
+        }
+      })()
+    : 0;
   const activePeriodKey = getInvoicePeriodKey(activePeriod);
   const activeOpeningInvoiceAmount = invoiceCard ? getOpeningInvoiceAmountForPeriod(invoiceCard, activePeriodKey) : 0;
   const activePeriodPayments = getPaymentsForPeriod(invoiceCard?.id, activePeriod);
@@ -1083,6 +1135,156 @@ function CardsPage() {
   useEffect(() => {
     if (invoiceDialogOpen) fetchHistory();
   }, [invoiceDialogOpen, fetchHistory]);
+
+  const openAnticipationDialog = async () => {
+    if (!editOriginalTx?.installment_group_id || !invoiceCard || anticipationLoading) return;
+    // Anticipation is an independent date-only operation; do not silently
+    // discard unsaved edits to names, amounts, category or installment count.
+    if (editTx && (
+      editTx.name !== editOriginalTx.name ||
+      editTx.category !== editOriginalTx.category ||
+      editTx.icon !== editOriginalTx.icon ||
+      Number(editTx.amount) !== Number(editOriginalTx.amount) ||
+      editTx.date !== editOriginalTx.date ||
+      (editTx.purchase_date || null) !== (editOriginalTx.purchase_date || null) ||
+      Number(installmentCurrent) !== Math.max(1, Number(editOriginalTx.installment_number) || 1) ||
+      Number(installmentTotal) !== Math.max(1, Number(editOriginalTx.total_installments) || 1)
+    )) {
+      toast.error("Salve ou descarte as outras alterações antes de antecipar parcelas.");
+      return;
+    }
+    setAnticipationLoading(true);
+    try {
+      const { data: group, error } = await supabase
+        .from("transactions")
+        .select("id, name, icon, category, date, purchase_date, amount, type, card, created_at, total_installments, installment_number, installment_group_id")
+        .eq("installment_group_id", editOriginalTx.installment_group_id)
+        .eq("card", invoiceCard.name)
+        .order("installment_number", { ascending: true });
+      if (error) throw error;
+      const rows = (group || []) as CardTransaction[];
+      const validation = validateAnticipationGroup(rows, editOriginalTx, invoiceCard.name);
+      if (validation) throw new Error(validation);
+      const eligible = invoicePeriods.filter((period) => {
+        if (period.endDate <= new Date() || getPaidTotalForPeriod(invoiceCard.id, period) > 0) return false;
+        try {
+          buildAnticipationPlan(rows, editOriginalTx, invoiceCard.name, period, 1);
+          return true;
+        } catch {
+          return false;
+        }
+      });
+      if (eligible.length === 0) throw new Error("Não há faturas abertas com parcelas futuras elegíveis.");
+      const preferred = eligible.find((period) => getInvoicePeriodKey(period) === getInvoicePeriodKey(activePeriod)) || eligible[0];
+      setAnticipationTx(editOriginalTx);
+      setAnticipationRows(rows);
+      setAnticipationPeriodKey(getInvoicePeriodKey(preferred));
+      setAnticipationCount("1");
+      setShowEditDialog(false);
+      setAnticipationDialogOpen(true);
+    } catch (error) {
+      console.error("Error preparing installment anticipation:", error);
+      toast.error(error instanceof Error ? error.message : "Não foi possível carregar as parcelas.");
+    } finally {
+      setAnticipationLoading(false);
+    }
+  };
+
+  const confirmAnticipation = async () => {
+    if (anticipationSavingRef.current || !invoiceCard || !anticipationTx || !chosenAnticipationPeriod || !currentAnticipationPlan) return;
+    anticipationSavingRef.current = true;
+    setAnticipationSaving(true);
+    try {
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) throw new Error("Sessão expirada. Entre novamente para antecipar parcelas.");
+
+      // Refetch immediately before the write. Do not trust any stale invoice
+      // preview from the browser, or move installments that changed in another tab.
+      const [groupResult, paymentsResult] = await Promise.all([
+        supabase.from("transactions")
+          .select("id, name, icon, category, date, purchase_date, amount, type, card, created_at, total_installments, installment_number, installment_group_id")
+          .eq("user_id", user.id)
+          .eq("installment_group_id", anticipationTx.installment_group_id!)
+          .eq("card", invoiceCard.name)
+          .order("installment_number", { ascending: true }),
+        supabase.from("card_payments")
+          .select("amount, paid_at, target_period")
+          .eq("user_id", user.id)
+          .eq("card_id", invoiceCard.id),
+      ]);
+      if (groupResult.error) throw groupResult.error;
+      if (paymentsResult.error) throw paymentsResult.error;
+      const fresh = (groupResult.data || []) as CardTransaction[];
+      const plan = buildAnticipationPlan(
+        fresh, anticipationTx, invoiceCard.name, chosenAnticipationPeriod,
+        Number(anticipationCount),
+      );
+      if (!isSameAnticipationPlan(currentAnticipationPlan, plan)) {
+        throw new Error("Alguma parcela mudou enquanto você editava. Abra a antecipação novamente.");
+      }
+
+      const paidMonths = new Set(
+        (paymentsResult.data || [])
+          .filter((payment) => Number(payment.amount) > 0)
+          .map((payment) => {
+            if (payment.target_period) return String(payment.target_period).slice(0, 7);
+            if (!payment.paid_at) return "";
+            const paidAt = new Date(payment.paid_at);
+            if (!Number.isFinite(paidAt.getTime())) return "";
+            const { currentClose } = getCycleDates(
+              paidAt, invoiceCard.closing_day || 1, invoiceCard.due_day || 10,
+            );
+            return format(currentClose, "yyyy-MM");
+          }),
+      );
+      const targetMonth = format(chosenAnticipationPeriod.endDate, "yyyy-MM");
+      if (paidMonths.has(targetMonth)) {
+        throw new Error("A fatura de destino já possui pagamento e não pode receber parcelas antecipadas.");
+      }
+      if (plan.moves.some((move) => {
+        const row = fresh.find((item) => item.id === move.id);
+        return row && paidMonths.has(getBillingCycleMonthKey(
+          row.date, row.created_at, invoiceCard.closing_day,
+        ));
+      })) {
+        throw new Error("Uma das parcelas já pertence a uma fatura paga. Nenhuma antecipação foi realizada.");
+      }
+
+      // One PostgreSQL UPDATE for the whole selection: no inserted rows,
+      // amount changes or installment renumbering. RLS applies to all rows.
+      const { data: updated, error } = await supabase.from("transactions")
+        .update({ date: plan.targetDate })
+        .eq("user_id", user.id)
+        .eq("card", invoiceCard.name)
+        .eq("installment_group_id", anticipationTx.installment_group_id!)
+        .in("id", plan.moves.map((move) => move.id))
+        .select("id");
+      if (error) throw error;
+      if ((updated || []).length !== plan.moves.length) {
+        throw new Error("Nem todas as parcelas foram confirmadas pelo banco. Atualize as faturas e confira os lançamentos.");
+      }
+
+      const destinationIndex = invoicePeriods.findIndex(
+        (period) => getInvoicePeriodKey(period) === anticipationPeriodKey,
+      );
+      if (destinationIndex >= 0) setActiveInvoiceIdx(destinationIndex);
+      setAnticipationDialogOpen(false);
+      setAnticipationTx(null);
+      setAnticipationRows([]);
+      setEditOriginalTx(null);
+      setEditTx(null);
+      toast.success(
+        `${plan.moves.length} parcela${plan.moves.length > 1 ? "s" : ""} antecipada${plan.moves.length > 1 ? "s" : ""} — R$ ${plan.totalAmount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`,
+      );
+      await refreshInvoiceSilently(invoiceCard);
+    } catch (error) {
+      console.error("Error anticipating installments:", error);
+      toast.error(error instanceof Error ? error.message : "Erro ao antecipar parcelas.");
+    } finally {
+      anticipationSavingRef.current = false;
+      setAnticipationSaving(false);
+    }
+  };
 
   const handleEditTx = (tx: CardTransaction) => {
     setEditOriginalTx({ ...tx });
@@ -3124,6 +3326,19 @@ function CardsPage() {
                 />
               </div>
 
+              {editOriginalTx?.installment_group_id && Number(editOriginalTx.total_installments) > 1 && editOriginalTx.type === "expense" && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => { void openAnticipationDialog(); }}
+                  disabled={anticipationLoading || isSavingEdit}
+                  className="w-full rounded-2xl border-primary/40 text-primary"
+                  data-testid="anticipate-installments-button"
+                >
+                  {anticipationLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Layers className="mr-2 h-4 w-4" />}
+                  Antecipar parcelas futuras
+                </Button>
+              )}
               <Button
                 onClick={saveEditTx}
                 disabled={isSavingEdit}
@@ -3172,6 +3387,88 @@ function CardsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+
+       {/* Separate from the ordinary editor: anticipation only shifts billing dates. */}
+       <Dialog open={anticipationDialogOpen} onOpenChange={(open) => {
+         if (!anticipationSavingRef.current) {
+           setAnticipationDialogOpen(open);
+           if (!open && anticipationTx) setShowEditDialog(true);
+         }
+       }}>
+         <DialogContent data-testid="anticipate-installments-dialog" className="max-w-[calc(100vw-1rem)] sm:max-w-sm mx-auto rounded-2xl p-4 sm:p-6">
+           <DialogHeader>
+             <DialogTitle>Antecipar parcelas</DialogTitle>
+           </DialogHeader>
+           {anticipationTx && invoiceCard && (
+             <div className="flex flex-col gap-3 text-sm">
+               <p className="text-xs text-muted-foreground">
+                 {stripInstallmentSuffix(anticipationTx.name)} — {invoiceCard.name}.
+                 Selecione a fatura que receberá as parcelas e quantas deseja antecipar.
+               </p>
+               <div className="space-y-1">
+                 <Label className="text-xs">Fatura de destino</Label>
+                 <Select value={anticipationPeriodKey} onValueChange={(key) => {
+                   setAnticipationPeriodKey(key);
+                   setAnticipationCount("1");
+                 }}>
+                   <SelectTrigger aria-label="Fatura de destino"><SelectValue placeholder="Selecione a fatura" /></SelectTrigger>
+                   <SelectContent>
+                     {anticipationOptions.map((period) => (
+                       <SelectItem key={getInvoicePeriodKey(period)} value={getInvoicePeriodKey(period)}>
+                         {monthNames[period.dueDate.getMonth()]} {period.dueDate.getFullYear()}
+                       </SelectItem>
+                     ))}
+                   </SelectContent>
+                 </Select>
+               </div>
+               <div className="space-y-1">
+                 <Label className="text-xs">Quantidade de parcelas para antecipar</Label>
+                 <Input
+                   aria-label="Quantidade de parcelas para antecipar"
+                   type="number"
+                   inputMode="numeric"
+                   min={1}
+                   max={anticipationAvailable}
+                   value={anticipationCount}
+                   onChange={(event) => setAnticipationCount(event.target.value.replace(/\D/g, "").slice(0, 2))}
+                 />
+                 <p className="text-[11px] text-muted-foreground">
+                   Até {anticipationAvailable} parcela{anticipationAvailable === 1 ? "" : "s"} futura{anticipationAvailable === 1 ? "" : "s"} disponível{anticipationAvailable === 1 ? "" : "is"}.
+                 </p>
+               </div>
+               {currentAnticipationPlan ? (
+                 <div className="rounded-xl border border-primary/25 bg-primary/5 p-3 space-y-1">
+                   <p className="text-xs font-medium">Prévia da antecipação</p>
+                   <p className="text-xs text-muted-foreground">
+                     Parcelas {currentAnticipationPlan.moves.map((row) => `${row.number}/${anticipationTx.total_installments}`).join(", ")}
+                   </p>
+                   <p className="font-semibold tabular-nums">
+                     R$ {currentAnticipationPlan.totalAmount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                   </p>
+                   <p className="text-[11px] text-muted-foreground">
+                     O valor entra na fatura selecionada e sai das faturas futuras. O total da compra e o número das parcelas permanecem iguais.
+                   </p>
+                 </div>
+               ) : (
+                 <p className="text-xs text-destructive">Escolha uma quantidade válida de parcelas.</p>
+               )}
+               <p className="text-[10px] text-muted-foreground">
+                 Esta antecipação organiza as faturas apenas no Cofre 360. Não solicita antecipação ao banco emissor nem paga a fatura.
+               </p>
+               <DialogFooter className="gap-2 sm:gap-2 flex-row">
+                 <Button type="button" variant="outline" disabled={anticipationSaving} className="flex-1" onClick={() => {
+                   setAnticipationDialogOpen(false);
+                   setShowEditDialog(true);
+                 }}>Voltar</Button>
+                 <Button type="button" className="flex-1" disabled={!currentAnticipationPlan || anticipationSaving} onClick={() => { void confirmAnticipation(); }}>
+                   {anticipationSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Confirmar antecipação"}
+                 </Button>
+               </DialogFooter>
+             </div>
+           )}
+         </DialogContent>
+       </Dialog>
 
       {/* Delete Dialog */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
