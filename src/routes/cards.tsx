@@ -3416,7 +3416,7 @@ function CardsPage() {
                    min={1}
                    max={anticipationAvailable}
                    value={anticipationCount}
-                   onChange={(event) => setAnticipationCount(event.target.value.replace(/\\D/g, "").slice(0, 2))}
+                   onChange={(event) => setAnticipationCount(event.target.value.replace(/\D/g, "").slice(0, 2))}
                  />
                  <p className="text-[11px] text-muted-foreground">
                    Até {anticipationAvailable} parcela{anticipationAvailable === 1 ? "" : "s"} futura{anticipationAvailable === 1 ? "" : "s"} disponível{anticipationAvailable === 1 ? "" : "is"}.
