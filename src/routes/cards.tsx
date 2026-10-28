@@ -3439,7 +3439,7 @@ function CardsPage() {
                  <p className="text-xs text-destructive">Escolha uma quantidade válida de parcelas.</p>
                )}
                <p className="text-[10px] text-muted-foreground">
-                 Esta antecipação organiza as faturas apenas no Cofre 360. Não solicita antecipação ao Porto Bank nem paga a fatura.
+                 Esta antecipação organiza as faturas apenas no Cofre 360. Não solicita antecipação ao banco emissor nem paga a fatura.
                </p>
                <DialogFooter className="gap-2 sm:gap-2 flex-row">
                  <Button type="button" variant="outline" disabled={anticipationSaving} className="flex-1" onClick={() => {
