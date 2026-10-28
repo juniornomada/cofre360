@@ -2453,14 +2453,27 @@ function CardsPage() {
                         </Button>
                       )}
                     </div>
-                    <Button type="button" variant="outline" size="sm"
+                    <button
+                      type="button"
                       data-testid="invoice-discount-action"
-                      className="w-full h-8 rounded-lg text-[11px] gap-1.5"
                       onClick={openDiscountDialog}
+                      className="group w-full rounded-xl border border-amber-500/70 bg-amber-50 px-3 py-3 text-left text-amber-950 shadow-sm transition-colors hover:border-amber-600 hover:bg-amber-100 active:bg-amber-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 focus-visible:ring-offset-background dark:border-amber-400/70 dark:bg-amber-500/15 dark:text-amber-100 dark:hover:border-amber-300 dark:hover:bg-amber-500/25 dark:active:bg-amber-500/30"
                     >
-                      <BadgePercent className="h-3.5 w-3.5" />
-                      Registrar desconto de antecipação
-                    </Button>
+                      <span className="flex items-center gap-3">
+                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500/20 text-amber-700 dark:bg-amber-400/20 dark:text-amber-200">
+                          <BadgePercent className="h-5 w-5" aria-hidden="true" />
+                        </span>
+                        <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                          <span className="text-[13px] font-semibold leading-snug">
+                            Registrar desconto de antecipação
+                          </span>
+                          <span className="text-[11px] leading-snug text-amber-900/80 dark:text-amber-100/80">
+                            Abater desconto concedido pelo banco
+                          </span>
+                        </span>
+                        <ChevronRight className="h-4 w-4 shrink-0 text-amber-700 dark:text-amber-200" aria-hidden="true" />
+                      </span>
+                    </button>
                   </div>
 
                   {(() => {
