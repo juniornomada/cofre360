@@ -34,12 +34,13 @@ describe("Investment color flow", () => {
     expect(investSrc).toContain("color: null");
   });
 
-  it("uses personalized colors in investment cards but class colors in the allocation chart", () => {
+  it("uses personalized colors in investment cards and the dominant asset color in the allocation chart", () => {
     expect(investSrc).not.toContain("borderLeftColor: getInvestmentColor(inv.color, inv.asset_class)");
     expect(investSrc).not.toContain("border-l-4");
     expect(investSrc).toContain("backgroundColor: investmentColor");
     expect(investSrc).toContain("<InvestmentIcon assetClass={inv.asset_class} color={investmentColor} />");
-    expect(investSrc).toContain("color: getAssetClassColor(key)");
+    expect(investSrc).toContain("getDominantInvestmentColor(investments, item.key)");
+    expect(investSrc).toContain("{ color: inv.color, assetClass: key, weight: val.grossValue }");
   });
 
   it("moves deletion into edit mode and requires named confirmation", () => {
