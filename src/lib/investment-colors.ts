@@ -47,3 +47,35 @@ export function getInvestmentColor(
 ): string {
   return normalizeInvestmentColor(color) || getAssetClassColor(assetClass);
 }
+
+
+/**
+ * Picks the color that represents the greatest invested value within a class.
+ * This keeps the allocation slice aligned with the dominant color shown on
+ * the individual investment cards, without splitting the class aggregation.
+ */
+export function getDominantInvestmentColor(
+  investments: Array<{
+    color: string | null | undefined;
+    assetClass: string | null | undefined;
+    weight: number;
+  }>,
+  fallbackAssetClass: string | null | undefined,
+): string {
+  const totals = new Map<string, number>();
+  for (const investment of investments) {
+    if (!Number.isFinite(investment.weight) || investment.weight <= 0) continue;
+    const color = getInvestmentColor(investment.color, investment.assetClass);
+    totals.set(color, (totals.get(color) || 0) + investment.weight);
+  }
+
+  let dominantColor: string | null = null;
+  let dominantWeight = -1;
+  for (const [color, weight] of totals) {
+    if (weight > dominantWeight) {
+      dominantColor = color;
+      dominantWeight = weight;
+    }
+  }
+  return dominantColor || getAssetClassColor(fallbackAssetClass);
+}
