@@ -35,7 +35,7 @@ import {
   type AssetClass,
 } from "@/lib/investments-calc";
 import { toast } from "sonner";
-import { getAssetClassColor, getInvestmentColor, INVESTMENT_COLOR_OPTIONS, normalizeInvestmentColor } from "@/lib/investment-colors";
+import { getAssetClassColor, getDominantInvestmentColor, getInvestmentColor, INVESTMENT_COLOR_OPTIONS, normalizeInvestmentColor } from "@/lib/investment-colors";
 import {
   Dialog,
   DialogContent,
@@ -242,9 +242,14 @@ function InvestPage() {
     return new Date(Math.max(...timestamps)).toLocaleDateString("pt-BR");
   }, [portfolio]);
 
-  // Pie data by asset_class. Colors are fixed per class so the visual identity never changes with ordering.
+  // Keep the class-level allocation, but use the dominant displayed asset color within each class.
   const pieData = useMemo(() => {
-    const map = new Map<string, { key: string; name: string; value: number; color: string }>();
+    const map = new Map<string, {
+      key: string;
+      name: string;
+      value: number;
+      investments: Array<{ color: string | null; assetClass: string; weight: number }>;
+    }>();
     for (const { inv, val } of valuations) {
       const key = (inv.asset_class || "outro") as string;
       const name = ASSET_CLASS_LABELS[key as AssetClass] || inv.type || "Outro";
@@ -253,10 +258,18 @@ function InvestPage() {
         key,
         name,
         value: (current?.value || 0) + val.grossValue,
-        color: getAssetClassColor(key),
+        investments: [
+          ...(current?.investments || []),
+          { color: inv.color, assetClass: key, weight: val.grossValue },
+        ],
       });
     }
-    return Array.from(map.values()).filter((d) => d.value > 0);
+    return Array.from(map.values())
+      .map(({ investments, ...item }) => ({
+        ...item,
+        color: getDominantInvestmentColor(investments, item.key),
+      }))
+      .filter((d) => d.value > 0);
   }, [valuations]);
 
   const openAdd = (cls?: AssetClass) => {

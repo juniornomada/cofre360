@@ -3,6 +3,7 @@ import {
   ASSET_CLASS_COLORS,
   INVESTMENT_COLOR_OPTIONS,
   getAssetClassColor,
+  getDominantInvestmentColor,
   getInvestmentColor,
   normalizeInvestmentColor,
 } from "@/lib/investment-colors";
@@ -37,8 +38,20 @@ describe("Individual investment colors", () => {
     }
   });
 
-  it("does not change the asset-class chart colors when an individual fund is personalized", () => {
-    expect(getInvestmentColor("#F97316", "fii")).toBe("#F97316");
-    expect(getAssetClassColor("fii")).toBe("#14B8A6");
+  it("uses the dominant displayed investment color for each allocation class", () => {
+    expect(getDominantInvestmentColor([
+      { color: "#A855F7", assetClass: "renda_variavel_global", weight: 1103.54 },
+      { color: "#3B82F6", assetClass: "renda_variavel_global", weight: 200 },
+    ], "renda_variavel_global")).toBe("#A855F7");
+    expect(getDominantInvestmentColor([
+      { color: "#EF4444", assetClass: "alternativos", weight: 1024.87 },
+    ], "alternativos")).toBe("#EF4444");
+  });
+
+  it("uses the class palette when there are no valid weighted investments", () => {
+    expect(getDominantInvestmentColor([], "fii")).toBe("#14B8A6");
+    expect(getDominantInvestmentColor([
+      { color: "#F97316", assetClass: "fii", weight: 0 },
+    ], "fii")).toBe("#14B8A6");
   });
 });
