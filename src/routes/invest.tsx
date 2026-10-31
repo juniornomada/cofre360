@@ -22,8 +22,27 @@ import {
   EyeOff,
   ChevronDown,
   ChevronUp,
+  GripVertical,
 } from "lucide-react";
 import { useState, useEffect, useCallback, useMemo } from "react";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  TouchSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+  arrayMove,
+  sortableKeyboardCoordinates,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { refreshInvestmentQuotes } from "@/lib/investments.functions";
@@ -146,9 +165,58 @@ function isVariable(cls: string) {
   return ["cripto", "acao", "fii", "etf"].includes(cls);
 }
 
+const ASSET_ORDER_STORAGE_KEY = "cofre360-investment-order";
+
+function SortableInvestmentCard({
+  id,
+  children,
+}: {
+  id: string;
+  children: (handleProps: {
+    attributes: ReturnType<typeof useSortable>["attributes"];
+    listeners: ReturnType<typeof useSortable>["listeners"];
+  }) => React.ReactNode;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+  return (
+    <div
+      ref={setNodeRef}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.65 : 1,
+        zIndex: isDragging ? 10 : undefined,
+        position: "relative",
+      }}
+    >
+      {children({ attributes, listeners })}
+    </div>
+  );
+}
+
 function InvestPage() {
   const { balanceVisible, updateBalanceVisible } = useUserPreferences();
   const [portfolio, setPortfolio] = useState<Investment[]>([]);
+  const [assetOrder, setAssetOrder] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem(ASSET_ORDER_STORAGE_KEY);
+      return saved ? JSON.parse(saved) as string[] : [];
+    } catch {
+      return [];
+    }
+  });
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 180, tolerance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
@@ -226,6 +294,34 @@ function InvestPage() {
     () => portfolio.map((inv) => ({ inv, val: valuate(inv, target) })),
     [portfolio, target]
   );
+
+  const orderedValuations = useMemo(() => {
+    const positions = new Map(assetOrder.map((id, index) => [id, index]));
+    return [...valuations].sort((a, b) => {
+      const ai = positions.get(a.inv.id);
+      const bi = positions.get(b.inv.id);
+      if (ai === undefined && bi === undefined) return 0;
+      if (ai === undefined) return 1;
+      if (bi === undefined) return -1;
+      return ai - bi;
+    });
+  }, [valuations, assetOrder]);
+
+  const handleAssetDragEnd = useCallback((event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const ids = orderedValuations.map(({ inv }) => inv.id);
+    const oldIndex = ids.indexOf(String(active.id));
+    const newIndex = ids.indexOf(String(over.id));
+    if (oldIndex < 0 || newIndex < 0) return;
+    const next = arrayMove(ids, oldIndex, newIndex);
+    setAssetOrder(next);
+    try {
+      localStorage.setItem(ASSET_ORDER_STORAGE_KEY, JSON.stringify(next));
+    } catch {
+      toast.error("Não foi possível salvar a ordem neste dispositivo");
+    }
+  }, [orderedValuations]);
 
   const totalInvested = valuations.reduce((s, v) => s + v.val.invested, 0);
   const totalGross = valuations.reduce((s, v) => s + v.val.grossValue, 0);
@@ -611,17 +707,32 @@ function InvestPage() {
             <Button onClick={() => openAdd()}>Adicionar primeiro investimento</Button>
           </div>
         ) : (
-          valuations.map(({ inv, val }, i) => {
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleAssetDragEnd}>
+            <SortableContext items={orderedValuations.map(({ inv }) => inv.id)} strategy={verticalListSortingStrategy}>
+              {orderedValuations.map(({ inv, val }, i) => {
             const positive = val.grossPnL >= 0;
             const investmentColor = getInvestmentColor(inv.color, inv.asset_class);
             return (
+              <SortableInvestmentCard key={inv.id} id={inv.id}>
+                {({ attributes, listeners }) => (
               <div
-      key={inv.id}
       onClick={() => openEdit(inv)}
       className="interactive-card cursor-pointer rounded-2xl bg-card p-3 animate-stagger-in"
       style={{ animationDelay: `${i * 40}ms` }}
     >
       <div className="flex items-start gap-2.5">
+        <button
+          type="button"
+          {...attributes}
+          {...listeners}
+          onClick={(event) => event.stopPropagation()}
+          onPointerDown={(event) => event.stopPropagation()}
+          aria-label={`Arrastar ${inv.name} para reordenar`}
+          title="Pressione e arraste para reordenar"
+          className="mt-1 flex h-8 w-7 shrink-0 touch-none items-center justify-center rounded-lg text-muted-foreground hover:bg-accent active:bg-accent cursor-grab active:cursor-grabbing"
+        >
+          <GripVertical className="h-4 w-4" />
+        </button>
         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-base"
           style={{ backgroundColor: `${investmentColor}26` }}>
           <InvestmentIcon assetClass={inv.asset_class} color={investmentColor} />
@@ -667,8 +778,12 @@ function InvestPage() {
         </div>
       </div>
     </div>
+                )}
+              </SortableInvestmentCard>
             );
-          })
+              })}
+            </SortableContext>
+          </DndContext>
         )}
       </div>
 
