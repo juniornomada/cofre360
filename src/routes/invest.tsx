@@ -24,7 +24,7 @@ import {
   ChevronUp,
   GripVertical,
 } from "lucide-react";
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, type ReactNode } from "react";
 import {
   DndContext,
   closestCenter,
@@ -175,7 +175,7 @@ function SortableInvestmentCard({
   children: (handleProps: {
     attributes: ReturnType<typeof useSortable>["attributes"];
     listeners: ReturnType<typeof useSortable>["listeners"];
-  }) => React.ReactNode;
+  }) => ReactNode;
 }) {
   const {
     attributes,
@@ -204,14 +204,20 @@ function SortableInvestmentCard({
 function InvestPage() {
   const { balanceVisible, updateBalanceVisible } = useUserPreferences();
   const [portfolio, setPortfolio] = useState<Investment[]>([]);
-  const [assetOrder, setAssetOrder] = useState<string[]>(() => {
+  const [assetOrder, setAssetOrder] = useState<string[]>([]);
+  useEffect(() => {
     try {
       const saved = localStorage.getItem(ASSET_ORDER_STORAGE_KEY);
-      return saved ? JSON.parse(saved) as string[] : [];
+      if (saved) {
+        const parsed: unknown = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.every((id) => typeof id === "string")) {
+          setAssetOrder(parsed);
+        }
+      }
     } catch {
-      return [];
+      // Ignore invalid or unavailable local storage and keep the default order.
     }
-  });
+  }, []);
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 180, tolerance: 8 } }),
