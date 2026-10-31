@@ -726,7 +726,6 @@ function InvestPage() {
           {...attributes}
           {...listeners}
           onClick={(event) => event.stopPropagation()}
-          onPointerDown={(event) => event.stopPropagation()}
           aria-label={`Arrastar ${inv.name} para reordenar`}
           title="Pressione e arraste para reordenar"
           className="mt-1 flex h-8 w-7 shrink-0 touch-none items-center justify-center rounded-lg text-muted-foreground hover:bg-accent active:bg-accent cursor-grab active:cursor-grabbing"
