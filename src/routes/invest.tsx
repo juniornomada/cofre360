@@ -39,10 +39,15 @@ import {
   SortableContext,
   useSortable,
   verticalListSortingStrategy,
-  arrayMove,
   sortableKeyboardCoordinates,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import {
+  ASSET_ORDER_STORAGE_KEY,
+  parseStoredInvestmentOrder,
+  sortInvestmentValuations,
+  moveInvestmentOrder,
+} from "@/lib/investment-order";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { refreshInvestmentQuotes } from "@/lib/investments.functions";
@@ -165,8 +170,6 @@ function isVariable(cls: string) {
   return ["cripto", "acao", "fii", "etf"].includes(cls);
 }
 
-const ASSET_ORDER_STORAGE_KEY = "cofre360-investment-order";
-
 function SortableInvestmentCard({
   id,
   children,
@@ -207,15 +210,9 @@ function InvestPage() {
   const [assetOrder, setAssetOrder] = useState<string[]>([]);
   useEffect(() => {
     try {
-      const saved = localStorage.getItem(ASSET_ORDER_STORAGE_KEY);
-      if (saved) {
-        const parsed: unknown = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.every((id) => typeof id === "string")) {
-          setAssetOrder(parsed);
-        }
-      }
+      setAssetOrder(parseStoredInvestmentOrder(localStorage.getItem(ASSET_ORDER_STORAGE_KEY)));
     } catch {
-      // Ignore invalid or unavailable local storage and keep the default order.
+      // Ignore unavailable local storage and keep the default order.
     }
   }, []);
   const sensors = useSensors(
@@ -301,26 +298,17 @@ function InvestPage() {
     [portfolio, target]
   );
 
-  const orderedValuations = useMemo(() => {
-    const positions = new Map(assetOrder.map((id, index) => [id, index]));
-    return [...valuations].sort((a, b) => {
-      const ai = positions.get(a.inv.id);
-      const bi = positions.get(b.inv.id);
-      if (ai === undefined && bi === undefined) return 0;
-      if (ai === undefined) return 1;
-      if (bi === undefined) return -1;
-      return ai - bi;
-    });
-  }, [valuations, assetOrder]);
+  const orderedValuations = useMemo(
+    () => sortInvestmentValuations(valuations, assetOrder),
+    [valuations, assetOrder]
+  );
 
   const handleAssetDragEnd = useCallback((event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
     const ids = orderedValuations.map(({ inv }) => inv.id);
-    const oldIndex = ids.indexOf(String(active.id));
-    const newIndex = ids.indexOf(String(over.id));
-    if (oldIndex < 0 || newIndex < 0) return;
-    const next = arrayMove(ids, oldIndex, newIndex);
+    const next = moveInvestmentOrder(ids, String(active.id), String(over.id));
+    if (!next) return;
     setAssetOrder(next);
     try {
       localStorage.setItem(ASSET_ORDER_STORAGE_KEY, JSON.stringify(next));
