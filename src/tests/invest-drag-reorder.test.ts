@@ -59,12 +59,22 @@ describe("Contrato visual e de interação dos cartões de investimento", () => 
   it("oferece alça de três linhas, sensores móveis e arraste somente pela alça", () => {
     expect(source).toContain('import {');
     expect(source).toContain("TouchSensor,");
-    expect(source).toContain("PointerSensor,");
+    expect(source).toContain("MouseSensor,");
     expect(source).toContain("KeyboardSensor,");
     expect(source).toContain('className="mt-0.5 flex h-11 w-11 shrink-0 touch-none');
+    expect(source).toContain("delay: 160, tolerance: 12");
+    expect(source).toContain('ref={setActivatorNodeRef}');
+    expect(source).toContain('className="flex items-start gap-2.5 select-none touch-manipulation cursor-grab');
+    expect(source).toContain('title="Segure o título ou a alça e arraste para reordenar"');
     expect(source).toContain('<Menu className="h-4 w-4" />');
     expect(source).toContain('aria-label={`Arrastar ${inv.name} para reordenar`}');
-    expect(source).toContain("{...listeners}");
+    // Listeners belong to the header so both the title and the handle initiate drag.
+    const header = source.indexOf('ref={setActivatorNodeRef}', source.indexOf('orderedValuations.map('));
+    const handle = source.indexOf('<button', header);
+    const listeners = source.indexOf("{...listeners}", header);
+    expect(header).toBeGreaterThan(-1);
+    expect(listeners).toBeGreaterThan(header);
+    expect(listeners).toBeLessThan(handle);
   });
 
   it("mantém o clique no cartão para editar e não abre edição ao clicar na alça", () => {
