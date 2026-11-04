@@ -22,7 +22,6 @@ import {
   EyeOff,
   ChevronDown,
   ChevronUp,
-  Menu,
 } from "lucide-react";
 import { useState, useEffect, useCallback, useMemo, type ReactNode } from "react";
 import {
@@ -718,21 +717,13 @@ function InvestPage() {
       style={{ animationDelay: `${i * 40}ms` }}
     >
       <div
+        ref={setActivatorNodeRef}
+        {...attributes}
         {...listeners}
+        aria-label={`Arrastar ${inv.name} para reordenar`}
         className="flex items-start gap-2.5 select-none touch-manipulation cursor-grab active:cursor-grabbing"
-        title="Segure o título ou a alça e arraste para reordenar"
+        title="Segure o título e arraste para reordenar"
       >
-        <button
-          ref={setActivatorNodeRef}
-          type="button"
-          {...attributes}
-          onClick={(event) => event.stopPropagation()}
-          aria-label={`Arrastar ${inv.name} para reordenar`}
-          title="Segure e arraste para reordenar"
-          className="mt-0.5 flex h-11 w-11 shrink-0 touch-none items-center justify-center rounded-lg text-muted-foreground hover:bg-accent active:bg-accent cursor-grab active:cursor-grabbing"
-        >
-          <Menu className="h-4 w-4" />
-        </button>
         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-base"
           style={{ backgroundColor: `${investmentColor}26` }}>
           <InvestmentIcon assetClass={inv.asset_class} color={investmentColor} />
