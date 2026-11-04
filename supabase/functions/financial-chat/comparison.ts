@@ -24,7 +24,7 @@ export function explicitComparisonMonths(question: string, referenceYear: number
   const matches: Array<{ month: number; year: number | null }> = [];
 
   for (const match of text.matchAll(named)) {
-    const month = MONTH_ALIASES.findIndex((values) => values.includes(match[1] as never)) + 1;
+    const month = MONTH_ALIASES.findIndex((values) => values.some((alias) => alias === match[1])) + 1;
     if (month) matches.push({ month, year: match[2] ? Number(match[2]) : null });
   }
 
