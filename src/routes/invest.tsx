@@ -718,12 +718,12 @@ function InvestPage() {
       style={{ animationDelay: `${i * 40}ms` }}
     >
       <div
-        ref={setActivatorNodeRef}
         {...listeners}
         className="flex items-start gap-2.5 select-none touch-manipulation cursor-grab active:cursor-grabbing"
         title="Segure o título ou a alça e arraste para reordenar"
       >
         <button
+          ref={setActivatorNodeRef}
           type="button"
           {...attributes}
           onClick={(event) => event.stopPropagation()}
