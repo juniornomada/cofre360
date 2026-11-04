@@ -61,7 +61,7 @@ describe("Contrato visual e de interação dos cartões de investimento", () => 
     expect(source).toContain("TouchSensor,");
     expect(source).toContain("PointerSensor,");
     expect(source).toContain("KeyboardSensor,");
-    expect(source).toContain('className="mt-1 flex h-8 w-7 shrink-0 touch-none');
+    expect(source).toContain('className="mt-0.5 flex h-11 w-11 shrink-0 touch-none');
     expect(source).toContain('<Menu className="h-4 w-4" />');
     expect(source).toContain('aria-label={`Arrastar ${inv.name} para reordenar`}');
     expect(source).toContain("{...listeners}");
