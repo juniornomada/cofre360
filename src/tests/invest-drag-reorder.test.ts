@@ -56,32 +56,32 @@ describe("Ordenação dos investimentos", () => {
 describe("Contrato visual e de interação dos cartões de investimento", () => {
   const source = readFileSync(resolve(process.cwd(), "src/routes/invest.tsx"), "utf8");
 
-  it("oferece alça de três linhas, sensores móveis e arraste somente pela alça", () => {
-    expect(source).toContain('import {');
+  it("mantém arraste Android pelo título sem alça visual", () => {
     expect(source).toContain("TouchSensor,");
     expect(source).toContain("MouseSensor,");
     expect(source).toContain("KeyboardSensor,");
-    expect(source).toContain('className="mt-0.5 flex h-11 w-11 shrink-0 touch-none');
     expect(source).toContain("delay: 160, tolerance: 12");
-    expect(source).toContain('ref={setActivatorNodeRef}');
-    expect(source).toContain('className="flex items-start gap-2.5 select-none touch-manipulation cursor-grab');
-    expect(source).toContain('title="Segure o título ou a alça e arraste para reordenar"');
-    expect(source).toContain('<Menu className="h-4 w-4" />');
-    expect(source).toContain('aria-label={`Arrastar ${inv.name} para reordenar`}');
-    // Listeners belong to the header so both the title and the handle initiate drag.
-    const header = source.indexOf('      <div\n        {...listeners}', source.indexOf('orderedValuations.map('));
-    const handle = source.indexOf('<button', header);
-    const listeners = source.indexOf("{...listeners}", header);
-    const keyboardActivator = source.indexOf('ref={setActivatorNodeRef}', handle);
-    expect(header).toBeGreaterThan(-1);
-    expect(listeners).toBeGreaterThan(header);
-    expect(listeners).toBeLessThan(handle);
-    expect(keyboardActivator).toBeGreaterThan(handle);
+    const headerStart = source.indexOf('      <div\n        ref={setActivatorNodeRef}', source.indexOf('orderedValuations.map('));
+    const iconStart = source.indexOf('        <div className="flex h-9 w-9', headerStart);
+    expect(headerStart).toBeGreaterThan(-1);
+    expect(iconStart).toBeGreaterThan(headerStart);
+    const header = source.slice(headerStart, iconStart);
+    expect(header).toContain("{...attributes}");
+    expect(header).toContain("{...listeners}");
+    expect(header).toContain('aria-label={`Arrastar ${inv.name} para reordenar`}');
+    expect(header).toContain('title="Segure o título e arraste para reordenar"');
+    expect(header).not.toContain("<button");
+    expect(source).not.toContain('<Menu className="h-4 w-4" />');
   });
 
-  it("mantém o clique no cartão para editar e não abre edição ao clicar na alça", () => {
-    expect(source).toContain("onClick={() => openEdit(inv)}");
-    expect(source).toContain("onClick={(event) => event.stopPropagation()}");
+  it("mantém o toque no cartão para editar, sem botão adicional de arraste", () => {
+    const cardStart = source.indexOf('      onClick={() => openEdit(inv)}', source.indexOf('orderedValuations.map('));
+    const headerStart = source.indexOf('      <div\n        ref={setActivatorNodeRef}', cardStart);
+    expect(cardStart).toBeGreaterThan(-1);
+    expect(headerStart).toBeGreaterThan(cardStart);
+    const header = source.slice(headerStart, source.indexOf('<InvestmentIcon assetClass=', headerStart));
+    expect(header).not.toContain("stopPropagation()");
+    expect(header).not.toContain("<button");
   });
 
   it("salva a ordenação localmente, sem atualizar a tabela de investimentos", () => {
