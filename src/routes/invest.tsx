@@ -28,7 +28,7 @@ import { useState, useEffect, useCallback, useMemo, type ReactNode } from "react
 import {
   DndContext,
   closestCenter,
-  PointerSensor,
+  MouseSensor,
   TouchSensor,
   KeyboardSensor,
   useSensor,
@@ -178,12 +178,14 @@ function SortableInvestmentCard({
   children: (handleProps: {
     attributes: ReturnType<typeof useSortable>["attributes"];
     listeners: ReturnType<typeof useSortable>["listeners"];
+    setActivatorNodeRef: ReturnType<typeof useSortable>["setActivatorNodeRef"];
   }) => ReactNode;
 }) {
   const {
     attributes,
     listeners,
     setNodeRef,
+    setActivatorNodeRef,
     transform,
     transition,
     isDragging,
@@ -199,7 +201,7 @@ function SortableInvestmentCard({
         position: "relative",
       }}
     >
-      {children({ attributes, listeners })}
+      {children({ attributes, listeners, setActivatorNodeRef })}
     </div>
   );
 }
@@ -216,8 +218,9 @@ function InvestPage() {
     }
   }, []);
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 180, tolerance: 8 } }),
+    // Use distinct mouse/touch sensors so Android scrolling does not cancel the drag.
+    useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 160, tolerance: 12 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
   const [loading, setLoading] = useState(true);
@@ -708,20 +711,24 @@ function InvestPage() {
             const investmentColor = getInvestmentColor(inv.color, inv.asset_class);
             return (
               <SortableInvestmentCard key={inv.id} id={inv.id}>
-                {({ attributes, listeners }) => (
+                {({ attributes, listeners, setActivatorNodeRef }) => (
               <div
       onClick={() => openEdit(inv)}
       className="interactive-card cursor-pointer rounded-2xl bg-card p-3 animate-stagger-in"
       style={{ animationDelay: `${i * 40}ms` }}
     >
-      <div className="flex items-start gap-2.5">
+      <div
+        ref={setActivatorNodeRef}
+        {...listeners}
+        className="flex items-start gap-2.5 select-none touch-manipulation cursor-grab active:cursor-grabbing"
+        title="Segure o título ou a alça e arraste para reordenar"
+      >
         <button
           type="button"
           {...attributes}
-          {...listeners}
           onClick={(event) => event.stopPropagation()}
           aria-label={`Arrastar ${inv.name} para reordenar`}
-          title="Pressione e arraste para reordenar"
+          title="Segure e arraste para reordenar"
           className="mt-0.5 flex h-11 w-11 shrink-0 touch-none items-center justify-center rounded-lg text-muted-foreground hover:bg-accent active:bg-accent cursor-grab active:cursor-grabbing"
         >
           <Menu className="h-4 w-4" />
