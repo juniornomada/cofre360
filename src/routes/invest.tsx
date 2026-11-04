@@ -23,7 +23,30 @@ import {
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, type ReactNode } from "react";
+import {
+  DndContext,
+  closestCenter,
+  MouseSensor,
+  TouchSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+  sortableKeyboardCoordinates,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import {
+  ASSET_ORDER_STORAGE_KEY,
+  parseStoredInvestmentOrder,
+  sortInvestmentValuations,
+  moveInvestmentOrder,
+} from "@/lib/investment-order";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { refreshInvestmentQuotes } from "@/lib/investments.functions";
@@ -146,9 +169,59 @@ function isVariable(cls: string) {
   return ["cripto", "acao", "fii", "etf"].includes(cls);
 }
 
+function SortableInvestmentCard({
+  id,
+  children,
+}: {
+  id: string;
+  children: (handleProps: {
+    attributes: ReturnType<typeof useSortable>["attributes"];
+    listeners: ReturnType<typeof useSortable>["listeners"];
+    setActivatorNodeRef: ReturnType<typeof useSortable>["setActivatorNodeRef"];
+  }) => ReactNode;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    setActivatorNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+  return (
+    <div
+      ref={setNodeRef}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.65 : 1,
+        zIndex: isDragging ? 10 : undefined,
+        position: "relative",
+      }}
+    >
+      {children({ attributes, listeners, setActivatorNodeRef })}
+    </div>
+  );
+}
+
 function InvestPage() {
   const { balanceVisible, updateBalanceVisible } = useUserPreferences();
   const [portfolio, setPortfolio] = useState<Investment[]>([]);
+  const [assetOrder, setAssetOrder] = useState<string[]>([]);
+  useEffect(() => {
+    try {
+      setAssetOrder(parseStoredInvestmentOrder(localStorage.getItem(ASSET_ORDER_STORAGE_KEY)));
+    } catch {
+      // Ignore unavailable local storage and keep the default order.
+    }
+  }, []);
+  const sensors = useSensors(
+    // Use distinct mouse/touch sensors so Android scrolling does not cancel the drag.
+    useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 160, tolerance: 12 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
@@ -226,6 +299,25 @@ function InvestPage() {
     () => portfolio.map((inv) => ({ inv, val: valuate(inv, target) })),
     [portfolio, target]
   );
+
+  const orderedValuations = useMemo(
+    () => sortInvestmentValuations(valuations, assetOrder),
+    [valuations, assetOrder]
+  );
+
+  const handleAssetDragEnd = useCallback((event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const ids = orderedValuations.map(({ inv }) => inv.id);
+    const next = moveInvestmentOrder(ids, String(active.id), String(over.id));
+    if (!next) return;
+    setAssetOrder(next);
+    try {
+      localStorage.setItem(ASSET_ORDER_STORAGE_KEY, JSON.stringify(next));
+    } catch {
+      toast.error("Não foi possível salvar a ordem neste dispositivo");
+    }
+  }, [orderedValuations]);
 
   const totalInvested = valuations.reduce((s, v) => s + v.val.invested, 0);
   const totalGross = valuations.reduce((s, v) => s + v.val.grossValue, 0);
@@ -611,17 +703,27 @@ function InvestPage() {
             <Button onClick={() => openAdd()}>Adicionar primeiro investimento</Button>
           </div>
         ) : (
-          valuations.map(({ inv, val }, i) => {
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleAssetDragEnd}>
+            <SortableContext items={orderedValuations.map(({ inv }) => inv.id)} strategy={verticalListSortingStrategy}>
+              {orderedValuations.map(({ inv, val }, i) => {
             const positive = val.grossPnL >= 0;
             const investmentColor = getInvestmentColor(inv.color, inv.asset_class);
             return (
+              <SortableInvestmentCard key={inv.id} id={inv.id}>
+                {({ attributes, listeners, setActivatorNodeRef }) => (
               <div
-      key={inv.id}
       onClick={() => openEdit(inv)}
       className="interactive-card cursor-pointer rounded-2xl bg-card p-3 animate-stagger-in"
       style={{ animationDelay: `${i * 40}ms` }}
     >
-      <div className="flex items-start gap-2.5">
+      <div
+        ref={setActivatorNodeRef}
+        {...attributes}
+        {...listeners}
+        aria-label={`Arrastar ${inv.name} para reordenar`}
+        className="flex items-start gap-2.5 select-none touch-manipulation cursor-grab active:cursor-grabbing"
+        title="Segure o título e arraste para reordenar"
+      >
         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-base"
           style={{ backgroundColor: `${investmentColor}26` }}>
           <InvestmentIcon assetClass={inv.asset_class} color={investmentColor} />
@@ -667,8 +769,12 @@ function InvestPage() {
         </div>
       </div>
     </div>
+                )}
+              </SortableInvestmentCard>
             );
-          })
+              })}
+            </SortableContext>
+          </DndContext>
         )}
       </div>
 
