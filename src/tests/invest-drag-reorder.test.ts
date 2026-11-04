@@ -69,7 +69,7 @@ describe("Contrato visual e de interação dos cartões de investimento", () => 
     expect(source).toContain('<Menu className="h-4 w-4" />');
     expect(source).toContain('aria-label={`Arrastar ${inv.name} para reordenar`}');
     // Listeners belong to the header so both the title and the handle initiate drag.
-    const header = source.indexOf('      <div\\n        {...listeners}', source.indexOf('orderedValuations.map('));
+    const header = source.indexOf('      <div\n        {...listeners}', source.indexOf('orderedValuations.map('));
     const handle = source.indexOf('<button', header);
     const listeners = source.indexOf("{...listeners}", header);
     const keyboardActivator = source.indexOf('ref={setActivatorNodeRef}', handle);
