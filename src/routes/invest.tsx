@@ -722,7 +722,7 @@ function InvestPage() {
           onClick={(event) => event.stopPropagation()}
           aria-label={`Arrastar ${inv.name} para reordenar`}
           title="Pressione e arraste para reordenar"
-          className="mt-1 flex h-8 w-7 shrink-0 touch-none items-center justify-center rounded-lg text-muted-foreground hover:bg-accent active:bg-accent cursor-grab active:cursor-grabbing"
+          className="mt-0.5 flex h-11 w-11 shrink-0 touch-none items-center justify-center rounded-lg text-muted-foreground hover:bg-accent active:bg-accent cursor-grab active:cursor-grabbing"
         >
           <Menu className="h-4 w-4" />
         </button>
