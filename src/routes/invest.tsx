@@ -22,7 +22,7 @@ import {
   EyeOff,
   ChevronDown,
   ChevronUp,
-  GripVertical,
+  Menu,
 } from "lucide-react";
 import { useState, useEffect, useCallback, useMemo, type ReactNode } from "react";
 import {
@@ -736,7 +736,7 @@ function InvestPage() {
           title="Pressione e arraste para reordenar"
           className="mt-1 flex h-8 w-7 shrink-0 touch-none items-center justify-center rounded-lg text-muted-foreground hover:bg-accent active:bg-accent cursor-grab active:cursor-grabbing"
         >
-          <GripVertical className="h-4 w-4" />
+          <Menu className="h-4 w-4" />
         </button>
         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-base"
           style={{ backgroundColor: `${investmentColor}26` }}>
