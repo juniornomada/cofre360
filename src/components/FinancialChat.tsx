@@ -1,9 +1,10 @@
-import { isValidElement, useState, useRef, useEffect, type ReactNode } from "react";
+import { isValidElement, useState, useRef, useEffect, useMemo, type ReactNode } from "react";
 import { Send, Bot, Sparkles, Loader2, History, MessageSquarePlus } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { extractCategoryDrilldowns } from "@/lib/insights-drilldowns";
 
 type Msg = { role: "user" | "assistant"; content: string };
 type ConversationSummary = {
@@ -185,6 +186,7 @@ export function FinancialChat({ initialPrompt, suggestions }: { initialPrompt?: 
   const autoSentRef = useRef<string | null>(null);
   const [mounted, setMounted] = useState(false);
   const activeSuggestions = suggestions ?? SUGGESTIONS;
+  const categoryDrilldowns = useMemo(() => extractCategoryDrilldowns(messages), [messages]);
   const db = supabase as any;
 
   const getAuthHeaders = async (): Promise<Record<string, string>> => {
@@ -714,6 +716,32 @@ export function FinancialChat({ initialPrompt, suggestions }: { initialPrompt?: 
           </div>
         ))}
 
+        {historyReady && categoryDrilldowns && (
+          <div className="rounded-2xl border border-primary/30 bg-primary/5 p-3 animate-fade-in">
+            <p className="text-xs font-semibold text-foreground">
+              Explorar subcategorias
+            </p>
+            <p className="mt-1 mb-3 text-[11px] leading-4 text-muted-foreground">
+              Toque em uma categoria para comparar as subcategorias de {categoryDrilldowns.earlier} e {categoryDrilldowns.later}, com as principais compras.
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              {categoryDrilldowns.actions.map(({ category, prompt }) => (
+                <button
+                  key={prompt}
+                  type="button"
+                  disabled={isLoading}
+                  onClick={() => void send(prompt)}
+                  aria-label={`Detalhar as subcategorias de ${category}`}
+                  className="interactive-button min-h-11 rounded-xl border border-primary/25 bg-card px-2.5 py-2 text-left text-xs font-medium leading-4 text-foreground transition-colors hover:border-primary/50 hover:bg-accent disabled:opacity-50"
+                >
+                  <span className="block text-[10px] font-normal text-primary">Detalhar</span>
+                  <span className="block break-words">{category}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {isLoading && messages[messages.length - 1]?.role === "user" && (
           <div className="flex items-center gap-2 text-xs text-muted-foreground animate-fade-in">
             <Loader2 className="h-3 w-3 animate-spin" />
@@ -721,7 +749,7 @@ export function FinancialChat({ initialPrompt, suggestions }: { initialPrompt?: 
           </div>
         )}
 
-        {!isLoading && (followUps.length > 0 || loadingFollowUps) && messages.length > 0 && (
+        {!categoryDrilldowns && !isLoading && (followUps.length > 0 || loadingFollowUps) && messages.length > 0 && (
           <div className="pt-1 animate-fade-in">
             <div className="mb-2 flex items-center gap-1.5 text-[10px] text-muted-foreground">
               <Sparkles className="h-3 w-3" />
