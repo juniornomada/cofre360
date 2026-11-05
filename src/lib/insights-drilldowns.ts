@@ -29,7 +29,7 @@ function parseComparison(content: string): CategoryDrilldowns | null {
     seen.add(category.toLowerCase());
     actions.push({
       category,
-      prompt: `Detalhe as subcategorias de ${category} entre ${earlier} e ${later}, comparando os valores e mostrando as maiores compras.`,
+      prompt: `Detalhe as subcategorias de ${category} entre ${earlier} e ${later}, comparando os valores e mostrando os principais lançamentos.`,
     });
   }
   return actions.length ? { earlier, later, actions: actions.slice(0, 12) } : null;
