@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { rankCategoryComparisons, resolveComparisonSelection } from "./comparison.ts";
+import { explicitComparisonMonths, rankCategoryComparisons, resolveComparisonSelection } from "./comparison.ts";
 
 const PROD_ORIGIN = "https://cofre360.vercel.app";
 const ALLOWED_ORIGINS = new Set([
@@ -521,6 +521,9 @@ async function buildDeterministicFinancialAnswer(
     ? `${previousQuestion} ${currentQuestion}`
     : currentQuestion;
   const q = norm(anchorQuestion);
+  const subcategoryComparisonMonths = /subcategor/.test(q) && /detalh|compar/.test(q)
+    ? explicitComparisonMonths(anchorQuestion, now.getFullYear())
+    : null;
 
   // Conselhos e projeções continuam com a IA; números, comparações e composições usam cálculo determinístico.
   if (!detailOnly && /(reduzir|economizar|cortar|dicas?|recomend|projec|por que|porque|como posso|analise|análise)/.test(q)) return null;
@@ -556,11 +559,11 @@ async function buildDeterministicFinancialAnswer(
     /(mes passado|mês passado|mes anterior|mês anterior|aumentaram|diminuiram|diminuíram|esse mes|esse mês)/.test(q);
   const requested = relativeComparison ? null : requestedMonth(anchorQuestion, now);
   // Pares explícitos (09/10, setembro/outubro) e "nos mesmos meses" têm precedência sobre o mês corrente.
-  const key = comparison?.laterKey || requested?.key || monthKey(new Date(now.getFullYear(), now.getMonth(), 1));
+  const key = subcategoryComparisonMonths?.[1] || comparison?.laterKey || requested?.key || monthKey(new Date(now.getFullYear(), now.getMonth(), 1));
   const [keyYear, keyMonth] = key.split("-").map(Number);
   const label = `${MONTHS_LABEL[keyMonth - 1]}/${keyYear}`;
   const previousDate = new Date(keyYear, keyMonth - 2, 1);
-  const previousKey = comparison?.earlierKey || monthKey(previousDate);
+  const previousKey = subcategoryComparisonMonths?.[0] || comparison?.earlierKey || monthKey(previousDate);
   const [previousYear, previousMonth] = previousKey.split("-").map(Number);
   const previousLabel = `${MONTHS_LABEL[previousMonth - 1]}/${previousYear}`;
   const [canonicalCurrent, canonicalPrevious] = await Promise.all([
@@ -642,6 +645,61 @@ async function buildDeterministicFinancialAnswer(
     });
   const allCardNames = Array.from(new Set(expenses.map((row) => row.card).filter((card): card is string => !!card)));
   const matchedCard = allCardNames.sort((a, b) => b.length - a.length).find((card) => q.includes(norm(card)));
+
+  if (subcategoryComparisonMonths && matchedCategory && !detailOnly) {
+    const earlierSubcategories = subcategoryTotals(expenses, previousKey, matchedCategory);
+    const laterSubcategories = subcategoryTotals(expenses, key, matchedCategory);
+    const breakdown = rankCategoryComparisons(earlierSubcategories, laterSubcategories);
+    const earlierTotal = roundMoney(earlierSubcategories.reduce((sum, [, amount]) => sum + amount, 0));
+    const laterTotal = roundMoney(laterSubcategories.reduce((sum, [, amount]) => sum + amount, 0));
+    const subcategoryLines = breakdown.length
+      ? breakdown.map((row) => {
+          const sign = row.difference < 0 ? "-" : "+";
+          return `- **${row.category}** — ${previousLabel}: R$ ${formatBRL(row.before)} → ${label}: R$ ${formatBRL(row.after)} (**${sign}R$ ${formatBRL(Math.abs(row.difference))}**)`;
+        }).join("\n")
+      : "(nenhuma compra identificada nesses períodos)";
+
+    // Valor e data são de compras econômicas inteiras, não das parcelas das faturas.
+    const purchasesInMonth = (periodKey: string, periodLabel: string) => {
+      const relevant = expenses
+        .filter((row) => monthKey(row.date) === periodKey && norm(rootCategory(row.category)) === norm(matchedCategory))
+        .sort((a, b) => b.amount - a.amount || a.name.localeCompare(b.name));
+      const top = relevant.slice(0, 6);
+      const shortNames = compactTransactionNames(top.map((row) => row.name));
+      const entries = top.length
+        ? top.map((row, index) => {
+            const parts = String(row.category || "").split(">").map((part) => part.trim()).filter(Boolean);
+            const sub = parts.length > 1 ? parts.slice(1).join(" > ") : "Outros";
+            return `- **${sub}** · ${shortNames[index]} — R$ ${formatBRL(row.amount)}`;
+          }).join("\n")
+        : "(nenhuma compra identificada)";
+      const remainder = relevant.length > top.length
+        ? `\n_Exibindo as 6 maiores de ${relevant.length} compras em ${periodLabel}._`
+        : "";
+      return `#### Principais compras — ${periodLabel}\n${entries}${remainder}`;
+    };
+
+    const canonicalEarlier = roundMoney(previousCategories.find(([category]) => norm(category) === norm(matchedCategory))?.[1] || 0);
+    const canonicalLater = roundMoney(categories.find(([category]) => norm(category) === norm(matchedCategory))?.[1] || 0);
+    const discrepancy = Math.abs(canonicalEarlier - earlierTotal) > 0.01 || Math.abs(canonicalLater - laterTotal) > 0.01
+      ? "\n\n> ⚠️ Os subtotais das compras podem diferir do relatório canônico por ajustes ou reembolsos. Não foi feito abatimento presumido."
+      : "";
+
+    return `### ${categoryEmoji(matchedCategory)} ${matchedCategory} por subcategoria — ${previousLabel} × ${label}
+
+**Compras identificadas na categoria:**
+- ${previousLabel}: **R$ ${formatBRL(earlierTotal)}**
+- ${label}: **R$ ${formatBRL(laterTotal)}**
+
+#### Comparativo das subcategorias
+${subcategoryLines}
+
+${purchasesInMonth(previousKey, previousLabel)}
+
+${purchasesInMonth(key, label)}
+
+> 💡 Compras parceladas entram pelo valor integral no mês original; os pagamentos posteriores não são somados novamente por categoria.${discrepancy}`;
+  }
 
   if (asksPurchaseComparison && !detailOnly) {
     // O pedido "compare as categorias" exige valores de CADA categoria nos dois meses.
