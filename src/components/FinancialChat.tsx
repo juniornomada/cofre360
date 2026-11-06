@@ -4,6 +4,8 @@ import ReactMarkdown from "react-markdown";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { parseSubcategoryReport } from "@/lib/insights-subcategory-report";
+import { SubcategoryInsightCard } from "@/components/SubcategoryInsightCard";
 import { extractCategoryDrilldowns } from "@/lib/insights-drilldowns";
 
 type Msg = { role: "user" | "assistant"; content: string };
@@ -620,18 +622,25 @@ export function FinancialChat({ initialPrompt, suggestions }: { initialPrompt?: 
           </div>
         )}
 
-        {historyReady && messages.map((msg, i) => (
+        {historyReady && messages.map((msg, i) => {
+          const subcategoryReport = msg.role === "assistant" ? parseSubcategoryReport(msg.content) : null;
+          return (
           <div
             key={i}
             className={cn(
               "rounded-2xl text-sm animate-fade-in",
               msg.role === "assistant"
-                ? "max-w-[97%] self-start border border-border/50 bg-gradient-to-br from-accent/65 via-accent/45 to-background/40 px-4 py-3 text-foreground shadow-sm"
+                ? subcategoryReport
+                  ? "w-full max-w-full self-start border border-border/50 bg-gradient-to-br from-accent/65 via-accent/45 to-background/40 px-3 py-3 text-foreground shadow-sm"
+                  : "max-w-[97%] self-start border border-border/50 bg-gradient-to-br from-accent/65 via-accent/45 to-background/40 px-4 py-3 text-foreground shadow-sm"
                 : "max-w-[88%] self-end ml-auto bg-primary px-4 py-2.5 text-primary-foreground",
             )}
           >
             {msg.role === "assistant" ? (
               <div className="max-w-none text-sm leading-6">
+                {subcategoryReport ? (
+                  <SubcategoryInsightCard report={subcategoryReport} />
+                ) : (
                 <ReactMarkdown
                   components={{
                     h1: ({ children }) => <h1 className="mb-2 mt-1 text-base font-bold text-primary">{children}</h1>,
@@ -709,12 +718,14 @@ export function FinancialChat({ initialPrompt, suggestions }: { initialPrompt?: 
                 >
                   {formatAssistantContent(msg.content) || "..."}
                 </ReactMarkdown>
+                )}
               </div>
             ) : (
               <p className="leading-5">{msg.content}</p>
             )}
           </div>
-        ))}
+          );
+        })}
 
         {historyReady && categoryDrilldowns && (
           <div className="rounded-2xl border border-primary/30 bg-primary/5 p-3 animate-fade-in">
