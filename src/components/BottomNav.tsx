@@ -1,5 +1,7 @@
 import { useLocation, useRouterState } from "@tanstack/react-router";
-import { SmartLink as Link } from "./SmartLink";
+// Use the router's native intent preloading. SmartLink also preloads on viewport,
+// which can start six redundant route requests from the always-visible bottom bar.
+import { Link } from "@tanstack/react-router";
 import { Home, ArrowLeftRight, Landmark, CreditCard, Sparkles, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 
