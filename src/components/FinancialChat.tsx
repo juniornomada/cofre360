@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { parseSubcategoryReport } from "@/lib/insights-subcategory-report";
 import { SubcategoryInsightCard } from "@/components/SubcategoryInsightCard";
 import { extractCategoryDrilldowns } from "@/lib/insights-drilldowns";
+import { FinancialSpeechButton } from "@/components/FinancialSpeechButton";
 
 type Msg = { role: "user" | "assistant"; content: string };
 type ConversationSummary = {
@@ -177,6 +178,7 @@ function CompactAssistantList({ children, ordered = false }: { children?: ReactN
 export function FinancialChat({ initialPrompt, suggestions }: { initialPrompt?: string; suggestions?: string[] } = {}) {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
+  const [voiceRecording, setVoiceRecording] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [followUps, setFollowUps] = useState<string[]>([]);
   const [loadingFollowUps, setLoadingFollowUps] = useState(false);
@@ -217,6 +219,7 @@ export function FinancialChat({ initialPrompt, suggestions }: { initialPrompt?: 
       .map((row: any) => ({ role: row.role, content: String(row.content || "") })) as Msg[];
 
     setConversationId(id);
+    setVoiceRecording(false);
     setMessages(restored);
     setFollowUps([]);
     setShowHistory(false);
@@ -318,6 +321,7 @@ export function FinancialChat({ initialPrompt, suggestions }: { initialPrompt?: 
 
       const created = data as ConversationSummary;
       setConversationId(created.id);
+      setVoiceRecording(false);
       setConversations((prev) => [created, ...prev.filter((item) => item.id !== created.id)].slice(0, 12));
       setMessages([]);
       setInput("");
@@ -388,7 +392,7 @@ export function FinancialChat({ initialPrompt, suggestions }: { initialPrompt?: 
 
   const send = async (text?: string) => {
     const messageText = (text ?? input).trim();
-    if (!messageText || isLoading || !historyReady) return;
+    if (!messageText || isLoading || !historyReady || voiceRecording) return;
 
     const userMsg: Msg = { role: "user", content: messageText };
     const newMessages = [...messages, userMsg];
@@ -528,7 +532,7 @@ export function FinancialChat({ initialPrompt, suggestions }: { initialPrompt?: 
           <button
             type="button"
             onClick={() => setShowHistory((value) => !value)}
-            disabled={!historyReady || isLoading}
+            disabled={!historyReady || isLoading || voiceRecording}
             aria-label="Abrir histórico de conversas"
             title="Histórico"
             className={cn(
@@ -541,7 +545,7 @@ export function FinancialChat({ initialPrompt, suggestions }: { initialPrompt?: 
           <button
             type="button"
             onClick={() => void startNewConversation()}
-            disabled={!historyReady || isLoading}
+            disabled={!historyReady || isLoading || voiceRecording}
             aria-label="Iniciar nova conversa"
             title="Nova conversa"
             className="interactive-button flex h-8 w-8 items-center justify-center rounded-lg border border-primary/30 bg-primary/10 text-primary transition-colors hover:bg-primary/20 disabled:opacity-40"
@@ -789,23 +793,41 @@ export function FinancialChat({ initialPrompt, suggestions }: { initialPrompt?: 
         )}
       </div>
 
-      <div className="flex items-center gap-2 p-3 border-t border-border/50 bg-card">
-        <input
-          type="text"
-          placeholder="Pergunte algo sobre suas finanças..."
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && send()}
-          disabled={isLoading || !historyReady}
-          className="flex-1 rounded-xl bg-accent/40 px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
-        />
-        <button
-          onClick={() => send()}
-          disabled={isLoading || !historyReady || !input.trim()}
-          className="interactive-button flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-violet-500 text-primary-foreground shadow-lg shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-        </button>
+      <div className="border-t border-border/50 bg-card p-3">
+        {voiceRecording && (
+          <p role="status" className="mb-2 flex items-center gap-2 text-xs text-foreground">
+            <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" aria-hidden="true" />
+            Ouvindo… Toque no quadrado para parar, revise o texto e envie.
+          </p>
+        )}
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            aria-label="Pergunta ao Assistente Financeiro"
+            placeholder={voiceRecording ? "Ouvindo sua pergunta…" : "Pergunte algo sobre suas finanças..."}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && !voiceRecording && send()}
+            disabled={isLoading || !historyReady || voiceRecording}
+            className="min-w-0 flex-1 rounded-xl bg-accent/40 px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
+          />
+          <FinancialSpeechButton
+            key={conversationId ?? "new-conversation"}
+            value={input}
+            onTranscript={setInput}
+            onRecordingChange={setVoiceRecording}
+            disabled={isLoading || !historyReady}
+          />
+          <button
+            type="button"
+            aria-label="Enviar pergunta ao Assistente Financeiro"
+            onClick={() => send()}
+            disabled={isLoading || !historyReady || voiceRecording || !input.trim()}
+            className="interactive-button flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-violet-500 text-primary-foreground shadow-lg shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+          </button>
+        </div>
       </div>
     </div>
   );
