@@ -22,9 +22,15 @@ describe("Cartões — registrar desconto de antecipação diretamente da fatura
     expect(action).toContain("dark:border-amber-400/70 dark:bg-amber-500/15");
     expect(action).toContain("dark:text-amber-100");
     expect(action).toContain("focus-visible:ring-2");
-    expect(action).toContain("Abater desconto concedido pelo banco");
+    expect(action).toContain('aria-label="Registrar desconto de antecipação"');
+    expect(action).toContain('title="Abater desconto concedido pelo banco"');
+    expect(action).toContain("Desconto de antecipação");
     expect(action).toContain("ChevronRight");
-    expect(action).toContain("h-10 w-10"); // Touch-friendly icon and descriptive action
+    expect(action).toContain("min-h-11"); // 44px touch target despite a compact visual row
+    expect(action).toContain("whitespace-nowrap"); // Keep the action on a single line
+    expect(action).toContain("h-4 w-4"); // Small icon instead of the old 40px icon tile
+    expect(action).not.toContain("h-10 w-10");
+    expect(action).not.toContain("Abater desconto concedido pelo banco\n");
     expect(action).not.toContain('variant="outline"');
   });
 
