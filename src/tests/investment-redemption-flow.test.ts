@@ -72,7 +72,7 @@ describe("Resgate de investimentos — validacao de valores", () => {
 });
 
 describe("Contrato transacional do resgate", () => {
-  const migration = readFileSync(resolve(process.cwd(),"supabase/migrations/20261113215000_investment_redemptions_atomic.sql"),"utf8");
+  const migration = readFileSync(resolve(process.cwd(),"supabase/migrations/20261113220041_investment_redemptions_atomic.sql"),"utf8");
   const invest = readFileSync(resolve(process.cwd(),"src/routes/invest.tsx"),"utf8");
   const dialog = readFileSync(resolve(process.cwd(),"src/components/InvestmentRedemptionDialog.tsx"),"utf8");
   const home = readFileSync(resolve(process.cwd(),"src/routes/home.tsx"),"utf8");
