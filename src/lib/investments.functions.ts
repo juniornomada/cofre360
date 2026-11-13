@@ -92,7 +92,8 @@ export const refreshInvestmentQuotes = createServerFn({ method: "POST" })
     const { data: investments, error } = await supabase
       .from("investments")
       .select("id, asset_class, asset_code, current_price")
-      .eq("user_id", userId);
+      .eq("user_id", userId)
+      .neq("position_status", "redeemed");
     if (error) throw error;
 
     const items = (investments ?? []) as QuoteUpdate[];
