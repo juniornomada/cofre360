@@ -303,6 +303,7 @@ function InvestPage() {
   useEffect(() => {
     if (loading || portfolio.length === 0) return;
     const stale = portfolio.some((i) => {
+      if (i.position_status === "redeemed") return false;
       const cls = (i.asset_class || "").toLowerCase();
       if (cls !== "cripto" && cls !== "tesouro") return false;
       if (!i.asset_code) return false;
@@ -796,7 +797,7 @@ function InvestPage() {
           </div>
         ) : valuations.length === 0 ? (
           <div className="rounded-2xl bg-card p-8 text-center">
-            <p className="text-sm text-muted-foreground mb-3">Nenhum investimento cadastrado</p>
+            <p className="text-sm text-muted-foreground mb-3">{archivedInvestments.length ? "Nenhum investimento ativo" : "Nenhum investimento cadastrado"}</p>
             <Button onClick={() => openAdd()}>Adicionar primeiro investimento</Button>
           </div>
         ) : (
