@@ -87,6 +87,8 @@ export interface Investment {
   redemption_quote?: string | null;
   redemption_settlement?: string | null;
   last_manual_update?: string | null;
+  position_status?: "active" | "redeemed" | null;
+  redeemed_at?: string | null;
 }
 
 export interface ValuationResult {
