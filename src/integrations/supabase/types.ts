@@ -410,6 +410,78 @@ export type Database = {
         }
         Relationships: []
       }
+      investment_redemptions: {
+        Row: {
+          id: string
+          user_id: string
+          investment_id: string
+          bank_account_id: string
+          asset_name: string
+          redemption_date: string
+          principal: number
+          net_yield: number
+          withheld_tax: number
+          received_total: number
+          principal_before: number
+          principal_after: number
+          is_full: boolean
+          principal_transaction_id: string
+          yield_transaction_id: string | null
+          created_at: string
+        }
+        Insert: {
+          id: string
+          user_id?: string
+          investment_id: string
+          bank_account_id: string
+          asset_name: string
+          redemption_date: string
+          principal: number
+          net_yield?: number
+          withheld_tax?: number
+          received_total: number
+          principal_before: number
+          principal_after: number
+          is_full: boolean
+          principal_transaction_id: string
+          yield_transaction_id?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          investment_id?: string
+          bank_account_id?: string
+          asset_name?: string
+          redemption_date?: string
+          principal?: number
+          net_yield?: number
+          withheld_tax?: number
+          received_total?: number
+          principal_before?: number
+          principal_after?: number
+          is_full?: boolean
+          principal_transaction_id?: string
+          yield_transaction_id?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "investment_redemptions_investment_id_fkey"
+            columns: ["investment_id"]
+            isOneToOne: false
+            referencedRelation: "investments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "investment_redemptions_bank_account_id_fkey"
+            columns: ["bank_account_id"]
+            isOneToOne: false
+            referencedRelation: "bank_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       investments: {
         Row: {
           color: string | null
@@ -433,6 +505,8 @@ export type Database = {
           quantity: number | null
           redemption_quote: string | null
           redemption_settlement: string | null
+          position_status: string
+          redeemed_at: string | null
           risk_level: string | null
           risk_score: number | null
           type: string
@@ -463,6 +537,8 @@ export type Database = {
           quantity?: number | null
           redemption_quote?: string | null
           redemption_settlement?: string | null
+          position_status?: string
+          redeemed_at?: string | null
           risk_level?: string | null
           risk_score?: number | null
           type?: string
@@ -493,6 +569,8 @@ export type Database = {
           quantity?: number | null
           redemption_quote?: string | null
           redemption_settlement?: string | null
+          position_status?: string
+          redeemed_at?: string | null
           risk_level?: string | null
           risk_score?: number | null
           type?: string
@@ -949,6 +1027,19 @@ export type Database = {
       delete_card_payment_atomic: {
         Args: { p_payment_id: string }
         Returns: boolean
+      }
+      redeem_investment: {
+        Args: {
+          p_request_id: string
+          p_investment_id: string
+          p_bank_account_id: string
+          p_redemption_date: string
+          p_principal: number
+          p_net_yield?: number
+          p_withheld_tax?: number
+          p_is_full?: boolean
+        }
+        Returns: string
       }
       financial_month_facts: { Args: { p_month: string }; Returns: Json }
       get_bank_account_balances: {
