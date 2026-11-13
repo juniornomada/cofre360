@@ -49,7 +49,24 @@ alter table public.investment_redemptions enable row level security;
 create policy "Owner may view investment redemptions" on public.investment_redemptions
   for select to authenticated using ((select auth.uid()) = user_id and private.mfa_access_allowed());
 create policy "Owner may create investment redemptions" on public.investment_redemptions
-  for insert to authenticated with check ((select auth.uid()) = user_id and private.mfa_access_allowed());
+  for insert to authenticated with check (
+    (select auth.uid()) = user_id and private.mfa_access_allowed()
+    and exists (
+      select 1 from public.investments i where i.id = investment_id and i.user_id = (select auth.uid())
+    )
+    and exists (
+      select 1 from public.bank_accounts a where a.id = bank_account_id and a.user_id = (select auth.uid())
+    )
+    and exists (
+      select 1 from public.transactions t where t.id = principal_transaction_id and t.user_id = (select auth.uid())
+    )
+    and (
+      yield_transaction_id is null
+      or exists (
+        select 1 from public.transactions t where t.id = yield_transaction_id and t.user_id = (select auth.uid())
+      )
+    )
+  );
 revoke all on public.investment_redemptions from public, anon;
 grant select,insert on public.investment_redemptions to authenticated;
 
