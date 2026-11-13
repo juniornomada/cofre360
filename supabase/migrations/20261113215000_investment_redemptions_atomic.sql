@@ -205,3 +205,32 @@ revoke all on function public.redeem_investment(uuid,uuid,text,date,numeric,nume
   from public, anon;
 grant execute on function public.redeem_investment(uuid,uuid,text,date,numeric,numeric,numeric,boolean)
   to authenticated;
+
+
+-- Impede alterar posteriormente os creditos vinculados ao resgate auditavel.
+-- A UI deve orientar a corrigir um erro via conciliacao, nunca corromper a trilha.
+create or replace function public.cofre_protect_redemption_transactions()
+returns trigger
+language plpgsql
+security invoker
+set search_path = ''
+as $guard$
+begin
+  if exists (
+    select 1 from public.investment_redemptions r
+    where r.principal_transaction_id = old.id
+       or r.yield_transaction_id = old.id
+  ) then
+    raise exception 'Lancamento vinculado a resgate. Corrija pelo fluxo de conciliacao, nao editando o credito.'
+      using errcode='23514';
+  end if;
+  if tg_op='DELETE' then return old; end if;
+  return new;
+end;
+$guard$;
+
+create trigger trg_cofre_protect_redemption_transactions
+before update or delete on public.transactions
+for each row execute function public.cofre_protect_redemption_transactions();
+
+revoke all on function public.cofre_protect_redemption_transactions() from public, anon;
