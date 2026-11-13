@@ -22,6 +22,7 @@ import {
   EyeOff,
   ChevronDown,
   ChevronUp,
+  ArrowDownToLine,
 } from "lucide-react";
 import { useState, useEffect, useCallback, useMemo, type ReactNode } from "react";
 import {
@@ -67,6 +68,8 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { InvestmentRedemptionDialog, type RedemptionAccount } from "@/components/InvestmentRedemptionDialog";
+import { type ValidatedRedemption } from "@/lib/investment-redemption";
 import { useUserPreferences } from "@/hooks/use-user-preferences";
 import {
   PieChart,
@@ -208,6 +211,15 @@ function SortableInvestmentCard({
 function InvestPage() {
   const { balanceVisible, updateBalanceVisible } = useUserPreferences();
   const [portfolio, setPortfolio] = useState<Investment[]>([]);
+  const [redemptionTarget, setRedemptionTarget] = useState<Investment | null>(null);
+  const [redemptionAccounts, setRedemptionAccounts] = useState<RedemptionAccount[]>([]);
+  const [loadingRedemptionAccounts, setLoadingRedemptionAccounts] = useState(false);
+  const [savingRedemption, setSavingRedemption] = useState(false);
+  const [archivedOpen, setArchivedOpen] = useState(false);
+  const [redemptionHistory, setRedemptionHistory] = useState<Array<{
+    id: string; investment_id: string; redemption_date: string; principal: number;
+    net_yield: number; withheld_tax: number; is_full: boolean;
+  }>>([]);
   const [assetOrder, setAssetOrder] = useState<string[]>([]);
   useEffect(() => {
     try {
@@ -253,6 +265,15 @@ function InvestPage() {
       toast.error("Erro ao carregar investimentos");
     } else {
       setPortfolio((data || []) as unknown as Investment[]);
+      const { data: redemptions, error: redemptionsError } = await supabase
+        .from("investment_redemptions")
+        .select("id, investment_id, redemption_date, principal, net_yield, withheld_tax, is_full")
+        .order("redemption_date", { ascending: false });
+      if (redemptionsError) {
+        console.error("Erro ao carregar histórico de resgates:", redemptionsError);
+      } else {
+        setRedemptionHistory(redemptions || []);
+      }
     }
     setLoading(false);
   }, []);
@@ -282,6 +303,7 @@ function InvestPage() {
   useEffect(() => {
     if (loading || portfolio.length === 0) return;
     const stale = portfolio.some((i) => {
+      if (i.position_status === "redeemed") return false;
       const cls = (i.asset_class || "").toLowerCase();
       if (cls !== "cripto" && cls !== "tesouro") return false;
       if (!i.asset_code) return false;
@@ -296,9 +318,22 @@ function InvestPage() {
   // Valuations
   const target = useMemo(() => new Date(targetDate + "T12:00:00"), [targetDate]);
   const valuations = useMemo(
-    () => portfolio.map((inv) => ({ inv, val: valuate(inv, target) })),
+    () => portfolio.filter((inv) => inv.position_status !== "redeemed")
+      .map((inv) => ({ inv, val: valuate(inv, target) })),
     [portfolio, target]
   );
+
+  const archivedInvestments = useMemo(
+    () => portfolio.filter((inv) => inv.position_status === "redeemed"),
+    [portfolio],
+  );
+  const archivedByInvestment = useMemo(() => {
+    const map = new Map<string, typeof redemptionHistory>();
+    for (const row of redemptionHistory) {
+      map.set(row.investment_id, [...(map.get(row.investment_id) || []), row]);
+    }
+    return map;
+  }, [redemptionHistory]);
 
   const orderedValuations = useMemo(
     () => sortInvestmentValuations(valuations, assetOrder),
@@ -372,6 +407,10 @@ function InvestPage() {
   };
 
   const openEdit = (inv: Investment) => {
+    if (inv.position_status === "redeemed") {
+      toast.info("Posição encerrada. Consulte o histórico de resgates abaixo.");
+      return;
+    }
     setEditing(inv);
     setDetailsExpanded(false);
     setForm({
@@ -402,6 +441,10 @@ function InvestPage() {
   };
 
   const handleSave = async () => {
+    if (editing?.position_status === "redeemed") {
+      toast.error("Investimento resgatado não pode ser reaberto por edição.");
+      return;
+    }
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
@@ -495,8 +538,63 @@ function InvestPage() {
     }
   };
 
+  const openRedeem = async (inv: Investment) => {
+    if (inv.position_status === "redeemed") return;
+    if (!["cdb", "tesouro", "pos_fixado"].includes(inv.asset_class || "")) {
+      toast.error("Este fluxo é destinado a investimentos de renda fixa e pós-fixados.");
+      return;
+    }
+    setShowAdd(false);
+    setEditing(null);
+    setDetail(null);
+    setRedemptionTarget(inv);
+    setLoadingRedemptionAccounts(true);
+    try {
+      const { data, error } = await supabase
+        .from("bank_accounts").select("id,name")
+        .order("name", { ascending: true });
+      if (error) throw error;
+      setRedemptionAccounts((data || []).map(({ id, name }) => ({ id, name })));
+    } catch (error: any) {
+      toast.error(error?.message || "Não foi possível carregar as contas de destino.");
+    } finally {
+      setLoadingRedemptionAccounts(false);
+    }
+  };
+
+  const confirmRedemption = async (redemption: ValidatedRedemption, requestId: string): Promise<boolean> => {
+    if (!redemptionTarget || savingRedemption) return false;
+    setSavingRedemption(true);
+    try {
+      const { error } = await supabase.rpc("redeem_investment", {
+        p_request_id: requestId,
+        p_investment_id: redemptionTarget.id,
+        p_bank_account_id: redemption.accountId,
+        p_redemption_date: redemption.redemptionDate,
+        p_principal: redemption.principal,
+        p_net_yield: redemption.netYield,
+        p_withheld_tax: redemption.withheldTax,
+        p_is_full: redemption.isFull,
+      });
+      if (error) throw error;
+      toast.success("Resgate registrado! Capital e juros creditados sem duplicar receitas.");
+      setRedemptionTarget(null);
+      await fetchInvestments();
+      return true;
+    } catch (error: any) {
+      toast.error(error?.message || "Não foi possível concluir o resgate. Nenhum crédito parcial foi criado.");
+      return false;
+    } finally {
+      setSavingRedemption(false);
+    }
+  };
+
   const requestDelete = () => {
     if (!editing) return;
+    if (archivedByInvestment.has(editing.id)) {
+      toast.error("Este investimento tem resgates registrados. O histórico não pode ser apagado.");
+      return;
+    }
     setDeleteId(editing.id);
     setShowAdd(false);
   };
@@ -699,7 +797,7 @@ function InvestPage() {
           </div>
         ) : valuations.length === 0 ? (
           <div className="rounded-2xl bg-card p-8 text-center">
-            <p className="text-sm text-muted-foreground mb-3">Nenhum investimento cadastrado</p>
+            <p className="text-sm text-muted-foreground mb-3">{archivedInvestments.length ? "Nenhum investimento ativo" : "Nenhum investimento cadastrado"}</p>
             <Button onClick={() => openAdd()}>Adicionar primeiro investimento</Button>
           </div>
         ) : (
@@ -777,6 +875,37 @@ function InvestPage() {
           </DndContext>
         )}
       </div>
+
+      {archivedInvestments.length > 0 && (
+        <div className="rounded-2xl border border-border/70 bg-card/60 p-3">
+          <button type="button" onClick={() => setArchivedOpen((v) => !v)}
+            aria-expanded={archivedOpen}
+            className="flex min-h-11 w-full items-center justify-between gap-2 text-left">
+            <span className="text-sm font-semibold">Resgatados · {archivedInvestments.length}</span>
+            {archivedOpen ? <ChevronUp className="h-4 w-4"/> : <ChevronDown className="h-4 w-4"/>}
+          </button>
+          {archivedOpen && (
+            <div className="mt-2 space-y-3">
+              {archivedInvestments.map((inv) => (
+                <div key={inv.id} className="rounded-xl border border-border/60 bg-background/50 p-3">
+                  <p className="break-words text-xs font-semibold">{inv.name}</p>
+                  <p className="mt-1 text-[11px] text-muted-foreground">
+                    Resgatado em {inv.redeemed_at ? inv.redeemed_at.split("-").reverse().join("/") : "data não informada"} · saldo investido R$ 0,00
+                  </p>
+                  {(archivedByInvestment.get(inv.id) || []).map((row) => (
+                    <div key={row.id} className="mt-2 border-t border-border/50 pt-2 text-[11px] leading-5">
+                      <p className="font-semibold">{row.is_full ? "Resgate total" : "Resgate parcial"} · {row.redemption_date.split("-").reverse().join("/")}</p>
+                      <p>Capital devolvido: {fmtBRL(Number(row.principal))}</p>
+                      <p>Juros líquidos: {fmtBRL(Number(row.net_yield))}</p>
+                      {Number(row.withheld_tax) > 0 && <p>IR/IOF retido: {fmtBRL(Number(row.withheld_tax))}</p>}
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Add/Edit Dialog */}
       <Dialog open={showAdd} onOpenChange={(o) => { setShowAdd(o); if (!o) setEditing(null); }}>
@@ -1082,13 +1211,29 @@ function InvestPage() {
           </div>
           <DialogFooter className="flex-row flex-wrap justify-end gap-2 sm:space-x-0">
             <Button variant="outline" onClick={() => { setShowAdd(false); setEditing(null); }}>Cancelar</Button>
-            {editing && <Button type="button" variant="destructive" onClick={requestDelete}>Excluir</Button>}
+            {editing && !archivedByInvestment.has(editing.id) && (
+              <Button type="button" variant="destructive" onClick={requestDelete}>Excluir</Button>
+            )}
+            {editing && ["pos_fixado", "cdb", "tesouro"].includes(String(editing.asset_class)) && (
+              <Button type="button" variant="outline" onClick={() => void openRedeem(editing)}>
+                <ArrowDownToLine className="mr-1 h-4 w-4"/>Resgatar
+              </Button>
+            )}
             <Button onClick={handleSave} disabled={!form.name}>
               {editing ? "Salvar" : "Adicionar"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <InvestmentRedemptionDialog
+        investment={redemptionTarget}
+        accounts={redemptionAccounts}
+        loadingAccounts={loadingRedemptionAccounts}
+        saving={savingRedemption}
+        onClose={() => setRedemptionTarget(null)}
+        onConfirm={confirmRedemption}
+      />
 
       {/* Delete Confirm */}
       <Dialog open={!!deleteId} onOpenChange={(o) => { if (!o && !deleting) cancelDelete(); }}>
@@ -1187,7 +1332,9 @@ function InvestPage() {
                 </div>
                 <DialogFooter>
                   <Button variant="outline" onClick={() => setDetail(null)}>Fechar</Button>
-                  <Button onClick={() => { openEdit(detail); setDetail(null); }}>Editar</Button>
+                  {detail.position_status !== "redeemed" && (
+                    <Button onClick={() => { openEdit(detail); setDetail(null); }}>Editar</Button>
+                  )}
                 </DialogFooter>
               </>
             );

@@ -596,7 +596,7 @@ export function TransactionsPage() {
     tx: Pick<Transaction, "category" | "type"> | CategoryLedgerTransaction,
   ): "income" | "expense" | "refund" | "ignore" => {
     const group = parseCategoryValue(tx.category || "").group;
-    if (group === "Transferências" || group === "Pagamento de Cartão" || group === "Ajustes") return "ignore";
+    if (group === "Transferências" || group === "Pagamento de Cartão" || group === "Ajustes" || group === "Investimentos") return "ignore";
     if ((tx.category || "").trim() === "Receita > Reembolso") return "refund";
     return tx.type === "income" ? "income" : "expense";
   };
