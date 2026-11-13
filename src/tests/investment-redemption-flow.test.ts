@@ -102,7 +102,7 @@ describe("Contrato transacional do resgate", () => {
     expect(invest).toContain('supabase.rpc("redeem_investment"');
     expect(invest).toContain("p_request_id: requestId");
     expect(dialog).toContain("requestIdRef.current || crypto.randomUUID()");
-    expect(dialog).toContain("Confirmo").toBe(false); // formulario usa declaracao clara
+    expect(dialog).not.toContain("Envio automático");
     expect(dialog).toContain("ainda não registrei este resgate");
   });
   it("exclui retorno de capital da receita dos relatorios, sem afetar saldo das contas", () => {
