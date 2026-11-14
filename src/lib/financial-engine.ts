@@ -62,6 +62,7 @@ const allowedKinds = new Set<TransactionKind>([
   "refund",
   "adjustment",
   "investment_movement",
+  "loan_movement",
   "yield",
 ]);
 
