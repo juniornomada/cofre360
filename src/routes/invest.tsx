@@ -68,7 +68,8 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { InvestmentRedemptionDialog, type RedemptionAccount } from "@/components/InvestmentRedemptionDialog";
+import { InvestmentRedemptionDialog } from "@/components/InvestmentRedemptionDialog";
+import type { RedemptionAccount } from "@/components/RedemptionAccountPicker";
 import { type ValidatedRedemption } from "@/lib/investment-redemption";
 import { useUserPreferences } from "@/hooks/use-user-preferences";
 import {
@@ -552,10 +553,12 @@ function InvestPage() {
     setLoadingRedemptionAccounts(true);
     try {
       const { data, error } = await supabase
-        .from("bank_accounts").select("id,name")
+        .from("bank_accounts").select("id,name,icon,color,is_visible")
         .order("name", { ascending: true });
       if (error) throw error;
-      setRedemptionAccounts((data || []).map(({ id, name }) => ({ id, name })));
+      setRedemptionAccounts((data || [])
+        .filter((account) => account.is_visible !== false)
+        .map(({ id, name, icon, color }) => ({ id, name, icon, color })));
     } catch (error: any) {
       toast.error(error?.message || "Não foi possível carregar as contas de destino.");
     } finally {
