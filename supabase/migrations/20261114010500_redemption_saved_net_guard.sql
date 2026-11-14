@@ -111,7 +111,7 @@ begin
     raise exception 'O resgate com prejuizo exige conciliacao especifica.'
       using errcode='22023';
   end if;
-  v_expected_total := round(v_inv.current_net_value * v_ratio,2);
+  v_expected_total := round(v_inv.current_net_value * (v_principal / v_before),2);
   if round(v_principal + v_yield,2) <> v_expected_total then
     raise exception 'Valor liquido da carteira mudou. Atualize a pagina e confira novamente.'
       using errcode='22023';
