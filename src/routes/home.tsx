@@ -331,7 +331,7 @@ function RecoveredHome() {
       const isAdjustment = normalizedCategory === "ajustes";
       const isRefund = normalizedFullCategory === "receita > reembolso";
 
-      if (isTransfer || isAdjustment || normalizedCategory === "investimentos" || isCardPaymentCategory(tx.category)) continue;
+      if (isTransfer || isAdjustment || normalizedCategory === "investimentos" || normalizedCategory === "emprestimos recebidos" || normalizedCategory === "devolucao de emprestimos" || isCardPaymentCategory(tx.category)) continue;
       if (isRefund) {
         expense -= Number(tx.amount || 0);
         continue;
