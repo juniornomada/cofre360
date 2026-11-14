@@ -219,6 +219,7 @@ function InvestPage() {
   const [redemptionHistory, setRedemptionHistory] = useState<Array<{
     id: string; investment_id: string; redemption_date: string; principal: number;
     net_yield: number; withheld_tax: number; is_full: boolean;
+    gross_before: number | null; net_before: number | null;
   }>>([]);
   const [assetOrder, setAssetOrder] = useState<string[]>([]);
   useEffect(() => {
@@ -267,7 +268,7 @@ function InvestPage() {
       setPortfolio((data || []) as unknown as Investment[]);
       const { data: redemptions, error: redemptionsError } = await supabase
         .from("investment_redemptions")
-        .select("id, investment_id, redemption_date, principal, net_yield, withheld_tax, is_full")
+        .select("id, investment_id, redemption_date, principal, net_yield, withheld_tax, is_full, gross_before, net_before")
         .order("redemption_date", { ascending: false });
       if (redemptionsError) {
         console.error("Erro ao carregar histórico de resgates:", redemptionsError);
@@ -897,7 +898,13 @@ function InvestPage() {
                       <p className="font-semibold">{row.is_full ? "Resgate total" : "Resgate parcial"} · {row.redemption_date.split("-").reverse().join("/")}</p>
                       <p>Capital devolvido: {fmtBRL(Number(row.principal))}</p>
                       <p>Juros líquidos: {fmtBRL(Number(row.net_yield))}</p>
-                      {Number(row.withheld_tax) > 0 && <p>IR/IOF retido: {fmtBRL(Number(row.withheld_tax))}</p>}
+                      {row.net_before != null && (
+                        <p>Líquido informado antes do resgate: {fmtBRL(Number(row.net_before))}</p>
+                      )}
+                      {row.gross_before != null && (
+                        <p>Bruto informado antes do resgate: {fmtBRL(Number(row.gross_before))}</p>
+                      )}
+                      {Number(row.withheld_tax) > 0 && <p>IR/IOF retido informado: {fmtBRL(Number(row.withheld_tax))}</p>}
                     </div>
                   ))}
                 </div>
