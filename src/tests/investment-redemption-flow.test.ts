@@ -93,6 +93,7 @@ describe("Resgate automático pelo líquido informado no investimento", () => {
 
 describe("Contrato transacional do resgate", () => {
   const migration = readFileSync(resolve(process.cwd(),"supabase/migrations/20261113220041_investment_redemptions_atomic.sql"),"utf8");
+  const savedNetGuard = readFileSync(resolve(process.cwd(),"supabase/migrations/20261114010500_redemption_saved_net_guard.sql"),"utf8");
   const invest = readFileSync(resolve(process.cwd(),"src/routes/invest.tsx"),"utf8");
   const dialog = readFileSync(resolve(process.cwd(),"src/components/InvestmentRedemptionDialog.tsx"),"utf8");
   const home = readFileSync(resolve(process.cwd(),"src/routes/home.tsx"),"utf8");
@@ -108,6 +109,11 @@ describe("Contrato transacional do resgate", () => {
     expect(migration).toContain("update public.investments");
     expect(migration).toContain("insert into public.investment_redemptions");
     expect(migration).toContain("grant execute on function public.redeem_investment");
+    expect(savedNetGuard).toContain("v_expected_total := round(v_inv.current_net_value * (v_principal / v_before),2)");
+    expect(savedNetGuard).toContain("round(v_principal + v_yield,2) <> v_expected_total");
+    expect(savedNetGuard).toContain("gross_before,net_before");
+    expect(savedNetGuard).toContain("v_inv.current_gross_value,v_inv.current_net_value");
+    expect(savedNetGuard).not.toContain("v_expected_total := round(v_inv.current_net_value * v_ratio");
   });
   it("mantém RLS, histórico e exclusão bloqueada para resgatados", () => {
     expect(migration).toContain("enable row level security");
