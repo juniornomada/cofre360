@@ -552,10 +552,10 @@ function InvestPage() {
     setLoadingRedemptionAccounts(true);
     try {
       const { data, error } = await supabase
-        .from("bank_accounts").select("id,name")
+        .from("bank_accounts").select("id,name,icon,color")
         .order("name", { ascending: true });
       if (error) throw error;
-      setRedemptionAccounts((data || []).map(({ id, name }) => ({ id, name })));
+      setRedemptionAccounts((data || []).map(({ id, name, icon, color }) => ({ id, name, icon, color })));
     } catch (error: any) {
       toast.error(error?.message || "Não foi possível carregar as contas de destino.");
     } finally {
