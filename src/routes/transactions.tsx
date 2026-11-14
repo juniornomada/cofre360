@@ -1426,23 +1426,29 @@ export function TransactionsPage() {
       if (editTx?.id) clearEditDraft(editTx.id);
       savedSuccessfully = true;
     } catch (e) {
-      console.error(e);
-      toast.error("Erro ao salvar transação");
+      console.error("Falha ao salvar edição de transação:", e);
+      const details = e && typeof e === "object" && "message" in e
+        ? String((e as { message?: unknown }).message ?? "")
+        : "";
+      // Keep the form and the entered values intact on failure.
+      toast.error(details
+        ? `Não foi possível salvar: ${details}`
+        : "Não foi possível salvar esta edição. Tente novamente.");
     } finally {
       (document.activeElement as HTMLElement)?.blur();
-      setShowEditDialog(false);
       setShowUpdateScopeDialog(false);
       savingEditRef.current = false;
       setSavingEdit(false);
-      // Reload preference (in case another tab/instance changed it) but keep the current session's choice
       setUpdateScope(readSavedScope());
-      setEditTx(null);
-      if (savedSuccessfully && shouldReturnHome) {
-        window.location.assign("/home");
-        return;
+      if (savedSuccessfully) {
+        setShowEditDialog(false);
+        setEditTx(null);
+        if (shouldReturnHome) {
+          window.location.assign("/home");
+          return;
+        }
+        await Promise.all([fetchTransactions(), fetchBankAccounts()]);
       }
-      fetchTransactions();
-      fetchBankAccounts(); // Refresh balances
     }
   };
 
