@@ -3,6 +3,7 @@ import { ArrowDownToLine, Check, Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { RedemptionAccountPicker, type RedemptionAccount } from "@/components/RedemptionAccountPicker";
+export type { RedemptionAccount } from "@/components/RedemptionAccountPicker";
 import type { Investment } from "@/lib/investments-calc";
 import {
   availablePrincipalCents,
