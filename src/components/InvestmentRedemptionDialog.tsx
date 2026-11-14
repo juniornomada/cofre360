@@ -6,7 +6,7 @@ import type { Investment } from "@/lib/investments-calc";
 import {
   availablePrincipalCents,
   moneyInput,
-  parseBRLMoney,
+  quoteRedemption,
   todayBrazil,
   validateRedemptionDraft,
   type RedemptionDraft,
@@ -15,12 +15,11 @@ import {
 
 export type RedemptionAccount = { id: string; name: string };
 
+const LAST_ACCOUNT_KEY = "cofre360-last-redemption-account";
 const money = (value: number) => value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 const newDraft = (inv: Investment): RedemptionDraft => ({
   mode: "total",
   principalText: moneyInput(availablePrincipalCents(inv)),
-  netYieldText: "0,00",
-  taxText: "0,00",
   accountId: "",
   date: todayBrazil(),
 });
@@ -43,7 +42,20 @@ export function InvestmentRedemptionDialog({
     setDraft(investment ? newDraft(investment) : null);
     requestIdRef.current = null;
     setVerified(false);
-  }, [investment?.id]); // each position has its own untouched draft
+  }, [investment?.id]);
+
+  // Convenient default only when it matches a real account. User still reviews it.
+  useEffect(() => {
+    if (!investment || !accounts.length) return;
+    let preferred = "";
+    try { preferred = localStorage.getItem(LAST_ACCOUNT_KEY) || ""; } catch { /* optional */ }
+    const match = accounts.find((account) => account.id === preferred);
+    if (match || accounts.length === 1) {
+      setDraft((previous) => previous && !previous.accountId
+        ? { ...previous, accountId: match?.id || accounts[0].id }
+        : previous);
+    }
+  }, [investment?.id, accounts]);
 
   if (!investment || !draft) return null;
   const setField = <K extends keyof RedemptionDraft>(key: K, value: RedemptionDraft[K]) => {
@@ -51,20 +63,27 @@ export function InvestmentRedemptionDialog({
     requestIdRef.current = null;
     setVerified(false);
   };
+
+  const quote = quoteRedemption(investment, draft.mode, draft.principalText);
+  const values = quote.value;
   const result = validateRedemptionDraft(investment, draft);
-  const principalCents = draft.mode === "total" ? availablePrincipalCents(investment) : parseBRLMoney(draft.principalText);
-  const netYieldCents = parseBRLMoney(draft.netYieldText);
-  const taxCents = parseBRLMoney(draft.taxText);
-  const total = principalCents !== null && netYieldCents !== null ? (principalCents + netYieldCents) / 100 : null;
-  const remaining = availablePrincipalCents(investment) - (principalCents ?? 0);
   const accountName = accounts.find((account) => account.id === draft.accountId)?.name || "Conta não selecionada";
+  const updatedAt = investment.last_manual_update
+    ? new Date(investment.last_manual_update).toLocaleString("pt-BR", {
+      timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit",
+      year: "numeric", hour: "2-digit", minute: "2-digit",
+    })
+    : null;
 
   const submit = async () => {
-    if (saving || !verified || !result.value) return;
+    if (saving || !verified || !result.value || !draft.accountId) return;
     const requestId = requestIdRef.current || crypto.randomUUID();
     requestIdRef.current = requestId;
     const succeeded = await onConfirm(result.value, requestId);
-    if (succeeded) requestIdRef.current = null;
+    if (succeeded) {
+      try { localStorage.setItem(LAST_ACCOUNT_KEY, result.value.accountId); } catch { /* optional */ }
+      requestIdRef.current = null;
+    }
   };
 
   return (
@@ -76,11 +95,18 @@ export function InvestmentRedemptionDialog({
             Resgatar investimento
           </DialogTitle>
         </DialogHeader>
+
         <div className="space-y-3">
           <div className="rounded-xl border border-border bg-card p-3">
             <p className="break-words text-sm font-semibold">{investment.name}</p>
-            <p className="mt-1 text-xs text-muted-foreground">Capital disponível</p>
-            <p className="text-lg font-bold tabular-nums">{money(availablePrincipalCents(investment) / 100)}</p>
+            <p className="mt-2 text-[11px] text-muted-foreground">Valor líquido salvo na carteira</p>
+            <p className="text-2xl font-bold tabular-nums">
+              {investment.current_net_value == null ? "Não informado" : money(Number(investment.current_net_value))}
+            </p>
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              {updatedAt ? `Atualizado em ${updatedAt}` : "Sem data de atualização manual"}
+              {" · "}Valor informado, não consultado em tempo real na XP
+            </p>
           </div>
 
           <fieldset className="space-y-2">
@@ -97,34 +123,23 @@ export function InvestmentRedemptionDialog({
               ))}
             </div>
           </fieldset>
+
           {draft.mode === "partial" && (
             <label className="block space-y-1 text-xs font-semibold">
-              Capital que está voltando (R$)
+              Quanto do capital deseja resgatar (R$)?
               <input inputMode="decimal" autoComplete="off" value={draft.principalText}
                 onChange={(event) => setField("principalText", event.target.value)}
                 className="h-11 w-full rounded-xl border border-border bg-card px-3 text-sm"
                 aria-label="Valor do capital resgatado" disabled={saving}/>
             </label>
           )}
-          <div className="grid grid-cols-2 gap-2">
-            <label className="block min-w-0 space-y-1 text-xs font-semibold">
-              Rendimento líquido (R$)
-              <input inputMode="decimal" autoComplete="off" value={draft.netYieldText}
-                onChange={(event) => setField("netYieldText", event.target.value)}
-                className="h-11 w-full rounded-xl border border-border bg-card px-3 text-sm"
-                aria-label="Juros líquidos recebidos" disabled={saving}/>
-            </label>
-            <label className="block min-w-0 space-y-1 text-xs font-semibold">
-              IR/IOF retido (R$)
-              <input inputMode="decimal" autoComplete="off" value={draft.taxText}
-                onChange={(event) => setField("taxText", event.target.value)}
-                className="h-11 w-full rounded-xl border border-border bg-card px-3 text-sm"
-                aria-label="Impostos retidos na fonte" disabled={saving}/>
-            </label>
-          </div>
-          <p className="text-[11px] leading-4 text-muted-foreground">
-            Informe os juros já líquidos de IR/IOF. Os impostos acima ficam no histórico e não serão descontados novamente.
-          </p>
+
+          {values?.estimated && (
+            <p className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 text-xs leading-5 text-foreground">
+              No resgate parcial, o líquido é uma estimativa proporcional. Confira no extrato da XP:
+              o valor efetivamente creditado pode ser diferente.
+            </p>
+          )}
 
           <label className="block space-y-1 text-xs font-semibold">
             Conta que recebeu o dinheiro
@@ -143,26 +158,43 @@ export function InvestmentRedemptionDialog({
           </label>
 
           <div className="space-y-2 rounded-xl border border-primary/30 bg-primary/5 p-3">
-            <p className="text-xs font-bold">Conferência antes de registrar</p>
-            <div className="flex justify-between gap-2 text-xs"><span>Capital devolvido</span><strong>{principalCents === null ? "—" : money(principalCents / 100)}</strong></div>
-            <div className="flex justify-between gap-2 text-xs"><span>Juros líquidos (receita)</span><strong>{netYieldCents === null ? "—" : money(netYieldCents / 100)}</strong></div>
-            <div className="flex justify-between gap-2 border-t border-border/50 pt-2 text-sm font-semibold">
-              <span>Entrada em {accountName}</span><strong className="tabular-nums">{total === null ? "—" : money(total)}</strong>
+            <p className="text-xs font-bold">{values?.estimated ? "Estimativa do resgate" : "Conferência automática do resgate"}</p>
+            <div className="flex justify-between gap-2 text-xs">
+              <span>Capital devolvido</span><strong className="tabular-nums">{values ? money(values.principalCents / 100) : "—"}</strong>
             </div>
-            <div className="flex justify-between gap-2 text-xs"><span>Capital que permanece investido</span><strong>{remaining < 0 ? "—" : money(remaining / 100)}</strong></div>
+            <div className="flex justify-between gap-2 text-xs">
+              <span>Rendimento líquido (receita)</span><strong className="tabular-nums">{values ? money(values.netYieldCents / 100) : "—"}</strong>
+            </div>
+            <div className="flex justify-between gap-2 border-t border-border/50 pt-2 text-sm font-semibold">
+              <span className="min-w-0 break-words">Entrada em {accountName}</span>
+              <strong className="shrink-0 tabular-nums">{values ? money(values.totalCents / 100) : "—"}</strong>
+            </div>
+            <div className="flex justify-between gap-2 text-xs">
+              <span>Capital que permanece investido</span><strong className="tabular-nums">{values ? money(values.capitalRemainingCents / 100) : "—"}</strong>
+            </div>
+            {values?.grossBeforeCents != null && (
+              <div className="border-t border-border/50 pt-2 text-[11px] leading-4 text-muted-foreground">
+                Bruto cadastrado: {money(values.grossBeforeCents / 100)}.
+                {" "}Diferença bruto/líquido: {money((values.grossNetDifferenceCents ?? 0) / 100)}
+                {" "}— pode incluir impostos e taxas; não será descontada novamente.
+              </div>
+            )}
           </div>
+
           <p className="text-[11px] leading-4 text-muted-foreground">
-            Isso cria o crédito do capital e dos juros na conta e atualiza a posição em uma operação única.
-            Se você já lançou esses valores manualmente, não confirme: evitaria uma entrada duplicada.
+            O capital e o rendimento serão creditados na conta em uma operação única.
+            O retorno do capital não entra como receita. Se já lançou esses valores manualmente,
+            não confirme para evitar duplicação.
           </p>
 
           {result.error && <p role="alert" className="text-xs text-destructive">{result.error}</p>}
           <label className="flex min-h-11 items-center gap-2 rounded-xl border border-border p-2 text-xs">
-            <input type="checkbox" checked={verified} disabled={saving}
+            <input type="checkbox" checked={verified} disabled={saving || !result.value}
               onChange={(event) => setVerified(event.target.checked)} className="h-4 w-4 shrink-0"/>
-            <span>Conferi o extrato e ainda não registrei este resgate em Transações.</span>
+            <span>Conferi o líquido do extrato e ainda não registrei este resgate em Transações.</span>
           </label>
         </div>
+
         <DialogFooter className="mt-2 flex-row justify-end gap-2">
           <Button type="button" variant="outline" disabled={saving} onClick={onClose}>Cancelar</Button>
           <Button type="button" disabled={saving || !result.value || !verified} onClick={() => void submit()}>
