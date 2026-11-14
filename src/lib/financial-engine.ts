@@ -10,6 +10,7 @@ export type TransactionKind =
   | "refund"
   | "adjustment"
   | "investment_movement"
+  | "loan_movement"
   | "yield";
 
 export type FinancialTransaction = {
