@@ -35,7 +35,7 @@ describe("Empréstimo recebido e devolução: classificação patrimonial", () =
     expect(computeMonthlyFinancialSummary(withInterest, [], "2026-11")).toMatchObject({ income: 0, expense: 50, result: -50 });
   });
   it("mantém saldos e histórico, mas exclui principal dos relatórios", () => {
-    const db = readFileSync(resolve(process.cwd(), "supabase/migrations/20261114143000_loan_principal_classification.sql"), "utf8");
+    const db = readFileSync(resolve(process.cwd(), "supabase/migrations/20261114134104_loan_principal_classification.sql"), "utf8");
     const quick = readFileSync(resolve(process.cwd(), "src/components/QuickAddTransactionDialog.tsx"), "utf8");
     const home = readFileSync(resolve(process.cwd(), "src/routes/home.tsx"), "utf8");
     const transactions = readFileSync(resolve(process.cwd(), "src/routes/transactions.tsx"), "utf8");
