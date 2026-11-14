@@ -164,6 +164,15 @@ export const categoryTree: CategoryGroup[] = [
     ],
   },
   {
+    label: "Doações",
+    icon: "❤️",
+    type: "expense",
+    subcategories: [
+      { label: "Doação", icon: "❤️" },
+      { label: "Outros", icon: "❤️" },
+    ],
+  },
+  {
     label: "Transferências",
     icon: "🔄",
     type: "expense",
