@@ -598,6 +598,15 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
         return;
       }
 
+      // Empréstimo recebido/devolvido é fluxo de caixa, não receita/despesa.
+      // Exige conta bancária e impede lançar principal em cartão ou parcelamento.
+      const isLoanPrincipal = /^(Empréstimos recebidos|Devolução de empréstimos)(\s*>|$)/.test(newTx.category || "");
+      if (isLoanPrincipal && (!newTx.bank_account_id || (newTx.card && newTx.card !== "Nenhum") || installmentEnabled)) {
+        toast.error("Para empréstimo, selecione uma conta bancária e não use cartão ou parcelas. Registre juros separadamente.");
+        setIsSubmitting(false);
+        return;
+      }
+
       console.log("QuickAdd: Standard transaction validation", { bank_account_id: newTx.bank_account_id, card: newTx.card });
       const pendingCardValue = newTx.card === "Nenhum" ? null : newTx.card;
       const willCreatePending = shouldAutoPendScheduledTransaction(
@@ -621,7 +630,7 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
       // selecionada — evita que estornos/reembolsos entrem como despesa na fatura.
       const categoryRoot = (newTx.category || "").split(">")[0].trim().toLowerCase();
       const finalType: "income" | "expense" =
-        categoryRoot === "receita" || categoryRoot === "receitas" ? "income" : newTx.type;
+        categoryRoot === "receita" || categoryRoot === "receitas" || categoryRoot === "empréstimos recebidos" ? "income" : newTx.type;
     let baseDate: Date;
     try {
       baseDate = parseQuickAddDate(newTx.date) || new Date();
@@ -980,6 +989,12 @@ export function QuickAddTransactionDialog({ open, onOpenChange, initialType = "e
                     </div>
                   )}
                 </div>
+              {(/^(Empréstimos recebidos|Devolução de empréstimos)(\s*>|$)/.test(newTx.category || "")) && (
+                <p className="rounded-lg border border-primary/25 bg-primary/5 px-2.5 py-2 text-[11px] leading-relaxed text-foreground" role="status">
+                  Este lançamento movimenta apenas o saldo da conta. O principal não conta como receita nem despesa.
+                  Informe a pessoa no nome, por exemplo: Empréstimo (mãe). Juros pagos são lançados separadamente em Dívidas/Parcelas &gt; Juros de empréstimo.
+                </p>
+              )}
               <CategoryPicker
                 value={newTx.category}
                 onChange={(val, icon) => setNewTx({ ...newTx, category: val, icon })}
