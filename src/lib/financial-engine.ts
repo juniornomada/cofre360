@@ -10,6 +10,7 @@ export type TransactionKind =
   | "refund"
   | "adjustment"
   | "investment_movement"
+  | "loan_movement"
   | "yield";
 
 export type FinancialTransaction = {
@@ -61,6 +62,7 @@ const allowedKinds = new Set<TransactionKind>([
   "refund",
   "adjustment",
   "investment_movement",
+  "loan_movement",
   "yield",
 ]);
 
@@ -88,6 +90,7 @@ export function inferTransactionKind(tx: Pick<FinancialTransaction, "transaction
   if (full === "receita > reembolso" || full.startsWith("receita > reembolso >")) return "refund";
   if (full === "receita > juros" || full.startsWith("receita > juros >")) return "yield";
   if (root === "investimento" || root === "investimentos") return "investment_movement";
+  if (root === "emprestimos recebidos" || root === "devolucao de emprestimos") return "loan_movement";
   return tx.type === "income" ? "income" : "expense";
 }
 

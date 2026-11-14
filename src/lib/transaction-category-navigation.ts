@@ -33,7 +33,7 @@ const expenseCategoryNames = new Set(
 );
 
 export const isTechnicalTransactionCategory = (group: string): boolean =>
-  group === "Transferências" || group === "Pagamento de Cartão";
+  group === "Transferências" || group === "Pagamento de Cartão" || group === "Devolução de empréstimos";
 
 /**
  * Navigation must be based on entries that the category drilldown can actually

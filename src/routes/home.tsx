@@ -331,7 +331,7 @@ function RecoveredHome() {
       const isAdjustment = normalizedCategory === "ajustes";
       const isRefund = normalizedFullCategory === "receita > reembolso";
 
-      if (isTransfer || isAdjustment || normalizedCategory === "investimentos" || isCardPaymentCategory(tx.category)) continue;
+      if (isTransfer || isAdjustment || normalizedCategory === "investimentos" || normalizedCategory === "emprestimos recebidos" || normalizedCategory === "devolucao de emprestimos" || isCardPaymentCategory(tx.category)) continue;
       if (isRefund) {
         expense -= Number(tx.amount || 0);
         continue;
@@ -354,7 +354,7 @@ function RecoveredHome() {
       if (!d || d.getFullYear() !== selectedMonth.getFullYear() || d.getMonth() !== selectedMonth.getMonth()) continue;
       const rawCategory = (tx.category || "Sem categoria").trim();
       const mainCategory = rawCategory.split(" > ")[0]?.trim() || "Sem categoria";
-      if (mainCategory === "Transferência" || mainCategory === "Transferências" || isCardPaymentCategory(mainCategory)) continue;
+      if (mainCategory === "Transferência" || mainCategory === "Transferências" || mainCategory === "Devolução de empréstimos" || isCardPaymentCategory(mainCategory)) continue;
       totalsInCents[mainCategory] = addCurrencyCents(totalsInCents[mainCategory] || 0, tx.amount);
     }
     return Object.entries(totalsInCents)

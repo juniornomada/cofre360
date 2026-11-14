@@ -158,6 +158,7 @@ export const categoryTree: CategoryGroup[] = [
     subcategories: [
       { label: "Financiamento", icon: "🏦" },
       { label: "Empréstimo", icon: "💸" },
+      { label: "Juros de empréstimo", icon: "📉" },
       { label: "Consórcio", icon: "📋" },
       { label: "Outros", icon: "📋" },
     ],
@@ -170,6 +171,22 @@ export const categoryTree: CategoryGroup[] = [
       { label: "PIX", icon: "⚡" },
       { label: "TED/DOC", icon: "🔄" },
       { label: "Outros", icon: "🔄" },
+    ],
+  },
+  {
+    label: "Devolução de empréstimos",
+    icon: "↩️",
+    type: "expense",
+    subcategories: [
+      { label: "Principal devolvido", icon: "↩️" },
+    ],
+  },
+  {
+    label: "Empréstimos recebidos",
+    icon: "🤝",
+    type: "income",
+    subcategories: [
+      { label: "Entrada de empréstimo", icon: "🤝" },
     ],
   },
   {
