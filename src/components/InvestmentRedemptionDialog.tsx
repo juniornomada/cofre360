@@ -3,6 +3,7 @@ import { ArrowDownToLine, Check, Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import type { Investment } from "@/lib/investments-calc";
+import { RedemptionAccountPicker, type RedemptionAccount } from "@/components/RedemptionAccountPicker";
 import {
   availablePrincipalCents,
   moneyInput,
@@ -13,7 +14,6 @@ import {
   type ValidatedRedemption,
 } from "@/lib/investment-redemption";
 
-export type RedemptionAccount = { id: string; name: string };
 
 const LAST_ACCOUNT_KEY = "cofre360-last-redemption-account";
 const money = (value: number) => value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -141,15 +141,13 @@ export function InvestmentRedemptionDialog({
             </p>
           )}
 
-          <label className="block space-y-1 text-xs font-semibold">
-            Conta que recebeu o dinheiro
-            <select value={draft.accountId} disabled={saving || loadingAccounts}
-              onChange={(event) => setField("accountId", event.target.value)}
-              className="min-h-11 w-full rounded-xl border border-border bg-card px-3 text-sm">
-              <option value="">{loadingAccounts ? "Carregando contas..." : "Selecione uma conta"}</option>
-              {accounts.map((account) => <option value={account.id} key={account.id}>{account.name}</option>)}
-            </select>
-          </label>
+          <RedemptionAccountPicker
+            accounts={accounts}
+            value={draft.accountId}
+            onChange={(id) => setField("accountId", id)}
+            disabled={saving}
+            loading={loadingAccounts}
+          />
           <label className="block space-y-1 text-xs font-semibold">
             Data em que o dinheiro entrou na conta
             <input type="date" value={draft.date} max={todayBrazil()}
