@@ -269,6 +269,13 @@ function CardsPage() {
   const [anticipationLoading, setAnticipationLoading] = useState(false);
   const [anticipationSaving, setAnticipationSaving] = useState(false);
   const anticipationSavingRef = useRef(false);
+  const [refundDialogOpen, setRefundDialogOpen] = useState(false);
+  const [refundAmount, setRefundAmount] = useState("");
+  const [refundDescription, setRefundDescription] = useState("");
+  const [refundSaving, setRefundSaving] = useState(false);
+  const refundSavingRef = useRef(false);
+  const refundIdRef = useRef<string | null>(null);
+  const [refundPeriodKey, setRefundPeriodKey] = useState("");
   const [discountDialogOpen, setDiscountDialogOpen] = useState(false);
   const [discountPeriodKey, setDiscountPeriodKey] = useState("");
   const [discountDescription, setDiscountDescription] = useState("");
@@ -686,6 +693,49 @@ function CardsPage() {
     }
   };
 
+  const saveManualRefund = async () => {
+    if (refundSavingRef.current || !invoiceCard || !refundIdRef.current) return;
+    const period = invoicePeriods.find((item) => getInvoicePeriodKey(item) === refundPeriodKey);
+    if (!period) { toast.error("Selecione uma fatura válida."); return; }
+    const cents = parseBrazilianDiscountCents(refundAmount);
+    if (!cents) { toast.error("Informe um valor de estorno válido."); return; }
+    refundSavingRef.current = true;
+    setRefundSaving(true);
+    try {
+      const date = discountDateForInvoice(period);
+      const { data: auth, error: authError } = await supabase.auth.getUser();
+      if (authError || !auth.user) throw new Error("Sessão expirada.");
+      const detail = refundDescription.trim().replace(/\\s+/g, " ").slice(0, 110);
+      const { error } = await supabase.from("transactions").upsert(
+        sanitizeTransactionWrite({
+          id: refundIdRef.current,
+          user_id: auth.user.id,
+          name: detail ? `Estorno de compra — ${detail}` : "Estorno de compra",
+          category: "Receita > Reembolso",
+          icon: "↩️",
+          type: "income",
+          card: invoiceCard.name,
+          bank_account_id: null,
+          amount: cents / 100,
+          date,
+        }),
+        { onConflict: "id", ignoreDuplicates: true },
+      );
+      if (error) throw error;
+      setRefundDialogOpen(false);
+      setRefundAmount("");
+      setRefundDescription("");
+      refundIdRef.current = null;
+      toast.success("Estorno registrado como crédito na fatura.");
+      await refreshInvoiceSilently(invoiceCard);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Erro ao registrar estorno.");
+    } finally {
+      refundSavingRef.current = false;
+      setRefundSaving(false);
+    }
+  };
+
   const saveAnticipationDiscount = async () => {
     if (discountSavingRef.current || !invoiceCard || !discountPeriod || discountValidation || !discountIdRef.current) return;
     discountSavingRef.current = true;
@@ -982,6 +1032,14 @@ function CardsPage() {
         Math.round(getPaidTotalForPeriod(invoiceCard.id, discountPeriod) * 100),
       )
     : "Selecione uma fatura válida.";
+  const openRefundDialog = () => {
+    if (!invoiceCard || !activePeriod) return;
+    setRefundPeriodKey(getInvoicePeriodKey(activePeriod));
+    setRefundAmount("");
+    setRefundDescription("");
+    refundIdRef.current = crypto.randomUUID();
+    setRefundDialogOpen(true);
+  };
   const openDiscountDialog = () => {
     if (!activePeriod || !invoiceCard) return;
     if (activePeriod.endDate <= new Date()) {
@@ -2455,6 +2513,16 @@ function CardsPage() {
                     </div>
                     <button
                       type="button"
+                      data-testid="invoice-refund-action"
+                      onClick={openRefundDialog}
+                      className="flex min-h-11 w-full items-center gap-2 rounded-lg border border-emerald-500/50 bg-emerald-500/10 px-2.5 py-1.5 text-left text-foreground hover:bg-emerald-500/20"
+                    >
+                      <RotateCcw className="h-4 w-4 shrink-0 text-emerald-600" />
+                      <span className="min-w-0 flex-1 text-[12px] font-semibold">Registrar estorno</span>
+                      <ChevronRight className="h-4 w-4 shrink-0" />
+                    </button>
+                    <button
+                      type="button"
                       data-testid="invoice-discount-action"
                       onClick={openDiscountDialog}
                       aria-label="Registrar desconto de antecipação"
@@ -3602,6 +3670,34 @@ function CardsPage() {
            )}
          </DialogContent>
        </Dialog>
+
+      <Dialog open={refundDialogOpen} onOpenChange={(open) => {
+        if (!refundSavingRef.current) setRefundDialogOpen(open);
+      }}>
+        <DialogContent className="max-w-[calc(100vw-1rem)] sm:max-w-sm mx-auto rounded-2xl p-4 sm:p-6">
+          <DialogHeader><DialogTitle>Registrar estorno de compra</DialogTitle></DialogHeader>
+          <div className="flex flex-col gap-3">
+            <p className="text-xs text-muted-foreground">
+              Crédito na fatura selecionada de {invoiceCard?.name}. As parcelas existentes não serão alteradas.
+            </p>
+            <div className="space-y-1">
+              <Label htmlFor="refund-detail">Compra ou motivo (opcional)</Label>
+              <Input id="refund-detail" value={refundDescription} onChange={(e) => setRefundDescription(e.target.value.slice(0, 110))} placeholder="Ex.: Compra cancelada no marketplace" />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="refund-amount">Valor creditado (R$)</Label>
+              <Input id="refund-amount" inputMode="decimal" placeholder="0,00" value={refundAmount} onChange={(e) => setRefundAmount(e.target.value)} />
+            </div>
+            <p className="text-[11px] text-muted-foreground">Não movimenta conta bancária. Registre somente o valor efetivamente creditado pelo emissor.</p>
+            <DialogFooter className="flex-row gap-2">
+              <Button variant="outline" className="flex-1" disabled={refundSaving} onClick={() => setRefundDialogOpen(false)}>Cancelar</Button>
+              <Button className="flex-1" disabled={refundSaving || !parseBrazilianDiscountCents(refundAmount)} onClick={saveManualRefund}>
+                {refundSaving ? "Salvando…" : "Registrar"}
+              </Button>
+            </DialogFooter>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Dedicated invoice credit: a discount is not a bank payment or cash income. */}
       <Dialog open={discountDialogOpen} onOpenChange={(open) => {
