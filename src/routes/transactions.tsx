@@ -785,9 +785,19 @@ export function TransactionsPage() {
       ? rawFiltered
       : includeMissingMonthlyCardPurchases(rawFiltered, categoryListTransactions);
 
+  // Show the posted credit date, not the original purchase date, for refunds.
+  // The economic purchase date remains available for monthly accounting.
+  const displayedTransactions = filtered.map((tx) => {
+    if ((tx.category || "").trim() !== "Receita > Reembolso") return tx;
+    const posted = transactions.find((item) => item.id === tx.id);
+    const ledger = categoryLedgerTransactions.find((item) => item.id === tx.id);
+    const actualDate = posted?.date || ledger?.date;
+    return actualDate && actualDate !== tx.date ? { ...tx, date: actualDate } : tx;
+  });
+
   const activeFilterCount = (filterStartDate || filterEndDate ? 1 : 0) + (minAmt !== null || maxAmt !== null ? 1 : 0) + (filterType !== "all" ? 1 : 0) + (sortBy !== "date-desc" ? 1 : 0) + (filterAccountId ? 1 : 0);
 
-  const sortedTransactions = [...filtered].sort((a, b) => {
+  const sortedTransactions = [...displayedTransactions].sort((a, b) => {
     if (sortBy === "date-desc") {
       const dateA = parseTxDate(a.date, a.created_at)?.getTime() ?? 0;
       const dateB = parseTxDate(b.date, b.created_at)?.getTime() ?? 0;
