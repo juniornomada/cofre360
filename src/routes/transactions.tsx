@@ -707,7 +707,11 @@ export function TransactionsPage() {
       icon: original?.icon || getCategoryIcon(group),
       name: tx.name || original?.name || "Transação",
       category: categoryValue,
-      date: tx.date || tx.purchase_date || original?.date || "",
+      // Refunds retain their actual credit date in the list. purchase_date
+      // is reserved for assigning the economic refund to the original purchase.
+      date: categoryValue.trim() === "Receita > Reembolso"
+        ? (original?.date || tx.date || "")
+        : (tx.date || tx.purchase_date || original?.date || ""),
       purchase_date: tx.purchase_date ?? tx.date ?? original?.purchase_date ?? null,
       amount: displayedAmounts.displayAmount,
       economic_amount: displayedAmounts.economicAmount,
