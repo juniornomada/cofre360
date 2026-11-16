@@ -861,6 +861,15 @@ export function TransactionsPage() {
 
   const displayTotalIncome = totalIncome;
   const displayTotalExpense = totalExpense;
+  // Monthly economic summary uses purchase-date recognition for expenses and
+  // card billing-cycle recognition for refunds. Do not sum the visible
+  // installment list: it follows invoice dates and is a different view.
+  const monthRefundAmount = !isYieldView && !hasEconomicDrilldown && canonicalFacts
+    ? Math.max(0, -(canonicalFacts.expenseBreakdown || [])
+        .filter((row) => row.category === "Reembolsos (abatimento)")
+        .reduce((sum, row) => sum + Number(row.amount || 0), 0))
+    : 0;
+  const monthGrossExpense = displayTotalExpense + monthRefundAmount;
 
   const generatePDF = () => {
     try {
@@ -2044,6 +2053,14 @@ export function TransactionsPage() {
           </p>
         </button>
       </section>
+      {!isYieldView && !hasEconomicDrilldown && monthRefundAmount > 0 && (
+        <div data-testid="monthly-refund-breakdown" className="rounded-xl border border-border/50 bg-card px-3 py-2 text-xs space-y-1">
+          <div className="flex justify-between gap-2"><span>Despesas do mês (compras)</span><strong>R$ {formatCurrency(monthGrossExpense)}</strong></div>
+          <div className="flex justify-between gap-2 text-emerald-600"><span>Estornos abatidos na competência</span><strong>- R$ {formatCurrency(monthRefundAmount)}</strong></div>
+          <div className="flex justify-between gap-2 border-t border-border/50 pt-1"><span>Despesas líquidas</span><strong>{displayTotalExpense < 0 ? "+ " : ""}R$ {formatCurrency(Math.abs(displayTotalExpense))}</strong></div>
+          <p className="text-[10px] text-muted-foreground">Compras reconhecidas no mês de origem; estornos de cartão na competência da fatura. Parcelas exibidas abaixo podem pertencer a compras anteriores.</p>
+        </div>
+      )}
       {isYieldView && (
         <div className="flex items-center justify-between rounded-xl border border-primary/20 bg-primary/5 px-3 py-2">
           <span className="text-xs font-semibold text-muted-foreground">Rendimento líquido</span>
