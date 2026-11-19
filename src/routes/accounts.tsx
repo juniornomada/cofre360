@@ -164,7 +164,9 @@ function SortableAccountItem({
   // Saldo calculado exclusivamente a partir das transações lançadas (receitas, despesas e transferências).
   // O campo `account.balance` representa o saldo inicial/de abertura da conta.
   const openingBalance = Math.round(Number(account.balance || 0) * 100) / 100;
-  const currentBalance = Math.round((openingBalance + income - expense) * 100) / 100;
+  const roundedBalance = Math.round((openingBalance + income - expense) * 100) / 100;
+  // JavaScript preserves negative zero after rounding; financial UI must not show -0,00.
+  const currentBalance = roundedBalance === 0 ? 0 : roundedBalance;
   // Rendimento financeiro não é variação de saldo. Aportes e resgates alteram
   // o saldo da subconta, mas somente juros menos IR/IOF/taxas compõem rendimento.
   const performance = Math.round(Number(yieldAmount || 0) * 100) / 100;
